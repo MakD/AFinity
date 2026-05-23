@@ -1,17 +1,22 @@
 package com.makd.afinity.data.websocket
 
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
+import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.repository.AppDataRepository
-import com.makd.afinity.data.repository.media.MediaRepository
-import com.makd.afinity.data.repository.userdata.UserDataRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
@@ -20,9 +25,13 @@ import org.jellyfin.sdk.api.sockets.SocketApiState
 import org.jellyfin.sdk.model.api.LibraryChangedMessage
 import org.jellyfin.sdk.model.api.PlayMessage
 import org.jellyfin.sdk.model.api.PlaystateMessage
+import org.jellyfin.sdk.model.api.ScheduledTasksInfoMessage
 import org.jellyfin.sdk.model.api.ServerRestartingMessage
 import org.jellyfin.sdk.model.api.ServerShuttingDownMessage
+import org.jellyfin.sdk.model.api.SessionInfoDto
 import org.jellyfin.sdk.model.api.SessionsMessage
+import org.jellyfin.sdk.model.api.TaskInfo
+import org.jellyfin.sdk.model.api.TaskState
 import org.jellyfin.sdk.model.api.UserDataChangedMessage
 import timber.log.Timber
 import javax.inject.Inject
@@ -33,17 +42,25 @@ class JellyfinWebSocketManager
 @Inject
 constructor(
     private val sessionManager: SessionManager,
-    private val mediaRepository: MediaRepository,
-    private val userDataRepository: UserDataRepository,
     private val appDataRepository: AppDataRepository,
-) {
+    private val mediaChangeManager: MediaChangeManager,
+) : DefaultLifecycleObserver {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var connectionJob: Job? = null
 
     private val _connectionState = MutableStateFlow(WebSocketState.DISCONNECTED)
     val connectionState: StateFlow<WebSocketState> = _connectionState.asStateFlow()
 
+    private val _liveSessions = MutableSharedFlow<List<SessionInfoDto>>(replay = 1)
+    val liveSessions: SharedFlow<List<SessionInfoDto>> = _liveSessions.asSharedFlow()
+
+    private val _liveTasks = MutableSharedFlow<List<TaskInfo>>(replay = 1)
+    val liveTasks = _liveTasks.asSharedFlow()
+
     init {
+
+        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+
         scope.launch {
             sessionManager.currentSession.collect { session ->
                 if (session != null) {
@@ -54,6 +71,18 @@ constructor(
                 }
             }
         }
+    }
+
+    override fun onStart(owner: LifecycleOwner) {
+        super.onStart(owner)
+        if (sessionManager.currentSession.value != null) {
+            connect()
+        }
+    }
+
+    override fun onStop(owner: LifecycleOwner) {
+        super.onStop(owner)
+        disconnect()
     }
 
     fun connect() {
@@ -68,6 +97,7 @@ constructor(
             launch { subscribeToSessionChanges(currentApiClient) }
             launch { subscribeToPlayCommands(currentApiClient) }
             launch { subscribeToServerMessages(currentApiClient) }
+            launch { subscribeToTaskChanges(currentApiClient) }
         }
     }
 
@@ -87,7 +117,6 @@ constructor(
                         is SocketApiState.Connected -> WebSocketState.CONNECTED
                         is SocketApiState.Connecting -> WebSocketState.CONNECTING
                         is SocketApiState.Disconnected -> WebSocketState.DISCONNECTED
-                        else -> WebSocketState.DISCONNECTED
                     }
             }
         } catch (e: Exception) {
@@ -154,26 +183,59 @@ constructor(
     }
 
     private fun handleLibraryChanged(message: LibraryChangedMessage) {
-        Timber.d("Library changed - refreshing caches and home data")
-        appDataRepository.scheduleHomeRefreshAfterTaskCompletion()
+        val update = message.data
+        Timber.d(
+            "Library changed - added=${update?.itemsAdded?.size ?: 0}, updated=${update?.itemsUpdated?.size ?: 0}, removed=${update?.itemsRemoved?.size ?: 0}"
+        )
+        appDataRepository.scheduleLiveHomeRefresh("library changed websocket event")
+        mediaChangeManager.notifyLibraryContentChanged("library changed websocket event")
+    }
+
+    private suspend fun subscribeToTaskChanges(apiClient: ApiClient) {
+        apiClient.webSocket
+            .subscribe(ScheduledTasksInfoMessage::class)
+            .catch { e -> Timber.e(e, "Tasks subscription failed") }
+            .collect { message ->
+                message.data?.let { tasks ->
+                    _liveTasks.emit(tasks)
+                    handleScheduledTasksChanged(tasks)
+                }
+            }
+    }
+
+    private fun handleScheduledTasksChanged(tasks: List<TaskInfo>) {
+        val runningLibraryTask = tasks.firstOrNull { task ->
+            task.state == TaskState.RUNNING && task.libraryScanTask()
+        }
+
+        if (runningLibraryTask != null) {
+            appDataRepository.scheduleLiveHomeRefresh(
+                reason =
+                    "running library task ${runningLibraryTask.key ?: runningLibraryTask.name.orEmpty()}"
+            )
+        }
+    }
+
+    private fun TaskInfo.libraryScanTask(): Boolean {
+        val text =
+            listOfNotNull(key, name, category, description)
+                .joinToString(separator = " ")
+                .lowercase()
+
+        return "library" in text || "scan" in text || "refresh" in text
     }
 
     private suspend fun handleUserDataChanged(message: UserDataChangedMessage) {
-        val userDataChangeInfo = message.data
-
-        userDataChangeInfo?.userDataList?.forEach { userData ->
-            val itemId = userData.itemId
-
-            if (itemId != null) {
-                Timber.d("User data changed for item: $itemId")
-                mediaRepository.invalidateItemCache(itemId)
-                mediaRepository.invalidateNextUpCache()
-            }
+        val userDataList = message.data?.userDataList ?: return
+        if (userDataList.isNotEmpty()) {
+            Timber.d("Batch processing ${userDataList.size} user data changes")
+            mediaChangeManager.applyUserDataChangesBatch(userDataList)
         }
     }
 
     private suspend fun handleSessionsUpdate(message: SessionsMessage) {
-        Timber.d("Sessions updated")
+        Timber.d("WebSocket: Sessions updated !")
+        message.data?.let { sessions -> _liveSessions.emit(sessions) }
     }
 
     private suspend fun handlePlayCommand(message: PlayMessage) {

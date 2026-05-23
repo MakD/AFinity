@@ -35,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,6 +59,7 @@ import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.settings.servers.components.SectionHeader
 import com.makd.afinity.ui.settings.servers.utils.formatLastRun
 import com.makd.afinity.ui.settings.servers.utils.formatTicks
+import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.SessionInfoDto
 import org.jellyfin.sdk.model.api.TaskInfo
@@ -77,9 +79,9 @@ internal fun ControlPanelView(
     val serverId = serverWithCount.server.id
 
     DisposableEffect(serverId) {
-        viewModel.startPolling()
+        viewModel.initialize(serverId)
 
-        onDispose { viewModel.stopPolling() }
+        onDispose {}
     }
 
     if (showRestartConfirm) {
@@ -430,11 +432,25 @@ private fun PlayingSessionCard(session: SessionInfoDto, baseUrl: String) {
             else null
         }
 
+    val basePositionTicks = session.playState?.positionTicks ?: 0L
+    val isPaused = session.playState?.isPaused ?: true
+
     val positionTicks = session.playState?.positionTicks
     val runtimeTicks = item.runTimeTicks
+
+    var localPositionTicks by remember(basePositionTicks) { mutableStateOf(basePositionTicks) }
+
+    LaunchedEffect(basePositionTicks, isPaused) {
+        if (!isPaused) {
+            while (true) {
+                delay(1000)
+                localPositionTicks += 10_000_000L
+            }
+        }
+    }
     val progress =
-        if (positionTicks != null && runtimeTicks != null && runtimeTicks > 0) {
-            (positionTicks.toDouble() / runtimeTicks.toDouble()).toFloat().coerceIn(0f, 1f)
+        if (runtimeTicks != null && runtimeTicks > 0) {
+            (localPositionTicks.toDouble() / runtimeTicks.toDouble()).toFloat().coerceIn(0f, 1f)
         } else null
 
     val deviceInfo = buildString {
@@ -444,8 +460,8 @@ private fun PlayingSessionCard(session: SessionInfoDto, baseUrl: String) {
     val title = item.name ?: stringResource(R.string.unknown_title)
     val year = item.productionYear?.toString()
     val timeText =
-        if (positionTicks != null && runtimeTicks != null) {
-            "${formatTicks(positionTicks)} / ${formatTicks(runtimeTicks)}"
+        if (runtimeTicks != null) {
+            "${formatTicks(localPositionTicks)} / ${formatTicks(runtimeTicks)}"
         } else null
     val userName = session.userName ?: stringResource(R.string.unknown_user)
 

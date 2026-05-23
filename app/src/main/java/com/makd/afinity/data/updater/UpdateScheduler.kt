@@ -14,7 +14,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class UpdateScheduler @Inject constructor(@ApplicationContext private val context: Context) {
+class UpdateScheduler @Inject constructor(@param:ApplicationContext private val context: Context) {
     private val workManager = WorkManager.getInstance(context)
 
     fun scheduleUpdateChecks(frequency: UpdateCheckFrequency) {

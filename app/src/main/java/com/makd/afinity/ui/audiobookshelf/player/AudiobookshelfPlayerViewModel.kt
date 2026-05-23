@@ -1,24 +1,26 @@
 package com.makd.afinity.ui.audiobookshelf.player
 
+import android.content.Context
 import androidx.annotation.OptIn
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
+import com.makd.afinity.R
+import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfEqualizerManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfSkipSilenceManager
 import com.makd.afinity.player.audiobookshelf.EqualizerPreset
-import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.makd.afinity.R
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -27,7 +29,7 @@ class AudiobookshelfPlayerViewModel
 @OptIn(UnstableApi::class)
 @Inject
 constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle,
     private val audiobookshelfRepository: AudiobookshelfRepository,
     private val audiobookshelfPlayer: AudiobookshelfPlayer,
@@ -184,7 +186,33 @@ constructor(
     }
 
     override fun onCleared() {
+        statsPollingJob?.cancel()
         super.onCleared()
+    }
+
+    private var statsPollingJob: kotlinx.coroutines.Job? = null
+
+    fun togglePlaybackStats() {
+        val willShow = !_uiState.value.showPlaybackStats
+        _uiState.value = _uiState.value.copy(showPlaybackStats = willShow)
+        if (willShow) {
+            startStatsPolling()
+        } else {
+            statsPollingJob?.cancel()
+        }
+    }
+
+    private fun startStatsPolling() {
+        statsPollingJob?.cancel()
+        statsPollingJob = viewModelScope.launch {
+            while (true) {
+                if (_uiState.value.showPlaybackStats) {
+                    _uiState.value =
+                        _uiState.value.copy(playbackStats = audiobookshelfPlayer.getPlaybackStats())
+                }
+                delay(1000L)
+            }
+        }
     }
 
     fun stopPlayback() {
@@ -200,4 +228,6 @@ data class AudiobookshelfPlayerUiState(
     val showSleepTimerDialog: Boolean = false,
     val showEqualizer: Boolean = false,
     val error: String? = null,
+    val showPlaybackStats: Boolean = false,
+    val playbackStats: PlaybackStats = PlaybackStats(),
 )

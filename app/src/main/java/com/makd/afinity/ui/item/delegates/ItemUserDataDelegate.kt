@@ -1,9 +1,9 @@
 package com.makd.afinity.ui.item.delegates
 
-import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.data.manager.MediaChangeManager
+import com.makd.afinity.data.manager.MediaChangeSource
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -14,8 +14,7 @@ class ItemUserDataDelegate
 @Inject
 constructor(
     private val userDataRepository: UserDataRepository,
-    private val playbackStateManager: PlaybackStateManager,
-    private val appDataRepository: AppDataRepository,
+    private val mediaChangeManager: MediaChangeManager,
 ) {
     fun toggleFavorite(
         scope: CoroutineScope,
@@ -37,11 +36,11 @@ constructor(
                     Timber.w("Failed to toggle favorite status, reverted UI")
                     revertUI()
                 } else {
-                    appDataRepository.updateFavoriteStatus(item, !item.favorite)
-                    playbackStateManager.notifyItemChanged(
-                        item.id,
-                        (item as? AfinityEpisode)?.seriesId,
-                        (item as? AfinityEpisode)?.seasonId,
+                    val updatedItem = item.withFavorite(!item.favorite)
+                    mediaChangeManager.publishKnownChange(
+                        updatedItem = updatedItem,
+                        source = MediaChangeSource.MANUAL,
+                        favoriteStatus = !item.favorite,
                     )
                 }
             } catch (e: Exception) {
@@ -66,11 +65,11 @@ constructor(
                     Timber.w("Failed to toggle like status, reverted UI")
                     revertUI()
                 } else {
-                    appDataRepository.updateWatchlistStatus(item, !item.liked)
-                    playbackStateManager.notifyItemChanged(
-                        item.id,
-                        (item as? AfinityEpisode)?.seriesId,
-                        (item as? AfinityEpisode)?.seasonId,
+                    val updatedItem = item.withLiked(!item.liked)
+                    mediaChangeManager.publishKnownChange(
+                        updatedItem = updatedItem,
+                        source = MediaChangeSource.MANUAL,
+                        watchlistStatus = !item.liked,
                     )
                 }
             } catch (e: Exception) {
@@ -94,7 +93,12 @@ constructor(
                         userDataRepository.addToFavorites(episode.id)
                     }
                 if (success) {
-                    appDataRepository.updateFavoriteStatus(episode, !episode.favorite)
+                    val updatedEpisode = episode.copy(favorite = !episode.favorite)
+                    mediaChangeManager.publishKnownChange(
+                        updatedItem = updatedEpisode,
+                        source = MediaChangeSource.MANUAL,
+                        favoriteStatus = !episode.favorite,
+                    )
                     onSuccess()
                 }
             } catch (e: Exception) {
@@ -102,4 +106,24 @@ constructor(
             }
         }
     }
+
+    private fun AfinityItem.withFavorite(isFavorite: Boolean): AfinityItem =
+        when (this) {
+            is com.makd.afinity.data.models.media.AfinityMovie -> copy(favorite = isFavorite)
+            is com.makd.afinity.data.models.media.AfinityShow -> copy(favorite = isFavorite)
+            is AfinityEpisode -> copy(favorite = isFavorite)
+            is com.makd.afinity.data.models.media.AfinitySeason -> copy(favorite = isFavorite)
+            is com.makd.afinity.data.models.media.AfinityBoxSet -> copy(favorite = isFavorite)
+            else -> this
+        }
+
+    private fun AfinityItem.withLiked(isLiked: Boolean): AfinityItem =
+        when (this) {
+            is com.makd.afinity.data.models.media.AfinityMovie -> copy(liked = isLiked)
+            is com.makd.afinity.data.models.media.AfinityShow -> copy(liked = isLiked)
+            is AfinityEpisode -> copy(liked = isLiked)
+            is com.makd.afinity.data.models.media.AfinitySeason -> copy(liked = isLiked)
+            is com.makd.afinity.data.models.media.AfinityBoxSet -> copy(liked = isLiked)
+            else -> this
+        }
 }

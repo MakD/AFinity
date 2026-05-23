@@ -2,8 +2,7 @@ package com.makd.afinity.ui.favorites
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.makd.afinity.data.manager.PlaybackEvent
-import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -17,12 +16,13 @@ import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
-import com.makd.afinity.util.NetworkConnectivityMonitor
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.ui.item.delegates.ItemDownloadDelegate
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
+import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -33,13 +33,14 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class FavoritesViewModel
 @Inject
 constructor(
     private val userDataRepository: UserDataRepository,
     private val mediaRepository: MediaRepository,
-    private val playbackStateManager: PlaybackStateManager,
+    private val mediaChangeManager: MediaChangeManager,
     private val watchlistRepository: WatchlistRepository,
     private val downloadRepository: DownloadRepository,
     private val appDataRepository: AppDataRepository,
@@ -52,7 +53,8 @@ constructor(
     private val _uiState = MutableStateFlow(FavoritesUiState())
 
     val canDownload: StateFlow<Boolean> =
-        preferencesRepository.getDownloadWifiOnlyFlow()
+        preferencesRepository
+            .getDownloadWifiOnlyFlow()
             .combine(networkMonitor.isOnWifiFlow) { wifiOnly, onWifi -> !wifiOnly || onWifi }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
     val uiState: StateFlow<FavoritesUiState> = _uiState.asStateFlow()
@@ -74,38 +76,32 @@ constructor(
     init {
         viewModelScope.launch {
             appDataRepository.favoritesData.collect { data ->
-                _uiState.value = FavoritesUiState(
-                    movies = data.movies,
-                    shows = data.shows,
-                    seasons = data.seasons,
-                    episodes = data.episodes,
-                    boxSets = data.boxSets,
-                    channels = data.channels,
-                    people = data.people,
-                    isLoading = false,
-                    error = null,
-                )
-            }
-        }
-        viewModelScope.launch {
-            playbackStateManager.playbackEvents.collect { event ->
-                if (event is PlaybackEvent.Synced) {
-                    _selectedEpisode.value?.let { ep ->
-                        if (ep.id == event.itemId) {
-                            val refreshedEp =
-                                mediaRepository.getItem(event.itemId)
-                                    ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
-                            refreshedEp?.let { _selectedEpisode.value = it }
-                        }
-                    }
-                }
+                _uiState.value =
+                    FavoritesUiState(
+                        movies = data.movies,
+                        shows = data.shows,
+                        seasons = data.seasons,
+                        episodes = data.episodes,
+                        boxSets = data.boxSets,
+                        channels = data.channels,
+                        people = data.people,
+                        isLoading = false,
+                        error = null,
+                    )
             }
         }
     }
 
     fun loadFavorites() {
         viewModelScope.launch {
-            appDataRepository.reloadFavorites()
+            val currentData = _uiState.value
+            val hasData =
+                currentData.movies.isNotEmpty() ||
+                    currentData.shows.isNotEmpty() ||
+                    currentData.episodes.isNotEmpty()
+            if (!hasData) {
+                appDataRepository.reloadFavorites()
+            }
         }
     }
 
@@ -170,27 +166,18 @@ constructor(
 
     fun toggleEpisodeWatched(episode: AfinityEpisode) {
         viewModelScope.launch {
-            try {
-                val isNowPlayed = !episode.played
-                _selectedEpisode.value =
-                    episode.copy(played = isNowPlayed, playbackPositionTicks = 0)
+            val isNowPlayed = !episode.played
+            _selectedEpisode.value = episode.copy(played = isNowPlayed, playbackPositionTicks = 0)
 
-                val success =
-                    if (episode.played) {
-                        userDataRepository.markUnwatched(episode.id)
-                    } else {
-                        userDataRepository.markWatched(episode.id)
-                    }
-
-                if (success) {
-                    mediaRepository.refreshItemUserData(episode.id, FieldSets.REFRESH_USER_DATA)
-                    playbackStateManager.notifyItemChanged(episode.id)
-                    mediaRepository.invalidateNextUpCache()
+            val success =
+                if (episode.played) {
+                    userDataRepository.markUnwatched(episode.id)
                 } else {
-                    _selectedEpisode.value = episode
+                    userDataRepository.markWatched(episode.id)
                 }
-            } catch (e: Exception) {
-                Timber.e(e, "Error toggling episode watched status")
+
+            if (!success) {
+                _selectedEpisode.value = episode
             }
         }
     }

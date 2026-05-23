@@ -1,9 +1,7 @@
 package com.makd.afinity.data.repository.userdata
 
 import com.makd.afinity.data.manager.SessionManager
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
+import com.makd.afinity.data.repository.DatabaseRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -13,18 +11,64 @@ import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.operations.ItemsApi
 import org.jellyfin.sdk.api.operations.PlayStateApi
 import org.jellyfin.sdk.api.operations.UserLibraryApi
+import org.jellyfin.sdk.model.DateTime
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.UpdateUserItemDataDto
 import org.jellyfin.sdk.model.api.UserItemDataDto
 import timber.log.Timber
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
-class JellyfinUserDataRepository @Inject constructor(private val sessionManager: SessionManager) :
-    UserDataRepository {
+class JellyfinUserDataRepository
+@Inject
+constructor(
+    private val sessionManager: SessionManager,
+    private val databaseRepository: DatabaseRepository,
+) : UserDataRepository {
 
     private suspend fun getCurrentUserId(): UUID? {
         return sessionManager.currentSession.value?.userId
+    }
+
+    private suspend fun updateLocalDatabasePlayedStatus(
+        itemId: UUID,
+        userId: UUID,
+        isPlayed: Boolean,
+    ) {
+        try {
+            val cachedEpisode = databaseRepository.getEpisode(itemId, userId)
+            if (cachedEpisode != null) {
+                val updated = cachedEpisode.copy(played = isPlayed, playbackPositionTicks = 0)
+                databaseRepository.updateEpisode(updated)
+                return
+            }
+
+            val cachedMovie = databaseRepository.getMovie(itemId, userId)
+            if (cachedMovie != null) {
+                val updated = cachedMovie.copy(played = isPlayed, playbackPositionTicks = 0)
+                databaseRepository.updateMovie(updated)
+                return
+            }
+
+            val cachedSeason = databaseRepository.getSeason(itemId, userId)
+            if (cachedSeason != null) {
+                val updated = cachedSeason.copy(played = isPlayed)
+                databaseRepository.updateSeason(updated)
+                return
+            }
+
+            val cachedShow = databaseRepository.getShow(itemId, userId)
+            if (cachedShow != null) {
+                val updated = cachedShow.copy(played = isPlayed)
+                databaseRepository.updateShow(updated)
+                return
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to update local cache for item $itemId")
+        }
     }
 
     override suspend fun markWatched(itemId: UUID): Boolean {
@@ -37,8 +81,9 @@ class JellyfinUserDataRepository @Inject constructor(private val sessionManager:
                 playStateApi.markPlayedItem(
                     itemId = itemId,
                     userId = userId,
-                    datePlayed = org.jellyfin.sdk.model.DateTime.now(),
+                    datePlayed = DateTime.now(),
                 )
+                updateLocalDatabasePlayedStatus(itemId, userId, true)
                 true
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to mark item as watched: $itemId")
@@ -58,6 +103,7 @@ class JellyfinUserDataRepository @Inject constructor(private val sessionManager:
                 val playStateApi = PlayStateApi(apiClient)
 
                 playStateApi.markUnplayedItem(itemId = itemId, userId = userId)
+                updateLocalDatabasePlayedStatus(itemId, userId, false)
                 true
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to mark item as unwatched: $itemId")
@@ -305,7 +351,8 @@ class JellyfinUserDataRepository @Inject constructor(private val sessionManager:
         return withContext(Dispatchers.IO) {
             try {
                 coroutineScope {
-                    itemIds.map { itemId -> async { itemId to getUserData(itemId) } }
+                    itemIds
+                        .map { itemId -> async { itemId to getUserData(itemId) } }
                         .awaitAll()
                         .mapNotNull { (itemId, userData) -> userData?.let { itemId to it } }
                         .toMap()

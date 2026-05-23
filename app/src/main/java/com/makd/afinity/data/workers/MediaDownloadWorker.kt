@@ -62,7 +62,7 @@ constructor(
     private val databaseRepository: DatabaseRepository,
     private val downloadRepository: JellyfinDownloadRepository,
     private val segmentsRepository: SegmentsRepository,
-    @DownloadClient private val okHttpClient: OkHttpClient,
+    @param:DownloadClient private val okHttpClient: OkHttpClient,
 ) : CoroutineWorker(appContext, workerParams) {
 
     companion object {

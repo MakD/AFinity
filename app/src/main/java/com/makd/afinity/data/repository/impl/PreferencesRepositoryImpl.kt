@@ -33,7 +33,8 @@ import javax.inject.Singleton
 @Singleton
 class PreferencesRepositoryImpl
 @Inject
-constructor(@AppPreferences private val dataStore: DataStore<Preferences>) : PreferencesRepository {
+constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>) :
+    PreferencesRepository {
 
     private object Keys {
         val CURRENT_SERVER_ID = stringPreferencesKey("current_server_id")

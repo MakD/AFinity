@@ -45,7 +45,7 @@ constructor(
     private val audiobookshelfDao: AudiobookshelfDao,
     private val apiService: Lazy<AudiobookshelfApiService>,
     private val securePreferencesRepository: SecurePreferencesRepository,
-    @DownloadClient private val okHttpClient: OkHttpClient,
+    @param:DownloadClient private val okHttpClient: OkHttpClient,
 ) : CoroutineWorker(appContext, workerParams) {
 
     companion object {

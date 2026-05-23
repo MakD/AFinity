@@ -56,6 +56,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import org.jellyfin.sdk.model.api.UserItemDataDto
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Provider
@@ -408,6 +409,23 @@ constructor(
 
     override suspend fun updateUserData(userData: AfinityUserDataDto) {
         userDataDao.updateUserData(userData)
+    }
+
+    override suspend fun patchUserDataLocally(
+        itemId: UUID,
+        userId: UUID,
+        serverId: String,
+        userData: UserItemDataDto,
+    ) {
+        userDataDao.patchUserDataLocally(
+            itemId = itemId,
+            userId = userId,
+            serverId = serverId,
+            isPlayed = userData.played ?: false,
+            positionTicks = userData.playbackPositionTicks ?: 0L,
+            isFavorite = userData.isFavorite ?: false,
+            isLiked = userData.likes ?: false,
+        )
     }
 
     override suspend fun deleteUserData(userId: UUID, itemId: UUID) {
@@ -775,7 +793,11 @@ constructor(
         return serverDatabaseDao.getSources(itemId)
     }
 
-    override suspend fun getItemMetadata(itemId: UUID, serverId: String, userId: String): ItemMetadataCacheEntity? {
+    override suspend fun getItemMetadata(
+        itemId: UUID,
+        serverId: String,
+        userId: String,
+    ): ItemMetadataCacheEntity? {
         return itemMetadataCacheDao.getMetadata(itemId, serverId, userId)
     }
 

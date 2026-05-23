@@ -34,6 +34,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -74,6 +75,9 @@ constructor(
     private var recentWatchedCache: Pair<Long, List<AfinityMovie>>? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var liveDataJob: Job? = null
+    private var liveHomeRefreshJob: Job? = null
+    private var pendingLiveHomeRefresh = false
+    private var lastLiveHomeRefreshAt = 0L
     private val _latestMedia = MutableStateFlow<List<AfinityItem>>(emptyList())
     val latestMedia: StateFlow<List<AfinityItem>> = _latestMedia.asStateFlow()
 
@@ -181,7 +185,7 @@ constructor(
                     )
                     clearAllData()
 
-                    kotlinx.coroutines.delay(300)
+                    delay(300)
 
                     try {
                         loadInitialData()
@@ -229,7 +233,7 @@ constructor(
 
         try {
             coroutineScope {
-                kotlinx.coroutines.delay(300)
+                delay(300)
 
                 updateProgress(0.1f, context.getString(R.string.loading_phase_connecting))
 
@@ -318,6 +322,35 @@ constructor(
         }
     }
 
+    fun scheduleLiveHomeRefresh(reason: String, minIntervalMillis: Long = 10_000L) {
+        if (!_isInitialDataLoaded.value) return
+
+        if (liveHomeRefreshJob?.isActive == true) {
+            pendingLiveHomeRefresh = true
+            return
+        }
+
+        liveHomeRefreshJob = scope.launch {
+            do {
+                pendingLiveHomeRefresh = false
+
+                val elapsed = System.currentTimeMillis() - lastLiveHomeRefreshAt
+                if (elapsed < minIntervalMillis) {
+                    delay(minIntervalMillis - elapsed)
+                }
+
+                try {
+                    lastLiveHomeRefreshAt = System.currentTimeMillis()
+                    Timber.d("Live home refresh requested: $reason")
+                    mediaRepository.invalidateLatestMediaCache()
+                    reloadHomeData()
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed live home refresh: $reason")
+                }
+            } while (pendingLiveHomeRefresh)
+        }
+    }
+
     suspend fun reloadHomeData() {
         if (_isInitialDataLoaded.value && _libraries.value.isEmpty()) {
             Timber.d("Libraries empty (offline start detected), forcing full initial load...")
@@ -360,56 +393,6 @@ constructor(
         }
     }
 
-    private suspend fun reloadLatestMoviesData() {
-        try {
-            val libraries = _libraries.value
-            val movieLibraries = libraries.filter { it.type == CollectionType.Movies }
-            if (movieLibraries.isEmpty()) return
-
-            val useJellyfinDefault = preferencesRepository.getHomeSortByDateAdded()
-
-            val movieResults = coroutineScope {
-                movieLibraries
-                    .map { library ->
-                        async {
-                            try {
-                                val items =
-                                    if (useJellyfinDefault) {
-                                        mediaRepository
-                                            .getLatestMedia(parentId = library.id, limit = 30)
-                                            .filterIsInstance<AfinityMovie>()
-                                    } else {
-                                        mediaRepository.getMovies(
-                                            parentId = library.id,
-                                            sortBy = SortBy.RELEASE_DATE,
-                                            sortDescending = true,
-                                            limit = 30,
-                                            isPlayed = false,
-                                        )
-                                    }
-                                library to items
-                            } catch (e: Exception) {
-                                library to emptyList()
-                            }
-                        }
-                    }
-                    .awaitAll()
-            }
-
-            _separateMovieLibrarySections.value =
-                movieResults
-                    .filter { it.second.isNotEmpty() }
-                    .map { (library, movies) -> library to movies.filter { !it.played }.take(15) }
-
-            val allMovies = movieResults.flatMap { it.second }.filter { !it.played }
-            _latestMovies.value =
-                if (useJellyfinDefault) allMovies.sortedByDescending { it.dateCreated }.take(15)
-                else allMovies.sortedByDescending { it.premiereDate }.take(15)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to reload latest movies data")
-        }
-    }
-
     private suspend fun getLatestShowsForLibrary(libraryId: UUID, limit: Int): List<AfinityShow> {
         val raw =
             mediaRepository.getLatestMedia(
@@ -429,54 +412,6 @@ constructor(
                 mediaRepository.getItemsByIds(missingSeriesIds).filterIsInstance<AfinityShow>()
             } else emptyList()
         return directShows + fetchedShows
-    }
-
-    private suspend fun reloadLatestShowsData() {
-        try {
-            val libraries = _libraries.value
-            val tvLibraries = libraries.filter { it.type == CollectionType.TvShows }
-            if (tvLibraries.isEmpty()) return
-
-            val useJellyfinDefault = preferencesRepository.getHomeSortByDateAdded()
-
-            val showResults = coroutineScope {
-                tvLibraries
-                    .map { library ->
-                        async {
-                            try {
-                                val items =
-                                    if (useJellyfinDefault) {
-                                        getLatestShowsForLibrary(library.id, limit = 30)
-                                    } else {
-                                        mediaRepository.getShows(
-                                            parentId = library.id,
-                                            sortBy = SortBy.RELEASE_DATE,
-                                            sortDescending = true,
-                                            limit = 30,
-                                            isPlayed = false,
-                                        )
-                                    }
-                                library to items
-                            } catch (e: Exception) {
-                                library to emptyList()
-                            }
-                        }
-                    }
-                    .awaitAll()
-            }
-
-            _separateTvLibrarySections.value =
-                showResults
-                    .filter { it.second.isNotEmpty() }
-                    .map { (library, shows) -> library to shows.filter { !it.played }.take(15) }
-
-            val allShows = showResults.flatMap { it.second }.filter { !it.played }
-            _latestTvSeries.value =
-                if (useJellyfinDefault) allShows.take(15)
-                else allShows.sortedByDescending { it.premiereDate }.take(15)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to reload latest shows data")
-        }
     }
 
     private suspend fun loadLatestMedia(): List<AfinityItem> {
@@ -760,116 +695,68 @@ constructor(
     }
 
     suspend fun updateItemInCaches(updatedItem: AfinityItem) {
-        val itemId = updatedItem.id
         genreRepository.updateItemInCaches(updatedItem)
         peopleRepository.updateItemInCaches(updatedItem)
         recentWatchedCache = null
-        if (updatedItem is AfinityMovie) {
-            val movieIsInLatest = _latestMovies.value.any { it.id == itemId }
-            if (updatedItem.played) {
-                _latestMovies.update { movies -> movies.filterNot { it.id == itemId } }
-                _separateMovieLibrarySections.update { sections ->
-                    sections.map { (library, movies) ->
-                        library to movies.filterNot { it.id == itemId }
-                    }
-                }
-            } else if (movieIsInLatest) {
-                _latestMovies.update { movies ->
-                    val index = movies.indexOfFirst { it.id == itemId }
-                    if (index != -1) movies.toMutableList().apply { this[index] = updatedItem }
-                    else movies
-                }
-                _separateMovieLibrarySections.update { sections ->
-                    sections.map { (library, movies) ->
-                        val index = movies.indexOfFirst { it.id == itemId }
-                        library to
-                            if (index != -1)
-                                movies.toMutableList().apply { this[index] = updatedItem }
-                            else movies
-                    }
-                }
-            } else {
-                reloadLatestMoviesData()
+        mediaRepository.invalidateLatestMediaCache()
+        _favoritesData.update { data ->
+            when (updatedItem) {
+                is AfinityMovie ->
+                    data.copy(
+                        movies =
+                            data.movies.map { if (it.id == updatedItem.id) updatedItem else it }
+                    )
+                is AfinityShow ->
+                    data.copy(
+                        shows = data.shows.map { if (it.id == updatedItem.id) updatedItem else it }
+                    )
+                is AfinitySeason ->
+                    data.copy(
+                        seasons =
+                            data.seasons.map { if (it.id == updatedItem.id) updatedItem else it }
+                    )
+                is AfinityEpisode ->
+                    data.copy(
+                        episodes =
+                            data.episodes.map { if (it.id == updatedItem.id) updatedItem else it }
+                    )
+                is AfinityBoxSet ->
+                    data.copy(
+                        boxSets =
+                            data.boxSets.map { if (it.id == updatedItem.id) updatedItem else it }
+                    )
+                else -> data
             }
         }
-        if (updatedItem is AfinityShow) {
-            val showIsInLatest = _latestTvSeries.value.any { it.id == itemId }
-            if (updatedItem.played) {
-                _latestTvSeries.update { shows -> shows.filterNot { it.id == itemId } }
-                _separateTvLibrarySections.update { sections ->
-                    sections.map { (library, shows) ->
-                        library to shows.filterNot { it.id == itemId }
-                    }
-                }
-            } else if (showIsInLatest) {
-                _latestTvSeries.update { shows ->
-                    val index = shows.indexOfFirst { it.id == itemId }
-                    if (index != -1) shows.toMutableList().apply { this[index] = updatedItem }
-                    else shows
-                }
-                _separateTvLibrarySections.update { sections ->
-                    sections.map { (library, shows) ->
-                        val index = shows.indexOfFirst { it.id == itemId }
-                        library to
-                            if (index != -1)
-                                shows.toMutableList().apply { this[index] = updatedItem }
-                            else shows
-                    }
-                }
-            } else {
-                reloadLatestShowsData()
+
+        _watchlistData.update { data ->
+            when (updatedItem) {
+                is AfinityMovie ->
+                    data.copy(
+                        movies =
+                            data.movies.map { if (it.id == updatedItem.id) updatedItem else it }
+                    )
+                is AfinityShow ->
+                    data.copy(
+                        shows = data.shows.map { if (it.id == updatedItem.id) updatedItem else it }
+                    )
+                is AfinitySeason ->
+                    data.copy(
+                        seasons =
+                            data.seasons.map { if (it.id == updatedItem.id) updatedItem else it }
+                    )
+                is AfinityEpisode ->
+                    data.copy(
+                        episodes =
+                            data.episodes.map { if (it.id == updatedItem.id) updatedItem else it }
+                    )
+                is AfinityBoxSet ->
+                    data.copy(
+                        boxSets =
+                            data.boxSets.map { if (it.id == updatedItem.id) updatedItem else it }
+                    )
+                else -> data
             }
-        }
-        _heroCarouselItems.update { items ->
-            val index = items.indexOfFirst { it.id == itemId }
-            if (index != -1) items.toMutableList().apply { this[index] = updatedItem } else items
-        }
-
-        _latestMedia.update { items ->
-            val index = items.indexOfFirst { it.id == itemId }
-            if (index != -1) items.toMutableList().apply { this[index] = updatedItem } else items
-        }
-
-        _favoritesData.update { current ->
-            current.copy(
-                movies =
-                    current.movies.map {
-                        if (it.id == itemId && updatedItem is AfinityMovie) updatedItem else it
-                    },
-                shows =
-                    current.shows.map {
-                        if (it.id == itemId && updatedItem is AfinityShow) updatedItem else it
-                    },
-                seasons =
-                    current.seasons.map {
-                        if (it.id == itemId && updatedItem is AfinitySeason) updatedItem else it
-                    },
-                episodes =
-                    current.episodes.map {
-                        if (it.id == itemId && updatedItem is AfinityEpisode) updatedItem else it
-                    },
-            )
-        }
-
-        _watchlistData.update { current ->
-            current.copy(
-                movies =
-                    current.movies.map {
-                        if (it.id == itemId && updatedItem is AfinityMovie) updatedItem else it
-                    },
-                shows =
-                    current.shows.map {
-                        if (it.id == itemId && updatedItem is AfinityShow) updatedItem else it
-                    },
-                seasons =
-                    current.seasons.map {
-                        if (it.id == itemId && updatedItem is AfinitySeason) updatedItem else it
-                    },
-                episodes =
-                    current.episodes.map {
-                        if (it.id == itemId && updatedItem is AfinityEpisode) updatedItem else it
-                    },
-            )
         }
     }
 
@@ -934,15 +821,40 @@ constructor(
             if (isFavorite) {
                 when (item) {
                     is AfinityMovie ->
-                        current.copy(movies = (current.movies + item).sortedBy { it.name })
+                        current.copy(
+                            movies =
+                                (current.movies.filterNot { it.id == item.id } + item).sortedBy {
+                                    it.name
+                                }
+                        )
                     is AfinityShow ->
-                        current.copy(shows = (current.shows + item).sortedBy { it.name })
+                        current.copy(
+                            shows =
+                                (current.shows.filterNot { it.id == item.id } + item).sortedBy {
+                                    it.name
+                                }
+                        )
                     is AfinitySeason ->
-                        current.copy(seasons = (current.seasons + item).sortedBy { it.name })
+                        current.copy(
+                            seasons =
+                                (current.seasons.filterNot { it.id == item.id } + item).sortedBy {
+                                    it.name
+                                }
+                        )
                     is AfinityEpisode ->
-                        current.copy(episodes = (current.episodes + item).sortedBy { it.name })
+                        current.copy(
+                            episodes =
+                                (current.episodes.filterNot { it.id == item.id } + item).sortedBy {
+                                    it.name
+                                }
+                        )
                     is AfinityBoxSet ->
-                        current.copy(boxSets = (current.boxSets + item).sortedBy { it.name })
+                        current.copy(
+                            boxSets =
+                                (current.boxSets.filterNot { it.id == item.id } + item).sortedBy {
+                                    it.name
+                                }
+                        )
                     else -> current
                 }
             } else {
@@ -968,15 +880,40 @@ constructor(
             if (isOnWatchlist) {
                 when (item) {
                     is AfinityBoxSet ->
-                        current.copy(boxSets = (current.boxSets + item).sortedBy { it.name })
+                        current.copy(
+                            boxSets =
+                                (current.boxSets.filterNot { it.id == item.id } + item).sortedBy {
+                                    it.name
+                                }
+                        )
                     is AfinityMovie ->
-                        current.copy(movies = (current.movies + item).sortedBy { it.name })
+                        current.copy(
+                            movies =
+                                (current.movies.filterNot { it.id == item.id } + item).sortedBy {
+                                    it.name
+                                }
+                        )
                     is AfinityShow ->
-                        current.copy(shows = (current.shows + item).sortedBy { it.name })
+                        current.copy(
+                            shows =
+                                (current.shows.filterNot { it.id == item.id } + item).sortedBy {
+                                    it.name
+                                }
+                        )
                     is AfinitySeason ->
-                        current.copy(seasons = (current.seasons + item).sortedBy { it.name })
+                        current.copy(
+                            seasons =
+                                (current.seasons.filterNot { it.id == item.id } + item).sortedBy {
+                                    it.name
+                                }
+                        )
                     is AfinityEpisode ->
-                        current.copy(episodes = (current.episodes + item).sortedBy { it.name })
+                        current.copy(
+                            episodes =
+                                (current.episodes.filterNot { it.id == item.id } + item).sortedBy {
+                                    it.name
+                                }
+                        )
                     else -> current
                 }
             } else {

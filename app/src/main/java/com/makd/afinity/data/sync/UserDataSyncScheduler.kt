@@ -8,12 +8,14 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.makd.afinity.data.workers.UserDataSyncWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
-import timber.log.Timber
 
 @Singleton
-class UserDataSyncScheduler @Inject constructor(@ApplicationContext private val context: Context) {
+class UserDataSyncScheduler
+@Inject
+constructor(@param:ApplicationContext private val context: Context) {
 
     fun scheduleSyncNow() {
         try {

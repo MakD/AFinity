@@ -10,8 +10,9 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.makd.afinity.R
+import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.OfflineModeManager
-import com.makd.afinity.data.manager.PlaybackEvent
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.GenreType
@@ -25,7 +26,6 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
-import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.AfinityVideo
@@ -49,14 +49,19 @@ import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -67,11 +72,12 @@ import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.PersonKind.ACTOR
 import org.jellyfin.sdk.model.api.PersonKind.DIRECTOR
 import org.jellyfin.sdk.model.api.PersonKind.WRITER
-import com.makd.afinity.R
 import timber.log.Timber
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class HomeViewModel
 @Inject
@@ -87,6 +93,7 @@ constructor(
     private val authRepository: AuthRepository,
     private val mediaRepository: MediaRepository,
     private val playbackStateManager: PlaybackStateManager,
+    private val mediaChangeManager: MediaChangeManager,
     private val itemDownloadDelegate: ItemDownloadDelegate,
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val preferencesRepository: PreferencesRepository,
@@ -106,15 +113,18 @@ constructor(
     private val loadedSpotlightSections = mutableListOf<HomeSection.Spotlight>()
 
     private var cachedShuffledGenres: List<HomeSection.Genre> = emptyList()
+    private var cachedSpotlightPositions: List<Int> = emptyList()
 
     private val recommendationMutex = Mutex()
+    private val layoutRefreshTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
-    private var recommendationLoadingJob: kotlinx.coroutines.Job? = null
+    private var recommendationLoadingJob: Job? = null
+    private var libraryContentReloadJob: Job? = null
 
     private val renderedPeopleNames = mutableSetOf<String>()
-    private val renderedItemIds = mutableSetOf<java.util.UUID>()
-    private val renderedWatchedMovies = mutableSetOf<java.util.UUID>()
-    private val renderedStarringWatchedMovies = mutableSetOf<java.util.UUID>()
+    private val renderedItemIds = mutableSetOf<UUID>()
+    private val renderedWatchedMovies = mutableSetOf<UUID>()
+    private val renderedStarringWatchedMovies = mutableSetOf<UUID>()
     private val renderedActorNames = mutableSetOf<String>()
 
     init {
@@ -270,37 +280,32 @@ constructor(
                 }
             }
         }
+
         viewModelScope.launch {
-            playbackStateManager.playbackEvents.collect { event ->
-                when (event) {
-                    is PlaybackEvent.Stopped -> {
-                        Timber.d("HomeViewModel received fast Stopped event for ${event.itemId}")
-                        _uiState.update { state ->
-                            state.copy(
-                                continueWatching =
-                                    state.continueWatching.filterNot { it.id == event.itemId },
-                                nextUp = state.nextUp.filterNot { it.id == event.itemId },
-                            )
-                        }
+            mediaChangeManager.mediaChanges.collect { event -> layoutRefreshTrigger.tryEmit(Unit) }
+        }
+
+        viewModelScope.launch {
+            mediaChangeManager.libraryContentChanges.collect { event ->
+                Timber.d("HomeViewModel received library content change: ${event.reason}")
+                libraryContentReloadJob?.cancel()
+                libraryContentReloadJob = launch {
+                    delay(10_000L)
+                    coroutineScope {
+                        launch { loadStudios() }
+                        launch { loadCombinedGenres() }
+                        launch { loadUpcomingEpisodes() }
                     }
+                    loadNewHomescreenSections()
+                }
+            }
+        }
 
-                    is PlaybackEvent.Synced -> {
-                        Timber.d("HomeViewModel received sync for ${event.itemId}")
-                        val syncedItem = mediaRepository.getItemById(event.itemId) ?: return@collect
-
-                        val targetItem =
-                            when (syncedItem) {
-                                is AfinityEpisode ->
-                                    mediaRepository.getItemById(syncedItem.seriesId)
-
-                                is AfinitySeason -> mediaRepository.getItemById(syncedItem.seriesId)
-
-                                else -> syncedItem
-                            } ?: return@collect
-
-                        appDataRepository.updateItemInCaches(targetItem)
-                        updateItemInDynamicSections(targetItem)
-                    }
+        viewModelScope.launch {
+            layoutRefreshTrigger.debounce(300L).collect {
+                Timber.d("UI Batch complete. Redrawing Homescreen sections.")
+                withContext(Dispatchers.Main) {
+                    updateCombinedSections(appDataRepository.combinedGenres.value)
                 }
             }
         }
@@ -335,9 +340,15 @@ constructor(
         }
 
         if (loadedSpotlightSections.isNotEmpty()) {
-            val positions =
-                computeSpotlightPositions(finalLayout.size, loadedSpotlightSections.size)
-            positions.sorted().forEachIndexed { offset, pos ->
+            if (
+                cachedSpotlightPositions.isEmpty() ||
+                    cachedSpotlightPositions.size != loadedSpotlightSections.size
+            ) {
+                cachedSpotlightPositions =
+                    computeSpotlightPositions(finalLayout.size, loadedSpotlightSections.size)
+            }
+
+            cachedSpotlightPositions.sorted().forEachIndexed { offset, pos ->
                 finalLayout.add(
                     (pos + offset).coerceAtMost(finalLayout.size),
                     loadedSpotlightSections[offset],
@@ -362,6 +373,7 @@ constructor(
                     }
 
                     loadedRecommendationSections.clear()
+                    cachedSpotlightPositions = emptyList()
                     renderedPeopleNames.clear()
                     renderedItemIds.clear()
                     renderedWatchedMovies.clear()
@@ -719,7 +731,11 @@ constructor(
                                         recommendationMutex.withLock {
                                             loadedSpotlightSections.add(
                                                 HomeSection.Spotlight(
-                                                    title = context.getString(R.string.home_genre_top_movies_fmt, genre.name),
+                                                    title =
+                                                        context.getString(
+                                                            R.string.home_genre_top_movies_fmt,
+                                                            genre.name,
+                                                        ),
                                                     type = SpotlightType.GENRE_MOVIE,
                                                     items = items,
                                                 )
@@ -749,7 +765,11 @@ constructor(
                                         recommendationMutex.withLock {
                                             loadedSpotlightSections.add(
                                                 HomeSection.Spotlight(
-                                                    title = context.getString(R.string.home_genre_top_series_fmt, genre.name),
+                                                    title =
+                                                        context.getString(
+                                                            R.string.home_genre_top_series_fmt,
+                                                            genre.name,
+                                                        ),
                                                     type = SpotlightType.GENRE_SHOW,
                                                     items = items,
                                                 )
@@ -775,7 +795,11 @@ constructor(
                                         recommendationMutex.withLock {
                                             loadedSpotlightSections.add(
                                                 HomeSection.Spotlight(
-                                                    title = context.getString(R.string.home_best_of_studio_fmt, studio.name),
+                                                    title =
+                                                        context.getString(
+                                                            R.string.home_best_of_studio_fmt,
+                                                            studio.name,
+                                                        ),
                                                     type = SpotlightType.STUDIO,
                                                     items = items,
                                                 )
@@ -821,7 +845,7 @@ constructor(
                 }
                 tasks.awaitAll()
             }
-            val seenIds = mutableSetOf<java.util.UUID>()
+            val seenIds = mutableSetOf<UUID>()
             val deduplicated =
                 loadedSpotlightSections.shuffled().mapNotNull { section ->
                     val uniqueItems = section.items.filter { seenIds.add(it.id) }.take(10)
@@ -1105,11 +1129,11 @@ constructor(
                     }
 
                 if (success) {
-                    mediaRepository.refreshItemUserData(episode.id, FieldSets.REFRESH_USER_DATA)
-                    playbackStateManager.notifyItemChanged(episode.id)
-                    if (updatedEpisode.played) {
-                        mediaRepository.invalidateNextUpCache()
-                    }
+                    mediaChangeManager.notifyItemChanged(
+                        episode.id,
+                        episode.seriesId,
+                        episode.seasonId,
+                    )
                 } else {
                     _selectedEpisode.value = episode
                 }
@@ -1217,72 +1241,6 @@ constructor(
             .enqueueUniqueWork(WORK_HOME_RELOAD, ExistingWorkPolicy.REPLACE, request)
 
         Timber.d("HomeDataReloadWorker scheduled")
-    }
-
-    private suspend fun updateItemInDynamicSections(updatedItem: AfinityItem) {
-        val targetId = updatedItem.id
-
-        var highestRatedChanged = false
-        val currentHighestRated = _uiState.value.highestRated.toMutableList()
-        val hrIndex = currentHighestRated.indexOfFirst { it.id == targetId }
-        if (hrIndex != -1) {
-            currentHighestRated[hrIndex] = updatedItem
-            highestRatedChanged = true
-        }
-        if (highestRatedChanged) {
-            _uiState.update { it.copy(highestRated = currentHighestRated) }
-        }
-
-        var sectionsChanged = false
-        val updatedSections = loadedRecommendationSections.map { section ->
-            when (section) {
-                is HomeSection.Movie -> {
-                    val items = section.section.recommendedItems
-                    val index = items.indexOfFirst { it.id == targetId }
-                    if (index != -1 && updatedItem is AfinityMovie) {
-                        sectionsChanged = true
-                        val newItems = items.toMutableList().apply { this[index] = updatedItem }
-                        HomeSection.Movie(section.section.copy(recommendedItems = newItems))
-                    } else section
-                }
-
-                is HomeSection.Person -> {
-                    val items = section.section.items
-                    val index = items.indexOfFirst { it.id == targetId }
-                    if (
-                        index != -1 && (updatedItem is AfinityMovie || updatedItem is AfinityShow)
-                    ) {
-                        sectionsChanged = true
-                        val newItems = items.toMutableList().apply { this[index] = updatedItem }
-                        HomeSection.Person(section.section.copy(items = newItems))
-                    } else section
-                }
-
-                is HomeSection.PersonFromMovie -> {
-                    val items = section.section.items
-                    val index = items.indexOfFirst { it.id == targetId }
-                    if (
-                        index != -1 && (updatedItem is AfinityMovie || updatedItem is AfinityShow)
-                    ) {
-                        sectionsChanged = true
-                        val newItems = items.toMutableList().apply { this[index] = updatedItem }
-                        HomeSection.PersonFromMovie(section.section.copy(items = newItems))
-                    } else section
-                }
-
-                is HomeSection.Genre -> section
-
-                is HomeSection.Spotlight -> section
-            }
-        }
-
-        if (sectionsChanged) {
-            loadedRecommendationSections.clear()
-            loadedRecommendationSections.addAll(updatedSections)
-            withContext(Dispatchers.Main) {
-                updateCombinedSections(appDataRepository.combinedGenres.value)
-            }
-        }
     }
 
     companion object {

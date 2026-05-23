@@ -20,7 +20,7 @@ import javax.inject.Inject
 class AudiobookshelfLoginViewModel
 @Inject
 constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val audiobookshelfRepository: AudiobookshelfRepository,
     private val preferencesRepository: PreferencesRepository,
 ) : ViewModel() {

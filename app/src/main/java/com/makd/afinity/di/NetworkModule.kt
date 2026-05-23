@@ -3,11 +3,11 @@ package com.makd.afinity.di
 import android.content.Context
 import com.makd.afinity.BuildConfig
 import com.makd.afinity.core.AppConstants
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.network.AudiobookshelfApiService
 import com.makd.afinity.data.network.JellyseerrApiService
 import com.makd.afinity.data.network.MdbListApiService
 import com.makd.afinity.data.network.TmdbApiService
-import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import dagger.Module
 import dagger.Provides
@@ -180,9 +180,10 @@ object NetworkModule {
                             )
                         if (
                             sanitizedMessage.contains("ERROR") ||
-                                sanitizedMessage.contains("FAILED") ||
-                                sanitizedMessage.contains("-->") ||
-                                sanitizedMessage.contains("<--")
+                                sanitizedMessage.contains("FAILED")
+                        //                            ||
+                        //                                sanitizedMessage.contains("-->") ||
+                        //                                sanitizedMessage.contains("<--")
                         ) {
                             Timber.tag("Jellyfin-HTTP").d(sanitizedMessage)
                         }

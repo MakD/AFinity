@@ -17,18 +17,13 @@ import javax.inject.Singleton
 @Singleton
 class AbsProgressSyncScheduler
 @Inject
-constructor(
-    @ApplicationContext private val context: Context,
-) {
+constructor(@param:ApplicationContext private val context: Context) {
     fun scheduleSync(serverId: String, userId: UUID) {
         try {
             val constraints =
                 Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
 
-            val inputData = workDataOf(
-                KEY_SERVER_ID to serverId,
-                KEY_USER_ID to userId.toString(),
-            )
+            val inputData = workDataOf(KEY_SERVER_ID to serverId, KEY_USER_ID to userId.toString())
 
             val request =
                 OneTimeWorkRequestBuilder<AbsProgressSyncWorker>()
@@ -40,7 +35,9 @@ constructor(
             WorkManager.getInstance(context)
                 .enqueueUniqueWork(SYNC_WORK_NAME, ExistingWorkPolicy.REPLACE, request)
 
-            Timber.d("ABS progress sync scheduled for serverId=$serverId (runs when network available)")
+            Timber.d(
+                "ABS progress sync scheduled for serverId=$serverId (runs when network available)"
+            )
         } catch (e: Exception) {
             Timber.e(e, "Failed to schedule ABS progress sync")
         }

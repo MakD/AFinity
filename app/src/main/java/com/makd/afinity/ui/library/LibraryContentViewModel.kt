@@ -8,27 +8,28 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.filter
 import androidx.paging.map
-import com.makd.afinity.data.manager.PlaybackEvent
-import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.R
+import com.makd.afinity.data.manager.MediaChangeManager
+import com.makd.afinity.data.manager.MediaChangeSource
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
-import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.makd.afinity.R
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -41,14 +42,15 @@ enum class FilterType {
     FAVORITES,
 }
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class LibraryContentViewModel
 @Inject
 constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val mediaRepository: MediaRepository,
     private val appDataRepository: AppDataRepository,
-    private val playbackStateManager: PlaybackStateManager,
+    private val mediaChangeManager: MediaChangeManager,
     private val preferencesRepository: PreferencesRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -68,6 +70,8 @@ constructor(
     val uiState: StateFlow<LibraryContentUiState> = _uiState.asStateFlow()
 
     private val _itemUpdates = MutableStateFlow<Map<UUID, AfinityItem>>(emptyMap())
+    private val pendingUpdates = mutableMapOf<UUID, AfinityItem>()
+    private val libraryUpdateTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
     private fun applyUpdatesToPagingFlow(
         baseFlow: Flow<PagingData<AfinityItem>>
@@ -123,15 +127,27 @@ constructor(
             }
         }
         viewModelScope.launch {
-            playbackStateManager.playbackEvents.collect { event ->
-                if (event is PlaybackEvent.Synced) {
-                    val syncedItem = mediaRepository.getItemById(event.itemId) ?: return@collect
-                    val targetItem =
-                        when (syncedItem) {
-                            is AfinityEpisode -> mediaRepository.getItemById(syncedItem.seriesId)
-                            is AfinitySeason -> mediaRepository.getItemById(syncedItem.seriesId)
-                            else -> syncedItem
-                        } ?: return@collect
+            libraryUpdateTrigger.debounce(300L).collect {
+                if (pendingUpdates.isNotEmpty()) {
+                    _itemUpdates.value += pendingUpdates
+                    pendingUpdates.clear()
+                    Timber.d("Applied batched PagingData updates to Library")
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            mediaChangeManager.mediaChanges.collect { event ->
+                val targetItem =
+                    event.parentItem
+                        ?: event.updatedItem
+                        ?: mediaRepository.getItemById(event.itemId)
+                        ?: return@collect
+
+                if (event.source == MediaChangeSource.WEBSOCKET) {
+                    pendingUpdates[targetItem.id] = targetItem
+                    libraryUpdateTrigger.tryEmit(Unit)
+                } else {
                     _itemUpdates.value += (targetItem.id to targetItem)
                 }
             }
@@ -154,8 +170,8 @@ constructor(
             val name = libraryName ?: ""
             when {
                 name.contains("TV", ignoreCase = true) ||
-                        name.contains("Shows", ignoreCase = true) ||
-                        name.contains("Series", ignoreCase = true) -> CollectionType.TvShows
+                    name.contains("Shows", ignoreCase = true) ||
+                    name.contains("Series", ignoreCase = true) -> CollectionType.TvShows
 
                 name.contains("Movie", ignoreCase = true) -> CollectionType.Movies
                 else -> CollectionType.Mixed

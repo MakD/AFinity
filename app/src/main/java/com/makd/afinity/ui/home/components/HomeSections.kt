@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -123,8 +124,17 @@ fun OptimizedLatestMoviesSection(
         )
 
         val uniqueItems = items.distinctBy { it.id }
+        val itemIdsKey = uniqueItems.joinToString(separator = "|") { it.id.toString() }
+        val scrollState = rememberLazyListState()
+
+        LaunchedEffect(itemIdsKey) {
+            if (uniqueItems.isNotEmpty()) {
+                scrollState.scrollToItem(0)
+            }
+        }
 
         LazyRow(
+            state = scrollState,
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
@@ -267,8 +277,17 @@ fun OptimizedLatestTvSeriesSection(
         )
 
         val uniqueItems = items.distinctBy { it.id }
+        val itemIdsKey = uniqueItems.joinToString(separator = "|") { it.id.toString() }
+        val scrollState = rememberLazyListState()
+
+        LaunchedEffect(itemIdsKey) {
+            if (uniqueItems.isNotEmpty()) {
+                scrollState.scrollToItem(0)
+            }
+        }
 
         LazyRow(
+            state = scrollState,
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),

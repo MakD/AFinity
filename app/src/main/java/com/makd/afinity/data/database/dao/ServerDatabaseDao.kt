@@ -90,6 +90,7 @@ abstract class ServerDatabaseDao {
                     played = false,
                     favorite = false,
                     playbackPositionTicks = 0L,
+                    likes = false,
                 )
                 .also { insertUserData(it) }
     }
