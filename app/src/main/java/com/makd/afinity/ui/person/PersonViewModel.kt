@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.MediaChangeManager
-import com.makd.afinity.data.manager.MediaChangeSource
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
@@ -55,6 +54,7 @@ constructor(
 
     private val pendingItemUpdates = mutableMapOf<UUID, AfinityItem>()
     private val personListUpdateTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    private var lastLoadedAt = 0L
 
     init {
         viewModelScope.launch {
@@ -92,39 +92,36 @@ constructor(
         }
         viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
-                val targetItem =
-                    event.updatedItem
-                        ?: event.parentItem
-                        ?: mediaRepository.getItemById(event.itemId)
-                        ?: return@collect
+                val currentMovieIds = _uiState.value.movies.map { it.id }
+                val currentShowIds = _uiState.value.shows.map { it.id }
 
-                if (event.source == MediaChangeSource.WEBSOCKET) {
-                    pendingItemUpdates[targetItem.id] = targetItem
-                    personListUpdateTrigger.tryEmit(Unit)
-                } else {
-                    val currentMovies = _uiState.value.movies
-                    val currentShows = _uiState.value.shows
-                    var hasChanges = false
-
-                    val newMovies = currentMovies.map { movie ->
-                        if (movie.id == targetItem.id) {
-                            hasChanges = true
-                            targetItem as? AfinityMovie ?: movie
-                        } else movie
+                val targetIdToFetch =
+                    when {
+                        currentMovieIds.contains(event.itemId) -> event.itemId
+                        currentShowIds.contains(event.itemId) -> event.itemId
+                        event.seriesId != null && currentShowIds.contains(event.seriesId) ->
+                            event.seriesId
+                        else -> null
                     }
 
-                    val newShows = currentShows.map { show ->
-                        if (show.id == targetItem.id) {
-                            hasChanges = true
-                            targetItem as? AfinityShow ?: show
-                        } else show
-                    }
-
-                    if (hasChanges) {
-                        _uiState.update { it.copy(movies = newMovies, shows = newShows) }
+                if (targetIdToFetch != null) {
+                    try {
+                        val freshItem = mediaRepository.getItemById(targetIdToFetch)
+                        freshItem?.let { item ->
+                            pendingItemUpdates[item.id] = item
+                            personListUpdateTrigger.tryEmit(Unit)
+                        }
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to resolve item for granular update: $targetIdToFetch")
                     }
                 }
             }
+        }
+    }
+
+    fun onScreenResumed() {
+        if (appDataRepository.lastUserDataChangedAt.value > lastLoadedAt) {
+            lastLoadedAt = System.currentTimeMillis()
         }
     }
 
@@ -171,6 +168,7 @@ constructor(
                         isLoading = false,
                     )
                 }
+                lastLoadedAt = System.currentTimeMillis()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load person details: $personId")
                 _uiState.update { currentState ->
@@ -210,6 +208,8 @@ constructor(
                         )
                     }
                     Timber.e("Failed to toggle favorite for person: ${currentPerson.name}")
+                } else {
+                    appDataRepository.reloadFavorites()
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error toggling favorite")

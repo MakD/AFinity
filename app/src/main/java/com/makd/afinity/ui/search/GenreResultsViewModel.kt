@@ -11,9 +11,10 @@ import androidx.paging.PagingState
 import androidx.paging.cachedIn
 import androidx.paging.map
 import com.makd.afinity.data.manager.MediaChangeManager
-import com.makd.afinity.data.manager.MediaChangeSource
 import com.makd.afinity.data.models.extensions.toAfinityItem
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -54,6 +55,7 @@ constructor(
     val showsPagingData: StateFlow<Flow<PagingData<AfinityItem>>> = _showsPagingData.asStateFlow()
 
     private var currentGenre: String? = null
+    private var lastLoadedAt = 0L
 
     private val _itemUpdates = MutableStateFlow<Map<UUID, AfinityItem>>(emptyMap())
 
@@ -77,26 +79,73 @@ constructor(
                 if (pendingUpdates.isNotEmpty()) {
                     _itemUpdates.value += pendingUpdates
                     pendingUpdates.clear()
-                    Timber.d("Applied batched PagingData updates")
+                    Timber.d("Applied batched PagingData updates to Genre Results")
                 }
             }
         }
 
         viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
-                val targetItem =
-                    event.parentItem
-                        ?: event.updatedItem
-                        ?: mediaRepository.getItemById(event.itemId)
-                        ?: return@collect
-                if (event.source == MediaChangeSource.WEBSOCKET) {
-                    pendingUpdates[targetItem.id] = targetItem
+                var targetItem = event.updatedItem ?: event.parentItem ?: event.seasonItem
+                if (targetItem == null) {
+                    try {
+                        targetItem = mediaRepository.getItemById(event.itemId)
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to resolve item for genre patch: ${event.itemId}")
+                    }
+                }
+
+                var parentShowItem: AfinityItem? = null
+                val trueSeriesId =
+                    event.seriesId
+                        ?: (targetItem as? AfinityEpisode)?.seriesId
+                        ?: (targetItem as? AfinitySeason)?.seriesId
+                if (trueSeriesId != null && trueSeriesId != targetItem?.id) {
+                    try {
+                        parentShowItem = mediaRepository.getItemById(trueSeriesId)
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to resolve parent show for genre patch: $trueSeriesId")
+                    }
+                }
+
+                var hasUpdates = false
+                targetItem?.let { item ->
+                    pendingUpdates[item.id] = item
+                    hasUpdates = true
+                }
+                parentShowItem?.let { show ->
+                    pendingUpdates[show.id] = show
+                    hasUpdates = true
+                }
+
+                if (hasUpdates) {
                     genreUpdateTrigger.tryEmit(Unit)
-                } else {
-                    _itemUpdates.value += (targetItem.id to targetItem)
                 }
             }
         }
+    }
+
+    fun onScreenResumed() {
+        if (appDataRepository.lastUserDataChangedAt.value > lastLoadedAt) {
+            lastLoadedAt = System.currentTimeMillis()
+        }
+    }
+
+    private fun reloadGenre(genre: String) {
+        _itemUpdates.value = emptyMap()
+        val moviesBaseFlow =
+            Pager(PagingConfig(pageSize = 50)) {
+                    GenrePagingSource(mediaRepository, genre, "MOVIE")
+                }
+                .flow
+        _moviesPagingData.value = applyUpdatesToPagingFlow(moviesBaseFlow)
+        val showsBaseFlow =
+            Pager(PagingConfig(pageSize = 50)) {
+                    GenrePagingSource(mediaRepository, genre, "SERIES")
+                }
+                .flow
+        _showsPagingData.value = applyUpdatesToPagingFlow(showsBaseFlow)
+        lastLoadedAt = System.currentTimeMillis()
     }
 
     fun loadGenreResults(genre: String) {
@@ -104,20 +153,7 @@ constructor(
 
         currentGenre = genre
         _uiState.update { it.copy(isLoading = false, error = null) }
-
-        val moviesBaseFlow =
-            Pager(PagingConfig(pageSize = 50)) {
-                    GenrePagingSource(mediaRepository, genre, "MOVIE")
-                }
-                .flow
-        _moviesPagingData.value = applyUpdatesToPagingFlow(moviesBaseFlow)
-
-        val showsBaseFlow =
-            Pager(PagingConfig(pageSize = 50)) {
-                    GenrePagingSource(mediaRepository, genre, "SERIES")
-                }
-                .flow
-        _showsPagingData.value = applyUpdatesToPagingFlow(showsBaseFlow)
+        reloadGenre(genre)
     }
 }
 

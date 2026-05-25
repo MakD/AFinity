@@ -3,18 +3,14 @@ package com.makd.afinity.data.manager
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
-import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
-import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.UserItemDataDto
 import timber.log.Timber
@@ -22,16 +18,14 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
-@OptIn(FlowPreview::class)
 @Singleton
 class MediaChangeManager
 @Inject
 constructor(
     private val mediaRepository: MediaRepository,
-    private val appDataRepository: AppDataRepository,
     private val databaseRepository: DatabaseRepository,
     private val sessionManager: SessionManager,
-    private val watchlistRepository: WatchlistRepository,
+    private val mediaRefreshBus: MediaRefreshBus,
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -41,17 +35,6 @@ constructor(
     private val _libraryContentChanges =
         MutableSharedFlow<LibraryContentChangeEvent>(extraBufferCapacity = 16)
     val libraryContentChanges = _libraryContentChanges.asSharedFlow()
-
-    private val liveSectionRefreshTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-
-    init {
-        scope.launch {
-            liveSectionRefreshTrigger.debounce(1000L).collect {
-                Timber.d("WebSocket transfer finished. Syncing Next Up & Continue Watching...")
-                appDataRepository.refreshLiveSections()
-            }
-        }
-    }
 
     fun notifyLibraryContentChanged(reason: String) {
         scope.launch { _libraryContentChanges.emit(LibraryContentChangeEvent(reason)) }
@@ -83,7 +66,6 @@ constructor(
         val currentSession = sessionManager.currentSession.value ?: return
         val userId = currentSession.userId
         val serverId = currentSession.serverId
-        val isBatch = userDataList.size > 1
 
         userDataList.forEach { userData ->
             val itemId = userData.itemId ?: return@forEach
@@ -92,14 +74,18 @@ constructor(
             } catch (e: Exception) {
                 Timber.e(e, "Failed to patch local DB for $itemId")
             }
+        }
+        mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
 
+        if (userDataList.size == 1) {
+            val userData = userDataList.first()
+            val itemId = userData.itemId ?: return
             val cachedItem =
                 try {
                     mediaRepository.getItemById(itemId)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     null
                 }
-            cachedItem?.let { appDataRepository.updateItemInCaches(it) }
             val resolvedSeriesId =
                 (cachedItem as? AfinityEpisode)?.seriesId
                     ?: (cachedItem as? AfinitySeason)?.seriesId
@@ -107,17 +93,42 @@ constructor(
             _mediaChanges.emit(
                 MediaChangeEvent(
                     itemId = itemId,
-                    updatedItem = cachedItem,
+                    updatedItem = null,
                     seriesId = resolvedSeriesId,
                     seasonId = resolvedSeasonId,
                     source = MediaChangeSource.WEBSOCKET,
                     userData = userData,
-                    isBatchEvent = isBatch,
+                    isBatchEvent = false,
                 )
             )
+            return
         }
 
-        liveSectionRefreshTrigger.tryEmit(Unit)
+        val firstItemId = userDataList.first().itemId ?: return
+        val firstItem =
+            try {
+                mediaRepository.getItemById(firstItemId)
+            } catch (_: Exception) {
+                null
+            }
+        val resolvedSeriesId =
+            (firstItem as? AfinityEpisode)?.seriesId ?: (firstItem as? AfinitySeason)?.seriesId
+        val resolvedSeasonId =
+            when (firstItem) {
+                is AfinityEpisode -> firstItem.seasonId
+                is AfinitySeason -> firstItem.id
+                else -> null
+            }
+
+        _mediaChanges.emit(
+            MediaChangeEvent(
+                itemId = firstItemId,
+                seriesId = resolvedSeriesId,
+                seasonId = resolvedSeasonId,
+                source = MediaChangeSource.WEBSOCKET,
+                isBatchEvent = true,
+            )
+        )
     }
 
     suspend fun refreshAndPublish(
@@ -131,8 +142,9 @@ constructor(
             val updatedItem =
                 mediaRepository.refreshItemUserData(itemId, FieldSets.REFRESH_USER_DATA)
             val parentItem = resolveParentItem(updatedItem, knownSeriesId)
+            val seasonItem = resolveSeasonItem(updatedItem, knownSeasonId)
 
-            appDataRepository.scheduleLiveHomeRefresh("manual update")
+            mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
             updatedItem?.let { refreshDerivedState(it) }
 
             val resolvedSeriesId =
@@ -153,6 +165,7 @@ constructor(
                     itemId = itemId,
                     updatedItem = updatedItem,
                     parentItem = parentItem,
+                    seasonItem = seasonItem,
                     seriesId = resolvedSeriesId,
                     seasonId = resolvedSeasonId,
                     source = source,
@@ -182,19 +195,10 @@ constructor(
         knownSeasonId: UUID? = null,
         source: MediaChangeSource = MediaChangeSource.MANUAL,
         userData: UserItemDataDto? = null,
-        favoriteStatus: Boolean? = null,
-        watchlistStatus: Boolean? = null,
     ) {
         try {
             val parentItem = resolveParentItem(updatedItem, knownSeriesId)
 
-            appDataRepository.updateItemInCaches(updatedItem)
-            parentItem?.let { appDataRepository.updateItemInCaches(it) }
-            favoriteStatus?.let { appDataRepository.updateFavoriteStatus(updatedItem, it) }
-            watchlistStatus?.let {
-                appDataRepository.updateWatchlistStatus(updatedItem, it)
-                watchlistRepository.refreshWatchlistCount()
-            }
             refreshDerivedState(updatedItem)
 
             val resolvedSeriesId =
@@ -226,9 +230,9 @@ constructor(
         }
     }
 
-    private suspend fun refreshDerivedState(updatedItem: AfinityItem) {
+    private fun refreshDerivedState(updatedItem: AfinityItem) {
         if (updatedItem is AfinityEpisode) {
-            liveSectionRefreshTrigger.tryEmit(Unit)
+            mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
         }
     }
 
@@ -246,12 +250,31 @@ constructor(
         if (parentId == null || parentId == updatedItem?.id) return null
         return mediaRepository.getItemById(parentId)
     }
+
+    private suspend fun resolveSeasonItem(
+        updatedItem: AfinityItem?,
+        knownSeasonId: UUID?,
+    ): AfinityItem? {
+        val seasonId =
+            when (updatedItem) {
+                is AfinityEpisode -> updatedItem.seasonId
+                else -> knownSeasonId
+            }
+        if (seasonId == null || seasonId == updatedItem?.id) return null
+        return try {
+            mediaRepository.getItemById(seasonId)
+        } catch (e: Exception) {
+            Timber.w(e, "Could not resolve season item for $seasonId")
+            null
+        }
+    }
 }
 
 data class MediaChangeEvent(
     val itemId: UUID,
     val updatedItem: AfinityItem? = null,
     val parentItem: AfinityItem? = null,
+    val seasonItem: AfinityItem? = null,
     val seriesId: UUID? = null,
     val seasonId: UUID? = null,
     val source: MediaChangeSource,

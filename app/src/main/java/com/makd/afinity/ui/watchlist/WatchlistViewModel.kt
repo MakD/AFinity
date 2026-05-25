@@ -51,6 +51,7 @@ constructor(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WatchlistUiState())
+    private var lastWatchlistLoadedAt = 0L
 
     val canDownload: StateFlow<Boolean> =
         preferencesRepository
@@ -86,6 +87,16 @@ constructor(
                         isLoading = false,
                         error = null,
                     )
+                lastWatchlistLoadedAt = System.currentTimeMillis()
+            }
+        }
+    }
+
+    fun onScreenResumed() {
+        if (appDataRepository.lastUserDataChangedAt.value > lastWatchlistLoadedAt) {
+            viewModelScope.launch {
+                appDataRepository.reloadWatchlist()
+                lastWatchlistLoadedAt = System.currentTimeMillis()
             }
         }
     }

@@ -4,8 +4,9 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.makd.afinity.data.manager.MediaChangeManager
+import com.makd.afinity.data.manager.MediaRefreshBus
+import com.makd.afinity.data.manager.RefreshTrigger
 import com.makd.afinity.data.manager.SessionManager
-import com.makd.afinity.data.repository.AppDataRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -42,8 +43,8 @@ class JellyfinWebSocketManager
 @Inject
 constructor(
     private val sessionManager: SessionManager,
-    private val appDataRepository: AppDataRepository,
     private val mediaChangeManager: MediaChangeManager,
+    private val mediaRefreshBus: MediaRefreshBus,
 ) : DefaultLifecycleObserver {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var connectionJob: Job? = null
@@ -187,7 +188,7 @@ constructor(
         Timber.d(
             "Library changed - added=${update?.itemsAdded?.size ?: 0}, updated=${update?.itemsUpdated?.size ?: 0}, removed=${update?.itemsRemoved?.size ?: 0}"
         )
-        appDataRepository.scheduleLiveHomeRefresh("library changed websocket event")
+        mediaRefreshBus.emit(RefreshTrigger.LIBRARY_CHANGED)
         mediaChangeManager.notifyLibraryContentChanged("library changed websocket event")
     }
 
@@ -209,10 +210,8 @@ constructor(
         }
 
         if (runningLibraryTask != null) {
-            appDataRepository.scheduleLiveHomeRefresh(
-                reason =
-                    "running library task ${runningLibraryTask.key ?: runningLibraryTask.name.orEmpty()}"
-            )
+            Timber.d("Library task running: ${runningLibraryTask.key ?: runningLibraryTask.name}")
+            mediaRefreshBus.emit(RefreshTrigger.LIBRARY_CHANGED)
         }
     }
 
@@ -230,6 +229,7 @@ constructor(
         if (userDataList.isNotEmpty()) {
             Timber.d("Batch processing ${userDataList.size} user data changes")
             mediaChangeManager.applyUserDataChangesBatch(userDataList)
+            mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
         }
     }
 

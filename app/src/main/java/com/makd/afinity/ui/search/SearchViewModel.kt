@@ -3,7 +3,6 @@ package com.makd.afinity.ui.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.MediaChangeManager
-import com.makd.afinity.data.manager.MediaChangeSource
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
@@ -23,6 +22,7 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.repository.AppDataRepository
@@ -120,6 +120,7 @@ constructor(
     private val searchQueryFlow = MutableSharedFlow<String>(extraBufferCapacity = 1)
     private val pendingItemUpdates = mutableMapOf<UUID, AfinityItem>()
     private val searchResultsUpdateTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    private var lastQueryAt = 0L
 
     init {
         viewModelScope.launch {
@@ -176,25 +177,38 @@ constructor(
                 pendingItemUpdates.clear()
             }
         }
+
         viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
-                val targetItem =
-                    event.updatedItem
-                        ?: event.parentItem
-                        ?: mediaRepository.getItemById(event.itemId)
-                        ?: return@collect
+                var targetItem = event.updatedItem ?: event.parentItem ?: event.seasonItem
+                if (targetItem == null) {
+                    try {
+                        targetItem = mediaRepository.getItemById(event.itemId)
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to resolve item for search patch: ${event.itemId}")
+                    }
+                }
+
+                var parentShowItem: AfinityItem? = null
+                val trueSeriesId =
+                    event.seriesId
+                        ?: (targetItem as? AfinityEpisode)?.seriesId
+                        ?: (targetItem as? AfinitySeason)?.seriesId
+                if (trueSeriesId != null && trueSeriesId != targetItem?.id) {
+                    try {
+                        parentShowItem = mediaRepository.getItemById(trueSeriesId)
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to resolve parent show for search patch")
+                    }
+                }
 
                 _selectedEpisode.value?.let { ep ->
                     if (ep.id == event.itemId && targetItem is AfinityEpisode) {
                         _selectedEpisode.value = targetItem
                     }
                 }
-                if (event.source == MediaChangeSource.WEBSOCKET) {
-                    pendingItemUpdates[targetItem.id] = targetItem
-                    searchResultsUpdateTrigger.tryEmit(Unit)
-                } else {
-                    updateItemInSearchResults(targetItem)
-                }
+                targetItem?.let { updateItemInSearchResults(it) }
+                parentShowItem?.let { updateItemInSearchResults(it) }
             }
         }
     }
@@ -378,6 +392,13 @@ constructor(
         }
     }
 
+    fun onScreenResumed() {
+        val query = _uiState.value.searchQuery.trim()
+        if (query.length >= 2 && appDataRepository.lastUserDataChangedAt.value > lastQueryAt) {
+            searchQueryFlow.tryEmit(query)
+        }
+    }
+
     fun updateSearchQuery(query: String) {
         _uiState.value = _uiState.value.copy(searchQuery = query)
 
@@ -487,6 +508,7 @@ constructor(
 
                 _uiState.value =
                     _uiState.value.copy(searchResults = afinityItems, isSearching = false)
+                lastQueryAt = System.currentTimeMillis()
 
                 Timber.d("Search completed: ${afinityItems.size} results for '$query'")
             } catch (e: Exception) {

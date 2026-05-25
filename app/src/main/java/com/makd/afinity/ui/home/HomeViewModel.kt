@@ -12,11 +12,13 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.MediaChangeManager
+import com.makd.afinity.data.manager.MediaChangeSource
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.MovieSection
+import com.makd.afinity.data.models.MovieSectionType
 import com.makd.afinity.data.models.PersonFromMovieSection
 import com.makd.afinity.data.models.PersonSection
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
@@ -26,6 +28,7 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.AfinityVideo
@@ -127,6 +130,8 @@ constructor(
     private val renderedStarringWatchedMovies = mutableSetOf<UUID>()
     private val renderedActorNames = mutableSetOf<String>()
 
+    private var lastHomeRefreshedAt = 0L
+
     init {
         viewModelScope.launch {
             appDataRepository.isInitialDataLoaded.collect { isLoaded ->
@@ -162,8 +167,13 @@ constructor(
         }
 
         viewModelScope.launch {
-            appDataRepository.latestMedia.collect { latestMedia ->
-                _uiState.update { it.copy(latestMedia = latestMedia) }
+            mediaRepository.getLatestMediaFlow().collect { items ->
+                _uiState.update {
+                    it.copy(
+                        latestMedia =
+                            items.filter { item -> item is AfinityMovie || item is AfinityShow }
+                    )
+                }
             }
         }
 
@@ -174,14 +184,14 @@ constructor(
         }
 
         viewModelScope.launch {
-            appDataRepository.continueWatching.collect { continueWatching ->
-                _uiState.update { it.copy(continueWatching = continueWatching) }
+            mediaRepository.getContinueWatchingFlow().collect { items ->
+                _uiState.update { it.copy(continueWatching = items) }
             }
         }
 
         viewModelScope.launch {
-            appDataRepository.nextUp.collect { nextUp ->
-                _uiState.update { it.copy(nextUp = nextUp) }
+            mediaRepository.getNextUpFlow().collect { items ->
+                _uiState.update { it.copy(nextUp = items) }
             }
         }
 
@@ -282,7 +292,66 @@ constructor(
         }
 
         viewModelScope.launch {
-            mediaChangeManager.mediaChanges.collect { event -> layoutRefreshTrigger.tryEmit(Unit) }
+            mediaChangeManager.mediaChanges.collect { event ->
+                var targetItem = event.updatedItem ?: event.parentItem ?: event.seasonItem
+                if (targetItem == null) {
+                    try {
+                        targetItem = mediaRepository.getItemById(event.itemId)
+                    } catch (e: Exception) {
+                        Timber.e(
+                            e,
+                            "Failed to resolve item for granular home patch: ${event.itemId}",
+                        )
+                    }
+                }
+
+                var parentShowItem: AfinityItem? = null
+                val trueSeriesId =
+                    event.seriesId
+                        ?: (targetItem as? AfinityEpisode)?.seriesId
+                        ?: (targetItem as? AfinitySeason)?.seriesId
+                if (trueSeriesId != null && trueSeriesId != targetItem?.id) {
+                    try {
+                        parentShowItem = mediaRepository.getItemById(trueSeriesId)
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to resolve parent show for home patch: $trueSeriesId")
+                    }
+                }
+
+                targetItem?.let { item -> updateItemInRecommendationSections(item) }
+
+                val isPlayed = (targetItem?.played == true) || (event.userData?.played == true)
+                val idToRemove = targetItem?.id ?: event.itemId
+                if (isPlayed) {
+                    _uiState.update { state ->
+                        state.copy(
+                            continueWatching =
+                                state.continueWatching.filter { it.id != idToRemove },
+                            nextUp = state.nextUp.filter { it.id != idToRemove },
+                            latestMovies = state.latestMovies.filter { it.id != idToRemove },
+                            latestMedia = state.latestMedia.filter { it.id != idToRemove },
+                        )
+                    }
+                }
+
+                parentShowItem?.let { show -> updateItemInRecommendationSections(show) }
+
+                if (
+                    event.source == MediaChangeSource.WEBSOCKET ||
+                        event.source == MediaChangeSource.PLAYBACK
+                ) {
+                    launch {
+                        try {
+                            appDataRepository.refreshLiveSections()
+                            lastHomeRefreshedAt = System.currentTimeMillis()
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed background sync of live sections")
+                        }
+                    }
+                }
+
+                layoutRefreshTrigger.tryEmit(Unit)
+            }
         }
 
         viewModelScope.launch {
@@ -290,7 +359,7 @@ constructor(
                 Timber.d("HomeViewModel received library content change: ${event.reason}")
                 libraryContentReloadJob?.cancel()
                 libraryContentReloadJob = launch {
-                    delay(10_000L)
+                    delay(2_000L)
                     coroutineScope {
                         launch { loadStudios() }
                         launch { loadCombinedGenres() }
@@ -308,6 +377,92 @@ constructor(
                     updateCombinedSections(appDataRepository.combinedGenres.value)
                 }
             }
+        }
+    }
+
+    private suspend fun updateItemInRecommendationSections(updatedItem: AfinityItem) {
+        recommendationMutex.withLock {
+            for (i in loadedRecommendationSections.indices) {
+                when (val section = loadedRecommendationSections[i]) {
+                    is HomeSection.Person -> {
+                        val idx = section.section.items.indexOfFirst { it.id == updatedItem.id }
+                        if (idx != -1) {
+                            val newItems =
+                                section.section.items.toMutableList().also { it[idx] = updatedItem }
+                            loadedRecommendationSections[i] =
+                                HomeSection.Person(section.section.copy(items = newItems))
+                        }
+                    }
+                    is HomeSection.Movie -> {
+                        if (updatedItem is AfinityMovie) {
+                            val idx =
+                                section.section.recommendedItems.indexOfFirst {
+                                    it.id == updatedItem.id
+                                }
+                            if (idx != -1) {
+                                val newItems =
+                                    section.section.recommendedItems.toMutableList().also {
+                                        it[idx] = updatedItem
+                                    }
+                                loadedRecommendationSections[i] =
+                                    HomeSection.Movie(
+                                        section.section.copy(recommendedItems = newItems)
+                                    )
+                            }
+                        }
+                    }
+                    is HomeSection.PersonFromMovie -> {
+                        val idx = section.section.items.indexOfFirst { it.id == updatedItem.id }
+                        if (idx != -1) {
+                            val newItems =
+                                section.section.items.toMutableList().also { it[idx] = updatedItem }
+                            loadedRecommendationSections[i] =
+                                HomeSection.PersonFromMovie(section.section.copy(items = newItems))
+                        }
+                    }
+                    is HomeSection.Genre -> Unit
+                    is HomeSection.Spotlight -> Unit
+                }
+            }
+            for (i in loadedSpotlightSections.indices) {
+                val section = loadedSpotlightSections[i]
+                val idx = section.items.indexOfFirst { it.id == updatedItem.id }
+                if (idx != -1) {
+                    val newItems = section.items.toMutableList().also { it[idx] = updatedItem }
+                    loadedSpotlightSections[i] = section.copy(items = newItems)
+                }
+            }
+        }
+
+        _uiState.update { state ->
+            val patchItem = { list: List<AfinityItem> ->
+                list.map { if (it.id == updatedItem.id) updatedItem else it }
+            }
+
+            state.copy(
+                heroCarouselItems = patchItem(state.heroCarouselItems),
+                highestRated = patchItem(state.highestRated),
+                latestMovies =
+                    state.latestMovies.map {
+                        if (it.id == updatedItem.id) updatedItem as AfinityMovie else it
+                    },
+                latestTvSeries =
+                    state.latestTvSeries.map {
+                        if (it.id == updatedItem.id) updatedItem as AfinityShow else it
+                    },
+                genreMovies =
+                    state.genreMovies.mapValues { (_, movies) ->
+                        movies.map {
+                            if (it.id == updatedItem.id) updatedItem as AfinityMovie else it
+                        }
+                    },
+                genreShows =
+                    state.genreShows.mapValues { (_, shows) ->
+                        shows.map {
+                            if (it.id == updatedItem.id) updatedItem as AfinityShow else it
+                        }
+                    },
+            )
         }
     }
 
@@ -593,12 +748,14 @@ constructor(
                         MovieSection(
                             referenceMovie = referenceMovie,
                             recommendedItems = similarMovies,
-                            sectionType =
-                                com.makd.afinity.data.models.MovieSectionType.BECAUSE_YOU_WATCHED,
+                            sectionType = MovieSectionType.BECAUSE_YOU_WATCHED,
                         )
 
-                    similarMovies.forEach { renderedItemIds.add(it.id) }
-                    loadedRecommendationSections.add(HomeSection.Movie(section))
+                    recommendationMutex.withLock {
+                        renderedWatchedMovies.add(referenceMovie.id)
+                        similarMovies.forEach { renderedItemIds.add(it.id) }
+                        loadedRecommendationSections.add(HomeSection.Movie(section))
+                    }
                     loadedCount++
                     Timber.d(
                         "Loaded 'Because you watched ${referenceMovie.name}' section (${similarMovies.size} items)"
@@ -877,14 +1034,17 @@ constructor(
         val adjustedPositions = mutableListOf<Int>()
         var lastPos = -2
 
-        for (pos in rawPositions) {
+        for (i in rawPositions.indices) {
+            val pos = rawPositions[i]
             var newPos = if (pos <= lastPos + 1) lastPos + 2 else pos
-            newPos = newPos.coerceAtMost(listSize)
+            val itemsLeft = count - 1 - i
+            val maxAllowedPos = listSize - (itemsLeft * 2)
+
+            newPos = newPos.coerceAtMost(maxAllowedPos)
             adjustedPositions.add(newPos)
             lastPos = newPos
         }
-
-        return adjustedPositions.distinct()
+        return adjustedPositions
     }
 
     private suspend fun loadDownloadedContent() {
@@ -1225,6 +1385,15 @@ constructor(
             }
 
             loadNewHomescreenSections()
+        }
+    }
+
+    fun onScreenResumed() {
+        if (appDataRepository.lastUserDataChangedAt.value > lastHomeRefreshedAt) {
+            viewModelScope.launch {
+                appDataRepository.refreshLiveSections()
+                lastHomeRefreshedAt = System.currentTimeMillis()
+            }
         }
     }
 

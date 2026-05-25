@@ -1,6 +1,7 @@
 package com.makd.afinity.data.manager
 
 import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
@@ -23,9 +24,11 @@ class PlaybackStateManager
 @Inject
 constructor(
     private val mediaRepository: MediaRepository,
+    private val appDataRepository: AppDataRepository,
     private val playbackRepository: PlaybackRepository,
     private val syncScheduler: UserDataSyncScheduler,
     private val mediaChangeManager: MediaChangeManager,
+    private val mediaRefreshBus: MediaRefreshBus,
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -61,7 +64,12 @@ constructor(
 
                 try {
                     updatePlaybackPosition(positionMs)
-                    reportPlaybackStop(itemId, capturedSessionId, capturedMediaSourceId, positionTicks)
+                    reportPlaybackStop(
+                        itemId,
+                        capturedSessionId,
+                        capturedMediaSourceId,
+                        positionTicks,
+                    )
                     handlePlaybackStopped(itemId)
                 } catch (e: Exception) {
                     Timber.e(e, "Error in notifyPlaybackStopped")
@@ -115,12 +123,14 @@ constructor(
             if (refreshedItem != null) {
                 val seriesId = (refreshedItem as? AfinityEpisode)?.seriesId
                 val seasonId = (refreshedItem as? AfinityEpisode)?.seasonId
+                appDataRepository.updateItemInCaches(refreshedItem)
                 mediaChangeManager.publishKnownChange(
                     updatedItem = refreshedItem,
                     knownSeriesId = seriesId,
                     knownSeasonId = seasonId,
                     source = MediaChangeSource.PLAYBACK,
                 )
+                mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to handle playback stopped")

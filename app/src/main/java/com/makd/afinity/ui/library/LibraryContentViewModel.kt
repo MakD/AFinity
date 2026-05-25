@@ -72,6 +72,7 @@ constructor(
     private val _itemUpdates = MutableStateFlow<Map<UUID, AfinityItem>>(emptyMap())
     private val pendingUpdates = mutableMapOf<UUID, AfinityItem>()
     private val libraryUpdateTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    private var lastLoadedAt = 0L
 
     private fun applyUpdatesToPagingFlow(
         baseFlow: Flow<PagingData<AfinityItem>>
@@ -138,17 +139,26 @@ constructor(
 
         viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
-                val targetItem =
-                    event.parentItem
-                        ?: event.updatedItem
-                        ?: mediaRepository.getItemById(event.itemId)
-                        ?: return@collect
+                event.updatedItem?.let { pendingUpdates[it.id] = it }
+                event.parentItem?.let { pendingUpdates[it.id] = it }
+                event.seasonItem?.let { pendingUpdates[it.id] = it }
 
                 if (event.source == MediaChangeSource.WEBSOCKET) {
-                    pendingUpdates[targetItem.id] = targetItem
+                    try {
+                        val directItem = mediaRepository.getItemById(event.itemId)
+                        directItem?.let { pendingUpdates[it.id] = it }
+
+                        if (event.seriesId != null && event.seriesId != event.itemId) {
+                            val seriesItem = mediaRepository.getItemById(event.seriesId)
+                            seriesItem?.let { pendingUpdates[it.id] = it }
+                        }
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to resolve items for granular update: ${event.itemId}")
+                    }
+                }
+
+                if (pendingUpdates.isNotEmpty()) {
                     libraryUpdateTrigger.tryEmit(Unit)
-                } else {
-                    _itemUpdates.value += (targetItem.id to targetItem)
                 }
             }
         }
@@ -217,6 +227,7 @@ constructor(
                     )
 
                 loadItems()
+                lastLoadedAt = System.currentTimeMillis()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load library content")
                 _uiState.value =
@@ -225,6 +236,12 @@ constructor(
                         error = context.getString(R.string.error_content_unavailable_server),
                     )
             }
+        }
+    }
+
+    fun onScreenResumed() {
+        if (appDataRepository.lastUserDataChangedAt.value > lastLoadedAt) {
+            lastLoadedAt = System.currentTimeMillis()
         }
     }
 

@@ -2,6 +2,10 @@ package com.makd.afinity.data.repository
 
 import android.content.Context
 import com.makd.afinity.R
+import com.makd.afinity.data.manager.MediaChangeManager
+import com.makd.afinity.data.manager.MediaChangeSource
+import com.makd.afinity.data.manager.MediaRefreshBus
+import com.makd.afinity.data.manager.RefreshTrigger
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.PersonSection
@@ -29,6 +33,7 @@ import com.makd.afinity.util.JellyfinImageUrlBuilder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
@@ -40,6 +45,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
@@ -55,6 +61,7 @@ import javax.inject.Singleton
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.hours
 
+@OptIn(FlowPreview::class)
 @Singleton
 class AppDataRepository
 @Inject
@@ -70,25 +77,18 @@ constructor(
     private val peopleRepository: PeopleRepository,
     private val studioRepository: StudioRepository,
     private val serverRepository: ServerRepository,
+    private val mediaRefreshBus: MediaRefreshBus,
+    private val mediaChangeManager: MediaChangeManager,
 ) {
     private val recentCacheTTL = 6.hours.inWholeMilliseconds
     private var recentWatchedCache: Pair<Long, List<AfinityMovie>>? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var liveDataJob: Job? = null
-    private var liveHomeRefreshJob: Job? = null
-    private var pendingLiveHomeRefresh = false
-    private var lastLiveHomeRefreshAt = 0L
-    private val _latestMedia = MutableStateFlow<List<AfinityItem>>(emptyList())
-    val latestMedia: StateFlow<List<AfinityItem>> = _latestMedia.asStateFlow()
+    private val _lastUserDataChangedAt = MutableStateFlow(0L)
+    val lastUserDataChangedAt: StateFlow<Long> = _lastUserDataChangedAt.asStateFlow()
 
     private val _heroCarouselItems = MutableStateFlow<List<AfinityItem>>(emptyList())
     val heroCarouselItems: StateFlow<List<AfinityItem>> = _heroCarouselItems.asStateFlow()
-
-    private val _continueWatching = MutableStateFlow<List<AfinityItem>>(emptyList())
-    val continueWatching: StateFlow<List<AfinityItem>> = _continueWatching.asStateFlow()
-
-    private val _nextUp = MutableStateFlow<List<AfinityEpisode>>(emptyList())
-    val nextUp: StateFlow<List<AfinityEpisode>> = _nextUp.asStateFlow()
 
     private val _libraries = MutableStateFlow<List<AfinityCollection>>(emptyList())
     val libraries: StateFlow<List<AfinityCollection>> = _libraries.asStateFlow()
@@ -237,10 +237,8 @@ constructor(
 
                 updateProgress(0.1f, context.getString(R.string.loading_phase_connecting))
 
-                val latestMediaDeferred = async { loadLatestMedia() }
+                val cacheDeferred = async { mediaRepository.invalidateAllCaches() }
                 val heroCarouselDeferred = async { loadHeroCarousel() }
-                val continueWatchingDeferred = async { loadContinueWatching() }
-                val nextUpDeferred = async { loadNextUp() }
                 val librariesDeferred = async { loadLibraries() }
                 val watchlistCountDeferred = async {
                     try {
@@ -261,10 +259,8 @@ constructor(
 
                 updateProgress(0.5f, context.getString(R.string.loading_phase_processing))
 
-                _latestMedia.value = latestMediaDeferred.await()
+                cacheDeferred.await()
                 _heroCarouselItems.value = heroCarouselDeferred.await()
-                _continueWatching.value = continueWatchingDeferred.await()
-                _nextUp.value = nextUpDeferred.await()
                 watchlistCountDeferred.await()
                 favoritesDeferred.await()
                 watchlistDeferred.await()
@@ -292,21 +288,49 @@ constructor(
 
         liveDataJob = scope.launch {
             launch {
-                mediaRepository.getContinueWatchingFlow().collect { liveData ->
-                    _continueWatching.value = liveData
-                }
+                mediaRefreshBus.events
+                    .filter { it == RefreshTrigger.USER_DATA_CHANGED }
+                    .collect { _lastUserDataChangedAt.value = System.currentTimeMillis() }
             }
 
             launch {
-                mediaRepository.getLatestMediaFlow().collect { liveData ->
-                    _latestMedia.value = liveData.filter { item ->
-                        item is AfinityMovie || item is AfinityShow
+                mediaRefreshBus.events
+                    .filter { it == RefreshTrigger.USER_DATA_CHANGED }
+                    .debounce(1_500L)
+                    .collect {
+                        Timber.d("Bus: user data changed — refreshing live sections")
+                        refreshLiveSections()
+                    }
+            }
+
+            launch {
+                mediaRefreshBus.events
+                    .filter { it == RefreshTrigger.LIBRARY_CHANGED }
+                    .debounce(1_500L)
+                    .collect {
+                        if (!_isInitialDataLoaded.value) return@collect
+                        Timber.d("Bus: library changed — invalidating and reloading home")
+                        mediaRepository.invalidateLatestMediaCache()
+                        reloadHomeData()
+                    }
+            }
+
+            launch {
+                mediaChangeManager.mediaChanges.collect { event ->
+                    if (event.source == MediaChangeSource.WEBSOCKET) return@collect
+                    if (event.isBatchEvent) {
+                        event.seriesId?.let { seriesId ->
+                            try {
+                                val series = mediaRepository.getItemById(seriesId)
+                                if (series != null) updateItemInCaches(series)
+                            } catch (_: Exception) {}
+                        }
+                    } else {
+                        event.updatedItem?.let { updateItemInCaches(it) }
+                        event.parentItem?.let { updateItemInCaches(it) }
+                        event.seasonItem?.let { updateItemInCaches(it) }
                     }
                 }
-            }
-
-            launch {
-                mediaRepository.getNextUpFlow().collect { liveData -> _nextUp.value = liveData }
             }
         }
     }
@@ -319,35 +343,6 @@ constructor(
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh home data after task completion")
             }
-        }
-    }
-
-    fun scheduleLiveHomeRefresh(reason: String, minIntervalMillis: Long = 10_000L) {
-        if (!_isInitialDataLoaded.value) return
-
-        if (liveHomeRefreshJob?.isActive == true) {
-            pendingLiveHomeRefresh = true
-            return
-        }
-
-        liveHomeRefreshJob = scope.launch {
-            do {
-                pendingLiveHomeRefresh = false
-
-                val elapsed = System.currentTimeMillis() - lastLiveHomeRefreshAt
-                if (elapsed < minIntervalMillis) {
-                    delay(minIntervalMillis - elapsed)
-                }
-
-                try {
-                    lastLiveHomeRefreshAt = System.currentTimeMillis()
-                    Timber.d("Live home refresh requested: $reason")
-                    mediaRepository.invalidateLatestMediaCache()
-                    reloadHomeData()
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed live home refresh: $reason")
-                }
-            } while (pendingLiveHomeRefresh)
         }
     }
 
@@ -414,17 +409,6 @@ constructor(
         return directShows + fetchedShows
     }
 
-    private suspend fun loadLatestMedia(): List<AfinityItem> {
-        return try {
-            mediaRepository.getLatestMedia(limit = 15).filter { item ->
-                item is AfinityMovie || item is AfinityShow
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to load latest media")
-            emptyList()
-        }
-    }
-
     private suspend fun loadHeroCarousel(): List<AfinityItem> {
         return try {
             val baseUrl = mediaRepository.getBaseUrl()
@@ -443,28 +427,6 @@ constructor(
             randomHeroItems.items?.mapNotNull { it.toAfinityItem(baseUrl) } ?: emptyList()
         } catch (e: Exception) {
             Timber.e(e, "Failed to load hero carousel items")
-            emptyList()
-        }
-    }
-
-    private suspend fun loadContinueWatching(): List<AfinityItem> {
-        return try {
-            mediaRepository.getContinueWatching(limit = 12)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to load continue watching")
-            emptyList()
-        }
-    }
-
-    private suspend fun loadNextUp(): List<AfinityEpisode> {
-        return try {
-            mediaRepository.getNextUp(
-                limit = 16,
-                enableResumable = false,
-                fields = FieldSets.NEXT_UP,
-            )
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to load next up")
             emptyList()
         }
     }
@@ -684,10 +646,38 @@ constructor(
     }
 
     suspend fun refreshLiveSections() {
+        if (!_isInitialDataLoaded.value) return
         try {
             coroutineScope {
                 launch { mediaRepository.invalidateContinueWatchingCache() }
                 launch { mediaRepository.invalidateNextUpCache() }
+                launch {
+                    val fresh = loadHeroCarousel()
+                    if (fresh.isNotEmpty()) _heroCarouselItems.value = fresh
+                }
+                val libs = _libraries.value
+                if (libs.isNotEmpty()) {
+                    launch {
+                        val (latestMovies, latestTvSeries, _) =
+                            loadHomeSpecificData(libs, existingHighestRated = _highestRated.value)
+                        _latestMovies.value = latestMovies
+                        _latestTvSeries.value = latestTvSeries
+                    }
+                }
+                launch {
+                    try {
+                        loadFavoritesData()
+                    } catch (e: Exception) {
+                        Timber.e(e, "refreshLiveSections: failed to reload favorites")
+                    }
+                }
+                launch {
+                    try {
+                        loadWatchlistData()
+                    } catch (e: Exception) {
+                        Timber.e(e, "refreshLiveSections: failed to reload watchlist")
+                    }
+                }
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to refresh live sections")
@@ -698,7 +688,38 @@ constructor(
         genreRepository.updateItemInCaches(updatedItem)
         peopleRepository.updateItemInCaches(updatedItem)
         recentWatchedCache = null
-        mediaRepository.invalidateLatestMediaCache()
+
+        when (updatedItem) {
+            is AfinityMovie -> {
+                _latestMovies.update { list ->
+                    if (updatedItem.played) list.filter { it.id != updatedItem.id }
+                    else list.map { if (it.id == updatedItem.id) updatedItem else it }
+                }
+                _separateMovieLibrarySections.update { sections ->
+                    sections.map { (lib, movies) ->
+                        if (updatedItem.played) lib to movies.filter { it.id != updatedItem.id }
+                        else lib to movies.map { if (it.id == updatedItem.id) updatedItem else it }
+                    }
+                }
+            }
+            is AfinityShow -> {
+                _latestTvSeries.update { list ->
+                    if (updatedItem.played) list.filter { it.id != updatedItem.id }
+                    else list.map { if (it.id == updatedItem.id) updatedItem else it }
+                }
+                _separateTvLibrarySections.update { sections ->
+                    sections.map { (lib, shows) ->
+                        if (updatedItem.played) lib to shows.filter { it.id != updatedItem.id }
+                        else lib to shows.map { if (it.id == updatedItem.id) updatedItem else it }
+                    }
+                }
+            }
+            else -> Unit
+        }
+        _highestRated.update { items ->
+            items.map { if (it.id == updatedItem.id) updatedItem else it }
+        }
+
         _favoritesData.update { data ->
             when (updatedItem) {
                 is AfinityMovie ->
@@ -955,10 +976,7 @@ constructor(
         }
 
         recentWatchedCache = null
-        _latestMedia.value = emptyList()
         _heroCarouselItems.value = emptyList()
-        _continueWatching.value = emptyList()
-        _nextUp.value = emptyList()
         _libraries.value = emptyList()
         _latestMovies.value = emptyList()
         _latestTvSeries.value = emptyList()

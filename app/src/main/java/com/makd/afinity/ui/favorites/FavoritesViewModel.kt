@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -51,6 +52,7 @@ constructor(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FavoritesUiState())
+    private var lastFavoritesLoadedAt = 0L
 
     val canDownload: StateFlow<Boolean> =
         preferencesRepository
@@ -88,7 +90,88 @@ constructor(
                         isLoading = false,
                         error = null,
                     )
+                lastFavoritesLoadedAt = System.currentTimeMillis()
             }
+        }
+
+        viewModelScope.launch {
+            mediaChangeManager.mediaChanges.collect { event ->
+                val currentState = _uiState.value
+
+                val currentMovieIds = currentState.movies.map { it.id }
+                val currentShowIds = currentState.shows.map { it.id }
+                val currentSeasonIds = currentState.seasons.map { it.id }
+                val currentEpisodeIds = currentState.episodes.map { it.id }
+                val targetIdsToFetch = mutableSetOf<java.util.UUID>()
+
+                if (currentMovieIds.contains(event.itemId)) targetIdsToFetch.add(event.itemId)
+                if (currentShowIds.contains(event.itemId)) targetIdsToFetch.add(event.itemId)
+                if (currentSeasonIds.contains(event.itemId)) targetIdsToFetch.add(event.itemId)
+                if (currentEpisodeIds.contains(event.itemId)) targetIdsToFetch.add(event.itemId)
+                if (event.seriesId != null && currentShowIds.contains(event.seriesId)) {
+                    targetIdsToFetch.add(event.seriesId)
+                }
+                if (event.seasonId != null && currentSeasonIds.contains(event.seasonId)) {
+                    targetIdsToFetch.add(event.seasonId)
+                }
+
+                if (targetIdsToFetch.isNotEmpty()) {
+                    try {
+                        val newMovies = currentState.movies.toMutableList()
+                        val newShows = currentState.shows.toMutableList()
+                        val newSeasons = currentState.seasons.toMutableList()
+                        val newEpisodes = currentState.episodes.toMutableList()
+                        var hasChanges = false
+
+                        for (id in targetIdsToFetch) {
+                            val freshItem = mediaRepository.getItemById(id) ?: continue
+                            hasChanges = true
+
+                            when (freshItem) {
+                                is AfinityMovie -> {
+                                    val idx = newMovies.indexOfFirst { it.id == id }
+                                    if (idx != -1) newMovies[idx] = freshItem
+                                }
+                                is AfinityShow -> {
+                                    val idx = newShows.indexOfFirst { it.id == id }
+                                    if (idx != -1) newShows[idx] = freshItem
+                                }
+                                is AfinitySeason -> {
+                                    val idx = newSeasons.indexOfFirst { it.id == id }
+                                    if (idx != -1) newSeasons[idx] = freshItem
+                                }
+                                is AfinityEpisode -> {
+                                    val idx = newEpisodes.indexOfFirst { it.id == id }
+                                    if (idx != -1) newEpisodes[idx] = freshItem
+                                }
+                                else -> {}
+                            }
+                        }
+
+                        if (hasChanges) {
+                            _uiState.update {
+                                it.copy(
+                                    movies = newMovies,
+                                    shows = newShows,
+                                    seasons = newSeasons,
+                                    episodes = newEpisodes,
+                                )
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Timber.e(
+                            e,
+                            "Failed to resolve items for granular update in favorites: $targetIdsToFetch",
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun onScreenResumed() {
+        if (appDataRepository.lastUserDataChangedAt.value > lastFavoritesLoadedAt) {
+            lastFavoritesLoadedAt = System.currentTimeMillis()
         }
     }
 

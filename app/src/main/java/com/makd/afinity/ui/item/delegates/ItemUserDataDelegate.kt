@@ -2,9 +2,13 @@ package com.makd.afinity.ui.item.delegates
 
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.MediaChangeSource
+import com.makd.afinity.data.manager.MediaRefreshBus
+import com.makd.afinity.data.manager.RefreshTrigger
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
+import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -15,6 +19,9 @@ class ItemUserDataDelegate
 constructor(
     private val userDataRepository: UserDataRepository,
     private val mediaChangeManager: MediaChangeManager,
+    private val appDataRepository: AppDataRepository,
+    private val watchlistRepository: WatchlistRepository,
+    private val mediaRefreshBus: MediaRefreshBus,
 ) {
     fun toggleFavorite(
         scope: CoroutineScope,
@@ -37,11 +44,13 @@ constructor(
                     revertUI()
                 } else {
                     val updatedItem = item.withFavorite(!item.favorite)
+                    appDataRepository.updateItemInCaches(updatedItem)
+                    appDataRepository.updateFavoriteStatus(updatedItem, !item.favorite)
                     mediaChangeManager.publishKnownChange(
                         updatedItem = updatedItem,
                         source = MediaChangeSource.MANUAL,
-                        favoriteStatus = !item.favorite,
                     )
+                    mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error toggling favorite status")
@@ -66,11 +75,14 @@ constructor(
                     revertUI()
                 } else {
                     val updatedItem = item.withLiked(!item.liked)
+                    appDataRepository.updateItemInCaches(updatedItem)
+                    appDataRepository.updateWatchlistStatus(updatedItem, !item.liked)
+                    watchlistRepository.refreshWatchlistCount()
                     mediaChangeManager.publishKnownChange(
                         updatedItem = updatedItem,
                         source = MediaChangeSource.MANUAL,
-                        watchlistStatus = !item.liked,
                     )
+                    mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error toggling like status")
@@ -94,10 +106,11 @@ constructor(
                     }
                 if (success) {
                     val updatedEpisode = episode.copy(favorite = !episode.favorite)
+                    appDataRepository.updateItemInCaches(updatedEpisode)
+                    appDataRepository.updateFavoriteStatus(updatedEpisode, !episode.favorite)
                     mediaChangeManager.publishKnownChange(
                         updatedItem = updatedEpisode,
                         source = MediaChangeSource.MANUAL,
-                        favoriteStatus = !episode.favorite,
                     )
                     onSuccess()
                 }
