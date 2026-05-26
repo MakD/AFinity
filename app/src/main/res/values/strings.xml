@@ -163,6 +163,7 @@
     <string name="action_play">Play</string>
     <string name="action_rewatch">Rewatch</string>
     <string name="action_resume_playback">Resume Playback</string>
+    <string name="play_error_missing_source">No playable item found on server</string>
     <string name="status_loading">Loading...</string>
 
     <string name="cd_backdrop_fmt">%1$s backdrop</string>

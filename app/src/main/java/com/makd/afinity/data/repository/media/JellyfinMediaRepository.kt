@@ -1017,13 +1017,6 @@ constructor(
                     )
                 response.content.items
                     .mapNotNull { baseItem -> baseItem.toAfinityEpisode(getBaseUrl()) }
-                    .filter { episode ->
-                        if (episode.missing) {
-                            episode.premiereDate?.isBefore(java.time.LocalDateTime.now()) == true
-                        } else {
-                            true
-                        }
-                    }
                     .distinctBy { episode -> "${episode.parentIndexNumber}_${episode.indexNumber}" }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get episodes")
@@ -1821,9 +1814,10 @@ constructor(
             try {
                 val nextUpEpisodes =
                     getNextUp(seriesId = seriesId, limit = 1, fields = FieldSets.PLAYABLE_EPISODE)
-                if (nextUpEpisodes.isNotEmpty()) {
-                    Timber.d("Found NextUp episode: ${nextUpEpisodes.first().name}")
-                    return nextUpEpisodes.first()
+                val playableNextUp = nextUpEpisodes.filter { !it.missing }
+                if (playableNextUp.isNotEmpty()) {
+                    Timber.d("Found NextUp episode: ${playableNextUp.first().name}")
+                    return playableNextUp.first()
                 }
             } catch (e: Exception) {
                 Timber.w(e, "NextUp API failed")
@@ -1843,6 +1837,7 @@ constructor(
                                         seriesId,
                                         fields = FieldSets.PLAYABLE_EPISODE,
                                     )
+                                    .filter { !it.missing }
                                     .sortedBy { it.indexNumber }
                             }
                     }
@@ -1870,9 +1865,10 @@ constructor(
         return try {
             Timber.d("Getting episode to play for season: $seasonId")
             val episodes = getEpisodes(seasonId, seriesId, fields = FieldSets.PLAYABLE_EPISODE)
-            if (episodes.isEmpty()) return null
+            val playableEpisodes = episodes.filter { !it.missing }
+            if (playableEpisodes.isEmpty()) return null
 
-            val sortedEpisodes = episodes.sortedBy { it.indexNumber }
+            val sortedEpisodes = playableEpisodes.sortedBy { it.indexNumber }
             sortedEpisodes.firstOrNull { !it.played } ?: sortedEpisodes.firstOrNull()
         } catch (e: Exception) {
             Timber.e(e, "Failed to determine episode to play for season: $seasonId")

@@ -1332,4 +1332,13 @@ data class ItemDetailUiState(
     val mdbRatings: List<MdbListRating> = emptyList(),
     val isRatingsFromCache: Boolean = false,
     val movieParts: List<AfinityItem> = emptyList(),
-)
+) {
+    val hasPlayableItems: Boolean
+        get() =
+            when (item) {
+                is AfinityShow,
+                is AfinitySeason -> nextEpisode != null && !nextEpisode.missing
+                is AfinityEpisode -> !item.missing
+                else -> true
+            }
+}

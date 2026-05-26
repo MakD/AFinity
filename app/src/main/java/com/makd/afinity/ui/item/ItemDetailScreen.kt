@@ -163,6 +163,7 @@ fun ItemDetailScreen(
             uiState.item != null -> {
                 ItemDetailContent(
                     item = uiState.item!!,
+                    hasPlayableItems = uiState.hasPlayableItems,
                     seasons = uiState.seasons,
                     boxSetItems = uiState.boxSetItems,
                     containingBoxSets = uiState.containingBoxSets,
@@ -318,6 +319,7 @@ fun ItemDetailScreen(
 @Composable
 private fun ItemDetailContent(
     item: AfinityItem,
+    hasPlayableItems: Boolean,
     seasons: List<AfinitySeason>,
     boxSetItems: List<AfinityItem>,
     containingBoxSets: List<AfinityBoxSet>,
@@ -346,6 +348,7 @@ private fun ItemDetailContent(
     if (isLandscape) {
         LandscapeItemDetailContent(
             item = item,
+            hasPlayableItems = hasPlayableItems,
             seasons = seasons,
             boxSetItems = boxSetItems,
             containingBoxSets = containingBoxSets,
@@ -371,6 +374,7 @@ private fun ItemDetailContent(
     } else {
         PortraitItemDetailContent(
             item = item,
+            hasPlayableItems = hasPlayableItems,
             seasons = seasons,
             boxSetItems = boxSetItems,
             containingBoxSets = containingBoxSets,
@@ -399,6 +403,7 @@ private fun ItemDetailContent(
 @Composable
 private fun LandscapeItemDetailContent(
     item: AfinityItem,
+    hasPlayableItems: Boolean,
     seasons: List<AfinitySeason>,
     boxSetItems: List<AfinityItem>,
     containingBoxSets: List<AfinityBoxSet>,
@@ -514,6 +519,11 @@ private fun LandscapeItemDetailContent(
                                         item = item,
                                         nextEpisode = nextEpisode,
                                         selectedMediaSource = selectedMediaSource,
+                                        isLoading =
+                                            viewModel.uiState
+                                                .collectAsStateWithLifecycle()
+                                                .value
+                                                .isLoading,
                                         onPlayRequested = { targetPlayItem, selection ->
                                             handlePlayRequest(
                                                 item,
@@ -532,6 +542,7 @@ private fun LandscapeItemDetailContent(
                                 isInWatchlist = isInWatchlist,
                                 hasTrailer = hasTrailer(item),
                                 downloadInfo = downloadInfo,
+                                hasPlayableItems = hasPlayableItems,
                                 onPlayTrailer = { playTrailer(item, context, viewModel) },
                                 onToggleWatchlist = { viewModel.toggleWatchlist() },
                                 onShufflePlay = { shufflePlay(item, nextEpisode, context) },
@@ -555,6 +566,7 @@ private fun LandscapeItemDetailContent(
 
                         TypeSpecificContent(
                             item = item,
+                            hasPlayableItems = hasPlayableItems,
                             seasons = seasons,
                             boxSetItems = boxSetItems,
                             containingBoxSets = containingBoxSets,
@@ -583,6 +595,7 @@ private fun LandscapeItemDetailContent(
 @Composable
 private fun PortraitItemDetailContent(
     item: AfinityItem,
+    hasPlayableItems: Boolean,
     seasons: List<AfinitySeason>,
     boxSetItems: List<AfinityItem>,
     containingBoxSets: List<AfinityBoxSet>,
@@ -648,6 +661,7 @@ private fun PortraitItemDetailContent(
                         item = item,
                         nextEpisode = nextEpisode,
                         selectedMediaSource = selectedMediaSource,
+                        isLoading = viewModel.uiState.collectAsStateWithLifecycle().value.isLoading,
                         onPlayRequested = { targetPlayItem, selection ->
                             handlePlayRequest(item, targetPlayItem, selection, context, onPlayClick)
                         },
@@ -659,6 +673,7 @@ private fun PortraitItemDetailContent(
                     isInWatchlist = isInWatchlist,
                     hasTrailer = hasTrailer(item),
                     downloadInfo = downloadInfo,
+                    hasPlayableItems = hasPlayableItems,
                     onPlayTrailer = { playTrailer(item, context, viewModel) },
                     onToggleWatchlist = { viewModel.toggleWatchlist() },
                     onShufflePlay = { shufflePlay(item, nextEpisode, context) },
@@ -680,6 +695,7 @@ private fun PortraitItemDetailContent(
 
                 TypeSpecificContent(
                     item = item,
+                    hasPlayableItems = hasPlayableItems,
                     seasons = seasons,
                     boxSetItems = boxSetItems,
                     containingBoxSets = containingBoxSets,
@@ -750,6 +766,7 @@ private fun ColumnScope.MediaLogoHeader(item: AfinityItem, isLandscape: Boolean)
 @Composable
 private fun TypeSpecificContent(
     item: AfinityItem,
+    hasPlayableItems: Boolean,
     seasons: List<AfinitySeason>,
     boxSetItems: List<AfinityItem>,
     containingBoxSets: List<AfinityBoxSet>,
@@ -772,6 +789,7 @@ private fun TypeSpecificContent(
         is AfinityShow ->
             SeriesDetailContent(
                 item = item,
+                hasPlayableItems = hasPlayableItems,
                 seasons = seasons,
                 nextEpisode = nextEpisode,
                 specialFeatures = specialFeatures,

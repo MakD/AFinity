@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -19,6 +20,7 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinitySourceType
 import timber.log.Timber
 
 @Composable
@@ -26,6 +28,7 @@ fun PrimaryPlaybackButton(
     item: AfinityItem,
     nextEpisode: AfinityEpisode?,
     selectedMediaSource: MediaSourceOption?,
+    isLoading: Boolean,
     onPlayRequested: (AfinityItem, PlaybackSelection) -> Unit,
 ) {
     val targetItem =
@@ -35,16 +38,66 @@ fun PrimaryPlaybackButton(
             else -> item
         }
 
+    val isUnplayable = targetItem == null || (targetItem as? AfinityEpisode)?.missing == true
+
+    if (isUnplayable) {
+        if (isLoading && targetItem == null) {
+            Button(
+                onClick = {},
+                enabled = false,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(28.dp),
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.status_loading))
+            }
+        } else {
+            Button(
+                onClick = {},
+                enabled = false,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(28.dp),
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_alert_triangle),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.play_error_missing_source))
+            }
+        }
+        return
+    }
+
     if (targetItem == null) {
-        Button(
-            onClick = {},
-            enabled = false,
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(28.dp),
-        ) {
-            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.status_loading))
+        if (isLoading) {
+            Button(
+                onClick = {},
+                enabled = false,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(28.dp),
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.status_loading))
+            }
+        } else {
+            Button(
+                onClick = {},
+                enabled = false,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(28.dp),
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_info),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("No playable item found on server")
+            }
         }
         return
     }
@@ -78,11 +131,7 @@ fun PrimaryPlaybackButton(
 
             val mediaSourceId =
                 selectedMediaSource?.id
-                    ?: targetItem.sources
-                        .firstOrNull {
-                            it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
-                        }
-                        ?.id
+                    ?: targetItem.sources.firstOrNull { it.type == AfinitySourceType.LOCAL }?.id
                     ?: targetItem.sources.firstOrNull()?.id
                     ?: ""
 

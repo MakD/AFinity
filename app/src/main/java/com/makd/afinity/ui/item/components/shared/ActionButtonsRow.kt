@@ -27,6 +27,7 @@ fun ActionButtonsRow(
     isInWatchlist: Boolean,
     hasTrailer: Boolean,
     downloadInfo: DownloadInfo?,
+    hasPlayableItems: Boolean = true,
     onPlayTrailer: () -> Unit,
     onToggleWatchlist: () -> Unit,
     onShufflePlay: () -> Unit,
@@ -74,11 +75,13 @@ fun ActionButtonsRow(
         }
 
         if (item is AfinityShow || item is AfinitySeason) {
-            IconButton(onClick = onShufflePlay) {
+            IconButton(onClick = onShufflePlay, enabled = hasPlayableItems) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_arrows_shuffle),
                     contentDescription = stringResource(R.string.cd_shuffle_play),
-                    tint = MaterialTheme.colorScheme.onBackground,
+                    tint =
+                        if (hasPlayableItems) MaterialTheme.colorScheme.onBackground
+                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
                     modifier = Modifier.size(28.dp),
                 )
             }
@@ -97,15 +100,22 @@ fun ActionButtonsRow(
             )
         }
 
-        IconButton(onClick = onToggleWatched) {
+        val visuallyPlayed = item.played && hasPlayableItems
+
+        IconButton(onClick = onToggleWatched, enabled = hasPlayableItems) {
             Icon(
                 painter =
-                    if (item.played) painterResource(id = R.drawable.ic_circle_check)
+                    if (visuallyPlayed) painterResource(id = R.drawable.ic_circle_check)
                     else painterResource(id = R.drawable.ic_circle_check_outline),
                 contentDescription =
-                    if (item.played) stringResource(R.string.cd_watched_unmark)
+                    if (visuallyPlayed) stringResource(R.string.cd_watched_unmark)
                     else stringResource(R.string.cd_watched_mark),
-                tint = if (item.played) Color.Green else MaterialTheme.colorScheme.onBackground,
+                tint =
+                    when {
+                        visuallyPlayed -> Color.Green
+                        hasPlayableItems -> MaterialTheme.colorScheme.onBackground
+                        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    },
                 modifier = Modifier.size(28.dp),
             )
         }
@@ -116,7 +126,7 @@ fun ActionButtonsRow(
             onPauseClick = onPauseDownload,
             onResumeClick = onResumeDownload,
             onCancelClick = onCancelDownload,
-            canDownload = canDownload,
+            canDownload = canDownload && hasPlayableItems,
             isLandscape = isLandscape,
         )
     }
