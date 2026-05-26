@@ -194,12 +194,14 @@ constructor(
                         ?: (targetItem as? AfinityEpisode)?.seriesId
                         ?: (targetItem as? AfinitySeason)?.seriesId
                 val trueSeasonId = event.seasonId ?: (targetItem as? AfinityEpisode)?.seasonId
+                val isInBoxSet = _uiState.value.boxSetItems.any { it.id == event.itemId }
 
                 val isRelated =
                     event.itemId == currentItem.id ||
                         trueSeriesId == currentItem.id ||
                         trueSeasonId == currentItem.id ||
-                        event.itemId == _uiState.value.nextEpisode?.id
+                        event.itemId == _uiState.value.nextEpisode?.id ||
+                        isInBoxSet
                 val similarDirectIdx =
                     _uiState.value.similarItems.indexOfFirst { it.id == event.itemId }
                 if (similarDirectIdx != -1) {
@@ -272,13 +274,41 @@ constructor(
 
                     if (item.id == currentItem.id) {
                         _uiState.update { it.copy(item = item) }
+                        launch {
+                            try {
+                                val freshBoxSets =
+                                    mediaRepository.getBoxSetsContaining(
+                                        itemId = currentItem.id,
+                                        fields = FieldSets.MEDIA_ITEM_CARDS,
+                                    )
+                                if (freshBoxSets != _uiState.value.containingBoxSets) {
+                                    _uiState.update { it.copy(containingBoxSets = freshBoxSets) }
+                                }
+                            } catch (e: Exception) {
+                                Timber.e(e, "Failed to refresh containing BoxSets")
+                            }
+                        }
+                    }
+
+                    val boxSetIdx = _uiState.value.boxSetItems.indexOfFirst { it.id == item.id }
+                    if (boxSetIdx != -1) {
+                        _uiState.update { state ->
+                            val newList = state.boxSetItems.toMutableList()
+                            newList[boxSetIdx] = item
+                            state.copy(boxSetItems = newList)
+                        }
                     }
                 }
 
-                if (currentItem is AfinityShow || currentItem is AfinitySeason) {
+                if (
+                    currentItem is AfinityShow ||
+                        currentItem is AfinitySeason ||
+                        (currentItem is AfinityBoxSet && isInBoxSet)
+                ) {
                     if (
                         event.source == MediaChangeSource.WEBSOCKET ||
-                            event.itemId == currentItem.id
+                            event.itemId == currentItem.id ||
+                            isInBoxSet
                     ) {
                         launch {
                             try {
@@ -305,9 +335,20 @@ constructor(
                                 val freshMainItem = mediaRepository.getItemById(currentItem.id)
                                 if (freshMainItem != null && freshMainItem != _uiState.value.item) {
                                     _uiState.update { it.copy(item = freshMainItem) }
+
+                                    if (currentItem is AfinityBoxSet && isInBoxSet) {
+                                        mediaChangeManager.notifyItemChanged(
+                                            currentItem.id,
+                                            null,
+                                            null,
+                                        )
+                                    }
                                 }
                             } catch (e: Exception) {
-                                Timber.e(e, "Failed background patch for series/season counts")
+                                Timber.e(
+                                    e,
+                                    "Failed background patch for series/season/boxset counts",
+                                )
                             }
                         }
                     }
@@ -1185,9 +1226,16 @@ constructor(
                         updatedItem = currentItem.withPlayed(isNowPlayed),
                         source = MediaChangeSource.MANUAL,
                     )
-                    if (currentItem is AfinitySeason || currentItem is AfinityShow) {
+                    if (
+                        currentItem is AfinitySeason ||
+                            currentItem is AfinityShow ||
+                            currentItem is AfinityBoxSet
+                    ) {
                         currentEpisodesPagingSource?.invalidate()
                         refreshFromCacheImmediate(skipNetworkSync = false)
+                        if (currentItem is AfinityBoxSet) {
+                            loadBoxSetItems(currentItem.id)
+                        }
                     }
                 } else {
                     _uiState.update { it.copy(item = currentItem) }

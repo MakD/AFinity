@@ -651,10 +651,6 @@ constructor(
             coroutineScope {
                 launch { mediaRepository.invalidateContinueWatchingCache() }
                 launch { mediaRepository.invalidateNextUpCache() }
-                launch {
-                    val fresh = loadHeroCarousel()
-                    if (fresh.isNotEmpty()) _heroCarouselItems.value = fresh
-                }
                 val libs = _libraries.value
                 if (libs.isNotEmpty()) {
                     launch {
