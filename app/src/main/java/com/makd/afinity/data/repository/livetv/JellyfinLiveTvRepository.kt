@@ -11,6 +11,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.operations.LiveTvApi
 import org.jellyfin.sdk.api.operations.MediaInfoApi
+import org.jellyfin.sdk.api.operations.UserViewsApi
+import org.jellyfin.sdk.model.api.CollectionType
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.ItemSortBy
@@ -321,16 +323,11 @@ constructor(
     override suspend fun hasLiveTvAccess(): Boolean =
         withContext(Dispatchers.IO) {
             try {
-                val liveTvApi = getLiveTvApi() ?: return@withContext false
-                val channelsResponse =
-                    liveTvApi.getLiveTvChannels(
-                        limit = 1,
-                        enableImages = false,
-                        enableUserData = false,
-                        addCurrentProgram = false,
-                    )
-                val channelCount = channelsResponse.content.items?.size ?: 0
-                return@withContext channelCount > 0
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
+                val userId = sessionManager.currentSession.value?.userId ?: return@withContext false
+                val userViewsApi = UserViewsApi(apiClient)
+                val response = userViewsApi.getUserViews(userId = userId)
+                response.content.items.any { it.collectionType == CollectionType.LIVETV }
             } catch (e: Exception) {
                 false
             }
