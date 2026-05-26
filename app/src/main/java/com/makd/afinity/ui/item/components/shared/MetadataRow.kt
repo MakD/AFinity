@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.text.format.DateFormat
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -122,7 +123,10 @@ fun MetadataRow(
             remainingChildRuntimeTicks
         }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth().animateContentSize(),
+    ) {
         if (item !is AfinityBoxSet && item.sources.isNotEmpty()) {
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp, horizontalAlignment),
@@ -499,11 +503,12 @@ fun MetadataRow(
                 needsSeparator = true
             }
 
-            val partCount = when (item) {
-                is AfinityMovie -> item.partCount
-                is AfinityEpisode -> item.partCount
-                else -> null
-            }
+            val partCount =
+                when (item) {
+                    is AfinityMovie -> item.partCount
+                    is AfinityEpisode -> item.partCount
+                    else -> null
+                }
             if ((partCount ?: 0) > 1) {
                 if (needsSeparator) MetadataDot()
                 Text(
@@ -678,7 +683,8 @@ fun MetadataRow(
         }
         val isSingleMediaEndsAt =
             item is AfinityMovie || item is AfinityEpisode || item is AfinityVideo
-        if (isSingleMediaEndsAt && item.runtimeTicks > 0) {
+
+        if (isSingleMediaEndsAt && item.runtimeTicks > 0 && !item.played) {
             val remainingTicks = (item.runtimeTicks - item.playbackPositionTicks).coerceAtLeast(0L)
 
             if (remainingTicks > 0) {
