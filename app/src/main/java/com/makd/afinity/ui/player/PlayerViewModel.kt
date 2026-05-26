@@ -44,13 +44,13 @@ import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinitySources
+import com.makd.afinity.data.models.media.AfinityTrickplayInfo
 import com.makd.afinity.data.models.player.GestureConfig
 import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.SubtitleOutlineStyle
 import com.makd.afinity.data.models.player.SubtitlePreferences
-import com.makd.afinity.data.models.player.Trickplay
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.PreferencesRepository
@@ -65,7 +65,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -122,13 +121,20 @@ constructor(
     private var speedBeforeLongPress: Float? = null
     private var currentMediaSegments: List<AfinitySegment> = emptyList()
     private var segmentCheckingJob: Job? = null
+    private var skipButtonHideJob: Job? = null
 
     private var progressReportingJob: Job? = null
     private var pendingMainItemOptions: MainItemPlaybackOptions? = null
     private var pendingAudioTrackPosition: Int? = null
     private var pendingSubtitleTrackPosition: Int? = null
     private var currentItem: AfinityItem? = null
-    private var currentTrickplay: Trickplay? = null
+    private var currentTrickplayInfo: AfinityTrickplayInfo? = null
+    private var currentTrickplayItemId: UUID? = null
+    private val trickplayTileCache =
+        object : LinkedHashMap<Int, Bitmap>(4, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, Bitmap>?) = size > 3
+        }
+    private var trickplayFetchJob: Job? = null
 
     private var playerView: PlayerView? = null
     private var currentZoomMode: VideoZoomMode = VideoZoomMode.FIT
@@ -299,11 +305,53 @@ constructor(
 
     private fun startPositionUpdateLoop() {
         viewModelScope.launch {
+            var lastPreloadedTileIndex = -1
+
             while (true) {
                 delay(100)
                 val isMpvLive = player is MPVPlayer && _uiState.value.isLiveChannel
                 if ((player.isPlaying || isMpvLive) && !_uiState.value.isSeeking) {
                     updatePlayerState()
+
+                    val info = currentTrickplayInfo
+                    val itemId = currentTrickplayItemId
+                    if (info != null && itemId != null && info.interval > 0) {
+                        val position = player.currentPosition
+                        val thumbnailsPerTile = info.tileWidth * info.tileHeight
+                        val globalIndex =
+                            (position / info.interval).toInt().coerceIn(0, info.thumbnailCount - 1)
+                        val currentTileIndex = globalIndex / thumbnailsPerTile
+
+                        if (currentTileIndex != lastPreloadedTileIndex) {
+                            lastPreloadedTileIndex = currentTileIndex
+
+                            if (!trickplayTileCache.containsKey(currentTileIndex)) {
+                                viewModelScope.launch(Dispatchers.IO) {
+                                    try {
+                                        val imageData =
+                                            mediaRepository.getTrickplayData(
+                                                itemId,
+                                                info.width,
+                                                currentTileIndex,
+                                            )
+                                        if (imageData != null) {
+                                            val tileBitmap =
+                                                BitmapFactory.decodeByteArray(
+                                                    imageData,
+                                                    0,
+                                                    imageData.size,
+                                                )
+                                            if (tileBitmap != null) {
+                                                trickplayTileCache[currentTileIndex] = tileBitmap
+                                            }
+                                        }
+                                    } catch (e: Exception) {
+                                        Timber.e(e, "Failed to pre-fetch trickplay tile")
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -967,22 +1015,10 @@ constructor(
         suppressNextControlShow = false
         stopAudiobookshelfIfPlaying()
         try {
-            // Capture previous source before we overwrite currentItem
             val previousSourceId = _uiState.value.currentMediaSourceId
             val previousSource = currentItem?.sources?.firstOrNull { it.id == previousSourceId }
 
-            val fullItem: AfinityItem =
-                if (item.sources.isEmpty()) {
-                    Timber.d("Item ${item.name} has no sources, fetching full details...")
-                    try {
-                        mediaRepository.getItemById(item.id) ?: item
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to fetch full item details")
-                        item
-                    }
-                } else {
-                    item
-                }
+            val fullItem: AfinityItem = item
 
             currentItem = fullItem
 
@@ -1076,7 +1112,11 @@ constructor(
                     currentMediaSourceId = actualMediaSourceId,
                 )
             }
-            currentSessionId = UUID.randomUUID().toString()
+            currentSessionId = playbackInfo?.playSessionId ?: UUID.randomUUID().toString()
+            Timber.d(
+                "Playback session ID: $currentSessionId (from server: ${playbackInfo?.playSessionId != null})"
+            )
+            hasStoppedPlayback = false
             playbackStateManager.trackPlaybackSession(
                 sessionId = currentSessionId!!,
                 itemId = fullItem.id,
@@ -1085,33 +1125,20 @@ constructor(
             playbackStateManager.trackCurrentItem(fullItem.id)
             coroutineScope {
                 val useLocalSource = mediaSource.type == AfinitySourceType.LOCAL
-                val streamUrlDeferred =
-                    async(Dispatchers.IO) {
-                        if (useLocalSource) {
-                            mediaSource.path?.let { "file://$it" }
-                        } else {
-                            playbackRepository.getStreamUrl(
-                                itemId = fullItem.id,
-                                mediaSourceId = actualMediaSourceId,
-                                audioStreamIndex = targetAudioStreamIndex,
-                                subtitleStreamIndex = targetSubtitleStreamIndex,
-                                videoStreamIndex = null,
-                                maxStreamingBitrate = null,
-                                startTimeTicks = null,
-                            )
-                        }
+                val streamUrl =
+                    if (useLocalSource) {
+                        mediaSource.path?.let { "file://$it" }
+                    } else {
+                        playbackRepository.getStreamUrl(
+                            itemId = fullItem.id,
+                            mediaSourceId = actualMediaSourceId,
+                            audioStreamIndex = targetAudioStreamIndex,
+                            subtitleStreamIndex = targetSubtitleStreamIndex,
+                            playSessionId = currentSessionId,
+                            tag = negotiatedSource?.eTag,
+                        )
                     }
 
-                val segmentsJob = launch(Dispatchers.IO) { loadSegments(fullItem.id) }
-                val trickplayJob = launch(Dispatchers.IO) { loadTrickplayData() }
-                val reportStartJob =
-                    launch(Dispatchers.IO) {
-                        if (!useLocalSource) {
-                            reportPlaybackStart(fullItem)
-                        }
-                    }
-
-                val streamUrl = streamUrlDeferred.await()
                 if (streamUrl.isNullOrBlank()) {
                     Timber.e("Stream URL is null or empty")
                     updateUiState {
@@ -1123,6 +1150,11 @@ constructor(
                     }
                     return@coroutineScope
                 }
+
+                viewModelScope.launch(Dispatchers.IO) { loadSegments(fullItem.id) }
+                viewModelScope.launch(Dispatchers.IO) { loadTrickplayData() }
+                if (!useLocalSource)
+                    viewModelScope.launch(Dispatchers.IO) { reportPlaybackStart(fullItem) }
 
                 val externalSubtitles =
                     if (useLocalSource) {
@@ -1252,10 +1284,6 @@ constructor(
                         }
                     }
                 }
-
-                segmentsJob.join()
-                trickplayJob.join()
-                reportStartJob.join()
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to load media")
@@ -1355,107 +1383,17 @@ constructor(
     }
 
     private fun loadTrickplayData() {
-        val currentItem = uiState.value.currentItem ?: return
-
-        val trickplayInfo =
-            when (currentItem) {
-                is AfinityEpisode -> {
-                    currentItem.trickplayInfo?.values?.firstOrNull()
-                }
-
-                is AfinityMovie -> {
-                    currentItem.trickplayInfo?.values?.firstOrNull()
-                }
-
-                else -> {
-                    if (currentItem is AfinitySources) {
-                        currentItem.trickplayInfo?.values?.firstOrNull()
-                    } else {
-                        null
-                    }
-                }
+        val item = uiState.value.currentItem ?: return
+        currentTrickplayInfo =
+            when (item) {
+                is AfinityEpisode -> item.trickplayInfo?.values?.firstOrNull()
+                is AfinityMovie -> item.trickplayInfo?.values?.firstOrNull()
+                else ->
+                    if (item is AfinitySources) item.trickplayInfo?.values?.firstOrNull() else null
             }
-
-        trickplayInfo?.let { info ->
-            viewModelScope.launch {
-                try {
-                    withContext(Dispatchers.Default) {
-                        val thumbnailsPerTile = info.tileWidth * info.tileHeight
-                        val maxTileIndex =
-                            kotlin.math
-                                .ceil(info.thumbnailCount.toDouble() / thumbnailsPerTile)
-                                .toInt()
-
-                        val individualThumbnails = mutableListOf<ImageBitmap>()
-
-                        for (tileIndex in 0..maxTileIndex) {
-                            if (tileIndex > 0) {
-                                delay(500L)
-                            }
-
-                            val imageData =
-                                mediaRepository.getTrickplayData(
-                                    currentItem.id,
-                                    info.width,
-                                    tileIndex,
-                                )
-
-                            if (imageData != null) {
-                                val tileBitmap =
-                                    BitmapFactory.decodeByteArray(imageData, 0, imageData.size)
-                                for (offsetY in
-                                    0 until (info.height * info.tileHeight) step info.height) {
-                                    for (offsetX in
-                                        0 until (info.width * info.tileWidth) step info.width) {
-                                        try {
-                                            val thumbnail =
-                                                Bitmap.createBitmap(
-                                                    tileBitmap,
-                                                    offsetX,
-                                                    offsetY,
-                                                    info.width,
-                                                    info.height,
-                                                )
-                                            individualThumbnails.add(thumbnail.asImageBitmap())
-                                            if (individualThumbnails.size >= info.thumbnailCount)
-                                                break
-                                        } catch (_: Exception) {
-                                            Timber.w(
-                                                "Failed to crop thumbnail at offset ($offsetX, $offsetY)"
-                                            )
-                                        }
-                                    }
-                                    if (individualThumbnails.size >= info.thumbnailCount) break
-                                }
-                                if (individualThumbnails.isNotEmpty()) {
-                                    currentTrickplay =
-                                        Trickplay(
-                                            interval = info.interval,
-                                            images = individualThumbnails.toList(),
-                                        )
-                                }
-                            } else {
-                                Timber.d("Failed to load tile $tileIndex")
-                                break
-                            }
-
-                            if (individualThumbnails.size >= info.thumbnailCount) break
-                        }
-
-                        if (individualThumbnails.isNotEmpty()) {
-                            currentTrickplay =
-                                Trickplay(interval = info.interval, images = individualThumbnails)
-                        } else {
-                            Timber.d(
-                                "No trickplay thumbnails could be extracted for ${currentItem.name}"
-                            )
-                        }
-                    }
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to load trickplay data")
-                }
-            }
-        }
+        currentTrickplayItemId = item.id
+        trickplayTileCache.clear()
+        trickplayFetchJob?.cancel()
     }
 
     override fun onVideoSizeChanged(videoSize: VideoSize) {
@@ -1626,6 +1564,7 @@ constructor(
         }
 
         currentSegment?.let { segment ->
+            val durationMs = segment.endTicks - segment.startTicks
             val skipMode =
                 when (segment.type) {
                     AfinitySegmentType.INTRO -> preferencesRepository.getSkipIntroMode()
@@ -1635,17 +1574,30 @@ constructor(
 
             when (skipMode) {
                 SkipMode.AUTO_SKIP -> {
-                    updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
-                    handlePlayerEvent(PlayerEvent.SkipSegment(segment))
+                    if (durationMs >= 1000L) {
+                        updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
+                        handlePlayerEvent(PlayerEvent.SkipSegment(segment))
+                    }
                 }
                 SkipMode.BUTTON -> {
-                    val skipButtonText = getSkipButtonText(segment)
-                    updateUiState {
-                        it.copy(
-                            currentSegment = segment,
-                            skipButtonText = skipButtonText,
-                            showSkipButton = true,
-                        )
+                    if (durationMs >= 3000L) {
+                        val skipButtonText = getSkipButtonText(segment)
+                        val alreadyShowing = uiState.value.showSkipButton &&
+                            uiState.value.currentSegment?.type == segment.type
+                        updateUiState {
+                            it.copy(
+                                currentSegment = segment,
+                                skipButtonText = skipButtonText,
+                                showSkipButton = true,
+                            )
+                        }
+                        if (!alreadyShowing) {
+                            skipButtonHideJob?.cancel()
+                            skipButtonHideJob = viewModelScope.launch {
+                                delay(8000L)
+                                updateUiState { it.copy(showSkipButton = false) }
+                            }
+                        }
                     }
                 }
                 SkipMode.DISABLED ->
@@ -1972,6 +1924,7 @@ constructor(
 
     private fun onSeekBarPreview(position: Long, isActive: Boolean) {
         if (!isActive) {
+            trickplayFetchJob?.cancel()
             updateUiState {
                 it.copy(
                     showTrickplayPreview = false,
@@ -1982,20 +1935,54 @@ constructor(
             return
         }
 
-        currentTrickplay?.let { trickplay ->
-            if (trickplay.images.isEmpty() || trickplay.interval <= 0) return
+        val info = currentTrickplayInfo ?: return
+        val itemId = currentTrickplayItemId ?: return
+        if (info.interval <= 0 || info.thumbnailCount <= 0) return
 
-            val rawIndex = (position / trickplay.interval).toInt()
-            val index = rawIndex.coerceIn(0, trickplay.images.size - 1)
+        val thumbnailsPerTile = info.tileWidth * info.tileHeight
+        val globalIndex = (position / info.interval).toInt().coerceIn(0, info.thumbnailCount - 1)
+        val tileIndex = globalIndex / thumbnailsPerTile
+        val offsetInTile = globalIndex % thumbnailsPerTile
+        val offsetX = (offsetInTile % info.tileWidth) * info.width
+        val offsetY = (offsetInTile / info.tileWidth) * info.height
 
-            updateUiState {
-                it.copy(
-                    showTrickplayPreview = true,
-                    trickplayPreviewImage = trickplay.images[index],
-                    trickplayPreviewPosition = position,
+        fun cropAndShow(tileBitmap: Bitmap) {
+            try {
+                val thumbnail =
+                    Bitmap.createBitmap(tileBitmap, offsetX, offsetY, info.width, info.height)
+                updateUiState {
+                    it.copy(
+                        showTrickplayPreview = true,
+                        trickplayPreviewImage = thumbnail.asImageBitmap(),
+                        trickplayPreviewPosition = position,
+                    )
+                }
+            } catch (e: Exception) {
+                Timber.w(
+                    e,
+                    "Failed to crop trickplay thumbnail at tile=$tileIndex offset=($offsetX,$offsetY)",
                 )
             }
         }
+
+        val cached = trickplayTileCache[tileIndex]
+        if (cached != null) {
+            cropAndShow(cached)
+            return
+        }
+
+        trickplayFetchJob?.cancel()
+        trickplayFetchJob =
+            viewModelScope.launch(Dispatchers.IO) {
+                val imageData =
+                    mediaRepository.getTrickplayData(itemId, info.width, tileIndex) ?: return@launch
+                val tileBitmap =
+                    BitmapFactory.decodeByteArray(imageData, 0, imageData.size) ?: return@launch
+                withContext(Dispatchers.Main) {
+                    trickplayTileCache[tileIndex] = tileBitmap
+                    cropAndShow(tileBitmap)
+                }
+            }
     }
 
     private var playStatus = false

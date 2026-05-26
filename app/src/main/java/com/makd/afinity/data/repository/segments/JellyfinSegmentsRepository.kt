@@ -10,6 +10,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.operations.MediaSegmentsApi
+import org.jellyfin.sdk.model.api.MediaSegmentType
 import timber.log.Timber
 
 @Singleton
@@ -38,7 +39,10 @@ constructor(
                     val apiClient =
                         sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
                     val mediaSegmentsApi = MediaSegmentsApi(apiClient)
-                    val response = mediaSegmentsApi.getItemSegments(itemId)
+                    val response = mediaSegmentsApi.getItemSegments(
+                        itemId = itemId,
+                        includeSegmentTypes = listOf(MediaSegmentType.INTRO, MediaSegmentType.OUTRO),
+                    )
 
                     val segments =
                         response.content?.items?.map { mediaSegmentDto ->

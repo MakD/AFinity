@@ -23,6 +23,8 @@ interface PlaybackRepository {
         videoStreamIndex: Int? = null,
         maxStreamingBitrate: Int? = null,
         startTimeTicks: Long? = null,
+        playSessionId: String? = null,
+        tag: String? = null,
     ): String?
 
     suspend fun getMediaSources(

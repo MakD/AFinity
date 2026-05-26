@@ -10,6 +10,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -30,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,9 +47,7 @@ fun TrickplayPreview(
     chapters: List<AfinityChapter>,
     modifier: Modifier = Modifier,
 ) {
-    val configuration = LocalConfiguration.current
     val layoutDirection = LocalLayoutDirection.current
-    val screenWidth = configuration.screenWidthDp.dp
     val (previewWidth, previewHeight) =
         remember(previewImage) {
             if (previewImage != null) {
@@ -65,6 +63,7 @@ fun TrickplayPreview(
                 220.dp to 124.dp
             }
         }
+
     val safeDrawingPadding = WindowInsets.safeDrawing.asPaddingValues()
     val bottomInset = safeDrawingPadding.calculateBottomPadding()
     val startInset = safeDrawingPadding.calculateStartPadding(layoutDirection)
@@ -77,8 +76,10 @@ fun TrickplayPreview(
         modifier = modifier,
     ) {
         if (previewImage != null) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                val seekBarY = configuration.screenHeightDp.dp - 80.dp - bottomInset
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                val screenWidth = maxWidth
+                val screenHeight = maxHeight
+                val seekBarY = screenHeight - 80.dp - bottomInset
 
                 val startPadding = 24.dp + startInset
                 val endPadding = 78.dp + endInset

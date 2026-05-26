@@ -159,35 +159,29 @@ constructor(
         videoStreamIndex: Int?,
         maxStreamingBitrate: Int?,
         startTimeTicks: Long?,
+        playSessionId: String?,
+        tag: String?,
     ): String? {
-        return withContext(Dispatchers.IO) {
-            try {
-                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
-                val videosApi = VideosApi(apiClient)
-
-                val streamUrl =
-                    videosApi.getVideoStreamUrl(
-                        itemId = itemId,
-                        static = true,
-                        mediaSourceId = mediaSourceId,
-                        audioStreamIndex = audioStreamIndex,
-                        subtitleStreamIndex = subtitleStreamIndex,
-                        videoStreamIndex = videoStreamIndex,
-                        startTimeTicks = null,
-                    )
-
-                Timber.d("Generated stream URL: $streamUrl")
-                streamUrl
-            } catch (e: ApiClientException) {
-                Timber.e(
-                    e,
-                    "Failed to get stream URL for item: $itemId, mediaSource: $mediaSourceId",
+        return try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return null
+            val videosApi = VideosApi(apiClient)
+            val streamUrl =
+                videosApi.getVideoStreamUrl(
+                    itemId = itemId,
+                    static = true,
+                    mediaSourceId = mediaSourceId,
+                    audioStreamIndex = audioStreamIndex,
+                    subtitleStreamIndex = subtitleStreamIndex,
+                    videoStreamIndex = videoStreamIndex,
+                    startTimeTicks = startTimeTicks,
+                    playSessionId = playSessionId,
+                    tag = tag,
                 )
-                null
-            } catch (e: Exception) {
-                Timber.e(e, "Unexpected error getting stream URL for item: $itemId")
-                null
-            }
+            Timber.d("Generated stream URL for item: $itemId")
+            streamUrl
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to build stream URL for item: $itemId")
+            null
         }
     }
 

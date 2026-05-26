@@ -344,22 +344,18 @@ constructor(
             val sessionApi = SessionApi(client)
             val capabilities =
                 ClientCapabilitiesDto(
-                    playableMediaTypes = listOf(MediaType.VIDEO),
+                    playableMediaTypes = listOf(MediaType.VIDEO, MediaType.AUDIO),
                     supportedCommands =
                         listOf(
                             GeneralCommandType.VOLUME_UP,
                             GeneralCommandType.VOLUME_DOWN,
                             GeneralCommandType.TOGGLE_MUTE,
-                            GeneralCommandType.SET_AUDIO_STREAM_INDEX,
-                            GeneralCommandType.SET_SUBTITLE_STREAM_INDEX,
                             GeneralCommandType.MUTE,
                             GeneralCommandType.UNMUTE,
                             GeneralCommandType.SET_VOLUME,
+                            GeneralCommandType.SET_AUDIO_STREAM_INDEX,
+                            GeneralCommandType.SET_SUBTITLE_STREAM_INDEX,
                             GeneralCommandType.DISPLAY_MESSAGE,
-                            GeneralCommandType.PLAY,
-                            GeneralCommandType.PLAY_STATE,
-                            GeneralCommandType.PLAY_NEXT,
-                            GeneralCommandType.PLAY_MEDIA_SOURCE,
                         ),
                     supportsMediaControl = true,
                     supportsPersistentIdentifier = true,
