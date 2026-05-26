@@ -123,7 +123,7 @@ fun LibrariesScreen(
                     color = MaterialTheme.colorScheme.onBackground,
                 )
             },
-            backgroundOpacity = topBarOpacity,
+            backgroundOpacity = { topBarOpacity },
             onSearchClick = {
                 val route = Destination.createSearchRoute()
                 navController.navigate(route)

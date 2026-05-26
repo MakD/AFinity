@@ -5,15 +5,13 @@ package com.makd.afinity.ui.home
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
@@ -145,7 +143,8 @@ fun HomeScreen(
 
                 Box(modifier = Modifier.fillMaxSize()) {
                     val density = LocalDensity.current
-                    val statusBarHeight = WindowInsets.statusBars.getTop(density)
+                    val statusBarHeight =
+                        WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
                     val bottomPadding =
                         WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                     val showCarousel = !uiState.isOffline && uiState.heroCarouselItems.isNotEmpty()
@@ -158,42 +157,48 @@ fun HomeScreen(
                         }
 
                     val firstContentKey =
-                        when {
-                            !uiState.isOffline && uiState.libraries.isNotEmpty() ->
-                                "libraries_section"
-                            continueWatchingItems.isNotEmpty() -> "continue_watching"
-                            !uiState.isOffline &&
-                                uiState.isLoading &&
-                                uiState.latestMedia.isNotEmpty() -> "cw_skeleton"
-                            uiState.isOffline && uiState.downloadedMovies.isNotEmpty() ->
-                                "downloaded_movies"
-                            uiState.isOffline && uiState.downloadedShows.isNotEmpty() ->
-                                "downloaded_shows"
-                            uiState.isOffline && uiState.downloadedAudiobooks.isNotEmpty() ->
-                                "downloaded_audiobooks"
-                            uiState.isOffline && uiState.downloadedPodcastEpisodes.isNotEmpty() ->
-                                "downloaded_podcasts"
-                            !uiState.isOffline && uiState.nextUp.isNotEmpty() -> "next_up"
-                            else -> null
+                        remember(
+                            uiState.isOffline,
+                            uiState.libraries.isNotEmpty(),
+                            continueWatchingItems.isNotEmpty(),
+                            uiState.isLoading,
+                            uiState.latestMedia.isNotEmpty(),
+                            uiState.downloadedMovies.isNotEmpty(),
+                            uiState.downloadedShows.isNotEmpty(),
+                            uiState.downloadedAudiobooks.isNotEmpty(),
+                            uiState.downloadedPodcastEpisodes.isNotEmpty(),
+                            uiState.nextUp.isNotEmpty(),
+                        ) {
+                            when {
+                                !uiState.isOffline && uiState.libraries.isNotEmpty() ->
+                                    "libraries_section"
+                                continueWatchingItems.isNotEmpty() -> "continue_watching"
+                                !uiState.isOffline &&
+                                    uiState.isLoading &&
+                                    uiState.latestMedia.isNotEmpty() -> "cw_skeleton"
+                                uiState.isOffline && uiState.downloadedMovies.isNotEmpty() ->
+                                    "downloaded_movies"
+                                uiState.isOffline && uiState.downloadedShows.isNotEmpty() ->
+                                    "downloaded_shows"
+                                uiState.isOffline && uiState.downloadedAudiobooks.isNotEmpty() ->
+                                    "downloaded_audiobooks"
+                                uiState.isOffline &&
+                                    uiState.downloadedPodcastEpisodes.isNotEmpty() ->
+                                    "downloaded_podcasts"
+                                !uiState.isOffline && uiState.nextUp.isNotEmpty() -> "next_up"
+                                else -> null
+                            }
                         }
 
-                    fun getItemModifier(key: String): Modifier {
-                        return if (isLandscape && key == firstContentKey) {
-                            Modifier.fillMaxWidth().verticalLayoutOffset((-70).dp)
-                        } else {
-                            Modifier.fillMaxWidth()
-                        }
-                    }
+                    val baseModifier = Modifier.fillMaxWidth()
+                    val landscapeOffsetModifier = baseModifier.verticalLayoutOffset((-70).dp)
 
                     LazyColumn(
                         state = lazyListState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding =
                             PaddingValues(
-                                top =
-                                    if (!showCarousel)
-                                        with(density) { statusBarHeight.toDp() + 56.dp }
-                                    else 0.dp,
+                                top = if (!showCarousel) statusBarHeight + 56.dp else 0.dp,
                                 bottom = max(bottomPadding, playerOffset) + 16.dp,
                             ),
                     ) {
@@ -214,44 +219,46 @@ fun HomeScreen(
 
                         if (!uiState.isOffline && uiState.libraries.isNotEmpty()) {
                             item(key = "libraries_section") {
-                                Box(modifier = getItemModifier("libraries_section")) {
-                                    Column {
-                                        Spacer(modifier = Modifier.height(24.dp))
-                                        LibrariesSection(
-                                            libraries = uiState.libraries,
-                                            onLibraryClick = { library ->
-                                                val route =
-                                                    Destination.createLibraryContentRoute(
-                                                        libraryId = library.id.toString(),
-                                                        libraryName = library.name,
-                                                    )
-                                                navController.navigate(route)
-                                            },
-                                            widthSizeClass = widthSizeClass,
-                                        )
-                                    }
+                                val itemMod =
+                                    if (isLandscape && firstContentKey == "libraries_section")
+                                        landscapeOffsetModifier
+                                    else baseModifier
+                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                    LibrariesSection(
+                                        libraries = uiState.libraries,
+                                        onLibraryClick = { library ->
+                                            val route =
+                                                Destination.createLibraryContentRoute(
+                                                    libraryId = library.id.toString(),
+                                                    libraryName = library.name,
+                                                )
+                                            navController.navigate(route)
+                                        },
+                                        widthSizeClass = widthSizeClass,
+                                    )
                                 }
                             }
                         }
 
                         if (continueWatchingItems.isNotEmpty()) {
                             item(key = "continue_watching") {
-                                Box(modifier = getItemModifier("continue_watching")) {
-                                    Column {
-                                        Spacer(modifier = Modifier.height(24.dp))
-                                        OptimizedContinueWatchingSection(
-                                            items = continueWatchingItems,
-                                            onItemClick = { item ->
-                                                if (item is AfinityEpisode) {
-                                                    viewModel.selectEpisode(item)
-                                                } else {
-                                                    onItemClick(item)
-                                                }
-                                            },
-                                            widthSizeClass = widthSizeClass,
-                                            scrollState = continueWatchingScrollState,
-                                        )
-                                    }
+                                val itemMod =
+                                    if (isLandscape && firstContentKey == "continue_watching")
+                                        landscapeOffsetModifier
+                                    else baseModifier
+                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                    OptimizedContinueWatchingSection(
+                                        items = continueWatchingItems,
+                                        onItemClick = { item ->
+                                            if (item is AfinityEpisode) {
+                                                viewModel.selectEpisode(item)
+                                            } else {
+                                                onItemClick(item)
+                                            }
+                                        },
+                                        widthSizeClass = widthSizeClass,
+                                        scrollState = continueWatchingScrollState,
+                                    )
                                 }
                             }
                         } else if (
@@ -260,92 +267,96 @@ fun HomeScreen(
                                 uiState.latestMedia.isNotEmpty()
                         ) {
                             item(key = "cw_skeleton") {
-                                Box(modifier = getItemModifier("cw_skeleton")) {
-                                    Column {
-                                        Spacer(modifier = Modifier.height(24.dp))
-                                        ContinueWatchingSkeleton(widthSizeClass)
-                                    }
+                                val itemMod =
+                                    if (isLandscape && firstContentKey == "cw_skeleton")
+                                        landscapeOffsetModifier
+                                    else baseModifier
+                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                    ContinueWatchingSkeleton(widthSizeClass)
                                 }
                             }
                         }
 
                         if (uiState.isOffline && uiState.downloadedMovies.isNotEmpty()) {
                             item(key = "downloaded_movies") {
-                                Box(modifier = getItemModifier("downloaded_movies")) {
-                                    Column {
-                                        Spacer(modifier = Modifier.height(24.dp))
-                                        OptimizedLatestTvSeriesSection(
-                                            title = stringResource(R.string.home_downloaded_movies),
-                                            items = uiState.downloadedMovies,
-                                            onItemClick = onItemClick,
-                                            widthSizeClass = widthSizeClass,
-                                        )
-                                    }
+                                val itemMod =
+                                    if (isLandscape && firstContentKey == "downloaded_movies")
+                                        landscapeOffsetModifier
+                                    else baseModifier
+                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                    OptimizedLatestTvSeriesSection(
+                                        title = stringResource(R.string.home_downloaded_movies),
+                                        items = uiState.downloadedMovies,
+                                        onItemClick = onItemClick,
+                                        widthSizeClass = widthSizeClass,
+                                    )
                                 }
                             }
                         }
 
                         if (uiState.isOffline && uiState.downloadedShows.isNotEmpty()) {
                             item(key = "downloaded_shows") {
-                                Box(modifier = getItemModifier("downloaded_shows")) {
-                                    Column {
-                                        Spacer(modifier = Modifier.height(24.dp))
-                                        OptimizedLatestTvSeriesSection(
-                                            title = stringResource(R.string.home_downloaded_shows),
-                                            items = uiState.downloadedShows,
-                                            onItemClick = onItemClick,
-                                            widthSizeClass = widthSizeClass,
-                                        )
-                                    }
+                                val itemMod =
+                                    if (isLandscape && firstContentKey == "downloaded_shows")
+                                        landscapeOffsetModifier
+                                    else baseModifier
+                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                    OptimizedLatestTvSeriesSection(
+                                        title = stringResource(R.string.home_downloaded_shows),
+                                        items = uiState.downloadedShows,
+                                        onItemClick = onItemClick,
+                                        widthSizeClass = widthSizeClass,
+                                    )
                                 }
                             }
                         }
 
                         if (uiState.isOffline && uiState.downloadedAudiobooks.isNotEmpty()) {
                             item(key = "downloaded_audiobooks") {
-                                Box(modifier = getItemModifier("downloaded_audiobooks")) {
-                                    Column {
-                                        Spacer(modifier = Modifier.height(24.dp))
-                                        DownloadedAudiobooksSection(
-                                            title =
-                                                stringResource(R.string.home_downloaded_audiobooks),
-                                            items = uiState.downloadedAudiobooks,
-                                            onItemClick = { onAbsItemClick(it.libraryItemId) },
-                                        )
-                                    }
+                                val itemMod =
+                                    if (isLandscape && firstContentKey == "downloaded_audiobooks")
+                                        landscapeOffsetModifier
+                                    else baseModifier
+                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                    DownloadedAudiobooksSection(
+                                        title = stringResource(R.string.home_downloaded_audiobooks),
+                                        items = uiState.downloadedAudiobooks,
+                                        onItemClick = { onAbsItemClick(it.libraryItemId) },
+                                    )
                                 }
                             }
                         }
 
                         if (uiState.isOffline && uiState.downloadedPodcastEpisodes.isNotEmpty()) {
                             item(key = "downloaded_podcasts") {
-                                Box(modifier = getItemModifier("downloaded_podcasts")) {
-                                    Column {
-                                        Spacer(modifier = Modifier.height(24.dp))
-                                        DownloadedAudiobooksSection(
-                                            title =
-                                                stringResource(R.string.home_downloaded_episodes),
-                                            items = uiState.downloadedPodcastEpisodes,
-                                            onItemClick = { onAbsItemClick(it.libraryItemId) },
-                                        )
-                                    }
+                                val itemMod =
+                                    if (isLandscape && firstContentKey == "downloaded_podcasts")
+                                        landscapeOffsetModifier
+                                    else baseModifier
+                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                    DownloadedAudiobooksSection(
+                                        title = stringResource(R.string.home_downloaded_episodes),
+                                        items = uiState.downloadedPodcastEpisodes,
+                                        onItemClick = { onAbsItemClick(it.libraryItemId) },
+                                    )
                                 }
                             }
                         }
 
                         if (!uiState.isOffline && uiState.nextUp.isNotEmpty()) {
                             item(key = "next_up") {
-                                Box(modifier = getItemModifier("next_up")) {
-                                    Column {
-                                        Spacer(modifier = Modifier.height(24.dp))
-                                        NextUpSection(
-                                            episodes = uiState.nextUp,
-                                            onEpisodeClick = { episode ->
-                                                viewModel.selectEpisode(episode)
-                                            },
-                                            widthSizeClass = widthSizeClass,
-                                        )
-                                    }
+                                val itemMod =
+                                    if (isLandscape && firstContentKey == "next_up")
+                                        landscapeOffsetModifier
+                                    else baseModifier
+                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                    NextUpSection(
+                                        episodes = uiState.nextUp,
+                                        onEpisodeClick = { episode ->
+                                            viewModel.selectEpisode(episode)
+                                        },
+                                        widthSizeClass = widthSizeClass,
+                                    )
                                 }
                             }
                         }
@@ -354,8 +365,7 @@ fun HomeScreen(
                             if (uiState.combineLibrarySections) {
                                 if (uiState.latestMovies.isNotEmpty()) {
                                     item(key = "latest_movies_combined") {
-                                        Column(modifier = Modifier.fillMaxWidth()) {
-                                            Spacer(modifier = Modifier.height(24.dp))
+                                        Box(modifier = baseModifier.padding(top = 24.dp)) {
                                             OptimizedLatestMoviesSection(
                                                 items = uiState.latestMovies,
                                                 onItemClick = onItemClick,
@@ -365,8 +375,7 @@ fun HomeScreen(
                                     }
                                 } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
                                     item(key = "movies_skeleton") {
-                                        Column(modifier = Modifier.fillMaxWidth()) {
-                                            Spacer(modifier = Modifier.height(24.dp))
+                                        Box(modifier = baseModifier.padding(top = 24.dp)) {
                                             MoviesSectionSkeleton(widthSizeClass)
                                         }
                                     }
@@ -376,8 +385,7 @@ fun HomeScreen(
                                     items = uiState.separateMovieLibrarySections,
                                     key = { (library, _) -> "movie_lib_${library.id}" },
                                 ) { (library, movies) ->
-                                    Column(modifier = Modifier.fillMaxWidth()) {
-                                        Spacer(modifier = Modifier.height(24.dp))
+                                    Box(modifier = baseModifier.padding(top = 24.dp)) {
                                         OptimizedLatestMoviesSection(
                                             title = library.name,
                                             items = movies,
@@ -393,8 +401,7 @@ fun HomeScreen(
                             if (uiState.combineLibrarySections) {
                                 if (uiState.latestTvSeries.isNotEmpty()) {
                                     item(key = "latest_tv_combined") {
-                                        Column(modifier = Modifier.fillMaxWidth()) {
-                                            Spacer(modifier = Modifier.height(24.dp))
+                                        Box(modifier = baseModifier.padding(top = 24.dp)) {
                                             OptimizedLatestTvSeriesSection(
                                                 items = uiState.latestTvSeries,
                                                 onItemClick = onItemClick,
@@ -404,8 +411,7 @@ fun HomeScreen(
                                     }
                                 } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
                                     item(key = "tv_skeleton") {
-                                        Column(modifier = Modifier.fillMaxWidth()) {
-                                            Spacer(modifier = Modifier.height(24.dp))
+                                        Box(modifier = baseModifier.padding(top = 24.dp)) {
                                             TvSeriesSectionSkeleton(widthSizeClass)
                                         }
                                     }
@@ -415,8 +421,7 @@ fun HomeScreen(
                                     items = uiState.separateTvLibrarySections,
                                     key = { (library, _) -> "tv_lib_${library.id}" },
                                 ) { (library, shows) ->
-                                    Column(modifier = Modifier.fillMaxWidth()) {
-                                        Spacer(modifier = Modifier.height(24.dp))
+                                    Box(modifier = baseModifier.padding(top = 24.dp)) {
                                         OptimizedLatestTvSeriesSection(
                                             title = library.name,
                                             items = shows,
@@ -430,25 +435,25 @@ fun HomeScreen(
 
                         if (!uiState.isOffline && uiState.upcomingEpisodes.isNotEmpty()) {
                             item(key = "upcoming_episodes") {
-                                Box(modifier = getItemModifier("upcoming_episodes")) {
-                                    Column {
-                                        Spacer(modifier = Modifier.height(24.dp))
-                                        UpcomingEpisodesSection(
-                                            items = uiState.upcomingEpisodes,
-                                            onItemClick = { episode ->
-                                                viewModel.selectEpisode(episode)
-                                            },
-                                            widthSizeClass = widthSizeClass,
-                                        )
-                                    }
+                                val itemMod =
+                                    if (isLandscape && firstContentKey == "upcoming_episodes")
+                                        landscapeOffsetModifier
+                                    else baseModifier
+                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                    UpcomingEpisodesSection(
+                                        items = uiState.upcomingEpisodes,
+                                        onItemClick = { episode ->
+                                            viewModel.selectEpisode(episode)
+                                        },
+                                        widthSizeClass = widthSizeClass,
+                                    )
                                 }
                             }
                         }
 
                         if (!uiState.isOffline && uiState.highestRated.isNotEmpty()) {
                             item(key = "highest_rated") {
-                                Column(modifier = Modifier.fillMaxWidth()) {
-                                    Spacer(modifier = Modifier.height(24.dp))
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     HighestRatedSection(
                                         items = uiState.highestRated,
                                         onItemClick = onItemClick,
@@ -460,8 +465,7 @@ fun HomeScreen(
 
                         if (!uiState.isOffline && uiState.studios.isNotEmpty()) {
                             item(key = "popular_studios") {
-                                Column(modifier = Modifier.fillMaxWidth()) {
-                                    Spacer(modifier = Modifier.height(24.dp))
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     PopularStudiosSection(
                                         studios = uiState.studios,
                                         onStudioClick = { studio ->
@@ -479,24 +483,23 @@ fun HomeScreen(
                                 key = { section ->
                                     when (section) {
                                         is HomeSection.Person ->
-                                            "person_${section.section.hashCode()}"
+                                            "person_${section.section.person.id}"
                                         is HomeSection.Movie ->
-                                            "movie_rec_${section.section.hashCode()}"
+                                            "movie_rec_${section.section.referenceMovie.id}"
                                         is HomeSection.PersonFromMovie ->
-                                            "person_movie_${section.section.hashCode()}"
+                                            "person_movie_${section.section.person.id}_${section.section.referenceMovie.id}"
                                         is HomeSection.Genre ->
                                             "genre_${section.genreItem.name}_${section.genreItem.type}"
                                         is HomeSection.Spotlight -> "spotlight_${section.title}"
                                     }
                                 },
                             ) { section ->
-                                Column(modifier = Modifier.fillMaxWidth()) {
-                                    Spacer(modifier = Modifier.height(24.dp))
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     when (section) {
                                         is HomeSection.Person -> {
                                             PersonSection(
                                                 section = section.section,
-                                                onItemClick = { movie -> onItemClick(movie) },
+                                                onItemClick = onItemClick,
                                                 widthSizeClass = widthSizeClass,
                                             )
                                         }
@@ -504,7 +507,7 @@ fun HomeScreen(
                                         is HomeSection.Movie -> {
                                             MovieRecommendationSection(
                                                 section = section.section,
-                                                onItemClick = { movie -> onItemClick(movie) },
+                                                onItemClick = onItemClick,
                                                 widthSizeClass = widthSizeClass,
                                             )
                                         }
@@ -512,7 +515,7 @@ fun HomeScreen(
                                         is HomeSection.PersonFromMovie -> {
                                             PersonFromMovieSection(
                                                 section = section.section,
-                                                onItemClick = { movie -> onItemClick(movie) },
+                                                onItemClick = onItemClick,
                                                 widthSizeClass = widthSizeClass,
                                             )
                                         }
@@ -621,8 +624,9 @@ fun HomeScreen(
             onProfileClick = onProfileClick,
             userName = mainUiState.userName,
             userProfileImageUrl = mainUiState.userProfileImageUrl,
-            backgroundOpacity = topBarOpacity,
+            backgroundOpacity = { topBarOpacity },
         )
+
         val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
         val selectedEpisodeWatchlistStatus by
             viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()

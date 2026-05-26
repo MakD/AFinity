@@ -110,7 +110,7 @@ fun LiveTvScreen(
                 onProfileClick = { navController.navigate(Destination.createSettingsRoute()) },
                 userName = mainUiState.userName,
                 userProfileImageUrl = mainUiState.userProfileImageUrl,
-                backgroundOpacity = 1f,
+                backgroundOpacity = { 1f },
             )
         },
         modifier = modifier,

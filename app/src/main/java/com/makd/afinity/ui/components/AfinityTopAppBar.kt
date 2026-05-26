@@ -90,12 +90,14 @@ fun AfinityTopAppBar(
     onProfileClick: (() -> Unit)? = null,
     userName: String? = null,
     userProfileImageUrl: String? = null,
-    backgroundOpacity: Float = 0f,
+    backgroundOpacity: () -> Float = { 0f },
     actions: @Composable (RowScope.() -> Unit) = {},
     viewModel: AfinityTopAppBarViewModel = hiltViewModel(),
 ) {
     val connectionType by
         viewModel.connectionType.collectAsStateWithLifecycle(initialValue = ConnectionType.REMOTE)
+
+    val surfaceColor = MaterialTheme.colorScheme.surface
 
     TopAppBar(
         title = title,
@@ -223,10 +225,8 @@ fun AfinityTopAppBar(
             }
             actions()
         },
-        colors =
-            TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = backgroundOpacity)
-            ),
-        modifier = modifier,
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+        modifier =
+            modifier.drawBehind { drawRect(color = surfaceColor.copy(alpha = backgroundOpacity())) },
     )
 }

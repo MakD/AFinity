@@ -148,7 +148,7 @@ fun LibraryContentScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 },
-                backgroundOpacity = 1f,
+                backgroundOpacity = { 1f },
                 userProfileImageUrl = uiState.userProfileImageUrl,
                 onProfileClick = onProfileClick,
                 onSearchClick = {
