@@ -435,16 +435,24 @@ constructor(
             try {
                 val cachedItem = mediaRepository.getItemById(itemId)
                 if (cachedItem != null) {
-                    if (cachedItem != _uiState.value.item) {
-                        _uiState.update { state -> state.copy(item = cachedItem) }
+                    val resolvedItem =
+                        if (cachedItem is AfinitySeason && cachedItem.runtimeTicks == 0L) {
+                            val currentItem = _uiState.value.item
+                            if (currentItem is AfinitySeason && currentItem.runtimeTicks > 0L) {
+                                cachedItem.copy(runtimeTicks = currentItem.runtimeTicks)
+                            } else cachedItem
+                        } else cachedItem
+
+                    if (resolvedItem != _uiState.value.item) {
+                        _uiState.update { state -> state.copy(item = resolvedItem) }
                     }
 
-                    when (cachedItem) {
+                    when (resolvedItem) {
                         is AfinityShow -> {
                             launch {
                                 try {
                                     val nextEpisode =
-                                        mediaRepository.getEpisodeToPlay(cachedItem.id)
+                                        mediaRepository.getEpisodeToPlay(resolvedItem.id)
                                     if (nextEpisode != _uiState.value.nextEpisode) {
                                         _uiState.update { it.copy(nextEpisode = nextEpisode) }
                                     }
@@ -454,7 +462,7 @@ constructor(
                             }
                             launch {
                                 try {
-                                    val seasons = mediaRepository.getSeasons(cachedItem.id)
+                                    val seasons = mediaRepository.getSeasons(resolvedItem.id)
                                     if (seasons != _uiState.value.seasons) {
                                         _uiState.update { it.copy(seasons = seasons) }
                                     }
@@ -468,8 +476,8 @@ constructor(
                                 try {
                                     val nextEpisode =
                                         mediaRepository.getEpisodeToPlayForSeason(
-                                            cachedItem.id,
-                                            cachedItem.seriesId,
+                                            resolvedItem.id,
+                                            resolvedItem.seriesId,
                                         )
                                     if (nextEpisode != _uiState.value.nextEpisode) {
                                         _uiState.update { it.copy(nextEpisode = nextEpisode) }
@@ -479,7 +487,7 @@ constructor(
                                 }
                             }
                         }
-                        is AfinityBoxSet -> loadBoxSetItems(cachedItem.id)
+                        is AfinityBoxSet -> loadBoxSetItems(resolvedItem.id)
                     }
                 }
 
