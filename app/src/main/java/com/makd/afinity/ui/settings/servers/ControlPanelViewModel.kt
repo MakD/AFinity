@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
@@ -22,6 +23,7 @@ import org.jellyfin.sdk.model.api.TaskInfo
 import org.jellyfin.sdk.model.api.TaskState
 import timber.log.Timber
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
 @HiltViewModel
@@ -44,6 +46,20 @@ constructor(
 
     private val _scheduledTasks = MutableStateFlow<List<TaskInfo>?>(null)
     val scheduledTasks: StateFlow<List<TaskInfo>?> = _scheduledTasks.asStateFlow()
+
+    private val _isRefreshInitiated = MutableStateFlow(false)
+    private val isRefreshExecuting = AtomicBoolean(false)
+
+    val isLibraryRefreshing: StateFlow<Boolean> =
+        combine(_isRefreshInitiated, scheduledTasks) { initiated, tasks ->
+                val isRunningOnServer = isRefreshTaskRunning(tasks)
+                initiated || isRunningOnServer
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = false,
+            )
 
     private val _activeSessions = MutableStateFlow<List<SessionInfoDto>?>(null)
     val activeSessions: StateFlow<List<SessionInfoDto>?> = _activeSessions.asStateFlow()
@@ -73,15 +89,14 @@ constructor(
         viewModelScope.launch {
             jellyfinWebSocketManager.liveTasks.collect { instantTasks ->
                 checkForCompletedTasks(instantTasks)
-                _scheduledTasks.value = instantTasks
-                taskCache[currentServerId] = instantTasks
+                updateTasksState(instantTasks)
             }
         }
     }
 
     fun initialize(serverId: String) {
         currentServerId = serverId
-        taskCache[serverId]?.let { _scheduledTasks.value = it }
+        taskCache[serverId]?.let { updateTasksState(it) }
         sessionCache[serverId]?.let { _activeSessions.value = it }
         pollingJob?.cancel()
         pollingJob = viewModelScope.launch {
@@ -101,6 +116,23 @@ constructor(
                 delay(5000)
             }
         }
+    }
+
+    private fun updateTasksState(tasks: List<TaskInfo>?) {
+        _scheduledTasks.value = tasks
+        taskCache[currentServerId] = tasks ?: emptyList()
+
+        if (isRefreshTaskRunning(tasks)) {
+            _isRefreshInitiated.value = false
+        }
+    }
+
+    private fun isRefreshTaskRunning(tasks: List<TaskInfo>?): Boolean {
+        return tasks?.any { task ->
+            val isRefreshTask = task.key == "RefreshLibrary"
+            val isActive = task.state == TaskState.RUNNING || task.state == TaskState.CANCELLING
+            isRefreshTask && isActive
+        } ?: false
     }
 
     private fun checkForCompletedTasks(newTasks: List<TaskInfo>) {
@@ -127,7 +159,20 @@ constructor(
     }
 
     fun refreshAllLibraries() {
-        viewModelScope.launch { jellyfinRepository.refreshAllLibraries() }
+        if (!isRefreshExecuting.compareAndSet(false, true)) return
+
+        _isRefreshInitiated.value = true
+
+        viewModelScope.launch {
+            try {
+                val result = jellyfinRepository.refreshAllLibraries()
+                if (result.isFailure) {
+                    _isRefreshInitiated.value = false
+                }
+            } finally {
+                isRefreshExecuting.set(false)
+            }
+        }
     }
 
     fun runTask(taskId: String) {
@@ -152,7 +197,7 @@ constructor(
         try {
             val result = jellyfinRepository.getScheduledTasks()
             if (result.isSuccess) {
-                _scheduledTasks.value = result.getOrNull() ?: emptyList()
+                updateTasksState(result.getOrNull())
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to force poll scheduled tasks")

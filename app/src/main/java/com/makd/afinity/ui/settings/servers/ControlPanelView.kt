@@ -1,7 +1,6 @@
 package com.makd.afinity.ui.settings.servers
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -73,6 +72,7 @@ internal fun ControlPanelView(
 ) {
     val tasks by viewModel.scheduledTasks.collectAsStateWithLifecycle()
     val sessions by viewModel.activeSessions.collectAsStateWithLifecycle()
+    val isLibraryRefreshing by viewModel.isLibraryRefreshing.collectAsStateWithLifecycle()
 
     var showRestartConfirm by remember { mutableStateOf(false) }
     var showShutdownConfirm by remember { mutableStateOf(false) }
@@ -234,6 +234,8 @@ internal fun ControlPanelView(
                     label = stringResource(R.string.action_refresh_libraries),
                     icon = painterResource(R.drawable.ic_refresh),
                     onClick = { viewModel.refreshAllLibraries() },
+                    isLoading = isLibraryRefreshing,
+                    enabled = !isLibraryRefreshing,
                     modifier = Modifier.weight(1f),
                 )
                 QuickActionButton(
@@ -279,6 +281,8 @@ private fun QuickActionButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     isDangerous: Boolean = false,
+    isLoading: Boolean = false,
+    enabled: Boolean = true,
 ) {
     val contentColor =
         if (isDangerous) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
@@ -286,26 +290,38 @@ private fun QuickActionButton(
         if (isDangerous) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
         else MaterialTheme.colorScheme.surfaceContainerHigh
 
+    val alpha = if (enabled) 1f else 0.5f
+
     Surface(
+        onClick = onClick,
+        enabled = enabled && !isLoading,
         shape = RoundedCornerShape(16.dp),
-        color = containerColor,
-        modifier = modifier.clip(RoundedCornerShape(16.dp)).clickable { onClick() },
+        color = containerColor.copy(alpha = containerColor.alpha * alpha),
+        modifier = modifier.clip(RoundedCornerShape(16.dp)),
     ) {
         Column(
             modifier = Modifier.padding(vertical = 16.dp, horizontal = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Icon(
-                painter = icon,
-                contentDescription = label,
-                tint = contentColor,
-                modifier = Modifier.size(24.dp),
-            )
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = contentColor,
+                    strokeWidth = 2.dp,
+                )
+            } else {
+                Icon(
+                    painter = icon,
+                    contentDescription = label,
+                    tint = contentColor.copy(alpha = alpha),
+                    modifier = Modifier.size(24.dp),
+                )
+            }
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                color = contentColor,
+                color = contentColor.copy(alpha = alpha),
                 textAlign = TextAlign.Center,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
