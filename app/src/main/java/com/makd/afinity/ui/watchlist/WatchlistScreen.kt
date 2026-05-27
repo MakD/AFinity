@@ -30,15 +30,16 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
-import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.MediaRowSection
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
@@ -119,8 +120,18 @@ fun WatchlistScreen(
                 uiState.seasons.isEmpty() &&
                 uiState.episodes.isEmpty() -> {
                 FullScreenEmpty(
-                    message = stringResource(R.string.watchlist_empty),
-                    modifier = Modifier.padding(customPadding),
+                    title = stringResource(R.string.watchlist_empty_title),
+                    message = stringResource(R.string.watchlists_empty_message),
+                    actionText = "Browse Media",
+                    onActionClick = {
+                        navController.navigate(Destination.HOME.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
                 )
             }
 

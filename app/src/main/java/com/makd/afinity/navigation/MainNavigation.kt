@@ -50,13 +50,13 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.makd.afinity.data.manager.OfflineModeManager
-import com.makd.afinity.data.websocket.WebSocketState
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.data.updater.UpdateManager
+import com.makd.afinity.data.websocket.WebSocketState
 import com.makd.afinity.ui.audiobookshelf.genre.AudiobookshelfGenreResultsScreen
 import com.makd.afinity.ui.audiobookshelf.item.AudiobookshelfItemScreen
 import com.makd.afinity.ui.audiobookshelf.item.series.AudiobookshelfSeriesScreen
@@ -104,6 +104,7 @@ fun MainNavigation(
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
+    val favoritesCount by viewModel.favoritesCount.collectAsStateWithLifecycle()
     val watchlistRepository: WatchlistRepository =
         hiltViewModel<MainNavigationViewModel>().watchlistRepository
     val watchlistCount by watchlistRepository.watchlistCountFlow.collectAsStateWithLifecycle()
@@ -213,6 +214,10 @@ fun MainNavigation(
                         }
 
                         if (destination == Destination.LIBRARIES) {
+                            return@forEach
+                        }
+
+                        if (destination == Destination.FAVORITES && favoritesCount == 0) {
                             return@forEach
                         }
 
@@ -995,10 +1000,10 @@ fun MainNavigation(
                             SnackbarHost(
                                 hostState = snackbarHostState,
                                 snackbar = { data -> Snackbar(snackbarData = data) },
-                                modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .padding(bottom = globalPlayerOffset + 8.dp)
-                                    .navigationBarsPadding(),
+                                modifier =
+                                    Modifier.align(Alignment.BottomCenter)
+                                        .padding(bottom = globalPlayerOffset + 8.dp)
+                                        .navigationBarsPadding(),
                             )
 
                             AnimatedVisibility(

@@ -155,6 +155,18 @@ constructor(
 
     private val _favoritesData = MutableStateFlow(FavoritesData())
     val favoritesData: StateFlow<FavoritesData> = _favoritesData.asStateFlow()
+    val favoritesCountFlow: Flow<Int> =
+        favoritesData
+            .map { data ->
+                data.movies.size +
+                    data.shows.size +
+                    data.seasons.size +
+                    data.episodes.size +
+                    data.boxSets.size +
+                    data.people.size +
+                    data.channels.size
+            }
+            .distinctUntilChanged()
 
     private val _watchlistData = MutableStateFlow(WatchlistData())
     val watchlistData: StateFlow<WatchlistData> = _watchlistData.asStateFlow()

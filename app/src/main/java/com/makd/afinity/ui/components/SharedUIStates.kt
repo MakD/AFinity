@@ -3,8 +3,12 @@ package com.makd.afinity.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -48,7 +52,13 @@ fun FullScreenError(message: String?, modifier: Modifier = Modifier, title: Stri
 }
 
 @Composable
-fun FullScreenEmpty(message: String, modifier: Modifier = Modifier, title: String? = null) {
+fun FullScreenEmpty(
+    message: String,
+    modifier: Modifier = Modifier,
+    title: String? = null,
+    actionText: String? = null,
+    onActionClick: (() -> Unit)? = null,
+) {
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -69,6 +79,18 @@ fun FullScreenEmpty(message: String, modifier: Modifier = Modifier, title: Strin
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
+            if (actionText != null && onActionClick != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = onActionClick,
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                ) {
+                    Text(text = actionText, style = MaterialTheme.typography.labelLarge)
+                }
+            }
         }
     }
 }

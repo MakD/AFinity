@@ -11,8 +11,8 @@ import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
-import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.livetv.LiveTvRepository
+import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
@@ -63,6 +63,13 @@ constructor(
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = AppLoadingState(isLoading = true),
             )
+
+    val favoritesCount =
+        appDataRepository.favoritesCountFlow.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0,
+        )
 
     init {
         observeAuthAndLoadData()
@@ -122,7 +129,9 @@ constructor(
             try {
                 val isOffline = offlineModeManager.isCurrentlyOffline()
                 if (isOffline || !sessionManager.isServerReachable.value) {
-                    Timber.d("Device is offline or server unreachable, skipping server info refresh")
+                    Timber.d(
+                        "Device is offline or server unreachable, skipping server info refresh"
+                    )
                     return@launch
                 }
 
@@ -146,7 +155,9 @@ constructor(
                 }
 
                 if (!sessionManager.isServerReachable.value) {
-                    Timber.d("Server unreachable (address resolution failed), starting in offline mode")
+                    Timber.d(
+                        "Server unreachable (address resolution failed), starting in offline mode"
+                    )
                     appDataRepository.skipInitialDataLoad()
                     return@launch
                 }
