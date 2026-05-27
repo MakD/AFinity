@@ -124,12 +124,14 @@ fun OptimizedLatestMoviesSection(
         )
 
         val uniqueItems = items.distinctBy { it.id }
-        val itemIdsKey = uniqueItems.joinToString(separator = "|") { it.id.toString() }
+        val firstItemId = uniqueItems.firstOrNull()?.id
         val scrollState = rememberLazyListState()
 
-        LaunchedEffect(itemIdsKey) {
+        LaunchedEffect(firstItemId) {
             if (uniqueItems.isNotEmpty()) {
-                scrollState.scrollToItem(0)
+                if (scrollState.firstVisibleItemIndex == 0 && !scrollState.isScrollInProgress) {
+                    scrollState.scrollToItem(0)
+                }
             }
         }
 
@@ -277,12 +279,14 @@ fun OptimizedLatestTvSeriesSection(
         )
 
         val uniqueItems = items.distinctBy { it.id }
-        val itemIdsKey = uniqueItems.joinToString(separator = "|") { it.id.toString() }
+        val firstItemId = uniqueItems.firstOrNull()?.id
         val scrollState = rememberLazyListState()
 
-        LaunchedEffect(itemIdsKey) {
+        LaunchedEffect(firstItemId) {
             if (uniqueItems.isNotEmpty()) {
-                scrollState.scrollToItem(0)
+                if (scrollState.firstVisibleItemIndex == 0 && !scrollState.isScrollInProgress) {
+                    scrollState.scrollToItem(0)
+                }
             }
         }
 

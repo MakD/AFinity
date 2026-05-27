@@ -39,7 +39,9 @@ fun NextUpSection(
 
     LaunchedEffect(episodes.firstOrNull()?.id) {
         if (episodes.isNotEmpty()) {
-            scrollState.scrollToItem(0)
+            if (scrollState.firstVisibleItemIndex == 0 && !scrollState.isScrollInProgress) {
+                scrollState.scrollToItem(0)
+            }
         }
     }
 

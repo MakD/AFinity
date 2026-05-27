@@ -104,12 +104,16 @@ fun HomeScreen(
     val screenHeight = configuration.screenHeightDp.dp
     val lazyListState = rememberLazyListState()
     val continueWatchingScrollState = rememberLazyListState()
-
     val continueWatchingItems =
         if (uiState.isOffline) uiState.offlineContinueWatching else uiState.continueWatching
     LaunchedEffect(continueWatchingItems.firstOrNull()?.id) {
         if (continueWatchingItems.isNotEmpty()) {
-            continueWatchingScrollState.scrollToItem(0)
+            if (
+                continueWatchingScrollState.firstVisibleItemIndex == 0 &&
+                    !continueWatchingScrollState.isScrollInProgress
+            ) {
+                continueWatchingScrollState.scrollToItem(0)
+            }
         }
     }
 
