@@ -789,7 +789,6 @@ private fun TypeSpecificContent(
         is AfinityShow ->
             SeriesDetailContent(
                 item = item,
-                hasPlayableItems = hasPlayableItems,
                 seasons = seasons,
                 nextEpisode = nextEpisode,
                 specialFeatures = specialFeatures,

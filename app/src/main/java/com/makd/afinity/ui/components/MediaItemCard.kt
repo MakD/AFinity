@@ -75,12 +75,7 @@ fun MediaItemCard(
                     modifier = Modifier.fillMaxSize(),
                 )
 
-                val visuallyPlayed =
-                    when (item) {
-                        is AfinityShow -> item.played && (item.episodeCount ?: 0) > 0
-                        is AfinitySeason -> item.played && (item.episodeCount ?: 0) > 0
-                        else -> item.played
-                    }
+                val visuallyPlayed = item.played
 
                 when {
                     visuallyPlayed -> {

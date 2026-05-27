@@ -56,7 +56,6 @@ import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 @Composable
 fun SeriesDetailContent(
     item: AfinityShow,
-    hasPlayableItems: Boolean,
     seasons: List<AfinitySeason>,
     nextEpisode: AfinityEpisode?,
     specialFeatures: List<AfinityItem>,
@@ -121,10 +120,8 @@ internal fun SeasonsSection(
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(seasons, key = { it.id.toString() }) { season ->
-                val seasonHasPlayableItems = (season.episodeCount ?: 0) > 0
                 SeasonCard(
                     season = season,
-                    hasPlayableItems = seasonHasPlayableItems,
                     onClick = {
                         val route =
                             Destination.createEpisodeListRoute(
@@ -142,12 +139,7 @@ internal fun SeasonsSection(
 }
 
 @Composable
-internal fun SeasonCard(
-    season: AfinitySeason,
-    hasPlayableItems: Boolean,
-    onClick: () -> Unit,
-    cardWidth: Dp,
-) {
+internal fun SeasonCard(season: AfinitySeason, onClick: () -> Unit, cardWidth: Dp) {
 
     Column(modifier = Modifier.width(cardWidth)) {
         Card(
@@ -169,7 +161,7 @@ internal fun SeasonCard(
                     contentScale = ContentScale.Crop,
                 )
 
-                val visuallyPlayed = season.played && hasPlayableItems
+                val visuallyPlayed = season.played
 
                 if (visuallyPlayed) {
                     Box(
