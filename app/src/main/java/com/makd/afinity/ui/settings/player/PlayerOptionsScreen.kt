@@ -53,6 +53,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -93,6 +94,7 @@ import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -592,50 +594,63 @@ private fun getSkipModeDisplayName(mode: SkipMode): String =
 
 @Composable
 private fun BufferSizeSelectorItem(selectedSizeMb: Int, onSizeSelected: (Int) -> Unit) {
-    val options = listOf(32 to "32 MB", 64 to "64 MB", 128 to "128 MB")
-    var expanded by remember { mutableStateOf(false) }
-    val currentLabel = options.find { it.first == selectedSizeMb }?.second ?: "64 MB"
-
-    Box {
-        SettingsItem(
-            icon = painterResource(id = R.drawable.ic_speed),
-            title = stringResource(R.string.pref_buffer_size_title),
-            subtitle = currentLabel,
-            onClick = { expanded = true },
-            trailing = {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp),
-                )
-            },
+    val options =
+        listOf(
+            Triple(32, "32 MB", "Minimal"),
+            Triple(64, "64 MB", "Default / Recommended"),
+            Triple(128, "128 MB", "Good for slow networks"),
+            Triple(256, "256 MB", "High"),
+            Triple(512, "512 MB", "Extreme (May cause crashes)"),
         )
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
-        ) {
-            options.forEach { (sizeMb, label) ->
-                DropdownMenuItem(
-                    text = { Text(label) },
-                    onClick = {
-                        onSizeSelected(sizeMb)
-                        expanded = false
-                    },
-                    leadingIcon =
-                        if (selectedSizeMb == sizeMb) {
-                            {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_check),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            }
-                        } else null,
+
+    val initialIndex = options.indexOfFirst { it.first == selectedSizeMb }.coerceAtLeast(0)
+    var sliderIndex by remember(selectedSizeMb) { mutableFloatStateOf(initialIndex.toFloat()) }
+
+    val currentOption = options[sliderIndex.roundToInt()]
+
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_speed),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(end = 16.dp),
+            )
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.pref_buffer_size_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = currentOption.third,
+                    style = MaterialTheme.typography.bodySmall,
+                    color =
+                        if (sliderIndex.roundToInt() >= 3) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            Text(
+                text = currentOption.second,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+            )
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
+        Slider(
+            value = sliderIndex,
+            onValueChange = { sliderIndex = it },
+            onValueChangeFinished = {
+                val finalIndex = sliderIndex.roundToInt()
+                onSizeSelected(options[finalIndex].first)
+            },
+            valueRange = 0f..(options.size - 1).toFloat(),
+            steps = options.size - 2,
+            modifier = Modifier.height(24.dp),
+        )
     }
 }
 

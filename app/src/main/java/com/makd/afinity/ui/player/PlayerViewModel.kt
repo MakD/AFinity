@@ -21,10 +21,15 @@ import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.VideoSize
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.cache.CacheDataSource
+import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
 import com.makd.afinity.BuildConfig
@@ -80,13 +85,14 @@ import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 
-@androidx.media3.common.util.UnstableApi
+@UnstableApi
 @HiltViewModel
 class PlayerViewModel
 @Inject
 constructor(
     @param:ApplicationContext private val context: Context,
     private val application: Application,
+    private val exoCache: SimpleCache,
     private val playbackRepository: PlaybackRepository,
     private val playbackStateManager: PlaybackStateManager,
     val castManager: CastManager,
@@ -122,6 +128,7 @@ constructor(
     private var currentMediaSegments: List<AfinitySegment> = emptyList()
     private var segmentCheckingJob: Job? = null
     private var skipButtonHideJob: Job? = null
+    private var lastShownSegmentKey: String? = null
 
     private var progressReportingJob: Job? = null
     private var pendingMainItemOptions: MainItemPlaybackOptions? = null
@@ -148,6 +155,8 @@ constructor(
         val metrics = context.resources.displayMetrics
         metrics.widthPixels.toFloat() / metrics.heightPixels.toFloat()
     }
+
+    private val SKIP_BUTTON_TIMEOUT_MS = 8000L
 
     init {
         viewModelScope.launch {
@@ -454,6 +463,8 @@ constructor(
         )
 
         val bufferSizeMb = preferencesRepository.getBufferSizeMb()
+        val safeExoRamBufferMb = bufferSizeMb.coerceAtMost(128)
+
         val loadControl =
             DefaultLoadControl.Builder()
                 .setBufferDurationsMs(
@@ -462,14 +473,30 @@ constructor(
                     DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
                     DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS,
                 )
-                .setTargetBufferBytes(bufferSizeMb * 1024 * 1024)
+                .setTargetBufferBytes(safeExoRamBufferMb * 1024 * 1024)
                 .build()
+
+        val userAgent = "AFinity/${BuildConfig.VERSION_NAME} (Android; ExoPlayer)"
+        val upstreamFactory =
+            DefaultHttpDataSource.Factory()
+                .setUserAgent(userAgent)
+                .setAllowCrossProtocolRedirects(true)
+
+        val cacheDataSourceFactory =
+            CacheDataSource.Factory()
+                .setCache(exoCache)
+                .setUpstreamDataSourceFactory(upstreamFactory)
+                .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+
+        val mediaSourceFactory =
+            DefaultMediaSourceFactory(context).setDataSourceFactory(cacheDataSourceFactory)
 
         val renderersFactory =
             DefaultRenderersFactory(context)
                 .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
 
         return ExoPlayer.Builder(context, renderersFactory)
+            .setMediaSourceFactory(mediaSourceFactory)
             .setAudioAttributes(audioAttributes, true)
             .setTrackSelector(trackSelector)
             .setLoadControl(loadControl)
@@ -498,7 +525,7 @@ constructor(
             }
     }
 
-    var mpvVideoOutputValue: String = "gpu"
+    var mpvVideoOutputValue: String = "gpu-next"
         private set
 
     private suspend fun createMPVPlayer(): MPVPlayer {
@@ -524,10 +551,6 @@ constructor(
             MpvPrefsSnapshot(hwDec.value, vo.value, ao.value, subs, audioLang, subLang)
 
         mpvVideoOutputValue = mpvVideoOutput
-
-        Timber.d(
-            "MPV preferences: hwdec=$mpvHwDec, vo=$mpvVideoOutput, ao=$mpvAudioOutput, alang=$preferredAudioLang, slang=$preferredSubLang"
-        )
 
         val bufferSizeMb = preferencesRepository.getBufferSizeMb()
 
@@ -763,19 +786,33 @@ constructor(
                 }
 
                 is PlayerEvent.SkipSegment -> {
+                    skipButtonHideJob?.cancel()
+
                     updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
+
                     if (event.segment.type == AfinitySegmentType.OUTRO) {
                         viewModelScope.launch {
                             val nextItem = playlistManager.getNextItem()
                             if (nextItem != null) {
+                                val originalVolume = getInternalVolume()
+                                val steps = 10
+                                val stepDelay = 150L / steps
+
+                                for (i in steps downTo 0) {
+                                    val progress = i.toFloat() / steps
+                                    setInternalVolume(originalVolume * progress)
+                                    delay(stepDelay)
+                                }
+
                                 playlistManager.markCurrentItemAsPlayed()
                                 onNextEpisode()
+                                setInternalVolume(originalVolume)
                             } else {
-                                handlePlayerEvent(PlayerEvent.Seek(event.segment.endTicks))
+                                executeSegmentSeek(event.segment.endTicks)
                             }
                         }
                     } else {
-                        handlePlayerEvent(PlayerEvent.Seek(event.segment.endTicks))
+                        executeSegmentSeek(event.segment.endTicks)
                     }
                 }
 
@@ -1572,48 +1609,64 @@ constructor(
                     else -> SkipMode.DISABLED
                 }
 
-            when (skipMode) {
-                SkipMode.AUTO_SKIP -> {
-                    if (durationMs >= 1000L) {
-                        updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
-                        handlePlayerEvent(PlayerEvent.SkipSegment(segment))
-                    }
-                }
-                SkipMode.BUTTON -> {
-                    if (durationMs >= 3000L) {
-                        val skipButtonText = getSkipButtonText(segment)
-                        val alreadyShowing = uiState.value.showSkipButton &&
-                            uiState.value.currentSegment?.type == segment.type
-                        updateUiState {
-                            it.copy(
-                                currentSegment = segment,
-                                skipButtonText = skipButtonText,
-                                showSkipButton = true,
-                            )
-                        }
-                        if (!alreadyShowing) {
-                            skipButtonHideJob?.cancel()
-                            skipButtonHideJob = viewModelScope.launch {
-                                delay(8000L)
-                                updateUiState { it.copy(showSkipButton = false) }
-                            }
-                        }
-                    }
-                }
-                SkipMode.DISABLED ->
-                    updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
+            if (skipMode == SkipMode.DISABLED) {
+                updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
+                return@let
             }
-        } ?: run { updateUiState { it.copy(currentSegment = null, showSkipButton = false) } }
+
+            if (durationMs >= 3000L) {
+                val segmentKey = "${segment.type}-${segment.startTicks}"
+                val alreadyShown = lastShownSegmentKey == segmentKey
+
+                if (!alreadyShown) {
+                    lastShownSegmentKey = segmentKey
+
+                    val skipButtonText = getSkipButtonText(segment, skipMode)
+
+                    updateUiState {
+                        it.copy(
+                            currentSegment = segment,
+                            skipButtonText = skipButtonText,
+                            showSkipButton = true,
+                        )
+                    }
+
+                    skipButtonHideJob?.cancel()
+                    skipButtonHideJob = viewModelScope.launch {
+                        delay(SKIP_BUTTON_TIMEOUT_MS)
+
+                        if (skipMode == SkipMode.AUTO_SKIP) {
+                            handlePlayerEvent(PlayerEvent.SkipSegment(segment))
+                        } else {
+                            updateUiState { it.copy(showSkipButton = false) }
+                        }
+                    }
+                }
+            }
+        }
+            ?: run {
+                lastShownSegmentKey = null
+                skipButtonHideJob?.cancel()
+                updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
+            }
     }
 
-    private fun getSkipButtonText(segment: AfinitySegment): String {
-        return when (segment.type) {
-            AfinitySegmentType.INTRO -> context.getString(R.string.skip_intro)
-            AfinitySegmentType.OUTRO -> context.getString(R.string.skip_outro)
-            AfinitySegmentType.RECAP -> context.getString(R.string.skip_recap)
-            AfinitySegmentType.PREVIEW -> context.getString(R.string.skip_preview)
-            AfinitySegmentType.COMMERCIAL -> context.getString(R.string.skip_commercial)
-            else -> context.getString(R.string.skip_generic)
+    private fun getSkipButtonText(segment: AfinitySegment, skipMode: SkipMode): String {
+        val baseText =
+            when (segment.type) {
+                AfinitySegmentType.INTRO -> context.getString(R.string.skip_intro)
+                AfinitySegmentType.OUTRO -> context.getString(R.string.skip_outro)
+                AfinitySegmentType.RECAP -> context.getString(R.string.skip_recap)
+                AfinitySegmentType.PREVIEW -> context.getString(R.string.skip_preview)
+                AfinitySegmentType.COMMERCIAL -> context.getString(R.string.skip_commercial)
+                else -> context.getString(R.string.skip_generic)
+            }
+
+        return if (skipMode == SkipMode.AUTO_SKIP) {
+            val cleanText = baseText.replace(Regex("(?i)^skip\\s+"), "")
+            "Auto-skipping $cleanText..."
+        } else {
+            baseText
         }
     }
 
@@ -1846,9 +1899,16 @@ constructor(
         onPreviousEpisode()
     }
 
-    private fun playQueueItem(item: AfinityItem) {
+    private suspend fun playQueueItem(item: AfinityItem) {
+        val fullItem =
+            if (item.sources.isEmpty()) {
+                withContext(Dispatchers.IO) { mediaRepository.getItemById(item.id) } ?: item
+            } else {
+                item
+            }
+
         suppressNextControlShow = true
-        if (pendingMainItemOptions?.itemId == item.id) {
+        if (pendingMainItemOptions?.itemId == fullItem.id) {
             val options = pendingMainItemOptions!!
             pendingMainItemOptions = null
             updateUiState {
@@ -1857,10 +1917,10 @@ constructor(
             controlsHideJob?.cancel()
             applyZoomMode(currentZoomMode, saveAsCurrent = true)
 
-            Timber.d("Intro finished, restoring settings: ${item.name}")
+            Timber.d("Intro finished, restoring settings: ${fullItem.name}")
             handlePlayerEvent(
                 PlayerEvent.LoadMedia(
-                    item = item,
+                    item = fullItem,
                     mediaSourceId = options.mediaSourceId,
                     audioStreamIndex = options.audioStreamIndex,
                     subtitleStreamIndex = options.subtitleStreamIndex,
@@ -1877,12 +1937,13 @@ constructor(
         val currentSource =
             _uiState.value.currentItem?.sources?.firstOrNull { it.id == currentSourceId }
 
-        val bestMatch = findBestMatchingSource(reference = currentSource, candidates = item.sources)
-        val mediaSourceId = bestMatch?.id ?: item.sources.firstOrNull()?.id ?: ""
+        val bestMatch =
+            findBestMatchingSource(reference = currentSource, candidates = fullItem.sources)
+        val mediaSourceId = bestMatch?.id ?: fullItem.sources.firstOrNull()?.id ?: ""
 
         handlePlayerEvent(
             PlayerEvent.LoadMedia(
-                item = item,
+                item = fullItem,
                 mediaSourceId = mediaSourceId,
                 audioStreamIndex = null,
                 subtitleStreamIndex = null,
@@ -1920,6 +1981,54 @@ constructor(
         if (duration <= 0) return
         val safeTime = targetTime.coerceIn(0L, duration)
         handlePlayerEvent(PlayerEvent.OnSeekBarValueChange(safeTime))
+    }
+
+    private fun getInternalVolume(): Float {
+        return when (val currentPlayer = player) {
+            is ExoPlayer -> currentPlayer.volume
+            is MPVPlayer -> {
+                val mpvVol = currentPlayer.mpv.getPropertyDouble("volume") ?: 100.0
+                (mpvVol / 100.0).toFloat()
+            }
+            else -> 1f
+        }
+    }
+
+    private fun setInternalVolume(volume: Float) {
+        val clampedVolume = volume.coerceIn(0f, 1f)
+        when (val currentPlayer = player) {
+            is ExoPlayer -> currentPlayer.volume = clampedVolume
+            is MPVPlayer -> {
+                currentPlayer.mpv.setPropertyDouble("volume", (clampedVolume * 100.0))
+            }
+        }
+    }
+
+    private fun executeSegmentSeek(targetPositionMs: Long) {
+        viewModelScope.launch {
+            val originalVolume = getInternalVolume()
+            val fadeDurationMs = 150L
+            val steps = 10
+            val stepDelay = fadeDurationMs / steps
+
+            for (i in steps downTo 0) {
+                val progress = i.toFloat() / steps
+                setInternalVolume(originalVolume * progress)
+                delay(stepDelay)
+            }
+
+            player.seekTo(targetPositionMs)
+
+            delay(50)
+
+            for (i in 1..steps) {
+                val progress = i.toFloat() / steps
+                setInternalVolume(originalVolume * progress)
+                delay(stepDelay)
+            }
+
+            setInternalVolume(originalVolume)
+        }
     }
 
     private fun onSeekBarPreview(position: Long, isActive: Boolean) {
@@ -2075,6 +2184,7 @@ constructor(
 
         progressReportingJob?.cancel()
         segmentCheckingJob?.cancel()
+        skipButtonHideJob?.cancel()
         controlsHideJob?.cancel()
         statsPollingJob?.cancel()
         player.removeListener(this)

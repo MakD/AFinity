@@ -169,14 +169,18 @@ class MPVPlayer(
         mpv.setOptionString("opengl-es", "yes")
         mpv.setOptionString("vid", "no")
 
+        mpv.setOptionString("target-colorspace-hint", "yes")
+
         mpv.setOptionString("hwdec", hwDec)
         mpv.setOptionString("hwdec-codecs", "h264,hevc,mpeg4,mpeg2video,vp8,vp9,av1")
 
         mpv.setOptionString("tls-verify", "no")
 
         mpv.setOptionString("cache", "yes")
+        mpv.setOptionString("cache-on-disk", "yes")
+        mpv.setOptionString("cache-dir", cacheDir.path)
         mpv.setOptionString("demuxer-max-bytes", "${bufferSizeMb}MiB")
-        mpv.setOptionString("demuxer-max-back-bytes", "10MiB")
+        mpv.setOptionString("demuxer-max-back-bytes", "50MiB")
         mpv.setOptionString("cache-secs", "36000")
         mpv.setOptionString("demuxer-readahead-secs", "36000")
 
@@ -218,6 +222,8 @@ class MPVPlayer(
                 Property("playlist-current-pos", MPVLib.MpvFormat.MPV_FORMAT_INT64),
                 Property("video-params/w", MPVLib.MpvFormat.MPV_FORMAT_INT64),
                 Property("video-params/h", MPVLib.MpvFormat.MPV_FORMAT_INT64),
+                Property("video-params/gamma", MPVLib.MpvFormat.MPV_FORMAT_STRING),
+                Property("video-params/primaries", MPVLib.MpvFormat.MPV_FORMAT_STRING),
             )
             .forEach { (name, format) -> mpv.observeProperty(name, format) }
 
