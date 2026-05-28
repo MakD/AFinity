@@ -2,6 +2,7 @@ package com.makd.afinity.data.database.entities
 
 import androidx.room.Entity
 import com.makd.afinity.data.models.mdblist.MdbListRating
+import com.makd.afinity.data.models.mdblist.MdbListRatingBadges
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import java.util.UUID
 
@@ -15,5 +16,6 @@ data class ItemMetadataCacheEntity(
     val userId: String,
     val tmdbReviews: List<TmdbReview> = emptyList(),
     val mdbRatings: List<MdbListRating> = emptyList(),
+    val mdbRatingBadges: MdbListRatingBadges = MdbListRatingBadges(),
     val lastUpdated: Long = System.currentTimeMillis(),
 )

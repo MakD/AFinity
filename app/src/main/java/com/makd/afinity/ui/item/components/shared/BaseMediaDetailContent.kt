@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -31,8 +30,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.mdblist.MdbListRating
+import com.makd.afinity.data.models.mdblist.MdbListRatingBadges
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
@@ -48,6 +49,7 @@ fun BaseMediaDetailContent(
     containingBoxSets: List<AfinityBoxSet>,
     tmdbReviews: List<TmdbReview>,
     mdbRatings: List<MdbListRating> = emptyList(),
+    mdbRatingBadges: MdbListRatingBadges = MdbListRatingBadges(),
     isRatingsFromCache: Boolean = false,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     onBoxSetClick: (AfinityBoxSet) -> Unit,
@@ -66,6 +68,14 @@ fun BaseMediaDetailContent(
 
         CastSection(item = item, onPersonClick = onPersonClick, widthSizeClass = widthSizeClass)
 
+        RatingsAndReviews(
+            item = item,
+            mdbRatings = mdbRatings,
+            mdbRatingBadges = mdbRatingBadges,
+            tmdbReviews = tmdbReviews,
+            isRatingsFromCache = isRatingsFromCache,
+        )
+
         SpecialFeaturesSection(
             specialFeatures = specialFeatures,
             onItemClick = onSpecialFeatureClick,
@@ -78,13 +88,6 @@ fun BaseMediaDetailContent(
             widthSizeClass = widthSizeClass,
         )
 
-        RatingsAndReviews(
-            item = item,
-            mdbRatings = mdbRatings,
-            tmdbReviews = tmdbReviews,
-            isRatingsFromCache = isRatingsFromCache,
-        )
-
         ExternalLinksSection(item = item)
     }
 }
@@ -93,6 +96,7 @@ fun BaseMediaDetailContent(
 private fun RatingsAndReviews(
     item: AfinityItem,
     mdbRatings: List<MdbListRating>,
+    mdbRatingBadges: MdbListRatingBadges,
     tmdbReviews: List<TmdbReview>,
     isRatingsFromCache: Boolean,
 ) {
@@ -110,7 +114,11 @@ private fun RatingsAndReviews(
             else -> null
         }
 
-    val hasRatings = mdbRatings.isNotEmpty() || communityRating != null || criticRating != null
+    val hasRatings =
+        mdbRatingBadges.hasAny ||
+            mdbRatings.isNotEmpty() ||
+            communityRating != null ||
+            criticRating != null
     val hasReviews = tmdbReviews.isNotEmpty()
 
     if (!hasRatings && !hasReviews) return
@@ -135,6 +143,26 @@ private fun RatingsAndReviews(
                     contentPadding = PaddingValues(horizontal = 0.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
+                    if (mdbRatingBadges.certifiedFresh) {
+                        item {
+                            BadgeCard(
+                                sourceName = "Tomatometer",
+                                iconRes = R.drawable.ic_certified_fresh,
+                                label = "Certified Fresh",
+                            )
+                        }
+                    }
+
+                    if (mdbRatingBadges.verifiedHot) {
+                        item {
+                            BadgeCard(
+                                sourceName = "Popcornmeter",
+                                iconRes = R.drawable.ic_verified_hot,
+                                label = "Verified Hot",
+                            )
+                        }
+                    }
+
                     communityRating?.let { rating ->
                         item {
                             Scorecard(
@@ -237,12 +265,81 @@ private fun RatingsAndReviews(
 }
 
 @Composable
+private fun BadgeCard(sourceName: String, iconRes: Int, label: String) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
+        modifier = Modifier.width(132.dp).height(96.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.Start,
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Icon(
+                    painter = painterResource(id = iconRes),
+                    contentDescription = sourceName,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(16.dp),
+                )
+                Text(
+                    text = sourceName,
+                    style =
+                        MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            val parts = label.split(" ", limit = 2)
+            val prefixText = if (parts.size > 1) parts[0].uppercase() else ""
+            val emphasisText = if (parts.size > 1) parts[1].uppercase() else label.uppercase()
+
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                if (prefixText.isNotEmpty()) {
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f),
+                    ) {
+                        Text(
+                            text = prefixText,
+                            style =
+                                MaterialTheme.typography.labelSmall.copy(
+                                    fontSize = 8.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 1.sp,
+                                ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        )
+                    }
+                }
+                Text(
+                    text = emphasisText,
+                    style =
+                        MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun Scorecard(sourceName: String, iconRes: Int?, score: String, subtext: String) {
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
-        modifier = Modifier.width(120.dp),
+        modifier = Modifier.width(132.dp).height(96.dp),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -270,8 +367,6 @@ private fun Scorecard(sourceName: String, iconRes: Int?, score: String, subtext:
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
 
             Row(
                 verticalAlignment = Alignment.Bottom,

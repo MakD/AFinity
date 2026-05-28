@@ -4,7 +4,7 @@ import androidx.paging.PagingData
 import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
-import com.makd.afinity.data.models.mdblist.MdbListRating
+import com.makd.afinity.data.models.mdblist.MdbListRatingsResult
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -238,7 +238,7 @@ interface MediaRepository {
 
     fun getContinueWatchingFlow(): Flow<List<AfinityItem>>
 
-    suspend fun getMdbListRatings(tmdbId: String, isMovie: Boolean): List<MdbListRating>
+    suspend fun getMdbListRatings(tmdbId: String, isMovie: Boolean): MdbListRatingsResult
 
     suspend fun getEpisodeToPlay(seriesId: UUID): AfinityEpisode?
 

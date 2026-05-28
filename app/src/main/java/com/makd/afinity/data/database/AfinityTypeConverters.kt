@@ -3,6 +3,7 @@ package com.makd.afinity.data.database
 import android.net.Uri
 import androidx.room.TypeConverter
 import com.makd.afinity.data.models.mdblist.MdbListRating
+import com.makd.afinity.data.models.mdblist.MdbListRatingBadges
 import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
@@ -479,6 +480,20 @@ class AfinityTypeConverters {
         ratingsString?.let {
             try {
                 json.decodeFromString<List<MdbListRating>>(it)
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+    @TypeConverter
+    fun fromMdbRatingBadges(badges: MdbListRatingBadges?): String? =
+        badges?.let { json.encodeToString(it) }
+
+    @TypeConverter
+    fun toMdbRatingBadges(badgesString: String?): MdbListRatingBadges? =
+        badgesString?.let {
+            try {
+                json.decodeFromString<MdbListRatingBadges>(it)
             } catch (e: Exception) {
                 null
             }

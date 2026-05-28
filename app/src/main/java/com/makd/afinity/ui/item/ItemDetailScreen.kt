@@ -68,6 +68,7 @@ import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.extensions.showBackdropImageUrl
 import com.makd.afinity.data.models.extensions.showLogoImageUrl
 import com.makd.afinity.data.models.mdblist.MdbListRating
+import com.makd.afinity.data.models.mdblist.MdbListRatingBadges
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -176,6 +177,7 @@ fun ItemDetailScreen(
                     downloadInfo = uiState.downloadInfo,
                     tmdbReviews = uiState.tmdbReviews,
                     mdbRatings = uiState.mdbRatings,
+                    mdbRatingBadges = uiState.mdbRatingBadges,
                     isRatingsFromCache = uiState.isRatingsFromCache,
                     movieParts = uiState.movieParts,
                     onPlayClick = { item, selection -> interceptPlayClick(item, selection) },
@@ -332,6 +334,7 @@ private fun ItemDetailContent(
     downloadInfo: DownloadInfo?,
     tmdbReviews: List<TmdbReview>,
     mdbRatings: List<MdbListRating>,
+    mdbRatingBadges: MdbListRatingBadges,
     isRatingsFromCache: Boolean,
     movieParts: List<AfinityItem>,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
@@ -361,6 +364,7 @@ private fun ItemDetailContent(
             downloadInfo = downloadInfo,
             tmdbReviews = tmdbReviews,
             mdbRatings = mdbRatings,
+            mdbRatingBadges = mdbRatingBadges,
             isRatingsFromCache = isRatingsFromCache,
             movieParts = movieParts,
             onPlayClick = onPlayClick,
@@ -387,6 +391,7 @@ private fun ItemDetailContent(
             downloadInfo = downloadInfo,
             tmdbReviews = tmdbReviews,
             mdbRatings = mdbRatings,
+            mdbRatingBadges = mdbRatingBadges,
             isRatingsFromCache = isRatingsFromCache,
             movieParts = movieParts,
             onPlayClick = onPlayClick,
@@ -416,6 +421,7 @@ private fun LandscapeItemDetailContent(
     downloadInfo: DownloadInfo?,
     tmdbReviews: List<TmdbReview>,
     mdbRatings: List<MdbListRating>,
+    mdbRatingBadges: MdbListRatingBadges,
     isRatingsFromCache: Boolean,
     movieParts: List<AfinityItem>,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
@@ -572,6 +578,7 @@ private fun LandscapeItemDetailContent(
                             episodesPagingData = episodesPagingData,
                             tmdbReviews = tmdbReviews,
                             mdbRatings = mdbRatings,
+                            mdbRatingBadges = mdbRatingBadges,
                             isRatingsFromCache = isRatingsFromCache,
                             movieParts = movieParts,
                             onPlayClick = onPlayClick,
@@ -605,6 +612,7 @@ private fun PortraitItemDetailContent(
     downloadInfo: DownloadInfo?,
     tmdbReviews: List<TmdbReview>,
     mdbRatings: List<MdbListRating>,
+    mdbRatingBadges: MdbListRatingBadges,
     isRatingsFromCache: Boolean,
     movieParts: List<AfinityItem>,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
@@ -698,6 +706,7 @@ private fun PortraitItemDetailContent(
                     episodesPagingData = episodesPagingData,
                     tmdbReviews = tmdbReviews,
                     mdbRatings = mdbRatings,
+                    mdbRatingBadges = mdbRatingBadges,
                     isRatingsFromCache = isRatingsFromCache,
                     movieParts = movieParts,
                     onPlayClick = onPlayClick,
@@ -771,6 +780,7 @@ private fun TypeSpecificContent(
     episodesPagingData: Flow<PagingData<AfinityEpisode>>?,
     tmdbReviews: List<TmdbReview>,
     mdbRatings: List<MdbListRating>,
+    mdbRatingBadges: MdbListRatingBadges,
     isRatingsFromCache: Boolean,
     movieParts: List<AfinityItem>,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
@@ -791,6 +801,8 @@ private fun TypeSpecificContent(
                 containingBoxSets = containingBoxSets,
                 tmdbReviews = tmdbReviews,
                 mdbRatings = mdbRatings,
+                mdbRatingBadges = mdbRatingBadges,
+                isRatingsFromCache = isRatingsFromCache,
                 onEpisodeClick = { ep ->
                     val mediaSourceId = ep.sources.firstOrNull()?.id ?: return@SeriesDetailContent
                     val startPos =
@@ -835,6 +847,8 @@ private fun TypeSpecificContent(
                 containingBoxSets = containingBoxSets,
                 tmdbReviews = tmdbReviews,
                 mdbRatings = mdbRatings,
+                mdbRatingBadges = mdbRatingBadges,
+                isRatingsFromCache = isRatingsFromCache,
                 onEpisodeClick = { ep -> viewModel.selectEpisode(ep) },
                 onSpecialFeatureClick = onSpecialFeatureClick,
                 navController = navController,
@@ -849,6 +863,8 @@ private fun TypeSpecificContent(
                 containingBoxSets = containingBoxSets,
                 tmdbReviews = tmdbReviews,
                 mdbRatings = mdbRatings,
+                mdbRatingBadges = mdbRatingBadges,
+                isRatingsFromCache = isRatingsFromCache,
                 parts = movieParts,
                 onSpecialFeatureClick = onSpecialFeatureClick,
                 onPlayClick = { movie, sel -> onPlayClick(movie, sel) },

@@ -1062,6 +1062,15 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_44_45 =
+        object : Migration(44, 45) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE item_metadata_cache ADD COLUMN mdbRatingBadges TEXT NOT NULL DEFAULT '{\"certifiedFresh\":false,\"verifiedHot\":false}'"
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1107,5 +1116,6 @@ object DatabaseMigrations {
             MIGRATION_41_42,
             MIGRATION_42_43,
             MIGRATION_43_44,
+            MIGRATION_44_45,
         )
 }

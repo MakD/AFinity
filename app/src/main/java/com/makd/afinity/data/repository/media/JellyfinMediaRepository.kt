@@ -16,7 +16,8 @@ import com.makd.afinity.data.models.extensions.toAfinityPersonDetail
 import com.makd.afinity.data.models.extensions.toAfinitySeason
 import com.makd.afinity.data.models.extensions.toAfinityShow
 import com.makd.afinity.data.models.extensions.toAfinityVideo
-import com.makd.afinity.data.models.mdblist.MdbListRating
+import com.makd.afinity.data.models.mdblist.MdbListRatingBadges
+import com.makd.afinity.data.models.mdblist.MdbListRatingsResult
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -1784,27 +1785,37 @@ constructor(
         }
     }
 
-    override suspend fun getMdbListRatings(tmdbId: String, isMovie: Boolean): List<MdbListRating> =
+    override suspend fun getMdbListRatings(tmdbId: String, isMovie: Boolean): MdbListRatingsResult =
         withContext(Dispatchers.IO) {
             try {
                 val serverId =
-                    sessionManager.currentSession.value?.serverId ?: return@withContext emptyList()
+                    sessionManager.currentSession.value?.serverId
+                        ?: return@withContext MdbListRatingsResult()
                 val userId =
                     sessionManager.currentSession.value?.userId?.toString()
-                        ?: return@withContext emptyList()
+                        ?: return@withContext MdbListRatingsResult()
 
                 val apiKey = securePreferencesRepository.getMdbListApiKey(serverId, userId)
                 if (apiKey.isNullOrBlank()) {
-                    return@withContext emptyList()
+                    return@withContext MdbListRatingsResult()
                 }
 
                 val type = if (isMovie) "movie" else "show"
                 val result = mdbListApiService.getRatings(type, tmdbId, apiKey)
+                val keywords = (result.keywords + result.keyword).map { it.name.lowercase() }.toSet()
 
-                result.ratings
+                MdbListRatingsResult(
+                    ratings = result.ratings,
+                    badges =
+                        MdbListRatingBadges(
+                            certifiedFresh = "certified-fresh" in keywords,
+                            verifiedHot =
+                                "certified-hot" in keywords || "verified-hot" in keywords,
+                        ),
+                )
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get MDBList ratings for TMDB ID: $tmdbId")
-                emptyList()
+                MdbListRatingsResult()
             }
         }
 

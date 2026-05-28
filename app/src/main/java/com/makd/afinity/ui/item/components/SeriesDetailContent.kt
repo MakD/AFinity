@@ -41,6 +41,7 @@ import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.extensions.showPrimaryImageUrl
 import com.makd.afinity.data.models.mdblist.MdbListRating
+import com.makd.afinity.data.models.mdblist.MdbListRatingBadges
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -63,6 +64,7 @@ fun SeriesDetailContent(
     containingBoxSets: List<AfinityBoxSet>,
     tmdbReviews: List<TmdbReview> = emptyList(),
     mdbRatings: List<MdbListRating> = emptyList(),
+    mdbRatingBadges: MdbListRatingBadges = MdbListRatingBadges(),
     isRatingsFromCache: Boolean = false,
     onEpisodeClick: (AfinityEpisode) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
@@ -75,6 +77,7 @@ fun SeriesDetailContent(
         containingBoxSets = containingBoxSets,
         tmdbReviews = tmdbReviews,
         mdbRatings = mdbRatings,
+        mdbRatingBadges = mdbRatingBadges,
         isRatingsFromCache = isRatingsFromCache,
         onSpecialFeatureClick = onSpecialFeatureClick,
         onBoxSetClick = { boxSet ->

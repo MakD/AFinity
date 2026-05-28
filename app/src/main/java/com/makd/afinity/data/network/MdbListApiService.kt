@@ -11,5 +11,6 @@ interface MdbListApiService {
         @Path("contentType") contentType: String,
         @Path("tmdbId") tmdbId: String,
         @Query("apikey") apiKey: String,
+        @Query("append_to_response") appendToResponse: String = "keyword",
     ): MdbListApiResult
 }

@@ -24,6 +24,8 @@ import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.extensions.toAfinitySeason
 import com.makd.afinity.data.models.mdblist.MdbListRating
+import com.makd.afinity.data.models.mdblist.MdbListRatingBadges
+import com.makd.afinity.data.models.mdblist.MdbListRatingsResult
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -705,6 +707,7 @@ constructor(
                                 _uiState.value.copy(
                                     tmdbReviews = cachedMetadata.tmdbReviews,
                                     mdbRatings = cachedMetadata.mdbRatings,
+                                    mdbRatingBadges = cachedMetadata.mdbRatingBadges,
                                     isRatingsFromCache = true,
                                 )
                         }
@@ -894,12 +897,14 @@ constructor(
                 cachedMetadata != null &&
                     isCacheValid &&
                     (cachedMetadata.tmdbReviews.isNotEmpty() ||
-                        cachedMetadata.mdbRatings.isNotEmpty())
+                        cachedMetadata.mdbRatings.isNotEmpty() ||
+                        cachedMetadata.mdbRatingBadges.hasAny)
             ) {
                 _uiState.update {
                     it.copy(
                         tmdbReviews = cachedMetadata.tmdbReviews,
                         mdbRatings = cachedMetadata.mdbRatings,
+                        mdbRatingBadges = cachedMetadata.mdbRatingBadges,
                         isRatingsFromCache = true,
                         isLoadingReviews = false,
                     )
@@ -908,6 +913,7 @@ constructor(
                 val tmdbId = item.providerIds?.get("Tmdb")
                 var fetchedReviews = emptyList<TmdbReview>()
                 var fetchedRatings = emptyList<MdbListRating>()
+                var fetchedRatingBadges = MdbListRatingBadges()
 
                 if (tmdbId != null && userId != null) {
                     val serverId = session?.serverId ?: serverRepository.currentServer.value?.id
@@ -937,23 +943,28 @@ constructor(
 
                         val ratingsDeferred = async {
                             try {
-                                val ratings =
+                                val ratingsResult =
                                     mediaRepository.getMdbListRatings(tmdbId, item is AfinityMovie)
-                                ratings.filter {
-                                    it.source.lowercase() !in listOf("imdb", "tomatoes") &&
-                                        it.value != null
-                                }
+                                ratingsResult.copy(
+                                    ratings =
+                                        ratingsResult.ratings.filter {
+                                            it.source.lowercase() !in listOf("imdb", "tomatoes") &&
+                                                it.value != null
+                                        }
+                                )
                             } catch (e: Exception) {
                                 Timber.w(
                                     e,
                                     "Failed to fetch MDBList ratings during network transition",
                                 )
-                                emptyList()
+                                MdbListRatingsResult()
                             }
                         }
 
                         fetchedReviews = reviewsDeferred.await()
-                        fetchedRatings = ratingsDeferred.await()
+                        val ratingsResult = ratingsDeferred.await()
+                        fetchedRatings = ratingsResult.ratings
+                        fetchedRatingBadges = ratingsResult.badges
                     }
                 }
 
@@ -961,13 +972,16 @@ constructor(
                     it.copy(
                         tmdbReviews = fetchedReviews,
                         mdbRatings = fetchedRatings,
+                        mdbRatingBadges = fetchedRatingBadges,
                         isRatingsFromCache = false,
                         isLoadingReviews = false,
                     )
                 }
 
                 if (
-                    (fetchedReviews.isNotEmpty() || fetchedRatings.isNotEmpty()) && session != null
+                    (fetchedReviews.isNotEmpty() ||
+                        fetchedRatings.isNotEmpty() ||
+                        fetchedRatingBadges.hasAny) && session != null
                 ) {
                     databaseRepository.insertItemMetadata(
                         ItemMetadataCacheEntity(
@@ -976,6 +990,7 @@ constructor(
                             userId = session.userId.toString(),
                             tmdbReviews = fetchedReviews,
                             mdbRatings = fetchedRatings,
+                            mdbRatingBadges = fetchedRatingBadges,
                         )
                     )
                 }
@@ -1338,6 +1353,7 @@ data class ItemDetailUiState(
     val tmdbReviews: List<TmdbReview> = emptyList(),
     val isLoadingReviews: Boolean = false,
     val mdbRatings: List<MdbListRating> = emptyList(),
+    val mdbRatingBadges: MdbListRatingBadges = MdbListRatingBadges(),
     val isRatingsFromCache: Boolean = false,
     val movieParts: List<AfinityItem> = emptyList(),
 ) {

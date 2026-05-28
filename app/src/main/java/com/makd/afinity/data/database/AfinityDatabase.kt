@@ -101,7 +101,7 @@ import com.makd.afinity.data.models.user.User
             JellyfinStatsCacheEntity::class,
             AbsDownloadEntity::class,
         ],
-    version = 44,
+    version = 45,
     exportSchema = false,
 )
 @TypeConverters(AfinityTypeConverters::class)
