@@ -264,7 +264,7 @@
     <string name="cd_screen_rotation">Поворот экрана</string>
     <string name="cd_fast_forward">Перемотка вперед</string>
     <string name="cd_rewind">Перемотка назад</string>
-    <string name="seek_forward_text">+10 сек</string>
+    <string name="seek_forward_text">+10 с</string>
     <string name="seek_rewind_text">-10 с</string>
     <string name="cd_brightness">Яркость</string>
     <string name="cd_volume">Громкость</string>
