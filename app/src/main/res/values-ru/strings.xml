@@ -110,7 +110,7 @@
     <string name="cd_air_date">Дата выхода в эфир</string>
     <string name="cd_duration">Продолжительность</string>
     <string name="cd_go_to_series">К сериалу</string>
-    <string name="cd_watchlist">Смотреть позже</string>
+    <string name="cd_watchlist">Список для просмотра</string>
     <string name="cd_favorite">Избранное</string>
     <string name="cd_toggle_watched">Включить статус \"Просмотрено\"</string>
     <string name="chapters_title">Главы</string>
