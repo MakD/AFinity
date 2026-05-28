@@ -48,6 +48,7 @@ constructor(
     private var allChannelsCache: List<AfinityChannel> = emptyList()
 
     private var refreshJob: Job? = null
+    private var isScreenVisible = false
 
     private val tabSwitchTrigger = MutableSharedFlow<LiveTvTab>(extraBufferCapacity = 1)
 
@@ -139,8 +140,12 @@ constructor(
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isCategoriesLoading = true) }
-                val channels = liveTvRepository.getChannels()
+                val channels = allChannelsCache.ifEmpty {
+                    liveTvRepository.getChannels().also { allChannelsCache = it }
+                }
+
                 val channelsMap = channels.associateBy { it.id }
+
                 val categorizedPrograms =
                     awaitAll(
                         async(Dispatchers.IO) {
@@ -300,10 +305,23 @@ constructor(
         loadEpgData()
     }
 
+    fun setScreenVisibility(isVisible: Boolean) {
+        isScreenVisible = isVisible
+        if (isVisible) {
+            if (allChannelsCache.isNotEmpty()) {
+                viewModelScope.launch { refreshCurrentTabData(_uiState.value.selectedTab) }
+            }
+            startPeriodicRefresh()
+        } else {
+            refreshJob?.cancel()
+            refreshJob = null
+        }
+    }
+
     private fun startPeriodicRefresh() {
         refreshJob?.cancel()
         refreshJob = viewModelScope.launch {
-            while (isActive) {
+            while (isActive && isScreenVisible) {
                 delay(60_000L)
                 refreshCurrentTabData(_uiState.value.selectedTab)
             }

@@ -192,6 +192,7 @@ constructor(
         audioStreamIndex: Int?,
         subtitleStreamIndex: Int?,
         playMethod: String,
+        liveStreamId: String?,
         canSeek: Boolean,
     ): Boolean {
         return withContext(Dispatchers.IO) {
@@ -204,7 +205,8 @@ constructor(
                     mediaSourceId = mediaSourceId,
                     audioStreamIndex = audioStreamIndex,
                     subtitleStreamIndex = subtitleStreamIndex,
-                    PlayMethod.fromName(playMethod),
+                    playMethod = PlayMethod.fromName(playMethod),
+                    liveStreamId = liveStreamId,
                     playSessionId = sessionId,
                     canSeek = canSeek,
                 )
@@ -229,6 +231,7 @@ constructor(
         audioStreamIndex: Int?,
         subtitleStreamIndex: Int?,
         playMethod: String,
+        liveStreamId: String?,
         repeatMode: String,
     ): Boolean {
         return withContext(Dispatchers.IO) {
@@ -242,6 +245,7 @@ constructor(
                     subtitleStreamIndex = subtitleStreamIndex,
                     volumeLevel = volumeLevel,
                     playMethod = PlayMethod.fromName(playMethod),
+                    liveStreamId = liveStreamId,
                     playSessionId = sessionId,
                     repeatMode = RepeatMode.fromName(repeatMode),
                     isPaused = isPaused,
@@ -278,6 +282,7 @@ constructor(
         sessionId: String,
         positionTicks: Long,
         mediaSourceId: String,
+        liveStreamId: String?,
         nextMediaType: String?,
         playlistItemId: String?,
     ): Boolean {
@@ -291,6 +296,7 @@ constructor(
                     mediaSourceId = mediaSourceId,
                     nextMediaType = nextMediaType,
                     positionTicks = positionTicks,
+                    liveStreamId = liveStreamId,
                     playSessionId = sessionId,
                 )
                 true

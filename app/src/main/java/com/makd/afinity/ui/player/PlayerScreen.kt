@@ -10,6 +10,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +37,7 @@ import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
 import androidx.media3.ui.SubtitleView
 import androidx.navigation.NavController
+import com.makd.afinity.data.models.livetv.LiveTvPlaybackInfo
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.models.player.SubtitlePreferences
@@ -68,6 +70,7 @@ fun PlayerScreen(
     shuffle: Boolean = false,
     isLiveChannel: Boolean = false,
     liveStreamUrl: String? = null,
+    livePlaybackInfo: LiveTvPlaybackInfo? = null,
     onBackPressed: () -> Unit,
     navController: NavController? = null,
     viewModel: PlayerViewModel = hiltViewModel(),
@@ -94,14 +97,17 @@ fun PlayerScreen(
     var showVersionPicker by remember { mutableStateOf(false) }
     LocalLifecycleOwner.current
 
-    LaunchedEffect(item.id, mediaSourceId, isLiveChannel, liveStreamUrl) {
-        if (isLiveChannel && liveStreamUrl != null) {
+    LaunchedEffect(item.id, mediaSourceId, isLiveChannel, liveStreamUrl, uiState.isPlayerReady) {
+        if (!uiState.isPlayerReady) return@LaunchedEffect
+
+        if (isLiveChannel && liveStreamUrl != null && livePlaybackInfo != null) {
             Timber.d("Loading live channel: ${item.name}")
             viewModel.handlePlayerEvent(
                 PlayerEvent.LoadLiveChannel(
                     channelId = item.id,
                     channelName = item.name,
                     streamUrl = liveStreamUrl,
+                    playbackInfo = livePlaybackInfo,
                 )
             )
         } else {
@@ -162,7 +168,12 @@ fun PlayerScreen(
     }
 
     Box(modifier = modifier.fillMaxSize().background(Color.Black)) {
-        if (castState.isConnected && castState.currentItem != null) {
+        if (!uiState.isPlayerReady) {
+            CircularProgressIndicator(
+                color = Color.White,
+                modifier = Modifier.align(Alignment.Center),
+            )
+        } else if (castState.isConnected && castState.currentItem != null) {
             CastRemoteControllerScreen(
                 castState = castState,
                 castManager = viewModel.castManager,

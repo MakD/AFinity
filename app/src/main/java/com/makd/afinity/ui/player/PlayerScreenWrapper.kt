@@ -42,6 +42,7 @@ fun PlayerScreenWrapper(
     val item by viewModel.item.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val fetchedStreamUrl by viewModel.liveStreamUrl.collectAsState()
+    val livePlaybackInfo by viewModel.livePlaybackInfo.collectAsState()
     val streamError by viewModel.streamError.collectAsState()
 
     val defaultChannelName = stringResource(R.string.channel_default_name)
@@ -104,6 +105,7 @@ fun PlayerScreenWrapper(
                 shuffle = shuffle,
                 isLiveChannel = isLiveChannel,
                 liveStreamUrl = effectiveStreamUrl,
+                livePlaybackInfo = livePlaybackInfo,
                 navController = navController,
                 onBackPressed = onBackPressed,
                 modifier = modifier,

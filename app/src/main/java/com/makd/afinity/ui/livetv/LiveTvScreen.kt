@@ -75,11 +75,16 @@ fun LiveTvScreen(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.refresh()
+                viewModel.setScreenVisibility(true)
+            } else if (event == Lifecycle.Event.ON_PAUSE) {
+                viewModel.setScreenVisibility(false)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            viewModel.setScreenVisibility(false)
+        }
     }
 
     LaunchedEffect(pagerState.currentPage) {

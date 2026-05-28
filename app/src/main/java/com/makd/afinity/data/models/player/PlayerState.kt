@@ -1,5 +1,6 @@
 package com.makd.afinity.data.models.player
 
+import com.makd.afinity.data.models.livetv.LiveTvPlaybackInfo
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySegment
 import java.util.UUID
@@ -67,6 +68,7 @@ sealed class PlayerEvent {
         val channelId: UUID,
         val channelName: String,
         val streamUrl: String,
+        val playbackInfo: LiveTvPlaybackInfo,
     ) : PlayerEvent()
 
     data class SkipSegment(val segment: AfinitySegment) : PlayerEvent()

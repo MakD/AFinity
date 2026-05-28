@@ -1,8 +1,8 @@
 package com.makd.afinity.data.repository.playback
 
-import java.util.UUID
 import org.jellyfin.sdk.model.api.DeviceProfile
 import org.jellyfin.sdk.model.api.PlaybackInfoResponse
+import java.util.UUID
 
 interface PlaybackRepository {
 
@@ -43,6 +43,7 @@ interface PlaybackRepository {
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
         playMethod: String = "DirectPlay",
+        liveStreamId: String? = null,
         canSeek: Boolean = true,
     ): Boolean
 
@@ -56,6 +57,7 @@ interface PlaybackRepository {
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
         playMethod: String = "DirectPlay",
+        liveStreamId: String? = null,
         repeatMode: String = "RepeatNone",
     ): Boolean
 
@@ -64,6 +66,7 @@ interface PlaybackRepository {
         sessionId: String,
         positionTicks: Long,
         mediaSourceId: String,
+        liveStreamId: String? = null,
         nextMediaType: String? = null,
         playlistItemId: String? = null,
     ): Boolean

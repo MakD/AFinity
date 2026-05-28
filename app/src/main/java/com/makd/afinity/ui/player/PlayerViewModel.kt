@@ -29,7 +29,9 @@ import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
+import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
 import com.makd.afinity.BuildConfig
@@ -39,6 +41,7 @@ import com.makd.afinity.cast.CastManager
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.ChannelType
+import com.makd.afinity.data.models.livetv.LiveTvPlaybackInfo
 import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityImages
@@ -111,6 +114,7 @@ constructor(
 
     private var hasStoppedPlayback = false
     private var currentSessionId: String? = null
+    private var currentLivePlaybackInfo: LiveTvPlaybackInfo? = null
     private val volumeManager: VolumeManager by lazy { VolumeManager(context) }
 
     private val _uiState = MutableStateFlow(PlayerUiState())
@@ -163,6 +167,7 @@ constructor(
             Timber.d("PlayerViewModel: starting async player init")
             initializePlayer()
             Timber.d("PlayerViewModel: player ready, starting observers and loops")
+            updateUiState { it.copy(isPlayerReady = true) }
             launch {
                 appDataRepository.isInitialDataLoaded.collect { isLoaded ->
                     if (!isLoaded) {
@@ -371,7 +376,6 @@ constructor(
         progressReportingJob = viewModelScope.launch {
             while (true) {
                 delay(5000L)
-                if (_uiState.value.isLiveChannel) continue
                 currentItem?.let { item ->
                     if (_uiState.value.isPlayingIntro) {
                         return@let
@@ -402,6 +406,7 @@ constructor(
                                     subStreams?.getOrNull(it)?.index
                                 } ?: -1
 
+                            val livePlaybackInfo = currentLivePlaybackInfo
                             playbackRepository.reportPlaybackProgress(
                                 itemId = item.id,
                                 sessionId = sessionId,
@@ -409,7 +414,8 @@ constructor(
                                 isPaused = isPaused,
                                 audioStreamIndex = jfAudioIndex,
                                 subtitleStreamIndex = jfSubIndex,
-                                playMethod = "DirectPlay",
+                                playMethod = livePlaybackInfo?.playMethod ?: "DirectPlay",
+                                liveStreamId = livePlaybackInfo?.liveStreamId,
                                 repeatMode = "RepeatNone",
                             )
                             Timber.d(
@@ -470,10 +476,11 @@ constructor(
                 .setBufferDurationsMs(
                     DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
                     Int.MAX_VALUE,
-                    DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
-                    DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS,
+                    500,
+                    1500,
                 )
                 .setTargetBufferBytes(safeExoRamBufferMb * 1024 * 1024)
+                .setPrioritizeTimeOverSizeThresholds(true)
                 .build()
 
         val userAgent = "AFinity/${BuildConfig.VERSION_NAME} (Android; ExoPlayer)"
@@ -782,7 +789,12 @@ constructor(
 
                 is PlayerEvent.LoadLiveChannel -> {
                     updateUiState { it.copy(isLoading = true, isLiveChannel = true) }
-                    loadLiveChannel(event.channelId, event.channelName, event.streamUrl)
+                    loadLiveChannel(
+                        event.channelId,
+                        event.channelName,
+                        event.streamUrl,
+                        event.playbackInfo,
+                    )
                 }
 
                 is PlayerEvent.SkipSegment -> {
@@ -1150,6 +1162,7 @@ constructor(
                 )
             }
             currentSessionId = playbackInfo?.playSessionId ?: UUID.randomUUID().toString()
+            currentLivePlaybackInfo = null
             Timber.d(
                 "Playback session ID: $currentSessionId (from server: ${playbackInfo?.playSessionId != null})"
             )
@@ -1335,9 +1348,16 @@ constructor(
         updateCurrentTrackSelections()
     }
 
-    private suspend fun loadLiveChannel(channelId: UUID, channelName: String, streamUrl: String) {
+    private suspend fun loadLiveChannel(
+        channelId: UUID,
+        channelName: String,
+        streamUrl: String,
+        playbackInfo: LiveTvPlaybackInfo,
+    ) {
         stopAudiobookshelfIfPlaying()
         mpvLiveAutoHideTriggered = false
+        currentLivePlaybackInfo = playbackInfo
+        currentSessionId = playbackInfo.playSessionId
 
         try {
             Timber.d("Loading live channel: $channelName ($channelId)")
@@ -1348,6 +1368,13 @@ constructor(
                 val mpv = player as MPVPlayer
                 mpv.setOption("user-agent", userAgent)
                 mpv.setOption("http-header-fields", "allow-cross-protocol-redirects: true")
+                mpv.setOption("profile", "low-latency")
+                mpv.setOption("cache", "yes")
+                mpv.setOption("cache-secs", "2")
+                mpv.setOption("demuxer-max-bytes", "32M")
+                mpv.setOption("demuxer-max-back-bytes", "16M")
+                mpv.setOption("demuxer-lavf-analyzeduration", "0.5")
+                mpv.setOption("demuxer-lavf-probesize", "32768")
 
                 withContext(Dispatchers.Main) {
                     val mediaItem =
@@ -1364,7 +1391,7 @@ constructor(
                 }
             } else if (player is ExoPlayer) {
                 val dataSourceFactory =
-                    androidx.media3.datasource.DefaultHttpDataSource.Factory()
+                    DefaultHttpDataSource.Factory()
                         .setUserAgent(userAgent)
                         .setAllowCrossProtocolRedirects(true)
                         .setKeepPostFor302Redirects(true)
@@ -1375,17 +1402,33 @@ constructor(
                     MediaItem.Builder()
                         .setMediaId(channelId.toString())
                         .setUri(streamUrl)
-                        .setMimeType(MimeTypes.APPLICATION_M3U8)
+                        .apply {
+                            if (playbackInfo.isHls) {
+                                setMimeType(MimeTypes.APPLICATION_M3U8)
+                            }
+                        }
                         .setMediaMetadata(MediaMetadata.Builder().setTitle(channelName).build())
+                        .setLiveConfiguration(
+                            MediaItem.LiveConfiguration.Builder()
+                                .setTargetOffsetMs(3000)
+                                .setMaxPlaybackSpeed(1.02f)
+                                .build()
+                        )
                         .build()
 
-                val hlsMediaSource =
-                    androidx.media3.exoplayer.hls.HlsMediaSource.Factory(dataSourceFactory)
-                        .setAllowChunklessPreparation(true)
-                        .createMediaSource(mediaItem)
-
                 withContext(Dispatchers.Main) {
-                    (player as ExoPlayer).setMediaSource(hlsMediaSource)
+                    if (playbackInfo.isHls) {
+                        val hlsMediaSource =
+                            HlsMediaSource.Factory(dataSourceFactory)
+                                .setAllowChunklessPreparation(true)
+                                .createMediaSource(mediaItem)
+                        (player as ExoPlayer).setMediaSource(hlsMediaSource)
+                    } else {
+                        val progressiveSource =
+                            ProgressiveMediaSource.Factory(dataSourceFactory)
+                                .createMediaSource(mediaItem)
+                        (player as ExoPlayer).setMediaSource(progressiveSource)
+                    }
                     player.prepare()
                     player.play()
                     showControls()
@@ -1403,6 +1446,24 @@ constructor(
                 )
 
             currentItem = channelItem
+            hasStoppedPlayback = false
+            playbackStateManager.trackPlaybackSession(
+                sessionId = playbackInfo.playSessionId,
+                itemId = channelId,
+                mediaSourceId = playbackInfo.mediaSourceId,
+                liveStreamId = playbackInfo.liveStreamId,
+            )
+            playbackStateManager.trackCurrentItem(channelId)
+            viewModelScope.launch(Dispatchers.IO) {
+                playbackRepository.reportPlaybackStart(
+                    itemId = channelId,
+                    sessionId = playbackInfo.playSessionId,
+                    mediaSourceId = playbackInfo.mediaSourceId,
+                    playMethod = playbackInfo.playMethod,
+                    liveStreamId = playbackInfo.liveStreamId,
+                    canSeek = false,
+                )
+            }
 
             updateUiState {
                 it.copy(isLoading = false, isLiveChannel = true, currentItem = channelItem)
@@ -2112,6 +2173,7 @@ constructor(
 
     fun stopPlayback() {
         if (hasStoppedPlayback) return
+        if (!::player.isInitialized) return
         hasStoppedPlayback = true
         progressReportingJob?.cancel()
 
@@ -2187,8 +2249,10 @@ constructor(
         skipButtonHideJob?.cancel()
         controlsHideJob?.cancel()
         statsPollingJob?.cancel()
-        player.removeListener(this)
-        player.release()
+        if (::player.isInitialized) {
+            player.removeListener(this)
+            player.release()
+        }
     }
 
     fun onPipModeChanged(isInPictureInPictureMode: Boolean) {
@@ -2206,6 +2270,7 @@ constructor(
     }
 
     data class PlayerUiState(
+        val isPlayerReady: Boolean = false,
         val isPlaying: Boolean = false,
         val isPaused: Boolean = false,
         val isBuffering: Boolean = false,

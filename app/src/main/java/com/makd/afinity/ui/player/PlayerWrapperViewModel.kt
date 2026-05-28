@@ -7,6 +7,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.ChannelType
+import com.makd.afinity.data.models.livetv.LiveTvPlaybackInfo
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.repository.DatabaseRepository
@@ -43,6 +44,9 @@ constructor(
     private val _liveStreamUrl = MutableStateFlow<String?>(null)
     val liveStreamUrl: StateFlow<String?> = _liveStreamUrl.asStateFlow()
 
+    private val _livePlaybackInfo = MutableStateFlow<LiveTvPlaybackInfo?>(null)
+    val livePlaybackInfo: StateFlow<LiveTvPlaybackInfo?> = _livePlaybackInfo.asStateFlow()
+
     private val _streamError = MutableStateFlow<String?>(null)
     val streamError: StateFlow<String?> = _streamError.asStateFlow()
 
@@ -73,8 +77,8 @@ constructor(
                     }
                 }
 
-                val streamUrlDeferred = viewModelScope.async {
-                    liveTvRepository.getChannelStreamUrl(channelId)
+                val playbackInfoDeferred = viewModelScope.async {
+                    liveTvRepository.getChannelPlaybackInfo(channelId)
                 }
 
                 val channel = channelDeferred.await()
@@ -85,10 +89,11 @@ constructor(
                     _item.value = channel
                 }
 
-                val streamUrl = streamUrlDeferred.await()
-                if (streamUrl != null) {
-                    Timber.d("PlayerWrapperViewModel: Got stream URL: $streamUrl")
-                    _liveStreamUrl.value = streamUrl
+                val playbackInfo = playbackInfoDeferred.await()
+                if (playbackInfo != null) {
+                    Timber.d("PlayerWrapperViewModel: Got stream URL: ${playbackInfo.streamUrl}")
+                    _livePlaybackInfo.value = playbackInfo
+                    _liveStreamUrl.value = playbackInfo.streamUrl
                 } else {
                     Timber.e("PlayerWrapperViewModel: Failed to get stream URL")
                     _streamError.value = context.getString(R.string.error_get_stream_url)

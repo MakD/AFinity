@@ -3,6 +3,7 @@ package com.makd.afinity.data.repository.livetv
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.AfinityProgram
 import com.makd.afinity.data.models.livetv.ChannelType
+import com.makd.afinity.data.models.livetv.LiveTvPlaybackInfo
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -24,6 +25,8 @@ interface LiveTvRepository {
     suspend fun getPrograms(
         channelIds: List<UUID>? = null,
         minStartDate: LocalDateTime? = null,
+        maxStartDate: LocalDateTime? = null,
+        minEndDate: LocalDateTime? = null,
         maxEndDate: LocalDateTime? = null,
         hasAired: Boolean? = null,
         isMovie: Boolean? = null,
@@ -40,6 +43,8 @@ interface LiveTvRepository {
         isAiring: Boolean = true,
         limit: Int = 20,
     ): List<AfinityProgram>
+
+    suspend fun getChannelPlaybackInfo(channelId: UUID): LiveTvPlaybackInfo?
 
     suspend fun getChannelStreamUrl(channelId: UUID): String?
 

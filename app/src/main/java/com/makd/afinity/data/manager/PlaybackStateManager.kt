@@ -39,15 +39,22 @@ constructor(
     @Volatile private var currentSessionId: String? = null
     @Volatile private var lastKnownPosition: Long = 0L
     @Volatile private var lastKnownMediaSourceId: String? = null
+    @Volatile private var lastKnownLiveStreamId: String? = null
 
     fun trackCurrentItem(itemId: UUID) {
         currentItemId = itemId
     }
 
-    fun trackPlaybackSession(sessionId: String, itemId: UUID, mediaSourceId: String) {
+    fun trackPlaybackSession(
+        sessionId: String,
+        itemId: UUID,
+        mediaSourceId: String,
+        liveStreamId: String? = null,
+    ) {
         currentSessionId = sessionId
         currentItemId = itemId
         lastKnownMediaSourceId = mediaSourceId
+        lastKnownLiveStreamId = liveStreamId
     }
 
     fun updatePlaybackPosition(positionMs: Long) {
@@ -57,6 +64,7 @@ constructor(
     fun notifyPlaybackStopped(itemId: UUID, positionMs: Long) {
         val capturedSessionId = currentSessionId
         val capturedMediaSourceId = lastKnownMediaSourceId
+        val capturedLiveStreamId = lastKnownLiveStreamId
         scope.launch {
             withContext(NonCancellable) {
                 val positionTicks = positionMs * 10000
@@ -68,6 +76,7 @@ constructor(
                         itemId,
                         capturedSessionId,
                         capturedMediaSourceId,
+                        capturedLiveStreamId,
                         positionTicks,
                     )
                     handlePlaybackStopped(itemId)
@@ -82,6 +91,7 @@ constructor(
         itemId: UUID,
         sessionId: String?,
         mediaSourceId: String?,
+        liveStreamId: String?,
         positionTicks: Long,
     ) {
         try {
@@ -92,6 +102,7 @@ constructor(
                         sessionId = sessionId,
                         positionTicks = positionTicks,
                         mediaSourceId = mediaSourceId,
+                        liveStreamId = liveStreamId,
                     )
 
                 if (success) {
@@ -142,6 +153,7 @@ constructor(
         currentSessionId = null
         lastKnownPosition = 0L
         lastKnownMediaSourceId = null
+        lastKnownLiveStreamId = null
     }
 }
 
