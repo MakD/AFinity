@@ -138,8 +138,8 @@
     <string name="chapters_title">Chapters</string>
     <string name="parts_title">Parts</string>
 
-    <string name="quality_dialog_title">Select Download Quality</string>
-    <string name="quality_dialog_subtitle">Choose which quality to download</string>
+    <string name="quality_dialog_title">Select Version</string>
+    <string name="quality_dialog_subtitle">Choose which version to download</string>
     <string name="action_download">Download</string>
 
     <string name="cd_selected">Selected</string>
