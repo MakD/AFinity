@@ -121,11 +121,14 @@ fun PlayerControls(
     val channelFmt = stringResource(R.string.audio_channel_fmt)
 
     val audioStreamOptions =
-        remember(currentItem, unknownLang, channelFmt) {
-            val streams =
+        remember(currentItem, uiState.currentMediaSourceId, unknownLang, channelFmt) {
+            val currentSource =
                 currentItem
                     ?.sources
-                    ?.firstOrNull()
+                    ?.firstOrNull { it.id == uiState.currentMediaSourceId }
+                    ?: currentItem?.sources?.firstOrNull()
+            val streams =
+                currentSource
                     ?.mediaStreams
                     ?.filter { it.type == MediaStreamType.AUDIO }
                     ?.mapIndexed { index, stream ->
