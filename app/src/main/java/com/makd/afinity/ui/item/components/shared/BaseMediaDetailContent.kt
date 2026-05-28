@@ -238,8 +238,8 @@ private fun RatingsAndReviews(
                         val dynamicSubtext =
                             when (sourceLower) {
                                 "popcorn" -> if (rawValue >= 60.0) "Hot" else "Stale"
-                                "metacritic",
-                                "metacriticuser" -> "/ 100"
+                                "metacritic" -> "/ 100"
+                                "metacriticuser" -> "/ 10"
                                 "letterboxd" -> "/ 5"
                                 "rogerebert" -> "/ 4"
                                 "myanimelist" -> "/ 10"
