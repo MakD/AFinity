@@ -46,6 +46,8 @@ fun BoxSetDetailContent(
         specialFeatures = emptyList(),
         containingBoxSets = emptyList(),
         tmdbReviews = emptyList(),
+        mdbRatings = emptyList(),
+        isRatingsFromCache = false,
         onSpecialFeatureClick = {},
         onBoxSetClick = {},
         onPersonClick = {},

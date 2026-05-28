@@ -30,6 +30,7 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.makd.afinity.R
 import com.makd.afinity.data.models.common.EpisodeLayout
+import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -51,6 +52,8 @@ fun SeasonDetailContent(
     specialFeatures: List<AfinityItem>,
     containingBoxSets: List<AfinityBoxSet>,
     tmdbReviews: List<TmdbReview> = emptyList(),
+    mdbRatings: List<MdbListRating> = emptyList(),
+    isRatingsFromCache: Boolean = false,
     onEpisodeClick: (AfinityEpisode) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     navController: NavController,
@@ -67,6 +70,8 @@ fun SeasonDetailContent(
         specialFeatures = specialFeatures,
         containingBoxSets = containingBoxSets,
         tmdbReviews = tmdbReviews,
+        mdbRatings = mdbRatings,
+        isRatingsFromCache = isRatingsFromCache,
         onSpecialFeatureClick = onSpecialFeatureClick,
         onBoxSetClick = { boxSet ->
             val route = Destination.createItemDetailRoute(boxSet.id.toString())

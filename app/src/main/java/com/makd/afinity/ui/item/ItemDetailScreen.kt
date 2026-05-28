@@ -491,12 +491,7 @@ private fun LandscapeItemDetailContent(
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         MediaLogoHeader(item = item, isLandscape = true)
 
-                        MetadataRow(
-                            item = item,
-                            boxSetItems = boxSetItems,
-                            mdbRatings = mdbRatings,
-                            isRatingsFromCache = isRatingsFromCache,
-                        )
+                        MetadataRow(item = item, boxSetItems = boxSetItems)
 
                         val mediaSourceOptions = rememberMediaSourceOptions(item)
                         val selectedMediaSource by
@@ -576,6 +571,8 @@ private fun LandscapeItemDetailContent(
                             specialFeatures = specialFeatures,
                             episodesPagingData = episodesPagingData,
                             tmdbReviews = tmdbReviews,
+                            mdbRatings = mdbRatings,
+                            isRatingsFromCache = isRatingsFromCache,
                             movieParts = movieParts,
                             onPlayClick = onPlayClick,
                             onBoxSetItemClick = onBoxSetItemClick,
@@ -639,12 +636,7 @@ private fun PortraitItemDetailContent(
             ) {
                 MediaLogoHeader(item = item, isLandscape = false)
 
-                MetadataRow(
-                    item = item,
-                    boxSetItems = boxSetItems,
-                    mdbRatings = mdbRatings,
-                    isRatingsFromCache = isRatingsFromCache,
-                )
+                MetadataRow(item = item, boxSetItems = boxSetItems)
 
                 val mediaSourceOptions = rememberMediaSourceOptions(item)
                 val selectedMediaSource by
@@ -705,6 +697,8 @@ private fun PortraitItemDetailContent(
                     specialFeatures = specialFeatures,
                     episodesPagingData = episodesPagingData,
                     tmdbReviews = tmdbReviews,
+                    mdbRatings = mdbRatings,
+                    isRatingsFromCache = isRatingsFromCache,
                     movieParts = movieParts,
                     onPlayClick = onPlayClick,
                     onBoxSetItemClick = onBoxSetItemClick,
@@ -776,6 +770,8 @@ private fun TypeSpecificContent(
     specialFeatures: List<AfinityItem>,
     episodesPagingData: Flow<PagingData<AfinityEpisode>>?,
     tmdbReviews: List<TmdbReview>,
+    mdbRatings: List<MdbListRating>,
+    isRatingsFromCache: Boolean,
     movieParts: List<AfinityItem>,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
@@ -794,6 +790,7 @@ private fun TypeSpecificContent(
                 specialFeatures = specialFeatures,
                 containingBoxSets = containingBoxSets,
                 tmdbReviews = tmdbReviews,
+                mdbRatings = mdbRatings,
                 onEpisodeClick = { ep ->
                     val mediaSourceId = ep.sources.firstOrNull()?.id ?: return@SeriesDetailContent
                     val startPos =
@@ -837,6 +834,7 @@ private fun TypeSpecificContent(
                 specialFeatures = specialFeatures,
                 containingBoxSets = containingBoxSets,
                 tmdbReviews = tmdbReviews,
+                mdbRatings = mdbRatings,
                 onEpisodeClick = { ep -> viewModel.selectEpisode(ep) },
                 onSpecialFeatureClick = onSpecialFeatureClick,
                 navController = navController,
@@ -850,6 +848,7 @@ private fun TypeSpecificContent(
                 specialFeatures = specialFeatures,
                 containingBoxSets = containingBoxSets,
                 tmdbReviews = tmdbReviews,
+                mdbRatings = mdbRatings,
                 parts = movieParts,
                 onSpecialFeatureClick = onSpecialFeatureClick,
                 onPlayClick = { movie, sel -> onPlayClick(movie, sel) },

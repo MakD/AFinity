@@ -751,6 +751,7 @@
     <string name="error_jellyseerr_logout_failed_fmt">Failed to logout from Seerr: %1$s</string>
 
     <string name="watchlist_title">Watchlist</string>
+    <string name="watchlist_empty">Your watchlist is empty</string>
     <string name="watchlist_empty_title">Nothing Watchlisted Yet</string>
     <string name="watchlists_empty_message">Items you add to watchlist will appear here</string>
     <string name="watchlist_section_header_fmt">%1$s (%2$d)</string>

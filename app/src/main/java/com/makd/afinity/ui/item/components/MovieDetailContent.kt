@@ -34,6 +34,7 @@ import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.extensions.thumbBlurHash
 import com.makd.afinity.data.models.extensions.thumbImageUrl
+import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityItem
@@ -55,6 +56,8 @@ fun MovieDetailContent(
     specialFeatures: List<AfinityItem>,
     containingBoxSets: List<AfinityBoxSet>,
     tmdbReviews: List<TmdbReview> = emptyList(),
+    mdbRatings: List<MdbListRating> = emptyList(),
+    isRatingsFromCache: Boolean = false,
     parts: List<AfinityItem> = emptyList(),
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     onPlayClick: (AfinityMovie, PlaybackSelection) -> Unit,
@@ -67,6 +70,8 @@ fun MovieDetailContent(
         specialFeatures = specialFeatures,
         containingBoxSets = containingBoxSets,
         tmdbReviews = tmdbReviews,
+        mdbRatings = mdbRatings,
+        isRatingsFromCache = isRatingsFromCache,
         onSpecialFeatureClick = onSpecialFeatureClick,
         onBoxSetClick = { boxSet ->
             val route = Destination.createItemDetailRoute(boxSet.id.toString())
@@ -79,11 +84,7 @@ fun MovieDetailContent(
         widthSizeClass = widthSizeClass,
     ) {
         if (parts.isNotEmpty()) {
-            PartsSection(
-                parts = parts,
-                onPartClick = onPartClick,
-                widthSizeClass = widthSizeClass,
-            )
+            PartsSection(parts = parts, onPartClick = onPartClick, widthSizeClass = widthSizeClass)
         }
 
         if (item.chapters.isNotEmpty()) {
@@ -164,7 +165,8 @@ private fun PartCard(
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         ) {
             Box(
-                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant)
+                modifier =
+                    Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 val imageUrl = part.images?.thumbImageUrl ?: part.images?.primaryImageUrl
                 AsyncImage(
@@ -184,7 +186,10 @@ private fun PartCard(
                 ) {
                     Text(
                         text = stringResource(R.string.meta_part_of_fmt, partNumber, totalParts),
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Medium
+                            ),
                         color = Color.White,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
                     )
@@ -198,7 +203,10 @@ private fun PartCard(
                     ) {
                         Text(
                             text = formatTime(part.runtimeTicks / 10000),
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                            style =
+                                MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
                             color = Color.White,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
                         )
@@ -238,7 +246,8 @@ internal fun ChaptersSection(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            itemsIndexed(chapters, key = { _, chapter -> chapter.startPosition }) { index, chapter ->
+            itemsIndexed(chapters, key = { _, chapter -> chapter.startPosition }) { index, chapter
+                ->
                 ChapterCard(
                     chapter = chapter,
                     index = index,
