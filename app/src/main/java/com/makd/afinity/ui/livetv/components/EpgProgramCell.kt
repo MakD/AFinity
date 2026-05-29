@@ -55,7 +55,7 @@ fun EpgProgramCell(
     val offsetDp = (offsetMinutes.toFloat() / 60f * hourWidth.value).dp
 
     val visibleDurationMinutes = Duration.between(visibleStart, visibleEnd).toMinutes()
-    val widthDp = (visibleDurationMinutes.toFloat() / 60f * hourWidth.value).dp.coerceAtLeast(50.dp)
+    val widthDp = (visibleDurationMinutes.toFloat() / 60f * hourWidth.value).dp
 
     Box(
         modifier =
@@ -77,42 +77,44 @@ fun EpgProgramCell(
                 .clickable(onClick = onClick)
                 .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (isLive) {
-                    LiveBadge()
-                    Spacer(modifier = Modifier.width(4.dp))
+        if (widthDp > 45.dp) {
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (isLive) {
+                        LiveBadge()
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                    Text(
+                        text = program.name,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = if (isLive) FontWeight.Bold else FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color =
+                            if (isLive) MaterialTheme.colorScheme.onPrimaryContainer
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
+
                 Text(
-                    text = program.name,
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = if (isLive) FontWeight.Bold else FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    text =
+                        stringResource(
+                            R.string.livetv_epg_time_range,
+                            programStart.format(timeFormatter),
+                            programEnd.format(timeFormatter),
+                        ),
+                    style = MaterialTheme.typography.labelSmall,
                     color =
-                        if (isLive) MaterialTheme.colorScheme.onPrimaryContainer
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        if (isLive) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    maxLines = 1,
                 )
-            }
 
-            Text(
-                text =
-                    stringResource(
-                        R.string.livetv_epg_time_range,
-                        programStart.format(timeFormatter),
-                        programEnd.format(timeFormatter),
-                    ),
-                style = MaterialTheme.typography.labelSmall,
-                color =
-                    if (isLive) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                maxLines = 1,
-            )
-
-            if (isLive) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Box(modifier = Modifier.fillMaxWidth().height(3.dp)) {
-                    ProgramProgressBar(program = program)
+                if (isLive) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Box(modifier = Modifier.fillMaxWidth().height(3.dp)) {
+                        ProgramProgressBar(program = program)
+                    }
                 }
             }
         }

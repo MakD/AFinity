@@ -237,7 +237,9 @@ constructor(
     fun loadEpgData() {
         viewModelScope.launch {
             try {
-                _uiState.update { it.copy(isEpgLoading = true) }
+                if (_uiState.value.epgPrograms.isEmpty()) {
+                    _uiState.update { it.copy(isEpgLoading = true) }
+                }
 
                 val channels =
                     if (allChannelsCache.isNotEmpty()) allChannelsCache

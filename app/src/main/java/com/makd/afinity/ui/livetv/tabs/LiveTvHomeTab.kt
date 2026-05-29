@@ -16,11 +16,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -32,8 +27,6 @@ import com.makd.afinity.ui.livetv.LiveTvUiState
 import com.makd.afinity.ui.livetv.components.ProgramCategoryRow
 import com.makd.afinity.ui.livetv.models.LiveTvCategory
 import com.makd.afinity.ui.livetv.models.ProgramWithChannel
-import kotlinx.coroutines.delay
-import java.time.LocalDateTime
 
 @Composable
 fun LiveTvHomeTab(
@@ -43,14 +36,7 @@ fun LiveTvHomeTab(
     widthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact,
 ) {
     val playerOffset = LocalPlayerOffset.current
-    var currentTime by remember { mutableStateOf(LocalDateTime.now()) }
 
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(30_000)
-            currentTime = LocalDateTime.now()
-        }
-    }
     if (uiState.isCategoriesLoading && uiState.categorizedPrograms.isEmpty()) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
@@ -109,7 +95,6 @@ fun LiveTvHomeTab(
             ProgramCategoryRow(
                 category = category,
                 programs = programs,
-                now = currentTime,
                 onProgramClick = onProgramClick,
                 widthSizeClass = widthSizeClass,
             )

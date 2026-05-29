@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.ui.livetv.models.LiveTvCategory
 import com.makd.afinity.ui.livetv.models.ProgramWithChannel
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
-import java.time.LocalDateTime
 
 @Composable
 fun ProgramCategoryRow(
@@ -26,7 +25,6 @@ fun ProgramCategoryRow(
     onProgramClick: (ProgramWithChannel) -> Unit,
     modifier: Modifier = Modifier,
     widthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact,
-    now: LocalDateTime,
 ) {
     if (programs.isEmpty()) return
     val cardWidth = widthSizeClass.landscapeWidth
@@ -46,12 +44,12 @@ fun ProgramCategoryRow(
         ) {
             items(
                 items = programs,
-                key = { "${it.program.id}_${it.channel.id}" }) { programWithChannel ->
+                key = { "${it.program.id}_${it.channel.id}" },
+            ) { programWithChannel ->
                 ProgramCard(
                     programWithChannel = programWithChannel,
                     onClick = { onProgramClick(programWithChannel) },
                     cardWidth = cardWidth,
-                    now = now,
                 )
             }
         }

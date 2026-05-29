@@ -17,14 +17,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -35,16 +33,13 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.livetv.models.ProgramWithChannel
-import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
 
 @Composable
 fun ProgramCard(
     programWithChannel: ProgramWithChannel,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    now: LocalDateTime = LocalDateTime.now(),
     cardWidth: Dp = 200.dp,
 ) {
     val timePattern = stringResource(R.string.livetv_time_pattern)
@@ -52,33 +47,12 @@ fun ProgramCard(
 
     val program = programWithChannel.program
     val channel = programWithChannel.channel
-
-    val isLive =
-        remember(program, now) {
-            program.startDate != null &&
-                    program.endDate != null &&
-                    now.isAfter(program.startDate) &&
-                    now.isBefore(program.endDate)
-        }
-
-    val progressPercentage =
-        remember(program, now) {
-            if (isLive && program.startDate != null && program.endDate != null) {
-                val totalSeconds =
-                    ChronoUnit.SECONDS.between(program.startDate, program.endDate).toFloat()
-                val elapsedSeconds = ChronoUnit.SECONDS.between(program.startDate, now).toFloat()
-                if (totalSeconds > 0) (elapsedSeconds / totalSeconds).coerceIn(0f, 1f) else 0f
-            } else {
-                0f
-            }
-        }
+    val isLive = program.isCurrentlyAiring()
 
     Column(modifier = modifier.width(cardWidth)) {
         Card(
             onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(16f / 9f),
+            modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f),
             colors =
                 CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -110,18 +84,13 @@ fun ProgramCard(
                 }
 
                 if (isLive) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp)
-                    ) { LiveBadge() }
+                    Box(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) { LiveBadge() }
                 }
 
                 if (showChannelOverlay) {
                     Box(
                         modifier =
-                            Modifier
-                                .align(Alignment.BottomStart)
+                            Modifier.align(Alignment.BottomStart)
                                 .padding(8.dp)
                                 .background(
                                     MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
@@ -139,16 +108,9 @@ fun ProgramCard(
                 }
 
                 if (isLive) {
-                    LinearProgressIndicator(
-                        progress = { progressPercentage },
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(4.dp)
-                                .align(Alignment.BottomCenter),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = Color.Black.copy(alpha = 0.3f),
-                    )
+                    Box(modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter)) {
+                        ProgramProgressBar(program = program)
+                    }
                 }
             }
         }

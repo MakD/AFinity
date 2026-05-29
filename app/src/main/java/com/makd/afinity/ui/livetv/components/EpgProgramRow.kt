@@ -38,7 +38,7 @@ fun EpgProgramRow(
                 .filter { program ->
                     val programStart = program.startDate ?: return@filter false
                     val programEnd = program.endDate ?: return@filter false
-                    programStart.isBefore(epgEndTime) && programEnd.isAfter(epgStartTime)
+                    programStart.isBefore(epgEndTime) && !programEnd.isBefore(epgStartTime)
                 }
                 .sortedBy { it.startDate }
 
