@@ -1,10 +1,11 @@
 [versions]
-aboutlibrariesCore = "14.2.0"
+aboutlibrariesCore = "14.2.1"
 activityCompose = "1.13.0"
 agp = "9.2.1"
 android-desugar-jdk-libs = "2.1.5"
 blurhash = "0.3.0"
 coilCompose = "3.4.0"
+commonmark = "0.28.0"
 composeBom = "2026.05.01"
 composePagerIndicator = "0.0.9"
 coreKtx = "1.18.0"
@@ -84,6 +85,7 @@ coil-gif = { group = "io.coil-kt.coil3", name = "coil-gif", version.ref = "coilC
 coil-network-cache-control = { group = "io.coil-kt.coil3", name = "coil-network-cache-control", version.ref = "coilCompose" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coilCompose" }
 coil-svg = { group = "io.coil-kt.coil3", name = "coil-svg", version.ref = "coilCompose" }
+commonmark = { module = "org.commonmark:commonmark", version.ref = "commonmark" }
 compose-pager-indicator = { module = "mx.platacard:compose-pager-indicator", version.ref = "composePagerIndicator" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }

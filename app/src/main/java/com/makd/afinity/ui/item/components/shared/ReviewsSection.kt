@@ -23,7 +23,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -37,18 +36,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import com.halilibo.richtext.commonmark.Markdown
-import com.halilibo.richtext.ui.material3.RichText
 import com.makd.afinity.R
 import com.makd.afinity.data.models.tmdb.TmdbReview
+import org.commonmark.parser.Parser
+import org.commonmark.renderer.html.HtmlRenderer
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -131,16 +126,12 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
                     }
                 }
 
-                ProvideTextStyle(
-                    value =
-                        MaterialTheme.typography.bodyLarge.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                ) {
-                    RichText(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)) {
-                        Markdown(content = selectedReview!!.content)
-                    }
-                }
+                Text(
+                    text = AnnotatedString.fromHtml(getHtml(selectedReview!!.content)),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
+                )
             }
         }
     }
@@ -208,7 +199,7 @@ private fun ReviewCard(review: TmdbReview, onReadMoreClick: () -> Unit) {
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = parseBasicMarkdown(review.content),
+                text = AnnotatedString.fromHtml(getHtml(review.content)),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 5,
@@ -234,83 +225,9 @@ private fun ReviewCard(review: TmdbReview, onReadMoreClick: () -> Unit) {
     }
 }
 
-@Composable
-fun parseBasicMarkdown(text: String): AnnotatedString {
-    val linkColor = MaterialTheme.colorScheme.primary
-    val quoteColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-
-    return remember(text) {
-        buildAnnotatedString {
-            var currentIndex = 0
-
-            val pattern =
-                Regex(
-                    "(?m)^>\\s+(.*)$|" +
-                        "(?m)^[-*]\\s+(.*)$|" +
-                        "\\*\\*(.*?)\\*\\*|" +
-                        "__(.*?)__|" +
-                        "\\*(.*?)\\*|" +
-                        "_(.*?)_|" +
-                        "\\[(.*?)\\]\\((.*?)\\)|" +
-                        "(https?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|])"
-                )
-
-            val matches = pattern.findAll(text)
-
-            for (match in matches) {
-                append(text.substring(currentIndex, match.range.first))
-
-                when {
-                    match.groups[1] != null -> {
-                        withStyle(SpanStyle(color = quoteColor, fontStyle = FontStyle.Italic)) {
-                            append("┃ ${match.groupValues[1]}")
-                        }
-                    }
-                    match.groups[2] != null -> {
-                        append("• ${match.groupValues[2]}")
-                    }
-                    match.groups[3] != null -> {
-                        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append(match.groupValues[3])
-                        }
-                    }
-                    match.groups[4] != null -> {
-                        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append(match.groupValues[4])
-                        }
-                    }
-                    match.groups[5] != null -> {
-                        withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                            append(match.groupValues[5])
-                        }
-                    }
-                    match.groups[6] != null -> {
-                        withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                            append(match.groupValues[6])
-                        }
-                    }
-                    match.groups[7] != null -> {
-                        withStyle(
-                            SpanStyle(
-                                color = linkColor,
-                                textDecoration = TextDecoration.Underline,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                        ) {
-                            append(match.groupValues[7])
-                        }
-                    }
-                    match.groups[9] != null -> {
-                        withStyle(
-                            SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)
-                        ) {
-                            append(match.groupValues[9])
-                        }
-                    }
-                }
-                currentIndex = match.range.last + 1
-            }
-            append(text.substring(currentIndex))
-        }
-    }
+private fun getHtml(text: String): String {
+    val parser = Parser.builder().build()
+    val document = parser.parse(text)
+    val renderer = HtmlRenderer.builder().build()
+    return renderer.render(document)
 }

@@ -272,6 +272,10 @@ private fun BadgeCard(sourceName: String, iconRes: Int, label: String) {
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
         modifier = Modifier.width(132.dp).height(96.dp),
     ) {
+        val parts = label.split(" ", limit = 2)
+        val prefixText = if (parts.size > 1) parts[0].uppercase() else ""
+        val emphasisText = if (parts.size > 1) parts[1].uppercase() else label.uppercase()
+
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween,
@@ -297,38 +301,32 @@ private fun BadgeCard(sourceName: String, iconRes: Int, label: String) {
                 )
             }
 
-            val parts = label.split(" ", limit = 2)
-            val prefixText = if (parts.size > 1) parts[0].uppercase() else ""
-            val emphasisText = if (parts.size > 1) parts[1].uppercase() else label.uppercase()
-
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                if (prefixText.isNotEmpty()) {
-                    Surface(
-                        shape = RoundedCornerShape(4.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f),
-                    ) {
-                        Text(
-                            text = prefixText,
-                            style =
-                                MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = 8.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    letterSpacing = 1.sp,
-                                ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        )
-                    }
+            if (prefixText.isNotEmpty()) {
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f),
+                ) {
+                    Text(
+                        text = prefixText,
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 1.sp,
+                            ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    )
                 }
-                Text(
-                    text = emphasisText,
-                    style =
-                        MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
-                    color = MaterialTheme.colorScheme.onBackground,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
             }
+
+            Text(
+                text = emphasisText,
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
