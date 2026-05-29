@@ -36,12 +36,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.fromHtml
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.tmdb.TmdbReview
+import org.commonmark.ext.autolink.AutolinkExtension
 import org.commonmark.parser.Parser
 import org.commonmark.renderer.html.HtmlRenderer
 
@@ -52,6 +56,15 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
 
     var selectedReview by remember { mutableStateOf<TmdbReview?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val linkStyles =
+        TextLinkStyles(
+            style =
+                SpanStyle(
+                    color = MaterialTheme.colorScheme.primary,
+                    textDecoration = TextDecoration.Underline,
+                    fontWeight = FontWeight.SemiBold,
+                )
+        )
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
@@ -65,12 +78,16 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(reviews.take(10), key = { it.id }) { review ->
-                ReviewCard(review = review, onReadMoreClick = { selectedReview = review })
+                ReviewCard(
+                    review = review,
+                    linkStyles = linkStyles,
+                    onReadMoreClick = { selectedReview = review },
+                )
             }
         }
     }
 
-    if (selectedReview != null) {
+    selectedReview?.let { review ->
         ModalBottomSheet(
             onDismissRequest = { selectedReview = null },
             sheetState = sheetState,
@@ -89,14 +106,14 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "Review by ${selectedReview!!.author}",
+                        text = "Review by ${review.author}",
                         style =
                             MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f),
                     )
 
-                    selectedReview!!.author_details?.rating?.let { rating ->
+                    review.author_details?.rating?.let { rating ->
                         val percentage = (rating * 10).toInt()
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -127,7 +144,8 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
                 }
 
                 Text(
-                    text = AnnotatedString.fromHtml(getHtml(selectedReview!!.content)),
+                    text =
+                        AnnotatedString.fromHtml(getHtml(review.content), linkStyles = linkStyles),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
@@ -138,7 +156,11 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun ReviewCard(review: TmdbReview, onReadMoreClick: () -> Unit) {
+private fun ReviewCard(
+    review: TmdbReview,
+    linkStyles: TextLinkStyles,
+    onReadMoreClick: () -> Unit,
+) {
     var isExpandable by remember { mutableStateOf(false) }
 
     Card(
@@ -199,7 +221,7 @@ private fun ReviewCard(review: TmdbReview, onReadMoreClick: () -> Unit) {
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = AnnotatedString.fromHtml(getHtml(review.content)),
+                text = AnnotatedString.fromHtml(getHtml(review.content), linkStyles = linkStyles),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 5,
@@ -226,8 +248,10 @@ private fun ReviewCard(review: TmdbReview, onReadMoreClick: () -> Unit) {
 }
 
 private fun getHtml(text: String): String {
-    val parser = Parser.builder().build()
+    val extensions = listOf(AutolinkExtension.create())
+    val parser = Parser.builder().extensions(extensions).build()
     val document = parser.parse(text)
-    val renderer = HtmlRenderer.builder().build()
+    val renderer = HtmlRenderer.builder().extensions(extensions).build()
+
     return renderer.render(document)
 }

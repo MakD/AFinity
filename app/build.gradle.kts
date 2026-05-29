@@ -160,6 +160,7 @@ dependencies {
     implementation(libs.coil.svg)
     implementation(libs.coil.gif)
     implementation(libs.commonmark)
+    implementation(libs.commonmark.ext.autolink)
     implementation(libs.jellyfin.core)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.libmpv)
