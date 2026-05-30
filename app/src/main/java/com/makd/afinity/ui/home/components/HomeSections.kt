@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -126,12 +127,15 @@ fun OptimizedLatestMoviesSection(
         val uniqueItems = items.distinctBy { it.id }
         val firstItemId = uniqueItems.firstOrNull()?.id
         val scrollState = rememberLazyListState()
+        val lastKnownFirstItemId = remember { mutableStateOf<Any?>(null) }
 
         LaunchedEffect(firstItemId) {
-            if (uniqueItems.isNotEmpty()) {
-                if (scrollState.firstVisibleItemIndex == 0 && !scrollState.isScrollInProgress) {
-                    scrollState.scrollToItem(0)
-                }
+            val previous = lastKnownFirstItemId.value
+            if (firstItemId != null && previous != null && firstItemId != previous) {
+                scrollState.scrollToItem(0)
+            }
+            if (firstItemId != null) {
+                lastKnownFirstItemId.value = firstItemId
             }
         }
 
@@ -281,12 +285,15 @@ fun OptimizedLatestTvSeriesSection(
         val uniqueItems = items.distinctBy { it.id }
         val firstItemId = uniqueItems.firstOrNull()?.id
         val scrollState = rememberLazyListState()
+        val lastKnownFirstItemId = remember { mutableStateOf<Any?>(null) }
 
         LaunchedEffect(firstItemId) {
-            if (uniqueItems.isNotEmpty()) {
-                if (scrollState.firstVisibleItemIndex == 0 && !scrollState.isScrollInProgress) {
-                    scrollState.scrollToItem(0)
-                }
+            val previous = lastKnownFirstItemId.value
+            if (firstItemId != null && previous != null && firstItemId != previous) {
+                scrollState.scrollToItem(0)
+            }
+            if (firstItemId != null) {
+                lastKnownFirstItemId.value = firstItemId
             }
         }
 
