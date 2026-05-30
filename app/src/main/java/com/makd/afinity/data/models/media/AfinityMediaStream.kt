@@ -21,6 +21,8 @@ data class AfinityMediaStream(
     val index: Int,
     val channels: Int?,
     val isDefault: Boolean,
+    val isForced: Boolean = false,
+    val isHearingImpaired: Boolean = false,
 )
 
 fun MediaStream.toAfinityMediaStream(baseUrl: String): AfinityMediaStream {
@@ -45,6 +47,7 @@ fun MediaStream.toAfinityMediaStream(baseUrl: String): AfinityMediaStream {
         index = index,
         channels = channels,
         isDefault = isDefault,
+        isForced = isForced,
     )
 }
 

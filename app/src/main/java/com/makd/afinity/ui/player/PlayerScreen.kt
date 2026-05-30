@@ -254,8 +254,10 @@ fun PlayerScreen(
                                         useController = false
                                         subtitleView?.visibility = android.view.View.GONE
                                         this.player = player
-                                        viewModel.setPlayerView(this)
                                     }
+                                },
+                                update = { view ->
+                                    view.resizeMode = uiState.videoZoomMode.toExoPlayerResizeMode()
                                 },
                                 modifier = Modifier.fillMaxSize(),
                             )

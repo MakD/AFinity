@@ -33,7 +33,6 @@ import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
-import androidx.media3.ui.PlayerView
 import com.makd.afinity.BuildConfig
 import com.makd.afinity.R
 import com.makd.afinity.cast.CastEvent
@@ -146,8 +145,6 @@ constructor(
             override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, Bitmap>?) = size > 3
         }
     private var trickplayFetchJob: Job? = null
-
-    private var playerView: PlayerView? = null
     private var currentZoomMode: VideoZoomMode = VideoZoomMode.FIT
     private var isVideoPortrait: Boolean = false
     private var isOrientationOverridden: Boolean = false
@@ -454,7 +451,6 @@ constructor(
                 .build()
 
         val preferredAudioLang = preferencesRepository.getPreferredAudioLanguage()
-        val preferredSubLang = preferencesRepository.getPreferredSubtitleLanguage()
 
         val trackSelector = DefaultTrackSelector(context)
         trackSelector.setParameters(
@@ -462,9 +458,7 @@ constructor(
                 if (preferredAudioLang.isNotEmpty()) {
                     setPreferredAudioLanguage(preferredAudioLang)
                 }
-                if (preferredSubLang.isNotEmpty()) {
-                    setPreferredTextLanguage(preferredSubLang)
-                }
+                setIgnoredTextSelectionFlags(C.SELECTION_FLAG_DEFAULT)
             }
         )
 
@@ -547,15 +541,8 @@ constructor(
         val ao = preferencesRepository.getMpvAudioOutput()
         val subs = preferencesRepository.getSubtitlePreferences()
         val audioLang = preferencesRepository.getPreferredAudioLanguage()
-        val subLang = preferencesRepository.getPreferredSubtitleLanguage()
-        val (
-            mpvHwDec,
-            mpvVideoOutput,
-            mpvAudioOutput,
-            subtitlePrefs,
-            preferredAudioLang,
-            preferredSubLang) =
-            MpvPrefsSnapshot(hwDec.value, vo.value, ao.value, subs, audioLang, subLang)
+        val (mpvHwDec, mpvVideoOutput, mpvAudioOutput, subtitlePrefs, preferredAudioLang) =
+            MpvPrefsSnapshot(hwDec.value, vo.value, ao.value, subs, audioLang)
 
         mpvVideoOutputValue = mpvVideoOutput
 
@@ -628,9 +615,8 @@ constructor(
         if (preferredAudioLang.isNotEmpty()) {
             mpvPlayer.setOption("alang", preferredAudioLang)
         }
-        if (preferredSubLang.isNotEmpty()) {
-            mpvPlayer.setOption("slang", preferredSubLang)
-        }
+        mpvPlayer.setOption("subs-with-matching-audio", "yes")
+        mpvPlayer.setOption("subs-fallback", "no")
 
         return mpvPlayer
     }
@@ -990,14 +976,8 @@ constructor(
     }
 
     private fun applyZoomMode(mode: VideoZoomMode, saveAsCurrent: Boolean = true) {
-        when (player) {
-            is ExoPlayer -> {
-                playerView?.resizeMode = mode.toExoPlayerResizeMode()
-            }
-
-            is MPVPlayer -> {
-                applyMPVZoomMode(mode)
-            }
+        if (player is MPVPlayer) {
+            applyMPVZoomMode(mode)
         }
 
         if (saveAsCurrent) {
@@ -1037,13 +1017,6 @@ constructor(
         val effectivePortrait = if (isOrientationOverridden) !isVideoPortrait else isVideoPortrait
         updateUiState { it.copy(resolvedOrientation = computeOrientation(effectivePortrait)) }
     }
-
-    fun setPlayerView(view: PlayerView) {
-        playerView = view
-        applyZoomMode(currentZoomMode)
-    }
-
-    fun getPlayerView(): PlayerView? = playerView
 
     private fun stopAudiobookshelfIfPlaying() {
         if (audiobookshelfPlayer.isPlaying()) {
@@ -1129,28 +1102,88 @@ constructor(
             val serverSavedAudioIndex = negotiatedSource?.defaultAudioStreamIndex
             val serverSavedSubtitleIndex = negotiatedSource?.defaultSubtitleStreamIndex
             val audioStreams = mediaSource.mediaStreams.filter { it.type == MediaStreamType.AUDIO }
-            val targetAudioStreamIndex =
-                audioStreamIndex
-                    ?: serverSavedAudioIndex
-                    ?: audioStreams.find { it.isDefault }?.index
-            val audioPosition = targetAudioStreamIndex?.let { idx ->
-                audioStreams.indexOfFirst { it.index == idx }.takeIf { it >= 0 }
-            }
-
             val subtitleStreams =
                 mediaSource.mediaStreams.filter { it.type == MediaStreamType.SUBTITLE }
-            val targetSubtitleStreamIndex =
-                subtitleStreamIndex
-                    ?: serverSavedSubtitleIndex
-                    ?: subtitleStreams.find { it.isDefault }?.index
-                    ?: -1
+
+            val preferredSubLang = preferencesRepository.getPreferredSubtitleLanguage()
+            val preferredAudioLang = preferencesRepository.getPreferredAudioLanguage()
+
+            val audioPosition =
+                if (audioStreamIndex != null) {
+                    audioStreams.indexOfFirst { it.index == audioStreamIndex }.takeIf { it >= 0 }
+                } else if (serverSavedAudioIndex != null) {
+                    audioStreams
+                        .indexOfFirst { it.index == serverSavedAudioIndex }
+                        .takeIf { it >= 0 }
+                } else {
+                    null
+                }
+
+            fun iso3(code: String) =
+                Locale.forLanguageTag(code).isO3Language.ifEmpty { code }.lowercase()
+            val resolvedAudioLang =
+                audioPosition?.let { audioStreams.getOrNull(it)?.language }
+                    ?: serverSavedAudioIndex?.let { idx ->
+                        audioStreams.find { it.index == idx }?.language
+                    }
+                    ?: preferredAudioLang.ifEmpty { null }
+                    ?: audioStreams.firstOrNull()?.language
+                    ?: ""
 
             val subtitlePosition =
-                if (targetSubtitleStreamIndex < 0) -1
-                else subtitleStreams.indexOfFirst { it.index == targetSubtitleStreamIndex }
+                if (subtitleStreamIndex != null) {
+                    if (subtitleStreamIndex < 0) -1
+                    else
+                        subtitleStreams
+                            .indexOfFirst { it.index == subtitleStreamIndex }
+                            .takeIf { it >= 0 } ?: -1
+                } else if (preferredSubLang.isNotEmpty()) {
+                    val normalizedPref = iso3(preferredSubLang)
+                    subtitleStreams
+                        .indexOfFirst { stream ->
+                            stream.language.equals(preferredSubLang, ignoreCase = true) ||
+                                iso3(stream.language) == normalizedPref
+                        }
+                        .takeIf { it >= 0 }
+                } else {
+                    val audioLangKnown =
+                        resolvedAudioLang.isNotEmpty() && resolvedAudioLang != "und"
+                    val normalizedAudioLang = if (audioLangKnown) iso3(resolvedAudioLang) else ""
+
+                    val forcedLangMatch =
+                        if (audioLangKnown) {
+                            subtitleStreams
+                                .indexOfFirst { stream ->
+                                    stream.isForced &&
+                                        (stream.language.equals(
+                                            resolvedAudioLang,
+                                            ignoreCase = true,
+                                        ) || iso3(stream.language) == normalizedAudioLang)
+                                }
+                                .takeIf { it >= 0 }
+                        } else {
+                            null
+                        }
+
+                    val forcedAny = subtitleStreams.indexOfFirst { it.isForced }.takeIf { it >= 0 }
+
+                    forcedLangMatch
+                        ?: forcedAny
+                        ?: if (serverSavedSubtitleIndex != null && serverSavedSubtitleIndex >= 0) {
+                            subtitleStreams
+                                .indexOfFirst { it.index == serverSavedSubtitleIndex }
+                                .takeIf { it >= 0 }
+                        } else {
+                            null
+                        }
+                }
 
             pendingAudioTrackPosition = audioPosition
             pendingSubtitleTrackPosition = subtitlePosition
+            val targetAudioStreamIndex = audioPosition?.let { audioStreams.getOrNull(it)?.index }
+            val targetSubtitleStreamIndex =
+                if (subtitlePosition == -1) -1
+                else subtitlePosition?.let { subtitleStreams.getOrNull(it)?.index }
 
             updateUiState {
                 it.copy(
@@ -1224,8 +1257,10 @@ constructor(
                                             else -> MimeTypes.TEXT_UNKNOWN
                                         }
 
-                                    val language =
+                                    val rawCode =
                                         subtitleFile.nameWithoutExtension.split("_").firstOrNull()
+                                    val language =
+                                        rawCode.toLocalizedLanguageName()
                                             ?: context.getString(R.string.track_unknown)
 
                                     MediaItem.SubtitleConfiguration.Builder(
@@ -1272,14 +1307,37 @@ constructor(
                                     val subtitleUrl =
                                         "${apiClient.baseUrl}/Videos/${fullItem.id}/${actualMediaSourceId}/Subtitles/${stream.index}/Stream.$extension"
                                     MediaItem.SubtitleConfiguration.Builder(subtitleUrl.toUri())
-                                        .setLabel(
-                                            stream.displayTitle
-                                                ?: stream.language
-                                                ?: context.getString(
-                                                    R.string.track_number_fmt,
-                                                    stream.index,
+                                    val langCode = stream.language ?: "eng"
+                                    val localizedLang = langCode.toLocalizedLanguageName()
+                                    val finalLabel =
+                                        if (
+                                            !stream.displayTitle.isNullOrBlank() &&
+                                                !stream.displayTitle.equals(
+                                                    langCode,
+                                                    ignoreCase = true,
                                                 )
-                                        )
+                                        ) {
+                                            if (
+                                                localizedLang != null &&
+                                                    !stream.displayTitle.contains(
+                                                        localizedLang,
+                                                        ignoreCase = true,
+                                                    )
+                                            ) {
+                                                "$localizedLang - ${stream.displayTitle}"
+                                            } else {
+                                                stream.displayTitle
+                                            }
+                                        } else {
+                                            localizedLang
+                                        }
+                                            ?: context.getString(
+                                                R.string.track_number_fmt,
+                                                stream.index,
+                                            )
+
+                                    MediaItem.SubtitleConfiguration.Builder(subtitleUrl.toUri())
+                                        .setLabel(finalLabel)
                                         .setMimeType(mimeType)
                                         .setLanguage(stream.language ?: "eng")
                                         .build()
@@ -1515,20 +1573,15 @@ constructor(
     override fun onTracksChanged(tracks: Tracks) {
         super.onTracksChanged(tracks)
         var consumedPending = false
-        Timber.d(
-            "TRACK_DEBUG: onTracksChanged fired. Pending Audio=$pendingAudioTrackPosition, Pending Sub=$pendingSubtitleTrackPosition"
-        )
 
         pendingAudioTrackPosition?.let { pos ->
             pendingAudioTrackPosition = null
-            Timber.d("TRACK_DEBUG: Attempting to switch audio track to position $pos")
             switchToTrack(C.TRACK_TYPE_AUDIO, pos)
             consumedPending = true
         }
 
         pendingSubtitleTrackPosition?.let { pos ->
             pendingSubtitleTrackPosition = null
-            Timber.d("TRACK_DEBUG: Attempting to switch subtitle track to position $pos")
             switchToTrack(C.TRACK_TYPE_TEXT, pos)
             consumedPending = true
         }
@@ -1545,6 +1598,13 @@ constructor(
                     .buildUpon()
                     .clearOverridesOfType(trackType)
                     .setTrackTypeDisabled(trackType, true)
+                    .apply {
+                        if (trackType == C.TRACK_TYPE_TEXT) {
+                            setIgnoredTextSelectionFlags(
+                                C.SELECTION_FLAG_FORCED or C.SELECTION_FLAG_DEFAULT
+                            )
+                        }
+                    }
                     .build()
         } else {
             val tracksGroups =
@@ -1558,6 +1618,11 @@ constructor(
                             TrackSelectionOverride(tracksGroups[index].mediaTrackGroup, 0)
                         )
                         .setTrackTypeDisabled(trackType, false)
+                        .apply {
+                            if (trackType == C.TRACK_TYPE_TEXT) {
+                                setIgnoredTextSelectionFlags(0)
+                            }
+                        }
                         .build()
             }
         }
@@ -2342,5 +2407,4 @@ private data class MpvPrefsSnapshot(
     val audioOutput: String,
     val subtitlePrefs: SubtitlePreferences,
     val preferredAudioLanguage: String,
-    val preferredSubtitleLanguage: String,
 )

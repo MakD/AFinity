@@ -75,6 +75,7 @@ import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.livetv.components.LiveBadge
 import com.makd.afinity.ui.player.PlayerViewModel
+import com.makd.afinity.ui.player.toLocalizedLanguageName
 import org.jellyfin.sdk.model.api.MediaStreamType
 import java.util.Locale
 import kotlin.math.abs
@@ -118,28 +119,31 @@ fun PlayerControls(
     val currentItem = uiState.currentItem
 
     val unknownLang = stringResource(R.string.track_unknown)
-    val channelFmt = stringResource(R.string.audio_channel_fmt)
 
     val audioStreamOptions =
-        remember(currentItem, uiState.currentMediaSourceId, unknownLang, channelFmt) {
+        remember(currentItem, uiState.currentMediaSourceId, unknownLang) {
             val currentSource =
-                currentItem
-                    ?.sources
-                    ?.firstOrNull { it.id == uiState.currentMediaSourceId }
+                currentItem?.sources?.firstOrNull { it.id == uiState.currentMediaSourceId }
                     ?: currentItem?.sources?.firstOrNull()
+
             val streams =
                 currentSource
                     ?.mediaStreams
                     ?.filter { it.type == MediaStreamType.AUDIO }
                     ?.mapIndexed { index, stream ->
-                        val displayName = buildString {
-                            append(stream.language.uppercase())
-                            append(" • ${stream.codec.uppercase()}")
-                            if ((stream.channels ?: 0) > 0) {
-                                append(String.format(channelFmt, stream.channels))
+                        val localizedLang =
+                            if (stream.language.isNotEmpty() && stream.language != "und") {
+                                stream.language.toLocalizedLanguageName()
+                                    ?: stream.language.uppercase()
+                            } else {
+                                unknownLang
                             }
+                        val channelStr = formatAudioChannels(stream.channels)
+                        val displayName = buildString {
+                            append(localizedLang)
+                            if (stream.codec.isNotBlank()) append(" • ${stream.codec.uppercase()}")
+                            if (channelStr != null) append(" $channelStr")
                         }
-
                         AudioStreamOption(
                             stream = stream,
                             displayName = displayName,
@@ -147,14 +151,27 @@ fun PlayerControls(
                             position = index,
                         )
                     } ?: emptyList()
-            streams
+            assertAudioOptions(streams)
         }
 
     val noneText = stringResource(R.string.track_none)
     val trackFmt = stringResource(R.string.track_number_fmt)
 
     val subtitleStreamOptions =
-        remember(currentItem, player.currentTracks, noneText, trackFmt) {
+        remember(
+            currentItem,
+            uiState.currentMediaSourceId,
+            player.currentTracks,
+            noneText,
+            trackFmt,
+        ) {
+            val currentSource =
+                currentItem?.sources?.firstOrNull { it.id == uiState.currentMediaSourceId }
+                    ?: currentItem?.sources?.firstOrNull()
+            val serverSubtitleStreams =
+                currentSource?.mediaStreams?.filter { it.type == MediaStreamType.SUBTITLE }
+                    ?: emptyList()
+
             val options = mutableListOf<SubtitleStreamOption>()
             options.add(
                 SubtitleStreamOption(
@@ -168,18 +185,38 @@ fun PlayerControls(
             player.currentTracks.groups
                 .filter { it.type == C.TRACK_TYPE_TEXT && it.isSupported }
                 .forEachIndexed { index, trackGroup ->
+                    val serverStream = serverSubtitleStreams.getOrNull(index)
                     val format = trackGroup.mediaTrackGroup.getFormat(0)
+
                     val displayName =
-                        listOfNotNull(
-                                format.label
-                                    ?: format.language
-                                    ?: String.format(trackFmt, index + 1),
-                                format.codecs?.let { formatSubtitleCodec(it) },
-                            )
-                            .joinToString(" - ")
+                        if (serverStream != null) {
+                            val langCode =
+                                serverStream.language.ifEmpty { format.language.orEmpty() }
+                            val localizedLang =
+                                if (langCode.isNotEmpty() && langCode != "und") {
+                                    langCode.toLocalizedLanguageName() ?: langCode.uppercase()
+                                } else {
+                                    String.format(trackFmt, index + 1)
+                                }
+                            buildString {
+                                append(localizedLang)
+                                if (serverStream.isForced) append(" [Forced]")
+                                if (serverStream.isHearingImpaired) append(" [SDH]")
+                                if (serverStream.isExternal) append(" [External]")
+                            }
+                        } else {
+                            val langCode = format.language.orEmpty()
+                            format.label?.takeIf { it.isNotBlank() }
+                                ?: if (langCode.isNotEmpty() && langCode != "und") {
+                                    langCode.toLocalizedLanguageName() ?: langCode.uppercase()
+                                } else {
+                                    String.format(trackFmt, index + 1)
+                                }
+                        }
+
                     options.add(
                         SubtitleStreamOption(
-                            stream = null,
+                            stream = serverStream,
                             displayName = displayName,
                             isDefault = trackGroup.isSelected,
                             index = index,
@@ -187,8 +224,9 @@ fun PlayerControls(
                         )
                     )
                 }
-            options
+            assertSubtitleOptions(options)
         }
+
     Box(modifier = Modifier.fillMaxSize()) {
         AnimatedVisibility(
             visible =
@@ -477,8 +515,12 @@ fun PlayerControls(
                                             .padding(vertical = 6.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
+                                    val currentAudioIndex =
+                                        uiState.audioStreamIndex
+                                            ?: audioStreamOptions.find { it.isDefault }?.position
+                                            ?: 0
                                     RadioButton(
-                                        selected = uiState.audioStreamIndex == option.position,
+                                        selected = currentAudioIndex == option.position,
                                         onClick = {
                                             onPlayerEvent(
                                                 PlayerEvent.SwitchToTrack(
@@ -567,8 +609,9 @@ fun PlayerControls(
                                             .padding(vertical = 6.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
+                                    val currentSubIndex = uiState.subtitleStreamIndex ?: -1
                                     RadioButton(
-                                        selected = uiState.subtitleStreamIndex == option.index,
+                                        selected = currentSubIndex == option.index,
                                         onClick = {
                                             onPlayerEvent(
                                                 PlayerEvent.SwitchToTrack(
@@ -1146,5 +1189,39 @@ private fun formatSubtitleCodec(codec: String): String {
         "microdvd" -> "MicroDVD"
         "subviewer" -> "SubViewer"
         else -> codec.uppercase()
+    }
+}
+
+private fun formatAudioChannels(channels: Int?): String? =
+    when (channels) {
+        1 -> "Mono"
+        2 -> "Stereo"
+        6 -> "5.1"
+        8 -> "7.1"
+        else -> channels?.let { "${it}ch" }
+    }
+
+private val parentheticalRegex = Regex("""\(([^)]+)\)""")
+
+private fun extractRegionalHint(displayTitle: String?): String? = displayTitle?.let {
+    parentheticalRegex.find(it)?.groupValues?.get(1)?.trim()
+}
+
+private fun assertAudioOptions(options: List<AudioStreamOption>): List<AudioStreamOption> {
+    val duplicates = options.groupBy { it.displayName }.filter { it.value.size > 1 }.keys
+    return options.map { opt ->
+        if (opt.displayName !in duplicates) return@map opt
+        val hint = extractRegionalHint(opt.stream.displayTitle) ?: return@map opt
+        opt.copy(displayName = "${opt.displayName} ($hint)")
+    }
+}
+
+private fun assertSubtitleOptions(options: List<SubtitleStreamOption>): List<SubtitleStreamOption> {
+    val duplicates =
+        options.filter { !it.isNone }.groupBy { it.displayName }.filter { it.value.size > 1 }.keys
+    return options.map { opt ->
+        if (opt.isNone || opt.displayName !in duplicates) return@map opt
+        val hint = extractRegionalHint(opt.stream?.displayTitle) ?: return@map opt
+        opt.copy(displayName = "${opt.displayName} ($hint)")
     }
 }

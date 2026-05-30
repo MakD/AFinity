@@ -198,9 +198,9 @@ class PlayerActivity : ComponentActivity() {
     }
 
     private fun buildPipParams(): PictureInPictureParams {
-        val playerView = viewModel.getPlayerView()
-        val viewWidth = playerView?.width ?: resources.displayMetrics.widthPixels
-        val viewHeight = playerView?.height ?: resources.displayMetrics.heightPixels
+        val rootView = window.decorView
+        val viewWidth = rootView.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
+        val viewHeight = rootView.height.takeIf { it > 0 } ?: resources.displayMetrics.heightPixels
 
         val displayAspectRatio = Rational(viewWidth, viewHeight)
 

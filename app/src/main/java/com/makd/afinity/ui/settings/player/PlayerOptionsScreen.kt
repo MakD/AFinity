@@ -242,11 +242,12 @@ fun PlayerOptionsScreen(
                         onLanguageSelected = viewModel::setPreferredAudioLanguage,
                         icon = painterResource(id = R.drawable.ic_language),
                     )
+
                     SettingsDivider()
+
                     LanguageSelectorItem(
                         title = stringResource(R.string.pref_preferred_subtitle_language_title),
-                        subtitle =
-                            stringResource(R.string.pref_preferred_subtitle_language_summary),
+                        subtitle = stringResource(R.string.pref_preferred_subtitle_language_summary),
                         selectedCode = uiState.preferredSubtitleLanguage,
                         onLanguageSelected = viewModel::setPreferredSubtitleLanguage,
                         icon = painterResource(id = R.drawable.ic_subtitles),
@@ -1350,7 +1351,9 @@ private fun SubtitlePreview(
                 fontWeight = if (subtitlePrefs.bold) FontWeight.Bold else FontWeight.Normal,
                 fontStyle = if (subtitlePrefs.italic) FontStyle.Italic else FontStyle.Normal,
                 fontSize =
-                    MaterialTheme.typography.headlineSmall.fontSize * 1.15f * subtitlePrefs.textSize,
+                    MaterialTheme.typography.headlineSmall.fontSize *
+                        1.15f *
+                        subtitlePrefs.textSize,
             )
 
         Box(

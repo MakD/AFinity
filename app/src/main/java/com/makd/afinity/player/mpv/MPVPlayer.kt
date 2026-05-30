@@ -829,7 +829,7 @@ class MPVPlayer(
     }
 
     private fun selectTrack(trackType: MPVTrackType, id: String) {
-        mpv.setPropertyString(trackType.type, id)
+        mpv.setPropertyString(trackType.propertyName, id)
     }
 
     override fun getMediaMetadata(): MediaMetadata =
@@ -1111,7 +1111,8 @@ class MPVPlayer(
                     .setLabel(json.optNullableString("title"))
                     .setLanguage(json.optNullableString("lang"))
                     .setSelectionFlags(
-                        if (json.optBoolean("default")) C.SELECTION_FLAG_DEFAULT else 0
+                        (if (json.optBoolean("default")) C.SELECTION_FLAG_DEFAULT else 0) or
+                            (if (json.optBoolean("forced")) C.SELECTION_FLAG_FORCED else 0)
                     )
                     .setCodecs(json.optNullableString("codec"))
                     .build()
