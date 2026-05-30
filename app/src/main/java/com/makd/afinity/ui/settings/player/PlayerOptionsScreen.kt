@@ -366,7 +366,7 @@ fun PlayerOptionsScreen(
                                 painter = painterResource(id = R.drawable.ic_broadcast),
                                 contentDescription = null,
                                 modifier = Modifier.size(24.dp),
-                                tint = MaterialTheme.colorScheme.onSurface,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Spacer(modifier = Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {

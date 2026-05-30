@@ -60,6 +60,7 @@ fun BaseMediaDetailContent(
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         TaglineSection(item = item)
         OverviewSection(item = item)
+        ExternalLinksSection(item = item)
 
         DirectorSection(item = item)
         WriterSection(item = item)
@@ -87,8 +88,6 @@ fun BaseMediaDetailContent(
             onBoxSetClick = onBoxSetClick,
             widthSizeClass = widthSizeClass,
         )
-
-        ExternalLinksSection(item = item)
     }
 }
 
