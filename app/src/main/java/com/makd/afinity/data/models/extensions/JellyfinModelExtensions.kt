@@ -83,6 +83,7 @@ private fun BaseItemDto.toAfinitySources(baseUrl: String): List<AfinitySource> =
                         isDefault = mediaStream.isDefault,
                         isForced = mediaStream.isForced,
                         isHearingImpaired = mediaStream.isHearingImpaired,
+                        profile = mediaStream.profile,
                     )
                 } ?: emptyList(),
         )
@@ -236,6 +237,7 @@ fun BaseItemDto.toAfinityEpisode(baseUrl: String): AfinityEpisode? {
                                     isDefault = mediaStream.isDefault,
                                     isForced = mediaStream.isForced,
                                     isHearingImpaired = mediaStream.isHearingImpaired,
+                                    profile = mediaStream.profile,
                                 )
                             } ?: emptyList(),
                     )

@@ -54,6 +54,7 @@ fun MetadataRow(
     item: AfinityItem,
     totalChildRuntimeTicks: Long = 0L,
     boxSetItems: List<AfinityItem> = emptyList(),
+    selectedSourceId: String? = null,
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -96,7 +97,7 @@ fun MetadataRow(
                 verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                val source = item.sources.firstOrNull()
+                val source = item.sources.find { it.id == selectedSourceId } ?: item.sources.firstOrNull()
 
                 source
                     ?.mediaStreams
@@ -155,29 +156,31 @@ fun MetadataRow(
                 source
                     ?.mediaStreams
                     ?.firstOrNull { it.type == MediaStreamType.AUDIO }
-                    ?.codec
-                    ?.takeIf { it.isNotEmpty() }
-                    ?.let { codec ->
-                        when (codec.lowercase()) {
-                            "ac3" ->
+                    ?.let { audioStream ->
+                        val isAtmos = audioStream.profile?.contains("Atmos", ignoreCase = true) == true
+                        val codec = audioStream.codec.takeIf { it.isNotEmpty() } ?: return@let
+                        when {
+                            isAtmos ->
+                                VideoMetadataChipWithIcon(
+                                    text = "Atmos",
+                                    iconRes = R.drawable.ic_brand_dolby_digital,
+                                )
+                            codec.lowercase() == "ac3" ->
                                 VideoMetadataChipWithIcon(
                                     text = stringResource(R.string.meta_digital),
                                     iconRes = R.drawable.ic_brand_dolby_digital,
                                 )
-
-                            "eac3" ->
+                            codec.lowercase() == "eac3" ->
                                 VideoMetadataChipWithIcon(
                                     text = stringResource(R.string.meta_digital_plus),
                                     iconRes = R.drawable.ic_brand_dolby_digital,
                                 )
-
-                            "truehd" ->
+                            codec.lowercase() == "truehd" ->
                                 VideoMetadataChipWithIcon(
                                     text = stringResource(R.string.meta_truehd),
                                     iconRes = R.drawable.ic_brand_dolby_digital,
                                 )
-
-                            "dts" -> VideoMetadataChip(text = "DTS")
+                            codec.lowercase() == "dts" -> VideoMetadataChip(text = "DTS")
                             else -> VideoMetadataChip(text = codec.uppercase())
                         }
                     }

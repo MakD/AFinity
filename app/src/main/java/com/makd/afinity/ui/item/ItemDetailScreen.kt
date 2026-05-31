@@ -497,8 +497,6 @@ private fun LandscapeItemDetailContent(
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         MediaLogoHeader(item = item, isLandscape = true)
 
-                        MetadataRow(item = item, boxSetItems = boxSetItems)
-
                         val mediaSourceOptions = rememberMediaSourceOptions(item)
                         val selectedMediaSource by
                             viewModel.selectedMediaSource.collectAsStateWithLifecycle()
@@ -508,6 +506,8 @@ private fun LandscapeItemDetailContent(
                                 viewModel.selectMediaSource(mediaSourceOptions.first())
                             }
                         }
+
+                        MetadataRow(item = item, boxSetItems = boxSetItems, selectedSourceId = selectedMediaSource?.id)
 
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -644,8 +644,6 @@ private fun PortraitItemDetailContent(
             ) {
                 MediaLogoHeader(item = item, isLandscape = false)
 
-                MetadataRow(item = item, boxSetItems = boxSetItems)
-
                 val mediaSourceOptions = rememberMediaSourceOptions(item)
                 val selectedMediaSource by
                     viewModel.selectedMediaSource.collectAsStateWithLifecycle()
@@ -655,6 +653,8 @@ private fun PortraitItemDetailContent(
                         viewModel.selectMediaSource(mediaSourceOptions.first())
                     }
                 }
+
+                MetadataRow(item = item, boxSetItems = boxSetItems, selectedSourceId = selectedMediaSource?.id)
 
                 if (item !is AfinityBoxSet && item.canPlay) {
                     PrimaryPlaybackButton(
