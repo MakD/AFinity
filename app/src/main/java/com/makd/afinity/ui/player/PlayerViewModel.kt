@@ -111,6 +111,8 @@ constructor(
     lateinit var player: Player
         private set
 
+    var syncPlayInterceptor: SyncPlayInterceptor? = null
+
     private var hasStoppedPlayback = false
     private var currentSessionId: String? = null
     private var currentLivePlaybackInfo: LiveTvPlaybackInfo? = null
@@ -138,6 +140,7 @@ constructor(
     private var pendingAudioTrackPosition: Int? = null
     private var pendingSubtitleTrackPosition: Int? = null
     private var currentItem: AfinityItem? = null
+    val currentPlayingItemId: java.util.UUID? get() = currentItem?.id
     private var currentTrickplayInfo: AfinityTrickplayInfo? = null
     private var currentTrickplayItemId: UUID? = null
     private val trickplayTileCache =
@@ -720,6 +723,7 @@ constructor(
 
     fun handlePlayerEvent(event: PlayerEvent) {
         viewModelScope.launch {
+            if (syncPlayInterceptor?.handle(event) == true) return@launch
             when (event) {
                 is PlayerEvent.Play -> player.play()
                 is PlayerEvent.Pause -> player.pause()
@@ -892,6 +896,18 @@ constructor(
                 }
             }
         }
+    }
+
+    fun executeScheduledPlay() {
+        player.play()
+    }
+
+    fun executeScheduledPause() {
+        player.pause()
+    }
+
+    fun executeScheduledSeek(positionMs: Long) {
+        player.seekTo(positionMs)
     }
 
     private fun startStatsPolling() {

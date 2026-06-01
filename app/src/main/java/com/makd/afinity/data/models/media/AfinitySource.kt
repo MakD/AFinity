@@ -2,11 +2,11 @@ package com.makd.afinity.data.models.media
 
 import com.makd.afinity.data.database.dao.ServerDatabaseDao
 import com.makd.afinity.data.database.entities.AfinitySourceDto
-import java.io.File
-import java.util.UUID
-import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.MediaProtocol
 import org.jellyfin.sdk.model.api.MediaSourceInfo
+import org.jellyfin.sdk.model.api.MediaStreamType
+import java.io.File
+import java.util.UUID
 
 data class AfinitySource(
     val id: String,
@@ -16,7 +16,6 @@ data class AfinitySource(
     val size: Long,
     val mediaStreams: List<AfinityMediaStream>,
     val downloadId: Long? = null,
-    // Version display metadata
     val bitrate: Long? = null,
     val container: String? = null,
     val videoCodec: String? = null,
@@ -46,8 +45,7 @@ suspend fun MediaSourceInfo.toAfinitySource(
         type = AfinitySourceType.REMOTE,
         path = path,
         size = size ?: 0,
-        mediaStreams =
-            mediaStreams?.map { it.toAfinityMediaStream(baseUrl) } ?: emptyList(),
+        mediaStreams = mediaStreams?.map { it.toAfinityMediaStream(baseUrl) } ?: emptyList(),
         bitrate = bitrate?.toLong(),
         container = container,
         videoCodec = videoStream?.codec,

@@ -110,6 +110,8 @@ fun PlayerControls(
     playlistContentStartIndex: Int = 0,
     onJumpToEpisode: (java.util.UUID) -> Unit = {},
     onVersionToggleRequest: () -> Unit = {},
+    isSyncPlay: Boolean = false,
+    onSyncPlayClick: () -> Unit = {},
 ) {
     var showAudioSelector by remember { mutableStateOf(false) }
     var showSubtitleSelector by remember { mutableStateOf(false) }
@@ -360,6 +362,8 @@ fun PlayerControls(
                     onBackClick = onBackClick,
                     onLockToggle = { onPlayerEvent(PlayerEvent.ToggleLock) },
                     onPipToggle = onPipToggle,
+                    isSyncPlay = isSyncPlay,
+                    onSyncPlayClick = onSyncPlayClick,
                 )
 
                 if (!uiState.isControlsLocked && !uiState.isInPictureInPictureMode) {
@@ -676,7 +680,9 @@ private fun TopControls(
     onPlayerEvent: (PlayerEvent) -> Unit,
     onBackClick: () -> Unit,
     onLockToggle: () -> Unit,
-    onPipToggle: () -> Unit = { /* TODO */ },
+    onPipToggle: () -> Unit = {},
+    isSyncPlay: Boolean = false,
+    onSyncPlayClick: () -> Unit = {},
 ) {
     Box(
         modifier =
@@ -727,6 +733,19 @@ private fun TopControls(
                 }
 
                 if (!uiState.isControlsLocked && !uiState.isInPictureInPictureMode) {
+                    IconButton(
+                        onClick = onSyncPlayClick,
+                        modifier = Modifier.size(40.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_users_group),
+                            contentDescription = "Watch party",
+                            tint =
+                                if (isSyncPlay) MaterialTheme.colorScheme.primary else Color.White,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+
                     IconButton(
                         onClick = { onPlayerEvent(PlayerEvent.RequestCastDeviceSelection) },
                         modifier = Modifier.size(40.dp),
