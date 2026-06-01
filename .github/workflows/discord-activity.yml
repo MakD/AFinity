@@ -15,30 +15,23 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
           EVENT_TYPE="${{ github.event_name }}"
-          ACTION="${{ github.event.action }}"
           REPO_NAME="${{ github.repository }}"
           REPO_URL="https://github.com/${{ github.repository }}"
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           
-          TITLE=""
-          DESCRIPTION=""
-          URL=""
-          AUTHOR_NAME=""
-          AUTHOR_ICON=""
-          AUTHOR_URL=""
-          COLOR=0
-          STATUS_TEXT=""
-          LABELS_RAW=""
+          # 1. Read the action securely from the event JSON
+          ACTION=$(jq -r '.action' "$GITHUB_EVENT_PATH")
 
+          # 2. Extract specific variables based on event type securely
           if [ "$EVENT_TYPE" == "issues" ]; then
-            TITLE="${{ github.event.issue.title }}"
-            NUMBER="${{ github.event.issue.number }}"
-            URL="${{ github.event.issue.html_url }}"
-            DESCRIPTION="${{ github.event.issue.body }}"
-            AUTHOR_NAME="${{ github.event.issue.user.login }}"
-            AUTHOR_ICON="${{ github.event.issue.user.avatar_url }}"
-            AUTHOR_URL="${{ github.event.issue.user.html_url }}"
-            LABELS_RAW='${{ toJson(github.event.issue.labels) }}'
+            TITLE=$(jq -r '.issue.title' "$GITHUB_EVENT_PATH")
+            NUMBER=$(jq -r '.issue.number' "$GITHUB_EVENT_PATH")
+            URL=$(jq -r '.issue.html_url' "$GITHUB_EVENT_PATH")
+            DESCRIPTION=$(jq -r '.issue.body // ""' "$GITHUB_EVENT_PATH")
+            AUTHOR_NAME=$(jq -r '.issue.user.login' "$GITHUB_EVENT_PATH")
+            AUTHOR_ICON=$(jq -r '.issue.user.avatar_url' "$GITHUB_EVENT_PATH")
+            AUTHOR_URL=$(jq -r '.issue.user.html_url' "$GITHUB_EVENT_PATH")
+            LABELS_STRING=$(jq -r 'if (.issue.labels | length) > 0 then .issue.labels | map("`" + .name + "`") | join(" ") else "None" end' "$GITHUB_EVENT_PATH")
             
             if [ "$ACTION" == "opened" ]; then
               STATUS_TEXT="Issue Opened"
@@ -49,20 +42,20 @@ jobs:
             fi
 
           elif [ "$EVENT_TYPE" == "pull_request" ]; then
-            TITLE="${{ github.event.pull_request.title }}"
-            NUMBER="${{ github.event.pull_request.number }}"
-            URL="${{ github.event.pull_request.html_url }}"
-            DESCRIPTION="${{ github.event.pull_request.body }}"
-            AUTHOR_NAME="${{ github.event.pull_request.user.login }}"
-            AUTHOR_ICON="${{ github.event.pull_request.user.avatar_url }}"
-            AUTHOR_URL="${{ github.event.pull_request.user.html_url }}"
-            LABELS_RAW='${{ toJson(github.event.pull_request.labels) }}'
+            TITLE=$(jq -r '.pull_request.title' "$GITHUB_EVENT_PATH")
+            NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
+            URL=$(jq -r '.pull_request.html_url' "$GITHUB_EVENT_PATH")
+            DESCRIPTION=$(jq -r '.pull_request.body // ""' "$GITHUB_EVENT_PATH")
+            AUTHOR_NAME=$(jq -r '.pull_request.user.login' "$GITHUB_EVENT_PATH")
+            AUTHOR_ICON=$(jq -r '.pull_request.user.avatar_url' "$GITHUB_EVENT_PATH")
+            AUTHOR_URL=$(jq -r '.pull_request.user.html_url' "$GITHUB_EVENT_PATH")
+            LABELS_STRING=$(jq -r 'if (.pull_request.labels | length) > 0 then .pull_request.labels | map("`" + .name + "`") | join(" ") else "None" end' "$GITHUB_EVENT_PATH")
             
             if [ "$ACTION" == "opened" ]; then
               STATUS_TEXT="Pull Request Opened"
               COLOR=5793266
             elif [ "$ACTION" == "closed" ]; then
-              IS_MERGED="${{ github.event.pull_request.merged }}"
+              IS_MERGED=$(jq -r '.pull_request.merged' "$GITHUB_EVENT_PATH")
               if [ "$IS_MERGED" == "true" ]; then
                 STATUS_TEXT="Pull Request Merged"
                 COLOR=10181046
@@ -73,19 +66,19 @@ jobs:
             fi
           fi
 
-          LABELS_STRING=$(echo "$LABELS_RAW" | jq -r 'if length > 0 then map("`" + .name + "`") | join(" ") else "None" end')
-
-          MAX_DESC_LENGTH=2000
-          if [ -z "$DESCRIPTION" ]; then
+          # 3. Handle Empty Descriptions & Truncation
+          if [ -z "$DESCRIPTION" ] || [ "$DESCRIPTION" == "null" ]; then
             DESCRIPTION="No description provided."
           fi
           
+          MAX_DESC_LENGTH=2000
           if [ ${#DESCRIPTION} -gt $MAX_DESC_LENGTH ]; then
             DESCRIPTION_TRUNCATED="${DESCRIPTION:0:$MAX_DESC_LENGTH}... [Read more]($URL)"
           else
             DESCRIPTION_TRUNCATED="$DESCRIPTION"
           fi
 
+          # 4. Generate Discord JSON Payload
           DISCORD_PAYLOAD=$(jq -n \
             --arg title "$STATUS_TEXT: #$NUMBER $TITLE" \
             --arg description "$DESCRIPTION_TRUNCATED" \
@@ -139,6 +132,7 @@ jobs:
               }]
             }')
 
+          # 5. Send Webhook
           RESPONSE=$(curl -s -w "\n%{http_code}" -H "Content-Type: application/json" \
                -d "$DISCORD_PAYLOAD" \
                "$DISCORD_WEBHOOK_URL")
@@ -148,5 +142,8 @@ jobs:
             echo "Notification sent successfully."
           else
             echo "Failed to send notification. HTTP Code: $HTTP_CODE"
+            # Added this to print out Discord's error messages for easier future debugging
+            echo "Response body: $RESPONSE" 
             exit 1
           fi
+          
