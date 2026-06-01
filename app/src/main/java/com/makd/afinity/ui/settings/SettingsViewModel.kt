@@ -12,6 +12,8 @@ import com.makd.afinity.data.models.player.MpvVideoOutput
 import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.models.user.User
+import com.makd.afinity.data.network.MdbListApiService
+import com.makd.afinity.data.network.TmdbApiService
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.DatabaseRepository
@@ -54,6 +56,8 @@ constructor(
     private val jellyseerrRepository: JellyseerrRepository,
     private val audiobookshelfRepository: AudiobookshelfRepository,
     private val audiobookshelfPlayer: AudiobookshelfPlayer,
+    private val tmdbApiService: TmdbApiService,
+    private val mdbListApiService: MdbListApiService,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -642,6 +646,82 @@ constructor(
         }
     }
 
+    fun validateAndSaveTmdbKey(apiKey: String, onSuccess: () -> Unit) {
+        if (apiKey.isBlank()) {
+            setTmdbApiKey("")
+            onSuccess()
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value =
+                _uiState.value.copy(
+                    isTmdbKeyValidating = true,
+                    tmdbKeyValidationError = null,
+                )
+            try {
+                val response = tmdbApiService.validateApiKey(apiKey)
+                if (response.isSuccessful) {
+                    setTmdbApiKey(apiKey)
+                    onSuccess()
+                } else {
+                    _uiState.value =
+                        _uiState.value.copy(tmdbKeyValidationError = "Invalid TMDB API Key")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "TMDB validation network failure")
+                _uiState.value =
+                    _uiState.value.copy(
+                        tmdbKeyValidationError = "Network failure. Please try again."
+                    )
+            } finally {
+                _uiState.value = _uiState.value.copy(isTmdbKeyValidating = false)
+            }
+        }
+    }
+
+    fun validateAndSaveMdbListKey(apiKey: String, onSuccess: () -> Unit) {
+        if (apiKey.isBlank()) {
+            setMdbListApiKey("")
+            onSuccess()
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value =
+                _uiState.value.copy(
+                    isMdbListKeyValidating = true,
+                    mdbListKeyValidationError = null,
+                )
+            try {
+                val response = mdbListApiService.validateApiKey(apiKey)
+                if (response.isSuccessful) {
+                    setMdbListApiKey(apiKey)
+                    onSuccess()
+                } else {
+                    _uiState.value =
+                        _uiState.value.copy(mdbListKeyValidationError = "Invalid MDBList API Key")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "MDBList validation network failure")
+                _uiState.value =
+                    _uiState.value.copy(
+                        mdbListKeyValidationError = "Network failure. Please try again."
+                    )
+            } finally {
+                _uiState.value = _uiState.value.copy(isMdbListKeyValidating = false)
+            }
+        }
+    }
+
+    fun clearApiValidationErrors() {
+        _uiState.value =
+            _uiState.value.copy(
+                tmdbKeyValidationError = null,
+                mdbListKeyValidationError = null,
+            )
+    }
+
     fun setTmdbApiKey(apiKey: String) {
         viewModelScope.launch {
             try {
@@ -763,4 +843,8 @@ data class SettingsUiState(
     val isLoggingOut: Boolean = false,
     val isExportingLogs: Boolean = false,
     val error: String? = null,
+    val isTmdbKeyValidating: Boolean = false,
+    val tmdbKeyValidationError: String? = null,
+    val isMdbListKeyValidating: Boolean = false,
+    val mdbListKeyValidationError: String? = null,
 )

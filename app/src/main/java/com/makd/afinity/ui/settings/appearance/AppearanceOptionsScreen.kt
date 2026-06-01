@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -210,10 +211,16 @@ fun AppearanceOptionsScreen(
         ApiKeyDialog(
             title = stringResource(R.string.pref_tmdb_config_title),
             initialKey = tmdbApiKey,
-            onDismiss = { showTmdbDialog = false },
-            onSave = { newKey ->
-                viewModel.setTmdbApiKey(newKey)
+            isValidationLoading = uiState.isTmdbKeyValidating,
+            validationError = uiState.tmdbKeyValidationError,
+            onDismiss = {
                 showTmdbDialog = false
+                viewModel.clearApiValidationErrors()
+            },
+            onSave = { newKey ->
+                viewModel.validateAndSaveTmdbKey(newKey) {
+                    showTmdbDialog = false
+                }
             },
         )
     }
@@ -222,10 +229,16 @@ fun AppearanceOptionsScreen(
         ApiKeyDialog(
             title = stringResource(R.string.pref_mdblist_config_title),
             initialKey = mdbListApiKey,
-            onDismiss = { showMdbListDialog = false },
-            onSave = { newKey ->
-                viewModel.setMdbListApiKey(newKey)
+            isValidationLoading = uiState.isMdbListKeyValidating,
+            validationError = uiState.mdbListKeyValidationError,
+            onDismiss = {
                 showMdbListDialog = false
+                viewModel.clearApiValidationErrors()
+            },
+            onSave = { newKey ->
+                viewModel.validateAndSaveMdbListKey(newKey) {
+                    showMdbListDialog = false
+                }
             },
         )
     }
@@ -495,9 +508,12 @@ private fun ApiKeyDialog(
     title: String,
     initialKey: String,
     onDismiss: () -> Unit,
+    isValidationLoading: Boolean = false,
+    validationError: String? = null,
     onSave: (String) -> Unit,
 ) {
     var input by remember { mutableStateOf(initialKey) }
+    var localError by remember(validationError) { mutableStateOf(validationError) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -519,12 +535,39 @@ private fun ApiKeyDialog(
                 )
                 OutlinedTextField(
                     value = input,
-                    onValueChange = { input = it },
+                    onValueChange = {
+                        input = it
+                        localError = null
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     shape = RoundedCornerShape(12.dp),
+                    isError = localError != null,
+                    trailingIcon = {
+                        if (localError != null) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_exclamation_circle),
+                                contentDescription = "Invalid Key",
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        } else if (isValidationLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    },
+                    supportingText = {
+                        if (localError != null) {
+                            Text(
+                                text = localError!!,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    },
                     colors =
                         OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -534,7 +577,10 @@ private fun ApiKeyDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(input.trim()) }) {
+            TextButton(
+                onClick = { onSave(input.trim()) },
+                enabled = !isValidationLoading,
+            ) {
                 Text(stringResource(R.string.action_save), fontWeight = FontWeight.Bold)
             }
         },
@@ -543,6 +589,7 @@ private fun ApiKeyDialog(
                 if (initialKey.isNotBlank()) {
                     TextButton(
                         onClick = { onSave("") },
+                        enabled = !isValidationLoading,
                         colors =
                             androidx.compose.material3.ButtonDefaults.textButtonColors(
                                 contentColor = MaterialTheme.colorScheme.error
@@ -551,7 +598,10 @@ private fun ApiKeyDialog(
                         Text(stringResource(R.string.action_clear_key))
                     }
                 }
-                TextButton(onClick = onDismiss) {
+                TextButton(
+                    onClick = onDismiss,
+                    enabled = !isValidationLoading,
+                ) {
                     Text(
                         stringResource(R.string.action_cancel),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
