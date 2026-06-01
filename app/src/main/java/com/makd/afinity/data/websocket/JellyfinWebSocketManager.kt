@@ -7,6 +7,7 @@ import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.MediaRefreshBus
 import com.makd.afinity.data.manager.RefreshTrigger
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.syncplay.SyncPlayGroupUpdate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -27,10 +28,13 @@ import org.jellyfin.sdk.model.api.LibraryChangedMessage
 import org.jellyfin.sdk.model.api.PlayMessage
 import org.jellyfin.sdk.model.api.PlaystateMessage
 import org.jellyfin.sdk.model.api.ScheduledTasksInfoMessage
+import org.jellyfin.sdk.model.api.SendCommand
 import org.jellyfin.sdk.model.api.ServerRestartingMessage
 import org.jellyfin.sdk.model.api.ServerShuttingDownMessage
 import org.jellyfin.sdk.model.api.SessionInfoDto
 import org.jellyfin.sdk.model.api.SessionsMessage
+import org.jellyfin.sdk.model.api.SyncPlayCommandMessage
+import org.jellyfin.sdk.model.api.SyncPlayGroupUpdateCommandMessage
 import org.jellyfin.sdk.model.api.TaskInfo
 import org.jellyfin.sdk.model.api.TaskState
 import org.jellyfin.sdk.model.api.UserDataChangedMessage
@@ -57,6 +61,13 @@ constructor(
 
     private val _liveTasks = MutableSharedFlow<List<TaskInfo>>(replay = 1)
     val liveTasks = _liveTasks.asSharedFlow()
+
+    private val _syncPlayCommands = MutableSharedFlow<SendCommand>(extraBufferCapacity = 16)
+    val syncPlayCommands: SharedFlow<SendCommand> = _syncPlayCommands.asSharedFlow()
+
+    private val _syncPlayGroupUpdates =
+        MutableSharedFlow<SyncPlayGroupUpdate>(extraBufferCapacity = 16)
+    val syncPlayGroupUpdates: SharedFlow<SyncPlayGroupUpdate> = _syncPlayGroupUpdates.asSharedFlow()
 
     init {
 
@@ -99,6 +110,8 @@ constructor(
             launch { subscribeToPlayCommands(currentApiClient) }
             launch { subscribeToServerMessages(currentApiClient) }
             launch { subscribeToTaskChanges(currentApiClient) }
+            launch { subscribeToSyncPlayCommands(currentApiClient) }
+            launch { subscribeToSyncPlayGroupUpdates(currentApiClient) }
         }
     }
 
@@ -260,5 +273,39 @@ constructor(
         Timber.w("Server is shutting down")
         _connectionState.value = WebSocketState.SERVER_SHUTDOWN
         scope.launch { disconnect() }
+    }
+
+    private suspend fun subscribeToSyncPlayCommands(apiClient: ApiClient) {
+        apiClient.webSocket
+            .subscribe(SyncPlayCommandMessage::class)
+            .catch { e -> Timber.e(e, "SyncPlay commands subscription failed") }
+            .collect { message ->
+                if (message.data == null) {
+                    Timber.w(
+                        "SyncPlay: SyncPlayCommandMessage received but data is null — SDK deserialization failed"
+                    )
+                } else {
+                    Timber.d(
+                        "SyncPlay: command received — type=${message.data!!.command}, ticks=${message.data!!.positionTicks}"
+                    )
+                    _syncPlayCommands.emit(message.data!!)
+                }
+            }
+    }
+
+    private suspend fun subscribeToSyncPlayGroupUpdates(apiClient: ApiClient) {
+        apiClient.webSocket
+            .subscribe(SyncPlayGroupUpdateCommandMessage::class)
+            .catch { e -> Timber.e(e, "SyncPlay group updates subscription failed") }
+            .collect { message ->
+                message.data?.let { groupUpdate ->
+                    _syncPlayGroupUpdates.emit(
+                        SyncPlayGroupUpdate(
+                            type = groupUpdate.type,
+                            groupId = groupUpdate.groupId,
+                        )
+                    )
+                }
+            }
     }
 }

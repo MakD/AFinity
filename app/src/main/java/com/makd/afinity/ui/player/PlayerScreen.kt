@@ -27,6 +27,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
@@ -49,11 +51,15 @@ import com.makd.afinity.ui.player.components.MpvSurface
 import com.makd.afinity.ui.player.components.PlaybackStatsOverlay
 import com.makd.afinity.ui.player.components.PlayerControls
 import com.makd.afinity.ui.player.components.PlayerIndicators
+import com.makd.afinity.ui.player.components.SyncPlayGroupSheet
+import com.makd.afinity.ui.player.components.SyncPlayWaitingOverlay
 import com.makd.afinity.ui.player.components.TrickplayPreview
 import com.makd.afinity.ui.player.components.VersionPickerSheet
 import com.makd.afinity.ui.player.utils.KeepScreenOn
 import com.makd.afinity.ui.player.utils.PlayerSystemBarsController
 import com.makd.afinity.ui.player.utils.ScreenBrightnessController
+import kotlinx.coroutines.flow.map
+import org.jellyfin.sdk.model.api.GroupStateType
 import timber.log.Timber
 import java.util.UUID
 
@@ -74,8 +80,11 @@ fun PlayerScreen(
     onBackPressed: () -> Unit,
     navController: NavController? = null,
     viewModel: PlayerViewModel = hiltViewModel(),
+    syncPlayViewModel: SyncPlayViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val syncPlayState by syncPlayViewModel.syncPlayState.collectAsStateWithLifecycle()
+    val syncPlayUiState by syncPlayViewModel.uiState.collectAsStateWithLifecycle()
     val playlistState by
         viewModel.playlistState.collectAsStateWithLifecycle(initialValue = PlaylistState())
 
@@ -123,12 +132,67 @@ fun PlayerScreen(
             )
         }
     }
+    LaunchedEffect(Unit) {
+        viewModel.syncPlayInterceptor = SyncPlayInterceptor { event ->
+            syncPlayViewModel.handleLocalPlayerEvent(event)
+        }
+        syncPlayViewModel.setPlayerActions(
+            object : SyncPlayPlayerActions {
+                override fun executePlay() = viewModel.executeScheduledPlay()
+
+                override fun executePause() = viewModel.executeScheduledPause()
+
+                override fun executeSeek(positionMs: Long) =
+                    viewModel.executeScheduledSeek(positionMs)
+
+                override val currentPositionMs: Long
+                    get() = viewModel.player.currentPosition
+
+                override val currentIsPlaying: Boolean
+                    get() = viewModel.player.isPlaying
+
+                override val currentItemId: UUID?
+                    get() = viewModel.currentPlayingItemId
+            }
+        )
+        syncPlayViewModel.setBufferingFlow(viewModel.uiState.map { it.isBuffering })
+    }
+
+    LaunchedEffect(Unit) {
+        syncPlayViewModel.effects.collect { effect ->
+            when (effect) {
+                is SyncPlayEffect.LoadContent -> viewModel.handlePlayerEvent(
+                    PlayerEvent.LoadMedia(
+                        item = effect.item,
+                        mediaSourceId = effect.mediaSourceId,
+                        startPositionMs = effect.startPositionMs,
+                    )
+                )
+                is SyncPlayEffect.GroupJoined -> syncPlayViewModel.dismissGroupSheet()
+                else -> {}
+            }
+        }
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_PAUSE -> syncPlayViewModel.onAppBackground()
+                Lifecycle.Event.ON_RESUME -> syncPlayViewModel.onAppForeground()
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     var hasNavigatedBack by remember { mutableStateOf(false) }
 
     BackHandler {
         if (!hasNavigatedBack) {
             hasNavigatedBack = true
+            if (syncPlayState.isInGroup) syncPlayViewModel.leaveGroup()
             viewModel.stopPlayback()
             onBackPressed()
         }
@@ -293,6 +357,7 @@ fun PlayerScreen(
                 onBackClick = {
                     if (!hasNavigatedBack) {
                         hasNavigatedBack = true
+                        if (syncPlayState.isInGroup) syncPlayViewModel.leaveGroup()
                         viewModel.stopPlayback()
                         onBackPressed()
                     }
@@ -305,7 +370,13 @@ fun PlayerScreen(
                 playlistContentStartIndex = playlistState.contentStartIndex,
                 onJumpToEpisode = viewModel::jumpToEpisode,
                 onVersionToggleRequest = { showVersionPicker = !showVersionPicker },
+                isSyncPlay = syncPlayState.isInGroup,
+                onSyncPlayClick = { syncPlayViewModel.toggleGroupSheet() },
             )
+
+            if (syncPlayState.isInGroup && syncPlayState.groupState == GroupStateType.WAITING) {
+                SyncPlayWaitingOverlay(modifier = Modifier.fillMaxSize())
+            }
 
             TrickplayPreview(
                 isVisible = uiState.showTrickplayPreview,
@@ -342,7 +413,6 @@ fun PlayerScreen(
                 )
             }
 
-            // Version picker — rendered here so align(BottomEnd) maps to the actual screen Box
             if (showVersionPicker && uiState.availableSources.size > 1) {
                 Box(
                     modifier =
@@ -377,6 +447,18 @@ fun PlayerScreen(
                 }
             }
         }
+    }
+
+    if (syncPlayUiState.showGroupSheet) {
+        SyncPlayGroupSheet(
+            syncPlayState = syncPlayState,
+            uiState = syncPlayUiState,
+            onCreateGroup = { name -> syncPlayViewModel.createGroup(name) },
+            onJoinGroup = { id -> syncPlayViewModel.joinGroup(id) },
+            onLeaveGroup = { syncPlayViewModel.leaveGroup() },
+            onRefreshGroups = { syncPlayViewModel.loadGroups() },
+            onDismiss = { syncPlayViewModel.dismissGroupSheet() },
+        )
     }
 
     ScreenBrightnessController(brightness = uiState.brightnessLevel)
