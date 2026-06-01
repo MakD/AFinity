@@ -505,7 +505,7 @@ constructor(
 
             cachedSpotlightPositions.sorted().forEachIndexed { offset, pos ->
                 finalLayout.add(
-                    (pos + offset).coerceAtMost(finalLayout.size),
+                    (pos + offset).coerceIn(0, finalLayout.size),
                     loadedSpotlightSections[offset],
                 )
             }
@@ -1038,9 +1038,8 @@ constructor(
             val pos = rawPositions[i]
             var newPos = if (pos <= lastPos + 1) lastPos + 2 else pos
             val itemsLeft = count - 1 - i
-            val maxAllowedPos = listSize - (itemsLeft * 2)
-
-            newPos = newPos.coerceAtMost(maxAllowedPos)
+            val maxAllowedPos = (listSize - (itemsLeft * 2)).coerceAtLeast(0)
+            newPos = newPos.coerceIn(0, maxAllowedPos)
             adjustedPositions.add(newPos)
             lastPos = newPos
         }
