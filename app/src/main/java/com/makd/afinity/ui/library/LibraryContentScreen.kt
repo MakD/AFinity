@@ -81,6 +81,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.Destination
+import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenEmpty
@@ -430,6 +431,8 @@ private fun MediaItemGridCard(
             textAlign = TextAlign.Start,
         )
 
+        val showRatings = LocalShowRatings.current
+
         when (item) {
             is AfinityMovie -> {
                 Row(
@@ -444,49 +447,51 @@ private fun MediaItemGridCard(
                         )
                     }
 
-                    item.communityRating?.let { rating ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                contentDescription = stringResource(R.string.cd_imdb),
-                                tint = Color.Unspecified,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Text(
-                                text = String.format(Locale.US, "%.1f", rating),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                    if (showRatings) {
+                        item.communityRating?.let { rating ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                    contentDescription = stringResource(R.string.cd_imdb),
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Text(
+                                    text = String.format(Locale.US, "%.1f", rating),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
-                    }
 
-                    item.criticRating?.let { rtRating ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp),
-                        ) {
-                            Icon(
-                                painter =
-                                    painterResource(
-                                        id =
-                                            if (rtRating > 60) {
-                                                R.drawable.ic_rotten_tomato_fresh
-                                            } else {
-                                                R.drawable.ic_rotten_tomato_rotten
-                                            }
-                                    ),
-                                contentDescription = stringResource(R.string.cd_rotten_tomatoes),
-                                tint = Color.Unspecified,
-                                modifier = Modifier.size(12.dp),
-                            )
-                            Text(
-                                text = "${rtRating.toInt()}%",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                        item.criticRating?.let { rtRating ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
+                                Icon(
+                                    painter =
+                                        painterResource(
+                                            id =
+                                                if (rtRating > 60) {
+                                                    R.drawable.ic_rotten_tomato_fresh
+                                                } else {
+                                                    R.drawable.ic_rotten_tomato_rotten
+                                                }
+                                        ),
+                                    contentDescription = stringResource(R.string.cd_rotten_tomatoes),
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(12.dp),
+                                )
+                                Text(
+                                    text = "${rtRating.toInt()}%",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 }
@@ -505,22 +510,24 @@ private fun MediaItemGridCard(
                         )
                     }
 
-                    item.communityRating?.let { rating ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                contentDescription = stringResource(R.string.cd_imdb),
-                                tint = Color.Unspecified,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Text(
-                                text = String.format(Locale.US, "%.1f", rating),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                    if (showRatings) {
+                        item.communityRating?.let { rating ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                    contentDescription = stringResource(R.string.cd_imdb),
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Text(
+                                    text = String.format(Locale.US, "%.1f", rating),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 }
