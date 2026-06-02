@@ -11,6 +11,7 @@ import androidx.paging.cachedIn
 import androidx.paging.map
 import com.makd.afinity.R
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
+import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.MediaChangeSource
 import com.makd.afinity.data.manager.OfflineModeManager
@@ -66,6 +67,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -91,6 +93,7 @@ constructor(
     private val offlineModeManager: OfflineModeManager,
     private val authRepository: AuthRepository,
     private val playbackStateManager: PlaybackStateManager,
+    private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
     private val serverRepository: ServerRepository,
     private val securePreferencesRepository: SecurePreferencesRepository,
@@ -141,6 +144,11 @@ constructor(
     private val _uiState = MutableStateFlow(ItemDetailUiState())
     val uiState: StateFlow<ItemDetailUiState> = _uiState.asStateFlow()
 
+    val isAdmin: StateFlow<Boolean> =
+        sessionManager.currentSession
+            .map { it?.isAdmin == true }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     val canDownload: StateFlow<Boolean> =
         preferencesRepository
             .getDownloadWifiOnlyFlow()
@@ -171,6 +179,12 @@ constructor(
 
         loadItem()
         observeDownloadStatus()
+
+        viewModelScope.launch {
+            adminChangeBroadcaster.itemChanged
+                .filter { it == itemId.toString() }
+                .collect { forceReloadFromServer() }
+        }
 
         viewModelScope.launch {
             playbackStateManager.playbackEvents.collect { event ->
@@ -999,6 +1013,10 @@ constructor(
             Timber.e(e, "Failed to load reviews/ratings")
             _uiState.update { it.copy(isLoadingReviews = false) }
         }
+    }
+
+    fun forceReloadFromServer() {
+        loadItem()
     }
 
     fun onScreenResumed() {

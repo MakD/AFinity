@@ -79,6 +79,7 @@ import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.admin.refresh.RefreshMetadataDialog
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
@@ -90,6 +91,7 @@ import com.makd.afinity.ui.item.components.SeasonDetailContent
 import com.makd.afinity.ui.item.components.SeriesDetailContent
 import com.makd.afinity.ui.item.components.VersionPickerDialog
 import com.makd.afinity.ui.item.components.shared.ActionButtonsRow
+import com.makd.afinity.ui.item.components.shared.AdminAction
 import com.makd.afinity.ui.item.components.shared.HeroSection
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.components.shared.MetadataRow
@@ -122,6 +124,8 @@ fun ItemDetailScreen(
     val selectedEpisodeDownloadInfo by
         viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
     val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
+    val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
+    var showEpisodeRefreshDialog by remember { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
@@ -252,7 +256,29 @@ fun ItemDetailScreen(
                             pendingNavigationSeriesId = episode.seriesId.toString()
                         }
                     } else null,
+                isAdmin = isAdmin,
+                onAdminAction = { action ->
+                    when (action) {
+                        AdminAction.EditMetadata ->
+                            navController.navigate(
+                                Destination.createEditMetadataRoute(episode.id.toString())
+                            )
+                        AdminAction.EditImages ->
+                            navController.navigate(
+                                Destination.createEditImagesRoute(episode.id.toString())
+                            )
+                        AdminAction.Refresh -> showEpisodeRefreshDialog = true
+                        AdminAction.Identify -> Unit
+                    }
+                },
             )
+
+            if (showEpisodeRefreshDialog) {
+                RefreshMetadataDialog(
+                    itemId = episode.id.toString(),
+                    onDismiss = { showEpisodeRefreshDialog = false },
+                )
+            }
         }
 
         LaunchedEffect(selectedEpisode, pendingNavigationSeriesId) {
@@ -434,6 +460,8 @@ private fun LandscapeItemDetailContent(
 ) {
     val preferencesRepository = rememberPreferencesRepository()
     val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
+    val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
+    var showRefreshDialog by remember { mutableStateOf(false) }
     val density = LocalDensity.current
     val statusBarHeight = WindowInsets.statusBars.getTop(density)
     val displayCutoutLeft = WindowInsets.displayCutout.getLeft(density, LayoutDirection.Ltr)
@@ -507,7 +535,11 @@ private fun LandscapeItemDetailContent(
                             }
                         }
 
-                        MetadataRow(item = item, boxSetItems = boxSetItems, selectedSourceId = selectedMediaSource?.id)
+                        MetadataRow(
+                            item = item,
+                            boxSetItems = boxSetItems,
+                            selectedSourceId = selectedMediaSource?.id,
+                        )
 
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -555,8 +587,43 @@ private fun LandscapeItemDetailContent(
                                 onCancelDownload = { viewModel.cancelDownload() },
                                 canDownload = canDownload,
                                 isLandscape = true,
+                                isAdmin = isAdmin,
+                                onAdminAction = { action ->
+                                    when (action) {
+                                        AdminAction.EditMetadata ->
+                                            navController.navigate(
+                                                Destination.createEditMetadataRoute(
+                                                    item.id.toString()
+                                                )
+                                            )
+                                        AdminAction.Identify ->
+                                            navController.navigate(
+                                                Destination.createIdentifyItemRoute(
+                                                    item.id.toString(),
+                                                    when (item) {
+                                                        is AfinityShow -> "Series"
+                                                        else -> "Movie"
+                                                    },
+                                                )
+                                            )
+                                        AdminAction.EditImages ->
+                                            navController.navigate(
+                                                Destination.createEditImagesRoute(
+                                                    item.id.toString()
+                                                )
+                                            )
+                                        AdminAction.Refresh -> showRefreshDialog = true
+                                    }
+                                },
                                 modifier = Modifier.weight(2f),
                             )
+
+                            if (showRefreshDialog) {
+                                RefreshMetadataDialog(
+                                    itemId = item.id.toString(),
+                                    onDismiss = { showRefreshDialog = false },
+                                )
+                            }
                         }
 
                         VideoQualitySelection(
@@ -626,6 +693,8 @@ private fun PortraitItemDetailContent(
     val preferencesRepository = rememberPreferencesRepository()
     val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
+    val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
+    var showRefreshDialog by remember { mutableStateOf(false) }
     val playerOffset = LocalPlayerOffset.current
 
     LazyColumn(
@@ -654,7 +723,11 @@ private fun PortraitItemDetailContent(
                     }
                 }
 
-                MetadataRow(item = item, boxSetItems = boxSetItems, selectedSourceId = selectedMediaSource?.id)
+                MetadataRow(
+                    item = item,
+                    boxSetItems = boxSetItems,
+                    selectedSourceId = selectedMediaSource?.id,
+                )
 
                 if (item !is AfinityBoxSet && item.canPlay) {
                     PrimaryPlaybackButton(
@@ -685,7 +758,38 @@ private fun PortraitItemDetailContent(
                     onCancelDownload = { viewModel.cancelDownload() },
                     canDownload = canDownload,
                     isLandscape = false,
+                    isAdmin = isAdmin,
+                    onAdminAction = { action ->
+                        when (action) {
+                            AdminAction.EditMetadata ->
+                                navController.navigate(
+                                    Destination.createEditMetadataRoute(item.id.toString())
+                                )
+                            AdminAction.Identify ->
+                                navController.navigate(
+                                    Destination.createIdentifyItemRoute(
+                                        item.id.toString(),
+                                        when (item) {
+                                            is AfinityShow -> "Series"
+                                            else -> "Movie"
+                                        },
+                                    )
+                                )
+                            AdminAction.EditImages ->
+                                navController.navigate(
+                                    Destination.createEditImagesRoute(item.id.toString())
+                                )
+                            AdminAction.Refresh -> showRefreshDialog = true
+                        }
+                    },
                 )
+
+                if (showRefreshDialog) {
+                    RefreshMetadataDialog(
+                        itemId = item.id.toString(),
+                        onDismiss = { showRefreshDialog = false },
+                    )
+                }
 
                 VideoQualitySelection(
                     mediaSourceOptions = mediaSourceOptions,

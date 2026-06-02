@@ -57,6 +57,9 @@ import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.data.updater.UpdateManager
 import com.makd.afinity.data.websocket.WebSocketState
+import com.makd.afinity.ui.admin.identify.IdentifyScreen
+import com.makd.afinity.ui.admin.images.EditImagesScreen
+import com.makd.afinity.ui.admin.metadata.EditMetadataScreen
 import com.makd.afinity.ui.audiobookshelf.genre.AudiobookshelfGenreResultsScreen
 import com.makd.afinity.ui.audiobookshelf.item.AudiobookshelfItemScreen
 import com.makd.afinity.ui.audiobookshelf.item.series.AudiobookshelfSeriesScreen
@@ -167,7 +170,8 @@ fun MainNavigation(
                 !route.startsWith("audiobookshelf/item/") &&
                 !route.startsWith("audiobookshelf/series/") &&
                 !route.startsWith("audiobookshelf/genre/") &&
-                !route.startsWith("audiobookshelf/player/")
+                !route.startsWith("audiobookshelf/player/") &&
+                !route.startsWith("admin/")
         } ?: true
 
     val useNavRail = widthSizeClass != WindowWidthSizeClass.Compact
@@ -398,7 +402,9 @@ fun MainNavigation(
                                     arguments =
                                         listOf(
                                             navArgument("libraryId") { type = NavType.StringType },
-                                            navArgument("libraryName") { type = NavType.StringType },
+                                            navArgument("libraryName") {
+                                                type = NavType.StringType
+                                            },
                                         ),
                                 ) {
                                     LibraryContentScreen(
@@ -541,6 +547,39 @@ fun MainNavigation(
                                         modifier = Modifier.fillMaxSize(),
                                         widthSizeClass = widthSizeClass,
                                     )
+                                }
+
+                                composable(
+                                    route = Destination.EDIT_METADATA_ROUTE,
+                                    arguments =
+                                        listOf(navArgument("itemId") { type = NavType.StringType }),
+                                ) {
+                                    EditMetadataScreen(
+                                        onNavigateUp = { navController.navigateUp() },
+                                        onSaveSuccess = { navController.navigateUp() },
+                                    )
+                                }
+
+                                composable(
+                                    route = Destination.IDENTIFY_ITEM_ROUTE,
+                                    arguments =
+                                        listOf(
+                                            navArgument("itemId") { type = NavType.StringType },
+                                            navArgument("itemType") { type = NavType.StringType },
+                                        ),
+                                ) {
+                                    IdentifyScreen(
+                                        onNavigateUp = { navController.navigateUp() },
+                                        onApplySuccess = { navController.navigateUp() },
+                                    )
+                                }
+
+                                composable(
+                                    route = Destination.EDIT_IMAGES_ROUTE,
+                                    arguments =
+                                        listOf(navArgument("itemId") { type = NavType.StringType }),
+                                ) {
+                                    EditImagesScreen(onNavigateUp = { navController.navigateUp() })
                                 }
 
                                 composable(Destination.FAVORITES.route) {
