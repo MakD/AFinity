@@ -2,6 +2,7 @@ package com.makd.afinity.ui.watchlist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.media.AfinityBoxSet
@@ -43,6 +44,7 @@ constructor(
     private val downloadRepository: DownloadRepository,
     private val appDataRepository: AppDataRepository,
     private val mediaRepository: MediaRepository,
+    private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val itemDownloadDelegate: ItemDownloadDelegate,
@@ -75,6 +77,10 @@ constructor(
         _selectedEpisodeDownloadInfo.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            adminChangeBroadcaster.itemChanged.collect { loadWatchlist() }
+        }
+
         viewModelScope.launch {
             appDataRepository.watchlistData.collect { data ->
                 _uiState.value =

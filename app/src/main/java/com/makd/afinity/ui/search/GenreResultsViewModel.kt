@@ -10,6 +10,7 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import androidx.paging.cachedIn
 import androidx.paging.map
+import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -42,6 +43,7 @@ constructor(
     @param:ApplicationContext private val context: Context,
     private val mediaRepository: MediaRepository,
     private val appDataRepository: AppDataRepository,
+    private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
 ) : ViewModel() {
 
@@ -81,6 +83,12 @@ constructor(
                     pendingUpdates.clear()
                     Timber.d("Applied batched PagingData updates to Genre Results")
                 }
+            }
+        }
+
+        viewModelScope.launch {
+            adminChangeBroadcaster.itemChanged.collect {
+                currentGenre?.let { reloadGenre(it) }
             }
         }
 
