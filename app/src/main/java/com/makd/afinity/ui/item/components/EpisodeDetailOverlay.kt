@@ -522,8 +522,7 @@ fun EpisodeDetailOverlay(
                         Box {
                             IconButton(onClick = { menuExpanded = true }) {
                                 Icon(
-                                    painter =
-                                        painterResource(id = R.drawable.ic_admin_panel_settings),
+                                    painter = painterResource(id = R.drawable.ic_options),
                                     contentDescription = stringResource(R.string.cd_admin_manage),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(28.dp),
@@ -534,10 +533,13 @@ fun EpisodeDetailOverlay(
                                 onDismissRequest = { menuExpanded = false },
                             ) {
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.admin_action_edit_metadata)) },
+                                    text = {
+                                        Text(stringResource(R.string.admin_action_edit_metadata))
+                                    },
                                     leadingIcon = {
                                         Icon(
-                                            painter = painterResource(id = R.drawable.ic_edit),
+                                            painter =
+                                                painterResource(id = R.drawable.ic_edit_circle),
                                             contentDescription = null,
                                             modifier = Modifier.size(20.dp),
                                         )
@@ -548,11 +550,13 @@ fun EpisodeDetailOverlay(
                                     },
                                 )
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.admin_action_edit_images)) },
+                                    text = {
+                                        Text(stringResource(R.string.admin_action_edit_images))
+                                    },
                                     leadingIcon = {
                                         Icon(
                                             painter =
-                                                painterResource(id = R.drawable.ic_auto_awesome),
+                                                painterResource(id = R.drawable.ic_photo_search),
                                             contentDescription = null,
                                             modifier = Modifier.size(20.dp),
                                         )
@@ -563,7 +567,9 @@ fun EpisodeDetailOverlay(
                                     },
                                 )
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.admin_action_refresh_metadata)) },
+                                    text = {
+                                        Text(stringResource(R.string.admin_action_refresh_metadata))
+                                    },
                                     leadingIcon = {
                                         Icon(
                                             painter = painterResource(id = R.drawable.ic_refresh),
