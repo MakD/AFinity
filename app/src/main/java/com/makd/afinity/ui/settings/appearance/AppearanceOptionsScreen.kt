@@ -76,6 +76,7 @@ fun AppearanceOptionsScreen(
     val combineLibrarySections by viewModel.combineLibrarySections.collectAsState()
     val homeSortByDateAdded by viewModel.homeSortByDateAdded.collectAsState()
     val episodeLayout by viewModel.episodeLayout.collectAsState()
+    val showRatings by viewModel.showRatings.collectAsState()
     val tmdbApiKey by viewModel.tmdbApiKey.collectAsState()
     val mdbListApiKey by viewModel.mdbListApiKey.collectAsState()
     val appFont by viewModel.appFont.collectAsState()
@@ -175,6 +176,14 @@ fun AppearanceOptionsScreen(
                     EpisodeLayoutSelectorItem(
                         selectedLayout = episodeLayout,
                         onLayoutSelected = viewModel::setEpisodeLayout,
+                    )
+                    SettingsDivider()
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_visibility),
+                        title = stringResource(R.string.pref_show_ratings_title),
+                        subtitle = stringResource(R.string.pref_show_ratings_summary),
+                        checked = showRatings,
+                        onCheckedChange = viewModel::toggleShowRatings,
                     )
                 }
             }

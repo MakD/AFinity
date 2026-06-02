@@ -63,6 +63,7 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.navigation.LocalShowRatings
 import kotlinx.coroutines.delay
 import mx.platacard.pagerindicator.PagerIndicatorOrientation
 import mx.platacard.pagerindicator.PagerWormIndicator
@@ -682,49 +683,55 @@ private fun HeroMetadata(item: AfinityItem) {
             else -> null
         }
 
-    communityRating?.let { rating ->
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_imdb_logo),
-                contentDescription = stringResource(R.string.cd_imdb),
-                tint = Color.Unspecified,
-                modifier = Modifier.size(24.dp),
-            )
-            Text(
-                text = String.format(Locale.US, "%.1f", rating),
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-
-    if (item is AfinityMovie) {
-        item.criticRating?.let { rtRating ->
+    if (LocalShowRatings.current) {
+        communityRating?.let { rating ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Icon(
-                    painter =
-                        painterResource(
-                            id =
-                                if (rtRating > 60) R.drawable.ic_rotten_tomato_fresh
-                                else R.drawable.ic_rotten_tomato_rotten
-                        ),
-                    contentDescription = null,
+                    painter = painterResource(id = R.drawable.ic_imdb_logo),
+                    contentDescription = stringResource(R.string.cd_imdb),
                     tint = Color.Unspecified,
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(24.dp),
                 )
                 Text(
-                    text = "${rtRating.toInt()}%",
+                    text = String.format(Locale.US, "%.1f", rating),
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
+
+        if (item is AfinityMovie) {
+            item.criticRating?.let { rtRating ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Icon(
+                        painter =
+                            painterResource(
+                                id =
+                                    if (rtRating > 60) R.drawable.ic_rotten_tomato_fresh
+                                    else R.drawable.ic_rotten_tomato_rotten
+                            ),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Text(
+                        text = "${rtRating.toInt()}%",
+                        style =
+                            MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+
+    if (item is AfinityMovie) {
         item.premiereDate?.let { date ->
             Text(
                 text = date.year.toString(),

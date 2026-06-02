@@ -110,6 +110,8 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val CAST_HEVC_ENABLED = booleanPreferencesKey("cast_hevc_enabled")
         val CAST_MAX_BITRATE = intPreferencesKey("cast_max_bitrate")
         val BUFFER_SIZE_MB = intPreferencesKey("buffer_size_mb")
+
+        val SHOW_RATINGS = booleanPreferencesKey("show_ratings")
     }
 
     override suspend fun setCurrentServerId(serverId: String?) {
@@ -699,6 +701,18 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
             preferences[Keys.EPISODE_LAYOUT]?.let { EpisodeLayout.fromValue(it) }
                 ?: EpisodeLayout.HORIZONTAL
         }
+    }
+
+    override suspend fun setShowRatings(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.SHOW_RATINGS] = enabled }
+    }
+
+    override suspend fun getShowRatings(): Boolean {
+        return dataStore.data.first()[Keys.SHOW_RATINGS] ?: true
+    }
+
+    override fun getShowRatingsFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences -> preferences[Keys.SHOW_RATINGS] ?: true }
     }
 
     override suspend fun setImageCacheEnabled(enabled: Boolean) {

@@ -51,6 +51,7 @@ import com.makd.afinity.data.models.extensions.showThumbImageUrl
 import com.makd.afinity.data.models.extensions.thumbBlurHash
 import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.theme.CardDimensions
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -180,27 +181,29 @@ fun EpisodeListCard(
                         }
                     }
 
-                    item.communityRating?.let { rating ->
-                        MetadataDot(modifier = Modifier.align(Alignment.CenterVertically))
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.align(Alignment.CenterVertically),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                contentDescription = stringResource(R.string.cd_imdb),
-                                tint = Color.Unspecified,
-                                modifier = Modifier.size(16.dp),
-                            )
-                            Text(
-                                text = String.format(Locale.US, "%.1f", rating),
-                                style =
-                                    MaterialTheme.typography.labelMedium.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                    if (LocalShowRatings.current) {
+                        item.communityRating?.let { rating ->
+                            MetadataDot(modifier = Modifier.align(Alignment.CenterVertically))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier.align(Alignment.CenterVertically),
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                    contentDescription = stringResource(R.string.cd_imdb),
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                                Text(
+                                    text = String.format(Locale.US, "%.1f", rating),
+                                    style =
+                                        MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 }

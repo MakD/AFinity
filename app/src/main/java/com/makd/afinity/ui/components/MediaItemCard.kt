@@ -43,6 +43,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.theme.CardDimensions
 import java.util.Locale
 
@@ -168,6 +169,7 @@ fun MediaItemCard(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             val metadataItems = mutableListOf<@Composable () -> Unit>()
+            val showRatings = LocalShowRatings.current
 
             when (item) {
                 is AfinityMovie -> item.productionYear
@@ -189,68 +191,29 @@ fun MediaItemCard(
                 }
             }
 
-            when (item) {
-                is AfinityMovie -> item.communityRating
-                is AfinityShow -> item.communityRating
-                else -> null
-            }?.let { rating ->
-                metadataItems.add {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(2.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_imdb_logo),
-                            contentDescription = stringResource(R.string.cd_imdb),
-                            tint = Color.Unspecified,
-                            modifier =
-                                Modifier.size(
-                                    if (fontScale > 1.3f) 14.dp
-                                    else if (fontScale > 1.15f) 16.dp else 18.dp
-                                ),
-                        )
-                        Text(
-                            text = String.format(Locale.US, "%.1f", rating),
-                            style =
-                                MaterialTheme.typography.bodySmall.copy(
-                                    fontSize =
-                                        MaterialTheme.typography.bodySmall.fontSize *
-                                            if (fontScale > 1.3f) 0.8f
-                                            else if (fontScale > 1.15f) 0.9f else 1f
-                                ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-
-            if (item is AfinityMovie) {
-                item.criticRating?.let { rtRating ->
+            if (showRatings) {
+                when (item) {
+                    is AfinityMovie -> item.communityRating
+                    is AfinityShow -> item.communityRating
+                    else -> null
+                }?.let { rating ->
                     metadataItems.add {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(2.dp),
                         ) {
                             Icon(
-                                painter =
-                                    painterResource(
-                                        id =
-                                            if (rtRating > 60) {
-                                                R.drawable.ic_rotten_tomato_fresh
-                                            } else {
-                                                R.drawable.ic_rotten_tomato_rotten
-                                            }
-                                    ),
-                                contentDescription = stringResource(R.string.cd_rotten_tomatoes),
+                                painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                contentDescription = stringResource(R.string.cd_imdb),
                                 tint = Color.Unspecified,
                                 modifier =
                                     Modifier.size(
-                                        if (fontScale > 1.3f) 10.dp
-                                        else if (fontScale > 1.15f) 11.dp else 12.dp
+                                        if (fontScale > 1.3f) 14.dp
+                                        else if (fontScale > 1.15f) 16.dp else 18.dp
                                     ),
                             )
                             Text(
-                                text = "${rtRating.toInt()}%",
+                                text = String.format(Locale.US, "%.1f", rating),
                                 style =
                                     MaterialTheme.typography.bodySmall.copy(
                                         fontSize =
@@ -260,6 +223,47 @@ fun MediaItemCard(
                                     ),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                        }
+                    }
+                }
+
+                if (item is AfinityMovie) {
+                    item.criticRating?.let { rtRating ->
+                        metadataItems.add {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
+                                Icon(
+                                    painter =
+                                        painterResource(
+                                            id =
+                                                if (rtRating > 60) {
+                                                    R.drawable.ic_rotten_tomato_fresh
+                                                } else {
+                                                    R.drawable.ic_rotten_tomato_rotten
+                                                }
+                                        ),
+                                    contentDescription = stringResource(R.string.cd_rotten_tomatoes),
+                                    tint = Color.Unspecified,
+                                    modifier =
+                                        Modifier.size(
+                                            if (fontScale > 1.3f) 10.dp
+                                            else if (fontScale > 1.15f) 11.dp else 12.dp
+                                        ),
+                                )
+                                Text(
+                                    text = "${rtRating.toInt()}%",
+                                    style =
+                                        MaterialTheme.typography.bodySmall.copy(
+                                            fontSize =
+                                                MaterialTheme.typography.bodySmall.fontSize *
+                                                    if (fontScale > 1.3f) 0.8f
+                                                    else if (fontScale > 1.15f) 0.9f else 1f
+                                        ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 }

@@ -440,6 +440,8 @@
 
     <string name="settings_group_content_layout">Content Layout</string>
     <string name="pref_episode_layout_title">Episode Layout</string>
+    <string name="pref_show_ratings_title">Show Ratings</string>
+    <string name="pref_show_ratings_summary">Display IMDb and Rotten Tomatoes ratings on cards</string>
 
     <string name="theme_system">System Default</string>
     <string name="theme_light">Light</string>

@@ -59,6 +59,7 @@ import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
 import java.util.Locale
 import java.util.UUID
@@ -274,7 +275,12 @@ private fun CastEpisodeCard(
                             stringResource(
                                 R.string.player_season_episode_fmt,
                                 episode.parentIndexNumber ?: 1,
-                                if (episode.indexNumberEnd != null && episode.indexNumberEnd != episode.indexNumber) "${episode.indexNumber ?: 0}-${episode.indexNumberEnd}" else "${episode.indexNumber ?: 0}",
+                                if (
+                                    episode.indexNumberEnd != null &&
+                                        episode.indexNumberEnd != episode.indexNumber
+                                )
+                                    "${episode.indexNumber ?: 0}-${episode.indexNumberEnd}"
+                                else "${episode.indexNumber ?: 0}",
                             ),
                         style = MaterialTheme.typography.labelSmall,
                         color =
@@ -285,7 +291,7 @@ private fun CastEpisodeCard(
                     )
 
                     val rating = episode.communityRating
-                    if (rating != null && rating > 0) {
+                    if (LocalShowRatings.current && rating != null && rating > 0) {
                         Text(
                             text = "•",
                             style = MaterialTheme.typography.labelSmall,

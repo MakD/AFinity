@@ -119,6 +119,15 @@ constructor(
                 initialValue = "DEFAULT",
             )
 
+    val showRatings: StateFlow<Boolean> =
+        preferencesRepository
+            .getShowRatingsFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = true,
+            )
+
     init {
         loadSettings()
     }
@@ -770,6 +779,10 @@ constructor(
 
     fun setAppFont(fontName: String) {
         viewModelScope.launch { preferencesRepository.setAppFont(fontName) }
+    }
+
+    fun toggleShowRatings(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setShowRatings(enabled) }
     }
 
     fun clearError() {

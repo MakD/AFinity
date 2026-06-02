@@ -10,6 +10,7 @@ import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import com.makd.afinity.data.repository.media.MediaRepository
@@ -42,9 +43,17 @@ constructor(
     private val liveTvRepository: LiveTvRepository,
     private val offlineModeManager: OfflineModeManager,
     private val sessionManager: SessionManager,
+    private val preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
     private val _hasLiveTvAccess = MutableStateFlow(true)
     val hasLiveTvAccess = _hasLiveTvAccess.asStateFlow()
+
+    val showRatings =
+        preferencesRepository.getShowRatingsFlow().stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true,
+        )
 
     val appLoadingState =
         combine(

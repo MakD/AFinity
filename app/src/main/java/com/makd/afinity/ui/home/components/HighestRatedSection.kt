@@ -48,6 +48,7 @@ import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
@@ -159,7 +160,8 @@ fun HighestRatedCard(item: AfinityItem, ranking: Int, onClick: () -> Unit, cardW
                                     Surface(
                                         modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
                                         shape = RoundedCornerShape(4.dp),
-                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
+                                        color =
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
                                     ) {
                                         Text(
                                             text =
@@ -176,7 +178,10 @@ fun HighestRatedCard(item: AfinityItem, ranking: Int, onClick: () -> Unit, cardW
                                                 ),
                                             color = MaterialTheme.colorScheme.onPrimary,
                                             modifier =
-                                                Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                                Modifier.padding(
+                                                    horizontal = 6.dp,
+                                                    vertical = 2.dp,
+                                                ),
                                         )
                                     }
                                 }
@@ -232,64 +237,66 @@ fun HighestRatedCard(item: AfinityItem, ranking: Int, onClick: () -> Unit, cardW
                     }
                 }
 
-                when (item) {
-                    is AfinityMovie -> item.communityRating
-                    is AfinityShow -> item.communityRating
-                    else -> null
-                }?.let { rating ->
-                    metadataItems.add {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                contentDescription = stringResource(R.string.cd_imdb),
-                                tint = Color.Unspecified,
-                                modifier = Modifier.size(imdbIconSize),
-                            )
-                            Text(
-                                text = String.format(Locale.US, "%.1f", rating),
-                                style =
-                                    MaterialTheme.typography.bodySmall.copy(
-                                        fontSize = metadataFontSize
-                                    ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-
-                if (item is AfinityMovie) {
-                    item.criticRating?.let { rtRating ->
+                if (LocalShowRatings.current) {
+                    when (item) {
+                        is AfinityMovie -> item.communityRating
+                        is AfinityShow -> item.communityRating
+                        else -> null
+                    }?.let { rating ->
                         metadataItems.add {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(2.dp),
                             ) {
                                 Icon(
-                                    painter =
-                                        painterResource(
-                                            id =
-                                                if (rtRating > 60) {
-                                                    R.drawable.ic_rotten_tomato_fresh
-                                                } else {
-                                                    R.drawable.ic_rotten_tomato_rotten
-                                                }
-                                        ),
-                                    contentDescription =
-                                        stringResource(R.string.cd_rotten_tomatoes),
+                                    painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                    contentDescription = stringResource(R.string.cd_imdb),
                                     tint = Color.Unspecified,
-                                    modifier = Modifier.size(rtIconSize),
+                                    modifier = Modifier.size(imdbIconSize),
                                 )
                                 Text(
-                                    text = "${rtRating.toInt()}%",
+                                    text = String.format(Locale.US, "%.1f", rating),
                                     style =
                                         MaterialTheme.typography.bodySmall.copy(
                                             fontSize = metadataFontSize
                                         ),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
+                            }
+                        }
+                    }
+
+                    if (item is AfinityMovie) {
+                        item.criticRating?.let { rtRating ->
+                            metadataItems.add {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                ) {
+                                    Icon(
+                                        painter =
+                                            painterResource(
+                                                id =
+                                                    if (rtRating > 60) {
+                                                        R.drawable.ic_rotten_tomato_fresh
+                                                    } else {
+                                                        R.drawable.ic_rotten_tomato_rotten
+                                                    }
+                                            ),
+                                        contentDescription =
+                                            stringResource(R.string.cd_rotten_tomatoes),
+                                        tint = Color.Unspecified,
+                                        modifier = Modifier.size(rtIconSize),
+                                    )
+                                    Text(
+                                        text = "${rtRating.toInt()}%",
+                                        style =
+                                            MaterialTheme.typography.bodySmall.copy(
+                                                fontSize = metadataFontSize
+                                            ),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
                     }

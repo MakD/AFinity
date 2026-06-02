@@ -224,6 +224,12 @@ interface PreferencesRepository {
 
     fun getEpisodeLayoutFlow(): Flow<EpisodeLayout>
 
+    suspend fun setShowRatings(enabled: Boolean)
+
+    suspend fun getShowRatings(): Boolean
+
+    fun getShowRatingsFlow(): Flow<Boolean>
+
     suspend fun setNotificationPermissionDeclined(declined: Boolean)
 
     suspend fun getNotificationPermissionDeclined(): Boolean

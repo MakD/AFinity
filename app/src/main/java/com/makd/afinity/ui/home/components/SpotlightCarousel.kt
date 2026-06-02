@@ -40,6 +40,7 @@ import com.makd.afinity.data.models.extensions.showLogoImageUrl
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
 import java.util.Locale
 
@@ -151,7 +152,9 @@ fun SpotlightCarousel(
                                 )
                             }
 
-                            if (imdbRating != null || rtRating != null) {
+                            if (
+                                LocalShowRatings.current && (imdbRating != null || rtRating != null)
+                            ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(4.dp),

@@ -95,6 +95,7 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 val LocalPlayerOffset = compositionLocalOf { 0.dp }
+val LocalShowRatings = compositionLocalOf { true }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -124,6 +125,7 @@ fun MainNavigation(
     val isOffline by offlineModeManager.isOffline.collectAsStateWithLifecycle(initialValue = false)
     val audiobookshelfPlaybackState by
         viewModel.audiobookshelfPlaybackManager.playbackState.collectAsStateWithLifecycle()
+    val showRatings by viewModel.showRatings.collectAsStateWithLifecycle()
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -302,7 +304,10 @@ fun MainNavigation(
                         targetValue = if (showMiniPlayer) 112.dp else 0.dp,
                         label = "globalPlayerOffset",
                     )
-                CompositionLocalProvider(LocalPlayerOffset provides globalPlayerOffset) {
+                CompositionLocalProvider(
+                    LocalPlayerOffset provides globalPlayerOffset,
+                    LocalShowRatings provides showRatings,
+                ) {
                     SharedTransitionLayout {
                         Box(modifier = Modifier.fillMaxSize()) {
                             NavHost(

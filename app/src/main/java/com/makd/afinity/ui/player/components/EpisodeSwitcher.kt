@@ -66,6 +66,7 @@ import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
 import java.util.Locale
 import java.util.UUID
@@ -412,7 +413,9 @@ private fun EpisodeSwitcherCard(
                     ?: (parentItem as? AfinityMovie)?.partCount
                     ?: (episode as? AfinityMovie)?.partCount
 
-            val hasTopRow = episodeMeta != null || rating != null || partNumber != null
+            val showRatings = LocalShowRatings.current
+            val hasTopRow =
+                episodeMeta != null || (showRatings && rating != null) || partNumber != null
             if (hasTopRow) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -440,7 +443,7 @@ private fun EpisodeSwitcherCard(
                         )
                     }
 
-                    if (rating != null && rating > 0) {
+                    if (showRatings && rating != null && rating > 0) {
                         if (episodeMeta != null) {
                             Text(
                                 text = "•",
@@ -469,7 +472,7 @@ private fun EpisodeSwitcherCard(
                     }
 
                     if (partNumber != null) {
-                        if (episodeMeta != null || (rating != null && rating > 0)) {
+                        if (episodeMeta != null || (showRatings && rating != null && rating > 0)) {
                             Text(
                                 text = "•",
                                 style = MaterialTheme.typography.labelSmall,
