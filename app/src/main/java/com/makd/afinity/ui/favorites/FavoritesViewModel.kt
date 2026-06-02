@@ -2,6 +2,7 @@ package com.makd.afinity.ui.favorites
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.media.AfinityBoxSet
@@ -41,6 +42,7 @@ class FavoritesViewModel
 constructor(
     private val userDataRepository: UserDataRepository,
     private val mediaRepository: MediaRepository,
+    private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
     private val watchlistRepository: WatchlistRepository,
     private val downloadRepository: DownloadRepository,
@@ -92,6 +94,10 @@ constructor(
                     )
                 lastFavoritesLoadedAt = System.currentTimeMillis()
             }
+        }
+
+        viewModelScope.launch {
+            adminChangeBroadcaster.itemChanged.collect { loadFavorites() }
         }
 
         viewModelScope.launch {

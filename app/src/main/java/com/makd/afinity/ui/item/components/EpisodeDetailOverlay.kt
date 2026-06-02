@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,7 +27,10 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,6 +58,7 @@ import com.makd.afinity.data.models.extensions.thumbBlurHash
 import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.item.components.shared.AdminAction
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelectionButton
 import org.jellyfin.sdk.model.api.MediaStreamType
@@ -79,6 +85,8 @@ fun EpisodeDetailOverlay(
     onCancelDownload: () -> Unit,
     canDownload: Boolean = true,
     onGoToSeries: (() -> Unit)? = null,
+    isAdmin: Boolean = false,
+    onAdminAction: (AdminAction) -> Unit = {},
 ) {
     val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -116,7 +124,12 @@ fun EpisodeDetailOverlay(
                     stringResource(
                         R.string.episode_season_episode_fmt,
                         episode.parentIndexNumber ?: 0,
-                        if (episode.indexNumberEnd != null && episode.indexNumberEnd != episode.indexNumber) "${episode.indexNumber ?: 0}-${episode.indexNumberEnd}" else "${episode.indexNumber ?: 0}",
+                        if (
+                            episode.indexNumberEnd != null &&
+                                episode.indexNumberEnd != episode.indexNumber
+                        )
+                            "${episode.indexNumber ?: 0}-${episode.indexNumberEnd}"
+                        else "${episode.indexNumber ?: 0}",
                         episode.name,
                     ),
                 style = MaterialTheme.typography.titleMedium,
@@ -502,6 +515,69 @@ fun EpisodeDetailOverlay(
                             onCancelClick = onCancelDownload,
                             canDownload = canDownload,
                         )
+                    }
+
+                    if (isAdmin) {
+                        var menuExpanded by remember { mutableStateOf(false) }
+                        Box {
+                            IconButton(onClick = { menuExpanded = true }) {
+                                Icon(
+                                    painter =
+                                        painterResource(id = R.drawable.ic_admin_panel_settings),
+                                    contentDescription = stringResource(R.string.cd_admin_manage),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(28.dp),
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = menuExpanded,
+                                onDismissRequest = { menuExpanded = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.admin_action_edit_metadata)) },
+                                    leadingIcon = {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.ic_edit),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                    },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onAdminAction(AdminAction.EditMetadata)
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.admin_action_edit_images)) },
+                                    leadingIcon = {
+                                        Icon(
+                                            painter =
+                                                painterResource(id = R.drawable.ic_auto_awesome),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                    },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onAdminAction(AdminAction.EditImages)
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.admin_action_refresh_metadata)) },
+                                    leadingIcon = {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.ic_refresh),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                    },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onAdminAction(AdminAction.Refresh)
+                                    },
+                                )
+                            }
+                        }
                     }
                 }
             }

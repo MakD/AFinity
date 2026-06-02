@@ -70,6 +70,15 @@ enum class Destination(
 
         const val LOGIN_ROUTE = "login?serverUrl={serverUrl}"
 
+        const val EDIT_METADATA_ROUTE = "admin/edit_metadata/{itemId}"
+        const val IDENTIFY_ITEM_ROUTE = "admin/identify/{itemId}/{itemType}"
+        const val EDIT_IMAGES_ROUTE = "admin/edit_images/{itemId}"
+
+        fun createEditMetadataRoute(itemId: String): String = "admin/edit_metadata/$itemId"
+        fun createIdentifyItemRoute(itemId: String, itemType: String): String =
+            "admin/identify/$itemId/$itemType"
+        fun createEditImagesRoute(itemId: String): String = "admin/edit_images/$itemId"
+
         const val AUDIOBOOKSHELF_LOGIN_ROUTE = "audiobookshelf/login"
         const val AUDIOBOOKSHELF_LIBRARIES_ROUTE = "audiobookshelf/libraries"
 

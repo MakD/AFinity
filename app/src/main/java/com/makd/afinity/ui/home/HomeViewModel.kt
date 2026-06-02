@@ -11,6 +11,7 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.makd.afinity.R
+import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.MediaChangeSource
 import com.makd.afinity.data.manager.OfflineModeManager
@@ -96,6 +97,7 @@ constructor(
     private val authRepository: AuthRepository,
     private val mediaRepository: MediaRepository,
     private val playbackStateManager: PlaybackStateManager,
+    private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
     private val itemDownloadDelegate: ItemDownloadDelegate,
     private val itemUserDataDelegate: ItemUserDataDelegate,
@@ -221,6 +223,12 @@ constructor(
                     return@collect
                 }
                 appDataRepository.reloadHomeData()
+            }
+        }
+
+        viewModelScope.launch {
+            adminChangeBroadcaster.itemChanged.collect {
+                appDataRepository.refreshLiveSections()
             }
         }
 

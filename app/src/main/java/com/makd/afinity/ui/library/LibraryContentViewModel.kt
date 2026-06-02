@@ -9,6 +9,7 @@ import androidx.paging.cachedIn
 import androidx.paging.filter
 import androidx.paging.map
 import com.makd.afinity.R
+import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.MediaChangeSource
 import com.makd.afinity.data.models.common.CollectionType
@@ -50,6 +51,7 @@ constructor(
     @param:ApplicationContext private val context: Context,
     private val mediaRepository: MediaRepository,
     private val appDataRepository: AppDataRepository,
+    private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
     private val preferencesRepository: PreferencesRepository,
     savedStateHandle: SavedStateHandle,
@@ -135,6 +137,10 @@ constructor(
                     Timber.d("Applied batched PagingData updates to Library")
                 }
             }
+        }
+
+        viewModelScope.launch {
+            adminChangeBroadcaster.itemChanged.collect { loadItems() }
         }
 
         viewModelScope.launch {

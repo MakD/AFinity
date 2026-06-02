@@ -5,6 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
+import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
@@ -36,6 +37,7 @@ constructor(
     private val mediaRepository: MediaRepository,
     private val appDataRepository: AppDataRepository,
     private val userDataRepository: UserDataRepository,
+    private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -57,6 +59,10 @@ constructor(
     private var lastLoadedAt = 0L
 
     init {
+        viewModelScope.launch {
+            adminChangeBroadcaster.itemChanged.collect { loadPersonDetails() }
+        }
+
         viewModelScope.launch {
             appDataRepository.isInitialDataLoaded.collect { isLoaded ->
                 if (isLoaded) {
