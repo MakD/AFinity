@@ -22,10 +22,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.makd.afinity.R
 
 @Composable
 fun RefreshMetadataDialog(
@@ -41,30 +43,30 @@ fun RefreshMetadataDialog(
 
     AlertDialog(
         onDismissRequest = { if (!uiState.refreshing) onDismiss() },
-        title = { Text("Refresh Metadata") },
+        title = { Text(stringResource(R.string.admin_refresh_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "Refresh mode",
+                    text = stringResource(R.string.admin_refresh_mode_label),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Column(modifier = Modifier.selectableGroup()) {
                     RefreshModeOption(
-                        label = "Default",
-                        description = "Fill missing data only",
+                        label = stringResource(R.string.admin_refresh_mode_default),
+                        description = stringResource(R.string.admin_refresh_mode_default_desc),
                         selected = uiState.mode == RefreshMode.Default,
                         onSelect = { viewModel.setMode(RefreshMode.Default) },
                     )
                     RefreshModeOption(
-                        label = "Validate",
-                        description = "Check and correct all fields",
+                        label = stringResource(R.string.admin_refresh_mode_validate),
+                        description = stringResource(R.string.admin_refresh_mode_validate_desc),
                         selected = uiState.mode == RefreshMode.Validate,
                         onSelect = { viewModel.setMode(RefreshMode.Validate) },
                     )
                     RefreshModeOption(
-                        label = "Full",
-                        description = "Replace everything from providers",
+                        label = stringResource(R.string.admin_refresh_mode_full),
+                        description = stringResource(R.string.admin_refresh_mode_full_desc),
                         selected = uiState.mode == RefreshMode.Full,
                         onSelect = { viewModel.setMode(RefreshMode.Full) },
                     )
@@ -75,14 +77,14 @@ fun RefreshMetadataDialog(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     SwitchRow(
-                        label = "Replace existing images",
+                        label = stringResource(R.string.admin_refresh_replace_images),
                         checked = uiState.replaceImages,
                         onToggle = { viewModel.toggleReplaceImages() },
                     )
 
                     if (uiState.mode == RefreshMode.Full) {
                         SwitchRow(
-                            label = "Replace all metadata",
+                            label = stringResource(R.string.admin_refresh_replace_metadata),
                             checked = uiState.replaceMetadata,
                             onToggle = { viewModel.toggleReplaceMetadata() },
                         )
@@ -103,13 +105,13 @@ fun RefreshMetadataDialog(
                 CircularProgressIndicator(modifier = Modifier.padding(horizontal = 16.dp))
             } else {
                 TextButton(onClick = { viewModel.refresh() }) {
-                    Text("Refresh")
+                    Text(stringResource(R.string.admin_btn_refresh))
                 }
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss, enabled = !uiState.refreshing) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         },
     )

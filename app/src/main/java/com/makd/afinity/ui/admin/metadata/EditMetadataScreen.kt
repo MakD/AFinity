@@ -67,6 +67,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -99,10 +100,10 @@ fun EditMetadataScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Edit Metadata", style = MaterialTheme.typography.titleLarge) },
+                title = { Text(stringResource(R.string.admin_edit_metadata_title), style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
-                        Icon(painterResource(R.drawable.ic_close), contentDescription = "Close")
+                        Icon(painterResource(R.drawable.ic_close), contentDescription = stringResource(R.string.action_close))
                     }
                 },
                 colors =
@@ -131,7 +132,7 @@ fun EditMetadataScreen(
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                             )
                         }
-                        Text(if (uiState.saving) "Saving…" else "Save Changes")
+                        Text(if (uiState.saving) stringResource(R.string.admin_saving) else stringResource(R.string.admin_save_changes))
                     }
                 }
             }
@@ -170,7 +171,11 @@ fun EditMetadataScreen(
                             )
                         },
                     ) {
-                        listOf("General", "People", "Advanced").forEachIndexed { index, title ->
+                        listOf(
+                            stringResource(R.string.admin_tab_general),
+                            stringResource(R.string.admin_tab_people),
+                            stringResource(R.string.admin_tab_advanced),
+                        ).forEachIndexed { index, title ->
                             Tab(
                                 selected = selectedTab == index,
                                 onClick = { selectedTab = index },
@@ -249,21 +254,21 @@ private fun GeneralTab(
         SleekTextField(
             value = item.name,
             onValueChange = { viewModel.updateName(it) },
-            label = "Title",
+            label = stringResource(R.string.admin_field_title),
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
         SleekTextField(
             value = item.originalTitle ?: "",
             onValueChange = { viewModel.updateOriginalTitle(it) },
-            label = "Original Title",
+            label = stringResource(R.string.admin_field_original_title),
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
         SleekTextField(
             value = item.overview ?: "",
             onValueChange = { viewModel.updateOverview(it) },
-            label = "Overview",
+            label = stringResource(R.string.admin_field_overview),
             modifier = Modifier.fillMaxWidth(),
             minLines = 4,
             maxLines = 8,
@@ -272,7 +277,7 @@ private fun GeneralTab(
             SleekTextField(
                 value = item.productionYear?.toString() ?: "",
                 onValueChange = { viewModel.updateYear(it) },
-                label = "Year",
+                label = stringResource(R.string.admin_field_year),
                 modifier = Modifier.weight(1f),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
@@ -280,27 +285,27 @@ private fun GeneralTab(
             SleekTextField(
                 value = item.officialRating ?: "",
                 onValueChange = { viewModel.updateOfficialRating(it) },
-                label = "Rating",
+                label = stringResource(R.string.admin_field_rating),
                 modifier = Modifier.weight(1f),
                 singleLine = true,
             )
         }
 
-        SectionHeader("Genres")
+        SectionHeader(stringResource(R.string.admin_section_genres))
         ChipInput(
             chips = item.genres,
             onAdd = { viewModel.addGenre(it) },
             onRemove = { viewModel.removeGenre(it) },
         )
 
-        SectionHeader("Tags")
+        SectionHeader(stringResource(R.string.admin_section_tags))
         ChipInput(
             chips = item.tags,
             onAdd = { viewModel.addTag(it) },
             onRemove = { viewModel.removeTag(it) },
         )
 
-        SectionHeader("Studios")
+        SectionHeader(stringResource(R.string.admin_section_studios))
         ChipInput(
             chips = item.studios,
             onAdd = { viewModel.addStudio(it) },
@@ -328,7 +333,7 @@ private fun PeopleTab(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Cast & Crew",
+                text = stringResource(R.string.admin_section_cast),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
@@ -348,7 +353,7 @@ private fun PeopleTab(
                     modifier = Modifier.size(16.dp),
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(if (showAddPerson) "Close Form" else "Add Person")
+                Text(if (showAddPerson) stringResource(R.string.admin_close_form) else stringResource(R.string.admin_add_person))
             }
         }
 
@@ -368,21 +373,21 @@ private fun PeopleTab(
                     SleekTextField(
                         value = newPersonName,
                         onValueChange = { newPersonName = it },
-                        label = "Name",
+                        label = stringResource(R.string.admin_field_person_name),
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                     )
                     SleekTextField(
                         value = newPersonType,
                         onValueChange = { newPersonType = it },
-                        label = "Type (Actor, Director, Writer…)",
+                        label = stringResource(R.string.admin_field_person_type),
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                     )
                     SleekTextField(
                         value = newPersonRole,
                         onValueChange = { newPersonRole = it },
-                        label = "Role / Character",
+                        label = stringResource(R.string.admin_field_person_role),
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                     )
@@ -408,7 +413,7 @@ private fun PeopleTab(
                             },
                             shape = RoundedCornerShape(12.dp),
                         ) {
-                            Text("Add to List")
+                            Text(stringResource(R.string.admin_add_to_list))
                         }
                     }
                 }
@@ -450,7 +455,7 @@ private fun PeopleTab(
                         ) {
                             Icon(
                                 painterResource(R.drawable.ic_delete),
-                                contentDescription = "Remove",
+                                contentDescription = stringResource(R.string.cd_admin_remove),
                                 modifier = Modifier.size(18.dp),
                             )
                         }
@@ -497,7 +502,7 @@ private fun AdvancedTab(
         SleekTextField(
             value = item.communityRating?.toString() ?: "",
             onValueChange = { viewModel.updateCommunityRating(it) },
-            label = "Community Rating",
+            label = stringResource(R.string.admin_field_community_rating),
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             singleLine = true,
@@ -505,7 +510,7 @@ private fun AdvancedTab(
         SleekTextField(
             value = item.customRating ?: "",
             onValueChange = { viewModel.updateCustomRating(it) },
-            label = "Custom Rating",
+            label = stringResource(R.string.admin_field_custom_rating),
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
@@ -514,27 +519,27 @@ private fun AdvancedTab(
             SleekTextField(
                 value = item.status ?: "",
                 onValueChange = { viewModel.updateStatus(it) },
-                label = "Status (Continuing / Ended / Unreleased)",
+                label = stringResource(R.string.admin_field_series_status),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
             SleekTextField(
                 value = item.displayOrder ?: "",
                 onValueChange = { viewModel.updateDisplayOrder(it) },
-                label = "Display Order (AirDate / DVD / Absolute)",
+                label = stringResource(R.string.admin_field_display_order),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
         }
 
         SwitchRowSimple(
-            label = "Lock data (prevent auto-refresh from overwriting)",
+            label = stringResource(R.string.admin_lock_data),
             checked = item.lockData,
             onToggle = { viewModel.toggleLockData() },
         )
 
         if (item.lockData) {
-            SectionHeader("Locked fields")
+            SectionHeader(stringResource(R.string.admin_section_locked_fields))
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -582,7 +587,7 @@ private fun ChipInput(
             value = text,
             onValueChange = { text = it },
             modifier = Modifier.weight(1f),
-            placeholder = { Text("Add item…") },
+            placeholder = { Text(stringResource(R.string.admin_add_item_placeholder)) },
             singleLine = true,
             shape = RoundedCornerShape(12.dp),
             colors =
@@ -607,7 +612,7 @@ private fun ChipInput(
         ) {
             Icon(
                 painterResource(R.drawable.ic_add),
-                contentDescription = "Add",
+                contentDescription = stringResource(R.string.cd_admin_add),
                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
@@ -635,7 +640,7 @@ private fun ChipInput(
                     ) {
                         Icon(
                             painterResource(R.drawable.ic_close),
-                            contentDescription = "Remove",
+                            contentDescription = stringResource(R.string.cd_admin_remove),
                             modifier = Modifier.size(12.dp),
                         )
                     }

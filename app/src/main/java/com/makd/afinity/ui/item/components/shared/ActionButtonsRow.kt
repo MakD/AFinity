@@ -146,7 +146,7 @@ fun ActionButtonsRow(
                 IconButton(onClick = { menuExpanded = true }) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_options),
-                        contentDescription = "Manage",
+                        contentDescription = stringResource(R.string.cd_admin_manage),
                         tint = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.size(28.dp),
                     )
@@ -156,7 +156,7 @@ fun ActionButtonsRow(
                     onDismissRequest = { menuExpanded = false },
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Edit Metadata") },
+                        text = { Text(stringResource(R.string.admin_action_edit_metadata)) },
                         leadingIcon = {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_edit_circle),
@@ -170,7 +170,7 @@ fun ActionButtonsRow(
                         },
                     )
                     DropdownMenuItem(
-                        text = { Text("Identify") },
+                        text = { Text(stringResource(R.string.admin_action_identify)) },
                         leadingIcon = {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_search),
@@ -184,7 +184,7 @@ fun ActionButtonsRow(
                         },
                     )
                     DropdownMenuItem(
-                        text = { Text("Edit Images") },
+                        text = { Text(stringResource(R.string.admin_action_edit_images)) },
                         leadingIcon = {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_photo_search),
@@ -198,7 +198,7 @@ fun ActionButtonsRow(
                         },
                     )
                     DropdownMenuItem(
-                        text = { Text("Refresh Metadata") },
+                        text = { Text(stringResource(R.string.admin_action_refresh_metadata)) },
                         leadingIcon = {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_refresh),

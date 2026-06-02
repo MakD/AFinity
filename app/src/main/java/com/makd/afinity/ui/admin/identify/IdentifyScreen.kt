@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -96,10 +97,10 @@ fun IdentifyScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Identify Media", style = MaterialTheme.typography.titleLarge) },
+                title = { Text(stringResource(R.string.admin_identify_title), style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
-                        Icon(painterResource(R.drawable.ic_close), contentDescription = "Close")
+                        Icon(painterResource(R.drawable.ic_close), contentDescription = stringResource(R.string.action_close))
                     }
                 },
                 colors =
@@ -122,7 +123,7 @@ fun IdentifyScreen(
                         SleekTextField(
                             value = uiState.searchName,
                             onValueChange = viewModel::updateSearchName,
-                            label = "Name",
+                            label = stringResource(R.string.admin_identify_field_name),
                             modifier = Modifier.weight(2f),
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -130,7 +131,7 @@ fun IdentifyScreen(
                         SleekTextField(
                             value = uiState.year,
                             onValueChange = viewModel::updateYear,
-                            label = "Year",
+                            label = stringResource(R.string.admin_identify_field_year),
                             modifier = Modifier.weight(1f),
                             singleLine = true,
                             keyboardOptions =
@@ -143,7 +144,7 @@ fun IdentifyScreen(
 
                     if (uiState.providers.isNotEmpty()) {
                         Text(
-                            text = "Provider IDs (Optional)",
+                            text = stringResource(R.string.admin_identify_provider_ids),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(top = 8.dp),
@@ -172,7 +173,7 @@ fun IdentifyScreen(
                     }
 
                     SwitchRowSimple(
-                        label = "Replace all images",
+                        label = stringResource(R.string.admin_identify_replace_images),
                         checked = uiState.replaceAllImages,
                         onToggle = viewModel::toggleReplaceImages,
                     )
@@ -194,7 +195,7 @@ fun IdentifyScreen(
                                 color = MaterialTheme.colorScheme.onPrimary,
                             )
                         } else {
-                            Text("Search", style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.admin_identify_search), style = MaterialTheme.typography.titleMedium)
                         }
                     }
                 }
@@ -203,7 +204,7 @@ fun IdentifyScreen(
             item {
                 AnimatedVisibility(visible = uiState.results.isNotEmpty() || uiState.searching) {
                     Text(
-                        text = "Results",
+                        text = stringResource(R.string.admin_identify_results),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(bottom = 8.dp),
@@ -233,7 +234,7 @@ fun IdentifyScreen(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            text = "No results found.",
+                            text = stringResource(R.string.admin_identify_no_results),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -280,7 +281,7 @@ private fun IdentifyResultCard(
                 } else {
                     Icon(
                         painterResource(R.drawable.ic_broken_image),
-                        contentDescription = "No image",
+                        contentDescription = stringResource(R.string.cd_admin_no_image),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                         modifier = Modifier.align(Alignment.Center).size(24.dp),
                     )

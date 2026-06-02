@@ -57,6 +57,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -103,10 +104,10 @@ fun EditImagesScreen(
     if (imageToDelete != null) {
         AlertDialog(
             onDismissRequest = { imageToDelete = null },
-            title = { Text("Delete image?", style = MaterialTheme.typography.titleLarge) },
+            title = { Text(stringResource(R.string.admin_delete_image_title), style = MaterialTheme.typography.titleLarge) },
             text = {
                 Text(
-                    "This will permanently remove the image from the server.",
+                    stringResource(R.string.admin_delete_image_message),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             },
@@ -122,11 +123,11 @@ fun EditImagesScreen(
                             contentColor = MaterialTheme.colorScheme.error
                         ),
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.action_delete))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { imageToDelete = null }) { Text("Cancel") }
+                TextButton(onClick = { imageToDelete = null }) { Text(stringResource(R.string.action_cancel)) }
             },
         )
     }
@@ -134,10 +135,10 @@ fun EditImagesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Edit Images", style = MaterialTheme.typography.titleLarge) },
+                title = { Text(stringResource(R.string.admin_edit_images_title), style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
-                        Icon(painterResource(R.drawable.ic_close), contentDescription = "Close")
+                        Icon(painterResource(R.drawable.ic_close), contentDescription = stringResource(R.string.action_close))
                     }
                 },
                 colors =
@@ -154,7 +155,7 @@ fun EditImagesScreen(
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 shape = RoundedCornerShape(16.dp),
                 icon = { Icon(painterResource(R.drawable.ic_add), contentDescription = null) },
-                text = { Text("Upload Image") },
+                text = { Text(stringResource(R.string.admin_upload_image)) },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -168,11 +169,16 @@ fun EditImagesScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    listOf("Primary", "Backdrop", "Logo").forEach { type ->
+                    val imageTypes = listOf(
+                        "Primary" to stringResource(R.string.admin_image_type_primary),
+                        "Backdrop" to stringResource(R.string.admin_image_type_backdrop),
+                        "Logo" to stringResource(R.string.admin_image_type_logo),
+                    )
+                    imageTypes.forEach { (type, label) ->
                         FilterChip(
                             selected = uiState.selectedType == type,
                             onClick = { viewModel.selectType(type) },
-                            label = { Text(type) },
+                            label = { Text(label) },
                             shape = CircleShape,
                             border = null,
                             colors =
@@ -198,7 +204,7 @@ fun EditImagesScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = "Include all languages",
+                        text = stringResource(R.string.admin_include_all_languages),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
@@ -228,7 +234,7 @@ fun EditImagesScreen(
             ) {
                 if (uiState.serverImages.isNotEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        SectionLabel("Current Images")
+                        SectionLabel(stringResource(R.string.admin_images_on_server))
                     }
                     items(uiState.serverImages) { image ->
                         ImageCard(
@@ -252,7 +258,7 @@ fun EditImagesScreen(
                 } else if (uiState.remoteImages.isNotEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Spacer(modifier = Modifier.height(8.dp))
-                        SectionLabel("Available from Providers")
+                        SectionLabel(stringResource(R.string.admin_images_from_providers))
                     }
                     items(uiState.remoteImages) { image ->
                         ImageCard(
@@ -308,7 +314,7 @@ private fun ImageCard(
             ) {
                 Icon(
                     painterResource(R.drawable.ic_broken_image),
-                    contentDescription = "No image",
+                    contentDescription = stringResource(R.string.cd_admin_no_image),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     modifier = Modifier.size(32.dp),
                 )
@@ -356,7 +362,7 @@ private fun ImageCard(
             ) {
                 Icon(
                     painterResource(R.drawable.ic_delete),
-                    contentDescription = "Delete",
+                    contentDescription = stringResource(R.string.action_delete),
                     tint = MaterialTheme.colorScheme.onErrorContainer,
                     modifier = Modifier.size(16.dp),
                 )

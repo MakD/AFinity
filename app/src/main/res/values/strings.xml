@@ -1085,4 +1085,79 @@
     <string name="error_request_fail_delete_fmt">Failed to delete: %1$s</string>
     <string name="error_request_fail_approve_fmt">Approve failed: %1$s</string>
     <string name="error_request_fail_decline_fmt">Decline failed: %1$s</string>
+
+    <!--Admin Actions (ActionButtonsRow / EpisodeDetailOverlay menu)-->
+    <string name="cd_admin_manage">Manage</string>
+    <string name="admin_action_edit_metadata">Edit Metadata</string>
+    <string name="admin_action_identify">Identify</string>
+    <string name="admin_action_edit_images">Edit Images</string>
+    <string name="admin_action_refresh_metadata">Refresh Metadata</string>
+
+    <!--Admin - Refresh Metadata Dialog-->
+    <string name="admin_refresh_title">Refresh Metadata</string>
+    <string name="admin_refresh_mode_label">Refresh mode</string>
+    <string name="admin_refresh_mode_default">Default</string>
+    <string name="admin_refresh_mode_default_desc">Fill missing data only</string>
+    <string name="admin_refresh_mode_validate">Validate</string>
+    <string name="admin_refresh_mode_validate_desc">Check and correct all fields</string>
+    <string name="admin_refresh_mode_full">Full</string>
+    <string name="admin_refresh_mode_full_desc">Replace everything from providers</string>
+    <string name="admin_refresh_replace_images">Replace existing images</string>
+    <string name="admin_refresh_replace_metadata">Replace all metadata</string>
+    <string name="admin_btn_refresh">Refresh</string>
+
+    <!--Admin - Edit Metadata Screen-->
+    <string name="admin_edit_metadata_title">Edit Metadata</string>
+    <string name="admin_save_changes">Save Changes</string>
+    <string name="admin_saving">Saving…</string>
+    <string name="admin_tab_general">General</string>
+    <string name="admin_tab_people">People</string>
+    <string name="admin_tab_advanced">Advanced</string>
+    <string name="admin_field_title">Title</string>
+    <string name="admin_field_original_title">Original Title</string>
+    <string name="admin_field_overview">Overview</string>
+    <string name="admin_field_year">Year</string>
+    <string name="admin_field_rating">Rating</string>
+    <string name="admin_section_genres">Genres</string>
+    <string name="admin_section_tags">Tags</string>
+    <string name="admin_section_studios">Studios</string>
+    <string name="admin_section_cast">Cast &amp; Crew</string>
+    <string name="admin_add_person">Add Person</string>
+    <string name="admin_close_form">Close Form</string>
+    <string name="admin_field_person_name">Name</string>
+    <string name="admin_field_person_type">Type (Actor, Director, Writer…)</string>
+    <string name="admin_field_person_role">Role / Character</string>
+    <string name="admin_add_to_list">Add to List</string>
+    <string name="admin_add_item_placeholder">Add item…</string>
+    <string name="admin_field_community_rating">Community Rating</string>
+    <string name="admin_field_custom_rating">Custom Rating</string>
+    <string name="admin_field_series_status">Status (Continuing / Ended / Unreleased)</string>
+    <string name="admin_field_display_order">Display Order (AirDate / DVD / Absolute)</string>
+    <string name="admin_lock_data">Lock data (prevent auto-refresh from overwriting)</string>
+    <string name="admin_section_locked_fields">Locked fields</string>
+    <string name="cd_admin_remove">Remove</string>
+    <string name="cd_admin_add">Add</string>
+
+    <!--Admin - Identify Screen-->
+    <string name="admin_identify_title">Identify Media</string>
+    <string name="admin_identify_field_name">Name</string>
+    <string name="admin_identify_field_year">Year</string>
+    <string name="admin_identify_provider_ids">Provider IDs (Optional)</string>
+    <string name="admin_identify_replace_images">Replace all images</string>
+    <string name="admin_identify_search">Search</string>
+    <string name="admin_identify_results">Results</string>
+    <string name="admin_identify_no_results">No results found</string>
+
+    <!--Admin - Edit Images Screen-->
+    <string name="admin_edit_images_title">Edit Images</string>
+    <string name="admin_delete_image_title">Delete image?</string>
+    <string name="admin_delete_image_message">This will permanently remove the image from the server.</string>
+    <string name="admin_upload_image">Upload Image</string>
+    <string name="admin_image_type_primary">Primary</string>
+    <string name="admin_image_type_backdrop">Backdrop</string>
+    <string name="admin_image_type_logo">Logo</string>
+    <string name="admin_include_all_languages">Include all languages</string>
+    <string name="admin_images_on_server">Current Images</string>
+    <string name="admin_images_from_providers">Available from Providers</string>
+    <string name="cd_admin_no_image">No image placeholder</string>
 </resources>

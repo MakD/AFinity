@@ -524,7 +524,7 @@ fun EpisodeDetailOverlay(
                                 Icon(
                                     painter =
                                         painterResource(id = R.drawable.ic_admin_panel_settings),
-                                    contentDescription = "Manage",
+                                    contentDescription = stringResource(R.string.cd_admin_manage),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(28.dp),
                                 )
@@ -534,7 +534,7 @@ fun EpisodeDetailOverlay(
                                 onDismissRequest = { menuExpanded = false },
                             ) {
                                 DropdownMenuItem(
-                                    text = { Text("Edit Metadata") },
+                                    text = { Text(stringResource(R.string.admin_action_edit_metadata)) },
                                     leadingIcon = {
                                         Icon(
                                             painter = painterResource(id = R.drawable.ic_edit),
@@ -548,7 +548,7 @@ fun EpisodeDetailOverlay(
                                     },
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Edit Images") },
+                                    text = { Text(stringResource(R.string.admin_action_edit_images)) },
                                     leadingIcon = {
                                         Icon(
                                             painter =
@@ -563,7 +563,7 @@ fun EpisodeDetailOverlay(
                                     },
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Refresh Metadata") },
+                                    text = { Text(stringResource(R.string.admin_action_refresh_metadata)) },
                                     leadingIcon = {
                                         Icon(
                                             painter = painterResource(id = R.drawable.ic_refresh),
