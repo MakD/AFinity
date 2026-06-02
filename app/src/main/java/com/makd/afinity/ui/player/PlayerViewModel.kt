@@ -830,7 +830,7 @@ constructor(
                 }
 
                 is PlayerEvent.OnSeekBarDragFinished -> {
-                    val finalPos = uiState.value.seekPosition
+                    val finalPos = event.positionMs
                     player.seekTo(finalPos)
                     updateUiState {
                         it.copy(

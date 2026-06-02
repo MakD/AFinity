@@ -133,6 +133,16 @@ constructor(
                 viewModelScope.launch { syncPlayRepository.seek(event.positionMs * 10_000L) }
                 true
             }
+            is PlayerEvent.SeekRelative -> {
+                val currentPos = playerActions?.currentPositionMs ?: 0L
+                val newPos = (currentPos + event.deltaMs).coerceAtLeast(0L)
+                viewModelScope.launch { syncPlayRepository.seek(newPos * 10_000L) }
+                false
+            }
+            is PlayerEvent.OnSeekBarDragFinished -> {
+                viewModelScope.launch { syncPlayRepository.seek(event.positionMs * 10_000L) }
+                false
+            }
             else -> false
         }
     }

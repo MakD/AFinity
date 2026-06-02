@@ -77,7 +77,7 @@ sealed class PlayerEvent {
 
     data class OnSeekBarValueChange(val positionMs: Long) : PlayerEvent()
 
-    object OnSeekBarDragFinished : PlayerEvent()
+    data class OnSeekBarDragFinished(val positionMs: Long) : PlayerEvent()
 
     object ToggleRemainingTime : PlayerEvent()
 

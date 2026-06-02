@@ -1075,7 +1075,7 @@ private fun SeekBar(
                     onPlayerEvent(PlayerEvent.OnSeekBarValueChange(newPosition.toLong()))
                 },
                 onValueChangeFinished = {
-                    onPlayerEvent(PlayerEvent.OnSeekBarDragFinished)
+                    onPlayerEvent(PlayerEvent.OnSeekBarDragFinished((draggedPosition ?: position).toLong()))
                     draggedPosition = null
                 },
                 valueRange = 0f..duration.toFloat().coerceAtLeast(0f),

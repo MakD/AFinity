@@ -295,7 +295,7 @@ fun PlayerScreen(
                             seekOriginTime = viewModel.player.currentPosition
                             viewModel.handlePlayerEvent(PlayerEvent.OnSeekBarDragStart)
                         } else {
-                            viewModel.handlePlayerEvent(PlayerEvent.OnSeekBarDragFinished)
+                            viewModel.handlePlayerEvent(PlayerEvent.OnSeekBarDragFinished(viewModel.uiState.value.seekPosition))
                         }
                     }
                 },
