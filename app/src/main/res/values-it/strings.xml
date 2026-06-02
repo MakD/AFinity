@@ -104,7 +104,7 @@
     <string name="cd_favorite">Favoriti</string>
     <string name="chapters_title">Capitoli</string>
     <string name="quality_dialog_title">Seleziona la qualità del download</string>
-    <string name="quality_dialog_subtitle">Scegli la qualità di download</string>
+    <string name="quality_dialog_subtitle">Scegli quale versione da scaricare</string>
     <string name="cd_selected">Selezionato</string>
     <string name="cd_not_selected">Non Selezionato</string>
     <string name="file_size_gb">%.2f GB</string>
@@ -350,4 +350,25 @@
     <string name="section_available_requests">Richieste disponibili</string>
     <string name="section_studios">Studios</string>
     <string name="section_networks">Reti</string>
+    <string name="cd_view_all">Vedi tutto</string>
+    <string name="error_requests_load_failed">Impossibile caricare la richiesta</string>
+    <string name="error_request_delete_failed_fmt">Impossibile cancellare la richiesta: %1$s</string>
+    <string name="error_request_approve_failed_fmt">Impossibile approvare la richiesta: %1$s</string>
+    <string name="error_search_no_results_fmt">Nessun risultato trovato per \'%1$s\'</string>
+    <string name="error_search_failed_fmt">Ricerca fallita: %1$s</string>
+    <string name="tab_tv_shows">Show Televisivi</string>
+    <string name="empty_genre_movies">Nessun film trovato per questo genere</string>
+    <string name="pref_switch_session_summary">Cambia utente o server</string>
+    <string name="pref_group_connections">Connessioni</string>
+    <string name="pref_manage_servers">Gestisci Servers</string>
+    <string name="pref_manage_servers_summary">Aggiungi o rimuovi server Jellyfin</string>
+    <string name="pref_group_preferences">Preferenze</string>
+    <string name="pref_appearance">Apparenza</string>
+    <string name="pref_appearance_summary">Temi e composizione</string>
+    <string name="dialog_select_language_title">Scegli Lingua</string>
+    <string name="pref_playback">Playback</string>
+    <string name="dialog_error_title">Errore</string>
+    <string name="action_ok">OK</string>
+    <string name="action_close">Chiudi</string>
+    <string name="error_logout_failed_fmt">Logout fallito: %1$s</string>
 </resources>
