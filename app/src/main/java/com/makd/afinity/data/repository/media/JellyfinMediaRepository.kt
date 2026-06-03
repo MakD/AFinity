@@ -1,6 +1,7 @@
 package com.makd.afinity.data.repository.media
 
 import android.content.Context
+import androidx.core.net.toUri
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -1018,7 +1019,7 @@ constructor(
                     )
                 response.content.items
                     .mapNotNull { baseItem -> baseItem.toAfinityEpisode(getBaseUrl()) }
-                    .distinctBy { episode -> "${episode.parentIndexNumber}_${episode.indexNumber}" }
+                    .distinctBy { it.id }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get episodes")
                 emptyList()
@@ -1546,7 +1547,12 @@ constructor(
                         val childCount = studioDto.childCount ?: 0
                         val thumbImageUrl =
                             studioDto.imageTags?.get(ImageType.THUMB)?.let { tag ->
-                                "${getBaseUrl()}/Items/$id/Images/Thumb?tag=$tag"
+                                getBaseUrl().toUri()
+                                    .buildUpon()
+                                    .appendEncodedPath("Items/$id/Images/Thumb")
+                                    .appendQueryParameter("tag", tag)
+                                    .build()
+                                    .toString()
                             }
                         AfinityStudio(
                             id = id,
