@@ -1,5 +1,6 @@
 package com.makd.afinity.data.repository
 
+import com.makd.afinity.data.models.audiobookshelf.AudibleRating
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser
 import com.makd.afinity.data.models.audiobookshelf.Library
@@ -134,6 +135,13 @@ interface AudiobookshelfRepository {
     suspend fun getListeningStats(): Result<ListeningStats>
 
     suspend fun getListeningSessions(itemsPerPage: Int = 15): Result<ListeningSessionsResponse>
+
+    suspend fun getAudibleRating(
+        itemId: String,
+        asin: String?,
+        title: String,
+        authorName: String?,
+    ): Result<AudibleRating?>
 }
 
 data class AudiobookshelfConfig(val serverUrl: String, val absUserId: String, val username: String)

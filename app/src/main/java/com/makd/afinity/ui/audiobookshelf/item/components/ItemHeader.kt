@@ -31,8 +31,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
-import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +59,9 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.makd.afinity.R
+import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
+import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
+import com.makd.afinity.data.models.audiobookshelf.AudibleRating
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.ui.components.CircleFlagIcon
@@ -77,6 +78,7 @@ fun ItemHeader(
     onDownload: (() -> Unit)? = null,
     onCancelDownload: (() -> Unit)? = null,
     onDeleteDownload: (() -> Unit)? = null,
+    audibleRating: AudibleRating? = null,
     modifier: Modifier = Modifier,
 ) {
     val coverUrl =
@@ -98,6 +100,7 @@ fun ItemHeader(
             onDownload = onDownload,
             onCancelDownload = onCancelDownload,
             onDeleteDownload = onDeleteDownload,
+            audibleRating = audibleRating,
         )
     }
 }
@@ -149,6 +152,7 @@ fun ItemHeaderContent(
     onDownload: (() -> Unit)? = null,
     onCancelDownload: (() -> Unit)? = null,
     onDeleteDownload: (() -> Unit)? = null,
+    audibleRating: AudibleRating? = null,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -374,13 +378,20 @@ fun ItemHeaderContent(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        if (audibleRating != null) {
+            Spacer(modifier = Modifier.height(12.dp))
+            AudibleRatingRow(rating = audibleRating)
+            Spacer(modifier = Modifier.height(12.dp))
+        } else {
+            Spacer(modifier = Modifier.height(24.dp))
+        }
 
         val showSplit = onDownload != null
-        val primaryColors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-        )
+        val primaryColors =
+            ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            )
 
         Row(
             modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -389,10 +400,9 @@ fun ItemHeaderContent(
             Button(
                 onClick = onPlay,
                 modifier = Modifier.weight(1f).fillMaxHeight(),
-                shape = if (showSplit)
-                    RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp)
-                else
-                    RoundedCornerShape(28.dp),
+                shape =
+                    if (showSplit) RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp)
+                    else RoundedCornerShape(28.dp),
                 colors = primaryColors,
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
             ) {
@@ -407,11 +417,14 @@ fun ItemHeaderContent(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = when {
-                            progress != null && progress.isFinished -> stringResource(R.string.abs_listen_again)
-                            progress != null && progress.progress > 0 -> stringResource(R.string.abs_continue_listening)
-                            else -> stringResource(R.string.action_play)
-                        },
+                        text =
+                            when {
+                                progress != null && progress.isFinished ->
+                                    stringResource(R.string.abs_listen_again)
+                                progress != null && progress.progress > 0 ->
+                                    stringResource(R.string.abs_continue_listening)
+                                else -> stringResource(R.string.action_play)
+                            },
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                     )
@@ -420,10 +433,10 @@ fun ItemHeaderContent(
 
             if (showSplit) {
                 Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.25f))
+                    modifier =
+                        Modifier.width(1.dp)
+                            .fillMaxHeight()
+                            .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.25f))
                 )
 
                 Button(
@@ -449,11 +462,13 @@ fun ItemHeaderContent(
                                     modifier = Modifier.size(30.dp),
                                     strokeWidth = 2.5.dp,
                                     color = MaterialTheme.colorScheme.onPrimary,
-                                    trackColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f),
+                                    trackColor =
+                                        MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f),
                                 )
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_cancel),
-                                    contentDescription = stringResource(R.string.cd_cancel_download),
+                                    contentDescription =
+                                        stringResource(R.string.cd_cancel_download),
                                     modifier = Modifier.size(14.dp),
                                 )
                             }
@@ -555,7 +570,9 @@ internal fun ExpandableSynopsis(description: String, modifier: Modifier = Modifi
         if (isEllipsized || isExpanded) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = if (isExpanded) stringResource(R.string.abs_show_less) else stringResource(R.string.abs_read_more),
+                text =
+                    if (isExpanded) stringResource(R.string.abs_show_less)
+                    else stringResource(R.string.abs_read_more),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold,
@@ -596,7 +613,8 @@ internal fun ItemDetailsSection(item: LibraryItem, modifier: Modifier = Modifier
         if (hasPublisherOrYear) {
             val label =
                 when {
-                    !publisher.isNullOrBlank() && !year.isNullOrBlank() -> stringResource(R.string.abs_publisher)
+                    !publisher.isNullOrBlank() && !year.isNullOrBlank() ->
+                        stringResource(R.string.abs_publisher)
                     !publisher.isNullOrBlank() -> stringResource(R.string.abs_publisher)
                     else -> stringResource(R.string.abs_year)
                 }
@@ -666,6 +684,34 @@ private fun DetailRow(label: String, value: String) {
             },
         style = MaterialTheme.typography.bodyMedium,
     )
+}
+
+@Composable
+private fun AudibleRatingRow(rating: AudibleRating, modifier: Modifier = Modifier) {
+    val amber = Color(0xFFFFC107)
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.ic_star),
+            contentDescription = null,
+            tint = amber,
+            modifier = Modifier.size(14.dp),
+        )
+        Text(
+            text = "%.1f".format(rating.rating),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = "on Audible",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 private fun formatDuration(seconds: Double): String {

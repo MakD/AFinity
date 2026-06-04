@@ -3,12 +3,15 @@ package com.makd.afinity.data.repository.audiobookshelf
 import android.os.Build
 import com.makd.afinity.BuildConfig
 import com.makd.afinity.data.database.AfinityDatabase
+import com.makd.afinity.data.database.dao.AudibleRatingDao
+import com.makd.afinity.data.database.entities.AudibleRatingEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfAddressEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfConfigEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfItemEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfLibraryEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfProgressEntity
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
+import com.makd.afinity.data.models.audiobookshelf.AudibleRating
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser
 import com.makd.afinity.data.models.audiobookshelf.BatchLocalSessionRequest
@@ -29,6 +32,7 @@ import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
 import com.makd.afinity.data.models.audiobookshelf.ProgressUpdateRequest
 import com.makd.afinity.data.models.audiobookshelf.SearchResponse
 import com.makd.afinity.data.network.AudiobookshelfApiService
+import com.makd.afinity.data.network.AudnexusApiService
 import com.makd.afinity.data.repository.AudiobookshelfConfig
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.ItemWithProgress
@@ -53,6 +57,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import timber.log.Timber
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -67,6 +72,8 @@ constructor(
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
     private val addressResolver: AudiobookshelfAddressResolver,
     private val absSyncScheduler: AbsProgressSyncScheduler,
+    private val audnexusApiService: AudnexusApiService,
+    private val audibleRatingDao: AudibleRatingDao,
 ) : AudiobookshelfRepository {
 
     private val audiobookshelfDao = database.audiobookshelfDao()
@@ -1611,6 +1618,110 @@ constructor(
                 Timber.e(e, "Error fetching listening sessions")
                 Result.failure(e)
             }
+        }
+    }
+
+    override suspend fun getAudibleRating(
+        itemId: String,
+        asin: String?,
+        title: String,
+        authorName: String?,
+    ): Result<AudibleRating?> =
+        withContext(Dispatchers.IO) {
+            try {
+                val context = currentActiveContext
+                Timber.d(
+                    "AudibleRating: start itemId=$itemId asin=$asin title=$title context=$context"
+                )
+                val (serverId, userId) = context ?: return@withContext Result.success(null)
+
+                val sevenDaysMs = 7 * 24 * 60 * 60 * 1000L
+                val cached = audibleRatingDao.getRating(itemId, serverId, userId.toString())
+                if (
+                    cached != null && (System.currentTimeMillis() - cached.fetchedAt) < sevenDaysMs
+                ) {
+                    Timber.d("AudibleRating: cache hit rating=${cached.rating}")
+                    return@withContext Result.success(
+                        AudibleRating(
+                            rating = cached.rating,
+                            numRatings = cached.numRatings,
+                            asin = cached.asin,
+                        )
+                    )
+                }
+
+                val resolvedAsin = asin ?: searchAsinFallback(title, authorName)
+                Timber.d("AudibleRating: resolvedAsin=$resolvedAsin")
+                resolvedAsin ?: return@withContext Result.success(null)
+
+                val region =
+                    Locale.getDefault().country.lowercase().let {
+                        if (it == "gb") "uk" else it
+                    }
+
+                Timber.d("AudibleRating: fetching from Audnexus asin=$resolvedAsin region=$region")
+                var response = audnexusApiService.getBook(resolvedAsin, region)
+
+                if (!response.isSuccessful && region != "us") {
+                    Timber.d(
+                        "AudibleRating: Regional fetch failed (${response.code()}), falling back to region=us"
+                    )
+                    response = audnexusApiService.getBook(resolvedAsin, "us")
+                }
+
+                Timber.d(
+                    "AudibleRating: Audnexus response code=${response.code()} body=${response.body()}"
+                )
+                if (!response.isSuccessful) return@withContext Result.success(null)
+
+                val body = response.body() ?: return@withContext Result.success(null)
+                val rating = body.rating?.toDoubleOrNull()?.takeIf { it > 0 }
+                Timber.d("AudibleRating: rawRating=${body.rating} parsedRating=$rating")
+                rating ?: return@withContext Result.success(null)
+
+                audibleRatingDao.insertRating(
+                    AudibleRatingEntity(
+                        itemId = itemId,
+                        jellyfinServerId = serverId,
+                        jellyfinUserId = userId.toString(),
+                        asin = resolvedAsin,
+                        rating = rating,
+                        numRatings = null,
+                        fetchedAt = System.currentTimeMillis(),
+                    )
+                )
+
+                Timber.d("AudibleRating: success rating=$rating")
+                Result.success(
+                    AudibleRating(rating = rating, numRatings = null, asin = resolvedAsin)
+                )
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to fetch Audible rating for $itemId")
+                Result.success(null)
+            }
+        }
+
+    private suspend fun searchAsinFallback(title: String, authorName: String?): String? {
+        return try {
+            val region =
+                Locale.getDefault().country.lowercase().let {
+                    if (it == "gb") "uk" else it
+                }
+            Timber.d(
+                "AudibleRating: fallback search title=$title author=$authorName region=$region"
+            )
+            val response =
+                apiService.get().searchCovers(title = title, author = authorName, region = region)
+            Timber.d(
+                "AudibleRating: fallback response code=${response.code()} body=${response.body()}"
+            )
+            if (!response.isSuccessful) return null
+            val asin = response.body()?.firstOrNull()?.asin
+            Timber.d("AudibleRating: fallback asin=$asin")
+            asin
+        } catch (e: Exception) {
+            Timber.w(e, "ABS cover search fallback failed for: $title")
+            null
         }
     }
 

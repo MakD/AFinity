@@ -5,6 +5,7 @@ import com.makd.afinity.BuildConfig
 import com.makd.afinity.core.AppConstants
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.network.AudiobookshelfApiService
+import com.makd.afinity.data.network.AudnexusApiService
 import com.makd.afinity.data.network.JellyseerrApiService
 import com.makd.afinity.data.network.MdbListApiService
 import com.makd.afinity.data.network.OmdbApiService
@@ -65,6 +66,8 @@ import javax.inject.Singleton
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class MdbListClient
 
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class OmdbClient
+
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class AudnexusClient
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -789,5 +792,34 @@ object NetworkModule {
     @Singleton
     fun provideOmdbApiService(@OmdbClient retrofit: Retrofit): OmdbApiService {
         return retrofit.create(OmdbApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    @AudnexusClient
+    fun provideAudnexusRetrofit(baseOkHttpClient: OkHttpClient): Retrofit {
+        val contentType = "application/json".toMediaType()
+        val json = Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+        }
+        return Retrofit.Builder()
+            .baseUrl("https://api.audnex.us/")
+            .client(
+                baseOkHttpClient
+                    .newBuilder()
+                    .connectTimeout(10, TimeUnit.SECONDS)
+                    .readTimeout(10, TimeUnit.SECONDS)
+                    .callTimeout(15, TimeUnit.SECONDS)
+                    .build()
+            )
+            .addConverterFactory(json.asConverterFactory(contentType))
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideAudnexusApiService(@AudnexusClient retrofit: Retrofit): AudnexusApiService {
+        return retrofit.create(AudnexusApiService::class.java)
     }
 }

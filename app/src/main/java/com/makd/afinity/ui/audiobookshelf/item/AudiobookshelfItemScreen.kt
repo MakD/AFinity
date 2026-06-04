@@ -120,6 +120,7 @@ fun AudiobookshelfItemScreen(
     val episodeDownloadMap by viewModel.episodeDownloadMap.collectAsStateWithLifecycle()
     val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
     val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
+    val audibleRating by viewModel.audibleRating.collectAsStateWithLifecycle()
 
     val isPodcast = item?.mediaType?.lowercase() == "podcast"
     val configuration = LocalConfiguration.current
@@ -253,6 +254,7 @@ fun AudiobookshelfItemScreen(
                                     if (!isPodcast) ({ viewModel.cancelDownload() }) else null,
                                 onDeleteDownload =
                                     if (!isPodcast) ({ viewModel.deleteDownload() }) else null,
+                                audibleRating = if (!isPodcast) audibleRating else null,
                             )
                         }
 
@@ -423,6 +425,7 @@ fun AudiobookshelfItemScreen(
                                     if (!isPodcast) ({ viewModel.cancelDownload() }) else null,
                                 onDeleteDownload =
                                     if (!isPodcast) ({ viewModel.deleteDownload() }) else null,
+                                audibleRating = if (!isPodcast) audibleRating else null,
                             )
                         }
 

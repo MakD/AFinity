@@ -2,6 +2,7 @@ package com.makd.afinity.di
 
 import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.database.dao.AbsDownloadDao
+import com.makd.afinity.data.database.dao.AudibleRatingDao
 import com.makd.afinity.data.database.dao.AudiobookshelfDao
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsDownloadRepository
@@ -41,6 +42,12 @@ abstract class AudiobookshelfModule {
         @Singleton
         fun provideAbsDownloadDao(database: AfinityDatabase): AbsDownloadDao {
             return database.absDownloadDao()
+        }
+
+        @Provides
+        @Singleton
+        fun provideAudibleRatingDao(database: AfinityDatabase): AudibleRatingDao {
+            return database.audibleRatingDao()
         }
     }
 }

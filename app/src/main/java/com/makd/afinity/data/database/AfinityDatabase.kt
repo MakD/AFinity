@@ -4,6 +4,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.makd.afinity.data.database.dao.AbsDownloadDao
+import com.makd.afinity.data.database.dao.AudibleRatingDao
 import com.makd.afinity.data.database.dao.AudiobookshelfDao
 import com.makd.afinity.data.database.dao.BoxSetCacheDao
 import com.makd.afinity.data.database.dao.EpisodeDao
@@ -35,6 +36,7 @@ import com.makd.afinity.data.database.entities.AfinitySegmentDto
 import com.makd.afinity.data.database.entities.AfinityShowDto
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
+import com.makd.afinity.data.database.entities.AudibleRatingEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfAddressEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfConfigEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfItemEntity
@@ -100,8 +102,9 @@ import com.makd.afinity.data.models.user.User
             AudiobookshelfAddressEntity::class,
             JellyfinStatsCacheEntity::class,
             AbsDownloadEntity::class,
+            AudibleRatingEntity::class,
         ],
-    version = 46,
+    version = 47,
     exportSchema = false,
 )
 @TypeConverters(AfinityTypeConverters::class)
@@ -152,4 +155,6 @@ abstract class AfinityDatabase : RoomDatabase() {
     abstract fun jellyfinStatsDao(): JellyfinStatsDao
 
     abstract fun absDownloadDao(): AbsDownloadDao
+
+    abstract fun audibleRatingDao(): AudibleRatingDao
 }

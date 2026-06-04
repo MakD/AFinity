@@ -1,5 +1,6 @@
 package com.makd.afinity.data.network
 
+import com.makd.afinity.data.models.audiobookshelf.AbsCoverSearchResult
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser
 import com.makd.afinity.data.models.audiobookshelf.AuthorizeResponse
 import com.makd.afinity.data.models.audiobookshelf.BatchLocalSessionRequest
@@ -83,6 +84,14 @@ interface AudiobookshelfApiService {
         @Query("q") query: String,
         @Query("limit") limit: Int? = null,
     ): Response<SearchResponse>
+
+    @GET("api/search/covers")
+    suspend fun searchCovers(
+        @Query("title") title: String,
+        @Query("author") author: String? = null,
+        @Query("provider") provider: String = "audible",
+        @Query("region") region: String? = null,
+    ): Response<List<AbsCoverSearchResult>>
 
     @GET("api/items/{itemId}")
     suspend fun getItem(
