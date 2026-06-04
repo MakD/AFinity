@@ -99,8 +99,8 @@
     <string name="cd_favorite">Favorit</string>
     <string name="cd_toggle_watched">Gesehen/Ungesehen</string>
     <string name="chapters_title">Kapitel</string>
-    <string name="quality_dialog_title">Download-Qualität wählen</string>
-    <string name="quality_dialog_subtitle">Download-Qualität auswählen</string>
+    <string name="quality_dialog_title">Version wählen</string>
+    <string name="quality_dialog_subtitle">Wählen Sie aus, welche Version heruntergeladen werden soll</string>
     <string name="action_download">Herunterladen</string>
     <string name="cd_selected">Ausgewählt</string>
     <string name="cd_not_selected">Nicht ausgewählt</string>
@@ -851,4 +851,23 @@
     <string name="error_server_not_found_login">Server nicht gefunden. Bitte erneut anmelden.</string>
     <string name="error_session_expired_login">Gespeicherte Sitzung abgelaufen. Bitte erneut anmelden.</string>
     <string name="error_request_update_failed_fmt">Aktualisierung fehlgeschlagen: %1$s</string>
+    <string name="play_error_missing_source">Auf dem Server wurde kein abspielbarer Inhalt gefunden</string>
+    <string name="cd_playback_info">Wiedergabestatistik</string>
+    <string name="pref_show_ratings_title">Bewertungen anzeigen</string>
+    <string name="pref_show_ratings_summary">Bewertungen von IMDb und Rotten Tomatoes auf Karten anzeigen</string>
+    <string name="watchlist_empty_title">Noch nichts auf der Merkliste</string>
+    <string name="watchlists_empty_message">Artikel, die Sie Ihrer Merkliste hinzufügen, werden hier angezeigt</string>
+    <string name="warning_http_insecure">Warnung: Bei einer Verbindung über HTTP wird Ihr Passwort im Klartext übertragen. Die Verwendung von HTTPS wird dringend empfohlen.</string>
+    <string name="dialog_restart_server_title">Server neu starten</string>
+    <string name="dialog_restart_server_message">%1$s neu starten? Aktive Streams werden unterbrochen.</string>
+    <string name="action_restart">Neu starten</string>
+    <string name="dialog_shutdown_server_title">Server herunterfahren</string>
+    <string name="dialog_shutdown_server_message">%1$s herunterfahren? Der Server wird vollständig offline gehen.</string>
+    <string name="action_shutdown">Herunterfahren</string>
+    <string name="title_control_panel">Kontrollpanel</string>
+    <string name="action_refresh_libraries">Bibliotheken aktualisieren</string>
+    <string name="active_sessions_title">Aktive Sitzungen</string>
+    <string name="active_sessions_count_fmt">Aktive Sitzungen (%1$d)</string>
+    <string name="active_sessions_empty">Keine aktiven Sitzungen.</string>
+    <string name="category_running">Läuft</string>
 </resources>
