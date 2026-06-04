@@ -984,4 +984,8 @@
     <string name="admin_images_on_server">Текущие изображения</string>
     <string name="admin_images_from_providers">Доступно у провайдеров</string>
     <string name="cd_admin_no_image">Изображение отсутствует</string>
+    <string name="pref_omdb_api_key_title">Ключ API OMDb</string>
+    <string name="pref_omdb_config_title">Настройки OMDb</string>
+    <string name="episode_missing">ОТСУТСТВУЕТ</string>
+    <string name="episode_upcoming">СЛЕДУЮЩИЙ</string>
 </resources>
