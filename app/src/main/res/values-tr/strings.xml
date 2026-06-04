@@ -979,4 +979,13 @@
     <string name="admin_images_on_server">Şu anki Görüntüler</string>
     <string name="admin_images_from_providers">Sağlayıcılardan ulaşılabilir resimler</string>
     <string name="cd_admin_no_image">Resim yer tutucu yok</string>
+    <string name="episode_upcoming">YAKINDA</string>
+    <string name="episode_missing">EKSİK</string>
+    <string name="cd_abs_explicit">Yetişkin İçerik</string>
+    <string name="cd_abs_abridged">Özetlenmiş</string>
+    <string name="request_fulfillment_details">Talep Yerine Getirme Detayları</string>
+    <string name="pref_omdb_api_key_title">OMDb API Anahtarı</string>
+    <string name="pref_omdb_config_title">OMDb Yapılandırması</string>
+    <string name="admin_refresh_mode_full">Tam</string>
+    <string name="admin_image_type_backdrop">Arka Plan</string>
 </resources>
