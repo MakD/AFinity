@@ -40,6 +40,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.tmdb.TmdbReview
+import com.makd.afinity.navigation.LocalShowRatings
 import java.util.Locale
 import java.util.UUID
 
@@ -75,14 +76,16 @@ fun BaseMediaDetailContent(
             AwardSection(awards = omdbAwards, isFromCache = isRatingsFromCache)
         }
 
-        RatingsAndReviews(
-            item = item,
-            mdbRatings = mdbRatings,
-            mdbRatingBadges = mdbRatingBadges,
-            omdbAwards = omdbAwards,
-            tmdbReviews = tmdbReviews,
-            isRatingsFromCache = isRatingsFromCache,
-        )
+        if (LocalShowRatings.current) {
+            RatingsAndReviews(
+                item = item,
+                mdbRatings = mdbRatings,
+                mdbRatingBadges = mdbRatingBadges,
+                omdbAwards = omdbAwards,
+                tmdbReviews = tmdbReviews,
+                isRatingsFromCache = isRatingsFromCache,
+            )
+        }
 
         SpecialFeaturesSection(
             specialFeatures = specialFeatures,
@@ -280,9 +283,10 @@ private fun AwardSection(awards: String, isFromCache: Boolean) {
     AnimatedVisibility(
         visible = true,
         enter = if (isFromCache) EnterTransition.None else fadeIn(tween(500)),
+        modifier = Modifier.padding(vertical = 8.dp),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {

@@ -57,6 +57,7 @@ import com.makd.afinity.data.models.extensions.showThumbImageUrl
 import com.makd.afinity.data.models.extensions.thumbBlurHash
 import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.item.components.shared.AdminAction
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
@@ -194,13 +195,16 @@ fun EpisodeDetailOverlay(
                             Box(
                                 modifier =
                                     Modifier.background(
-                                            Color.Red.copy(alpha = 0.8f),
+                                            if (isUnaired) Color(0xFF2E7D32).copy(alpha = 0.9f)
+                                            else Color.Red.copy(alpha = 0.8f),
                                             RoundedCornerShape(4.dp),
                                         )
                                         .padding(horizontal = 4.dp, vertical = 2.dp)
                             ) {
                                 Text(
-                                    text = if (isUnaired) "UNAIRED" else "MISSING",
+                                    text =
+                                        if (isUnaired) stringResource(R.string.episode_upcoming)
+                                        else stringResource(R.string.episode_missing),
                                     color = Color.White,
                                     style =
                                         MaterialTheme.typography.labelSmall.copy(
@@ -263,24 +267,26 @@ fun EpisodeDetailOverlay(
                     needsSeparator = true
                 }
 
-                episode.communityRating?.let { rating ->
-                    if (needsSeparator) MetadataDot()
+                if (LocalShowRatings.current) {
+                    episode.communityRating?.let { rating ->
+                        if (needsSeparator) MetadataDot()
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(2.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_imdb_logo),
-                            contentDescription = stringResource(R.string.cd_imdb),
-                            tint = Color.Unspecified,
-                            modifier = Modifier.size(22.dp),
-                        )
-                        Text(
-                            text = String.format(Locale.US, "%.1f", rating),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                contentDescription = stringResource(R.string.cd_imdb),
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(22.dp),
+                            )
+                            Text(
+                                text = String.format(Locale.US, "%.1f", rating),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }

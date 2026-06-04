@@ -84,12 +84,15 @@ fun EpisodeListCard(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            val isUpcoming = item.missing && item.premiereDate?.isAfter(LocalDateTime.now()) == true
+            val isMissingAndAired = item.missing && !isUpcoming
+
             Box(
                 modifier =
                     Modifier.width(thumbnailWidth)
                         .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE)
                         .clip(MaterialTheme.shapes.medium)
-                        .alpha(if (item.missing) 0.5f else 1f)
+                        .alpha(if (isMissingAndAired) 0.5f else 1f)
             ) {
                 val blurHash =
                     item.images.primaryBlurHash
@@ -153,13 +156,20 @@ fun EpisodeListCard(
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     Text(
-                        text = "S${item.parentIndexNumber}:E" + if (item.indexNumberEnd != null && item.indexNumberEnd != item.indexNumber) "${item.indexNumber}-E${item.indexNumberEnd}" else "${item.indexNumber}",
+                        text =
+                            "S${item.parentIndexNumber}:E" +
+                                if (
+                                    item.indexNumberEnd != null &&
+                                        item.indexNumberEnd != item.indexNumber
+                                )
+                                    "${item.indexNumber}-E${item.indexNumberEnd}"
+                                else "${item.indexNumber}",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.align(Alignment.CenterVertically),
                     )
 
-                    if (item.missing) {
+                    if (isMissingAndAired) {
                         Box(
                             modifier =
                                 Modifier.background(
@@ -170,7 +180,27 @@ fun EpisodeListCard(
                                     .align(Alignment.CenterVertically)
                         ) {
                             Text(
-                                text = "MISSING",
+                                text = stringResource(R.string.episode_missing),
+                                color = Color.White,
+                                style =
+                                    MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.5.sp,
+                                    ),
+                            )
+                        }
+                    } else if (isUpcoming) {
+                        Box(
+                            modifier =
+                                Modifier.background(
+                                        Color(0xFF2E7D32).copy(alpha = 0.9f),
+                                        RoundedCornerShape(4.dp),
+                                    )
+                                    .padding(horizontal = 4.dp, vertical = 2.dp)
+                                    .align(Alignment.CenterVertically)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.episode_upcoming),
                                 color = Color.White,
                                 style =
                                     MaterialTheme.typography.labelSmall.copy(

@@ -97,12 +97,18 @@ fun ContinueWatchingCard(
                     }
 
                 val isMissing = item is AfinityEpisode && item.missing
+                val isUpcoming =
+                    isMissing &&
+                        (item as AfinityEpisode)
+                            .premiereDate
+                            ?.isAfter(java.time.LocalDateTime.now()) == true
+                val isMissingAndAired = isMissing && !isUpcoming
 
                 AsyncImage(
                     imageUrl = imageUrl,
                     blurHash = blurHash,
                     contentDescription = item.name,
-                    modifier = Modifier.fillMaxSize().alpha(if (isMissing) 0.5f else 1f),
+                    modifier = Modifier.fillMaxSize().alpha(if (isMissingAndAired) 0.5f else 1f),
                     contentScale = ContentScale.Crop,
                 )
 
@@ -122,7 +128,7 @@ fun ContinueWatchingCard(
                     )
                 }
 
-                if (isMissing) {
+                if (isMissingAndAired) {
                     Box(
                         modifier =
                             Modifier.align(Alignment.TopEnd)
@@ -131,7 +137,28 @@ fun ContinueWatchingCard(
                                 .padding(horizontal = 4.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = "MISSING",
+                            text = stringResource(R.string.episode_missing),
+                            color = Color.White,
+                            style =
+                                MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.5.sp,
+                                ),
+                        )
+                    }
+                } else if (isUpcoming) {
+                    Box(
+                        modifier =
+                            Modifier.align(Alignment.TopEnd)
+                                .padding(8.dp)
+                                .background(
+                                    Color(0xFF2E7D32).copy(alpha = 0.9f),
+                                    RoundedCornerShape(4.dp),
+                                )
+                                .padding(horizontal = 4.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.episode_upcoming),
                             color = Color.White,
                             style =
                                 MaterialTheme.typography.labelSmall.copy(
@@ -242,7 +269,8 @@ fun ContinueWatchingCard(
                                                         R.drawable.ic_rotten_tomato_rotten
                                                     }
                                             ),
-                                        contentDescription = stringResource(R.string.cd_rotten_tomatoes_rating),
+                                        contentDescription =
+                                            stringResource(R.string.cd_rotten_tomatoes_rating),
                                         modifier = Modifier.size(12.dp),
                                         tint = Color.Unspecified,
                                     )
@@ -279,7 +307,14 @@ fun ContinueWatchingCard(
                 ) {
                     Text(
                         text =
-                            "S${item.parentIndexNumber}:E" + (if (item.indexNumberEnd != null && item.indexNumberEnd != item.indexNumber) "${item.indexNumber}-E${item.indexNumberEnd}" else "${item.indexNumber}") + " • ${item.seriesName}",
+                            "S${item.parentIndexNumber}:E" +
+                                (if (
+                                    item.indexNumberEnd != null &&
+                                        item.indexNumberEnd != item.indexNumber
+                                )
+                                    "${item.indexNumber}-E${item.indexNumberEnd}"
+                                else "${item.indexNumber}") +
+                                " • ${item.seriesName}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
