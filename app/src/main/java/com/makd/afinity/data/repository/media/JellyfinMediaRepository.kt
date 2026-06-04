@@ -29,7 +29,9 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.toAfinityCollection
+import com.makd.afinity.data.models.omdb.OmdbApiResult
 import com.makd.afinity.data.network.MdbListApiService
+import com.makd.afinity.data.network.OmdbApiService
 import com.makd.afinity.data.paging.JellyfinItemsPagingSource
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
@@ -82,6 +84,7 @@ constructor(
     @param:ApplicationContext private val context: Context,
     private val boxSetCache: BoxSetCache,
     private val mdbListApiService: MdbListApiService,
+    private val omdbApiService: OmdbApiService,
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val databaseRepository: DatabaseRepository,
 ) : MediaRepository {
@@ -1547,7 +1550,8 @@ constructor(
                         val childCount = studioDto.childCount ?: 0
                         val thumbImageUrl =
                             studioDto.imageTags?.get(ImageType.THUMB)?.let { tag ->
-                                getBaseUrl().toUri()
+                                getBaseUrl()
+                                    .toUri()
                                     .buildUpon()
                                     .appendEncodedPath("Items/$id/Images/Thumb")
                                     .appendQueryParameter("tag", tag)
@@ -1808,20 +1812,48 @@ constructor(
 
                 val type = if (isMovie) "movie" else "show"
                 val result = mdbListApiService.getRatings(type, tmdbId, apiKey)
-                val keywords = (result.keywords + result.keyword).map { it.name.lowercase() }.toSet()
+                val keywords =
+                    (result.keywords + result.keyword).map { it.name.lowercase() }.toSet()
 
                 MdbListRatingsResult(
                     ratings = result.ratings,
                     badges =
                         MdbListRatingBadges(
                             certifiedFresh = "certified-fresh" in keywords,
-                            verifiedHot =
-                                "certified-hot" in keywords || "verified-hot" in keywords,
+                            verifiedHot = "certified-hot" in keywords || "verified-hot" in keywords,
                         ),
                 )
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get MDBList ratings for TMDB ID: $tmdbId")
                 MdbListRatingsResult()
+            }
+        }
+
+    override suspend fun getOmdbDetails(imdbId: String): OmdbApiResult? =
+        withContext(Dispatchers.IO) {
+            try {
+                val serverId =
+                    sessionManager.currentSession.value?.serverId ?: return@withContext null
+                val userId =
+                    sessionManager.currentSession.value?.userId?.toString()
+                        ?: return@withContext null
+                val apiKey = securePreferencesRepository.getOmdbApiKey(serverId, userId)
+
+                if (apiKey.isNullOrBlank()) {
+                    return@withContext null
+                }
+
+                val result = omdbApiService.getTitleDetails(imdbId = imdbId, apiKey = apiKey)
+
+                if (result.response == "True") {
+                    result
+                } else {
+                    Timber.w("OMDb API Error: ${result.error}")
+                    null
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get OMDb details for IMDb ID: $imdbId")
+                null
             }
         }
 

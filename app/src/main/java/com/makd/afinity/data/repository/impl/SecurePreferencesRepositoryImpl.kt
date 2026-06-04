@@ -686,6 +686,18 @@ constructor(@param:ApplicationContext private val context: Context) : SecurePref
         return getDecryptedString(mdbKey)
     }
 
+    override suspend fun saveOmdbApiKey(serverId: String, userId: String, apiKey: String) {
+        context.dataStore.edit { prefs ->
+            val omdbKey = stringPreferencesKey("omdb_api_key_${serverId}_$userId")
+            prefs[omdbKey] = encrypt(apiKey)
+        }
+    }
+
+    override suspend fun getOmdbApiKey(serverId: String, userId: String): String? {
+        val omdbKey = stringPreferencesKey("omdb_api_key_${serverId}_$userId")
+        return getDecryptedString(omdbKey)
+    }
+
     @Volatile override var onAbsAuthInvalidated: (() -> Unit)? = null
 
     override fun getCachedJellyfinToken(): String? = cachedJellyfinToken

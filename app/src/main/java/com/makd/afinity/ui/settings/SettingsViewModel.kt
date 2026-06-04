@@ -13,6 +13,7 @@ import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.network.MdbListApiService
+import com.makd.afinity.data.network.OmdbApiService
 import com.makd.afinity.data.network.TmdbApiService
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.AudiobookshelfRepository
@@ -58,6 +59,7 @@ constructor(
     private val audiobookshelfPlayer: AudiobookshelfPlayer,
     private val tmdbApiService: TmdbApiService,
     private val mdbListApiService: MdbListApiService,
+    private val omdbApiService: OmdbApiService,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -110,6 +112,9 @@ constructor(
     private val _mdbListApiKey = MutableStateFlow("")
     val mdbListApiKey = _mdbListApiKey.asStateFlow()
 
+    private val _omdbApiKey = MutableStateFlow("")
+    val omdbApiKey: StateFlow<String> = _omdbApiKey.asStateFlow()
+
     val appFont: StateFlow<String> =
         preferencesRepository
             .getAppFontFlow()
@@ -156,6 +161,14 @@ constructor(
                             ) ?: ""
                         } else ""
 
+                    val omdbKey =
+                        if (user != null && server != null) {
+                            securePreferencesRepository.getOmdbApiKey(
+                                server.id,
+                                user.id.toString(),
+                            ) ?: ""
+                        } else ""
+
                     _uiState.value =
                         _uiState.value.copy(
                             currentUser = user,
@@ -177,6 +190,7 @@ constructor(
                         )
                     _tmdbApiKey.value = tmdbKey
                     _mdbListApiKey.value = mdbListKey
+                    _omdbApiKey.value = omdbKey
 
                     Timber.d(
                         "SettingsViewModel - Updated uiState: user=${user?.name}, server=${server?.name}"
@@ -723,11 +737,46 @@ constructor(
         }
     }
 
+    fun validateAndSaveOmdbKey(apiKey: String, onSuccess: () -> Unit) {
+        if (apiKey.isBlank()) {
+            setOmdbApiKey("")
+            onSuccess()
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value =
+                _uiState.value.copy(
+                    isOmdbKeyValidating = true,
+                    omdbKeyValidationError = null,
+                )
+            try {
+                val result = omdbApiService.getTitleDetails("tt0111161", apiKey)
+                if (result.response == "True") {
+                    setOmdbApiKey(apiKey)
+                    onSuccess()
+                } else {
+                    _uiState.value =
+                        _uiState.value.copy(omdbKeyValidationError = "Invalid OMDb API Key")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "OMDb validation network failure")
+                _uiState.value =
+                    _uiState.value.copy(
+                        omdbKeyValidationError = "Network failure. Please try again."
+                    )
+            } finally {
+                _uiState.value = _uiState.value.copy(isOmdbKeyValidating = false)
+            }
+        }
+    }
+
     fun clearApiValidationErrors() {
         _uiState.value =
             _uiState.value.copy(
                 tmdbKeyValidationError = null,
                 mdbListKeyValidationError = null,
+                omdbKeyValidationError = null,
             )
     }
 
@@ -750,6 +799,29 @@ constructor(
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error saving TMDB API key")
+            }
+        }
+    }
+
+    fun setOmdbApiKey(apiKey: String) {
+        viewModelScope.launch {
+            try {
+                val user = authRepository.currentUser.value
+                val server = serverRepository.currentServer.value
+
+                if (user != null && server != null) {
+                    securePreferencesRepository.saveOmdbApiKey(
+                        server.id,
+                        user.id.toString(),
+                        apiKey,
+                    )
+                    _omdbApiKey.value = apiKey
+                    Timber.d("OMDb API Key updated securely.")
+                } else {
+                    Timber.w("Failed to save OMDb API Key: User or Server is null")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error saving OMDb API key")
             }
         }
     }
@@ -818,6 +890,7 @@ constructor(
                 addAll(audiobookshelfRepository.getAllKnownAddresses())
                 _tmdbApiKey.value.takeIf { it.isNotBlank() }?.let { add(it) }
                 _mdbListApiKey.value.takeIf { it.isNotBlank() }?.let { add(it) }
+                _omdbApiKey.value.takeIf { it.isNotBlank() }?.let { add(it) }
             }
             LogExporter.export(context, app?.ringBufferTree, secrets)
             _uiState.value = _uiState.value.copy(isExportingLogs = false)
@@ -860,4 +933,6 @@ data class SettingsUiState(
     val tmdbKeyValidationError: String? = null,
     val isMdbListKeyValidating: Boolean = false,
     val mdbListKeyValidationError: String? = null,
+    val isOmdbKeyValidating: Boolean = false,
+    val omdbKeyValidationError: String? = null,
 )

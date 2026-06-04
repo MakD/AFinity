@@ -14,6 +14,7 @@ import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
+import com.makd.afinity.data.models.omdb.OmdbApiResult
 import com.makd.afinity.ui.library.FilterType
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -239,6 +240,8 @@ interface MediaRepository {
     fun getContinueWatchingFlow(): Flow<List<AfinityItem>>
 
     suspend fun getMdbListRatings(tmdbId: String, isMovie: Boolean): MdbListRatingsResult
+
+    suspend fun getOmdbDetails(imdbId: String): OmdbApiResult?
 
     suspend fun getEpisodeToPlay(seriesId: UUID): AfinityEpisode?
 

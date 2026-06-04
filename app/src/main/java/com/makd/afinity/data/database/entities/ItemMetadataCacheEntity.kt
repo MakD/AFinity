@@ -17,5 +17,6 @@ data class ItemMetadataCacheEntity(
     val tmdbReviews: List<TmdbReview> = emptyList(),
     val mdbRatings: List<MdbListRating> = emptyList(),
     val mdbRatingBadges: MdbListRatingBadges = MdbListRatingBadges(),
+    val omdbAwards: String? = null,
     val lastUpdated: Long = System.currentTimeMillis(),
 )

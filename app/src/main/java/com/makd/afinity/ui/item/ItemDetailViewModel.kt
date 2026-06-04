@@ -59,6 +59,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -722,6 +723,7 @@ constructor(
                                     tmdbReviews = cachedMetadata.tmdbReviews,
                                     mdbRatings = cachedMetadata.mdbRatings,
                                     mdbRatingBadges = cachedMetadata.mdbRatingBadges,
+                                    omdbAwards = cachedMetadata.omdbAwards,
                                     isRatingsFromCache = true,
                                 )
                         }
@@ -912,32 +914,36 @@ constructor(
                     isCacheValid &&
                     (cachedMetadata.tmdbReviews.isNotEmpty() ||
                         cachedMetadata.mdbRatings.isNotEmpty() ||
-                        cachedMetadata.mdbRatingBadges.hasAny)
+                        cachedMetadata.mdbRatingBadges.hasAny ||
+                        cachedMetadata.omdbAwards != null)
             ) {
                 _uiState.update {
                     it.copy(
                         tmdbReviews = cachedMetadata.tmdbReviews,
                         mdbRatings = cachedMetadata.mdbRatings,
                         mdbRatingBadges = cachedMetadata.mdbRatingBadges,
+                        omdbAwards = cachedMetadata.omdbAwards,
                         isRatingsFromCache = true,
                         isLoadingReviews = false,
                     )
                 }
             } else {
                 val tmdbId = item.providerIds?.get("Tmdb")
+                val imdbId = item.providerIds?.get("Imdb")
                 var fetchedReviews = emptyList<TmdbReview>()
                 var fetchedRatings = emptyList<MdbListRating>()
                 var fetchedRatingBadges = MdbListRatingBadges()
+                var fetchedOmdbAwards: String? = null
 
-                if (tmdbId != null && userId != null) {
+                if ((tmdbId != null || imdbId != null) && userId != null) {
                     val serverId = session?.serverId ?: serverRepository.currentServer.value?.id
                     val tmdbKey = serverId?.let {
                         securePreferencesRepository.getTmdbApiKey(it, userId.toString())
                     }
-                    kotlinx.coroutines.coroutineScope {
+                    coroutineScope {
                         val reviewsDeferred = async {
                             try {
-                                if (!tmdbKey.isNullOrBlank()) {
+                                if (tmdbId != null && !tmdbKey.isNullOrBlank()) {
                                     when (item) {
                                         is AfinityMovie ->
                                             tmdbApiService.getMovieReviews(tmdbId, tmdbKey).results
@@ -957,15 +963,20 @@ constructor(
 
                         val ratingsDeferred = async {
                             try {
-                                val ratingsResult =
-                                    mediaRepository.getMdbListRatings(tmdbId, item is AfinityMovie)
-                                ratingsResult.copy(
-                                    ratings =
-                                        ratingsResult.ratings.filter {
-                                            it.source.lowercase() !in listOf("imdb", "tomatoes") &&
-                                                it.value != null
-                                        }
-                                )
+                                if (tmdbId != null) {
+                                    val ratingsResult =
+                                        mediaRepository.getMdbListRatings(
+                                            tmdbId,
+                                            item is AfinityMovie,
+                                        )
+                                    ratingsResult.copy(
+                                        ratings =
+                                            ratingsResult.ratings.filter {
+                                                it.source.lowercase() !in
+                                                    listOf("imdb", "tomatoes") && it.value != null
+                                            }
+                                    )
+                                } else MdbListRatingsResult()
                             } catch (e: Exception) {
                                 Timber.w(
                                     e,
@@ -975,10 +986,23 @@ constructor(
                             }
                         }
 
+                        val omdbDeferred = async {
+                            try {
+                                if (imdbId != null) {
+                                    val result = mediaRepository.getOmdbDetails(imdbId)
+                                    result?.awards?.takeIf { it != "N/A" }
+                                } else null
+                            } catch (e: Exception) {
+                                Timber.w(e, "Failed to fetch OMDb awards")
+                                null
+                            }
+                        }
+
                         fetchedReviews = reviewsDeferred.await()
                         val ratingsResult = ratingsDeferred.await()
                         fetchedRatings = ratingsResult.ratings
                         fetchedRatingBadges = ratingsResult.badges
+                        fetchedOmdbAwards = omdbDeferred.await()
                     }
                 }
 
@@ -987,6 +1011,7 @@ constructor(
                         tmdbReviews = fetchedReviews,
                         mdbRatings = fetchedRatings,
                         mdbRatingBadges = fetchedRatingBadges,
+                        omdbAwards = fetchedOmdbAwards,
                         isRatingsFromCache = false,
                         isLoadingReviews = false,
                     )
@@ -995,7 +1020,8 @@ constructor(
                 if (
                     (fetchedReviews.isNotEmpty() ||
                         fetchedRatings.isNotEmpty() ||
-                        fetchedRatingBadges.hasAny) && session != null
+                        fetchedRatingBadges.hasAny ||
+                        fetchedOmdbAwards != null) && session != null
                 ) {
                     databaseRepository.insertItemMetadata(
                         ItemMetadataCacheEntity(
@@ -1005,6 +1031,7 @@ constructor(
                             tmdbReviews = fetchedReviews,
                             mdbRatings = fetchedRatings,
                             mdbRatingBadges = fetchedRatingBadges,
+                            omdbAwards = fetchedOmdbAwards,
                         )
                     )
                 }
@@ -1372,6 +1399,7 @@ data class ItemDetailUiState(
     val isLoadingReviews: Boolean = false,
     val mdbRatings: List<MdbListRating> = emptyList(),
     val mdbRatingBadges: MdbListRatingBadges = MdbListRatingBadges(),
+    val omdbAwards: String? = null,
     val isRatingsFromCache: Boolean = false,
     val movieParts: List<AfinityItem> = emptyList(),
 ) {

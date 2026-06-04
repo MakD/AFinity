@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,6 +51,7 @@ fun BaseMediaDetailContent(
     tmdbReviews: List<TmdbReview>,
     mdbRatings: List<MdbListRating> = emptyList(),
     mdbRatingBadges: MdbListRatingBadges = MdbListRatingBadges(),
+    omdbAwards: String? = null,
     isRatingsFromCache: Boolean = false,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     onBoxSetClick: (AfinityBoxSet) -> Unit,
@@ -69,10 +71,15 @@ fun BaseMediaDetailContent(
 
         CastSection(item = item, onPersonClick = onPersonClick, widthSizeClass = widthSizeClass)
 
+        if (!omdbAwards.isNullOrBlank()) {
+            AwardSection(awards = omdbAwards, isFromCache = isRatingsFromCache)
+        }
+
         RatingsAndReviews(
             item = item,
             mdbRatings = mdbRatings,
             mdbRatingBadges = mdbRatingBadges,
+            omdbAwards = omdbAwards,
             tmdbReviews = tmdbReviews,
             isRatingsFromCache = isRatingsFromCache,
         )
@@ -96,6 +103,7 @@ private fun RatingsAndReviews(
     item: AfinityItem,
     mdbRatings: List<MdbListRating>,
     mdbRatingBadges: MdbListRatingBadges,
+    omdbAwards: String?,
     tmdbReviews: List<TmdbReview>,
     isRatingsFromCache: Boolean,
 ) {
@@ -119,11 +127,12 @@ private fun RatingsAndReviews(
             communityRating != null ||
             criticRating != null
     val hasReviews = tmdbReviews.isNotEmpty()
+    val hasAwards = !omdbAwards.isNullOrBlank()
 
-    if (!hasRatings && !hasReviews) return
+    if (!hasRatings && !hasReviews && !hasAwards) return
 
     Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         if (hasRatings) {
@@ -259,6 +268,49 @@ private fun RatingsAndReviews(
         }
         if (hasReviews) {
             ReviewsSection(reviews = tmdbReviews)
+        }
+    }
+}
+
+@Composable
+private fun AwardSection(awards: String, isFromCache: Boolean) {
+    val mainHighlight = awards.split(".", limit = 2).firstOrNull()?.trim() ?: awards
+    val goldAccent = Color(0xFFD4AF37)
+
+    AnimatedVisibility(
+        visible = true,
+        enter = if (isFromCache) EnterTransition.None else fadeIn(tween(500)),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_laurel),
+                contentDescription = null,
+                tint = goldAccent,
+                modifier = Modifier.size(36.dp),
+            )
+            Text(
+                text = mainHighlight.uppercase(),
+                style =
+                    MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp,
+                    ),
+                color = goldAccent,
+                modifier = Modifier.padding(horizontal = 16.dp).weight(1f, fill = false),
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Icon(
+                painter = painterResource(id = R.drawable.ic_laurel),
+                contentDescription = null,
+                tint = goldAccent,
+                modifier = Modifier.size(36.dp),
+            )
         }
     }
 }

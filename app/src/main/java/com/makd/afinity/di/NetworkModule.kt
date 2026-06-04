@@ -7,6 +7,7 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.network.AudiobookshelfApiService
 import com.makd.afinity.data.network.JellyseerrApiService
 import com.makd.afinity.data.network.MdbListApiService
+import com.makd.afinity.data.network.OmdbApiService
 import com.makd.afinity.data.network.TmdbApiService
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import dagger.Module
@@ -14,6 +15,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Cache
@@ -61,6 +63,8 @@ import javax.inject.Singleton
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class TmdbClient
 
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class MdbListClient
+
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class OmdbClient
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -464,12 +468,11 @@ object NetworkModule {
             .build()
     }
 
-    private val jellyseerrJson =
-        kotlinx.serialization.json.Json {
-            ignoreUnknownKeys = true
-            isLenient = true
-            encodeDefaults = true
-        }
+    private val jellyseerrJson = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        encodeDefaults = true
+    }
 
     @Provides
     @Singleton
@@ -671,7 +674,7 @@ object NetworkModule {
             val response = refreshClient.newCall(request).execute()
             if (response.isSuccessful) {
                 val body = response.body.string()
-                val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+                val json = Json { ignoreUnknownKeys = true }
                 val jsonObj = json.parseToJsonElement(body).jsonObject
                 val userObj = jsonObj["user"]?.jsonObject
                 val newAccessToken =
@@ -698,12 +701,11 @@ object NetworkModule {
         }
     }
 
-    private val audiobookshelfJson =
-        kotlinx.serialization.json.Json {
-            ignoreUnknownKeys = true
-            isLenient = true
-            encodeDefaults = true
-        }
+    private val audiobookshelfJson = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        encodeDefaults = true
+    }
 
     @Provides
     @Singleton
@@ -763,5 +765,29 @@ object NetworkModule {
     @Singleton
     fun provideMdbListApiService(@MdbListClient retrofit: Retrofit): MdbListApiService {
         return retrofit.create(MdbListApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    @OmdbClient
+    fun provideOmdbRetrofit(baseOkHttpClient: OkHttpClient): Retrofit {
+        val contentType = "application/json".toMediaType()
+
+        val json = Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+        }
+
+        return Retrofit.Builder()
+            .baseUrl("https://www.omdbapi.com/")
+            .client(baseOkHttpClient)
+            .addConverterFactory(json.asConverterFactory(contentType))
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideOmdbApiService(@OmdbClient retrofit: Retrofit): OmdbApiService {
+        return retrofit.create(OmdbApiService::class.java)
     }
 }

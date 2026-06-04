@@ -147,6 +147,10 @@ interface SecurePreferencesRepository {
 
     suspend fun getMdbListApiKey(serverId: String, userId: String): String?
 
+    suspend fun saveOmdbApiKey(serverId: String, userId: String, apiKey: String)
+
+    suspend fun getOmdbApiKey(serverId: String, userId: String): String?
+
     var onAbsAuthInvalidated: (() -> Unit)?
 
     fun getCachedJellyfinToken(): String?

@@ -1071,6 +1071,13 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_45_46 =
+        object : Migration(45, 46) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE item_metadata_cache ADD COLUMN omdbAwards TEXT")
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1117,5 +1124,6 @@ object DatabaseMigrations {
             MIGRATION_42_43,
             MIGRATION_43_44,
             MIGRATION_44_45,
+            MIGRATION_45_46,
         )
 }

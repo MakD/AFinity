@@ -128,6 +128,8 @@
     <string name="episode_duration_format">%1$dm</string>
     <string name="episode_play">Play</string>
     <string name="episode_resume">Resume</string>
+    <string name="episode_upcoming">UPCOMING</string>
+    <string name="episode_missing">MISSING</string>
 
     <string name="cd_air_date">Air date</string>
     <string name="cd_duration">Duration</string>
@@ -948,6 +950,8 @@
     <string name="pref_mdblist_api_key_title">MDBList API Key</string>
     <string name="pref_tmdb_config_title">TMDB Configuration</string>
     <string name="pref_mdblist_config_title">MDBList Configuration</string>
+    <string name="pref_omdb_api_key_title">OMDb API Key</string>
+    <string name="pref_omdb_config_title">OMDb Configuration</string>
     <string name="pref_api_key_configured">Configured</string>
     <string name="pref_api_key_not_configured">Not configured</string>
     <string name="action_clear_key">Clear Key</string>

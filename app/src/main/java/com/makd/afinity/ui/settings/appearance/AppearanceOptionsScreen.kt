@@ -79,9 +79,11 @@ fun AppearanceOptionsScreen(
     val showRatings by viewModel.showRatings.collectAsState()
     val tmdbApiKey by viewModel.tmdbApiKey.collectAsState()
     val mdbListApiKey by viewModel.mdbListApiKey.collectAsState()
+    val omdbApiKey by viewModel.omdbApiKey.collectAsState()
     val appFont by viewModel.appFont.collectAsState()
     var showTmdbDialog by remember { mutableStateOf(false) }
     var showMdbListDialog by remember { mutableStateOf(false) }
+    var showOmdbDialog by remember { mutableStateOf(false) }
     val playerOffset = LocalPlayerOffset.current
 
     Scaffold(
@@ -211,6 +213,18 @@ fun AppearanceOptionsScreen(
                             else stringResource(R.string.pref_api_key_not_configured),
                         onClick = { showMdbListDialog = true },
                     )
+
+                    SettingsDivider()
+
+                    SettingsItem(
+                        icon = painterResource(id = R.drawable.ic_omdb_logo),
+                        title = stringResource(R.string.pref_omdb_api_key_title),
+                        subtitle =
+                            if (omdbApiKey.isNotBlank())
+                                stringResource(R.string.pref_api_key_configured)
+                            else stringResource(R.string.pref_api_key_not_configured),
+                        onClick = { showOmdbDialog = true },
+                    )
                 }
             }
         }
@@ -247,6 +261,24 @@ fun AppearanceOptionsScreen(
             onSave = { newKey ->
                 viewModel.validateAndSaveMdbListKey(newKey) {
                     showMdbListDialog = false
+                }
+            },
+        )
+    }
+
+    if (showOmdbDialog) {
+        ApiKeyDialog(
+            title = stringResource(R.string.pref_omdb_config_title),
+            initialKey = omdbApiKey,
+            isValidationLoading = uiState.isOmdbKeyValidating,
+            validationError = uiState.omdbKeyValidationError,
+            onDismiss = {
+                showOmdbDialog = false
+                viewModel.clearApiValidationErrors()
+            },
+            onSave = { newKey ->
+                viewModel.validateAndSaveOmdbKey(newKey) {
+                    showOmdbDialog = false
                 }
             },
         )

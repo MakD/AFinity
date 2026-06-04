@@ -65,6 +65,7 @@ fun SeriesDetailContent(
     tmdbReviews: List<TmdbReview> = emptyList(),
     mdbRatings: List<MdbListRating> = emptyList(),
     mdbRatingBadges: MdbListRatingBadges = MdbListRatingBadges(),
+    omdbAwards: String? = null,
     isRatingsFromCache: Boolean = false,
     onEpisodeClick: (AfinityEpisode) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
@@ -78,6 +79,7 @@ fun SeriesDetailContent(
         tmdbReviews = tmdbReviews,
         mdbRatings = mdbRatings,
         mdbRatingBadges = mdbRatingBadges,
+        omdbAwards = omdbAwards,
         isRatingsFromCache = isRatingsFromCache,
         onSpecialFeatureClick = onSpecialFeatureClick,
         onBoxSetClick = { boxSet ->

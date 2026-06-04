@@ -59,6 +59,7 @@ fun MovieDetailContent(
     tmdbReviews: List<TmdbReview> = emptyList(),
     mdbRatings: List<MdbListRating> = emptyList(),
     mdbRatingBadges: MdbListRatingBadges = MdbListRatingBadges(),
+    omdbAwards: String? = null,
     isRatingsFromCache: Boolean = false,
     parts: List<AfinityItem> = emptyList(),
     onSpecialFeatureClick: (AfinityItem) -> Unit,
@@ -74,6 +75,7 @@ fun MovieDetailContent(
         tmdbReviews = tmdbReviews,
         mdbRatings = mdbRatings,
         mdbRatingBadges = mdbRatingBadges,
+        omdbAwards = omdbAwards,
         isRatingsFromCache = isRatingsFromCache,
         onSpecialFeatureClick = onSpecialFeatureClick,
         onBoxSetClick = { boxSet ->
