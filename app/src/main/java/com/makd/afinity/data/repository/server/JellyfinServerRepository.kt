@@ -6,12 +6,13 @@ import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -26,6 +27,7 @@ import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
 
+@OptIn(FlowPreview::class)
 @Singleton
 class JellyfinServerRepository
 @Inject
@@ -85,24 +87,24 @@ constructor(
             }
         }
         scope.launch {
-            networkConnectivityMonitor.isNetworkAvailable.drop(1).collect { isAvailable ->
-                if (!isAvailable) return@collect
+            networkConnectivityMonitor.networkSwitchEvents.debounce(500).collect {
                 val session = sessionManager.currentSession.value ?: return@collect
                 if (_currentBaseUrl.value.isBlank()) return@collect
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) return@collect
                 try {
                     val result = serverAddressResolver.resolveAddress(session.serverId)
                     if (result is AddressResolutionResult.Success) {
                         sessionManager.setServerReachable(true)
                         if (result.address != _currentBaseUrl.value) {
                             Timber.d(
-                                "Network changed, switching from ${_currentBaseUrl.value} to ${result.address}"
+                                "Network switched, updating URL from ${_currentBaseUrl.value} to ${result.address}"
                             )
                             setBaseUrl(result.address)
                             sessionManager.updateSessionUrl(result.address)
                         }
                     }
                 } catch (e: Exception) {
-                    Timber.e(e, "Failed to re-resolve address on network change")
+                    Timber.e(e, "Failed to re-resolve address on network switch")
                 }
             }
         }

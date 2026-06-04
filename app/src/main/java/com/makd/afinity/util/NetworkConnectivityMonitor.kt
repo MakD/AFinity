@@ -9,13 +9,18 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,6 +34,14 @@ constructor(@param:ApplicationContext private val context: Context) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
+    private val _networkSwitchEvents =
+        MutableSharedFlow<Unit>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST,
+        )
+
+    val networkSwitchEvents: SharedFlow<Unit> = _networkSwitchEvents.asSharedFlow()
+
     val isNetworkAvailable: StateFlow<Boolean> =
         callbackFlow {
                 val callback =
@@ -38,6 +51,7 @@ constructor(@param:ApplicationContext private val context: Context) {
                         override fun onAvailable(network: Network) {
                             networks.add(network)
                             trySend(true)
+                            scope.launch { _networkSwitchEvents.emit(Unit) }
                             Timber.d(
                                 "Network available: $network, Total networks: ${networks.size}"
                             )

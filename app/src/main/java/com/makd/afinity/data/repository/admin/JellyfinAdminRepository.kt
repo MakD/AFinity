@@ -300,7 +300,6 @@ constructor(
                         itemId = UUID.fromString(itemId),
                         type = type,
                         includeAllLanguages = includeAllLanguages,
-                        limit = 50,
                     )
                 response.content.images?.map { info ->
                     ItemImage(
