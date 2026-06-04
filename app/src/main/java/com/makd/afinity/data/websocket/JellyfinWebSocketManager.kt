@@ -56,7 +56,7 @@ constructor(
     private val _connectionState = MutableStateFlow(WebSocketState.DISCONNECTED)
     val connectionState: StateFlow<WebSocketState> = _connectionState.asStateFlow()
 
-    private val _liveSessions = MutableSharedFlow<List<SessionInfoDto>>(replay = 1)
+    private val _liveSessions = MutableSharedFlow<List<SessionInfoDto>>(replay = 0)
     val liveSessions: SharedFlow<List<SessionInfoDto>> = _liveSessions.asSharedFlow()
 
     private val _liveTasks = MutableSharedFlow<List<TaskInfo>>(replay = 1)

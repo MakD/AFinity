@@ -97,7 +97,7 @@ constructor(
     fun initialize(serverId: String) {
         currentServerId = serverId
         taskCache[serverId]?.let { updateTasksState(it) }
-        sessionCache[serverId]?.let { _activeSessions.value = it }
+        _activeSessions.value = null
         pollingJob?.cancel()
         pollingJob = viewModelScope.launch {
             pollTasksNow()
