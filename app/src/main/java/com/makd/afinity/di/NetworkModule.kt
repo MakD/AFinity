@@ -11,11 +11,15 @@ import com.makd.afinity.data.network.MdbListApiService
 import com.makd.afinity.data.network.OmdbApiService
 import com.makd.afinity.data.network.TmdbApiService
 import com.makd.afinity.data.repository.SecurePreferencesRepository
+import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -140,7 +144,10 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideBaseOkHttpClient(@ApplicationContext context: Context): OkHttpClient {
+    fun provideBaseOkHttpClient(
+        @ApplicationContext context: Context,
+        networkMonitor: NetworkConnectivityMonitor,
+    ): OkHttpClient {
         val dispatcher =
             Dispatcher(
                     Executors.newCachedThreadPool { runnable ->
@@ -158,6 +165,13 @@ object NetworkModule {
                 keepAliveDuration = 30,
                 timeUnit = TimeUnit.SECONDS,
             )
+
+        CoroutineScope(Dispatchers.Default).launch {
+            networkMonitor.networkSwitchEvents.collect {
+                Timber.d("Network changed. Evicting base OkHttpClient connection pool.")
+                connectionPool.evictAll()
+            }
+        }
 
         val builder =
             OkHttpClient.Builder()
@@ -257,7 +271,10 @@ object NetworkModule {
     @Provides
     @Singleton
     @DownloadClient
-    fun provideDownloadOkHttpClient(@ApplicationContext context: Context): OkHttpClient {
+    fun provideDownloadOkHttpClient(
+        @ApplicationContext context: Context,
+        networkMonitor: NetworkConnectivityMonitor,
+    ): OkHttpClient {
         val dispatcher =
             Dispatcher(
                     Executors.newCachedThreadPool { runnable ->
@@ -275,6 +292,13 @@ object NetworkModule {
                 keepAliveDuration = 5,
                 timeUnit = TimeUnit.MINUTES,
             )
+
+        CoroutineScope(Dispatchers.Default).launch {
+            networkMonitor.networkSwitchEvents.collect {
+                Timber.d("Network changed. Evicting download OkHttpClient connection pool.")
+                connectionPool.evictAll()
+            }
+        }
 
         val builder =
             OkHttpClient.Builder()

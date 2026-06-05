@@ -68,6 +68,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -180,6 +181,26 @@ constructor(
 
         loadItem()
         observeDownloadStatus()
+
+        viewModelScope.launch {
+            networkMonitor.isNetworkAvailable
+                .filter { it }
+                .drop(1)
+                .collect {
+                    val item = _uiState.value.item ?: return@collect
+                    if (item !is AfinityMovie && item !is AfinityShow) return@collect
+                    val s = _uiState.value
+                    if (
+                        !s.isLoadingReviews &&
+                            s.tmdbReviews.isEmpty() &&
+                            s.mdbRatings.isEmpty() &&
+                            !s.mdbRatingBadges.hasAny &&
+                            s.omdbAwards == null
+                    ) {
+                        loadReviewsAndRatings(item)
+                    }
+                }
+        }
 
         viewModelScope.launch {
             adminChangeBroadcaster.itemChanged
@@ -634,6 +655,7 @@ constructor(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)
                 val isOffline = offlineModeManager.isCurrentlyOffline()
+                val hasInternet = offlineModeManager.isInternetAvailable()
                 if (!isOffline) {
                     launchParallelFetches()
                 }
@@ -686,28 +708,10 @@ constructor(
 
                 _uiState.value = _uiState.value.copy(item = item, isLoading = false)
                 itemLastLoadedAt = System.currentTimeMillis()
-
-                if (!isOffline) {
-                    if (item is AfinityMovie || item is AfinityShow) {
+                if (item is AfinityMovie || item is AfinityShow) {
+                    if (hasInternet) {
                         launch { loadReviewsAndRatings(item) }
-                    }
-                    if (item is AfinityBoxSet) {
-                        loadBoxSetItems(item.id)
-                    }
-                    if (item is AfinityMovie && (item.partCount ?: 0) > 1) {
-                        launch {
-                            try {
-                                val parts = mediaRepository.getAdditionalParts(item.id)
-                                if (parts.isNotEmpty()) {
-                                    _uiState.update { it.copy(movieParts = parts) }
-                                }
-                            } catch (e: Exception) {
-                                Timber.e(e, "Failed to fetch movie parts")
-                            }
-                        }
-                    }
-                } else {
-                    if (item is AfinityMovie || item is AfinityShow) {
+                    } else {
                         val offlineSession = sessionManager.currentSession.value
                         val cachedMetadata =
                             if (offlineSession != null) {
@@ -728,6 +732,25 @@ constructor(
                                 )
                         }
                     }
+                }
+
+                if (!isOffline) {
+                    if (item is AfinityBoxSet) {
+                        loadBoxSetItems(item.id)
+                    }
+                    if (item is AfinityMovie && (item.partCount ?: 0) > 1) {
+                        launch {
+                            try {
+                                val parts = mediaRepository.getAdditionalParts(item.id)
+                                if (parts.isNotEmpty()) {
+                                    _uiState.update { it.copy(movieParts = parts) }
+                                }
+                            } catch (e: Exception) {
+                                Timber.e(e, "Failed to fetch movie parts")
+                            }
+                        }
+                    }
+                } else {
                     when (item) {
                         is AfinityShow -> {
                             if (item.seasons.isNotEmpty()) {
@@ -893,7 +916,7 @@ constructor(
     }
 
     private suspend fun loadReviewsAndRatings(item: AfinityItem) {
-        val userId = authRepository.currentUser.value?.id
+        val userId = sessionManager.currentSession.value?.userId
         try {
             _uiState.update { it.copy(isLoadingReviews = true) }
             val session = sessionManager.currentSession.value

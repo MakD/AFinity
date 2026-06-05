@@ -60,6 +60,7 @@ constructor(@param:ApplicationContext private val context: Context) {
                         override fun onLost(network: Network) {
                             networks.remove(network)
                             trySend(networks.isNotEmpty())
+                            scope.launch { _networkSwitchEvents.emit(Unit) }
                             Timber.d("Network lost: $network, Remaining networks: ${networks.size}")
                         }
 
