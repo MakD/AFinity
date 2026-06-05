@@ -42,6 +42,14 @@ constructor(@param:ApplicationContext private val context: Context) {
 
     val networkSwitchEvents: SharedFlow<Unit> = _networkSwitchEvents.asSharedFlow()
 
+    private val _networkDropEvents =
+        MutableSharedFlow<Unit>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST,
+        )
+
+    val networkDropEvents: SharedFlow<Unit> = _networkDropEvents.asSharedFlow()
+
     val isNetworkAvailable: StateFlow<Boolean> =
         callbackFlow {
                 val callback =
@@ -60,7 +68,7 @@ constructor(@param:ApplicationContext private val context: Context) {
                         override fun onLost(network: Network) {
                             networks.remove(network)
                             trySend(networks.isNotEmpty())
-                            scope.launch { _networkSwitchEvents.emit(Unit) }
+                            scope.launch { _networkDropEvents.emit(Unit) }
                             Timber.d("Network lost: $network, Remaining networks: ${networks.size}")
                         }
 

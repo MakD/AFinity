@@ -19,6 +19,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -28,6 +29,7 @@ import okhttp3.ConnectionPool
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.Dispatcher
+import okhttp3.Dns
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
@@ -49,6 +51,7 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import timber.log.Timber
 import java.io.File
 import java.io.IOException
+import java.net.Inet4Address
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -167,8 +170,7 @@ object NetworkModule {
             )
 
         CoroutineScope(Dispatchers.Default).launch {
-            networkMonitor.networkSwitchEvents.collect {
-                Timber.d("Network changed. Evicting base OkHttpClient connection pool.")
+            merge(networkMonitor.networkSwitchEvents, networkMonitor.networkDropEvents).collect {
                 connectionPool.evictAll()
             }
         }
@@ -183,6 +185,9 @@ object NetworkModule {
                         maxSize = 50L * 1024L * 1024L,
                     )
                 )
+                .dns { hostname ->
+                    Dns.SYSTEM.lookup(hostname).sortedBy { if (it is Inet4Address) 0 else 1 }
+                }
                 .connectTimeout(15, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)
@@ -294,8 +299,7 @@ object NetworkModule {
             )
 
         CoroutineScope(Dispatchers.Default).launch {
-            networkMonitor.networkSwitchEvents.collect {
-                Timber.d("Network changed. Evicting download OkHttpClient connection pool.")
+            merge(networkMonitor.networkSwitchEvents, networkMonitor.networkDropEvents).collect {
                 connectionPool.evictAll()
             }
         }
@@ -761,10 +765,11 @@ object NetworkModule {
     @TmdbClient
     fun provideTmdbRetrofit(baseOkHttpClient: OkHttpClient): Retrofit {
         val contentType = "application/json".toMediaType()
+        val tmdbClient = baseOkHttpClient.newBuilder().connectTimeout(5, TimeUnit.SECONDS).build()
 
         return Retrofit.Builder()
             .baseUrl("https://api.themoviedb.org/")
-            .client(baseOkHttpClient)
+            .client(tmdbClient)
             .addConverterFactory(jellyseerrJson.asConverterFactory(contentType))
             .build()
     }

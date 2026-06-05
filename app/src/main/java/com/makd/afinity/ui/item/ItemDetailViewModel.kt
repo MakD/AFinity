@@ -974,12 +974,10 @@ constructor(
                                             tmdbApiService.getSeriesReviews(tmdbId, tmdbKey).results
                                         else -> emptyList()
                                     }
-                                } else emptyList()
+                                } else {
+                                    emptyList()
+                                }
                             } catch (e: Exception) {
-                                Timber.w(
-                                    e,
-                                    "Failed to fetch TMDB reviews during network transition",
-                                )
                                 emptyList()
                             }
                         }
@@ -999,12 +997,10 @@ constructor(
                                                     listOf("imdb", "tomatoes") && it.value != null
                                             }
                                     )
-                                } else MdbListRatingsResult()
+                                } else {
+                                    MdbListRatingsResult()
+                                }
                             } catch (e: Exception) {
-                                Timber.w(
-                                    e,
-                                    "Failed to fetch MDBList ratings during network transition",
-                                )
                                 MdbListRatingsResult()
                             }
                         }
@@ -1012,20 +1008,31 @@ constructor(
                         val omdbDeferred = async {
                             try {
                                 if (imdbId != null) {
-                                    val result = mediaRepository.getOmdbDetails(imdbId)
-                                    result?.awards?.takeIf { it != "N/A" }
-                                } else null
+                                    mediaRepository.getOmdbDetails(imdbId)?.awards?.takeIf {
+                                        it != "N/A"
+                                    }
+                                } else {
+                                    null
+                                }
                             } catch (e: Exception) {
-                                Timber.w(e, "Failed to fetch OMDb awards")
                                 null
                             }
                         }
 
-                        fetchedReviews = reviewsDeferred.await()
                         val ratingsResult = ratingsDeferred.await()
                         fetchedRatings = ratingsResult.ratings
                         fetchedRatingBadges = ratingsResult.badges
                         fetchedOmdbAwards = omdbDeferred.await()
+                        _uiState.update {
+                            it.copy(
+                                mdbRatings = fetchedRatings,
+                                mdbRatingBadges = fetchedRatingBadges,
+                                omdbAwards = fetchedOmdbAwards,
+                                isLoadingReviews = true,
+                            )
+                        }
+
+                        fetchedReviews = reviewsDeferred.await()
                     }
                 }
 
