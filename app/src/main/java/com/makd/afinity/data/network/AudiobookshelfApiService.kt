@@ -75,6 +75,7 @@ interface AudiobookshelfApiService {
     suspend fun getPersonalized(
         @Path("libraryId") id: String,
         @Query("limit") limit: Int? = null,
+        @Query("minified") minified: Int? = null,
         @Query("include") include: String? = null,
     ): Response<List<PersonalizedView>>
 

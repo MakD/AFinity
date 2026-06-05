@@ -82,6 +82,8 @@ interface AudiobookshelfRepository {
         limit: Int = 4,
     ): Result<SeriesItemsResult>
 
+    val personalizedCache: StateFlow<Map<String, List<PersonalizedView>>>
+
     suspend fun getPersonalized(libraryId: String): Result<List<PersonalizedView>>
 
     fun getInProgressItemsFlow(): Flow<List<ItemWithProgress>>

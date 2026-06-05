@@ -236,7 +236,7 @@ fun AudiobookshelfLibrariesScreen(
                                     sections = personalizedSections,
                                     serverUrl = config?.serverUrl,
                                     onItemClick = { item -> onNavigateToItem(item.id) },
-                                    isLoading = uiState.isRefreshing,
+                                    isLoading = uiState.isRefreshing && personalizedSections.isEmpty(),
                                     widthSizeClass = widthSizeClass,
                                 )
                             }

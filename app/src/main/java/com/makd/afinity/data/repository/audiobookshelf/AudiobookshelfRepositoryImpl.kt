@@ -84,6 +84,11 @@ constructor(
     private val _isAuthenticated = MutableStateFlow(false)
     override val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
 
+    private val _personalizedCache =
+        MutableStateFlow<Map<String, List<PersonalizedView>>>(emptyMap())
+    override val personalizedCache: StateFlow<Map<String, List<PersonalizedView>>> =
+        _personalizedCache.asStateFlow()
+
     private val _currentSessionId = MutableStateFlow<String?>(null)
     override val currentSessionId: StateFlow<String?> = _currentSessionId.asStateFlow()
 
@@ -244,6 +249,7 @@ constructor(
         securePreferencesRepository.clearActiveAudiobookshelfCache()
         _isAuthenticated.value = false
         _currentConfig.value = null
+        _personalizedCache.value = emptyMap()
         pendingServerUrl = null
         Timber.d("Audiobookshelf active session cleared")
     }
@@ -841,10 +847,19 @@ constructor(
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
-                val response = apiService.get().getPersonalized(libraryId, include = "progress")
+                val response =
+                    apiService
+                        .get()
+                        .getPersonalized(
+                            id = libraryId,
+                            limit = 15,
+                            minified = 1,
+                        )
 
                 if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!)
+                    val views = response.body()!!
+                    _personalizedCache.value += (libraryId to views)
+                    Result.success(views)
                 } else {
                     Result.failure(Exception("Failed to fetch personalized: ${response.message()}"))
                 }

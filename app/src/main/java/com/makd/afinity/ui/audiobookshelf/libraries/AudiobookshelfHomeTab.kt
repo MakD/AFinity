@@ -12,19 +12,25 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.res.stringResource
-import com.makd.afinity.R
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
@@ -59,12 +65,29 @@ fun AudiobookshelfHomeTab(
             val cardHeight = CardDimensions.calculateHeight(cardWidth, 1f)
             val fixedRowHeight = cardHeight + 8.dp + 20.dp + 18.dp
             val playerOffset = LocalPlayerOffset.current
+            val columnState = rememberLazyListState()
 
             LazyColumn(
+                state = columnState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = playerOffset),
             ) {
                 items(items = sections, key = { it.id }) { section ->
+                    val rowListState = rememberLazyListState()
+                    var prevFirstItemId by remember { mutableStateOf<String?>(null) }
+                    val currentFirstItemId = section.items.firstOrNull()?.id
+
+                    LaunchedEffect(currentFirstItemId) {
+                        if (
+                            prevFirstItemId != null &&
+                                prevFirstItemId != currentFirstItemId &&
+                                currentFirstItemId != null
+                        ) {
+                            rowListState.animateScrollToItem(0)
+                        }
+                        prevFirstItemId = currentFirstItemId
+                    }
+
                     Column {
                         Spacer(modifier = Modifier.height(24.dp))
                         Column(modifier = Modifier.padding(horizontal = 14.dp)) {
@@ -79,6 +102,7 @@ fun AudiobookshelfHomeTab(
                             )
 
                             LazyRow(
+                                state = rowListState,
                                 modifier = Modifier.height(fixedRowHeight),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 contentPadding = PaddingValues(horizontal = 0.dp),
