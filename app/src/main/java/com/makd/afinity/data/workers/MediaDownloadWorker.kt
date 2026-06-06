@@ -31,6 +31,7 @@ import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.segments.SegmentsRepository
 import com.makd.afinity.di.DownloadClient
+import com.makd.afinity.util.parseDashlessUuid
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
@@ -227,7 +228,17 @@ constructor(
                     val outputFile = File(mediaDir, "$sourceId.$extension.download")
                     val finalFile = File(mediaDir, "$sourceId.$extension")
 
-                    val downloadUrl = apiClient.libraryApi.getDownloadUrl(itemId = itemId)
+                    // Each sourceId is actually an itemId corresponding to the specific version that was requested in the download dialog
+                    // Unfortunately, because the SDK expects a UUID, but UUID.fromString doesn't handle strings without dashes, we have
+                    // to do some special handling here to get a UUID to pass to getDownloadUrl
+                    val sourceUuid =
+                        try {
+                            parseDashlessUuid(sourceId)
+                        } catch (e: IllegalArgumentException) {
+                            return@withContext Result.failure(workDataOf("error" to "Invalid source ID"))
+                        }
+
+                    val downloadUrl = apiClient.libraryApi.getDownloadUrl(itemId = sourceUuid)
 
                     val existingFileSize = if (outputFile.exists()) outputFile.length() else 0L
 
