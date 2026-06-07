@@ -42,6 +42,8 @@ import com.makd.afinity.ui.player.SyncPlayUiState
 import org.jellyfin.sdk.model.UUID
 import org.jellyfin.sdk.model.api.GroupInfoDto
 import org.jellyfin.sdk.model.api.GroupStateType
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 @Composable
 fun SyncPlayGroupSheet(
@@ -292,6 +294,11 @@ private fun GroupRow(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             )
+            Text(
+                text = relativeTime(group.lastUpdatedAt),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+            )
         }
         Spacer(modifier = Modifier.width(8.dp))
         GroupStateChip(state = group.state)
@@ -308,6 +315,19 @@ private fun GroupRow(
             } else {
                 Text(text = "Join")
             }
+        }
+    }
+}
+
+private fun relativeTime(dateTime: LocalDateTime): String {
+    val now = LocalDateTime.now()
+    val minutes = ChronoUnit.MINUTES.between(dateTime, now).coerceAtLeast(0)
+    return when {
+        minutes < 1 -> "Active just now"
+        minutes < 60 -> "Active ${minutes}m ago"
+        else -> {
+            val hours = minutes / 60
+            if (hours < 24) "Active ${hours}h ago" else "Active ${hours / 24}d ago"
         }
     }
 }
