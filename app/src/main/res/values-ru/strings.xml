@@ -44,8 +44,8 @@
     <string name="home_downloaded_shows">Скачанные сериалы</string>
     <string name="home_critics_choice">Выбор критиков</string>
     <string name="home_popular_studios">Популярные студии</string>
-    <string name="home_episode_count_fmt">%1$d ЭП</string>
-    <string name="home_episode_count_plus">99+ ЭП</string>
+    <string name="home_episode_count_fmt">%1$d эп</string>
+    <string name="home_episode_count_plus">99+ эп</string>
     <string name="cd_app_logo">Логотип приложения</string>
     <string name="cd_watched_status">Просмотрено</string>
     <string name="cd_imdb">IMDB</string>
