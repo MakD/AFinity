@@ -20,6 +20,7 @@ import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.data.workers.ImageDownloadWorker
 import com.makd.afinity.data.workers.MediaDownloadWorker
 import com.makd.afinity.data.workers.SubtitleDownloadWorker
@@ -50,6 +51,7 @@ constructor(
     private val mediaRepository: MediaRepository,
     private val databaseRepository: DatabaseRepository,
     private val preferencesRepository: PreferencesRepository,
+    private val storageLocationProvider: StorageLocationProvider,
     private val workManager: WorkManager,
 ) : DownloadRepository {
 
@@ -62,18 +64,30 @@ constructor(
         const val MAX_CONCURRENT_DOWNLOADS = 2
     }
 
-    private val downloadDir: File
-        get() {
-            val dir = File(context.getExternalFilesDir(null), "AFinity/Downloads")
-            if (!dir.exists() && !dir.mkdirs()) {
-                Timber.e("Failed to create base download directory at ${dir.absolutePath}")
-            }
-            return dir
+    /**
+     * Resolves the `AFinity/Downloads` base directory for the given volume. Falls back to the
+     * primary volume when the requested volume is no longer mounted (e.g. SD card removed).
+     */
+    private fun baseDir(volumeId: String): File {
+        val dir =
+            storageLocationProvider.resolveBaseDir(volumeId)
+                ?: storageLocationProvider.primaryBaseDir()
+        if (!dir.exists() && !dir.mkdirs()) {
+            Timber.e("Failed to create base download directory at ${dir.absolutePath}")
         }
+        return dir
+    }
 
-    override suspend fun startDownload(itemId: UUID, sourceId: String): Result<UUID> =
+    override suspend fun startDownload(
+        itemId: UUID,
+        sourceId: String,
+        volumeId: String?,
+    ): Result<UUID> =
         withContext(Dispatchers.IO) {
             return@withContext try {
+                val resolvedVolumeId =
+                    volumeId ?: preferencesRepository.getDownloadStorageVolumeId()
+
                 val currentSession =
                     sessionManager.currentSession.value
                         ?: return@withContext Result.failure(Exception("No active session"))
@@ -196,6 +210,7 @@ constructor(
                         runtimeTicks = runtimeTicks,
                         folderPath = folderPath,
                         seriesId = (item as? AfinityEpisode)?.seriesId?.toString(),
+                        storageVolumeId = resolvedVolumeId,
                     )
 
                 databaseRepository.insertDownload(download)
@@ -364,7 +379,7 @@ constructor(
                         ?: return@withContext Result.failure(Exception("Download not found"))
 
                 val targetPath = download.folderPath ?: download.itemId.toString()
-                val itemFolder = File(downloadDir, targetPath)
+                val itemFolder = File(baseDir(download.storageVolumeId), targetPath)
 
                 if (itemFolder.exists()) {
                     itemFolder.deleteRecursively()
@@ -503,34 +518,45 @@ constructor(
             }
         }
 
-    fun getDownloadDirectory(): File = downloadDir
+    fun getDownloadDirectory(): File = baseDir(StorageLocationProvider.PRIMARY_VOLUME_ID)
 
     suspend fun getItemDownloadDirectory(itemId: UUID): File {
-        val folderPath = databaseRepository.getDownloadByItemId(itemId)?.folderPath
-        val dir = File(downloadDir, folderPath ?: itemId.toString())
+        val download = databaseRepository.getDownloadByItemId(itemId)
+        val folderPath = download?.folderPath
+        val volumeId = download?.storageVolumeId ?: StorageLocationProvider.PRIMARY_VOLUME_ID
+        val dir = File(baseDir(volumeId), folderPath ?: itemId.toString())
         if (!dir.exists() && !dir.mkdirs()) Timber.w("Failed to create item directory")
         return dir
     }
 
     fun getShowDirectory(serverId: String, showId: UUID): File {
-        val dir = File(downloadDir, "$serverId/shows/$showId")
+        val dir =
+            File(baseDir(StorageLocationProvider.PRIMARY_VOLUME_ID), "$serverId/shows/$showId")
         if (!dir.exists() && !dir.mkdirs()) Timber.w("Failed to create show directory")
         return dir
     }
 
     fun getSeasonDirectory(serverId: String, showId: UUID, seasonNumber: Int): File {
-        val dir = File(downloadDir, "$serverId/shows/$showId/seasons/$seasonNumber")
+        val dir =
+            File(
+                baseDir(StorageLocationProvider.PRIMARY_VOLUME_ID),
+                "$serverId/shows/$showId/seasons/$seasonNumber",
+            )
         if (!dir.exists() && !dir.mkdirs()) Timber.w("Failed to create season directory")
         return dir
     }
 
-    override suspend fun startSeasonDownload(seasonId: UUID, seriesId: UUID?): Result<Int> =
+    override suspend fun startSeasonDownload(
+        seasonId: UUID,
+        seriesId: UUID?,
+        volumeId: String?,
+    ): Result<Int> =
         withContext(Dispatchers.IO) {
             return@withContext try {
                 val episodes = mediaRepository.getEpisodes(seasonId, seriesId)
                 var started = 0
                 for (episode in episodes) {
-                    startDownload(episode.id, "")
+                    startDownload(episode.id, "", volumeId)
                         .onSuccess { started++ }
                         .onFailure {
                             Timber.w(it, "Skipping episode ${episode.name}: ${it.message}")

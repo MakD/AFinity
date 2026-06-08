@@ -67,6 +67,7 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val DOWNLOAD_WIFI_ONLY = booleanPreferencesKey("download_wifi_only")
         val DOWNLOAD_QUALITY = stringPreferencesKey("download_quality")
         val MAX_DOWNLOADS = intPreferencesKey("max_downloads")
+        val DOWNLOAD_STORAGE_VOLUME_ID = stringPreferencesKey("download_storage_volume_id")
 
         val SYNC_ENABLED = booleanPreferencesKey("sync_enabled")
         val SYNC_INTERVAL = intPreferencesKey("sync_interval")
@@ -340,6 +341,17 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
     override suspend fun getMaxDownloads(): Int {
         return dataStore.data.first()[Keys.MAX_DOWNLOADS] ?: 3
     }
+
+    override suspend fun setDownloadStorageVolumeId(volumeId: String) {
+        dataStore.edit { preferences -> preferences[Keys.DOWNLOAD_STORAGE_VOLUME_ID] = volumeId }
+    }
+
+    override suspend fun getDownloadStorageVolumeId(): String {
+        return dataStore.data.first()[Keys.DOWNLOAD_STORAGE_VOLUME_ID] ?: "primary"
+    }
+
+    override fun getDownloadStorageVolumeIdFlow(): Flow<String> =
+        dataStore.data.map { it[Keys.DOWNLOAD_STORAGE_VOLUME_ID] ?: "primary" }
 
     override suspend fun setSyncEnabled(enabled: Boolean) {
         dataStore.edit { preferences -> preferences[Keys.SYNC_ENABLED] = enabled }

@@ -208,8 +208,6 @@ constructor(
                                 workDataOf("error" to "Source not found")
                             )
 
-                    applicationContext.getExternalFilesDir(null)
-
                     val itemDir = downloadRepository.getItemDownloadDirectory(itemId)
                     val mediaDir = File(itemDir, "media")
 

@@ -7,7 +7,11 @@ import kotlinx.coroutines.flow.Flow
 
 interface DownloadRepository {
 
-    suspend fun startDownload(itemId: UUID, sourceId: String): Result<UUID>
+    suspend fun startDownload(
+        itemId: UUID,
+        sourceId: String,
+        volumeId: String? = null,
+    ): Result<UUID>
 
     suspend fun pauseDownload(downloadId: UUID): Result<Unit>
 
@@ -41,7 +45,11 @@ interface DownloadRepository {
 
     suspend fun getStorageUsedPerVolumeAllServers(): Map<String, Long>
 
-    suspend fun startSeasonDownload(seasonId: UUID, seriesId: UUID? = null): Result<Int>
+    suspend fun startSeasonDownload(
+        seasonId: UUID,
+        seriesId: UUID? = null,
+        volumeId: String? = null,
+    ): Result<Int>
 
     suspend fun startSeriesDownload(showId: UUID): Result<Int>
 
