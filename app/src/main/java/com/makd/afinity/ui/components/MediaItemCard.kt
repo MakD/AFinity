@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -53,6 +54,7 @@ fun MediaItemCard(
     onClick: () -> Unit,
     cardWidth: Dp,
     modifier: Modifier = Modifier,
+    isUnavailable: Boolean = false,
 ) {
     val density = LocalDensity.current
     val fontScale = density.fontScale
@@ -73,8 +75,30 @@ fun MediaItemCard(
                     targetWidth = cardWidth,
                     targetHeight = cardWidth * 3f / 2f,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().alpha(if (isUnavailable) 0.4f else 1f),
                 )
+
+                if (isUnavailable) {
+                    Box(
+                        modifier =
+                            Modifier.align(Alignment.TopStart)
+                                .padding(8.dp)
+                                .size(24.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.errorContainer,
+                                    CircleShape,
+                                ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_cloud_off),
+                            contentDescription =
+                                stringResource(R.string.download_unavailable_indicator),
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
 
                 val visuallyPlayed = item.played
 

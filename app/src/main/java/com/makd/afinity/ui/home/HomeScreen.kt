@@ -293,6 +293,7 @@ fun HomeScreen(
                                         items = uiState.downloadedMovies,
                                         onItemClick = onItemClick,
                                         widthSizeClass = widthSizeClass,
+                                        unavailableItemIds = uiState.unavailableDownloadIds,
                                     )
                                 }
                             }
@@ -310,6 +311,7 @@ fun HomeScreen(
                                         items = uiState.downloadedShows,
                                         onItemClick = onItemClick,
                                         widthSizeClass = widthSizeClass,
+                                        unavailableItemIds = uiState.unavailableDownloadIds,
                                     )
                                 }
                             }

@@ -475,6 +475,21 @@
     <string name="storage_free_on_device_fmt">%1$s free on device</string>
     <string name="storage_this_server">This server</string>
     <string name="storage_all_servers_fmt">%1$s total across all servers</string>
+    <string name="section_storage_locations">STORAGE LOCATIONS</string>
+    <string name="storage_used_on_volume_fmt">%1$s used on this server</string>
+    <string name="storage_free_of_total_fmt">%1$s free of %2$s</string>
+    <string name="storage_usage_combined_fmt">%1$s used here • %2$s free of %3$s</string>
+    <string name="storage_default_badge">Default</string>
+    <string name="storage_set_as_default">Set as default</string>
+    <string name="storage_unavailable_volume">Unavailable storage</string>
+    <string name="storage_unavailable_badge">Unavailable</string>
+    <string name="storage_unavailable_used_fmt">%1$s used • storage not connected</string>
+    <string name="download_unavailable_label">Unavailable — %1$s removed</string>
+    <string name="download_unavailable_indicator">Downloaded — storage unavailable</string>
+    <string name="download_unavailable_delete_title">Storage unavailable</string>
+    <string name="download_unavailable_delete_message">This download is on storage that isn\'t connected, so its files can\'t be deleted right now. Remove it from the list anyway? The files will remain on the storage if you reconnect it.</string>
+    <string name="download_unavailable_delete_confirm">Remove from list</string>
+    <string name="download_location_section">Storage location</string>
 
     <string name="download_preferences_title">Download Settings</string>
     <string name="pref_download_wifi_only_title">Wi-Fi only</string>

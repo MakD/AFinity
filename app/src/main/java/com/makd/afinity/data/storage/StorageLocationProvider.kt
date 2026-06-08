@@ -73,6 +73,20 @@ constructor(@param:ApplicationContext private val context: Context) {
         listVolumes().firstOrNull { it.id == volumeId }?.baseDir
 
     /**
+     * Whether the given volume is currently mounted and writable. The primary volume is always
+     * considered available.
+     */
+    fun isVolumeAvailable(volumeId: String): Boolean =
+        volumeId == PRIMARY_VOLUME_ID || resolveBaseDir(volumeId) != null
+
+    /** Stable ids of all currently mounted volumes. */
+    fun mountedVolumeIds(): Set<String> = listVolumes().map { it.id }.toSet()
+
+    /** User-visible name for a volume id, or `null` when it is not currently mounted. */
+    fun displayNameFor(volumeId: String): String? =
+        listVolumes().firstOrNull { it.id == volumeId }?.displayName
+
+    /**
      * The primary (internal) volume's base directory. Always available, used as the fallback when a
      * stored volume id can no longer be resolved.
      */

@@ -50,6 +50,8 @@ import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
+import com.makd.afinity.data.storage.StorageLocationProvider
+import com.makd.afinity.data.storage.StorageVolumeInfo
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.delegates.ItemDownloadDelegate
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
@@ -103,6 +105,7 @@ constructor(
     private val itemDownloadDelegate: ItemDownloadDelegate,
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val preferencesRepository: PreferencesRepository,
+    private val storageLocationProvider: StorageLocationProvider,
     private val networkMonitor: NetworkConnectivityMonitor,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -402,16 +405,48 @@ constructor(
                         _uiState.map { it.item }.distinctUntilChanged(),
                         downloadRepository.getAllDownloadsFlow(),
                     ) { item, downloads ->
-                        computeDownloadInfo(item, downloads)
+                        computeDownloadInfo(item, downloads) to
+                            computeDownloadUnavailable(item, downloads)
                     }
-                    .collect { downloadInfo ->
-                        _uiState.value = _uiState.value.copy(downloadInfo = downloadInfo)
+                    .collect { (downloadInfo, unavailable) ->
+                        _uiState.value =
+                            _uiState.value.copy(
+                                downloadInfo = downloadInfo,
+                                downloadUnavailable = unavailable,
+                            )
                     }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 Timber.e(e, "Failed to observe download status")
             }
         }
+    }
+
+    /**
+     * Whether the completed download(s) for [item] live on storage that is no longer mounted (e.g.
+     * an SD card was removed). For shows/seasons this is only true when *every* constituent
+     * completed download is on an unavailable volume, so a partially-available set still reads as
+     * available.
+     */
+    private fun computeDownloadUnavailable(
+        item: AfinityItem?,
+        downloads: List<DownloadInfo>,
+    ): Boolean {
+        if (item == null) return false
+        val relevant =
+            when (item) {
+                is AfinityShow -> downloads.filter { it.seriesId == item.id.toString() }
+                is AfinitySeason ->
+                    downloads.filter {
+                        it.seriesId == item.seriesId.toString() &&
+                            it.seasonNumber == item.indexNumber
+                    }
+                else -> downloads.filter { it.itemId == itemId }
+            }
+        val completed = relevant.filter { it.status == DownloadStatus.COMPLETED }
+        if (completed.isEmpty()) return false
+        val mounted = storageLocationProvider.mountedVolumeIds()
+        return completed.all { it.storageVolumeId !in mounted }
     }
 
     private fun computeDownloadInfo(
@@ -1163,7 +1198,7 @@ constructor(
                     viewModelScope,
                     selectedEpisode ?: currentItem,
                 ) {
-                    _uiState.value = _uiState.value.copy(showQualityDialog = true)
+                    showQualityDialogWithVolumes()
                 }
             }
             currentItem is AfinitySeason -> {
@@ -1189,11 +1224,99 @@ constructor(
         }
     }
 
+    /**
+     * Long-press entry point. Always opens the version/location dialog for the leaf item (movie or
+     * episode), even when there is a single version — letting the user pick a storage location.
+     * For bulk show/season downloads, opens a storage-location picker when more than one volume is
+     * available; otherwise falls back to the normal tap behavior.
+     */
+    fun onDownloadLongClick() {
+        val selectedEpisode = _selectedEpisode.value
+        val currentItem = _uiState.value.item
+        val leaf =
+            selectedEpisode
+                ?: currentItem?.takeIf { it !is AfinityShow && it !is AfinitySeason }
+        if (leaf != null) {
+            showQualityDialogWithVolumes()
+        } else {
+            showLocationDialogWithVolumes()
+        }
+    }
+
+    private fun showQualityDialogWithVolumes() {
+        viewModelScope.launch {
+            val volumes = storageLocationProvider.listVolumes()
+            val defaultVolumeId = preferencesRepository.getDownloadStorageVolumeId()
+            _uiState.value =
+                _uiState.value.copy(
+                    showQualityDialog = true,
+                    availableVolumes = volumes,
+                    selectedVolumeId = defaultVolumeId,
+                )
+        }
+    }
+
+    fun onVolumeSelected(volumeId: String) {
+        _uiState.value = _uiState.value.copy(selectedVolumeId = volumeId)
+    }
+
+    private fun showLocationDialogWithVolumes() {
+        viewModelScope.launch {
+            val volumes = storageLocationProvider.listVolumes()
+            if (volumes.size <= 1) {
+                onDownloadClick()
+                return@launch
+            }
+            val defaultVolumeId = preferencesRepository.getDownloadStorageVolumeId()
+            _uiState.value =
+                _uiState.value.copy(
+                    showLocationDialog = true,
+                    availableVolumes = volumes,
+                    selectedVolumeId = defaultVolumeId,
+                )
+        }
+    }
+
+    fun onLocationConfirmed() {
+        val volumeId = _uiState.value.selectedVolumeId
+        val currentItem = _uiState.value.item
+        dismissLocationDialog()
+        when (currentItem) {
+            is AfinitySeason -> {
+                bulkDownloadJob = viewModelScope.launch {
+                    downloadRepository
+                        .startSeasonDownload(currentItem.id, currentItem.seriesId, volumeId)
+                        .onSuccess { count ->
+                            Timber.i("Queued $count episodes for season ${currentItem.name}")
+                        }
+                        .onFailure { Timber.e(it, "Failed to start season download") }
+                }
+            }
+            is AfinityShow -> {
+                bulkDownloadJob = viewModelScope.launch {
+                    downloadRepository
+                        .startSeriesDownload(currentItem.id, volumeId)
+                        .onSuccess { count ->
+                            Timber.i("Queued $count episodes for series ${currentItem.name}")
+                        }
+                        .onFailure { Timber.e(it, "Failed to start series download") }
+                }
+            }
+            else -> {}
+        }
+    }
+
+    fun dismissLocationDialog() {
+        _uiState.value =
+            _uiState.value.copy(showLocationDialog = false, selectedVolumeId = null)
+    }
+
     fun onQualitySelected(sourceId: String) {
         itemDownloadDelegate.onQualitySelected(
             viewModelScope,
             _selectedEpisode.value ?: _uiState.value.item,
             sourceId,
+            _uiState.value.selectedVolumeId,
         ) {
             dismissQualityDialog()
         }
@@ -1391,7 +1514,8 @@ constructor(
     }
 
     fun dismissQualityDialog() {
-        _uiState.value = _uiState.value.copy(showQualityDialog = false)
+        _uiState.value =
+            _uiState.value.copy(showQualityDialog = false, selectedVolumeId = null)
     }
 
     fun getBaseUrl(): String = mediaRepository.getBaseUrl()
@@ -1424,7 +1548,11 @@ data class ItemDetailUiState(
     val nextEpisode: AfinityEpisode? = null,
     val episodesPagingData: Flow<PagingData<AfinityEpisode>>? = null,
     val showQualityDialog: Boolean = false,
+    val showLocationDialog: Boolean = false,
+    val availableVolumes: List<StorageVolumeInfo> = emptyList(),
+    val selectedVolumeId: String? = null,
     val downloadInfo: DownloadInfo? = null,
+    val downloadUnavailable: Boolean = false,
     val tmdbReviews: List<TmdbReview> = emptyList(),
     val isLoadingReviews: Boolean = false,
     val mdbRatings: List<MdbListRating> = emptyList(),

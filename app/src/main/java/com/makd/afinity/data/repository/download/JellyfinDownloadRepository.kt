@@ -21,6 +21,7 @@ import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
+import com.makd.afinity.data.storage.VolumeUnavailableException
 import com.makd.afinity.data.workers.ImageDownloadWorker
 import com.makd.afinity.data.workers.MediaDownloadWorker
 import com.makd.afinity.data.workers.SubtitleDownloadWorker
@@ -65,13 +66,23 @@ constructor(
     }
 
     /**
-     * Resolves the `AFinity/Downloads` base directory for the given volume. Falls back to the
-     * primary volume when the requested volume is no longer mounted (e.g. SD card removed).
+     * Resolves the `AFinity/Downloads` base directory for the given volume. Throws
+     * [VolumeUnavailableException] when a non-primary volume is no longer mounted (e.g. the SD card
+     * was removed) rather than silently retargeting to primary — silently falling back would let
+     * deletes/cleanup no-op on the absent volume's files while still mutating state, orphaning the
+     * media. The primary volume is always resolvable.
      */
     private fun baseDir(volumeId: String): File {
         val dir =
-            storageLocationProvider.resolveBaseDir(volumeId)
-                ?: storageLocationProvider.primaryBaseDir()
+            if (volumeId == StorageLocationProvider.PRIMARY_VOLUME_ID) {
+                storageLocationProvider.primaryBaseDir()
+            } else {
+                storageLocationProvider.resolveBaseDir(volumeId)
+                    ?: throw VolumeUnavailableException(
+                        volumeId,
+                        storageLocationProvider.displayNameFor(volumeId),
+                    )
+            }
         if (!dir.exists() && !dir.mkdirs()) {
             Timber.e("Failed to create base download directory at ${dir.absolutePath}")
         }
@@ -85,8 +96,24 @@ constructor(
     ): Result<UUID> =
         withContext(Dispatchers.IO) {
             return@withContext try {
-                val resolvedVolumeId =
+                // An explicit volume choice that is no longer mounted is an error — fail loudly
+                // rather than silently retargeting the user's deliberate selection.
+                if (volumeId != null && !storageLocationProvider.isVolumeAvailable(volumeId)) {
+                    return@withContext Result.failure(
+                        VolumeUnavailableException(
+                            volumeId,
+                            storageLocationProvider.displayNameFor(volumeId),
+                        )
+                    )
+                }
+
+                // Fall back to the primary volume when the global default is unavailable so a
+                // tap-to-download never fails just because an SD card was removed.
+                val requestedVolumeId =
                     volumeId ?: preferencesRepository.getDownloadStorageVolumeId()
+                val resolvedVolumeId =
+                    if (storageLocationProvider.isVolumeAvailable(requestedVolumeId)) requestedVolumeId
+                    else StorageLocationProvider.PRIMARY_VOLUME_ID
 
                 val currentSession =
                     sessionManager.currentSession.value
@@ -378,8 +405,13 @@ constructor(
                     databaseRepository.getDownload(downloadId)
                         ?: return@withContext Result.failure(Exception("Download not found"))
 
+                // baseDir throws VolumeUnavailableException when the item's volume is gone, so a
+                // delete can never no-op on absent files while dropping the DB rows. The UI catches
+                // that and offers "remove from list" instead.
+                val baseDir = baseDir(download.storageVolumeId)
+
                 val targetPath = download.folderPath ?: download.itemId.toString()
-                val itemFolder = File(baseDir(download.storageVolumeId), targetPath)
+                val itemFolder = File(baseDir, targetPath)
 
                 if (itemFolder.exists()) {
                     itemFolder.deleteRecursively()
@@ -395,6 +427,27 @@ constructor(
                 Result.success(Unit)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to delete download")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun removeDownloadRecord(downloadId: UUID): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val download =
+                    databaseRepository.getDownload(downloadId)
+                        ?: return@withContext Result.failure(Exception("Download not found"))
+
+                val sources = databaseRepository.getSources(download.itemId)
+                sources
+                    .filter { it.type == AfinitySourceType.LOCAL }
+                    .forEach { databaseRepository.deleteSource(it.id) }
+
+                databaseRepository.deleteDownload(downloadId)
+
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to remove download record")
                 Result.failure(e)
             }
         }
@@ -570,13 +623,13 @@ constructor(
             }
         }
 
-    override suspend fun startSeriesDownload(showId: UUID): Result<Int> =
+    override suspend fun startSeriesDownload(showId: UUID, volumeId: String?): Result<Int> =
         withContext(Dispatchers.IO) {
             return@withContext try {
                 val seasons = mediaRepository.getSeasons(showId)
                 var totalStarted = 0
                 for (season in seasons) {
-                    startSeasonDownload(season.id, showId)
+                    startSeasonDownload(season.id, showId, volumeId)
                         .onSuccess { count -> totalStarted += count }
                         .onFailure { Timber.w(it, "Skipping season ${season.name}: ${it.message}") }
                 }

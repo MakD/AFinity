@@ -21,6 +21,13 @@ interface DownloadRepository {
 
     suspend fun deleteDownload(downloadId: UUID): Result<Unit>
 
+    /**
+     * Removes a download's database records (and local sources) **without** touching files on disk.
+     * Used to clear an entry whose storage volume is currently unavailable (e.g. SD card removed),
+     * leaving any on-volume files to be reclaimed when the volume returns.
+     */
+    suspend fun removeDownloadRecord(downloadId: UUID): Result<Unit>
+
     suspend fun getDownload(downloadId: UUID): DownloadInfo?
 
     suspend fun getDownloadByItemId(itemId: UUID): DownloadInfo?
@@ -51,7 +58,7 @@ interface DownloadRepository {
         volumeId: String? = null,
     ): Result<Int>
 
-    suspend fun startSeriesDownload(showId: UUID): Result<Int>
+    suspend fun startSeriesDownload(showId: UUID, volumeId: String? = null): Result<Int>
 
     suspend fun cancelAllSeriesDownloads(showId: UUID): Result<Unit>
 

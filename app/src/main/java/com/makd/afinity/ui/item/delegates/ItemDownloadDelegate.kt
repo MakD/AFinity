@@ -37,6 +37,7 @@ class ItemDownloadDelegate @Inject constructor(private val downloadRepository: D
         scope: CoroutineScope,
         item: AfinityItem?,
         sourceId: String,
+        volumeId: String? = null,
         hideQualityDialog: () -> Unit,
     ) {
         val target = item ?: return
@@ -44,7 +45,7 @@ class ItemDownloadDelegate @Inject constructor(private val downloadRepository: D
             try {
                 hideQualityDialog()
                 downloadRepository
-                    .startDownload(target.id, sourceId)
+                    .startDownload(target.id, sourceId, volumeId)
                     .onSuccess { Timber.i("Download started successfully for: ${target.name}") }
                     .onFailure { error -> Timber.e(error, "Failed to start download") }
             } catch (e: Exception) {

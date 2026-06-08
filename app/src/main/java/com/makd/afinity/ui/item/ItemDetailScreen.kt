@@ -87,6 +87,7 @@ import com.makd.afinity.ui.item.components.BoxSetDetailContent
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.item.components.MovieDetailContent
 import com.makd.afinity.ui.item.components.QualitySelectionDialog
+import com.makd.afinity.ui.item.components.StorageLocationDialog
 import com.makd.afinity.ui.item.components.SeasonDetailContent
 import com.makd.afinity.ui.item.components.SeriesDetailContent
 import com.makd.afinity.ui.item.components.VersionPickerDialog
@@ -307,8 +308,22 @@ fun ItemDetailScreen(
                     sources = remoteSources,
                     onSourceSelected = { source -> viewModel.onQualitySelected(source.id) },
                     onDismiss = { viewModel.dismissQualityDialog() },
+                    volumes = uiState.availableVolumes,
+                    selectedVolumeId = uiState.selectedVolumeId,
+                    onVolumeSelected = { viewModel.onVolumeSelected(it) },
+                    onConfirm = { source, _ -> viewModel.onQualitySelected(source.id) },
                 )
             }
+        }
+
+        if (uiState.showLocationDialog) {
+            StorageLocationDialog(
+                volumes = uiState.availableVolumes,
+                selectedVolumeId = uiState.selectedVolumeId,
+                onVolumeSelected = { viewModel.onVolumeSelected(it) },
+                onConfirm = { viewModel.onLocationConfirmed() },
+                onDismiss = { viewModel.dismissLocationDialog() },
+            )
         }
 
         if (showVersionPickerForPlay) {
@@ -464,6 +479,7 @@ private fun LandscapeItemDetailContent(
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val preferencesRepository = rememberPreferencesRepository()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
     var showRefreshDialog by remember { mutableStateOf(false) }
@@ -592,7 +608,9 @@ private fun LandscapeItemDetailContent(
                                 onCancelDownload = { viewModel.cancelDownload() },
                                 canDownload = canDownload,
                                 isLandscape = true,
+                                downloadUnavailable = uiState.downloadUnavailable,
                                 isAdmin = isAdmin,
+                                onDownloadLongClick = { viewModel.onDownloadLongClick() },
                                 onAdminAction = { action ->
                                     when (action) {
                                         AdminAction.EditMetadata ->
@@ -699,6 +717,7 @@ private fun PortraitItemDetailContent(
 ) {
     val preferencesRepository = rememberPreferencesRepository()
     val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
     var showRefreshDialog by remember { mutableStateOf(false) }
@@ -765,7 +784,9 @@ private fun PortraitItemDetailContent(
                     onCancelDownload = { viewModel.cancelDownload() },
                     canDownload = canDownload,
                     isLandscape = false,
+                    downloadUnavailable = uiState.downloadUnavailable,
                     isAdmin = isAdmin,
+                    onDownloadLongClick = { viewModel.onDownloadLongClick() },
                     onAdminAction = { action ->
                         when (action) {
                             AdminAction.EditMetadata ->

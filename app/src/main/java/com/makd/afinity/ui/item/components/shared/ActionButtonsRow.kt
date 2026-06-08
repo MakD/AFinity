@@ -47,8 +47,10 @@ fun ActionButtonsRow(
     onCancelDownload: () -> Unit,
     canDownload: Boolean = true,
     isLandscape: Boolean = false,
+    downloadUnavailable: Boolean = false,
     isAdmin: Boolean = false,
     onAdminAction: (AdminAction) -> Unit = {},
+    onDownloadLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -138,6 +140,8 @@ fun ActionButtonsRow(
             onCancelClick = onCancelDownload,
             canDownload = canDownload && hasPlayableItems,
             isLandscape = isLandscape,
+            isUnavailable = downloadUnavailable,
+            onDownloadLongClick = onDownloadLongClick,
         )
 
         if (isAdmin) {
