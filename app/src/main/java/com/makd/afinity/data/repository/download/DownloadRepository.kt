@@ -37,6 +37,10 @@ interface DownloadRepository {
 
     suspend fun getTotalStorageUsedAllServers(): Long
 
+    suspend fun getStorageUsedPerVolume(): Map<String, Long>
+
+    suspend fun getStorageUsedPerVolumeAllServers(): Map<String, Long>
+
     suspend fun startSeasonDownload(seasonId: UUID, seriesId: UUID? = null): Result<Int>
 
     suspend fun startSeriesDownload(showId: UUID): Result<Int>

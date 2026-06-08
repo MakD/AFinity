@@ -164,6 +164,16 @@ abstract class ServerDatabaseDao {
     @Query("SELECT COALESCE(SUM(totalBytes), 0) FROM downloads WHERE status = 'COMPLETED'")
     abstract suspend fun getTotalBytesAllServers(): Long
 
+    @Query(
+        "SELECT storageVolumeId, COALESCE(SUM(totalBytes), 0) AS totalBytes FROM downloads WHERE serverId = :serverId AND status = 'COMPLETED' GROUP BY storageVolumeId"
+    )
+    abstract suspend fun getTotalBytesPerVolumeForServer(serverId: String): List<VolumeUsage>
+
+    @Query(
+        "SELECT storageVolumeId, COALESCE(SUM(totalBytes), 0) AS totalBytes FROM downloads WHERE status = 'COMPLETED' GROUP BY storageVolumeId"
+    )
+    abstract suspend fun getTotalBytesPerVolume(): List<VolumeUsage>
+
     @Query("UPDATE downloads SET serverId = :serverId, userId = :userId WHERE serverId = ''")
     abstract suspend fun backfillEmptyServerIds(serverId: String, userId: UUID)
 

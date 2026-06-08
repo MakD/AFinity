@@ -482,6 +482,27 @@ constructor(
             }
         }
 
+    override suspend fun getStorageUsedPerVolume(): Map<String, Long> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val session = sessionManager.currentSession.value ?: return@withContext emptyMap()
+                databaseRepository.getTotalBytesPerVolumeForServer(session.serverId)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to calculate per-volume storage used")
+                emptyMap()
+            }
+        }
+
+    override suspend fun getStorageUsedPerVolumeAllServers(): Map<String, Long> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                databaseRepository.getTotalBytesPerVolumeAllServers()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to calculate per-volume storage used")
+                emptyMap()
+            }
+        }
+
     fun getDownloadDirectory(): File = downloadDir
 
     suspend fun getItemDownloadDirectory(itemId: UUID): File {
