@@ -310,6 +310,8 @@ class MPVPlayer(
         }
     private val videoListeners = CopyOnWriteArraySet<Player.Listener>()
 
+    @Volatile private var isReleased = false
+
     private var internalMediaItems = mutableListOf<MediaItem>()
 
     @Player.State private var playbackState: Int = STATE_IDLE
@@ -336,6 +338,7 @@ class MPVPlayer(
 
     override fun eventProperty(property: String, value: String) {
         handler.post {
+            if (isReleased) return@post
             when (property) {
                 "track-list" -> {
                     val newTracks = getTracks(value)
@@ -350,6 +353,7 @@ class MPVPlayer(
 
     override fun eventProperty(property: String, value: Boolean) {
         handler.post {
+            if (isReleased) return@post
             when (property) {
                 "paused" -> {
                     if (isPlayerReady) {
@@ -405,6 +409,7 @@ class MPVPlayer(
 
     override fun eventProperty(property: String, value: Long) {
         handler.post {
+            if (isReleased) return@post
             when (property) {
                 "time-pos" -> {
                     if (playbackState != STATE_BUFFERING) {
@@ -466,6 +471,7 @@ class MPVPlayer(
 
     override fun eventProperty(property: String, value: Double) {
         handler.post {
+            if (isReleased) return@post
             when (property) {
                 "demuxer-cache-time" -> {
                     currentCacheDurationMs = (value * 1000).toLong()
@@ -483,6 +489,7 @@ class MPVPlayer(
 
     override fun event(eventId: Int) {
         handler.post {
+            if (isReleased) return@post
             when (eventId) {
                 MPVLib.MpvEvent.MPV_EVENT_START_FILE -> {
                     if (!isPlayerReady) {
@@ -789,6 +796,8 @@ class MPVPlayer(
     }
 
     override fun release() {
+        isReleased = true
+        handler.removeCallbacksAndMessages(null)
         if (handleAudioFocus) {
             AudioManagerCompat.abandonAudioFocusRequest(audioManager, audioFocusRequest)
         }
