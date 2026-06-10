@@ -232,11 +232,8 @@ fun PlayerControls(
     Box(modifier = Modifier.fillMaxSize()) {
         AnimatedVisibility(
             visible =
-                if (uiState.logoAutoHide) {
-                    uiState.showControls && !uiState.isInPictureInPictureMode
-                } else {
-                    true
-                },
+                !uiState.isInPictureInPictureMode &&
+                    (!uiState.logoAutoHide || uiState.showControls),
             enter = fadeIn(animationSpec = tween(300)),
             exit = fadeOut(animationSpec = tween(300)),
         ) {
