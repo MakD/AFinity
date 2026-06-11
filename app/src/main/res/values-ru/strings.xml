@@ -988,4 +988,12 @@
     <string name="pref_omdb_config_title">Настройки OMDb</string>
     <string name="episode_missing">ОТСУТСТВУЕТ</string>
     <string name="episode_upcoming">СЛЕДУЮЩИЙ</string>
+    <string name="dialog_quickconnect_message">Введите 6-значный код, показанный на устройстве, с которого выполняется вход</string>
+    <string name="dialog_quickconnect_authorized">Устройство успешно авторизовано</string>
+    <string name="action_authorize">Авторизовать</string>
+    <string name="error_quickconnect_invalid_code">Неверный или недействительный код. Попробуйте еще раз.</string>
+    <string name="error_quickconnect_failed_fmt">Авторизация не удалась: %1$s</string>
+    <string name="dialog_quickconnect_title">Быстрое подключение</string>
+    <string name="pref_authorize_quickconnect_summary">Авторизация входа на другом устройстве</string>
+    <string name="pref_authorize_quickconnect">Быстрое подключение</string>
 </resources>
