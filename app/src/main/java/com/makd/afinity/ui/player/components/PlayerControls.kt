@@ -2,6 +2,7 @@ package com.makd.afinity.ui.player.components
 
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -229,6 +230,14 @@ fun PlayerControls(
             assertSubtitleOptions(options)
         }
 
+    val shouldShowControls = uiState.showControls && !uiState.isInPictureInPictureMode
+    val logoStartPadding by
+        animateDpAsState(
+            targetValue = if (shouldShowControls) 60.dp else 0.dp,
+            animationSpec = tween(300),
+            label = "logoStartPadding",
+        )
+
     Box(modifier = Modifier.fillMaxSize()) {
         AnimatedVisibility(
             visible =
@@ -247,15 +256,15 @@ fun PlayerControls(
                             )
                         )
                         .windowInsetsPadding(
-                            WindowInsets.safeDrawing.only(
+                            WindowInsets.displayCutout.only(
                                 WindowInsetsSides.Horizontal + WindowInsetsSides.Top
                             )
                         )
-                        .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp)
+                        .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 16.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(
-                        modifier = Modifier.padding(start = 60.dp),
+                        modifier = Modifier.padding(start = logoStartPadding),
                         horizontalAlignment = Alignment.Start,
                     ) {
                         val displayItem =
@@ -345,7 +354,6 @@ fun PlayerControls(
                 }
             }
         }
-        val shouldShowControls = uiState.showControls && !uiState.isInPictureInPictureMode
         AnimatedVisibility(
             visible = shouldShowControls,
             enter = fadeIn(animationSpec = tween(300)),
@@ -691,11 +699,11 @@ private fun TopControls(
                     )
                 )
                 .windowInsetsPadding(
-                    WindowInsets.safeDrawing.only(
+                    WindowInsets.displayCutout.only(
                         WindowInsetsSides.Horizontal + WindowInsetsSides.Top
                     )
                 )
-                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 8.dp)
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 24.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
             IconButton(onClick = onBackClick, modifier = Modifier.size(36.dp)) {
@@ -1072,7 +1080,9 @@ private fun SeekBar(
                     onPlayerEvent(PlayerEvent.OnSeekBarValueChange(newPosition.toLong()))
                 },
                 onValueChangeFinished = {
-                    onPlayerEvent(PlayerEvent.OnSeekBarDragFinished((draggedPosition ?: position).toLong()))
+                    onPlayerEvent(
+                        PlayerEvent.OnSeekBarDragFinished((draggedPosition ?: position).toLong())
+                    )
                     draggedPosition = null
                 },
                 valueRange = 0f..duration.toFloat().coerceAtLeast(0f),
