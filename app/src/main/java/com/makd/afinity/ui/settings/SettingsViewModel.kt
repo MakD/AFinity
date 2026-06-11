@@ -857,6 +857,41 @@ constructor(
         viewModelScope.launch { preferencesRepository.setShowRatings(enabled) }
     }
 
+    fun authorizeQuickConnect(code: String) {
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(
+                    isAuthorizingQuickConnect = true,
+                    quickConnectAuthError = null,
+                    quickConnectAuthSuccess = false,
+                )
+                val authorized = authRepository.authorizeQuickConnect(code)
+                _uiState.value = _uiState.value.copy(
+                    isAuthorizingQuickConnect = false,
+                    quickConnectAuthSuccess = authorized,
+                    quickConnectAuthError = if (!authorized)
+                        context.getString(R.string.error_quickconnect_invalid_code)
+                    else null,
+                )
+            } catch (e: Exception) {
+                Timber.e(e, "QuickConnect authorization failed")
+                _uiState.value = _uiState.value.copy(
+                    isAuthorizingQuickConnect = false,
+                    quickConnectAuthError = context.getString(
+                        R.string.error_quickconnect_failed_fmt, e.message
+                    ),
+                )
+            }
+        }
+    }
+
+    fun clearQuickConnectAuthState() {
+        _uiState.value = _uiState.value.copy(
+            quickConnectAuthSuccess = false,
+            quickConnectAuthError = null,
+        )
+    }
+
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }
@@ -935,4 +970,7 @@ data class SettingsUiState(
     val mdbListKeyValidationError: String? = null,
     val isOmdbKeyValidating: Boolean = false,
     val omdbKeyValidationError: String? = null,
+    val isAuthorizingQuickConnect: Boolean = false,
+    val quickConnectAuthSuccess: Boolean = false,
+    val quickConnectAuthError: String? = null,
 )

@@ -712,6 +712,14 @@
 
     <string name="pref_switch_session">Switch Session</string>
     <string name="pref_switch_session_summary">Change user or server</string>
+    <string name="pref_authorize_quickconnect">Authorize QuickConnect</string>
+    <string name="pref_authorize_quickconnect_summary">Authorize a sign-in request from another device</string>
+    <string name="dialog_quickconnect_title">Authorize QuickConnect</string>
+    <string name="dialog_quickconnect_message">Enter the 6-digit code shown on the device requesting sign-in</string>
+    <string name="dialog_quickconnect_authorized">Device authorized successfully</string>
+    <string name="action_authorize">Authorize</string>
+    <string name="error_quickconnect_invalid_code">Invalid or expired code. Please try again.</string>
+    <string name="error_quickconnect_failed_fmt">Authorization failed: %1$s</string>
 
     <string name="pref_group_connections">Connections</string>
     <string name="pref_manage_servers">Manage Servers</string>

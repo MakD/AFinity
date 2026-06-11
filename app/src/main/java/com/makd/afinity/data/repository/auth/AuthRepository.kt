@@ -30,6 +30,8 @@ interface AuthRepository {
 
     suspend fun getQuickConnectState(serverUrl: String, secret: String): QuickConnectState?
 
+    suspend fun authorizeQuickConnect(code: String): Boolean
+
     suspend fun getCurrentUser(): User?
 
     suspend fun getPublicUsers(serverUrl: String): List<User>

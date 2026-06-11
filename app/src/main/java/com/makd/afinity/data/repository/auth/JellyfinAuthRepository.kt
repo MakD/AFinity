@@ -246,6 +246,22 @@ constructor(
         }
     }
 
+    override suspend fun authorizeQuickConnect(code: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
+                val quickConnectApi = QuickConnectApi(apiClient)
+                quickConnectApi.authorizeQuickConnect(code = code).content
+            } catch (e: ApiClientException) {
+                Timber.e(e, "QuickConnect authorization failed")
+                false
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error during QuickConnect authorization")
+                false
+            }
+        }
+    }
+
     override suspend fun logout() {
         withContext(Dispatchers.IO) {
             try {

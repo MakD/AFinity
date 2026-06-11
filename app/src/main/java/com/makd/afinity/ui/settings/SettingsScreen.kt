@@ -4,6 +4,7 @@ import android.app.LocaleConfig
 import android.app.LocaleManager
 import android.os.LocaleList
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +26,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -34,6 +37,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -56,17 +60,29 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -134,6 +150,7 @@ fun SettingsScreen(
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showJellyseerrLogoutDialog by remember { mutableStateOf(false) }
     var showAudiobookshelfLogoutDialog by remember { mutableStateOf(false) }
+    var showQuickConnectDialog by remember { mutableStateOf(false) }
     var showJellyseerrBottomSheet by remember { mutableStateOf(false) }
     var showAudiobookshelfBottomSheet by remember { mutableStateOf(false) }
     var showSessionSwitcherSheet by remember { mutableStateOf(false) }
@@ -181,6 +198,19 @@ fun SettingsScreen(
 
     if (showLanguageDialog) {
         LanguagePickerDialog(onDismiss = { showLanguageDialog = false })
+    }
+
+    if (showQuickConnectDialog) {
+        AuthorizeQuickConnectDialog(
+            isAuthorizing = uiState.isAuthorizingQuickConnect,
+            isSuccess = uiState.quickConnectAuthSuccess,
+            errorMessage = uiState.quickConnectAuthError,
+            onAuthorize = { code -> viewModel.authorizeQuickConnect(code) },
+            onDismiss = {
+                showQuickConnectDialog = false
+                viewModel.clearQuickConnectAuthState()
+            },
+        )
     }
 
     if (showJellyseerrBottomSheet) {
@@ -381,6 +411,16 @@ fun SettingsScreen(
                             onClick =
                                 if (!effectiveOfflineMode) {
                                     { showSessionSwitcherSheet = true }
+                                } else null,
+                        )
+                        SettingsDivider()
+                        SettingsItem(
+                            icon = painterResource(id = R.drawable.ic_quickconnect),
+                            title = stringResource(R.string.pref_authorize_quickconnect),
+                            subtitle = stringResource(R.string.pref_authorize_quickconnect_summary),
+                            onClick =
+                                if (!effectiveOfflineMode) {
+                                    { showQuickConnectDialog = true }
                                 } else null,
                         )
                     }
@@ -952,6 +992,172 @@ private fun LanguagePickerDialog(onDismiss: () -> Unit) {
             }
         },
         confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+    )
+}
+
+@Composable
+private fun AuthorizeQuickConnectDialog(
+    isAuthorizing: Boolean,
+    isSuccess: Boolean,
+    errorMessage: String?,
+    onAuthorize: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val digits = remember { Array(6) { mutableStateOf("") } }
+    val focusRequesters = remember { Array(6) { FocusRequester() } }
+    val code = digits.joinToString("") { it.value }
+
+    LaunchedEffect(isSuccess) {
+        if (isSuccess) kotlinx.coroutines.delay(1200)
+        if (isSuccess) onDismiss()
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_security),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        },
+        title = {
+            Text(
+                stringResource(R.string.dialog_quickconnect_title),
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            )
+        },
+        text = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.dialog_quickconnect_message),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    digits.forEachIndexed { index, digitState ->
+                        val isFocused = remember { mutableStateOf(false) }
+                        BasicTextField(
+                            value = digitState.value,
+                            onValueChange = { input ->
+                                val filtered = input.filter { it.isDigit() }
+                                if (filtered.isEmpty()) {
+                                    digitState.value = ""
+                                } else {
+                                    digitState.value = filtered.takeLast(1)
+                                    if (index < 5) focusRequesters[index + 1].requestFocus()
+                                }
+                            },
+                            modifier =
+                                Modifier.size(42.dp)
+                                    .focusRequester(focusRequesters[index])
+                                    .onKeyEvent { event ->
+                                        if (
+                                            event.type == KeyEventType.KeyDown &&
+                                                event.key == Key.Backspace &&
+                                                digitState.value.isEmpty() &&
+                                                index > 0
+                                        ) {
+                                            focusRequesters[index - 1].requestFocus()
+                                            digits[index - 1].value = ""
+                                            true
+                                        } else false
+                                    },
+                            keyboardOptions =
+                                KeyboardOptions(
+                                    keyboardType = KeyboardType.Number,
+                                    imeAction = if (index == 5) ImeAction.Done else ImeAction.Next,
+                                ),
+                            enabled = !isAuthorizing && !isSuccess,
+                            singleLine = true,
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                            textStyle =
+                                LocalTextStyle.current.copy(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center,
+                                ),
+                            decorationBox = { innerTextField ->
+                                Box(
+                                    modifier =
+                                        Modifier.fillMaxSize()
+                                            .background(
+                                                color =
+                                                    MaterialTheme.colorScheme
+                                                        .surfaceContainerHighest,
+                                                shape = RoundedCornerShape(10.dp),
+                                            )
+                                            .border(
+                                                width =
+                                                    if (digitState.value.isNotEmpty()) 2.dp
+                                                    else 1.dp,
+                                                color =
+                                                    when {
+                                                        isSuccess -> Color(0xFF4CAF50)
+                                                        errorMessage != null ->
+                                                            MaterialTheme.colorScheme.error
+                                                        digitState.value.isNotEmpty() ->
+                                                            MaterialTheme.colorScheme.primary
+                                                        else ->
+                                                            MaterialTheme.colorScheme.outline.copy(
+                                                                alpha = 0.4f
+                                                            )
+                                                    },
+                                                shape = RoundedCornerShape(10.dp),
+                                            ),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    innerTextField()
+                                }
+                            },
+                        )
+                    }
+                }
+                when {
+                    isSuccess ->
+                        Text(
+                            text = stringResource(R.string.dialog_quickconnect_authorized),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF4CAF50),
+                        )
+                    errorMessage != null ->
+                        Text(
+                            text = errorMessage,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    else -> Spacer(modifier = Modifier.height(0.dp))
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onAuthorize(code) },
+                enabled = code.length == 6 && !isAuthorizing && !isSuccess,
+            ) {
+                if (isAuthorizing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                } else {
+                    Text(stringResource(R.string.action_authorize))
+                }
+            }
+        },
+        dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
         shape = RoundedCornerShape(28.dp),
