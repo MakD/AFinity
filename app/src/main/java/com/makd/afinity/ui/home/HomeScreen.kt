@@ -77,7 +77,6 @@ import com.makd.afinity.ui.home.components.ShowGenreSection
 import com.makd.afinity.ui.home.components.SpotlightCarousel
 import com.makd.afinity.ui.home.components.TvSeriesSectionSkeleton
 import com.makd.afinity.ui.home.components.UpcomingEpisodesSection
-import com.makd.afinity.ui.item.components.QualitySelectionDialog
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 import com.makd.afinity.ui.utils.verticalLayoutOffset
@@ -649,31 +648,11 @@ fun HomeScreen(
             onToggleFavorite = { episode -> viewModel.toggleEpisodeFavorite(episode) },
             onToggleWatchlist = { episode -> viewModel.toggleEpisodeWatchlist(episode) },
             onToggleWatched = { episode -> viewModel.toggleEpisodeWatched(episode) },
-            onDownloadClick = { viewModel.onDownloadClick() },
-            onPauseDownload = { viewModel.pauseDownload() },
-            onResumeDownload = { viewModel.resumeDownload() },
-            onCancelDownload = { viewModel.cancelDownload() },
             onNavigateToSeries = { seriesId ->
                 navController.navigate(
                     Destination.createItemDetailRoute(itemId = seriesId, itemType = "Series")
                 )
             },
         )
-
-        if (uiState.showQualityDialog) {
-            val currentEpisode = selectedEpisode
-            val remoteSources =
-                currentEpisode?.sources?.filter {
-                    it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE
-                } ?: emptyList()
-
-            if (remoteSources.isNotEmpty()) {
-                QualitySelectionDialog(
-                    sources = remoteSources,
-                    onSourceSelected = { source -> viewModel.onQualitySelected(source.id) },
-                    onDismiss = { viewModel.dismissQualityDialog() },
-                )
-            }
-        }
     }
 }

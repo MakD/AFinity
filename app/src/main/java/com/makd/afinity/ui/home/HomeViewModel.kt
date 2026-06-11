@@ -47,7 +47,6 @@ import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.data.workers.HomeDataReloadWorker
 import com.makd.afinity.navigation.Destination
-import com.makd.afinity.ui.item.delegates.ItemDownloadDelegate
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import com.makd.afinity.ui.utils.IntentUtils
 import com.makd.afinity.util.NetworkConnectivityMonitor
@@ -101,7 +100,6 @@ constructor(
     private val playbackStateManager: PlaybackStateManager,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
-    private val itemDownloadDelegate: ItemDownloadDelegate,
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val preferencesRepository: PreferencesRepository,
     private val networkMonitor: NetworkConnectivityMonitor,
@@ -1249,36 +1247,6 @@ constructor(
         }
     }
 
-    fun onDownloadClick() {
-        itemDownloadDelegate.onDownloadClick(
-            scope = viewModelScope,
-            item = _selectedEpisode.value,
-            showQualityDialog = { _uiState.update { it.copy(showQualityDialog = true) } },
-        )
-    }
-
-    fun onQualitySelected(sourceId: String) {
-        itemDownloadDelegate.onQualitySelected(
-            scope = viewModelScope,
-            item = _selectedEpisode.value,
-            sourceId = sourceId,
-            hideQualityDialog = { dismissQualityDialog() },
-        )
-    }
-
-    fun dismissQualityDialog() {
-        _uiState.update { it.copy(showQualityDialog = false) }
-    }
-
-    fun pauseDownload() =
-        itemDownloadDelegate.pauseDownload(viewModelScope, _selectedEpisodeDownloadInfo.value)
-
-    fun resumeDownload() =
-        itemDownloadDelegate.resumeDownload(viewModelScope, _selectedEpisodeDownloadInfo.value)
-
-    fun cancelDownload() =
-        itemDownloadDelegate.cancelDownload(viewModelScope, _selectedEpisodeDownloadInfo.value)
-
     fun toggleEpisodeWatchlist(episode: AfinityEpisode) {
         viewModelScope.launch {
             try {
@@ -1504,5 +1472,4 @@ data class HomeUiState(
         emptyList(),
     val separateTvLibrarySections: List<Pair<AfinityCollection, List<AfinityShow>>> = emptyList(),
     val isOffline: Boolean = false,
-    val showQualityDialog: Boolean = false,
 )

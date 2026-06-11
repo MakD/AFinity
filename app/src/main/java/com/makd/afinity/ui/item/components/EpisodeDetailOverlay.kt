@@ -85,6 +85,7 @@ fun EpisodeDetailOverlay(
     onResumeDownload: () -> Unit,
     onCancelDownload: () -> Unit,
     canDownload: Boolean = true,
+    onDownloadLongClick: (() -> Unit)? = null,
     onGoToSeries: (() -> Unit)? = null,
     isAdmin: Boolean = false,
     onAdminAction: (AdminAction) -> Unit = {},
@@ -520,6 +521,7 @@ fun EpisodeDetailOverlay(
                             onResumeClick = onResumeDownload,
                             onCancelClick = onCancelDownload,
                             canDownload = canDownload,
+                            onDownloadLongClick = onDownloadLongClick,
                         )
                     }
 
