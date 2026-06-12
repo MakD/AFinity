@@ -66,6 +66,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -73,6 +74,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.model.api.PersonKind.ACTOR
 import org.jellyfin.sdk.model.api.PersonKind.DIRECTOR
 import org.jellyfin.sdk.model.api.PersonKind.WRITER
@@ -1056,7 +1058,19 @@ constructor(
 
     private suspend fun loadDownloadedContent() {
         try {
-            val userId = authRepository.currentUser.value?.id ?: return
+            // Wait for the current user to be available before loading. Right after an offline
+            // session restore it can briefly be null, so awaiting it (with a timeout safeguard)
+            // avoids bailing out early and leaving the offline home blank.
+            val userId =
+                withTimeoutOrNull(10_000) {
+                    authRepository.currentUser.filterNotNull().first().id
+                }
+                    ?: run {
+                        Timber.w(
+                            "No authenticated user available; skipping downloaded content load"
+                        )
+                        return
+                    }
 
             Timber.d("Loading downloaded content for user: $userId")
 
