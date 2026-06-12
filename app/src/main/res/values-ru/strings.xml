@@ -44,8 +44,8 @@
     <string name="home_downloaded_shows">Скачанные сериалы</string>
     <string name="home_critics_choice">Выбор критиков</string>
     <string name="home_popular_studios">Популярные студии</string>
-    <string name="home_episode_count_fmt">%1$d ЭП</string>
-    <string name="home_episode_count_plus">99+ ЭП</string>
+    <string name="home_episode_count_fmt">%1$d эп</string>
+    <string name="home_episode_count_plus">99+ эп</string>
     <string name="cd_app_logo">Логотип приложения</string>
     <string name="cd_watched_status">Просмотрено</string>
     <string name="cd_imdb">IMDB</string>
@@ -988,4 +988,12 @@
     <string name="pref_omdb_config_title">Настройки OMDb</string>
     <string name="episode_missing">ОТСУТСТВУЕТ</string>
     <string name="episode_upcoming">СЛЕДУЮЩИЙ</string>
+    <string name="dialog_quickconnect_message">Введите 6-значный код, показанный на устройстве, с которого выполняется вход</string>
+    <string name="dialog_quickconnect_authorized">Устройство успешно авторизовано</string>
+    <string name="action_authorize">Авторизовать</string>
+    <string name="error_quickconnect_invalid_code">Неверный или недействительный код. Попробуйте еще раз.</string>
+    <string name="error_quickconnect_failed_fmt">Авторизация не удалась: %1$s</string>
+    <string name="dialog_quickconnect_title">Быстрое подключение</string>
+    <string name="pref_authorize_quickconnect_summary">Авторизация входа на другом устройстве</string>
+    <string name="pref_authorize_quickconnect">Быстрое подключение</string>
 </resources>
