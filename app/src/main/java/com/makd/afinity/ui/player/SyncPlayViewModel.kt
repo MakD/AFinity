@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.player.PlayerEvent
+import com.makd.afinity.data.models.syncplay.SyncPlayMemberInfo
 import com.makd.afinity.data.models.syncplay.SyncPlayState
+import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.syncplay.SyncPlayRepository
 import com.makd.afinity.data.syncplay.SyncPlayGroupEvent
@@ -23,6 +25,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.UUID
@@ -83,6 +87,7 @@ constructor(
     private val timeSyncEngine: SyncPlayTimeSyncEngine,
     private val rawWebSocket: SyncPlayRawWebSocket,
     private val mediaRepository: MediaRepository,
+    private val jellyfinRepository: JellyfinRepository,
 ) : ViewModel() {
     val syncPlayState: StateFlow<SyncPlayState> = syncPlayRepository.syncPlayState
 
@@ -91,6 +96,9 @@ constructor(
 
     private val _effects = MutableSharedFlow<SyncPlayEffect>(extraBufferCapacity = 8)
     val effects: SharedFlow<SyncPlayEffect> = _effects.asSharedFlow()
+
+    private val _memberInfoMap = MutableStateFlow<Map<String, SyncPlayMemberInfo>>(emptyMap())
+    val memberInfoMap: StateFlow<Map<String, SyncPlayMemberInfo>> = _memberInfoMap.asStateFlow()
 
     private var playerActions: SyncPlayPlayerActions? = null
 
@@ -104,6 +112,7 @@ constructor(
         viewModelScope.launch { collectRawCommands() }
         viewModelScope.launch { collectGroupUpdates() }
         viewModelScope.launch { collectRawGroupEvents() }
+        viewModelScope.launch { collectMemberSessionChanges() }
         viewModelScope.launch { collectPlayQueueUpdates() }
     }
 
@@ -410,6 +419,47 @@ constructor(
                 playlistItemId = playlistItemId,
             )
         }
+    }
+
+    private suspend fun collectMemberSessionChanges() {
+        syncPlayRepository.syncPlayState
+            .map { it.members }
+            .distinctUntilChanged()
+            .collect { members ->
+                if (members.isEmpty()) {
+                    _memberInfoMap.value = emptyMap()
+                    return@collect
+                }
+
+                jellyfinRepository.getActiveSessions().onSuccess { sessions ->
+                    val baseUrl = jellyfinRepository.getBaseUrl()
+
+                    _memberInfoMap.value =
+                        sessions
+                            .filter { it.userName != null }
+                            .groupBy { it.userName!! }
+                            .mapValues { (_, userSessions) ->
+                                val activeSession =
+                                    userSessions.firstOrNull { session ->
+                                        session.nowPlayingItem != null ||
+                                            session.playState?.isPaused == false
+                                    } ?: userSessions.first()
+
+                                val imageUrl =
+                                    activeSession.userId?.let { uid ->
+                                        "$baseUrl/Users/$uid/Images/Primary"
+                                    }
+
+                                SyncPlayMemberInfo(
+                                    username = activeSession.userName!!,
+                                    deviceName = activeSession.deviceName,
+                                    clientName = activeSession.client,
+                                    appVersion = activeSession.applicationVersion,
+                                    profileImageUrl = imageUrl,
+                                )
+                            }
+                }
+            }
     }
 
     override fun onCleared() {

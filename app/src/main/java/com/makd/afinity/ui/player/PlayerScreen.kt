@@ -85,6 +85,7 @@ fun PlayerScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val syncPlayState by syncPlayViewModel.syncPlayState.collectAsStateWithLifecycle()
     val syncPlayUiState by syncPlayViewModel.uiState.collectAsStateWithLifecycle()
+    val syncPlayMemberInfo by syncPlayViewModel.memberInfoMap.collectAsStateWithLifecycle()
     val playlistState by
         viewModel.playlistState.collectAsStateWithLifecycle(initialValue = PlaylistState())
 
@@ -372,6 +373,9 @@ fun PlayerScreen(
                 onVersionToggleRequest = { showVersionPicker = !showVersionPicker },
                 isSyncPlay = syncPlayState.isInGroup,
                 onSyncPlayClick = { syncPlayViewModel.toggleGroupSheet() },
+                syncPlayMembers = syncPlayState.members,
+                syncPlayGroupName = syncPlayState.groupName,
+                syncPlayMemberInfo = syncPlayMemberInfo,
             )
 
             if (syncPlayState.isInGroup && syncPlayState.groupState == GroupStateType.WAITING) {

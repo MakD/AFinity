@@ -10,6 +10,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -33,9 +35,11 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +48,7 @@ import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +56,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -73,6 +79,7 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.player.PlayerEvent
+import com.makd.afinity.data.models.syncplay.SyncPlayMemberInfo
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.livetv.components.LiveBadge
 import com.makd.afinity.ui.player.PlayerViewModel
@@ -113,11 +120,15 @@ fun PlayerControls(
     onVersionToggleRequest: () -> Unit = {},
     isSyncPlay: Boolean = false,
     onSyncPlayClick: () -> Unit = {},
+    syncPlayMembers: List<String> = emptyList(),
+    syncPlayGroupName: String = "",
+    syncPlayMemberInfo: Map<String, SyncPlayMemberInfo> = emptyMap(),
 ) {
     var showAudioSelector by remember { mutableStateOf(false) }
     var showSubtitleSelector by remember { mutableStateOf(false) }
     var showSpeedDialog by remember { mutableStateOf(false) }
     var showEpisodeSwitcher by remember { mutableStateOf(false) }
+    var showMembersPopup by remember { mutableStateOf(false) }
 
     val currentItem = uiState.currentItem
 
@@ -368,7 +379,9 @@ fun PlayerControls(
                     onLockToggle = { onPlayerEvent(PlayerEvent.ToggleLock) },
                     onPipToggle = onPipToggle,
                     isSyncPlay = isSyncPlay,
-                    onSyncPlayClick = onSyncPlayClick,
+                    onSyncPlayClick = {
+                        if (isSyncPlay) showMembersPopup = !showMembersPopup else onSyncPlayClick()
+                    },
                 )
 
                 if (!uiState.isControlsLocked && !uiState.isInPictureInPictureMode) {
@@ -676,6 +689,210 @@ fun PlayerControls(
                 },
                 onDismiss = { showEpisodeSwitcher = false },
             )
+        }
+
+        if (showMembersPopup && isSyncPlay) {
+            Box(
+                modifier =
+                    Modifier.fillMaxSize().clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) {
+                        showMembersPopup = false
+                    }
+            ) {
+                Box(
+                    modifier =
+                        Modifier.align(Alignment.TopEnd)
+                            .windowInsetsPadding(
+                                WindowInsets.displayCutout.only(
+                                    WindowInsetsSides.Horizontal + WindowInsetsSides.Top
+                                )
+                            )
+                            .padding(top = 72.dp, end = 16.dp)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                            ) {
+                                /* consume clicks */
+                            }
+                ) {
+                    Column(
+                        modifier =
+                            Modifier.background(
+                                    color = Color(0xEB000000),
+                                    shape = RoundedCornerShape(16.dp),
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = Color.White.copy(alpha = 0.08f),
+                                    shape = RoundedCornerShape(16.dp),
+                                )
+                                .padding(16.dp)
+                                .widthIn(min = 220.dp, max = 280.dp)
+                                .heightIn(max = 340.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_users_group),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Text(
+                                    text = syncPlayGroupName.ifBlank { "Watch Party" },
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.White,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+
+                            Box(
+                                modifier =
+                                    Modifier.background(
+                                            color =
+                                                MaterialTheme.colorScheme.primary.copy(
+                                                    alpha = 0.15f
+                                                ),
+                                            shape = RoundedCornerShape(4.dp),
+                                        )
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "SYNCED",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+
+                        HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
+
+                        Column(
+                            modifier = Modifier.verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            syncPlayMembers.forEach { member ->
+                                val memberInfo = syncPlayMemberInfo[member]
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Box(modifier = Modifier.size(32.dp)) {
+                                        if (memberInfo?.profileImageUrl != null) {
+                                            AsyncImage(
+                                                imageUrl = memberInfo.profileImageUrl,
+                                                contentDescription = "Profile picture of $member",
+                                                modifier =
+                                                    Modifier.fillMaxSize()
+                                                        .clip(CircleShape)
+                                                        .background(Color.White.copy(alpha = 0.1f)),
+                                                contentScale = ContentScale.Crop,
+                                                blurHash = null,
+                                            )
+                                        } else {
+                                            Box(
+                                                modifier =
+                                                    Modifier.fillMaxSize()
+                                                        .clip(CircleShape)
+                                                        .background(
+                                                            MaterialTheme.colorScheme.primary.copy(
+                                                                alpha = 0.2f
+                                                            )
+                                                        ),
+                                                contentAlignment = Alignment.Center,
+                                            ) {
+                                                Text(
+                                                    text = member.take(1).uppercase(),
+                                                    style = MaterialTheme.typography.titleSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                )
+                                            }
+                                        }
+
+                                        Box(
+                                            modifier =
+                                                Modifier.size(10.dp)
+                                                    .align(Alignment.BottomEnd)
+                                                    .offset(x = 2.dp, y = 2.dp)
+                                                    .background(Color(0xFF4CAF50), CircleShape)
+                                                    .border(2.dp, Color(0xEB000000), CircleShape)
+                                        )
+                                    }
+
+                                    Column {
+                                        Text(
+                                            text = member,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium,
+                                            color = Color.White.copy(alpha = 0.95f),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+
+                                        if (memberInfo != null) {
+                                            val deviceDetails =
+                                                listOfNotNull(
+                                                        memberInfo.deviceName?.takeIf {
+                                                            it.isNotBlank()
+                                                        },
+                                                        memberInfo.clientName?.takeIf {
+                                                            it.isNotBlank()
+                                                        },
+                                                    )
+                                                    .joinToString(" • ")
+
+                                            if (deviceDetails.isNotEmpty()) {
+                                                Text(
+                                                    text = deviceDetails,
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = Color.White.copy(alpha = 0.5f),
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
+
+                        TextButton(
+                            onClick = {
+                                showMembersPopup = false
+                                onSyncPlayClick()
+                            },
+                            modifier = Modifier.align(Alignment.End).height(32.dp),
+                            contentPadding =
+                                androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp),
+                        ) {
+                            Text(
+                                text = "Manage group",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -1198,26 +1415,6 @@ private fun formatTime(timeMs: Long): String {
         String.format(Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds)
     } else {
         String.format(Locale.ROOT, "%d:%02d", minutes, seconds)
-    }
-}
-
-private fun formatSubtitleCodec(codec: String): String {
-    return when (codec.lowercase()) {
-        "subrip" -> "SRT"
-        "ass",
-        "ssa" -> "ASS"
-        "webvtt",
-        "vtt" -> "VTT"
-        "mov_text" -> "TX3G"
-        "dvd_subtitle",
-        "dvdsub" -> "VOBSUB"
-        "hdmv_pgs_subtitle",
-        "pgssub" -> "PGS"
-        "dvb_subtitle" -> "DVB"
-        "sami" -> "SAMI"
-        "microdvd" -> "MicroDVD"
-        "subviewer" -> "SubViewer"
-        else -> codec.uppercase()
     }
 }
 
