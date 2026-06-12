@@ -66,7 +66,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -74,7 +74,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.model.api.PersonKind.ACTOR
 import org.jellyfin.sdk.model.api.PersonKind.DIRECTOR
 import org.jellyfin.sdk.model.api.PersonKind.WRITER
@@ -164,7 +163,6 @@ constructor(
                             launch { loadUpcomingEpisodes() }
                         }
                         loadNewHomescreenSections()
-                        loadDownloadedContent()
                     }
                 }
             }
@@ -293,12 +291,26 @@ constructor(
                 Timber.d("Offline mode changed: $isOffline")
                 _uiState.update { it.copy(isOffline = isOffline) }
 
-                if (isOffline) {
-                    loadDownloadedContent()
-                } else {
+                if (!isOffline) {
                     scheduleHomeDataReload()
                 }
             }
+        }
+
+        // Load downloaded content whenever we're offline and a user is available. Combining the two
+        // flows means we react once the user is known rather than reading it eagerly and racing the
+        // session restore (which would leave the offline home blank). distinctUntilChanged avoids
+        // reloading on the redundant emissions both source flows produce during startup.
+        viewModelScope.launch {
+            combine(offlineModeManager.isOffline, authRepository.currentUser) { isOffline, user ->
+                    isOffline to user?.id
+                }
+                .distinctUntilChanged()
+                .collect { (isOffline, userId) ->
+                    if (isOffline && userId != null) {
+                        loadDownloadedContent(userId)
+                    }
+                }
         }
 
         viewModelScope.launch {
@@ -1056,22 +1068,8 @@ constructor(
         return adjustedPositions
     }
 
-    private suspend fun loadDownloadedContent() {
+    private suspend fun loadDownloadedContent(userId: UUID) {
         try {
-            // Wait for the current user to be available before loading. Right after an offline
-            // session restore it can briefly be null, so awaiting it (with a timeout safeguard)
-            // avoids bailing out early and leaving the offline home blank.
-            val userId =
-                withTimeoutOrNull(10_000) {
-                    authRepository.currentUser.filterNotNull().first().id
-                }
-                    ?: run {
-                        Timber.w(
-                            "No authenticated user available; skipping downloaded content load"
-                        )
-                        return
-                    }
-
             Timber.d("Loading downloaded content for user: $userId")
 
             val completedDownloads = downloadRepository.getCompletedDownloadsFlow().first()
