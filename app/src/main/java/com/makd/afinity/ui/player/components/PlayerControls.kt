@@ -459,10 +459,13 @@ fun PlayerControls(
                     ),
         ) {
             if (currentSegment != null) {
-                SkipButton(
+                val nextItem = playlistQueue.getOrNull(currentPlaylistIndex + 1)
+
+                NextUpSkipOverlay(
+                    nextItem = nextItem,
                     segment = currentSegment,
                     skipButtonText = uiState.skipButtonText,
-                    onClick = { onPlayerEvent(PlayerEvent.SkipSegment(currentSegment)) },
+                    onSkipClick = { onPlayerEvent(PlayerEvent.SkipSegment(currentSegment)) },
                 )
             }
         }

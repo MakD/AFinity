@@ -10,10 +10,8 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
@@ -70,7 +68,7 @@ fun SkipButton(
         ElevatedButton(
             onClick = { onClick(segment) },
             modifier =
-                Modifier.wrapContentSize().padding(16.dp).drawWithCache {
+                modifier.drawWithCache {
                     val strokeWidthPx = 3.dp.toPx()
                     val inset = strokeWidthPx / 2f
                     val cornerRadius = CornerRadius((size.height - strokeWidthPx) / 2f)
