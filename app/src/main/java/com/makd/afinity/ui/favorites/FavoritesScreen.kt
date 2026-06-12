@@ -270,10 +270,6 @@ fun FavoritesScreen(
         onToggleFavorite = { episode -> viewModel.toggleEpisodeFavorite(episode) },
         onToggleWatchlist = { episode -> viewModel.toggleEpisodeWatchlist(episode) },
         onToggleWatched = { episode -> viewModel.toggleEpisodeWatched(episode) },
-        onDownloadClick = { viewModel.onDownloadClick() },
-        onPauseDownload = { viewModel.pauseDownload() },
-        onResumeDownload = { viewModel.resumeDownload() },
-        onCancelDownload = { viewModel.cancelDownload() },
         onNavigateToSeries = { seriesId ->
             navController.navigate(
                 Destination.createItemDetailRoute(itemId = seriesId, itemType = "Series")

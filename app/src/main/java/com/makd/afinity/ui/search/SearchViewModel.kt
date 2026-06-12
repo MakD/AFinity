@@ -35,7 +35,6 @@ import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
-import com.makd.afinity.ui.item.delegates.ItemDownloadDelegate
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -78,7 +77,6 @@ constructor(
     private val userDataRepository: UserDataRepository,
     private val authRepository: AuthRepository,
     private val databaseRepository: DatabaseRepository,
-    private val itemDownloadDelegate: ItemDownloadDelegate,
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val preferencesRepository: PreferencesRepository,
     private val networkMonitor: NetworkConnectivityMonitor,
@@ -262,21 +260,6 @@ constructor(
         _selectedEpisodeWatchlistStatus.value = false
         _selectedEpisodeDownloadInfo.value = null
     }
-
-    fun onDownloadClick() {
-        _selectedEpisode.value?.let { episode ->
-            itemDownloadDelegate.onDownloadClick(viewModelScope, episode) {}
-        }
-    }
-
-    fun pauseDownload() =
-        itemDownloadDelegate.pauseDownload(viewModelScope, _selectedEpisodeDownloadInfo.value)
-
-    fun resumeDownload() =
-        itemDownloadDelegate.resumeDownload(viewModelScope, _selectedEpisodeDownloadInfo.value)
-
-    fun cancelDownload() =
-        itemDownloadDelegate.cancelDownload(viewModelScope, _selectedEpisodeDownloadInfo.value)
 
     fun toggleEpisodeFavorite(episode: AfinityEpisode) {
         itemUserDataDelegate.toggleEpisodeFavorite(viewModelScope, episode) {

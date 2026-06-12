@@ -237,6 +237,10 @@ interface DatabaseRepository {
 
     suspend fun getTotalBytesAllServers(): Long
 
+    suspend fun getTotalBytesPerVolumeForServer(serverId: String): Map<String, Long>
+
+    suspend fun getTotalBytesPerVolumeAllServers(): Map<String, Long>
+
     suspend fun backfillEmptyServerIds(serverId: String, userId: UUID)
 
     suspend fun deleteDownload(downloadId: UUID)

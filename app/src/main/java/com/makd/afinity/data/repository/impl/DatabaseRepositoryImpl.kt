@@ -781,6 +781,18 @@ constructor(
         return serverDatabaseDao.getTotalBytesAllServers()
     }
 
+    override suspend fun getTotalBytesPerVolumeForServer(serverId: String): Map<String, Long> {
+        return serverDatabaseDao.getTotalBytesPerVolumeForServer(serverId).associate {
+            it.storageVolumeId to it.totalBytes
+        }
+    }
+
+    override suspend fun getTotalBytesPerVolumeAllServers(): Map<String, Long> {
+        return serverDatabaseDao.getTotalBytesPerVolume().associate {
+            it.storageVolumeId to it.totalBytes
+        }
+    }
+
     override suspend fun backfillEmptyServerIds(serverId: String, userId: UUID) {
         serverDatabaseDao.backfillEmptyServerIds(serverId, userId)
     }

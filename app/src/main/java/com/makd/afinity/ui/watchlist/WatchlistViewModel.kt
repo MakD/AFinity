@@ -19,7 +19,6 @@ import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
-import com.makd.afinity.ui.item.delegates.ItemDownloadDelegate
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -47,7 +46,6 @@ constructor(
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
     private val itemUserDataDelegate: ItemUserDataDelegate,
-    private val itemDownloadDelegate: ItemDownloadDelegate,
     private val preferencesRepository: PreferencesRepository,
     private val networkMonitor: NetworkConnectivityMonitor,
 ) : ViewModel() {
@@ -195,21 +193,6 @@ constructor(
             }
         }
     }
-
-    fun onDownloadClick() {
-        _selectedEpisode.value?.let { episode ->
-            itemDownloadDelegate.onDownloadClick(viewModelScope, episode) {}
-        }
-    }
-
-    fun pauseDownload() =
-        itemDownloadDelegate.pauseDownload(viewModelScope, _selectedEpisodeDownloadInfo.value)
-
-    fun resumeDownload() =
-        itemDownloadDelegate.resumeDownload(viewModelScope, _selectedEpisodeDownloadInfo.value)
-
-    fun cancelDownload() =
-        itemDownloadDelegate.cancelDownload(viewModelScope, _selectedEpisodeDownloadInfo.value)
 }
 
 data class WatchlistUiState(

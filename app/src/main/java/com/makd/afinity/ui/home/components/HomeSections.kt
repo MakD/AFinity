@@ -269,6 +269,7 @@ fun OptimizedLatestTvSeriesSection(
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     title: String = stringResource(R.string.home_latest_tv_series),
+    unavailableItemIds: Set<java.util.UUID> = emptySet(),
 ) {
     val cardWidth = widthSizeClass.portraitWidth
     val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
@@ -304,7 +305,12 @@ fun OptimizedLatestTvSeriesSection(
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(items = uniqueItems, key = { item -> "latest_tv_${item.id}" }) { item ->
-                MediaItemCard(item = item, onClick = { onItemClick(item) }, cardWidth = cardWidth)
+                MediaItemCard(
+                    item = item,
+                    onClick = { onItemClick(item) },
+                    cardWidth = cardWidth,
+                    isUnavailable = item.id in unavailableItemIds,
+                )
             }
         }
     }

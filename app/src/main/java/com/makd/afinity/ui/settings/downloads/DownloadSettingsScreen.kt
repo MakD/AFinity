@@ -3,6 +3,7 @@ package com.makd.afinity.ui.settings.downloads
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +25,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -41,6 +43,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -53,6 +56,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalLocale
@@ -97,6 +101,24 @@ fun DownloadSettingsScreen(
             snackbarHostState.showSnackbar(error)
             viewModel.clearError()
         }
+    }
+
+    if (uiState.pendingUnavailableDelete != null) {
+        AlertDialog(
+            onDismissRequest = viewModel::dismissUnavailableDelete,
+            title = { Text(stringResource(R.string.download_unavailable_delete_title)) },
+            text = { Text(stringResource(R.string.download_unavailable_delete_message)) },
+            confirmButton = {
+                TextButton(onClick = viewModel::confirmRemoveUnavailableDelete) {
+                    Text(stringResource(R.string.download_unavailable_delete_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::dismissUnavailableDelete) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
     }
 
     Scaffold(
@@ -166,11 +188,34 @@ fun DownloadSettingsScreen(
                     downloadCount = uiState.activeDownloads.size + uiState.completedDownloads.size,
                     isOffline = isOffline,
                     wifiOnly = uiState.downloadOverWifiOnly,
-                    deviceStats = uiState.deviceStorageStats,
+                    deviceStats =
+                        if (uiState.volumeStorageStats.size > 1)
+                            aggregateDeviceStats(uiState.volumeStorageStats)
+                        else uiState.deviceStorageStats,
                     onWifiOnlyChanged = viewModel::setDownloadOverWifiOnly,
                     formatSize = viewModel::formatStorageSize,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
+            }
+
+            if (uiState.volumeStorageStats.size > 1) {
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    SectionHeader(
+                        title = stringResource(R.string.section_storage_locations),
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                    )
+                }
+
+                item {
+                    StorageLocationsCard(
+                        stats = uiState.volumeStorageStats,
+                        defaultVolumeId = uiState.defaultStorageVolumeId,
+                        onSetDefault = viewModel::setDefaultStorageVolume,
+                        formatSize = viewModel::formatStorageSize,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
             }
 
             item {
@@ -249,8 +294,22 @@ fun DownloadSettingsScreen(
                     }
                     items(uiState.completedDownloads, key = { "jf_completed_${it.id}" }) { download
                         ->
+                        val unavailableVolumeIds =
+                            uiState.volumeStorageStats
+                                .filter { !it.isAvailable }
+                                .map { it.volumeId }
+                                .toSet()
+                        val isVolumeAvailable =
+                            download.storageVolumeId !in unavailableVolumeIds
                         CompletedDownloadRow(
                             download = download,
+                            volumeLabel =
+                                if (uiState.volumeStorageStats.size > 1)
+                                    uiState.volumeStorageStats
+                                        .firstOrNull { it.volumeId == download.storageVolumeId }
+                                        ?.displayName
+                                else null,
+                            isVolumeAvailable = isVolumeAvailable,
                             onDelete = viewModel::deleteDownload,
                             formatSize = viewModel::formatStorageSize,
                         )
@@ -388,9 +447,15 @@ fun StatusHub(
 
                     val freeSpaceText = deviceStats?.freeBytes?.let { formatSize(it) } ?: "..."
                     Text(
-                        text = stringResource(R.string.storage_free_on_device_fmt, freeSpaceText),
+                        text =
+                            stringResource(
+                                R.string.storage_free_on_device_fmt,
+                                freeSpaceText,
+                            ),
                         style =
-                            MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                            MaterialTheme.typography.bodySmall.copy(
+                                fontWeight = FontWeight.Medium
+                            ),
                         color =
                             if ((deviceStats?.usagePercentage ?: 0f) > 0.9f)
                                 MaterialTheme.colorScheme.error
@@ -653,6 +718,8 @@ fun ActiveDownloadCard(
 @Composable
 fun CompletedDownloadRow(
     download: DownloadInfo,
+    volumeLabel: String? = null,
+    isVolumeAvailable: Boolean = true,
     onDelete: (UUID) -> Unit,
     formatSize: (Long) -> String,
 ) {
@@ -685,7 +752,10 @@ fun CompletedDownloadRow(
                     else download.imageUrl,
                 contentDescription = null,
                 modifier =
-                    Modifier.width(56.dp).aspectRatio(2f / 3f).clip(RoundedCornerShape(6.dp)),
+                    Modifier.width(56.dp)
+                        .aspectRatio(2f / 3f)
+                        .clip(RoundedCornerShape(6.dp))
+                        .alpha(if (isVolumeAvailable) 1f else 0.4f),
                 contentScale = ContentScale.Crop,
             )
         },
@@ -698,13 +768,61 @@ fun CompletedDownloadRow(
             )
         },
         supportingContent = {
-            Text(
-                text = subtitleText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Column {
+                Text(
+                    text = subtitleText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (!isVolumeAvailable) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 2.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_folder),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text =
+                                stringResource(
+                                    R.string.download_unavailable_label,
+                                    volumeLabel
+                                        ?: stringResource(R.string.storage_unavailable_volume),
+                                ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                } else if (volumeLabel != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 2.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_folder),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = volumeLabel,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
         },
         trailingContent = {
             IconButton(onClick = { onDelete(download.id) }) {
@@ -726,6 +844,188 @@ fun SectionHeader(title: String, modifier: Modifier = Modifier) {
         color = MaterialTheme.colorScheme.primary,
         fontWeight = FontWeight.Bold,
         modifier = modifier,
+    )
+}
+
+@Composable
+fun StorageLocationsCard(
+    stats: List<DownloadsViewModel.VolumeStorageStats>,
+    defaultVolumeId: String,
+    onSetDefault: (String) -> Unit,
+    formatSize: (Long) -> String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Column {
+            stats.forEachIndexed { index, item ->
+                if (index > 0) {
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
+                VolumeStorageRow(
+                    stats = item,
+                    isDefault = item.isAvailable && item.volumeId == defaultVolumeId,
+                    onSetDefault = { if (item.isAvailable) onSetDefault(item.volumeId) },
+                    formatSize = formatSize,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun VolumeStorageRow(
+    stats: DownloadsViewModel.VolumeStorageStats,
+    isDefault: Boolean,
+    onSetDefault: () -> Unit,
+    formatSize: (Long) -> String,
+) {
+    val device = stats.device
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            Modifier.fillMaxWidth()
+                .clickable(enabled = stats.isAvailable, onClick = onSetDefault)
+                .background(
+                    if (isDefault) MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
+                    else Color.Transparent
+                )
+                .padding(16.dp),
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(56.dp)) {
+            CircularProgressIndicator(
+                progress = { 1f },
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                strokeWidth = 5.dp,
+            )
+            if (device != null) {
+                val progress = device.usagePercentage
+                CircularProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.fillMaxSize(),
+                    color =
+                        if (progress > 0.9f) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.primary,
+                    strokeWidth = 5.dp,
+                    strokeCap = StrokeCap.Round,
+                )
+            }
+            Icon(
+                painter =
+                    painterResource(
+                        id =
+                            if (stats.isRemovable) R.drawable.ic_folder
+                            else R.drawable.ic_database
+                    ),
+                contentDescription = null,
+                tint =
+                    if (stats.isAvailable) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = stats.displayName,
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color =
+                        if (stats.isAvailable) MaterialTheme.colorScheme.onSurface
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                if (!stats.isAvailable) {
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.storage_unavailable_badge),
+                            style =
+                                MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        )
+                    }
+                } else if (isDefault) {
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = MaterialTheme.colorScheme.primary,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.storage_default_badge),
+                            style =
+                                MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        )
+                    }
+                } else {
+                    Text(
+                        text = stringResource(R.string.storage_set_as_default),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text =
+                    if (device != null)
+                        stringResource(
+                            R.string.storage_usage_combined_fmt,
+                            formatSize(stats.usedThisServer),
+                            formatSize(device.freeBytes),
+                            formatSize(device.totalBytes),
+                        )
+                    else
+                        stringResource(
+                            R.string.storage_unavailable_used_fmt,
+                            formatSize(stats.usedThisServer),
+                        ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+private fun aggregateDeviceStats(
+    stats: List<DownloadsViewModel.VolumeStorageStats>
+): DownloadsViewModel.DeviceStorageStats? {
+    val devices = stats.mapNotNull { it.device }
+    if (devices.isEmpty()) return null
+    val totalBytes = devices.sumOf { it.totalBytes }
+    val freeBytes = devices.sumOf { it.freeBytes }
+    val usedBytes = totalBytes - freeBytes
+    return DownloadsViewModel.DeviceStorageStats(
+        totalBytes = totalBytes,
+        freeBytes = freeBytes,
+        usedBytes = usedBytes,
+        usagePercentage = if (totalBytes > 0) usedBytes.toFloat() / totalBytes.toFloat() else 0f,
     )
 }
 

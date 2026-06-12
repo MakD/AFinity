@@ -44,9 +44,9 @@ import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
+import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.data.workers.HomeDataReloadWorker
 import com.makd.afinity.navigation.Destination
-import com.makd.afinity.ui.item.delegates.ItemDownloadDelegate
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import com.makd.afinity.ui.utils.IntentUtils
 import com.makd.afinity.util.NetworkConnectivityMonitor
@@ -93,13 +93,13 @@ constructor(
     private val databaseRepository: DatabaseRepository,
     private val downloadRepository: DownloadRepository,
     private val absDownloadRepository: AbsDownloadRepository,
+    private val storageLocationProvider: StorageLocationProvider,
     private val offlineModeManager: OfflineModeManager,
     private val authRepository: AuthRepository,
     private val mediaRepository: MediaRepository,
     private val playbackStateManager: PlaybackStateManager,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
-    private val itemDownloadDelegate: ItemDownloadDelegate,
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val preferencesRepository: PreferencesRepository,
     private val networkMonitor: NetworkConnectivityMonitor,
@@ -1063,6 +1063,16 @@ constructor(
             val completedDownloads = downloadRepository.getCompletedDownloadsFlow().first()
             val downloadedItemIds = completedDownloads.map { it.itemId }.toSet()
 
+            // A download is unavailable when the volume it was saved to (e.g. an SD card) is no
+            // longer mounted. Build the set of mounted volumes once and the per-item volume map so
+            // we can flag movies/shows whose files can't currently be reached.
+            val mountedVolumeIds = storageLocationProvider.mountedVolumeIds()
+            val volumeByItemId = completedDownloads.associate { it.itemId to it.storageVolumeId }
+            fun isItemUnavailable(itemId: UUID): Boolean {
+                val volumeId = volumeByItemId[itemId] ?: return false
+                return volumeId !in mountedVolumeIds
+            }
+
             val downloadedMovies =
                 databaseRepository.getAllMovies(userId).filter { movie ->
                     movie.id in downloadedItemIds
@@ -1128,6 +1138,25 @@ constructor(
                         )
                     }
 
+            // Movies are unavailable when their own download volume is gone; a show is unavailable
+            // only when every one of its downloaded episodes lives on a missing volume.
+            val unavailableMovieIds =
+                downloadedMovies.map { it.id }.filter { isItemUnavailable(it) }.toSet()
+            val unavailableShowIds =
+                downloadedShows
+                    .filter { show ->
+                        val downloadedEpisodeIds =
+                            show.seasons
+                                .flatMap { season -> season.episodes }
+                                .map { it.id }
+                                .filter { it in downloadedItemIds }
+                        downloadedEpisodeIds.isNotEmpty() &&
+                            downloadedEpisodeIds.all { isItemUnavailable(it) }
+                    }
+                    .map { it.id }
+                    .toSet()
+            val unavailableDownloadIds = unavailableMovieIds + unavailableShowIds
+
             _uiState.update {
                 it.copy(
                     downloadedMovies = downloadedMovies,
@@ -1135,6 +1164,7 @@ constructor(
                     offlineContinueWatching = sortedOfflineContinueWatching,
                     downloadedAudiobooks = downloadedAudiobooks,
                     downloadedPodcastEpisodes = downloadedPodcastEpisodes,
+                    unavailableDownloadIds = unavailableDownloadIds,
                 )
             }
         } catch (e: Exception) {
@@ -1216,36 +1246,6 @@ constructor(
             _selectedEpisode.value = episode.copy(favorite = !episode.favorite)
         }
     }
-
-    fun onDownloadClick() {
-        itemDownloadDelegate.onDownloadClick(
-            scope = viewModelScope,
-            item = _selectedEpisode.value,
-            showQualityDialog = { _uiState.update { it.copy(showQualityDialog = true) } },
-        )
-    }
-
-    fun onQualitySelected(sourceId: String) {
-        itemDownloadDelegate.onQualitySelected(
-            scope = viewModelScope,
-            item = _selectedEpisode.value,
-            sourceId = sourceId,
-            hideQualityDialog = { dismissQualityDialog() },
-        )
-    }
-
-    fun dismissQualityDialog() {
-        _uiState.update { it.copy(showQualityDialog = false) }
-    }
-
-    fun pauseDownload() =
-        itemDownloadDelegate.pauseDownload(viewModelScope, _selectedEpisodeDownloadInfo.value)
-
-    fun resumeDownload() =
-        itemDownloadDelegate.resumeDownload(viewModelScope, _selectedEpisodeDownloadInfo.value)
-
-    fun cancelDownload() =
-        itemDownloadDelegate.cancelDownload(viewModelScope, _selectedEpisodeDownloadInfo.value)
 
     fun toggleEpisodeWatchlist(episode: AfinityEpisode) {
         viewModelScope.launch {
@@ -1463,6 +1463,7 @@ data class HomeUiState(
     val downloadedShows: List<AfinityShow> = emptyList(),
     val downloadedAudiobooks: List<AbsDownloadInfo> = emptyList(),
     val downloadedPodcastEpisodes: List<AbsDownloadInfo> = emptyList(),
+    val unavailableDownloadIds: Set<UUID> = emptySet(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val combineLibrarySections: Boolean = false,
@@ -1471,5 +1472,4 @@ data class HomeUiState(
         emptyList(),
     val separateTvLibrarySections: List<Pair<AfinityCollection, List<AfinityShow>>> = emptyList(),
     val isOffline: Boolean = false,
-    val showQualityDialog: Boolean = false,
 )

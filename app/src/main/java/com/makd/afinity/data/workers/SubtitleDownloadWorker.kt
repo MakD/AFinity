@@ -143,7 +143,6 @@ constructor(
                     return@withContext Result.success()
                 }
 
-                applicationContext.getExternalFilesDir(null)
                 val itemDir = downloadRepository.getItemDownloadDirectory(itemId)
                 val subtitlesDir = File(itemDir, "subtitles")
 

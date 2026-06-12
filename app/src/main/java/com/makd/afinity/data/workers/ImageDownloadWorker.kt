@@ -99,7 +99,6 @@ constructor(
                     "Loaded item from database: ${item.name}, has images: ${item.images.primary != null}"
                 )
 
-                applicationContext.getExternalFilesDir(null)
                 val itemDir = downloadRepository.getItemDownloadDirectory(itemId)
                 val imagesDir = File(itemDir, "images")
 

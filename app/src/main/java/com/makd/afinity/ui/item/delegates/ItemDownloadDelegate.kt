@@ -3,13 +3,22 @@ package com.makd.afinity.ui.item.delegates
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySourceType
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
+import com.makd.afinity.data.storage.StorageLocationProvider
+import com.makd.afinity.data.storage.StorageVolumeInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
-class ItemDownloadDelegate @Inject constructor(private val downloadRepository: DownloadRepository) {
+class ItemDownloadDelegate
+@Inject
+constructor(
+    private val downloadRepository: DownloadRepository,
+    private val storageLocationProvider: StorageLocationProvider,
+    private val preferencesRepository: PreferencesRepository,
+) {
     fun onDownloadClick(scope: CoroutineScope, item: AfinityItem?, showQualityDialog: () -> Unit) {
         val target = item ?: return
         scope.launch {
@@ -33,10 +42,40 @@ class ItemDownloadDelegate @Inject constructor(private val downloadRepository: D
         }
     }
 
+    /**
+     * Long-press entry point for a single (leaf) item. Always opens the version/location picker when
+     * the item has remote sources, letting the user choose a quality version and/or a storage
+     * volume. The available volumes and current default are resolved off the main thread and handed
+     * back via [showPicker] so the caller can populate its dialog state.
+     */
+    fun onDownloadLongClick(
+        scope: CoroutineScope,
+        item: AfinityItem?,
+        showPicker: (volumes: List<StorageVolumeInfo>, defaultVolumeId: String?) -> Unit,
+    ) {
+        val target = item ?: return
+        scope.launch {
+            try {
+                val sources = target.sources.filter { it.type == AfinitySourceType.REMOTE }
+                if (sources.isEmpty()) {
+                    Timber.w("No remote sources available for download for item: ${target.name}")
+                    return@launch
+                }
+                val volumes = storageLocationProvider.listVolumes()
+                val defaultVolumeId = preferencesRepository.getDownloadStorageVolumeId()
+                showPicker(volumes, defaultVolumeId)
+            } catch (e: Exception) {
+                Timber.e(e, "Error preparing download options")
+            }
+        }
+    }
+
+
     fun onQualitySelected(
         scope: CoroutineScope,
         item: AfinityItem?,
         sourceId: String,
+        volumeId: String? = null,
         hideQualityDialog: () -> Unit,
     ) {
         val target = item ?: return
@@ -44,7 +83,7 @@ class ItemDownloadDelegate @Inject constructor(private val downloadRepository: D
             try {
                 hideQualityDialog()
                 downloadRepository
-                    .startDownload(target.id, sourceId)
+                    .startDownload(target.id, sourceId, volumeId)
                     .onSuccess { Timber.i("Download started successfully for: ${target.name}") }
                     .onFailure { error -> Timber.e(error, "Failed to start download") }
             } catch (e: Exception) {

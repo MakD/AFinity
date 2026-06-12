@@ -36,6 +36,7 @@ import com.makd.afinity.data.paging.JellyfinItemsPagingSource
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.SecurePreferencesRepository
+import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.ui.library.FilterType
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -87,6 +88,7 @@ constructor(
     private val omdbApiService: OmdbApiService,
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val databaseRepository: DatabaseRepository,
+    private val storageLocationProvider: StorageLocationProvider,
 ) : MediaRepository {
     override suspend fun refreshItemUserData(
         itemId: UUID,
@@ -1433,30 +1435,29 @@ constructor(
     override suspend fun getTrickplayData(itemId: UUID, width: Int, index: Int): ByteArray? =
         withContext(Dispatchers.IO) {
             try {
-                val externalFilesDir = context.getExternalFilesDir(null)
                 Timber.d(
                     "Attempting to load trickplay tile: itemId=$itemId, width=$width, index=$index"
                 )
 
-                if (externalFilesDir != null) {
-                    val downloadDir = File(externalFilesDir, "AFinity/Downloads")
-                    val folderPath = databaseRepository.getDownloadByItemId(itemId)?.folderPath
-                    val itemDir = File(downloadDir, folderPath ?: itemId.toString())
-                    val trickplayFile = File(itemDir, "trickplay/$width/$index.jpg")
+                val download = databaseRepository.getDownloadByItemId(itemId)
+                val volumeId =
+                    download?.storageVolumeId ?: StorageLocationProvider.PRIMARY_VOLUME_ID
+                val baseDir =
+                    storageLocationProvider.resolveBaseDir(volumeId)
+                        ?: storageLocationProvider.primaryBaseDir()
+                val itemDir = File(baseDir, download?.folderPath ?: itemId.toString())
+                val trickplayFile = File(itemDir, "trickplay/$width/$index.jpg")
 
-                    Timber.d("Looking for trickplay file: ${trickplayFile.absolutePath}")
-                    Timber.d("File exists: ${trickplayFile.exists()}")
+                Timber.d("Looking for trickplay file: ${trickplayFile.absolutePath}")
+                Timber.d("File exists: ${trickplayFile.exists()}")
 
-                    if (trickplayFile.exists()) {
-                        Timber.i(
-                            "Loading trickplay tile from local storage: $width/$index.jpg (${trickplayFile.length()} bytes)"
-                        )
-                        return@withContext trickplayFile.readBytes()
-                    } else {
-                        Timber.d("Trickplay file not found locally, trying API")
-                    }
+                if (trickplayFile.exists()) {
+                    Timber.i(
+                        "Loading trickplay tile from local storage: $width/$index.jpg (${trickplayFile.length()} bytes)"
+                    )
+                    return@withContext trickplayFile.readBytes()
                 } else {
-                    Timber.w("External files directory is null")
+                    Timber.d("Trickplay file not found locally, trying API")
                 }
             } catch (e: Exception) {
                 Timber.w(e, "Failed to load trickplay from local storage, falling back to API")
