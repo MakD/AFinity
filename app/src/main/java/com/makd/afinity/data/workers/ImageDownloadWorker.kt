@@ -68,11 +68,18 @@ constructor(
                 inputData.getString(KEY_SOURCE_ID)
                     ?: return@withContext Result.failure(workDataOf("error" to "Missing source ID"))
 
+            val downloadId =
+                try {
+                    UUID.fromString(downloadIdString)
+                } catch (e: IllegalArgumentException) {
+                    return@withContext Result.failure(workDataOf("error" to "Invalid download ID"))
+                }
+
             try {
                 Timber.d("Starting image download for item: $itemId")
 
                 val download: DownloadDto =
-                    databaseRepository.getDownloadByItemId(itemId)
+                    databaseRepository.getDownload(downloadId)
                         ?: return@withContext Result.failure(
                             workDataOf("error" to "Download not found")
                         )

@@ -2,11 +2,12 @@ package com.makd.afinity.data.storage
 
 import android.content.Context
 import android.os.storage.StorageManager
+import com.makd.afinity.data.storage.StorageLocationProvider.Companion.PRIMARY_VOLUME_ID
 import dagger.hilt.android.qualifiers.ApplicationContext
+import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
-import timber.log.Timber
 
 /**
  * Resolves the available storage volumes (internal + removable SD cards / USB-OTG) that the app can
@@ -31,9 +32,9 @@ constructor(@param:ApplicationContext private val context: Context) {
     }
 
     /**
-     * Returns the currently mounted volumes the app can use, each with its `AFinity/Downloads`
-     * base directory. Volumes that are unmounted (a `null` entry in [Context.getExternalFilesDirs])
-     * are skipped. The primary volume is always included and always keyed [PRIMARY_VOLUME_ID].
+     * Returns the currently mounted volumes the app can use, each with its `AFinity/Downloads` base
+     * directory. Volumes that are unmounted (a `null` entry in [Context.getExternalFilesDirs]) are
+     * skipped. The primary volume is always included and always keyed [PRIMARY_VOLUME_ID].
      */
     fun listVolumes(): List<StorageVolumeInfo> {
         val dirs = context.getExternalFilesDirs(null)
@@ -44,7 +45,11 @@ constructor(@param:ApplicationContext private val context: Context) {
             try {
                 val volume = storageManager.getStorageVolume(dir) ?: continue
                 val isPrimary = volume.isPrimary
-                val id = if (isPrimary) PRIMARY_VOLUME_ID else volume.uuid ?: continue
+                // FAT32 cards expose a UUID; exFAT cards and adoptable-storage volumes may not.
+                // Fall back to a path-derived key so those volumes still appear rather than being
+                // silently dropped.
+                val id =
+                    if (isPrimary) PRIMARY_VOLUME_ID else volume.uuid ?: "vol:${dir.absolutePath}"
                 val displayName =
                     volume.getDescription(context)
                         ?: if (isPrimary) "Internal storage" else "SD card"

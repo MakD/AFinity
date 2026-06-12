@@ -582,17 +582,16 @@ constructor(
         return dir
     }
 
-    fun getShowDirectory(serverId: String, showId: UUID): File {
-        val dir =
-            File(baseDir(StorageLocationProvider.PRIMARY_VOLUME_ID), "$serverId/shows/$showId")
+    fun getShowDirectory(serverId: String, showId: UUID, volumeId: String): File {
+        val dir = File(baseDir(volumeId), "$serverId/shows/$showId")
         if (!dir.exists() && !dir.mkdirs()) Timber.w("Failed to create show directory")
         return dir
     }
 
-    fun getSeasonDirectory(serverId: String, showId: UUID, seasonNumber: Int): File {
+    fun getSeasonDirectory(serverId: String, showId: UUID, seasonNumber: Int, volumeId: String): File {
         val dir =
             File(
-                baseDir(StorageLocationProvider.PRIMARY_VOLUME_ID),
+                baseDir(volumeId),
                 "$serverId/shows/$showId/seasons/$seasonNumber",
             )
         if (!dir.exists() && !dir.mkdirs()) Timber.w("Failed to create season directory")
@@ -611,8 +610,10 @@ constructor(
                 for (episode in episodes) {
                     startDownload(episode.id, "", volumeId)
                         .onSuccess { started++ }
-                        .onFailure {
-                            Timber.w(it, "Skipping episode ${episode.name}: ${it.message}")
+                        .onFailure { error ->
+                            if (error is VolumeUnavailableException)
+                                return@withContext Result.failure(error)
+                            Timber.w(error, "Skipping episode ${episode.name}: ${error.message}")
                         }
                 }
                 Timber.i("Season download queued $started/${episodes.size} episodes")

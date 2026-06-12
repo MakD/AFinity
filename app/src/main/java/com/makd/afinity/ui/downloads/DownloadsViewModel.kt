@@ -252,9 +252,7 @@ constructor(
                 .map { volumeId ->
                     VolumeStorageStats(
                         volumeId = volumeId,
-                        displayName =
-                            storageLocationProvider.displayNameFor(volumeId)
-                                ?: context.getString(R.string.storage_unavailable_volume),
+                        displayName = context.getString(R.string.storage_unavailable_volume),
                         isRemovable = true,
                         isAvailable = false,
                         usedThisServer = usedThisServer[volumeId] ?: 0L,

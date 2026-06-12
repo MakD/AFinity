@@ -354,7 +354,7 @@ constructor(
                         )
                     databaseRepository.insertDownload(updatedDownload)
 
-                    ensureItemInDatabase(apiClient, download.serverId, baseItemDto, userId)
+                    ensureItemInDatabase(apiClient, download.serverId, baseItemDto, userId, download.storageVolumeId)
                     downloadImages(apiClient, download.serverId, itemId, itemType, userId)
                     downloadSegments(itemId)
                     createLocalSource(itemId, sourceId, source.name, finalFile, source.mediaStreams)
@@ -420,6 +420,7 @@ constructor(
         serverId: String,
         baseItemDto: BaseItemDto,
         userId: UUID,
+        volumeId: String,
     ) {
         try {
             Timber.d("Ensuring item ${baseItemDto.id} is saved to database")
@@ -490,13 +491,13 @@ constructor(
                         seriesId?.let {
                             seriesDeferred?.await()?.toAfinityShow(baseUrl)?.let { show ->
                                 databaseRepository.insertShow(show, serverId)
-                                downloadShowImages(apiClient, serverId, it, userId)
+                                downloadShowImages(apiClient, serverId, it, userId, volumeId)
                             }
                         }
 
                         seasonDeferred?.await()?.toAfinitySeason(baseUrl)?.let { season ->
                             databaseRepository.insertSeason(season, serverId)
-                            downloadSeasonImages(apiClient, serverId, seasonId, userId)
+                            downloadSeasonImages(apiClient, serverId, seasonId, userId, volumeId)
                         }
                     }
 
@@ -591,10 +592,11 @@ constructor(
         serverId: String,
         showId: UUID,
         userId: UUID,
+        volumeId: String,
     ) {
         try {
             val show = databaseRepository.getShow(showId, userId) ?: return
-            val showDir = downloadRepository.getShowDirectory(serverId, showId)
+            val showDir = downloadRepository.getShowDirectory(serverId, showId, volumeId)
             val imagesDir = File(showDir, "images")
             if (!imagesDir.exists() && !imagesDir.mkdirs()) {
                 Timber.w("Failed to create show images directory for show $showId")
@@ -635,11 +637,12 @@ constructor(
         serverId: String,
         seasonId: UUID,
         userId: UUID,
+        volumeId: String,
     ) {
         try {
             val season = databaseRepository.getSeason(seasonId, userId) ?: return
             val seasonDir =
-                downloadRepository.getSeasonDirectory(serverId, season.seriesId, season.indexNumber)
+                downloadRepository.getSeasonDirectory(serverId, season.seriesId, season.indexNumber, volumeId)
             val imagesDir = File(seasonDir, "images")
             if (!imagesDir.exists() && !imagesDir.mkdirs()) {
                 Timber.w("Failed to create season images directory for season $seasonId")
