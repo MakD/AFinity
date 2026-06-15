@@ -988,4 +988,12 @@
     <string name="pref_omdb_config_title">OMDb Yapılandırması</string>
     <string name="admin_refresh_mode_full">Tam</string>
     <string name="admin_image_type_backdrop">Arka Plan</string>
+    <string name="section_storage_locations">DEPOLAMA YERLERİ</string>
+    <string name="storage_used_on_volume_fmt">%1$s bu sunucuda kullanıldı</string>
+    <string name="storage_free_of_total_fmt">%2$s\'den %1$s\'i boş</string>
+    <string name="storage_usage_combined_fmt">%1$skullanılıyor • %3$s\'den %2$s\'i boş</string>
+    <string name="storage_default_badge">Varsayılan</string>
+    <string name="storage_set_as_default">Varsayılan olarak ayarla</string>
+    <string name="storage_unavailable_volume">Ulaşılamayan depolama</string>
+    <string name="storage_unavailable_badge">Mevcut değil</string>
 </resources>
