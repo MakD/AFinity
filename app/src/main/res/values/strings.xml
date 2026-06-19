@@ -493,6 +493,7 @@
 
     <string name="download_preferences_title">Download Settings</string>
     <string name="pref_download_wifi_only_title">Wi-Fi only</string>
+    <string name="pref_max_concurrent_downloads">Max parallel downloads</string>
     <string name="pref_download_wifi_only_subtitle">Only download over Wi-Fi</string>
     <string name="pref_download_mobile_data_warning">Downloading over mobile data may incur additional data charges from your carrier</string>
 

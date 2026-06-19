@@ -104,7 +104,7 @@ import com.makd.afinity.data.models.user.User
             AbsDownloadEntity::class,
             AudibleRatingEntity::class,
         ],
-    version = 48,
+    version = 49,
     exportSchema = false,
 )
 @TypeConverters(AfinityTypeConverters::class)

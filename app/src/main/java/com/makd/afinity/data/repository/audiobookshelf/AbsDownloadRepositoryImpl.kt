@@ -1,6 +1,5 @@
 package com.makd.afinity.data.repository.audiobookshelf
 
-import android.content.Context
 import androidx.work.Constraints
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
@@ -13,8 +12,8 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.data.workers.AbsMediaDownloadWorker
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -30,10 +29,10 @@ import javax.inject.Singleton
 class AbsDownloadRepositoryImpl
 @Inject
 constructor(
-    @param:ApplicationContext private val context: Context,
     private val sessionManager: SessionManager,
     private val absDownloadDao: AbsDownloadDao,
     private val preferencesRepository: PreferencesRepository,
+    private val storageLocationProvider: StorageLocationProvider,
     private val workManager: WorkManager,
 ) : AbsDownloadRepository {
 
@@ -43,14 +42,16 @@ constructor(
         const val KEY_EPISODE_ID = "abs_episode_id"
     }
 
-    private val downloadBaseDir: File
-        get() {
-            val dir = File(context.getExternalFilesDir(null), "AFinity/Audiobookshelf")
-            if (!dir.exists() && !dir.mkdirs()) {
-                Timber.e("Failed to create ABS base download directory at ${dir.absolutePath}")
-            }
-            return dir
+    private fun absBaseDir(volumeId: String): File {
+        val downloadsBase =
+            storageLocationProvider.resolveBaseDir(volumeId)
+                ?: storageLocationProvider.primaryBaseDir()
+        val dir = File(downloadsBase.parentFile ?: downloadsBase, "Audiobookshelf")
+        if (!dir.exists() && !dir.mkdirs()) {
+            Timber.e("Failed to create ABS base download directory at ${dir.absolutePath}")
         }
+        return dir
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun getActiveDownloadsFlow(): Flow<List<AbsDownloadInfo>> =
@@ -117,7 +118,8 @@ constructor(
         }
 
         val downloadId = UUID.randomUUID()
-        val localDirPath = buildLocalDirPath(serverId, libraryItemId, episodeId)
+        val volumeId = preferencesRepository.getDownloadStorageVolumeId()
+        val localDirPath = buildLocalDirPath(volumeId, serverId, libraryItemId, episodeId)
 
         val entity =
             AbsDownloadEntity(
@@ -142,6 +144,7 @@ constructor(
                 updatedAt = System.currentTimeMillis(),
                 localDirPath = localDirPath,
                 serializedSession = null,
+                storageVolumeId = volumeId,
             )
         absDownloadDao.upsert(entity)
 
@@ -181,12 +184,28 @@ constructor(
         return absDownloadDao.getTotalBytesForServer(session.serverId, session.userId.toString())
     }
 
-    private fun buildLocalDirPath(
+    override suspend fun getTotalStorageUsedAllServers(): Long =
+        absDownloadDao.getTotalBytesAllServers()
+
+    override suspend fun getStorageUsedPerVolume(): Map<String, Long> {
+        val session = sessionManager.currentSession.value ?: return emptyMap()
+        return absDownloadDao
+            .getStorageUsedPerVolume(session.serverId, session.userId.toString())
+            .associate { it.storageVolumeId to it.totalBytes }
+    }
+
+    override suspend fun getStorageUsedPerVolumeAllServers(): Map<String, Long> =
+        absDownloadDao
+            .getStorageUsedPerVolumeAllServers()
+            .associate { it.storageVolumeId to it.totalBytes }
+
+    private suspend fun buildLocalDirPath(
+        volumeId: String,
         serverId: String,
         libraryItemId: String,
         episodeId: String?,
     ): String {
-        val base = File(downloadBaseDir, serverId)
+        val base = File(absBaseDir(volumeId), serverId)
         return if (episodeId != null) {
             File(base, "podcasts/$libraryItemId/episodes/$episodeId").absolutePath
         } else {

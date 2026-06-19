@@ -20,4 +20,10 @@ interface AbsDownloadRepository {
     suspend fun deleteDownload(downloadId: UUID): Result<Unit>
 
     suspend fun getTotalStorageUsed(): Long
+
+    suspend fun getTotalStorageUsedAllServers(): Long
+
+    suspend fun getStorageUsedPerVolume(): Map<String, Long>
+
+    suspend fun getStorageUsedPerVolumeAllServers(): Map<String, Long>
 }

@@ -164,6 +164,8 @@ interface PreferencesRepository {
 
     suspend fun getMaxDownloads(): Int
 
+    fun getMaxDownloadsFlow(): Flow<Int>
+
     suspend fun setDownloadStorageVolumeId(volumeId: String)
 
     suspend fun getDownloadStorageVolumeId(): String

@@ -106,7 +106,7 @@ constructor(
                     "Loaded item from database: ${item.name}, has images: ${item.images.primary != null}"
                 )
 
-                val itemDir = downloadRepository.getItemDownloadDirectory(itemId)
+                val itemDir = downloadRepository.getItemDownloadDirectory(download)
                 val imagesDir = File(itemDir, "images")
 
                 if (!imagesDir.exists() && !imagesDir.mkdirs()) {
@@ -213,6 +213,40 @@ constructor(
                             Timber.w(e, "Failed to download series logo")
                         }
                     }
+                    if (images.showPrimary != null) {
+                        try {
+                            val url = images.showPrimary.toString()
+                            if (url.startsWith("file://")) {
+                                Timber.d("Show primary already local, skipping download: $url")
+                            } else {
+                                Timber.d("Downloading show primary image from: $url")
+                                val localUri = downloadWithClient(url, "showPrimary")
+                                if (localUri != null) {
+                                    downloadedImages["showPrimary"] = localUri
+                                    Timber.i("Show primary image downloaded successfully")
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Timber.w(e, "Failed to download show primary image")
+                        }
+                    }
+                    if (images.showBackdrop != null) {
+                        try {
+                            val url = images.showBackdrop.toString()
+                            if (url.startsWith("file://")) {
+                                Timber.d("Show backdrop already local, skipping download: $url")
+                            } else {
+                                Timber.d("Downloading show backdrop image from: $url")
+                                val localUri = downloadWithClient(url, "showBackdrop")
+                                if (localUri != null) {
+                                    downloadedImages["showBackdrop"] = localUri
+                                    Timber.i("Show backdrop image downloaded successfully")
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Timber.w(e, "Failed to download show backdrop image")
+                        }
+                    }
                 }
 
                 Timber.i(
@@ -305,8 +339,8 @@ constructor(
                     backdrop = downloadedImages["backdrop"] ?: images.backdrop,
                     thumb = downloadedImages["thumb"] ?: images.thumb,
                     logo = downloadedImages["logo"] ?: images.logo,
-                    showPrimary = images.showPrimary,
-                    showBackdrop = images.showBackdrop,
+                    showPrimary = downloadedImages["showPrimary"] ?: images.showPrimary,
+                    showBackdrop = downloadedImages["showBackdrop"] ?: images.showBackdrop,
                     showLogo = downloadedImages["series_logo"] ?: images.showLogo,
                     primaryImageBlurHash = images.primaryImageBlurHash,
                     backdropImageBlurHash = images.backdropImageBlurHash,

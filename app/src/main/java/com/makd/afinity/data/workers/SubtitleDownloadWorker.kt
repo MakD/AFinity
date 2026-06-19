@@ -150,7 +150,7 @@ constructor(
                     return@withContext Result.success()
                 }
 
-                val itemDir = downloadRepository.getItemDownloadDirectory(itemId)
+                val itemDir = downloadRepository.getItemDownloadDirectory(download)
                 val subtitlesDir = File(itemDir, "subtitles")
 
                 if (!subtitlesDir.exists() && !subtitlesDir.mkdirs()) {
@@ -217,7 +217,7 @@ constructor(
 
         if (!outputFile.exists()) {
             val subtitleUrl =
-                "$baseUrl/Videos/$itemId/$mediaSourceId/Subtitles/${stream.index}/Stream.$extension?api_key=${apiClient.accessToken}"
+                "$baseUrl/Videos/$itemId/$mediaSourceId/Subtitles/${stream.index}/Stream.$extension"
 
             val request =
                 Request.Builder()

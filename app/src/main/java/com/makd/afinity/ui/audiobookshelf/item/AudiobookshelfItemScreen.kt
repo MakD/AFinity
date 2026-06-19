@@ -202,7 +202,9 @@ fun AudiobookshelfItemScreen(
             item != null -> {
                 if (isLandscape) {
                     val coverUrl =
-                        if (config?.serverUrl != null && item?.media?.coverPath != null) {
+                        if (downloadInfo?.status == AbsDownloadStatus.COMPLETED && downloadInfo?.localDirPath != null) {
+                            "file://${downloadInfo?.localDirPath}/cover.jpg"
+                        } else if (config?.serverUrl != null && item?.media?.coverPath != null) {
                             "${config?.serverUrl}/api/items/${item?.id}/cover"
                         } else null
 

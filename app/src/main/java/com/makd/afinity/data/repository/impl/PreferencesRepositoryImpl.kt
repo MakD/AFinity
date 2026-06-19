@@ -342,6 +342,9 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         return dataStore.data.first()[Keys.MAX_DOWNLOADS] ?: 3
     }
 
+    override fun getMaxDownloadsFlow(): Flow<Int> =
+        dataStore.data.map { it[Keys.MAX_DOWNLOADS] ?: 3 }
+
     override suspend fun setDownloadStorageVolumeId(volumeId: String) {
         dataStore.edit { preferences -> preferences[Keys.DOWNLOAD_STORAGE_VOLUME_ID] = volumeId }
     }

@@ -68,7 +68,9 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -247,7 +249,8 @@ fun PlayerOptionsScreen(
 
                     LanguageSelectorItem(
                         title = stringResource(R.string.pref_preferred_subtitle_language_title),
-                        subtitle = stringResource(R.string.pref_preferred_subtitle_language_summary),
+                        subtitle =
+                            stringResource(R.string.pref_preferred_subtitle_language_summary),
                         selectedCode = uiState.preferredSubtitleLanguage,
                         onLanguageSelected = viewModel::setPreferredSubtitleLanguage,
                         icon = painterResource(id = R.drawable.ic_subtitles),
@@ -618,7 +621,7 @@ private fun BufferSizeSelectorItem(selectedSizeMb: Int, onSizeSelected: (Int) ->
                 modifier = Modifier.padding(end = 16.dp),
             )
 
-            Column(modifier = Modifier.weight(1f)) {
+            Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
                 Text(
                     text = stringResource(R.string.pref_buffer_size_title),
                     style = MaterialTheme.typography.titleMedium,
@@ -632,12 +635,22 @@ private fun BufferSizeSelectorItem(selectedSizeMb: Int, onSizeSelected: (Int) ->
                         else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text(
-                text = currentOption.second,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-            )
+
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            ) {
+                Text(
+                    text = currentOption.second,
+                    style =
+                        MaterialTheme.typography.labelMedium.copy(
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -650,6 +663,14 @@ private fun BufferSizeSelectorItem(selectedSizeMb: Int, onSizeSelected: (Int) ->
             },
             valueRange = 0f..(options.size - 1).toFloat(),
             steps = options.size - 2,
+            colors =
+                SliderDefaults.colors(
+                    thumbColor = MaterialTheme.colorScheme.primary,
+                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                    inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    activeTickColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
+                    inactiveTickColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                ),
             modifier = Modifier.height(24.dp),
         )
     }
@@ -933,18 +954,35 @@ private fun SubtitleSliderItem(
     onValueChange: (Float) -> Unit,
 ) {
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Text(
-                text = String.format(Locale.US, "%.1f", value),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            ) {
+                Text(
+                    text = String.format(Locale.US, "%.1f", value),
+                    style =
+                        MaterialTheme.typography.labelMedium.copy(
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         Slider(
             value = value,
             onValueChange = onValueChange,
@@ -953,6 +991,9 @@ private fun SubtitleSliderItem(
                 SliderDefaults.colors(
                     thumbColor = MaterialTheme.colorScheme.primary,
                     activeTrackColor = MaterialTheme.colorScheme.primary,
+                    inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    activeTickColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
+                    inactiveTickColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                 ),
             modifier = Modifier.height(24.dp),
         )
@@ -1021,9 +1062,8 @@ private fun LanguageSelectorItem(
     onLanguageSelected: (String) -> Unit,
     icon: Painter,
 ) {
-    val context = LocalContext.current
-    val languages = remember { context.resources.getStringArray(R.array.languages) }
-    val languageCodes = remember { context.resources.getStringArray(R.array.language_values) }
+    val languages = stringArrayResource(id = R.array.languages)
+    val languageCodes = stringArrayResource(id = R.array.language_values)
 
     val selectedIndex = languageCodes.indexOf(selectedCode).coerceAtLeast(0)
     val displayName = languages.getOrElse(selectedIndex) { languages[0] }

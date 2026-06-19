@@ -135,6 +135,7 @@ interface AbsDownloadDao {
            SET status = :status,
                progress = :progress,
                bytesDownloaded = :bytesDownloaded,
+               totalBytes = CASE WHEN :totalBytes > 0 THEN :totalBytes ELSE totalBytes END,
                tracksDownloaded = :tracksDownloaded,
                serializedSession = COALESCE(:serializedSession, serializedSession),
                updatedAt = :updatedAt
@@ -145,6 +146,7 @@ interface AbsDownloadDao {
         status: AbsDownloadStatus,
         progress: Float,
         bytesDownloaded: Long,
+        totalBytes: Long,
         tracksDownloaded: Int,
         serializedSession: String?,
         updatedAt: Long,
@@ -163,4 +165,28 @@ interface AbsDownloadDao {
              AND jellyfinUserId = :userId"""
     )
     suspend fun getTotalBytesForServer(serverId: String, userId: String): Long
+
+    @Query(
+        """SELECT COALESCE(SUM(bytesDownloaded), 0) FROM abs_downloads
+           WHERE status = 'COMPLETED'"""
+    )
+    suspend fun getTotalBytesAllServers(): Long
+
+    @Query(
+        """SELECT storageVolumeId, COALESCE(SUM(bytesDownloaded), 0) AS totalBytes
+           FROM abs_downloads
+           WHERE status = 'COMPLETED'
+             AND jellyfinServerId = :serverId
+             AND jellyfinUserId = :userId
+           GROUP BY storageVolumeId"""
+    )
+    suspend fun getStorageUsedPerVolume(serverId: String, userId: String): List<VolumeUsage>
+
+    @Query(
+        """SELECT storageVolumeId, COALESCE(SUM(bytesDownloaded), 0) AS totalBytes
+           FROM abs_downloads
+           WHERE status = 'COMPLETED'
+           GROUP BY storageVolumeId"""
+    )
+    suspend fun getStorageUsedPerVolumeAllServers(): List<VolumeUsage>
 }

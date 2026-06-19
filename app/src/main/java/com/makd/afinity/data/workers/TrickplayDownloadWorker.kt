@@ -143,7 +143,7 @@ constructor(
                     return@withContext Result.success()
                 }
 
-                val itemDir = downloadRepository.getItemDownloadDirectory(itemId)
+                val itemDir = downloadRepository.getItemDownloadDirectory(download)
                 val trickplayDir = File(itemDir, "trickplay")
 
                 if (!trickplayDir.exists() && !trickplayDir.mkdirs()) {
@@ -241,7 +241,7 @@ constructor(
                                     return@withPermit
                                 }
                                 val tileUrl =
-                                    "$baseUrl/Videos/$itemId/Trickplay/$width/$tileIndex.jpg?api_key=${apiClient.accessToken}"
+                                    "$baseUrl/Videos/$itemId/Trickplay/$width/$tileIndex.jpg"
                                 Timber.d(
                                     "Downloading trickplay tile to: ${outputFile.absolutePath}"
                                 )

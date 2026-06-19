@@ -1108,6 +1108,15 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_48_49 =
+        object : Migration(48, 49) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE abs_downloads ADD COLUMN storageVolumeId TEXT NOT NULL DEFAULT 'primary'"
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1157,5 +1166,6 @@ object DatabaseMigrations {
             MIGRATION_45_46,
             MIGRATION_46_47,
             MIGRATION_47_48,
+            MIGRATION_48_49,
         )
 }

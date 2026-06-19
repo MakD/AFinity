@@ -39,4 +39,5 @@ data class AbsDownloadEntity(
     val serializedSession: String?,
     val episodeDescription: String? = null,
     val publishedAt: Long? = null,
+    val storageVolumeId: String = "primary",
 )

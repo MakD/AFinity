@@ -14,6 +14,7 @@ import androidx.work.workDataOf
 import com.makd.afinity.R
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.DownloadDto
+import com.makd.afinity.data.manager.DownloadSemaphoreManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
@@ -28,6 +29,7 @@ import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.segments.SegmentsRepository
 import com.makd.afinity.di.DownloadClient
@@ -37,8 +39,7 @@ import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -63,6 +64,8 @@ constructor(
     private val databaseRepository: DatabaseRepository,
     private val downloadRepository: JellyfinDownloadRepository,
     private val segmentsRepository: SegmentsRepository,
+    private val preferencesRepository: PreferencesRepository,
+    private val downloadSemaphoreManager: DownloadSemaphoreManager,
     @param:DownloadClient private val okHttpClient: OkHttpClient,
 ) : CoroutineWorker(appContext, workerParams) {
 
@@ -75,7 +78,6 @@ constructor(
         const val KEY_FILE_PATH = "file_path"
         const val PROGRESS_KEY = "progress"
         const val BUFFER_SIZE = 8192
-        private val downloadMutex = Mutex()
     }
 
     override suspend fun doWork(): Result =
@@ -111,13 +113,17 @@ constructor(
             val itemName = inputData.getString(KEY_ITEM_NAME) ?: "Unknown"
             val itemType = inputData.getString(KEY_ITEM_TYPE) ?: "Unknown"
 
+            ensureNotificationChannel()
+
             try {
                 setForeground(createQueuedForegroundInfo(downloadId.hashCode(), itemName))
             } catch (e: Exception) {
                 Timber.e(e, "Failed to promote to foreground service")
             }
 
-            downloadMutex.withLock {
+            val maxDownloads = preferencesRepository.getMaxDownloads()
+            downloadSemaphoreManager.updatePermits(maxDownloads)
+            downloadSemaphoreManager.semaphore.withPermit {
                 try {
                     setForeground(createForegroundInfo(downloadId.hashCode(), itemName, 0, 0))
                 } catch (e: Exception) {
@@ -135,11 +141,8 @@ constructor(
 
                     val apiClient =
                         sessionManager.getOrRestoreApiClient(download.serverId)
-                            ?: return@withContext Result.failure(
-                                workDataOf(
-                                    "error" to
-                                        "Could not restore session for server ${download.serverId}"
-                                )
+                            ?: throw Exception(
+                                "Could not restore session for server ${download.serverId}"
                             )
 
                     databaseRepository.insertDownload(
@@ -180,44 +183,30 @@ constructor(
                         } catch (e: Exception) {
                             Timber.e(e, "Failed to fetch item details")
                             null
-                        }
-                            ?: return@withContext Result.failure(
-                                workDataOf("error" to "Item not found")
-                            )
+                        } ?: throw Exception("Item not found")
 
                     val item =
                         when (baseItemDto.type) {
                             BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(baseUrl)
                             BaseItemKind.EPISODE ->
                                 baseItemDto.toAfinityEpisode(baseUrl)
-                                    ?: return@withContext Result.failure(
-                                        workDataOf("error" to "Failed to convert episode")
-                                    )
+                                    ?: throw Exception("Failed to convert episode")
 
                             else ->
-                                return@withContext Result.failure(
-                                    workDataOf(
-                                        "error" to "Unsupported item type: ${baseItemDto.type}"
-                                    )
-                                )
+                                throw Exception("Unsupported item type: ${baseItemDto.type}")
                         }
 
                     val source =
                         item.sources.find { it.id == sourceId }
-                            ?: return@withContext Result.failure(
-                                workDataOf("error" to "Source not found")
-                            )
+                            ?: throw Exception("Source not found")
 
-                    val itemDir = downloadRepository.getItemDownloadDirectory(itemId)
+                    val itemDir = downloadRepository.getItemDownloadDirectory(download)
                     val mediaDir = File(itemDir, "media")
 
                     if (!mediaDir.exists() && !mediaDir.mkdirs()) {
                         Timber.e("Failed to create download directory at ${mediaDir.absolutePath}")
-                        return@withContext Result.failure(
-                            workDataOf(
-                                "error" to
-                                    "Failed to create download directory. Check storage permissions."
-                            )
+                        throw Exception(
+                            "Failed to create download directory. Check storage permissions."
                         )
                     }
 
@@ -233,7 +222,7 @@ constructor(
                         try {
                             parseDashlessUuid(sourceId)
                         } catch (e: IllegalArgumentException) {
-                            return@withContext Result.failure(workDataOf("error" to "Invalid source ID"))
+                            throw Exception("Invalid source ID")
                         }
 
                     val downloadUrl = apiClient.libraryApi.getDownloadUrl(itemId = sourceUuid)
@@ -355,7 +344,9 @@ constructor(
                     databaseRepository.insertDownload(updatedDownload)
 
                     ensureItemInDatabase(apiClient, download.serverId, baseItemDto, userId, download.storageVolumeId)
-                    downloadImages(apiClient, download.serverId, itemId, itemType, userId)
+                    if (itemType.uppercase() == "MOVIE") {
+                        downloadPersonImages(apiClient, download.serverId, itemId, userId)
+                    }
                     downloadSegments(itemId)
                     createLocalSource(itemId, sourceId, source.name, finalFile, source.mediaStreams)
 
@@ -817,15 +808,19 @@ constructor(
         }
     }
 
-    private fun createQueuedForegroundInfo(notificationId: Int, itemName: String): ForegroundInfo {
+    private fun ensureNotificationChannel() {
         val channelId = "download_channel"
-        val context: Context = applicationContext
         val channel =
             NotificationChannel(channelId, "Downloads", NotificationManager.IMPORTANCE_LOW).apply {
                 description = "Background download tasks"
             }
-        (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+        (applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
             .createNotificationChannel(channel)
+    }
+
+    private fun createQueuedForegroundInfo(notificationId: Int, itemName: String): ForegroundInfo {
+        val channelId = "download_channel"
+        val context: Context = applicationContext
         val notification =
             NotificationCompat.Builder(context, channelId)
                 .setContentTitle(itemName)
@@ -850,12 +845,6 @@ constructor(
         val context: Context = applicationContext
         val channelId = "download_channel"
         val title = "Downloading $itemName"
-        val channel =
-            NotificationChannel(channelId, "Downloads", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Background download tasks"
-            }
-        (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-            .createNotificationChannel(channel)
 
         val progressText =
             if (totalBytes > 0) {

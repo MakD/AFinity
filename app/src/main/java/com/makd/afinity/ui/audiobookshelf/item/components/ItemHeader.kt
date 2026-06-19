@@ -82,7 +82,9 @@ fun ItemHeader(
     modifier: Modifier = Modifier,
 ) {
     val coverUrl =
-        if (serverUrl != null && item.media.coverPath != null) {
+        if (downloadInfo?.status == AbsDownloadStatus.COMPLETED && downloadInfo.localDirPath != null) {
+            "file://${downloadInfo.localDirPath}/cover.jpg"
+        } else if (serverUrl != null && item.media.coverPath != null) {
             "$serverUrl/api/items/${item.id}/cover"
         } else null
 

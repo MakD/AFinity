@@ -1,6 +1,7 @@
 package com.makd.afinity.data.storage
 
 import android.content.Context
+import android.os.Environment
 import android.os.storage.StorageManager
 import com.makd.afinity.data.storage.StorageLocationProvider.Companion.PRIMARY_VOLUME_ID
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -37,17 +38,30 @@ constructor(@param:ApplicationContext private val context: Context) {
      * skipped. The primary volume is always included and always keyed [PRIMARY_VOLUME_ID].
      */
     fun listVolumes(): List<StorageVolumeInfo> {
-        val dirs = context.getExternalFilesDirs(null)
+        val dirs =
+            try {
+                context.getExternalFilesDirs(null)
+            } catch (e: Exception) {
+                Timber.w(e, "getExternalFilesDirs failed — no volumes available")
+                return emptyList()
+            }
         val result = mutableListOf<StorageVolumeInfo>()
 
         for (dir in dirs) {
             if (dir == null) continue
             try {
+                val state = Environment.getExternalStorageState(dir)
+                if (state != Environment.MEDIA_MOUNTED) {
+                    Timber.d("Skipping volume at ${dir.absolutePath} — state=$state")
+                    continue
+                }
+            } catch (e: Exception) {
+                Timber.w(e, "Could not query storage state for ${dir.absolutePath}, skipping")
+                continue
+            }
+            try {
                 val volume = storageManager.getStorageVolume(dir) ?: continue
                 val isPrimary = volume.isPrimary
-                // FAT32 cards expose a UUID; exFAT cards and adoptable-storage volumes may not.
-                // Fall back to a path-derived key so those volumes still appear rather than being
-                // silently dropped.
                 val id =
                     if (isPrimary) PRIMARY_VOLUME_ID else volume.uuid ?: "vol:${dir.absolutePath}"
                 val displayName =
@@ -78,11 +92,11 @@ constructor(@param:ApplicationContext private val context: Context) {
         listVolumes().firstOrNull { it.id == volumeId }?.baseDir
 
     /**
-     * Whether the given volume is currently mounted and writable. The primary volume is always
-     * considered available.
+     * Whether the given volume is currently mounted and writable. Delegates to [resolveBaseDir] for
+     * all volumes including primary — a non-null base dir means the volume passed the
+     * [Environment.getExternalStorageState] check in [listVolumes].
      */
-    fun isVolumeAvailable(volumeId: String): Boolean =
-        volumeId == PRIMARY_VOLUME_ID || resolveBaseDir(volumeId) != null
+    fun isVolumeAvailable(volumeId: String): Boolean = resolveBaseDir(volumeId) != null
 
     /** Stable ids of all currently mounted volumes. */
     fun mountedVolumeIds(): Set<String> = listVolumes().map { it.id }.toSet()
@@ -92,10 +106,25 @@ constructor(@param:ApplicationContext private val context: Context) {
         listVolumes().firstOrNull { it.id == volumeId }?.displayName
 
     /**
-     * The primary (internal) volume's base directory. Always available, used as the fallback when a
-     * stored volume id can no longer be resolved.
+     * The primary volume's base directory, used as the fallback when a stored volume id can no
+     * longer be resolved.
+     *
+     * Falls back through three levels:
+     * 1. Primary volume resolved via [listVolumes] (state-checked, preferred)
+     * 2. [Context.getExternalFilesDir] — may return null when external storage is unavailable
+     * 3. [Context.getFilesDir] — internal storage, always non-null and always writable
      */
-    fun primaryBaseDir(): File =
-        resolveBaseDir(PRIMARY_VOLUME_ID)
-            ?: File(context.getExternalFilesDir(null), DOWNLOADS_SUBPATH)
+    fun primaryBaseDir(): File {
+        resolveBaseDir(PRIMARY_VOLUME_ID)?.let {
+            return it
+        }
+        val external =
+            try {
+                context.getExternalFilesDir(null)
+            } catch (e: Exception) {
+                Timber.w(e, "getExternalFilesDir failed in primaryBaseDir fallback")
+                null
+            }
+        return File(external ?: context.filesDir, DOWNLOADS_SUBPATH)
+    }
 }

@@ -14,11 +14,13 @@ import com.makd.afinity.R
 import com.makd.afinity.data.database.dao.AbsDownloadDao
 import com.makd.afinity.data.database.dao.AudiobookshelfDao
 import com.makd.afinity.data.database.entities.AudiobookshelfItemEntity
+import com.makd.afinity.data.manager.DownloadSemaphoreManager
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.audiobookshelf.AudioFile
 import com.makd.afinity.data.models.audiobookshelf.AudioTrack
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
 import com.makd.afinity.data.network.AudiobookshelfApiService
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsDownloadRepositoryImpl
 import com.makd.afinity.di.DownloadClient
@@ -26,6 +28,7 @@ import dagger.Lazy
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
@@ -45,6 +48,8 @@ constructor(
     private val audiobookshelfDao: AudiobookshelfDao,
     private val apiService: Lazy<AudiobookshelfApiService>,
     private val securePreferencesRepository: SecurePreferencesRepository,
+    private val preferencesRepository: PreferencesRepository,
+    private val downloadSemaphoreManager: DownloadSemaphoreManager,
     @param:DownloadClient private val okHttpClient: OkHttpClient,
 ) : CoroutineWorker(appContext, workerParams) {
 
@@ -103,339 +108,363 @@ constructor(
                 Timber.w(e, "AbsDownload: could not set foreground")
             }
 
-            absDownloadDao.updateProgress(
-                id = downloadId,
-                status = AbsDownloadStatus.DOWNLOADING,
-                progress = 0f,
-                bytesDownloaded = 0L,
-                tracksDownloaded = 0,
-                serializedSession = null,
-                updatedAt = System.currentTimeMillis(),
-            )
+            val maxDownloads = preferencesRepository.getMaxDownloads()
+            downloadSemaphoreManager.updatePermits(maxDownloads)
+            downloadSemaphoreManager.semaphore.withPermit {
+                absDownloadDao.updateProgress(
+                    id = downloadId,
+                    status = AbsDownloadStatus.DOWNLOADING,
+                    progress = 0f,
+                    bytesDownloaded = 0L,
+                    totalBytes = 0L,
+                    tracksDownloaded = 0,
+                    serializedSession = null,
+                    updatedAt = System.currentTimeMillis(),
+                )
 
-            val token = securePreferencesRepository.getCachedAudiobookshelfToken()
-            val baseUrl =
-                securePreferencesRepository.getCachedAudiobookshelfServerUrl()?.trimEnd('/')
-                    ?: run {
-                        markFailed(downloadId, "No ABS server URL available")
-                        return@withContext Result.failure(
-                            workDataOf("error" to "No ABS server URL")
+                val token = securePreferencesRepository.getCachedAudiobookshelfToken()
+                val baseUrl =
+                    securePreferencesRepository.getCachedAudiobookshelfServerUrl()?.trimEnd('/')
+                        ?: run {
+                            markFailed(downloadId, "No ABS server URL available")
+                            return@withContext Result.failure(
+                                workDataOf("error" to "No ABS server URL")
+                            )
+                        }
+
+                val itemResult = runCatching {
+                    val response =
+                        apiService.get().getItem(libraryItemId, expanded = 1, include = null)
+                    if (!response.isSuccessful || response.body() == null) {
+                        throw Exception(
+                            "Item API returned ${response.code()}: ${response.message()}"
                         )
                     }
-
-            val itemResult = runCatching {
-                val response = apiService.get().getItem(libraryItemId, expanded = 1, include = null)
-                if (!response.isSuccessful || response.body() == null) {
-                    throw Exception("Item API returned ${response.code()}: ${response.message()}")
+                    response.body()!!
                 }
-                response.body()!!
-            }
 
-            val item = itemResult.getOrElse { e ->
-                Timber.e(e, "AbsDownload: failed to fetch item metadata")
-                markFailed(downloadId, e.message ?: "Item fetch failed")
-                return@withContext Result.failure(workDataOf("error" to e.message))
-            }
+                val item = itemResult.getOrElse { e ->
+                    Timber.e(e, "AbsDownload: failed to fetch item metadata")
+                    markFailed(downloadId, e.message ?: "Item fetch failed")
+                    return@withContext Result.failure(workDataOf("error" to e.message))
+                }
 
-            if (item.media != null) {
-                runCatching {
-                        audiobookshelfDao.insertItem(
-                            AudiobookshelfItemEntity(
-                                id = item.id ?: libraryItemId,
-                                jellyfinServerId = entity.jellyfinServerId,
-                                jellyfinUserId = entity.jellyfinUserId,
-                                libraryId = item.libraryId ?: "",
-                                title = item.media.metadata.title ?: "",
-                                authorName = item.media.metadata.authorName,
-                                narratorName = item.media.metadata.narratorName,
-                                seriesName = item.media.metadata.seriesName,
-                                seriesSequence = null,
-                                mediaType =
-                                    item.mediaType ?: if (episodeId != null) "podcast" else "book",
-                                duration = item.media.duration,
-                                coverUrl = item.media.coverPath,
-                                description = item.media.metadata.description,
-                                publishedYear = item.media.metadata.publishedYear,
-                                genres =
-                                    item.media.metadata.genres?.let { json.encodeToString(it) },
-                                numTracks = item.media.numTracks,
-                                numChapters = item.media.numChapters,
-                                addedAt = item.addedAt,
-                                updatedAt = item.updatedAt,
-                                cachedAt = System.currentTimeMillis(),
-                                serializedEpisodes =
-                                    item.media.episodes?.let { json.encodeToString(it) },
+                if (item.media != null) {
+                    runCatching {
+                            audiobookshelfDao.insertItem(
+                                AudiobookshelfItemEntity(
+                                    id = item.id ?: libraryItemId,
+                                    jellyfinServerId = entity.jellyfinServerId,
+                                    jellyfinUserId = entity.jellyfinUserId,
+                                    libraryId = item.libraryId ?: "",
+                                    title = item.media.metadata.title ?: "",
+                                    authorName = item.media.metadata.authorName,
+                                    narratorName = item.media.metadata.narratorName,
+                                    seriesName = item.media.metadata.seriesName,
+                                    seriesSequence = null,
+                                    mediaType =
+                                        item.mediaType
+                                            ?: if (episodeId != null) "podcast" else "book",
+                                    duration = item.media.duration,
+                                    coverUrl = item.media.coverPath,
+                                    description = item.media.metadata.description,
+                                    publishedYear = item.media.metadata.publishedYear,
+                                    genres =
+                                        item.media.metadata.genres?.let { json.encodeToString(it) },
+                                    numTracks = item.media.numTracks,
+                                    numChapters = item.media.numChapters,
+                                    addedAt = item.addedAt,
+                                    updatedAt = item.updatedAt,
+                                    cachedAt = System.currentTimeMillis(),
+                                    serializedEpisodes =
+                                        item.media.episodes?.let { json.encodeToString(it) },
+                                )
+                            )
+                            Timber.d(
+                                "AbsDownload: cached item $libraryItemId for offline browsing (${item.media.episodes?.size ?: 0} episodes)"
+                            )
+                        }
+                        .onFailure {
+                            Timber.w(it, "AbsDownload: failed to cache item $libraryItemId")
+                        }
+                }
+
+                val audioFilesToDownload: List<AudioFile>
+                val episodeDuration: Double
+                val displayTitle: String
+                val displayAuthor: String?
+
+                if (episodeId != null) {
+                    val episode = item.media?.episodes?.find { it.id == episodeId }
+                    if (episode == null) {
+                        Timber.e(
+                            "AbsDownload: episode $episodeId not found. Episodes in response: ${item.media?.episodes?.map { it.id }}"
+                        )
+                        markFailed(downloadId, "Episode $episodeId not found in item response")
+                        return@withContext Result.failure(
+                            workDataOf("error" to "Episode not found")
+                        )
+                    }
+                    val audioFile = episode.audioFile
+                    if (audioFile == null) {
+                        Timber.e(
+                            "AbsDownload: episode $episodeId has no audioFile. audioTrack=${episode.audioTrack?.contentUrl}"
+                        )
+                        markFailed(
+                            downloadId,
+                            "Episode $episodeId has no audio file (ino unavailable)",
+                        )
+                        return@withContext Result.failure(workDataOf("error" to "No audio file"))
+                    }
+                    Timber.d(
+                        "AbsDownload: episode audioFile ino=${audioFile.ino}, filename=${audioFile.metadata.filename}"
+                    )
+                    audioFilesToDownload = listOf(audioFile)
+                    episodeDuration = episode.duration ?: audioFile.duration ?: 0.0
+                    displayTitle = episode.title
+                    displayAuthor = item.media?.metadata?.title
+                    if (episode.description != null || episode.publishedAt != null) {
+                        absDownloadDao.upsert(
+                            entity.copy(
+                                episodeDescription = episode.description,
+                                publishedAt = episode.publishedAt,
                             )
                         )
-                        Timber.d(
-                            "AbsDownload: cached item $libraryItemId for offline browsing (${item.media.episodes?.size ?: 0} episodes)"
-                        )
                     }
-                    .onFailure { Timber.w(it, "AbsDownload: failed to cache item $libraryItemId") }
-            }
-
-            val audioFilesToDownload: List<AudioFile>
-            val episodeDuration: Double
-            val displayTitle: String
-            val displayAuthor: String?
-
-            if (episodeId != null) {
-                val episode = item.media?.episodes?.find { it.id == episodeId }
-                if (episode == null) {
-                    Timber.e(
-                        "AbsDownload: episode $episodeId not found. Episodes in response: ${item.media?.episodes?.map { it.id }}"
-                    )
-                    markFailed(downloadId, "Episode $episodeId not found in item response")
-                    return@withContext Result.failure(workDataOf("error" to "Episode not found"))
-                }
-                val audioFile = episode.audioFile
-                if (audioFile == null) {
-                    Timber.e(
-                        "AbsDownload: episode $episodeId has no audioFile. audioTrack=${episode.audioTrack?.contentUrl}"
-                    )
-                    markFailed(downloadId, "Episode $episodeId has no audio file (ino unavailable)")
-                    return@withContext Result.failure(workDataOf("error" to "No audio file"))
-                }
-                Timber.d(
-                    "AbsDownload: episode audioFile ino=${audioFile.ino}, filename=${audioFile.metadata.filename}"
-                )
-                audioFilesToDownload = listOf(audioFile)
-                episodeDuration = episode.duration ?: audioFile.duration ?: 0.0
-                displayTitle = episode.title
-                displayAuthor = item.media?.metadata?.title
-                if (episode.description != null || episode.publishedAt != null) {
-                    absDownloadDao.upsert(
-                        entity.copy(
-                            episodeDescription = episode.description,
-                            publishedAt = episode.publishedAt,
-                        )
-                    )
-                }
-            } else {
-                val files =
-                    item.media
-                        ?.audioFiles
-                        ?.filter { it.invalid != true && it.exclude != true }
-                        ?.sortedBy { it.index ?: Int.MAX_VALUE } ?: emptyList()
-                if (files.isEmpty()) {
-                    markFailed(downloadId, "No audio files in item")
-                    return@withContext Result.failure(workDataOf("error" to "No audio files"))
-                }
-                audioFilesToDownload = files
-                episodeDuration = item.media?.duration ?: files.sumOf { it.duration ?: 0.0 }
-                displayTitle = item.media?.metadata?.title ?: entity.title
-                displayAuthor = item.media?.metadata?.authorName
-            }
-
-            val localDirPath =
-                entity.localDirPath
-                    ?: run {
-                        markFailed(downloadId, "No local dir path set")
-                        return@withContext Result.failure(workDataOf("error" to "No local dir"))
+                } else {
+                    val files =
+                        item.media
+                            ?.audioFiles
+                            ?.filter { it.invalid != true && it.exclude != true }
+                            ?.sortedBy { it.index ?: Int.MAX_VALUE } ?: emptyList()
+                    if (files.isEmpty()) {
+                        markFailed(downloadId, "No audio files in item")
+                        return@withContext Result.failure(workDataOf("error" to "No audio files"))
                     }
-
-            appContext.getExternalFilesDir(null)
-
-            val localDir = File(localDirPath)
-
-            if (!localDir.exists() && !localDir.mkdirs()) {
-                val errorMsg = "Failed to create local directory: $localDirPath"
-                Timber.e(errorMsg)
-                markFailed(downloadId, errorMsg)
-                return@withContext Result.failure(workDataOf("error" to errorMsg))
-            }
-
-            absDownloadDao.upsert(
-                absDownloadDao
-                    .getById(downloadId)!!
-                    .copy(
-                        title = displayTitle,
-                        authorName = displayAuthor,
-                        duration = episodeDuration,
-                        tracksTotal = audioFilesToDownload.size,
-                        coverUrl = "$baseUrl/api/items/$libraryItemId/cover",
-                        updatedAt = System.currentTimeMillis(),
-                    )
-            )
-
-            var downloadedBytesAllTracks = 0L
-            val localTrackPaths = mutableListOf<String>()
-
-            for ((index, audioFile) in audioFilesToDownload.withIndex()) {
-                if (isStopped) {
-                    markFailed(downloadId, "Cancelled")
-                    return@withContext Result.failure(workDataOf("error" to "Cancelled"))
+                    audioFilesToDownload = files
+                    episodeDuration = item.media?.duration ?: files.sumOf { it.duration ?: 0.0 }
+                    displayTitle = item.media?.metadata?.title ?: entity.title
+                    displayAuthor = item.media?.metadata?.authorName
                 }
 
-                val ext = audioFileExtension(audioFile)
-                val outputFile = File(localDir, "track_$index.$ext.download")
-                val finalFile = File(localDir, "track_$index.$ext")
+                val totalBytesExpected = audioFilesToDownload.sumOf { it.metadata.size ?: 0L }
 
-                if (finalFile.exists() && finalFile.length() > 0) {
-                    Timber.d("AbsDownload: track $index already downloaded, skipping")
-                    localTrackPaths.add(finalFile.absolutePath)
-                    downloadedBytesAllTracks += finalFile.length()
-                    absDownloadDao.updateProgress(
-                        id = downloadId,
-                        status = AbsDownloadStatus.DOWNLOADING,
-                        progress = (index + 1).toFloat() / audioFilesToDownload.size,
-                        bytesDownloaded = downloadedBytesAllTracks,
-                        tracksDownloaded = index + 1,
-                        serializedSession = null,
-                        updatedAt = System.currentTimeMillis(),
-                    )
-                    continue
-                }
-
-                val downloadUrl = "$baseUrl/api/items/$libraryItemId/file/${audioFile.ino}/download"
-                val resumeFrom = if (outputFile.exists()) outputFile.length() else 0L
-                val requestBuilder =
-                    Request.Builder().url(downloadUrl).apply {
-                        if (token != null) header("Authorization", "Bearer $token")
-                        if (resumeFrom > 0) header("Range", "bytes=$resumeFrom-")
-                    }
-                val request = requestBuilder.build()
-
-                var trackBytesDownloaded = resumeFrom
-                var trackTotalBytes = 0L
-
-                val downloadSuccess = runCatching {
-                    okHttpClient.newCall(request).execute().use { response ->
-                        if (!response.isSuccessful && response.code != 416) {
-                            throw Exception("HTTP ${response.code}: ${response.message}")
+                val localDirPath =
+                    entity.localDirPath
+                        ?: run {
+                            markFailed(downloadId, "No local dir path set")
+                            return@withContext Result.failure(workDataOf("error" to "No local dir"))
                         }
-                        if (response.code == 416) return@runCatching
 
-                        val contentLength = response.body?.contentLength() ?: -1L
-                        trackTotalBytes =
-                            if (contentLength != -1L) resumeFrom + contentLength else -1L
+                appContext.getExternalFilesDir(null)
 
-                        var lastDbUpdate = 0L
+                val localDir = File(localDirPath)
 
-                        response.body?.byteStream()?.use { input ->
-                            FileOutputStream(outputFile, resumeFrom > 0).use { output ->
-                                val buffer = ByteArray(BUFFER_SIZE)
-                                var bytes: Int
-                                while (input.read(buffer).also { bytes = it } != -1) {
-                                    if (isStopped) throw Exception("Cancelled")
-                                    output.write(buffer, 0, bytes)
-                                    trackBytesDownloaded += bytes
-                                    downloadedBytesAllTracks += bytes
+                if (!localDir.exists() && !localDir.mkdirs()) {
+                    val errorMsg = "Failed to create local directory: $localDirPath"
+                    Timber.e(errorMsg)
+                    markFailed(downloadId, errorMsg)
+                    return@withContext Result.failure(workDataOf("error" to errorMsg))
+                }
 
-                                    val now = System.currentTimeMillis()
-                                    if (now - lastDbUpdate > 500) {
-                                        lastDbUpdate = now
-                                        val overallProgress =
-                                            (index.toFloat() +
-                                                (trackBytesDownloaded.toFloat() /
-                                                    trackTotalBytes.coerceAtLeast(1L))) /
-                                                audioFilesToDownload.size
-                                        absDownloadDao.updateProgress(
-                                            id = downloadId,
-                                            status = AbsDownloadStatus.DOWNLOADING,
-                                            progress = overallProgress,
-                                            bytesDownloaded = downloadedBytesAllTracks,
-                                            tracksDownloaded = index,
-                                            serializedSession = null,
-                                            updatedAt = now,
-                                        )
+                absDownloadDao.upsert(
+                    absDownloadDao
+                        .getById(downloadId)!!
+                        .copy(
+                            title = displayTitle,
+                            authorName = displayAuthor,
+                            duration = episodeDuration,
+                            tracksTotal = audioFilesToDownload.size,
+                            coverUrl = "$baseUrl/api/items/$libraryItemId/cover",
+                            updatedAt = System.currentTimeMillis(),
+                        )
+                )
+
+                var downloadedBytesAllTracks = 0L
+                val localTrackPaths = mutableListOf<String>()
+
+                for ((index, audioFile) in audioFilesToDownload.withIndex()) {
+                    if (isStopped) {
+                        markFailed(downloadId, "Cancelled")
+                        return@withContext Result.failure(workDataOf("error" to "Cancelled"))
+                    }
+
+                    val ext = audioFileExtension(audioFile)
+                    val outputFile = File(localDir, "track_$index.$ext.download")
+                    val finalFile = File(localDir, "track_$index.$ext")
+
+                    if (finalFile.exists() && finalFile.length() > 0) {
+                        Timber.d("AbsDownload: track $index already downloaded, skipping")
+                        localTrackPaths.add(finalFile.absolutePath)
+                        downloadedBytesAllTracks += finalFile.length()
+                        absDownloadDao.updateProgress(
+                            id = downloadId,
+                            status = AbsDownloadStatus.DOWNLOADING,
+                            progress = (index + 1).toFloat() / audioFilesToDownload.size,
+                            bytesDownloaded = downloadedBytesAllTracks,
+                            totalBytes = totalBytesExpected,
+                            tracksDownloaded = index + 1,
+                            serializedSession = null,
+                            updatedAt = System.currentTimeMillis(),
+                        )
+                        continue
+                    }
+
+                    val downloadUrl =
+                        "$baseUrl/api/items/$libraryItemId/file/${audioFile.ino}/download"
+                    val resumeFrom = if (outputFile.exists()) outputFile.length() else 0L
+                    val requestBuilder =
+                        Request.Builder().url(downloadUrl).apply {
+                            if (token != null) header("Authorization", "Bearer $token")
+                            if (resumeFrom > 0) header("Range", "bytes=$resumeFrom-")
+                        }
+                    val request = requestBuilder.build()
+
+                    var trackBytesDownloaded = resumeFrom
+                    var trackTotalBytes = 0L
+                    downloadedBytesAllTracks += resumeFrom
+
+                    val downloadSuccess = runCatching {
+                        okHttpClient.newCall(request).execute().use { response ->
+                            if (!response.isSuccessful && response.code != 416) {
+                                throw Exception("HTTP ${response.code}: ${response.message}")
+                            }
+                            if (response.code == 416) return@runCatching
+
+                            val contentLength = response.body?.contentLength() ?: -1L
+                            trackTotalBytes =
+                                if (contentLength != -1L) resumeFrom + contentLength else -1L
+
+                            var lastDbUpdate = 0L
+
+                            response.body?.byteStream()?.use { input ->
+                                FileOutputStream(outputFile, resumeFrom > 0).use { output ->
+                                    val buffer = ByteArray(BUFFER_SIZE)
+                                    var bytes: Int
+                                    while (input.read(buffer).also { bytes = it } != -1) {
+                                        if (isStopped) throw Exception("Cancelled")
+                                        output.write(buffer, 0, bytes)
+                                        trackBytesDownloaded += bytes
+                                        downloadedBytesAllTracks += bytes
+
+                                        val now = System.currentTimeMillis()
+                                        if (now - lastDbUpdate > 500) {
+                                            lastDbUpdate = now
+                                            val overallProgress =
+                                                (index.toFloat() +
+                                                    (trackBytesDownloaded.toFloat() /
+                                                        trackTotalBytes.coerceAtLeast(1L))) /
+                                                    audioFilesToDownload.size
+                                            absDownloadDao.updateProgress(
+                                                id = downloadId,
+                                                status = AbsDownloadStatus.DOWNLOADING,
+                                                progress = overallProgress,
+                                                bytesDownloaded = downloadedBytesAllTracks,
+                                                totalBytes = totalBytesExpected,
+                                                tracksDownloaded = index,
+                                                serializedSession = null,
+                                                updatedAt = now,
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
 
-                if (downloadSuccess.isFailure) {
-                    val err = downloadSuccess.exceptionOrNull()?.message ?: "Download failed"
-                    if (err == "Cancelled") {
-                        markFailed(downloadId, "Cancelled")
-                        return@withContext Result.failure(workDataOf("error" to "Cancelled"))
+                    if (downloadSuccess.isFailure) {
+                        val err = downloadSuccess.exceptionOrNull()?.message ?: "Download failed"
+                        if (err == "Cancelled") {
+                            markFailed(downloadId, "Cancelled")
+                            return@withContext Result.failure(workDataOf("error" to "Cancelled"))
+                        }
+                        markFailed(downloadId, "Track $index failed: $err")
+                        return@withContext Result.failure(workDataOf("error" to err))
                     }
-                    markFailed(downloadId, "Track $index failed: $err")
-                    return@withContext Result.failure(workDataOf("error" to err))
+
+                    if (outputFile.exists()) outputFile.renameTo(finalFile)
+                    localTrackPaths.add(finalFile.absolutePath)
+
+                    absDownloadDao.updateProgress(
+                        id = downloadId,
+                        status = AbsDownloadStatus.DOWNLOADING,
+                        progress = (index + 1).toFloat() / audioFilesToDownload.size,
+                        bytesDownloaded = downloadedBytesAllTracks,
+                        totalBytes = totalBytesExpected,
+                        tracksDownloaded = index + 1,
+                        serializedSession = null,
+                        updatedAt = System.currentTimeMillis(),
+                    )
+
+                    Timber.d("AbsDownload: track $index downloaded to ${finalFile.absolutePath}")
                 }
 
-                if (outputFile.exists()) outputFile.renameTo(finalFile)
-                localTrackPaths.add(finalFile.absolutePath)
+                val localCoverPath = downloadCover(libraryItemId, baseUrl, token, localDir)
+
+                var cumulativeStart = 0.0
+                val audioTracks = audioFilesToDownload.mapIndexed { index, audioFile ->
+                    val ext = audioFileExtension(audioFile)
+                    val localPath = File(localDir, "track_$index.$ext").absolutePath
+                    val startOffset = cumulativeStart
+                    cumulativeStart += audioFile.duration ?: 0.0
+                    AudioTrack(
+                        index = index + 1,
+                        startOffset = startOffset,
+                        duration = audioFile.duration ?: 0.0,
+                        title = audioFile.metadata.filename,
+                        contentUrl = "file://$localPath",
+                        mimeType = audioFile.mimeType,
+                        codec = audioFile.codec,
+                        metadata = audioFile.metadata,
+                    )
+                }
+
+                val now = System.currentTimeMillis()
+                val localSession =
+                    PlaybackSession(
+                        id = "local_${libraryItemId}_${episodeId ?: ""}",
+                        userId = "",
+                        libraryId = item.libraryId ?: "",
+                        libraryItemId = libraryItemId,
+                        episodeId = episodeId,
+                        mediaType = item.mediaType ?: if (episodeId != null) "podcast" else "book",
+                        mediaMetadata = item.media?.metadata,
+                        chapters =
+                            if (episodeId != null) {
+                                item.media?.episodes?.find { it.id == episodeId }?.chapters
+                            } else {
+                                item.media?.chapters
+                            },
+                        displayTitle = displayTitle,
+                        displayAuthor = displayAuthor,
+                        coverPath = localCoverPath,
+                        duration = episodeDuration,
+                        playMethod = 0,
+                        startTime = 0.0,
+                        currentTime = 0.0,
+                        startedAt = now,
+                        updatedAt = now,
+                        audioTracks = audioTracks,
+                    )
+
+                val serializedSession = json.encodeToString(localSession)
 
                 absDownloadDao.updateProgress(
                     id = downloadId,
-                    status = AbsDownloadStatus.DOWNLOADING,
-                    progress = (index + 1).toFloat() / audioFilesToDownload.size,
+                    status = AbsDownloadStatus.COMPLETED,
+                    progress = 1f,
                     bytesDownloaded = downloadedBytesAllTracks,
-                    tracksDownloaded = index + 1,
-                    serializedSession = null,
+                    totalBytes = totalBytesExpected.takeIf { it > 0L } ?: downloadedBytesAllTracks,
+                    tracksDownloaded = audioFilesToDownload.size,
+                    serializedSession = serializedSession,
                     updatedAt = System.currentTimeMillis(),
                 )
 
-                Timber.d("AbsDownload: track $index downloaded to ${finalFile.absolutePath}")
-            }
-
-            val localCoverPath = downloadCover(libraryItemId, baseUrl, token, localDir)
-
-            var cumulativeStart = 0.0
-            val audioTracks = audioFilesToDownload.mapIndexed { index, audioFile ->
-                val ext = audioFileExtension(audioFile)
-                val localPath = File(localDir, "track_$index.$ext").absolutePath
-                val startOffset = cumulativeStart
-                cumulativeStart += audioFile.duration ?: 0.0
-                AudioTrack(
-                    index = index + 1,
-                    startOffset = startOffset,
-                    duration = audioFile.duration ?: 0.0,
-                    title = audioFile.metadata.filename,
-                    contentUrl = "file://$localPath",
-                    mimeType = audioFile.mimeType,
-                    codec = audioFile.codec,
-                    metadata = audioFile.metadata,
+                Timber.d(
+                    "AbsDownload: completed $libraryItemId / $episodeId — ${audioFilesToDownload.size} tracks"
                 )
+                Result.success()
             }
-
-            val now = System.currentTimeMillis()
-            val localSession =
-                PlaybackSession(
-                    id = "local_${libraryItemId}_${episodeId ?: ""}",
-                    userId = "",
-                    libraryId = item.libraryId ?: "",
-                    libraryItemId = libraryItemId,
-                    episodeId = episodeId,
-                    mediaType = item.mediaType ?: if (episodeId != null) "podcast" else "book",
-                    mediaMetadata = item.media?.metadata,
-                    chapters =
-                        if (episodeId != null) {
-                            item.media?.episodes?.find { it.id == episodeId }?.chapters
-                        } else {
-                            item.media?.chapters
-                        },
-                    displayTitle = displayTitle,
-                    displayAuthor = displayAuthor,
-                    coverPath = localCoverPath,
-                    duration = episodeDuration,
-                    playMethod = 0,
-                    startTime = 0.0,
-                    currentTime = 0.0,
-                    startedAt = now,
-                    updatedAt = now,
-                    audioTracks = audioTracks,
-                )
-
-            val serializedSession = json.encodeToString(localSession)
-
-            absDownloadDao.updateProgress(
-                id = downloadId,
-                status = AbsDownloadStatus.COMPLETED,
-                progress = 1f,
-                bytesDownloaded = downloadedBytesAllTracks,
-                tracksDownloaded = audioFilesToDownload.size,
-                serializedSession = serializedSession,
-                updatedAt = System.currentTimeMillis(),
-            )
-
-            Timber.d(
-                "AbsDownload: completed $libraryItemId / $episodeId — ${audioFilesToDownload.size} tracks"
-            )
-            Result.success()
         }
 
     private fun downloadCover(

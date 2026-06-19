@@ -369,7 +369,7 @@ constructor(
 
                 val download = databaseRepository.getDownload(downloadId)
                 if (download != null) {
-                    val itemDir = getItemDownloadDirectory(download.itemId)
+                    val itemDir = getItemDownloadDirectory(download)
                     val mediaDir = File(itemDir, "media")
                     if (mediaDir.exists()) {
                         mediaDir
@@ -379,14 +379,15 @@ constructor(
                                 file.delete()
                             }
                     }
-                    if (
-                        itemDir.exists() &&
-                            (itemDir.listFiles()?.isEmpty() == true ||
-                                itemDir.listFiles()?.all {
-                                    it.name == "media" && it.listFiles()?.isEmpty() == true
-                                } == true)
-                    ) {
-                        itemDir.deleteRecursively()
+                    if (itemDir.exists()) {
+                        val children = itemDir.listFiles() ?: emptyArray()
+                        val onlyEmptyMediaDir =
+                            children.size == 1 &&
+                                children[0].name == "media" &&
+                                children[0].listFiles()?.isEmpty() == true
+                        if (children.isEmpty() || onlyEmptyMediaDir) {
+                            itemDir.deleteRecursively()
+                        }
                     }
                     databaseRepository.deleteDownload(downloadId)
                 }
@@ -573,8 +574,19 @@ constructor(
 
     fun getDownloadDirectory(): File = baseDir(StorageLocationProvider.PRIMARY_VOLUME_ID)
 
+    fun getItemDownloadDirectory(download: DownloadDto): File {
+        val dir = File(baseDir(download.storageVolumeId), download.folderPath ?: download.itemId.toString())
+        if (!dir.exists() && !dir.mkdirs()) Timber.w("Failed to create item directory")
+        return dir
+    }
+
     suspend fun getItemDownloadDirectory(itemId: UUID): File {
-        val download = databaseRepository.getDownloadByItemId(itemId)
+        val session = sessionManager.currentSession.value
+        val download = if (session != null) {
+            databaseRepository.getDownloadByItemIdScoped(itemId, session.serverId, session.userId)
+        } else {
+            databaseRepository.getDownloadByItemId(itemId)
+        }
         val folderPath = download?.folderPath
         val volumeId = download?.storageVolumeId ?: StorageLocationProvider.PRIMARY_VOLUME_ID
         val dir = File(baseDir(volumeId), folderPath ?: itemId.toString())
