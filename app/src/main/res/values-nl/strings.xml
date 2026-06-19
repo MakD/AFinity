@@ -111,8 +111,8 @@
     <string name="cd_favorite">Favoriet</string>
     <string name="cd_toggle_watched">Schakel de bekeken status in</string>
     <string name="chapters_title">Hoofdstukken</string>
-    <string name="quality_dialog_title">Selecteer Downloadkwaliteit</string>
-    <string name="quality_dialog_subtitle">Kies welke kwaliteit u wilt downloaden</string>
+    <string name="quality_dialog_title">Selecteer versie</string>
+    <string name="quality_dialog_subtitle">Kies welke versie u wilt downloaden</string>
     <string name="action_download">Downloaden</string>
     <string name="cd_selected">Gekozen</string>
     <string name="cd_not_selected">Niet geselecteerd</string>
@@ -670,4 +670,22 @@
     <string name="section_administration">Administratie</string>
     <string name="cd_manage_addresses">Adressen beheren</string>
     <string name="cd_add_address">Voeg adres toe</string>
+    <string name="home_upcoming_episodes">Komende Afleveringen</string>
+    <string name="episode_upcoming">KOMEND</string>
+    <string name="episode_missing">ONTBREKEND</string>
+    <string name="play_error_missing_source">Geen afspeelbaar artikel gevonden op de server</string>
+    <string name="playing_intro_text">Intro spelen…</string>
+    <string name="cd_playback_info">Afspeel statistieken</string>
+    <string name="media_type_collection">Verzamelbox</string>
+    <string name="pref_show_ratings_title">Toon reviews</string>
+    <string name="pref_show_ratings_summary">Toon IMDb en Rotten Tomatoes reviews op kaarten</string>
+    <string name="section_storage_locations">Opslag locaties</string>
+    <string name="storage_used_on_volume_fmt">%1$s gebruikt op deze server</string>
+    <string name="storage_free_of_total_fmt">%1$s vrij van %2$s</string>
+    <string name="storage_usage_combined_fmt">%1$s gebruikt %2$s vrij van %3$s</string>
+    <string name="storage_default_badge">Standaard</string>
+    <string name="storage_set_as_default">Zet als standaard</string>
+    <string name="storage_unavailable_volume">Niet beschikbare opslag</string>
+    <string name="storage_unavailable_badge">Niet beschikbaar</string>
+    <string name="storage_unavailable_used_fmt">%1$s gebruikt • opslag niet aangesloten</string>
 </resources>
