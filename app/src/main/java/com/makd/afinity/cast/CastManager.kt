@@ -1,9 +1,14 @@
 package com.makd.afinity.cast
 
 import android.content.Context
+import androidx.core.net.toUri
+import androidx.mediarouter.media.MediaRouter
+import androidx.mediarouter.media.MediaRouterParams
 import com.google.android.gms.cast.MediaInfo
 import com.google.android.gms.cast.MediaLoadRequestData
 import com.google.android.gms.cast.MediaMetadata
+import com.google.android.gms.cast.MediaQueueData
+import com.google.android.gms.cast.MediaQueueItem
 import com.google.android.gms.cast.MediaSeekOptions
 import com.google.android.gms.cast.MediaStatus
 import com.google.android.gms.cast.MediaTrack
@@ -11,8 +16,11 @@ import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.cast.framework.media.RemoteMediaClient
+import com.google.android.gms.common.images.WebImage
 import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.data.models.audiobookshelf.AudioTrack
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
 import kotlinx.coroutines.CoroutineScope
@@ -64,6 +72,8 @@ constructor(
 
     private var currentServerBaseUrl: String? = null
     private var currentEnableHevc: Boolean = false
+    private var absAudioTracks: List<AudioTrack> = emptyList()
+    private var absTrackStartOffsets: Map<Int, Long> = emptyMap()
 
     fun initialize(context: Context) {
         try {
@@ -71,6 +81,11 @@ constructor(
             castContext
                 ?.sessionManager
                 ?.addSessionManagerListener(castSessionManagerListener, CastSession::class.java)
+            MediaRouter.getInstance(context).routerParams =
+                MediaRouterParams.Builder()
+                    .setDialogType(MediaRouterParams.DIALOG_TYPE_DYNAMIC_GROUP)
+                    .setOutputSwitcherEnabled(true)
+                    .build()
             Timber.d("CastManager initialized")
         } catch (e: Exception) {
             Timber.e(e, "Failed to initialize CastManager")
@@ -204,9 +219,11 @@ constructor(
                         null
                     }
 
+                val artworkUrl = "${serverBaseUrl.trimEnd('/')}/Items/${item.id}/Images/Primary"
                 val metadata =
                     MediaMetadata(MediaMetadata.MEDIA_TYPE_MOVIE).apply {
                         putString(MediaMetadata.KEY_TITLE, item.name)
+                        addImage(WebImage(artworkUrl.toUri()))
                     }
 
                 val mediaInfo =
@@ -283,6 +300,189 @@ constructor(
                 _castEvents.emit(CastEvent.PlaybackError("Failed to load media: ${e.message}"))
             }
         }
+    }
+
+    fun loadMusicQueue(
+        tracks: List<AfinityTrack>,
+        startIndex: Int,
+        startPositionMs: Long,
+        serverBaseUrl: String,
+        token: String,
+    ) {
+        scope.launch {
+            try {
+                val client =
+                    remoteMediaClient
+                        ?: run {
+                            _castEvents.emit(
+                                CastEvent.PlaybackError("Not connected to a cast device")
+                            )
+                            return@launch
+                        }
+
+                val base = serverBaseUrl.trimEnd('/')
+
+                val queueItems = tracks.map { track ->
+                    val streamUrl = "$base/Audio/${track.id}/stream?static=true&api_key=$token"
+                    val durationMs = track.runtimeTicks / 10_000
+
+                    val metadata =
+                        MediaMetadata(MediaMetadata.MEDIA_TYPE_MUSIC_TRACK).apply {
+                            putString(MediaMetadata.KEY_TITLE, track.name)
+                            track.artist?.let { putString(MediaMetadata.KEY_ARTIST, it) }
+                            track.album?.let { putString(MediaMetadata.KEY_ALBUM_TITLE, it) }
+                            track.images.primary?.let { addImage(WebImage(it)) }
+                        }
+
+                    val mediaInfo =
+                        MediaInfo.Builder(streamUrl)
+                            .setContentType("audio/mpeg")
+                            .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
+                            .setStreamDuration(durationMs)
+                            .setMetadata(metadata)
+                            .build()
+
+                    MediaQueueItem.Builder(mediaInfo).build()
+                }
+
+                val queueData =
+                    MediaQueueData.Builder()
+                        .setItems(queueItems)
+                        .setStartIndex(startIndex)
+                        .setStartTime(startPositionMs / 1000)
+                        .build()
+
+                val loadRequest =
+                    MediaLoadRequestData.Builder().setQueueData(queueData).setAutoplay(true).build()
+
+                client.load(loadRequest)
+                _castState.update { it.copy(isMusicCasting = true) }
+                startPositionPolling()
+
+                Timber.d(
+                    "Music queue loaded to Cast: ${tracks.size} tracks, starting at $startIndex"
+                )
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load music queue on cast device")
+                _castEvents.emit(CastEvent.PlaybackError("Failed to load music: ${e.message}"))
+            }
+        }
+    }
+
+    fun skipMusicTrack(forward: Boolean) {
+        scope.launch {
+            try {
+                if (forward) remoteMediaClient?.queueNext(null)
+                else remoteMediaClient?.queuePrev(null)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to skip music track on cast device")
+            }
+        }
+    }
+
+    fun loadAbsSession(
+        tracks: List<AudioTrack>,
+        startGlobalTimeSeconds: Double,
+        displayTitle: String,
+        author: String?,
+        coverUrl: String?,
+        baseUrl: String,
+        token: String,
+    ) {
+        scope.launch {
+            try {
+                val client =
+                    remoteMediaClient
+                        ?: run {
+                            _castEvents.emit(
+                                CastEvent.PlaybackError("Not connected to a cast device")
+                            )
+                            return@launch
+                        }
+
+                val startTrackIndex =
+                    tracks.indexOfLast { it.startOffset <= startGlobalTimeSeconds }.coerceAtLeast(0)
+                val startPositionInTrackMs =
+                    ((startGlobalTimeSeconds - tracks[startTrackIndex].startOffset) * 1000).toLong()
+
+                absAudioTracks = tracks
+                absTrackStartOffsets = emptyMap()
+
+                val queueItems = tracks.map { track ->
+                    val streamUrl = buildAbsStreamUrl(track.contentUrl ?: "", baseUrl, token)
+                    val durationMs = (track.duration * 1000).toLong()
+                    val contentType = track.mimeType ?: "audio/mpeg"
+
+                    val metadata =
+                        MediaMetadata(MediaMetadata.MEDIA_TYPE_MUSIC_TRACK).apply {
+                            putString(MediaMetadata.KEY_TITLE, displayTitle)
+                            author?.let { putString(MediaMetadata.KEY_ARTIST, it) }
+                            coverUrl?.let { addImage(WebImage(it.toUri())) }
+                        }
+
+                    val mediaInfo =
+                        MediaInfo.Builder(streamUrl)
+                            .setContentType(contentType)
+                            .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
+                            .setStreamDuration(durationMs)
+                            .setMetadata(metadata)
+                            .build()
+
+                    MediaQueueItem.Builder(mediaInfo).build()
+                }
+
+                val queueData =
+                    MediaQueueData.Builder()
+                        .setItems(queueItems)
+                        .setStartIndex(startTrackIndex)
+                        .setStartTime(startPositionInTrackMs / 1000)
+                        .build()
+
+                val loadRequest =
+                    MediaLoadRequestData.Builder().setQueueData(queueData).setAutoplay(true).build()
+
+                client.load(loadRequest)
+                _castState.update { it.copy(isAbsCasting = true) }
+                startPositionPolling()
+
+                Timber.d(
+                    "ABS loaded to Cast: ${tracks.size} tracks, starting at index $startTrackIndex, pos ${startPositionInTrackMs}ms"
+                )
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load ABS session on cast device")
+                _castEvents.emit(CastEvent.PlaybackError("Failed to load audiobook: ${e.message}"))
+            }
+        }
+    }
+
+    fun seekAbsGlobalPosition(globalPositionMs: Long) {
+        scope.launch {
+            try {
+                val client = remoteMediaClient ?: return@launch
+                val sorted = absTrackStartOffsets.entries.sortedBy { it.value }
+                val targetEntry = sorted.lastOrNull { it.value <= globalPositionMs }
+                if (targetEntry != null) {
+                    val positionWithinTrackMs = globalPositionMs - targetEntry.value
+                    val currentItemId = client.mediaStatus?.currentItemId
+                    if (currentItemId == targetEntry.key) {
+                        client.seek(
+                            MediaSeekOptions.Builder().setPosition(positionWithinTrackMs).build()
+                        )
+                    } else {
+                        client.queueJumpToItem(targetEntry.key, positionWithinTrackMs, null)
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to seek ABS position on cast device")
+            }
+        }
+    }
+
+    private fun buildAbsStreamUrl(contentUrl: String, baseUrl: String, token: String): String {
+        val url =
+            if (contentUrl.startsWith("http") || contentUrl.startsWith("file")) contentUrl
+            else "$baseUrl$contentUrl"
+        return if (token.isNotEmpty()) "$url?token=$token" else url
     }
 
     fun play() {
@@ -492,8 +692,16 @@ constructor(
             val client = remoteMediaClient ?: return
             val position = client.approximateStreamPosition
             if (position >= 0) {
-                _castState.update { it.copy(currentPosition = position) }
-                playbackStateManager.updatePlaybackPosition(position)
+                if (_castState.value.isAbsCasting && absTrackStartOffsets.isNotEmpty()) {
+                    val currentItemId = client.mediaStatus?.currentItemId
+                    val trackStartOffsetMs = absTrackStartOffsets[currentItemId] ?: 0L
+                    val globalPositionMs = trackStartOffsetMs + position
+                    _castState.update { it.copy(currentPosition = globalPositionMs) }
+                    playbackStateManager.updatePlaybackPosition(globalPositionMs)
+                } else {
+                    _castState.update { it.copy(currentPosition = position) }
+                    playbackStateManager.updatePlaybackPosition(position)
+                }
             }
 
             val mediaStatus = client.mediaStatus
@@ -573,7 +781,11 @@ constructor(
                 sessionId = null,
                 audioStreamIndex = null,
                 subtitleStreamIndex = null,
+                isMusicCasting = false,
+                isAbsCasting = false,
             )
+        absAudioTracks = emptyList()
+        absTrackStartOffsets = emptyMap()
     }
 
     private val castSessionManagerListener =
@@ -618,6 +830,8 @@ constructor(
             override fun onSessionEnded(session: CastSession, error: Int) {
                 Timber.d("Cast session ended (error: $error)")
                 val finalState = _castState.value
+                val wasMusicCasting = finalState.isMusicCasting
+                val wasAbsCasting = finalState.isAbsCasting
                 remoteMediaClient?.unregisterCallback(remoteMediaClientCallback)
                 remoteMediaClient = null
                 castSession = null
@@ -647,9 +861,23 @@ constructor(
                             finalState.currentPosition,
                         )
                     }
-                    _castEvents.emit(
-                        CastEvent.Disconnected(lastPositionMs = finalState.currentPosition)
-                    )
+                    if (wasMusicCasting) {
+                        _castEvents.emit(
+                            CastEvent.MusicCastDisconnected(
+                                lastPositionMs = finalState.currentPosition
+                            )
+                        )
+                    } else if (wasAbsCasting) {
+                        _castEvents.emit(
+                            CastEvent.AbsCastDisconnected(
+                                lastPositionSeconds = finalState.currentPosition / 1000.0
+                            )
+                        )
+                    } else {
+                        _castEvents.emit(
+                            CastEvent.Disconnected(lastPositionMs = finalState.currentPosition)
+                        )
+                    }
                     playbackStateManager.clearSession()
                 }
             }
@@ -683,6 +911,19 @@ constructor(
     private val remoteMediaClientCallback =
         object : RemoteMediaClient.Callback() {
             override fun onStatusUpdated() {
+                if (_castState.value.isAbsCasting && absTrackStartOffsets.isEmpty()) {
+                    val items = remoteMediaClient?.mediaStatus?.queueItems
+                    if (!items.isNullOrEmpty()) {
+                        absTrackStartOffsets =
+                            items
+                                .mapIndexed { idx, item ->
+                                    item.itemId to
+                                        ((absAudioTracks.getOrNull(idx)?.startOffset ?: 0.0) * 1000)
+                                            .toLong()
+                                }
+                                .toMap()
+                    }
+                }
                 updatePositionFromRemote()
             }
 

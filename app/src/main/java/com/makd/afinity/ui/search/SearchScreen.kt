@@ -3,6 +3,7 @@
 package com.makd.afinity.ui.search
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -43,7 +45,6 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -54,6 +55,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -71,6 +73,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
+import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
@@ -83,11 +86,16 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.music.AfinityTrack
+import com.makd.afinity.data.models.music.MusicSearchResults
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
+import com.makd.afinity.ui.music.components.MusicTrackRow
+import com.makd.afinity.ui.music.library.startMusicService
+import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -102,8 +110,12 @@ fun SearchScreen(
     onAudiobookshelfItemClick: (String) -> Unit,
     onAudiobookshelfGenreClick: (String) -> Unit,
     onSeriesClick: (String) -> Unit = {},
+    onMusicAlbumClick: (String) -> Unit = {},
+    onMusicArtistClick: (String) -> Unit = {},
+    onMusicPlaylistClick: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel(),
+    musicPlayerViewModel: MusicPlayerViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -130,6 +142,7 @@ fun SearchScreen(
         viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
     val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     LocalFocusManager.current
@@ -251,20 +264,60 @@ fun SearchScreen(
                     )
                 }
 
+                uiState.selectedLibrary?.type == CollectionType.Music &&
+                    uiState.musicSearchResults != null -> {
+                    val musicResults =
+                        uiState.musicSearchResults
+                            ?: MusicSearchResults(
+                                emptyList(),
+                                emptyList(),
+                                emptyList(),
+                                emptyList(),
+                            )
+                    MusicSearchResultsContent(
+                        results = musicResults,
+                        isMusicSearching = uiState.isMusicSearching,
+                        onTrackClick = { track, tracks ->
+                            startMusicService(context)
+                            musicPlayerViewModel.playQueue(tracks, tracks.indexOf(track))
+                        },
+                        onAlbumClick = onMusicAlbumClick,
+                        onArtistClick = onMusicArtistClick,
+                        onPlaylistClick = onMusicPlaylistClick,
+                        onInstantMix = musicPlayerViewModel::playInstantMix,
+                        onAddNext = { track -> musicPlayerViewModel.addNext(listOf(track)) },
+                        onAddLast = { track -> musicPlayerViewModel.addLast(listOf(track)) },
+                        onFavorite = { trackId -> viewModel.toggleTrackFavorite(trackId) },
+                    )
+                }
+
                 isAllMode &&
                     (uiState.searchResults.isNotEmpty() ||
                         uiState.audiobookshelfSearchResults.isNotEmpty() ||
-                        uiState.jellyseerrSearchResults.isNotEmpty()) -> {
+                        uiState.jellyseerrSearchResults.isNotEmpty() ||
+                        uiState.musicSearchResults != null) -> {
                     CombinedSearchResultsContent(
                         jellyfinResults = uiState.searchResults,
                         audiobookshelfResults = uiState.audiobookshelfSearchResults,
                         jellyseerrResults = uiState.jellyseerrSearchResults,
+                        musicResults = uiState.musicSearchResults,
                         isAudiobookshelfSearching = uiState.isAudiobookshelfSearching,
                         isJellyseerrSearching = uiState.isJellyseerrSearching,
+                        isMusicSearching = uiState.isMusicSearching,
                         serverUrl = uiState.audiobookshelfServerUrl,
                         onItemClick = onItemClick,
                         onEpisodeClick = { episode -> viewModel.selectEpisode(episode) },
                         onAudiobookshelfItemClick = onAudiobookshelfItemClick,
+                        onMusicTrackClick = { track, tracks ->
+                            startMusicService(context)
+                            musicPlayerViewModel.playQueue(tracks, tracks.indexOf(track))
+                        },
+                        onMusicAlbumClick = onMusicAlbumClick,
+                        onMusicArtistClick = onMusicArtistClick,
+                        onMusicInstantMix = musicPlayerViewModel::playInstantMix,
+                        onMusicTrackFavorite = { trackId ->
+                            viewModel.toggleTrackFavorite(trackId)
+                        },
                         onRequestClick = { item ->
                             item.getMediaType()?.let { mediaType ->
                                 viewModel.showRequestDialog(
@@ -1244,12 +1297,19 @@ private fun CombinedSearchResultsContent(
     jellyfinResults: List<AfinityItem>,
     audiobookshelfResults: List<LibraryItem>,
     jellyseerrResults: List<SearchResultItem>,
+    musicResults: MusicSearchResults?,
     isAudiobookshelfSearching: Boolean,
     isJellyseerrSearching: Boolean,
+    isMusicSearching: Boolean,
     serverUrl: String?,
     onItemClick: (AfinityItem) -> Unit,
     onEpisodeClick: (AfinityEpisode) -> Unit,
     onAudiobookshelfItemClick: (String) -> Unit,
+    onMusicTrackClick: (AfinityTrack, List<AfinityTrack>) -> Unit,
+    onMusicAlbumClick: (String) -> Unit,
+    onMusicArtistClick: (String) -> Unit,
+    onMusicInstantMix: (java.util.UUID) -> Unit,
+    onMusicTrackFavorite: (java.util.UUID) -> Unit,
     onRequestClick: (SearchResultItem) -> Unit,
 ) {
     val collections =
@@ -1318,6 +1378,266 @@ private fun CombinedSearchResultsContent(
                     serverUrl = serverUrl,
                     onClick = { onAudiobookshelfItemClick(item.id) },
                 )
+            }
+        }
+
+        val musicTracks = musicResults?.tracks.orEmpty()
+        val musicAlbums = musicResults?.albums.orEmpty()
+        val musicArtists = musicResults?.artists.orEmpty()
+
+        if (
+            isMusicSearching ||
+                musicTracks.isNotEmpty() ||
+                musicAlbums.isNotEmpty() ||
+                musicArtists.isNotEmpty()
+        ) {
+            item { SearchSectionHeader("Music", isLoading = isMusicSearching) }
+        }
+
+        if (musicTracks.isNotEmpty()) {
+            item {
+                Text(
+                    "Tracks",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            }
+            items(musicTracks.take(5), key = { "mtrack_${it.id}" }) { track ->
+                MusicTrackRow(
+                    track = track,
+                    showAlbumArt = true,
+                    onClick = { onMusicTrackClick(track, musicTracks) },
+                    onInstantMix = { onMusicInstantMix(track.id) },
+                    onFavorite = { onMusicTrackFavorite(track.id) },
+                )
+            }
+        }
+
+        if (musicAlbums.isNotEmpty()) {
+            item {
+                Text(
+                    "Albums",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            }
+            items(musicAlbums.take(5), key = { "malbum_${it.id}" }) { album ->
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .clickable { onMusicAlbumClick(album.id.toString()) }
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AsyncImage(
+                        imageUrl = album.images.primary?.toString(),
+                        contentDescription = album.name,
+                        targetWidth = 40.dp,
+                        targetHeight = 40.dp,
+                        modifier = Modifier.size(40.dp).clip(RoundedCornerShape(4.dp)),
+                    )
+                    Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
+                        Text(
+                            album.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            album.artist ?: "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
+                    Icon(
+                        painter = painterResource(R.drawable.ic_music),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+        }
+
+        if (musicArtists.isNotEmpty()) {
+            item {
+                Text(
+                    "Artists",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            }
+            items(musicArtists.take(5), key = { "martist_${it.id}" }) { artist ->
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .clickable { onMusicArtistClick(artist.id.toString()) }
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AsyncImage(
+                        imageUrl = artist.images.primary?.toString(),
+                        contentDescription = artist.name,
+                        targetWidth = 40.dp,
+                        targetHeight = 40.dp,
+                        modifier = Modifier.size(40.dp).clip(CircleShape),
+                    )
+                    Text(
+                        artist.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(start = 12.dp).weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MusicSearchResultsContent(
+    results: MusicSearchResults,
+    isMusicSearching: Boolean,
+    onTrackClick: (AfinityTrack, List<AfinityTrack>) -> Unit,
+    onAlbumClick: (String) -> Unit,
+    onArtistClick: (String) -> Unit,
+    onPlaylistClick: (String) -> Unit,
+    onInstantMix: (java.util.UUID) -> Unit,
+    onAddNext: (AfinityTrack) -> Unit,
+    onAddLast: (AfinityTrack) -> Unit,
+    onFavorite: (java.util.UUID) -> Unit,
+) {
+    val playerOffset = LocalPlayerOffset.current
+
+    if (
+        isMusicSearching &&
+            results.tracks.isEmpty() &&
+            results.albums.isEmpty() &&
+            results.artists.isEmpty()
+    ) {
+        FullScreenLoading()
+        return
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 16.dp + playerOffset),
+    ) {
+        if (results.tracks.isNotEmpty()) {
+            item { SearchSectionHeader("Tracks") }
+            itemsIndexed(results.tracks, key = { _, t -> "search_track_${t.id}" }) { _, track ->
+                MusicTrackRow(
+                    track = track,
+                    showAlbumArt = true,
+                    onClick = { onTrackClick(track, results.tracks) },
+                    onInstantMix = { onInstantMix(track.id) },
+                    onAddNext = { onAddNext(track) },
+                    onAddLast = { onAddLast(track) },
+                    onFavorite = { onFavorite(track.id) },
+                )
+            }
+        }
+
+        if (results.albums.isNotEmpty()) {
+            item { SearchSectionHeader("Albums") }
+            items(results.albums, key = { "search_album_${it.id}" }) { album ->
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .clickable { onAlbumClick(album.id.toString()) }
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AsyncImage(
+                        imageUrl = album.images.primary?.toString(),
+                        contentDescription = album.name,
+                        targetWidth = 48.dp,
+                        targetHeight = 48.dp,
+                        modifier = Modifier.size(48.dp).clip(RoundedCornerShape(6.dp)),
+                    )
+                    Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
+                        Text(
+                            album.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            listOfNotNull(album.artist, album.productionYear?.toString())
+                                .joinToString(" · "),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
+                }
+            }
+        }
+
+        if (results.artists.isNotEmpty()) {
+            item { SearchSectionHeader("Artists") }
+            items(results.artists, key = { "search_artist_${it.id}" }) { artist ->
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .clickable { onArtistClick(artist.id.toString()) }
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AsyncImage(
+                        imageUrl = artist.images.primary?.toString(),
+                        contentDescription = artist.name,
+                        targetWidth = 48.dp,
+                        targetHeight = 48.dp,
+                        modifier = Modifier.size(48.dp).clip(CircleShape),
+                    )
+                    Text(
+                        artist.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(start = 12.dp).weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+
+        if (results.playlists.isNotEmpty()) {
+            item { SearchSectionHeader("Playlists") }
+            items(results.playlists, key = { "search_playlist_${it.id}" }) { playlist ->
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .clickable { onPlaylistClick(playlist.id.toString()) }
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AsyncImage(
+                        imageUrl = playlist.images.primary?.toString(),
+                        contentDescription = playlist.name,
+                        targetWidth = 48.dp,
+                        targetHeight = 48.dp,
+                        modifier = Modifier.size(48.dp).clip(RoundedCornerShape(6.dp)),
+                    )
+                    Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
+                        Text(
+                            playlist.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            "${playlist.songCount} tracks",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
         }
     }

@@ -1046,7 +1046,7 @@ private fun AuthorizeQuickConnectDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     digits.forEachIndexed { index, digitState ->
-                        val isFocused = remember { mutableStateOf(false) }
+                        remember { mutableStateOf(false) }
                         BasicTextField(
                             value = digitState.value,
                             onValueChange = { input ->

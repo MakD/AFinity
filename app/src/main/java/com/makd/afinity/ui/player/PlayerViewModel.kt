@@ -106,10 +106,13 @@ constructor(
     private val appDataRepository: AppDataRepository,
     private val apiClient: ApiClient,
     private val audiobookshelfPlayer: AudiobookshelfPlayer,
+    private val musicPlaybackManager: com.makd.afinity.player.music.MusicPlaybackManager,
 ) : ViewModel(), Player.Listener {
 
     lateinit var player: Player
         private set
+
+    private var videoMediaSession: androidx.media3.session.MediaSession? = null
 
     var syncPlayInterceptor: SyncPlayInterceptor? = null
 
@@ -140,7 +143,9 @@ constructor(
     private var pendingAudioTrackPosition: Int? = null
     private var pendingSubtitleTrackPosition: Int? = null
     private var currentItem: AfinityItem? = null
-    val currentPlayingItemId: java.util.UUID? get() = currentItem?.id
+    val currentPlayingItemId: UUID?
+        get() = currentItem?.id
+
     private var currentTrickplayInfo: AfinityTrickplayInfo? = null
     private var currentTrickplayItemId: UUID? = null
     private val trickplayTileCache =
@@ -240,6 +245,8 @@ constructor(
                         Timber.e("Cast error: ${event.message}")
                         updateUiState { it.copy(isCasting = false) }
                     }
+                    is CastEvent.MusicCastDisconnected -> {}
+                    is CastEvent.AbsCastDisconnected -> {}
                 }
             }
         }
@@ -443,6 +450,9 @@ constructor(
             }
 
         player.addListener(this@PlayerViewModel)
+        videoMediaSession = androidx.media3.session.MediaSession.Builder(context, player)
+            .setId("afinity_video")
+            .build()
         Timber.d("Player initialized: ${player.javaClass.simpleName}")
     }
 
@@ -702,7 +712,7 @@ constructor(
 
         val isBuffering = !isActuallyPlaying && playbackState == Player.STATE_BUFFERING
         val isPausedState = !isActuallyPlaying && playbackState == Player.STATE_READY
-        val shouldShowPlayButton = if (isBuffering) false else !uiState.value.isControlsLocked
+        if (isBuffering) false else !uiState.value.isControlsLocked
 
         lastKnownPosition = position
         lastKnownDuration = duration
@@ -758,7 +768,14 @@ constructor(
                     updateUiState { it.copy(playbackSpeed = event.speed) }
                 }
 
-                is PlayerEvent.SwitchToTrack -> switchToTrack(event.trackType, event.index)
+                is PlayerEvent.SwitchToTrack -> {
+                    switchToTrack(event.trackType, event.index)
+                    if (event.trackType == C.TRACK_TYPE_TEXT) {
+                        updateUiState { it.copy(subtitleUserSelected = true) }
+                    } else if (event.trackType == C.TRACK_TYPE_AUDIO && event.index >= 0) {
+                        autoUpdateSubtitleForAudio(event.index)
+                    }
+                }
                 is PlayerEvent.ToggleControls -> toggleControls()
                 is PlayerEvent.ToggleLock -> onLockToggle()
                 is PlayerEvent.ToggleFullscreen -> {
@@ -1040,6 +1057,13 @@ constructor(
             audiobookshelfPlayer.pause()
             audiobookshelfPlayer.closeSession()
         }
+        if (musicPlaybackManager.state.value.currentTrack != null) {
+            Timber.d("Stopping Music playback before starting Jellyfin playback")
+            context.startService(
+                android.content.Intent(context, com.makd.afinity.player.AudioService::class.java)
+                    .setAction(com.makd.afinity.player.AudioService.ACTION_STOP)
+            )
+        }
     }
 
     private suspend fun loadMedia(
@@ -1124,9 +1148,20 @@ constructor(
             val preferredSubLang = preferencesRepository.getPreferredSubtitleLanguage()
             val preferredAudioLang = preferencesRepository.getPreferredAudioLanguage()
 
+            fun iso3(code: String) =
+                Locale.forLanguageTag(code).isO3Language.ifEmpty { code }.lowercase()
+
             val audioPosition =
                 if (audioStreamIndex != null) {
                     audioStreams.indexOfFirst { it.index == audioStreamIndex }.takeIf { it >= 0 }
+                } else if (preferredAudioLang.isNotEmpty()) {
+                    val normalizedPref = iso3(preferredAudioLang)
+                    audioStreams
+                        .indexOfFirst { stream ->
+                            stream.language.equals(preferredAudioLang, ignoreCase = true) ||
+                                iso3(stream.language) == normalizedPref
+                        }
+                        .takeIf { it >= 0 }
                 } else if (serverSavedAudioIndex != null) {
                     audioStreams
                         .indexOfFirst { it.index == serverSavedAudioIndex }
@@ -1135,8 +1170,6 @@ constructor(
                     null
                 }
 
-            fun iso3(code: String) =
-                Locale.forLanguageTag(code).isO3Language.ifEmpty { code }.lowercase()
             val resolvedAudioLang =
                 audioPosition?.let { audioStreams.getOrNull(it)?.language }
                     ?: serverSavedAudioIndex?.let { idx ->
@@ -1184,7 +1217,7 @@ constructor(
                     val forcedAny = subtitleStreams.indexOfFirst { it.isForced }.takeIf { it >= 0 }
 
                     forcedLangMatch
-                        ?: forcedAny
+                        ?: if (!audioLangKnown) forcedAny else null
                         ?: if (serverSavedSubtitleIndex != null && serverSavedSubtitleIndex >= 0) {
                             subtitleStreams
                                 .indexOfFirst { it.index == serverSavedSubtitleIndex }
@@ -1206,6 +1239,7 @@ constructor(
                     currentItem = fullItem,
                     audioStreamIndex = audioPosition,
                     subtitleStreamIndex = subtitlePosition,
+                    subtitleUserSelected = false,
                     availableSources = fullItem.sources,
                     currentMediaSourceId = actualMediaSourceId,
                 )
@@ -1643,6 +1677,37 @@ constructor(
             }
         }
         updateCurrentTrackSelections()
+    }
+
+    private fun autoUpdateSubtitleForAudio(audioPosition: Int) {
+        if (_uiState.value.subtitleUserSelected) return
+
+        val sourceId = _uiState.value.currentMediaSourceId ?: return
+        val source =
+            currentItem?.sources?.find { it.id == sourceId }
+                ?: currentItem?.sources?.firstOrNull()
+                ?: return
+        val audioStreams = source.mediaStreams.filter { it.type == MediaStreamType.AUDIO }
+        val subtitleStreams = source.mediaStreams.filter { it.type == MediaStreamType.SUBTITLE }
+
+        val audioLang = audioStreams.getOrNull(audioPosition)?.language ?: return
+        val audioLangKnown = audioLang.isNotEmpty() && audioLang != "und"
+        if (!audioLangKnown) return
+
+        fun iso3(code: String) =
+            Locale.forLanguageTag(code).isO3Language.ifEmpty { code }.lowercase()
+        val normalizedAudioLang = iso3(audioLang)
+
+        val forcedSubPosition =
+            subtitleStreams
+                .indexOfFirst { stream ->
+                    stream.isForced &&
+                        (stream.language.equals(audioLang, ignoreCase = true) ||
+                            iso3(stream.language) == normalizedAudioLang)
+                }
+                .takeIf { it >= 0 }
+
+        switchToTrack(C.TRACK_TYPE_TEXT, forcedSubPosition ?: -1)
     }
 
     private fun updateCurrentTrackSelections() {
@@ -2330,6 +2395,8 @@ constructor(
         skipButtonHideJob?.cancel()
         controlsHideJob?.cancel()
         statsPollingJob?.cancel()
+        videoMediaSession?.release()
+        videoMediaSession = null
         if (::player.isInitialized) {
             player.removeListener(this)
             player.release()
@@ -2368,6 +2435,7 @@ constructor(
         val playbackSpeed: Float = 1f,
         val audioStreamIndex: Int? = null,
         val subtitleStreamIndex: Int? = null,
+        val subtitleUserSelected: Boolean = false,
         val showPlayButton: Boolean = true,
         val showBuffering: Boolean = false,
         val showError: Boolean = false,

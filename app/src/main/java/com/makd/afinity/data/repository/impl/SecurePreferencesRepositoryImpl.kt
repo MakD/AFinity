@@ -657,9 +657,8 @@ constructor(@param:ApplicationContext private val context: Context) : SecurePref
     }
 
     override suspend fun hasValidAudiobookshelfAuth(): Boolean {
-        if (!cachedAudiobookshelfToken.isNullOrBlank() && !cachedAudiobookshelfUrl.isNullOrBlank())
-            return true
-        return false
+        return !cachedAudiobookshelfToken.isNullOrBlank() &&
+            !cachedAudiobookshelfUrl.isNullOrBlank()
     }
 
     override suspend fun saveTmdbApiKey(serverId: String, userId: String, apiKey: String) {

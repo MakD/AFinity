@@ -1,9 +1,5 @@
 package com.makd.afinity.ui.settings
 
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -24,7 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,7 +28,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
@@ -58,13 +52,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.ui.audiobookshelf.login.AudiobookshelfLoginViewModel
 import com.makd.afinity.util.isInsecurePublicUrl
-import timber.log.Timber
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,74 +70,8 @@ fun AudiobookshelfBottomSheet(
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
     var passwordVisible by remember { mutableStateOf(false) }
-    var showNotificationDialog by remember { mutableStateOf(false) }
-
-    val permissionLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted
-            ->
-            if (isGranted) {
-                Timber.d("Notification permission granted")
-            } else {
-                Timber.w("Notification permission denied - Media controls will not show")
-            }
-            onDismiss()
-        }
-
     LaunchedEffect(uiState.isLoggedIn) {
-        if (uiState.isLoggedIn) {
-            val hasPermission =
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.POST_NOTIFICATIONS,
-                ) == PackageManager.PERMISSION_GRANTED
-            val declined = viewModel.isNotificationPermissionDeclined()
-
-            if (!hasPermission && !declined) {
-                showNotificationDialog = true
-            } else {
-                onDismiss()
-            }
-        }
-    }
-
-    if (showNotificationDialog) {
-        AlertDialog(
-            onDismissRequest = {},
-            title = {
-                Text(
-                    text = stringResource(R.string.notification_permission_title),
-                    style =
-                        MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                )
-            },
-            text = {
-                Text(
-                    text = stringResource(R.string.notification_permission_message),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showNotificationDialog = false
-                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    }
-                ) {
-                    Text(stringResource(R.string.notification_permission_yes))
-                }
-            },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = {
-                        showNotificationDialog = false
-                        viewModel.declineNotificationPermission()
-                        onDismiss()
-                    }
-                ) {
-                    Text(stringResource(R.string.notification_permission_no))
-                }
-            },
-        )
+        if (uiState.isLoggedIn) onDismiss()
     }
 
     ModalBottomSheet(

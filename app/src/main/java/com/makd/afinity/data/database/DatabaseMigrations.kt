@@ -1117,6 +1117,32 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_49_50 =
+        object : Migration(49, 50) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `music_queue` (
+                        `position` INTEGER NOT NULL,
+                        `trackId` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `artist` TEXT,
+                        `albumId` TEXT,
+                        `album` TEXT,
+                        `durationMs` INTEGER NOT NULL,
+                        `imageUrl` TEXT,
+                        `normalizationGain` REAL,
+                        `indexNumber` INTEGER,
+                        `discNumber` INTEGER,
+                        `serverId` TEXT NOT NULL,
+                        PRIMARY KEY(`position`)
+                    )
+                    """
+                        .trimIndent()
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1167,5 +1193,6 @@ object DatabaseMigrations {
             MIGRATION_46_47,
             MIGRATION_47_48,
             MIGRATION_48_49,
+            MIGRATION_49_50,
         )
 }

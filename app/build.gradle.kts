@@ -31,7 +31,7 @@ aboutLibraries {
 
 configure<ApplicationExtension> {
     namespace = "com.makd.afinity"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.makd.afinity"
@@ -143,6 +143,7 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.tink.android)
     implementation(libs.blurhash)
+    implementation(libs.reorderable)
     implementation(libs.okhttp)
     implementation(libs.retrofit)
     implementation(libs.retrofit.kotlinx.serialization)
@@ -153,6 +154,7 @@ dependencies {
     implementation(libs.okhttp.logging.interceptor)
     ksp(libs.androidx.room.compiler)
     ksp(libs.hilt.android.compiler)
+    ksp(libs.kotlin.metadata.jvm)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)

@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.settings
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -26,7 +24,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -86,13 +83,6 @@ fun LicensesScreen(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
         LibrariesContainer(
             libraries = libraries,
             modifier = Modifier.fillMaxSize(),
-            libraryModifier =
-                Modifier.clip(RoundedCornerShape(16.dp))
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                        shape = RoundedCornerShape(16.dp),
-                    ),
             contentPadding =
                 PaddingValues(
                     top = customPadding.calculateTopPadding() + 16.dp,
@@ -105,7 +95,6 @@ fun LicensesScreen(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
                     libraryBackgroundColor = MaterialTheme.colorScheme.surface,
                     libraryContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
-            padding = LibraryDefaults.libraryPadding(contentPadding = PaddingValues(16.dp)),
             header = {
                 item {
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {

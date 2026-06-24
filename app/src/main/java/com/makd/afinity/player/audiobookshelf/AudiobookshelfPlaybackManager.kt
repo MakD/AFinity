@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,7 +20,18 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
     private val _currentSession = MutableStateFlow<PlaybackSession?>(null)
     val currentSession: StateFlow<PlaybackSession?> = _currentSession.asStateFlow()
 
+    private val _currentAudioDecoder = MutableStateFlow("Unknown")
+    val currentAudioDecoder: StateFlow<String> = _currentAudioDecoder.asStateFlow()
+
+    fun updateAudioDecoder(decoderName: String, isHardwareAccelerated: Boolean) {
+        _currentAudioDecoder.value = if (isHardwareAccelerated) "H/W Dec" else "S/W Dec"
+    }
+
     fun setSession(session: PlaybackSession, serverUrl: String? = null, token: String? = null) {
+        android.util.Log.d(
+            "ABS-MiniPlayer",
+            "PlaybackManager.setSession: id=${session.id} title=${session.displayTitle} author=${session.displayAuthor}",
+        )
         _currentSession.value = session
 
         val coverUrl =
@@ -63,6 +75,10 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
         _playbackState.update { it.copy(isBuffering = isBuffering) }
     }
 
+    fun updatePlayerError(message: String?) {
+        _playbackState.update { it.copy(playerError = message) }
+    }
+
     fun updatePlaybackSpeed(speed: Float) {
         _playbackState.update { it.copy(playbackSpeed = speed) }
     }
@@ -86,8 +102,31 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
     }
 
     fun clearSession() {
+        Timber.tag("ABS-MiniPlayer")
+            .d(
+                "PlaybackManager.clearSession: was sessionId=${_currentSession.value?.id} displayTitle=${_playbackState.value.displayTitle}"
+            )
         _currentSession.value = null
-        _playbackState.value = AudiobookshelfPlaybackState()
+        _playbackState.update { current ->
+            AudiobookshelfPlaybackState(
+                itemId = current.itemId,
+                displayTitle = current.displayTitle,
+                displayAuthor = current.displayAuthor,
+                coverUrl = current.coverUrl,
+            )
+        }
+    }
+
+    fun preloadDisplayMetadata(itemId: String, title: String, author: String?, coverUrl: String?) {
+        _playbackState.update { current ->
+            if (current.sessionId != null && current.itemId == itemId) return@update current
+            current.copy(
+                itemId = itemId,
+                displayTitle = title,
+                displayAuthor = author,
+                coverUrl = coverUrl,
+            )
+        }
     }
 
     private fun findCurrentChapter(currentTime: Double): BookChapter? {
@@ -131,6 +170,7 @@ data class AudiobookshelfPlaybackState(
     val isPodcastPlaylist: Boolean = false,
     val playlistEpisodeIds: List<String> = emptyList(),
     val isChapterBasedPlayback: Boolean = false,
+    val playerError: String? = null,
 ) {
     val currentChapterIndex: Int
         get() = currentChapter?.let { chapter -> chapters.indexOf(chapter) } ?: -1

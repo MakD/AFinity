@@ -318,7 +318,7 @@ constructor(
 
                 val playMethod: PlayMethod
                 val streamUrl: String
-                val container: String? = source.container ?: "ts"
+                val container: String = source.container ?: "ts"
 
                 val isClientRemote =
                     !baseUrl.contains("192.168.") &&

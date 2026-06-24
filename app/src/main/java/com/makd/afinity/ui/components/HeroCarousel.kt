@@ -123,6 +123,7 @@ private fun HeroCarouselAutoScrollAndPrefetch(
     pagerState: PagerState,
     items: List<AfinityItem>,
     isScrolling: Boolean,
+    fillWidthPx: Int,
 ) {
     val context = LocalContext.current
     val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
@@ -161,9 +162,19 @@ private fun HeroCarouselAutoScrollAndPrefetch(
 
         listOf(nextIndex, prevIndex).forEach { index ->
             val item = items[index]
-            val imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl
-            if (imageUrl != null) {
-                val request = ImageRequest.Builder(context).data(imageUrl).build()
+            val rawUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl
+            if (rawUrl != null) {
+                val url = if (
+                    rawUrl.contains("/Items/") &&
+                    rawUrl.contains("/Images/") &&
+                    !rawUrl.contains("fillWidth")
+                ) {
+                    val sep = if ('?' in rawUrl) "&" else "?"
+                    "${rawUrl}${sep}fillWidth=${fillWidthPx.coerceAtLeast(50)}&quality=90"
+                } else {
+                    rawUrl
+                }
+                val request = ImageRequest.Builder(context).data(url).build()
                 context.imageLoader.enqueue(request)
             }
         }
@@ -187,13 +198,14 @@ fun HeroCarouselPortrait(
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
     val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+    val screenWidthPx = windowInfo.containerSize.width
     val infinitePageCount = Int.MAX_VALUE
     val pagerState =
         rememberPagerState(initialPage = initialPageIndex, pageCount = { infinitePageCount })
 
     LaunchedEffect(pagerState.currentPage) { onPageChanged(pagerState.currentPage) }
 
-    HeroCarouselAutoScrollAndPrefetch(pagerState, items, isScrolling)
+    HeroCarouselAutoScrollAndPrefetch(pagerState, items, isScrolling, fillWidthPx = screenWidthPx)
 
     val currentItem by remember { derivedStateOf { items[pagerState.currentPage % items.size] } }
 
@@ -429,6 +441,7 @@ private fun HeroCarouselLandscape(
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
     val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+    val screenWidthPx = windowInfo.containerSize.width
     val screenHeightDp = with(density) { windowInfo.containerSize.height.toDp() }
     val infinitePageCount = Int.MAX_VALUE
     val pagerState =
@@ -438,7 +451,7 @@ private fun HeroCarouselLandscape(
 
     val landscapeHeight = screenHeightDp * 0.95f
 
-    HeroCarouselAutoScrollAndPrefetch(pagerState, items, isScrolling)
+    HeroCarouselAutoScrollAndPrefetch(pagerState, items, isScrolling, fillWidthPx = screenWidthPx)
 
     val currentItem by remember { derivedStateOf { items[pagerState.currentPage % items.size] } }
 

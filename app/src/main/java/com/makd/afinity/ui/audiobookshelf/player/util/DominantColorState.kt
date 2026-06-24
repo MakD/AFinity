@@ -28,7 +28,11 @@ fun rememberDominantColor(url: String?, defaultColor: Color): Color {
 
         withContext(Dispatchers.IO) {
             val loader = SingletonImageLoader.get(context)
-            val request = ImageRequest.Builder(context).data(url).allowHardware(false).build()
+            val sizedUrl = if (url.startsWith("file://")) url else {
+                val sep = if ('?' in url) "&" else "?"
+                "${url}${sep}width=256"
+            }
+            val request = ImageRequest.Builder(context).data(sizedUrl).allowHardware(false).build()
 
             val result = loader.execute(request)
 

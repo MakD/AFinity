@@ -13,6 +13,7 @@ import com.makd.afinity.data.database.dao.LibraryCacheDao
 import com.makd.afinity.data.database.dao.MediaStreamDao
 import com.makd.afinity.data.database.dao.MovieDao
 import com.makd.afinity.data.database.dao.MovieSectionDao
+import com.makd.afinity.data.database.dao.MusicQueueDao
 import com.makd.afinity.data.database.dao.PersonSectionDao
 import com.makd.afinity.data.database.dao.SeasonDao
 import com.makd.afinity.data.database.dao.ServerAddressDao
@@ -145,5 +146,10 @@ object DatabaseModule {
     @Provides
     fun provideMovieSectionDao(database: AfinityDatabase): MovieSectionDao {
         return database.movieSectionDao()
+    }
+
+    @Provides
+    fun provideMusicQueueDao(database: AfinityDatabase): MusicQueueDao {
+        return database.musicQueueDao()
     }
 }

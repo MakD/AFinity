@@ -66,7 +66,7 @@ fun LiveTvChannelsTab(
     val playerOffset = LocalPlayerOffset.current
     val safeDrawing = WindowInsets.safeDrawing.asPaddingValues()
     val safeStart = safeDrawing.calculateStartPadding(layoutDirection)
-    val safeEnd = safeDrawing.calculateEndPadding(layoutDirection)
+    safeDrawing.calculateEndPadding(layoutDirection)
     val safeBottom = safeDrawing.calculateBottomPadding()
 
     Box(modifier = modifier.fillMaxSize()) {

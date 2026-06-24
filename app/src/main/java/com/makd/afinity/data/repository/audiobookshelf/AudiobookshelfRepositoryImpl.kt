@@ -642,6 +642,15 @@ constructor(
         }
     }
 
+    override suspend fun getCachedItemMetadata(itemId: String): Triple<String, String?, String?>? {
+        return withContext(Dispatchers.IO) {
+            val (serverId, userId) = activeContext ?: return@withContext null
+            val entity = audiobookshelfDao.getItem(itemId, serverId, userId.toString())
+                ?: return@withContext null
+            Triple(entity.title, entity.authorName, entity.coverUrl)
+        }
+    }
+
     override suspend fun getItemDetails(itemId: String): Result<LibraryItem> {
         return withContext(Dispatchers.IO) {
             val (currentServerId, currentUserId) =

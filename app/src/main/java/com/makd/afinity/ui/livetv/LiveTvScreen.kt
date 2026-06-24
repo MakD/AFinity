@@ -65,7 +65,7 @@ fun LiveTvScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedLetter by viewModel.selectedLetter.collectAsStateWithLifecycle()
-    val playerOffset = LocalPlayerOffset.current
+    LocalPlayerOffset.current
 
     val pagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()

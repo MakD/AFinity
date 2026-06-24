@@ -50,6 +50,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.makd.afinity.data.manager.OfflineModeManager
+import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.AudiobookshelfRepository
@@ -65,7 +66,6 @@ import com.makd.afinity.ui.audiobookshelf.item.AudiobookshelfItemScreen
 import com.makd.afinity.ui.audiobookshelf.item.series.AudiobookshelfSeriesScreen
 import com.makd.afinity.ui.audiobookshelf.libraries.AudiobookshelfLibrariesScreen
 import com.makd.afinity.ui.audiobookshelf.player.AudiobookshelfPlayerScreen
-import com.makd.afinity.ui.audiobookshelf.player.components.MiniPlayer
 import com.makd.afinity.ui.components.AfinitySplashScreen
 import com.makd.afinity.ui.favorites.FavoritesScreen
 import com.makd.afinity.ui.home.HomeScreen
@@ -74,7 +74,14 @@ import com.makd.afinity.ui.libraries.LibrariesScreen
 import com.makd.afinity.ui.library.LibraryContentScreen
 import com.makd.afinity.ui.login.LoginScreen
 import com.makd.afinity.ui.main.MainViewModel
+import com.makd.afinity.ui.music.album.MusicAlbumScreen
+import com.makd.afinity.ui.music.artist.MusicArtistScreen
+import com.makd.afinity.ui.music.library.MusicLibraryScreen
+import com.makd.afinity.ui.music.player.MusicPlayerScreen
+import com.makd.afinity.ui.music.playlist.MusicPlaylistScreen
 import com.makd.afinity.ui.person.PersonScreen
+import com.makd.afinity.ui.player.AudioMiniPlayer
+import com.makd.afinity.ui.player.AudioMiniPlayerState
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.requests.FilterParams
 import com.makd.afinity.ui.requests.FilterType
@@ -125,6 +132,7 @@ fun MainNavigation(
     val isOffline by offlineModeManager.isOffline.collectAsStateWithLifecycle(initialValue = false)
     val audiobookshelfPlaybackState by
         viewModel.audiobookshelfPlaybackManager.playbackState.collectAsStateWithLifecycle()
+    val musicPlaybackState by viewModel.musicPlaybackManager.state.collectAsStateWithLifecycle()
     val showRatings by viewModel.showRatings.collectAsStateWithLifecycle()
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -173,7 +181,12 @@ fun MainNavigation(
                 !route.startsWith("audiobookshelf/series/") &&
                 !route.startsWith("audiobookshelf/genre/") &&
                 !route.startsWith("audiobookshelf/player/") &&
-                !route.startsWith("admin/")
+                !route.startsWith("admin/") &&
+                !route.startsWith("music/library/") &&
+                !route.startsWith("music/album/") &&
+                !route.startsWith("music/artist/") &&
+                !route.startsWith("music/playlist/") &&
+                route != "music/player"
         } ?: true
 
     val useNavRail = widthSizeClass != WindowWidthSizeClass.Compact
@@ -297,11 +310,46 @@ fun MainNavigation(
             ) {
                 val isOnAudiobookshelfPlayer =
                     currentDestination?.route?.startsWith("audiobookshelf/player/") == true
-                val showMiniPlayer =
-                    audiobookshelfPlaybackState.sessionId != null && !isOnAudiobookshelfPlayer
+                val isOnMusicPlayer = currentDestination?.route == Destination.MUSIC_PLAYER_ROUTE
+                val isOnAnyPlayer = isOnAudiobookshelfPlayer || isOnMusicPlayer
+                val currentTrack = musicPlaybackState.currentTrack
+                val miniPlayerState: AudioMiniPlayerState? =
+                    when {
+                        isOnAnyPlayer -> null
+                        audiobookshelfPlaybackState.sessionId != null ->
+                            AudioMiniPlayerState.Abs(
+                                title = audiobookshelfPlaybackState.displayTitle,
+                                author = audiobookshelfPlaybackState.displayAuthor,
+                                currentChapter = audiobookshelfPlaybackState.currentChapter,
+                                coverUrl = audiobookshelfPlaybackState.coverUrl,
+                                currentTime = audiobookshelfPlaybackState.currentTime,
+                                duration = audiobookshelfPlaybackState.duration,
+                                isPlaying = audiobookshelfPlaybackState.isPlaying,
+                                isBuffering = audiobookshelfPlaybackState.isBuffering,
+                            )
+                        currentTrack != null ->
+                            AudioMiniPlayerState.Music(
+                                title = currentTrack.name,
+                                artist = currentTrack.artist ?: currentTrack.artists.firstOrNull(),
+                                coverUrl = currentTrack.images?.primary?.toString(),
+                                blurHash = currentTrack.images?.primaryImageBlurHash,
+                                positionMs = musicPlaybackState.positionMs,
+                                durationMs = musicPlaybackState.durationMs,
+                                isPlaying = musicPlaybackState.isPlaying,
+                                isBuffering = musicPlaybackState.isBuffering,
+                            )
+                        else -> null
+                    }
+                androidx.compose.runtime.SideEffect {
+                    android.util.Log.d(
+                        "ABS-MiniPlayer",
+                        "MainNavigation: miniPlayerState=${miniPlayerState?.let { it::class.simpleName } ?: "null"} sessionId=${audiobookshelfPlaybackState.sessionId} musicTrack=${currentTrack?.name} isOnAnyPlayer=$isOnAnyPlayer",
+                    )
+                }
+
                 val globalPlayerOffset by
                     animateDpAsState(
-                        targetValue = if (showMiniPlayer) 112.dp else 0.dp,
+                        targetValue = if (miniPlayerState != null) 112.dp else 0.dp,
                         label = "globalPlayerOffset",
                     )
                 CompositionLocalProvider(
@@ -385,10 +433,17 @@ fun MainNavigation(
                                     LibrariesScreen(
                                         onLibraryClick = { library ->
                                             val route =
-                                                Destination.createLibraryContentRoute(
-                                                    libraryId = library.id.toString(),
-                                                    libraryName = library.name,
-                                                )
+                                                if (library.type == CollectionType.Music) {
+                                                    Destination.createMusicLibraryRoute(
+                                                        libraryId = library.id.toString(),
+                                                        libraryName = library.name,
+                                                    )
+                                                } else {
+                                                    Destination.createLibraryContentRoute(
+                                                        libraryId = library.id.toString(),
+                                                        libraryName = library.name,
+                                                    )
+                                                }
                                             navController.navigate(route)
                                         },
                                         onProfileClick = {
@@ -774,6 +829,21 @@ fun MainNavigation(
                                                 )
                                             )
                                         },
+                                        onMusicAlbumClick = { albumId ->
+                                            navController.navigate(
+                                                Destination.createMusicAlbumRoute(albumId)
+                                            )
+                                        },
+                                        onMusicArtistClick = { artistId ->
+                                            navController.navigate(
+                                                Destination.createMusicArtistRoute(artistId)
+                                            )
+                                        },
+                                        onMusicPlaylistClick = { playlistId ->
+                                            navController.navigate(
+                                                Destination.createMusicPlaylistRoute(playlistId)
+                                            )
+                                        },
                                         modifier = Modifier.fillMaxSize(),
                                         widthSizeClass = widthSizeClass,
                                     )
@@ -945,6 +1015,49 @@ fun MainNavigation(
                                     )
                                 }
 
+                                composable(
+                                    route = Destination.MUSIC_LIBRARY_ROUTE,
+                                    arguments =
+                                        listOf(
+                                            navArgument("libraryId") { type = NavType.StringType },
+                                            navArgument("libraryName") {
+                                                type = NavType.StringType
+                                            },
+                                        ),
+                                ) {
+                                    MusicLibraryScreen(navController = navController)
+                                }
+
+                                composable(
+                                    route = Destination.MUSIC_ALBUM_ROUTE,
+                                    arguments =
+                                        listOf(
+                                            navArgument("albumId") { type = NavType.StringType }
+                                        ),
+                                ) {
+                                    MusicAlbumScreen(navController = navController)
+                                }
+
+                                composable(
+                                    route = Destination.MUSIC_ARTIST_ROUTE,
+                                    arguments =
+                                        listOf(
+                                            navArgument("artistId") { type = NavType.StringType }
+                                        ),
+                                ) {
+                                    MusicArtistScreen(navController = navController)
+                                }
+
+                                composable(
+                                    route = Destination.MUSIC_PLAYLIST_ROUTE,
+                                    arguments =
+                                        listOf(
+                                            navArgument("playlistId") { type = NavType.StringType }
+                                        ),
+                                ) {
+                                    MusicPlaylistScreen(navController = navController)
+                                }
+
                                 composable(Destination.AUDIOBOOKSHELF_LIBRARIES_ROUTE) {
                                     AudiobookshelfLibrariesScreen(
                                         onNavigateToItem = { itemId ->
@@ -1039,6 +1152,13 @@ fun MainNavigation(
                                         animatedVisibilityScope = this@composable,
                                     )
                                 }
+
+                                composable(route = Destination.MUSIC_PLAYER_ROUTE) {
+                                    MusicPlayerScreen(
+                                        onNavigateBack = { navController.popBackStack() },
+                                        animatedVisibilityScope = this@composable,
+                                    )
+                                }
                             }
 
                             SnackbarHost(
@@ -1051,48 +1171,88 @@ fun MainNavigation(
                             )
 
                             AnimatedVisibility(
-                                visible = showMiniPlayer,
+                                visible = miniPlayerState != null,
                                 enter = slideInVertically { it },
                                 exit = slideOutVertically { it },
                                 modifier = Modifier.align(Alignment.BottomCenter),
                             ) {
-                                MiniPlayer(
-                                    modifier = Modifier.navigationBarsPadding(),
-                                    title = audiobookshelfPlaybackState.displayTitle,
-                                    author = audiobookshelfPlaybackState.displayAuthor,
-                                    currentChapter = audiobookshelfPlaybackState.currentChapter,
-                                    coverUrl = audiobookshelfPlaybackState.coverUrl,
-                                    currentTime = audiobookshelfPlaybackState.currentTime,
-                                    duration = audiobookshelfPlaybackState.duration,
-                                    isPlaying = audiobookshelfPlaybackState.isPlaying,
-                                    isBuffering = audiobookshelfPlaybackState.isBuffering,
-                                    animatedVisibilityScope = this@AnimatedVisibility,
-                                    onPlayPauseClick = {
-                                        if (viewModel.audiobookshelfPlayer.isPlaying()) {
-                                            viewModel.audiobookshelfPlayer.pause()
-                                        } else {
-                                            viewModel.audiobookshelfPlayer.play()
-                                        }
-                                    },
-                                    onCloseClick = {
-                                        viewModel.audiobookshelfPlayer.pause()
-                                        coroutineScope.launch {
-                                            viewModel.audiobookshelfPlayer.closeSession()
-                                        }
-                                    },
-                                    onClick = {
-                                        val itemId = audiobookshelfPlaybackState.itemId
-                                        val episodeId = audiobookshelfPlaybackState.episodeId
-                                        if (itemId != null) {
-                                            navController.navigate(
-                                                Destination.createAudiobookshelfPlayerRoute(
-                                                    itemId,
-                                                    episodeId,
-                                                )
-                                            )
-                                        }
-                                    },
-                                )
+                                if (miniPlayerState != null) {
+                                    AudioMiniPlayer(
+                                        state = miniPlayerState,
+                                        modifier = Modifier.navigationBarsPadding(),
+                                        animatedVisibilityScope = this@AnimatedVisibility,
+                                        onPlayPauseClick = {
+                                            when (miniPlayerState) {
+                                                is AudioMiniPlayerState.Abs ->
+                                                    if (viewModel.audiobookshelfPlayer.isPlaying())
+                                                        viewModel.audiobookshelfPlayer.pause()
+                                                    else viewModel.audiobookshelfPlayer.play()
+                                                is AudioMiniPlayerState.Music ->
+                                                    if (musicPlaybackState.isPlaying)
+                                                        viewModel.musicPlaybackManager.pause()
+                                                    else viewModel.musicPlaybackManager.play()
+                                            }
+                                        },
+                                        onSkipNext =
+                                            if (miniPlayerState is AudioMiniPlayerState.Music) {
+                                                { viewModel.musicPlaybackManager.skipToNext() }
+                                            } else null,
+                                        onCloseClick = {
+                                            when (miniPlayerState) {
+                                                is AudioMiniPlayerState.Abs -> {
+                                                    android.util.Log.d(
+                                                        "ABS-MiniPlayer",
+                                                        "MainNavigation: ABS onCloseClick — calling pause()+closeSession()",
+                                                    )
+                                                    viewModel.audiobookshelfPlayer.pause()
+                                                    viewModel.audiobookshelfPlayer.closeSession()
+                                                }
+                                                is AudioMiniPlayerState.Music -> {
+                                                    android.util.Log.d(
+                                                        "ABS-MiniPlayer",
+                                                        "MainNavigation: Music onCloseClick — calling stop()+ACTION_STOP",
+                                                    )
+                                                    viewModel.musicPlaybackManager.stop()
+                                                    navController.context.startService(
+                                                        android.content
+                                                            .Intent(
+                                                                navController.context,
+                                                                com.makd.afinity.player
+                                                                        .AudioService::class
+                                                                    .java,
+                                                            )
+                                                            .setAction(
+                                                                com.makd.afinity.player.AudioService
+                                                                    .ACTION_STOP
+                                                            )
+                                                    )
+                                                }
+                                            }
+                                        },
+                                        onClick = {
+                                            when (miniPlayerState) {
+                                                is AudioMiniPlayerState.Abs -> {
+                                                    val itemId = audiobookshelfPlaybackState.itemId
+                                                    val episodeId =
+                                                        audiobookshelfPlaybackState.episodeId
+                                                    if (itemId != null) {
+                                                        navController.navigate(
+                                                            Destination
+                                                                .createAudiobookshelfPlayerRoute(
+                                                                    itemId,
+                                                                    episodeId,
+                                                                )
+                                                        )
+                                                    }
+                                                }
+                                                is AudioMiniPlayerState.Music ->
+                                                    navController.navigate(
+                                                        Destination.MUSIC_PLAYER_ROUTE
+                                                    )
+                                            }
+                                        },
+                                    )
+                                }
                             }
                         }
                     }

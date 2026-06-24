@@ -106,4 +106,38 @@ object FieldSets {
 
     val CACHE_NEXT_UP =
         listOf(ItemFields.OVERVIEW, ItemFields.PRIMARY_IMAGE_ASPECT_RATIO, ItemFields.AIR_TIME)
+
+    val MUSIC_TRACK =
+        listOf(
+            ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+        )
+
+    val MUSIC_ALBUM =
+        listOf(
+            ItemFields.OVERVIEW,
+            ItemFields.GENRES,
+            ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+            ItemFields.CHILD_COUNT,
+        )
+
+    val MUSIC_ARTIST =
+        listOf(
+            ItemFields.OVERVIEW,
+            ItemFields.GENRES,
+            ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+            ItemFields.CHILD_COUNT,
+        )
+
+    val MUSIC_PLAYLIST =
+        listOf(
+            ItemFields.OVERVIEW,
+            ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+            ItemFields.CHILD_COUNT,
+        )
+
+    val MUSIC_SEARCH =
+        listOf(
+            ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+            ItemFields.CHILD_COUNT,
+        )
 }

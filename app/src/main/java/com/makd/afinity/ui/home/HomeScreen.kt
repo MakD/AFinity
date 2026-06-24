@@ -51,6 +51,7 @@ import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.R.drawable.ic_launcher_monochrome
 import com.makd.afinity.data.models.GenreType
+import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.navigation.Destination
@@ -145,7 +146,7 @@ fun HomeScreen(
                         android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
                 Box(modifier = Modifier.fillMaxSize()) {
-                    val density = LocalDensity.current
+                    LocalDensity.current
                     val statusBarHeight =
                         WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
                     val bottomPadding =
@@ -231,10 +232,17 @@ fun HomeScreen(
                                         libraries = uiState.libraries,
                                         onLibraryClick = { library ->
                                             val route =
-                                                Destination.createLibraryContentRoute(
-                                                    libraryId = library.id.toString(),
-                                                    libraryName = library.name,
-                                                )
+                                                if (library.type == CollectionType.Music) {
+                                                    Destination.createMusicLibraryRoute(
+                                                        libraryId = library.id.toString(),
+                                                        libraryName = library.name,
+                                                    )
+                                                } else {
+                                                    Destination.createLibraryContentRoute(
+                                                        libraryId = library.id.toString(),
+                                                        libraryName = library.name,
+                                                    )
+                                                }
                                             navController.navigate(route)
                                         },
                                         widthSizeClass = widthSizeClass,

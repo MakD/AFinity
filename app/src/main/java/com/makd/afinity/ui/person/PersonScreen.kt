@@ -38,7 +38,7 @@ fun PersonScreen(
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val playerOffset = LocalPlayerOffset.current
+    LocalPlayerOffset.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {

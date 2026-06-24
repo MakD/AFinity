@@ -17,6 +17,7 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
+import com.makd.afinity.player.music.MusicPlaybackManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -40,6 +41,7 @@ constructor(
     val audiobookshelfRepository: AudiobookshelfRepository,
     val audiobookshelfPlayer: AudiobookshelfPlayer,
     val audiobookshelfPlaybackManager: AudiobookshelfPlaybackManager,
+    val musicPlaybackManager: MusicPlaybackManager,
     private val liveTvRepository: LiveTvRepository,
     private val offlineModeManager: OfflineModeManager,
     private val sessionManager: SessionManager,

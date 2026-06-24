@@ -25,11 +25,15 @@ data class CastSessionState(
     val serverBaseUrl: String? = null,
     val enableHevc: Boolean = false,
     val loadedTextTrackIndices: Set<Int> = emptySet(),
+    val isMusicCasting: Boolean = false,
+    val isAbsCasting: Boolean = false,
 )
 
 sealed class CastEvent {
     data class Connected(val deviceName: String) : CastEvent()
     data class Disconnected(val lastPositionMs: Long = 0L) : CastEvent()
+    data class MusicCastDisconnected(val lastPositionMs: Long = 0L) : CastEvent()
+    data class AbsCastDisconnected(val lastPositionSeconds: Double = 0.0) : CastEvent()
     data class PlaybackStarted(val itemId: UUID) : CastEvent()
     data class PlaybackError(val message: String) : CastEvent()
 }
