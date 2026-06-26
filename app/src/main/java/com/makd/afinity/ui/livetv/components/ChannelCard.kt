@@ -25,6 +25,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -42,6 +44,8 @@ fun ChannelCard(
     modifier: Modifier = Modifier,
     showProgramOverlays: Boolean = true,
 ) {
+    val density = LocalDensity.current
+    val screenWidthDp = with(density) { LocalWindowInfo.current.containerSize.width.toDp() }
     val currentProgram = channel.currentProgram
 
     val showProgramImage =
@@ -75,7 +79,10 @@ fun ChannelCard(
                         imageUrl = displayImageUrl.toString(),
                         contentDescription = channel.name,
                         modifier = imageMod,
-                        contentScale = if (showProgramImage) ContentScale.Crop else ContentScale.Fit,
+                        contentScale =
+                            if (showProgramImage) ContentScale.Crop else ContentScale.Fit,
+                        targetWidth = screenWidthDp,
+                        targetHeight = screenWidthDp * 9f / 16f,
                     )
                 } else {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -104,6 +111,8 @@ fun ChannelCard(
                             contentDescription = null,
                             modifier = Modifier.size(28.dp),
                             contentScale = ContentScale.Fit,
+                            targetWidth = 28.dp,
+                            targetHeight = 28.dp,
                         )
                     }
                 }

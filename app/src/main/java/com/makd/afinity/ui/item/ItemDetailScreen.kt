@@ -21,9 +21,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
@@ -37,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -80,6 +87,7 @@ import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.admin.refresh.RefreshMetadataDialog
+import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
@@ -87,9 +95,9 @@ import com.makd.afinity.ui.item.components.BoxSetDetailContent
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.item.components.MovieDetailContent
 import com.makd.afinity.ui.item.components.QualitySelectionDialog
-import com.makd.afinity.ui.item.components.StorageLocationDialog
 import com.makd.afinity.ui.item.components.SeasonDetailContent
 import com.makd.afinity.ui.item.components.SeriesDetailContent
+import com.makd.afinity.ui.item.components.StorageLocationDialog
 import com.makd.afinity.ui.item.components.VersionPickerDialog
 import com.makd.afinity.ui.item.components.shared.ActionButtonsRow
 import com.makd.afinity.ui.item.components.shared.AdminAction
@@ -102,6 +110,7 @@ import com.makd.afinity.ui.item.components.shared.SimilarItemsSection
 import com.makd.afinity.ui.item.components.shared.VideoQualitySelection
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.utils.IntentUtils
+import com.makd.afinity.ui.utils.rememberTopBarOpacity
 import com.makd.afinity.ui.utils.verticalLayoutOffset
 import com.makd.afinity.util.rememberPreferencesRepository
 import kotlinx.coroutines.flow.Flow
@@ -391,61 +400,98 @@ private fun ItemDetailContent(
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-    if (isLandscape) {
-        LandscapeItemDetailContent(
-            item = item,
-            hasPlayableItems = hasPlayableItems,
-            seasons = seasons,
-            boxSetItems = boxSetItems,
-            containingBoxSets = containingBoxSets,
-            similarItems = similarItems,
-            nextEpisode = nextEpisode,
-            baseUrl = baseUrl,
-            specialFeatures = specialFeatures,
-            isInWatchlist = isInWatchlist,
-            episodesPagingData = episodesPagingData,
-            downloadInfo = downloadInfo,
-            tmdbReviews = tmdbReviews,
-            mdbRatings = mdbRatings,
-            mdbRatingBadges = mdbRatingBadges,
-            omdbAwards = omdbAwards,
-            isRatingsFromCache = isRatingsFromCache,
-            movieParts = movieParts,
-            onPlayClick = onPlayClick,
-            onBoxSetItemClick = onBoxSetItemClick,
-            onSpecialFeatureClick = onSpecialFeatureClick,
-            navController = navController,
-            viewModel = viewModel,
-            context = context,
-            widthSizeClass = widthSizeClass,
-        )
-    } else {
-        PortraitItemDetailContent(
-            item = item,
-            hasPlayableItems = hasPlayableItems,
-            seasons = seasons,
-            boxSetItems = boxSetItems,
-            containingBoxSets = containingBoxSets,
-            similarItems = similarItems,
-            nextEpisode = nextEpisode,
-            baseUrl = baseUrl,
-            specialFeatures = specialFeatures,
-            isInWatchlist = isInWatchlist,
-            episodesPagingData = episodesPagingData,
-            downloadInfo = downloadInfo,
-            tmdbReviews = tmdbReviews,
-            mdbRatings = mdbRatings,
-            mdbRatingBadges = mdbRatingBadges,
-            omdbAwards = omdbAwards,
-            isRatingsFromCache = isRatingsFromCache,
-            movieParts = movieParts,
-            onPlayClick = onPlayClick,
-            onBoxSetItemClick = onBoxSetItemClick,
-            onSpecialFeatureClick = onSpecialFeatureClick,
-            navController = navController,
-            viewModel = viewModel,
-            context = context,
-            widthSizeClass = widthSizeClass,
+    val lazyListState = rememberLazyListState()
+    val topBarOpacity by rememberTopBarOpacity(lazyListState)
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (isLandscape) {
+            LandscapeItemDetailContent(
+                item = item,
+                hasPlayableItems = hasPlayableItems,
+                seasons = seasons,
+                boxSetItems = boxSetItems,
+                containingBoxSets = containingBoxSets,
+                similarItems = similarItems,
+                nextEpisode = nextEpisode,
+                baseUrl = baseUrl,
+                specialFeatures = specialFeatures,
+                isInWatchlist = isInWatchlist,
+                episodesPagingData = episodesPagingData,
+                downloadInfo = downloadInfo,
+                tmdbReviews = tmdbReviews,
+                mdbRatings = mdbRatings,
+                mdbRatingBadges = mdbRatingBadges,
+                omdbAwards = omdbAwards,
+                isRatingsFromCache = isRatingsFromCache,
+                movieParts = movieParts,
+                onPlayClick = onPlayClick,
+                onBoxSetItemClick = onBoxSetItemClick,
+                onSpecialFeatureClick = onSpecialFeatureClick,
+                navController = navController,
+                viewModel = viewModel,
+                context = context,
+                widthSizeClass = widthSizeClass,
+                lazyListState = lazyListState,
+            )
+        } else {
+            PortraitItemDetailContent(
+                item = item,
+                hasPlayableItems = hasPlayableItems,
+                seasons = seasons,
+                boxSetItems = boxSetItems,
+                containingBoxSets = containingBoxSets,
+                similarItems = similarItems,
+                nextEpisode = nextEpisode,
+                baseUrl = baseUrl,
+                specialFeatures = specialFeatures,
+                isInWatchlist = isInWatchlist,
+                episodesPagingData = episodesPagingData,
+                downloadInfo = downloadInfo,
+                tmdbReviews = tmdbReviews,
+                mdbRatings = mdbRatings,
+                mdbRatingBadges = mdbRatingBadges,
+                omdbAwards = omdbAwards,
+                isRatingsFromCache = isRatingsFromCache,
+                movieParts = movieParts,
+                onPlayClick = onPlayClick,
+                onBoxSetItemClick = onBoxSetItemClick,
+                onSpecialFeatureClick = onSpecialFeatureClick,
+                navController = navController,
+                viewModel = viewModel,
+                context = context,
+                widthSizeClass = widthSizeClass,
+                lazyListState = lazyListState,
+            )
+        }
+
+        AfinityTopAppBar(
+            title = {
+                IconButton(
+                    onClick = {
+                        navController.navigate(Destination.HOME.route) {
+                            popUpTo(Destination.HOME.route) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    },
+                    modifier = Modifier.size(42.dp),
+                ) {
+                    Box(
+                        modifier =
+                            Modifier.fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.3f), CircleShape)
+                                .clip(CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_home),
+                            contentDescription = "Go to Home",
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
+                }
+            },
+            backgroundOpacity = { topBarOpacity },
         )
     }
 }
@@ -477,6 +523,7 @@ private fun LandscapeItemDetailContent(
     viewModel: ItemDetailViewModel,
     context: Context,
     widthSizeClass: WindowWidthSizeClass,
+    lazyListState: LazyListState = rememberLazyListState(),
 ) {
     val preferencesRepository = rememberPreferencesRepository()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -533,6 +580,7 @@ private fun LandscapeItemDetailContent(
             )
 
             LazyColumn(
+                state = lazyListState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding =
                     PaddingValues(
@@ -714,6 +762,7 @@ private fun PortraitItemDetailContent(
     viewModel: ItemDetailViewModel,
     context: Context,
     widthSizeClass: WindowWidthSizeClass,
+    lazyListState: LazyListState = rememberLazyListState(),
 ) {
     val preferencesRepository = rememberPreferencesRepository()
     val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -724,6 +773,7 @@ private fun PortraitItemDetailContent(
     val playerOffset = LocalPlayerOffset.current
 
     LazyColumn(
+        state = lazyListState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = max(bottomPadding, playerOffset) + 16.dp),
     ) {

@@ -495,6 +495,9 @@ constructor(
             DefaultHttpDataSource.Factory()
                 .setUserAgent(userAgent)
                 .setAllowCrossProtocolRedirects(true)
+                .setDefaultRequestProperties(
+                    mapOf("Authorization" to "MediaBrowser Token=\"${apiClient.accessToken}\"")
+                )
 
         val cacheDataSourceFactory =
             CacheDataSource.Factory()

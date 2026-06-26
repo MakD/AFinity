@@ -7,6 +7,7 @@ import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityTrack
+import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
@@ -31,6 +32,7 @@ data class MusicArtistUiState(
 @HiltViewModel
 class MusicArtistViewModel @Inject constructor(
     private val musicRepository: MusicRepository,
+    private val downloadRepository: DownloadRepository,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -88,6 +90,27 @@ class MusicArtistViewModel @Inject constructor(
             runCatching { musicRepository.setFavorite(artist.id, newFavorite) }
                 .onSuccess { adminChangeBroadcaster.notifyItemChanged(artist.id.toString()) }
                 .onFailure { _uiState.update { it.copy(artist = artist.copy(favorite = artist.favorite)) } }
+        }
+    }
+
+    fun downloadArtist() {
+        viewModelScope.launch {
+            downloadRepository.startArtistDownload(artistId)
+                .onFailure { Timber.e(it, "Failed to start artist download") }
+        }
+    }
+
+    fun downloadAlbum(albumId: UUID) {
+        viewModelScope.launch {
+            downloadRepository.startAlbumDownload(albumId)
+                .onFailure { Timber.e(it, "Failed to start album download for $albumId") }
+        }
+    }
+
+    fun downloadTrack(trackId: UUID) {
+        viewModelScope.launch {
+            downloadRepository.startDownload(trackId, "")
+                .onFailure { Timber.e(it, "Failed to download track $trackId") }
         }
     }
 }

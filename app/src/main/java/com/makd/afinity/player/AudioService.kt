@@ -17,6 +17,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
@@ -345,12 +346,12 @@ class AudioService : MediaSessionService() {
                         mapOf("Authorization" to "MediaBrowser Token=\"$token\"")
                     }
                 }
-            return DefaultHttpDataSource.Factory()
+            val httpFactory = DefaultHttpDataSource.Factory()
                 .setAllowCrossProtocolRedirects(true)
                 .setConnectTimeoutMs(15_000)
                 .setReadTimeoutMs(15_000)
                 .setDefaultRequestProperties(headers)
-                .createDataSource()
+            return DefaultDataSource.Factory(this@AudioService, httpFactory).createDataSource()
         }
     }
 

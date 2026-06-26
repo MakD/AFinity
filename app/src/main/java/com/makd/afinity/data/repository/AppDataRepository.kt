@@ -672,8 +672,8 @@ constructor(
                     launch {
                         val (latestMovies, latestTvSeries, _) =
                             loadHomeSpecificData(libs, existingHighestRated = _highestRated.value)
-                        _latestMovies.value = latestMovies
-                        _latestTvSeries.value = latestTvSeries
+                        if (latestMovies.isNotEmpty()) _latestMovies.value = latestMovies
+                        if (latestTvSeries.isNotEmpty()) _latestTvSeries.value = latestTvSeries
                     }
                 }
                 launch {

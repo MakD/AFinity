@@ -4,8 +4,11 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
+import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityTrack
+import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
@@ -24,11 +27,16 @@ data class MusicAlbumUiState(
     val artistImageUrl: String? = null,
     val isLoading: Boolean = true,
     val error: String? = null,
+    val albumDownloadInfo: DownloadInfo? = null,
+    val trackDownloadInfos: Map<UUID, DownloadInfo> = emptyMap(),
 )
 
 @HiltViewModel
-class MusicAlbumViewModel @Inject constructor(
+class MusicAlbumViewModel
+@Inject
+constructor(
     private val musicRepository: MusicRepository,
+    private val downloadRepository: DownloadRepository,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -40,6 +48,7 @@ class MusicAlbumViewModel @Inject constructor(
 
     init {
         load()
+        observeDownloads()
     }
 
     private fun load() {
@@ -50,11 +59,17 @@ class MusicAlbumViewModel @Inject constructor(
                 val tracksDeferred = async { musicRepository.getAlbumTracks(albumId) }
                 val album = albumDeferred.await()
                 val tracks = tracksDeferred.await()
-                val artistImageUrl = album?.artistId?.let {
-                    "${musicRepository.getBaseUrl()}/Items/$it/Images/Primary?fillHeight=128&quality=90"
-                }
+                val artistImageUrl =
+                    album?.artistId?.let {
+                        "${musicRepository.getBaseUrl()}/Items/$it/Images/Primary?fillHeight=128&quality=90"
+                    }
                 _uiState.update {
-                    it.copy(album = album, tracks = tracks, artistImageUrl = artistImageUrl, isLoading = false)
+                    it.copy(
+                        album = album,
+                        tracks = tracks,
+                        artistImageUrl = artistImageUrl,
+                        isLoading = false,
+                    )
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load album $albumId")
@@ -70,7 +85,9 @@ class MusicAlbumViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { musicRepository.setFavorite(album.id, newFavorite) }
                 .onSuccess { adminChangeBroadcaster.notifyItemChanged(album.id.toString()) }
-                .onFailure { _uiState.update { it.copy(album = album.copy(favorite = album.favorite)) } }
+                .onFailure {
+                    _uiState.update { it.copy(album = album.copy(favorite = album.favorite)) }
+                }
         }
     }
 
@@ -78,11 +95,92 @@ class MusicAlbumViewModel @Inject constructor(
         val tracks = _uiState.value.tracks
         val track = tracks.find { it.id == trackId } ?: return
         val newFavorite = !track.favorite
-        _uiState.update { it.copy(tracks = tracks.map { t -> if (t.id == trackId) t.copy(favorite = newFavorite) else t }) }
+        _uiState.update {
+            it.copy(
+                tracks =
+                    tracks.map { t -> if (t.id == trackId) t.copy(favorite = newFavorite) else t }
+            )
+        }
         viewModelScope.launch {
             runCatching { musicRepository.setFavorite(trackId, newFavorite) }
                 .onFailure { _uiState.update { it.copy(tracks = tracks) } }
         }
+    }
+
+    private fun observeDownloads() {
+        viewModelScope.launch {
+            downloadRepository.getAllDownloadsFlow().collect { allDownloads ->
+                val albumTracks = allDownloads.filter { it.seriesId == albumId.toString() }
+                val albumInfo = aggregateAlbumDownloadInfo(albumTracks)
+                val trackMap =
+                    allDownloads.filter { it.itemType == "Audio" }.associateBy { it.itemId }
+                _uiState.update {
+                    it.copy(albumDownloadInfo = albumInfo, trackDownloadInfos = trackMap)
+                }
+            }
+        }
+    }
+
+    private fun aggregateAlbumDownloadInfo(downloads: List<DownloadInfo>): DownloadInfo? {
+        if (downloads.isEmpty()) return null
+        val status =
+            when {
+                downloads.any { it.status == DownloadStatus.DOWNLOADING } ->
+                    DownloadStatus.DOWNLOADING
+                downloads.any { it.status == DownloadStatus.QUEUED } -> DownloadStatus.QUEUED
+                downloads.all { it.status == DownloadStatus.COMPLETED } -> DownloadStatus.COMPLETED
+                downloads.any { it.status == DownloadStatus.FAILED } -> DownloadStatus.FAILED
+                else -> DownloadStatus.PAUSED
+            }
+        val first = downloads.first()
+        return DownloadInfo(
+            id = albumId,
+            itemId = albumId,
+            itemName = first.seriesName ?: first.itemName,
+            itemType = "Album",
+            sourceId = "",
+            sourceName = "",
+            status = status,
+            progress = downloads.map { it.progress }.average().toFloat(),
+            bytesDownloaded = downloads.sumOf { it.bytesDownloaded },
+            totalBytes = downloads.sumOf { it.totalBytes },
+            filePath = null,
+            error = null,
+            createdAt = downloads.minOf { it.createdAt },
+            updatedAt = downloads.maxOf { it.updatedAt },
+            serverId = first.serverId,
+            userId = first.userId,
+        )
+    }
+
+    fun downloadAlbum() {
+        viewModelScope.launch {
+            downloadRepository.startAlbumDownload(albumId).onFailure {
+                Timber.e(it, "Failed to start album download")
+            }
+        }
+    }
+
+    fun cancelAlbumDownload() {
+        val info = _uiState.value.albumDownloadInfo ?: return
+        viewModelScope.launch {
+            _uiState.value.trackDownloadInfos.values
+                .filter { it.seriesId == albumId.toString() }
+                .forEach { downloadRepository.cancelDownload(it.id) }
+        }
+    }
+
+    fun downloadTrack(trackId: UUID) {
+        viewModelScope.launch {
+            downloadRepository.startDownload(trackId, "").onFailure {
+                Timber.e(it, "Failed to download track $trackId")
+            }
+        }
+    }
+
+    fun cancelTrackDownload(trackId: UUID) {
+        val info = _uiState.value.trackDownloadInfos[trackId] ?: return
+        viewModelScope.launch { downloadRepository.cancelDownload(info.id) }
     }
 
     fun refresh() = load()

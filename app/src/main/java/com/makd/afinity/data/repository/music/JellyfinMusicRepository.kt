@@ -1,6 +1,7 @@
 package com.makd.afinity.data.repository.music
 
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.extensions.toAfinityAlbum
 import com.makd.afinity.data.models.extensions.toAfinityArtist
 import com.makd.afinity.data.models.extensions.toAfinityPlaylist
@@ -13,9 +14,17 @@ import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicFilters
 import com.makd.afinity.data.models.music.MusicSearchResults
+import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.operations.ArtistsApi
 import org.jellyfin.sdk.api.operations.GenresApi
@@ -34,8 +43,12 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class JellyfinMusicRepository @Inject constructor(private val sessionManager: SessionManager) :
-    MusicRepository {
+class JellyfinMusicRepository
+@Inject
+constructor(
+    private val sessionManager: SessionManager,
+    private val databaseRepository: DatabaseRepository,
+) : MusicRepository {
 
     private fun getBaseUrlInternal(): String =
         sessionManager.currentSession.value?.serverUrl?.trimEnd('/') ?: ""
@@ -84,13 +97,12 @@ class JellyfinMusicRepository @Inject constructor(private val sessionManager: Se
                             sortOrder = listOf(sortOrder),
                             filters = itemFilters.ifEmpty { null },
                             genreIds = filters.genreIds.ifEmpty { null },
-                            years =
-                                buildList {
-                                        filters.yearMin?.let { min ->
-                                            val max = filters.yearMax ?: min
-                                            addAll((min..max).toList())
-                                        }
+                            years = buildList {
+                                    filters.yearMin?.let { min ->
+                                        val max = filters.yearMax ?: min
+                                        addAll((min..max).toList())
                                     }
+                                }
                                     .ifEmpty { null },
                             startIndex = startIndex,
                             limit = limit,
@@ -142,13 +154,12 @@ class JellyfinMusicRepository @Inject constructor(private val sessionManager: Se
                             sortBy = listOf(sortBy),
                             sortOrder = listOf(sortOrder),
                             filters = itemFilters.ifEmpty { null },
-                            years =
-                                buildList {
-                                        filters.yearMin?.let { min ->
-                                            val max = filters.yearMax ?: min
-                                            addAll((min..max).toList())
-                                        }
+                            years = buildList {
+                                    filters.yearMin?.let { min ->
+                                        val max = filters.yearMax ?: min
+                                        addAll((min..max).toList())
                                     }
+                                }
                                     .ifEmpty { null },
                             startIndex = startIndex,
                             limit = limit,
@@ -240,16 +251,72 @@ class JellyfinMusicRepository @Inject constructor(private val sessionManager: Se
 
     override suspend fun getAlbumTracks(albumId: UUID): List<AfinityTrack> =
         withContext(Dispatchers.IO) {
+            val session = sessionManager.currentSession.value
+            val serverId = session?.serverId
+            val userId = session?.userId
+
+            fun toFileUri(rawPath: String): String =
+                if (rawPath.startsWith("/"))
+                    android.net.Uri.fromFile(java.io.File(rawPath)).toString()
+                else rawPath
+
+            suspend fun patchLocalPaths(tracks: List<AfinityTrack>): List<AfinityTrack> {
+                if (serverId == null || userId == null) return tracks
+                return tracks.map { track ->
+                    if (track.localFilePath != null) return@map track
+                    val download = databaseRepository.getDownloadByItemId(track.id)
+                    if (download?.status == DownloadStatus.COMPLETED && download.filePath != null) {
+                        track.copy(localFilePath = toFileUri(download.filePath))
+                    } else {
+                        track
+                    }
+                }
+            }
+
+            suspend fun tracksFromDownloads(): List<AfinityTrack> {
+                if (serverId == null || userId == null) return emptyList()
+                return databaseRepository
+                    .getCompletedAudioDownloadsByAlbum(albumId.toString(), serverId, userId)
+                    .map { dl ->
+                        AfinityTrack(
+                            id = dl.itemId,
+                            name = dl.itemName,
+                            albumId =
+                                dl.seriesId?.let {
+                                    runCatching { UUID.fromString(it) }.getOrNull()
+                                },
+                            album = dl.seriesName,
+                            artistId = null,
+                            artist = null,
+                            artists = emptyList(),
+                            indexNumber = dl.episodeNumber,
+                            discNumber = dl.seasonNumber,
+                            productionYear = dl.releaseYear?.toIntOrNull(),
+                            runtimeTicks = dl.runtimeTicks ?: 0L,
+                            playbackPositionTicks = 0L,
+                            played = false,
+                            favorite = false,
+                            playCount = null,
+                            normalizationGain = null,
+                            images =
+                                com.makd.afinity.data.models.media.AfinityImages(
+                                    primary = dl.imageUrl?.let { android.net.Uri.parse(it) }
+                                ),
+                            localFilePath = dl.filePath?.let { toFileUri(it) },
+                        )
+                    }
+            }
+
             try {
                 val apiClient =
                     sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
+                val apiUserId = getCurrentUserId() ?: return@withContext emptyList()
                 val baseUrl = getBaseUrlInternal()
 
                 val response =
                     ItemsApi(apiClient)
                         .getItems(
-                            userId = userId,
+                            userId = apiUserId,
                             parentId = albumId,
                             includeItemTypes = listOf(BaseItemKind.AUDIO),
                             sortBy =
@@ -263,15 +330,21 @@ class JellyfinMusicRepository @Inject constructor(private val sessionManager: Se
                             enableUserData = true,
                             recursive = false,
                         )
-                response.content.items.mapNotNull { dto ->
-                    runCatching { dto.toAfinityTrack(baseUrl) }.getOrNull()
-                }
-            } catch (e: ApiClientException) {
-                Timber.e(e, "Failed to fetch tracks for album: $albumId")
-                emptyList()
+                val tracks =
+                    response.content.items.mapNotNull { dto ->
+                        runCatching { dto.toAfinityTrack(baseUrl) }.getOrNull()
+                    }
+                patchLocalPaths(tracks)
             } catch (e: Exception) {
-                Timber.e(e, "Unexpected error fetching tracks for album: $albumId")
-                emptyList()
+                Timber.e(e, "Failed to fetch tracks for album: $albumId — trying DB cache")
+                if (serverId != null && userId != null) {
+                    val dbTracks =
+                        databaseRepository.getMusicAlbumTracks(albumId, serverId, userId.toString())
+                    val patched = patchLocalPaths(dbTracks)
+                    if (patched.isNotEmpty()) patched else tracksFromDownloads()
+                } else {
+                    emptyList()
+                }
             }
         }
 
@@ -518,13 +591,13 @@ class JellyfinMusicRepository @Inject constructor(private val sessionManager: Se
 
                 if (trackIds.isNotEmpty()) {
                     runCatching {
-                            PlaylistsApi(apiClient)
-                                .addItemToPlaylist(
-                                    playlistId = playlistId,
-                                    ids = trackIds,
-                                    userId = userId,
-                                )
-                        }
+                        PlaylistsApi(apiClient)
+                            .addItemToPlaylist(
+                                playlistId = playlistId,
+                                ids = trackIds,
+                                userId = userId,
+                            )
+                    }
                         .onFailure { Timber.e(it, "createPlaylist: addItemToPlaylist failed") }
                 }
 
@@ -648,6 +721,9 @@ class JellyfinMusicRepository @Inject constructor(private val sessionManager: Se
 
     override suspend fun getLyrics(trackId: UUID): List<AfinityLyricLine> =
         withContext(Dispatchers.IO) {
+            val cached = getCachedLyrics(trackId)
+            if (cached != null) return@withContext cached
+
             try {
                 val apiClient =
                     sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
@@ -1248,6 +1324,41 @@ class JellyfinMusicRepository @Inject constructor(private val sessionManager: Se
                 emptyList()
             }
         }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun getDownloadedTracksFlow(): Flow<List<AfinityTrack>> =
+        sessionManager.currentSession.filterNotNull().flatMapLatest { session ->
+            databaseRepository.getAllMusicTracksFlow(session.serverId, session.userId.toString())
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun getDownloadedAlbumsFlow(): Flow<List<AfinityAlbum>> =
+        sessionManager.currentSession.filterNotNull().flatMapLatest { session ->
+            databaseRepository.getAllMusicAlbumsFlow(session.serverId, session.userId.toString())
+        }
+
+    override suspend fun getCachedLyrics(trackId: UUID): List<AfinityLyricLine>? {
+        val session = sessionManager.currentSession.value ?: return null
+        val json =
+            databaseRepository.getMusicLyricsJson(
+                trackId,
+                session.serverId,
+                session.userId.toString(),
+            ) ?: return null
+        return try {
+            val parsed = Json.parseToJsonElement(json).jsonArray
+            parsed.mapNotNull { element ->
+                val pair = element.jsonArray
+                val text = pair[0].jsonPrimitive.content
+                val startSeconds =
+                    pair[1].jsonPrimitive.content.toDoubleOrNull() ?: return@mapNotNull null
+                AfinityLyricLine(text = text, startSeconds = startSeconds)
+            }
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to parse cached lyrics for track $trackId")
+            null
+        }
+    }
 
     private fun parseUuid(raw: String): UUID? {
         val s = raw.trim()

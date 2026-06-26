@@ -5,6 +5,7 @@ import android.os.StatFs
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
+import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.repository.PreferencesRepository
@@ -34,6 +35,7 @@ constructor(
     private val absDownloadRepository: AbsDownloadRepository,
     private val preferencesRepository: PreferencesRepository,
     private val storageLocationProvider: StorageLocationProvider,
+    val offlineModeManager: OfflineModeManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DownloadsUiState())
@@ -431,6 +433,17 @@ constructor(
             uiState.value.absCompletedDownloads
                 .filter { it.libraryItemId == libraryItemId }
                 .forEach { absDownloadRepository.deleteDownload(it.id) }
+            loadStorageInfo()
+        }
+    }
+
+    fun deleteMusicAlbum(albumSeriesId: String) {
+        viewModelScope.launch {
+            uiState.value.completedDownloads
+                .filter { it.itemType == "Audio" && it.seriesId == albumSeriesId }
+                .forEach {
+                    downloadRepository.deleteDownload(it.id)
+                }
             loadStorageInfo()
         }
     }

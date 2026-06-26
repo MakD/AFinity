@@ -251,10 +251,15 @@ class MusicPlayerViewModel @Inject constructor(
     fun toggleCurrentTrackFavorite() {
         val track = playbackState.value.currentTrack ?: return
         val newFav = !track.favorite
-        playbackManager.updateTrack(track.copy(favorite = newFav))
+        val updated = track.copy(favorite = newFav)
+        playbackManager.updateTrack(updated)
+        queueManager.updateTrackInQueue(updated)
         viewModelScope.launch {
             runCatching { musicRepository.setFavorite(track.id, newFav) }
-                .onFailure { playbackManager.updateTrack(track) }
+                .onFailure {
+                    playbackManager.updateTrack(track)
+                    queueManager.updateTrackInQueue(track)
+                }
         }
     }
 

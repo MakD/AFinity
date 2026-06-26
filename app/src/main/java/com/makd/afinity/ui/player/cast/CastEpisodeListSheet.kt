@@ -159,6 +159,8 @@ private fun CastEpisodeCard(
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
                 blurHash = episode.images?.primaryBlurHash,
+                targetWidth = 140.dp,
+                targetHeight = 79.dp,
             )
 
             Box(

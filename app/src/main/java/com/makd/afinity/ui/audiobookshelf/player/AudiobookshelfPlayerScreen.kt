@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -69,6 +70,12 @@ import com.makd.afinity.ui.audiobookshelf.player.components.PlayerControls
 import com.makd.afinity.ui.audiobookshelf.player.components.SleepTimerDialog
 import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 import com.makd.afinity.ui.player.components.PlaybackStatsOverlay
+
+private fun String.withAbsWidth(px: Int): String {
+    if (startsWith("file://")) return this
+    val sep = if ('?' in this) "&" else "?"
+    return "${this}${sep}width=$px"
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -255,6 +262,11 @@ fun SharedTransitionScope.PortraitPlayerContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        val density = LocalDensity.current
+        val coverWidthPx = with(density) {
+            (LocalConfiguration.current.screenWidthDp.dp - 48.dp).roundToPx()
+        }
+
         Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             Surface(
                 modifier =
@@ -277,7 +289,7 @@ fun SharedTransitionScope.PortraitPlayerContent(
             ) {
                 if (playbackState.coverUrl != null) {
                     AsyncImage(
-                        model = playbackState.coverUrl,
+                        model = playbackState.coverUrl.withAbsWidth(coverWidthPx),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
@@ -462,6 +474,11 @@ fun SharedTransitionScope.LandscapePlayerContent(
         horizontalArrangement = Arrangement.spacedBy(32.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val density = LocalDensity.current
+        val coverWidthPx = with(density) {
+            ((LocalConfiguration.current.screenWidthDp.dp - 64.dp) * 0.45f).roundToPx()
+        }
+
         Box(
             modifier = Modifier.weight(0.45f).fillMaxHeight(),
             contentAlignment = Alignment.Center,
@@ -486,7 +503,7 @@ fun SharedTransitionScope.LandscapePlayerContent(
             ) {
                 if (playbackState.coverUrl != null) {
                     AsyncImage(
-                        model = playbackState.coverUrl,
+                        model = playbackState.coverUrl.withAbsWidth(coverWidthPx),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),

@@ -60,20 +60,221 @@ import com.makd.afinity.util.isInsecurePublicUrl
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+internal fun AudiobookshelfLoginContent(
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: AudiobookshelfLoginViewModel = hiltViewModel(),
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val focusManager = LocalFocusManager.current
+    @Suppress("UNUSED_VARIABLE") val context = LocalContext.current
+    var passwordVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.isLoggedIn) {
+        if (uiState.isLoggedIn) onDismiss()
+    }
+
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 24.dp)
+                .imePadding()
+                .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = stringResource(R.string.pref_audiobookshelf),
+                style =
+                    MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            )
+            Text(
+                text = stringResource(R.string.audiobookshelf_connect),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        InsecureConnectionBannerAbs(serverUrl = uiState.serverUrl)
+
+        OutlinedTextField(
+            value = uiState.serverUrl,
+            onValueChange = viewModel::updateServerUrl,
+            label = { Text(stringResource(R.string.label_server_url)) },
+            placeholder = { Text(stringResource(R.string.abs_server_url_placeholder)) },
+            leadingIcon = {
+                Icon(
+                    painterResource(id = R.drawable.ic_link_rotated),
+                    contentDescription = null,
+                )
+            },
+            enabled = !uiState.isLoggingIn,
+            keyboardOptions =
+                KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
+            keyboardActions =
+                KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+            singleLine = true,
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            OutlinedTextField(
+                value = uiState.username,
+                onValueChange = viewModel::updateUsername,
+                label = { Text(stringResource(R.string.placeholder_username)) },
+                placeholder = { Text(stringResource(R.string.placeholder_username)) },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_user),
+                        contentDescription = null,
+                    )
+                },
+                enabled = !uiState.isLoggingIn,
+                keyboardOptions =
+                    KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Next,
+                    ),
+                keyboardActions =
+                    KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            OutlinedTextField(
+                value = uiState.password,
+                onValueChange = viewModel::updatePassword,
+                label = { Text(stringResource(R.string.login_password_label)) },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_lock_filled),
+                        contentDescription = null,
+                    )
+                },
+                enabled = !uiState.isLoggingIn,
+                visualTransformation =
+                    if (passwordVisible) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    },
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            painter =
+                                painterResource(
+                                    id =
+                                        if (passwordVisible) {
+                                            R.drawable.ic_visibility_off
+                                        } else {
+                                            R.drawable.ic_visibility
+                                        }
+                                ),
+                            contentDescription =
+                                if (passwordVisible) {
+                                    stringResource(R.string.cd_hide_password)
+                                } else {
+                                    stringResource(R.string.cd_show_password)
+                                },
+                        )
+                    }
+                },
+                keyboardOptions =
+                    KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                    ),
+                keyboardActions =
+                    KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                            if (!uiState.isLoggingIn) {
+                                viewModel.login()
+                            }
+                        }
+                    ),
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        AnimatedVisibility(
+            visible = uiState.error != null,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically(),
+        ) {
+            Surface(
+                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.padding(12.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_exclamation_circle),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                    Text(
+                        text = uiState.error ?: "",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Button(
+            onClick = {
+                focusManager.clearFocus()
+                viewModel.login()
+            },
+            enabled =
+                !uiState.isLoggingIn &&
+                    uiState.serverUrl.isNotBlank() &&
+                    uiState.username.isNotBlank(),
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors =
+                ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+        ) {
+            if (uiState.isLoggingIn) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.btn_login),
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun AudiobookshelfBottomSheet(
     onDismiss: () -> Unit,
     sheetState: SheetState,
     modifier: Modifier = Modifier,
     viewModel: AudiobookshelfLoginViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val focusManager = LocalFocusManager.current
-    val context = LocalContext.current
-    var passwordVisible by remember { mutableStateOf(false) }
-    LaunchedEffect(uiState.isLoggedIn) {
-        if (uiState.isLoggedIn) onDismiss()
-    }
-
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -82,201 +283,12 @@ fun AudiobookshelfBottomSheet(
         contentColor = MaterialTheme.colorScheme.onSurface,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
     ) {
-        Column(
-            modifier =
-                Modifier.fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 24.dp)
-                    .imePadding()
-                    .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = stringResource(R.string.pref_audiobookshelf),
-                    style =
-                        MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                )
-                Text(
-                    text = stringResource(R.string.audiobookshelf_connect),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            InsecureConnectionBanner(serverUrl = uiState.serverUrl)
-
-            OutlinedTextField(
-                value = uiState.serverUrl,
-                onValueChange = viewModel::updateServerUrl,
-                label = { Text(stringResource(R.string.label_server_url)) },
-                placeholder = { Text(stringResource(R.string.abs_server_url_placeholder)) },
-                leadingIcon = {
-                    Icon(
-                        painterResource(id = R.drawable.ic_link_rotated),
-                        contentDescription = null,
-                    )
-                },
-                enabled = !uiState.isLoggingIn,
-                keyboardOptions =
-                    KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
-                keyboardActions =
-                    KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
-                singleLine = true,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                OutlinedTextField(
-                    value = uiState.username,
-                    onValueChange = viewModel::updateUsername,
-                    label = { Text(stringResource(R.string.placeholder_username)) },
-                    placeholder = { Text(stringResource(R.string.placeholder_username)) },
-                    leadingIcon = {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_user),
-                            contentDescription = null,
-                        )
-                    },
-                    enabled = !uiState.isLoggingIn,
-                    keyboardOptions =
-                        KeyboardOptions(
-                            keyboardType = KeyboardType.Text,
-                            imeAction = ImeAction.Next,
-                        ),
-                    keyboardActions =
-                        KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
-                    singleLine = true,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-
-                OutlinedTextField(
-                    value = uiState.password,
-                    onValueChange = viewModel::updatePassword,
-                    label = { Text(stringResource(R.string.login_password_label)) },
-                    leadingIcon = {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_lock_filled),
-                            contentDescription = null,
-                        )
-                    },
-                    enabled = !uiState.isLoggingIn,
-                    visualTransformation =
-                        if (passwordVisible) {
-                            VisualTransformation.None
-                        } else {
-                            PasswordVisualTransformation()
-                        },
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                painter =
-                                    painterResource(
-                                        id =
-                                            if (passwordVisible) {
-                                                R.drawable.ic_visibility_off
-                                            } else {
-                                                R.drawable.ic_visibility
-                                            }
-                                    ),
-                                contentDescription =
-                                    if (passwordVisible) {
-                                        stringResource(R.string.cd_hide_password)
-                                    } else {
-                                        stringResource(R.string.cd_show_password)
-                                    },
-                            )
-                        }
-                    },
-                    keyboardOptions =
-                        KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done,
-                        ),
-                    keyboardActions =
-                        KeyboardActions(
-                            onDone = {
-                                focusManager.clearFocus()
-                                if (!uiState.isLoggingIn) {
-                                    viewModel.login()
-                                }
-                            }
-                        ),
-                    singleLine = true,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-
-            AnimatedVisibility(
-                visible = uiState.error != null,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically(),
-            ) {
-                Surface(
-                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.padding(12.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_exclamation_circle),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                        )
-                        Text(
-                            text = uiState.error ?: "",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(
-                onClick = {
-                    focusManager.clearFocus()
-                    viewModel.login()
-                },
-                enabled =
-                    !uiState.isLoggingIn &&
-                        uiState.serverUrl.isNotBlank() &&
-                        uiState.username.isNotBlank(),
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors =
-                    ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-            ) {
-                if (uiState.isLoggingIn) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                } else {
-                    Text(
-                        text = stringResource(R.string.btn_login),
-                        style =
-                            MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-        }
+        AudiobookshelfLoginContent(onDismiss = onDismiss, viewModel = viewModel)
     }
 }
 
 @Composable
-private fun InsecureConnectionBanner(serverUrl: String) {
+private fun InsecureConnectionBannerAbs(serverUrl: String) {
     val showWarning by remember(serverUrl) { derivedStateOf { isInsecurePublicUrl(serverUrl) } }
 
     AnimatedVisibility(

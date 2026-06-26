@@ -185,6 +185,8 @@ fun SharedTransitionScope.AudioMiniPlayer(
                             blurHash = (state as? AudioMiniPlayerState.Music)?.blurHash,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.matchParentSize(),
+                            targetWidth = 48.dp,
+                            targetHeight = 48.dp,
                         )
                     }
                 }

@@ -467,6 +467,8 @@ private fun FavoriteChannelCard(channel: AfinityChannel, onClick: () -> Unit, ca
                         contentDescription = channel.name,
                         modifier = Modifier.fillMaxSize().padding(16.dp),
                         contentScale = ContentScale.Fit,
+                        targetWidth = cardWidth,
+                        targetHeight = cardWidth * 9f / 16f,
                     )
                 } else {
                     Text(

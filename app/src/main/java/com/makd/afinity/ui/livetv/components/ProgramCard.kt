@@ -71,6 +71,8 @@ fun ProgramCard(
                         contentDescription = program.name,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
+                        targetWidth = cardWidth,
+                        targetHeight = cardWidth * 9f / 16f,
                     )
                 } else {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -103,6 +105,8 @@ fun ProgramCard(
                             contentDescription = channel.name,
                             modifier = Modifier.size(28.dp),
                             contentScale = ContentScale.Fit,
+                            targetWidth = 28.dp,
+                            targetHeight = 28.dp,
                         )
                     }
                 }

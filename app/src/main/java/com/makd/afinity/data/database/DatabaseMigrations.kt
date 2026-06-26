@@ -1143,6 +1143,69 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_50_51 =
+        object : Migration(50, 51) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `music_tracks` (
+                        `id` TEXT NOT NULL,
+                        `serverId` TEXT NOT NULL,
+                        `userId` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `artist` TEXT,
+                        `artistId` TEXT,
+                        `albumId` TEXT,
+                        `albumName` TEXT,
+                        `indexNumber` INTEGER,
+                        `discNumber` INTEGER,
+                        `productionYear` INTEGER,
+                        `runtimeTicks` INTEGER NOT NULL,
+                        `images` TEXT,
+                        `localFilePath` TEXT,
+                        `localImagePath` TEXT,
+                        PRIMARY KEY(`id`, `serverId`, `userId`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_music_tracks_serverId_userId` ON `music_tracks` (`serverId`, `userId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_music_tracks_albumId_serverId_userId` ON `music_tracks` (`albumId`, `serverId`, `userId`)")
+
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `music_albums` (
+                        `id` TEXT NOT NULL,
+                        `serverId` TEXT NOT NULL,
+                        `userId` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `artist` TEXT,
+                        `artistId` TEXT,
+                        `productionYear` INTEGER,
+                        `songCount` INTEGER,
+                        `runtimeTicks` INTEGER NOT NULL,
+                        `images` TEXT,
+                        `localImagePath` TEXT,
+                        PRIMARY KEY(`id`, `serverId`, `userId`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_music_albums_serverId_userId` ON `music_albums` (`serverId`, `userId`)")
+
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `music_lyrics` (
+                        `trackId` TEXT NOT NULL,
+                        `serverId` TEXT NOT NULL,
+                        `userId` TEXT NOT NULL,
+                        `lyricsJson` TEXT NOT NULL,
+                        `cachedAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`trackId`, `serverId`, `userId`)
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1194,5 +1257,6 @@ object DatabaseMigrations {
             MIGRATION_47_48,
             MIGRATION_48_49,
             MIGRATION_49_50,
+            MIGRATION_50_51,
         )
 }

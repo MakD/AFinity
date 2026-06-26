@@ -29,6 +29,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -36,6 +37,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -73,9 +75,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -90,17 +96,19 @@ import androidx.paging.compose.itemKey
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
+import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicFilters
 import com.makd.afinity.navigation.Destination
+import com.makd.afinity.player.AudioService
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.home.components.ArtistAlbumsCarousel
 import com.makd.afinity.ui.home.components.LatestAlbumsSection
 import com.makd.afinity.ui.home.components.MusicAlbumRowSection
 import com.makd.afinity.ui.home.components.MusicGenreHomeSection
-import com.makd.afinity.ui.home.components.MusicTrackRowSection
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
@@ -612,8 +620,8 @@ private fun ArtistsGrid(
 @Composable
 private fun PlaylistsGrid(
     gridState: LazyGridState,
-    playlists: List<com.makd.afinity.data.models.music.AfinityPlaylist>,
-    onPlaylistClick: (com.makd.afinity.data.models.music.AfinityPlaylist) -> Unit,
+    playlists: List<AfinityPlaylist>,
+    onPlaylistClick: (AfinityPlaylist) -> Unit,
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(150.dp),
@@ -626,7 +634,7 @@ private fun PlaylistsGrid(
         items(playlists, key = { it.id }) { playlist ->
             MusicAlbumCard(
                 album =
-                    com.makd.afinity.data.models.music.AfinityAlbum(
+                    AfinityAlbum(
                         id = playlist.id,
                         name = playlist.name,
                         artistId = null,
@@ -671,8 +679,7 @@ private fun TabControlsRow(
             Box {
                 TextButton(onClick = { showSortMenu = true }) {
                     Icon(
-                        painter =
-                            androidx.compose.ui.res.painterResource(R.drawable.ic_arrows_sort),
+                        painter = painterResource(R.drawable.ic_arrows_sort),
                         contentDescription = "Sort",
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -696,10 +703,7 @@ private fun TabControlsRow(
                                 if (currentSort == option) {
                                     {
                                         Icon(
-                                            painter =
-                                                androidx.compose.ui.res.painterResource(
-                                                    R.drawable.ic_check
-                                                ),
+                                            painter = painterResource(R.drawable.ic_check),
                                             contentDescription = null,
                                             modifier = Modifier.size(18.dp),
                                             tint = MaterialTheme.colorScheme.primary,
@@ -718,7 +722,7 @@ private fun TabControlsRow(
             ) {
                 IconButton(onClick = { showFilterSheet = true }) {
                     Icon(
-                        painter = androidx.compose.ui.res.painterResource(R.drawable.ic_filter),
+                        painter = painterResource(R.drawable.ic_filter),
                         contentDescription = "Filter",
                         modifier = Modifier.size(20.dp),
                         tint =
@@ -737,10 +741,7 @@ private fun TabControlsRow(
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                     ) {
                         Icon(
-                            painter =
-                                androidx.compose.ui.res.painterResource(
-                                    R.drawable.ic_arrows_shuffle
-                                ),
+                            painter = painterResource(R.drawable.ic_arrows_shuffle),
                             contentDescription = null,
                             modifier = Modifier.size(16.dp),
                         )
@@ -754,10 +755,7 @@ private fun TabControlsRow(
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                     ) {
                         Icon(
-                            painter =
-                                androidx.compose.ui.res.painterResource(
-                                    R.drawable.ic_player_play_filled
-                                ),
+                            painter = painterResource(R.drawable.ic_player_play_filled),
                             contentDescription = null,
                             modifier = Modifier.size(16.dp),
                         )
@@ -883,6 +881,13 @@ private fun MusicAlphabetScroller(
     }
 }
 
+private sealed class MadeForYouItem {
+    data class TrackMix(val title: String, val subtitle: String, val tracks: List<AfinityTrack>) :
+        MadeForYouItem()
+
+    data class AlbumItem(val album: AfinityAlbum) : MadeForYouItem()
+}
+
 @Composable
 private fun MusicHomeContent(
     uiState: MusicLibraryUiState,
@@ -895,9 +900,9 @@ private fun MusicHomeContent(
         ) -> Unit,
     onQueuePlay: (List<AfinityTrack>) -> Unit,
     onInstantMixByTrack: (AfinityTrack) -> Unit,
-    onAlbumClick: (com.makd.afinity.data.models.music.AfinityAlbum) -> Unit,
-    onArtistClick: (com.makd.afinity.data.models.music.AfinityArtist) -> Unit,
-    onPlaylistClick: (java.util.UUID) -> Unit,
+    onAlbumClick: (AfinityAlbum) -> Unit,
+    onArtistClick: (AfinityArtist) -> Unit,
+    onPlaylistClick: (UUID) -> Unit,
 ) {
     val isEmpty =
         uiState.recentlyPlayedTracks.isEmpty() &&
@@ -930,17 +935,50 @@ private fun MusicHomeContent(
         }
     }
 
+    val madeForYouItems =
+        remember(
+            uiState.radioSections,
+            uiState.songsByGenreSections,
+            uiState.randomTracks,
+            uiState.randomAlbums,
+        ) {
+            buildList {
+                uiState.radioSections.forEach { (title, tracks) ->
+                    add(MadeForYouItem.TrackMix(title, "Radio", tracks))
+                }
+                uiState.songsByGenreSections.forEach { (genre, tracks) ->
+                    add(MadeForYouItem.TrackMix("$genre Songs", "Instant Mix", tracks))
+                }
+                if (uiState.randomTracks.isNotEmpty()) {
+                    add(
+                        MadeForYouItem.TrackMix(
+                            "Surprise Me",
+                            "Random Mix",
+                            uiState.randomTracks,
+                        )
+                    )
+                }
+                uiState.randomAlbums.forEach { album ->
+                    add(MadeForYouItem.AlbumItem(album))
+                }
+            }
+        }
+
     val shuffledRows =
         uiState.homeRowOrder
             .mapNotNull { allRows.getOrNull(it) }
+            .filterNot { row ->
+                row is HomeRow.Playlists ||
+                    row is HomeRow.MostPlayed ||
+                    row is HomeRow.Favorites ||
+                    row is HomeRow.RandomSongs ||
+                    row is HomeRow.Radio ||
+                    row is HomeRow.SongsByGenre
+            }
             .filter { row ->
                 when (row) {
-                    HomeRow.MostPlayed -> uiState.mostPlayedAlbums.isNotEmpty()
-                    HomeRow.Favorites -> uiState.favoriteAlbums.isNotEmpty()
                     HomeRow.FavoriteArtists -> uiState.favoriteArtists.isNotEmpty()
                     HomeRow.TopArtists -> uiState.topArtists.isNotEmpty()
-                    HomeRow.RandomSongs -> uiState.randomTracks.isNotEmpty()
-                    HomeRow.Playlists -> uiState.homePlaylists.isNotEmpty()
                     HomeRow.TopRated -> uiState.topRatedAlbums.isNotEmpty()
                     HomeRow.ArtistsToExplore -> uiState.randomArtists.isNotEmpty()
                     HomeRow.Decades -> uiState.albumsByDecade != null
@@ -948,8 +986,7 @@ private fun MusicHomeContent(
                     is HomeRow.TopTracks -> uiState.topTracksSections.size > row.index
                     is HomeRow.Genre -> uiState.musicGenreSections.size > row.index
                     is HomeRow.NewGenreRelease -> uiState.newGenreReleases.size > row.index
-                    is HomeRow.SongsByGenre -> uiState.songsByGenreSections.size > row.index
-                    is HomeRow.Radio -> uiState.radioSections.size > row.index
+                    else -> false
                 }
             }
 
@@ -960,64 +997,89 @@ private fun MusicHomeContent(
     ) {
         item(key = "top_spacer") { Spacer(Modifier.height(16.dp)) }
 
-        if (uiState.randomAlbums.isNotEmpty()) {
-            item(key = "discover") {
-                LatestAlbumsSection(
-                    title = "Discover",
-                    albums = uiState.randomAlbums,
+        if (madeForYouItems.isNotEmpty()) {
+            item(key = "made_for_you_carousel") {
+                MadeForYouCarousel(
+                    title = "Made For You",
+                    items = madeForYouItems,
+                    onPlayMix = onQueuePlay,
                     onAlbumClick = onAlbumClick,
-                    modifier = Modifier.padding(bottom = 24.dp),
+                    modifier = Modifier.padding(bottom = 28.dp),
                 )
             }
         }
-        if (uiState.latestAlbums.isNotEmpty()) {
-            item(key = "latest_albums") {
-                MusicAlbumRowSection(
-                    title = "Recently Added",
-                    albums = uiState.latestAlbums,
-                    onAlbumClick = onAlbumClick,
-                    modifier = Modifier.padding(bottom = 24.dp),
+
+        if (uiState.homePlaylists.isNotEmpty()) {
+            item(key = "pinned_playlists") {
+                MusicPlaylistRowSection(
+                    title = "Your Playlists",
+                    playlists = uiState.homePlaylists,
+                    onPlaylistClick = onPlaylistClick,
+                    modifier = Modifier.padding(bottom = 28.dp),
                 )
             }
         }
+
+        if (uiState.recentlyPlayedTracks.isNotEmpty()) {
+            item(key = "recently_played_tracks") {
+                CompactTrackGridSection(
+                    title = "Jump Back In",
+                    tracks = uiState.recentlyPlayedTracks,
+                    onTrackClick = { track ->
+                        onTrackClickWithQueue(track, uiState.recentlyPlayedTracks)
+                    },
+                    modifier = Modifier.padding(bottom = 28.dp),
+                )
+            }
+        }
+
         if (uiState.recentlyPlayedAlbums.isNotEmpty()) {
             item(key = "recently_played") {
                 MusicAlbumRowSection(
                     title = "Recently Played Albums",
                     albums = uiState.recentlyPlayedAlbums,
                     onAlbumClick = onAlbumClick,
-                    modifier = Modifier.padding(bottom = 24.dp),
+                    modifier = Modifier.padding(bottom = 28.dp),
                 )
             }
         }
-        if (uiState.recentlyPlayedTracks.isNotEmpty()) {
-            item(key = "recently_played_tracks") {
-                MusicTrackRowSection(
-                    title = "Recently Played",
-                    tracks = uiState.recentlyPlayedTracks,
-                    onTrackClick = onTrackClick,
-                    modifier = Modifier.padding(bottom = 24.dp),
+
+        if (uiState.latestAlbums.isNotEmpty()) {
+            item(key = "latest_albums") {
+                MusicAlbumRowSection(
+                    title = "Recently Added",
+                    albums = uiState.latestAlbums,
+                    onAlbumClick = onAlbumClick,
+                    modifier = Modifier.padding(bottom = 28.dp),
+                )
+            }
+        }
+
+        if (uiState.mostPlayedAlbums.isNotEmpty()) {
+            item(key = "pinned_most_played") {
+                MusicAlbumRowSection(
+                    title = "Most Played",
+                    albums = uiState.mostPlayedAlbums,
+                    onAlbumClick = onAlbumClick,
+                    modifier = Modifier.padding(bottom = 28.dp),
+                )
+            }
+        }
+
+        if (uiState.favoriteAlbums.isNotEmpty()) {
+            item(key = "pinned_favorites") {
+                MusicAlbumRowSection(
+                    title = "Favorites",
+                    albums = uiState.favoriteAlbums,
+                    onAlbumClick = onAlbumClick,
+                    modifier = Modifier.padding(bottom = 28.dp),
                 )
             }
         }
 
         items(shuffledRows, key = { it.key() }) { row ->
-            val m = Modifier.padding(bottom = 24.dp)
+            val m = Modifier.padding(bottom = 28.dp)
             when (row) {
-                HomeRow.MostPlayed ->
-                    MusicAlbumRowSection(
-                        title = "Most Played",
-                        albums = uiState.mostPlayedAlbums,
-                        onAlbumClick = onAlbumClick,
-                        modifier = m,
-                    )
-                HomeRow.Favorites ->
-                    MusicAlbumRowSection(
-                        title = "Favorites",
-                        albums = uiState.favoriteAlbums,
-                        onAlbumClick = onAlbumClick,
-                        modifier = m,
-                    )
                 HomeRow.FavoriteArtists ->
                     MusicArtistsRow(
                         title = "Favorite Artists",
@@ -1030,40 +1092,6 @@ private fun MusicHomeContent(
                         title = "Your Top Artists",
                         artists = uiState.topArtists,
                         onArtistClick = onArtistClick,
-                        modifier = m,
-                    )
-                HomeRow.RandomSongs ->
-                    MusicTrackRowSection(
-                        title = "Random Songs",
-                        tracks = uiState.randomTracks,
-                        onTrackClick = { track ->
-                            onTrackClickWithQueue(track, uiState.randomTracks)
-                        },
-                        modifier = m,
-                    )
-                HomeRow.Playlists ->
-                    MusicAlbumRowSection(
-                        title = "Playlists",
-                        albums =
-                            uiState.homePlaylists.map { p ->
-                                com.makd.afinity.data.models.music.AfinityAlbum(
-                                    id = p.id,
-                                    name = p.name,
-                                    artistId = null,
-                                    artist = null,
-                                    artists = emptyList(),
-                                    productionYear = null,
-                                    songCount = p.songCount,
-                                    runtimeTicks = p.runtimeTicks,
-                                    genres = emptyList(),
-                                    overview = p.overview,
-                                    favorite = p.favorite,
-                                    played = false,
-                                    playCount = null,
-                                    images = p.images,
-                                )
-                            },
-                        onAlbumClick = { album -> onPlaylistClick(album.id) },
                         modifier = m,
                     )
                 HomeRow.TopRated ->
@@ -1100,7 +1128,7 @@ private fun MusicHomeContent(
                     }
                 is HomeRow.TopTracks ->
                     uiState.topTracksSections.getOrNull(row.index)?.let { (artistName, tracks) ->
-                        MusicTrackRowSection(
+                        CompactTrackGridSection(
                             title = "Top Tracks: $artistName",
                             tracks = tracks,
                             onTrackClick = { track -> onTrackClickWithQueue(track, tracks) },
@@ -1125,26 +1153,7 @@ private fun MusicHomeContent(
                             modifier = m,
                         )
                     }
-                is HomeRow.SongsByGenre ->
-                    uiState.songsByGenreSections.getOrNull(row.index)?.let { (genre, tracks) ->
-                        MusicTracksCard(
-                            title = "$genre Songs",
-                            tracks = tracks,
-                            subtitle = "Instant Mix",
-                            onPlay = { tracks.firstOrNull()?.let { onInstantMixByTrack(it) } },
-                            modifier = m,
-                        )
-                    }
-                is HomeRow.Radio ->
-                    uiState.radioSections.getOrNull(row.index)?.let { (title, tracks) ->
-                        MusicTracksCard(
-                            title = title,
-                            tracks = tracks,
-                            subtitle = "Radio",
-                            onPlay = { onQueuePlay(tracks) },
-                            modifier = m,
-                        )
-                    }
+                else -> Unit
             }
         }
     }
@@ -1202,6 +1211,58 @@ private sealed class HomeRow {
 }
 
 @Composable
+private fun MadeForYouCarousel(
+    title: String,
+    items: List<MadeForYouItem>,
+    onPlayMix: (List<AfinityTrack>) -> Unit,
+    onAlbumClick: (AfinityAlbum) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (items.isEmpty()) return
+    Column(modifier = modifier) {
+        Text(
+            text = title,
+            modifier = Modifier.padding(start = 14.dp, bottom = 12.dp),
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+        )
+        LazyRow(
+            modifier = Modifier.padding(horizontal = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            items(
+                items,
+                key = { item ->
+                    when (item) {
+                        is MadeForYouItem.TrackMix -> "mix_${item.title}"
+                        is MadeForYouItem.AlbumItem -> "album_${item.album.id}"
+                    }
+                },
+            ) { item ->
+                val cardWidth = LocalConfiguration.current.screenWidthDp.dp * 0.85f
+                when (item) {
+                    is MadeForYouItem.TrackMix -> {
+                        MusicTracksCard(
+                            title = item.title,
+                            subtitle = item.subtitle,
+                            tracks = item.tracks,
+                            onPlay = { onPlayMix(item.tracks) },
+                            modifier = Modifier.width(cardWidth),
+                        )
+                    }
+                    is MadeForYouItem.AlbumItem -> {
+                        HeroDiscoverCard(
+                            album = item.album,
+                            onAlbumClick = { onAlbumClick(item.album) },
+                            modifier = Modifier.width(cardWidth),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun MusicTracksCard(
     title: String,
     tracks: List<AfinityTrack>,
@@ -1213,19 +1274,16 @@ private fun MusicTracksCard(
     val blurHash = tracks.firstOrNull()?.images?.primaryImageBlurHash
     Box(
         modifier =
-            modifier
-                .padding(horizontal = 14.dp)
-                .fillMaxWidth()
-                .height(220.dp)
-                .clip(MaterialTheme.shapes.extraLarge)
-                .clickable(onClick = onPlay)
+            modifier.height(220.dp).clip(RoundedCornerShape(16.dp)).clickable(onClick = onPlay)
     ) {
-        com.makd.afinity.ui.components.AsyncImage(
+        AsyncImage(
             imageUrl = imageUrl,
             contentDescription = title,
             blurHash = blurHash,
             modifier = Modifier.fillMaxSize(),
-            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            contentScale = ContentScale.Crop,
+            targetWidth = LocalConfiguration.current.screenWidthDp.dp,
+            targetHeight = 220.dp,
         )
         Box(
             modifier =
@@ -1251,12 +1309,17 @@ private fun MusicTracksCard(
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Column(
+                    modifier = Modifier.weight(1f).padding(end = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
                     Text(
                         text = title,
                         style =
                             MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = subtitle,
@@ -1272,10 +1335,7 @@ private fun MusicTracksCard(
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        painter =
-                            androidx.compose.ui.res.painterResource(
-                                R.drawable.ic_player_play_filled
-                            ),
+                        painter = painterResource(R.drawable.ic_player_play_filled),
                         contentDescription = "Play",
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(20.dp),
@@ -1287,10 +1347,60 @@ private fun MusicTracksCard(
 }
 
 @Composable
+private fun HeroDiscoverCard(
+    album: AfinityAlbum,
+    onAlbumClick: (AfinityAlbum) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier.height(220.dp).clip(RoundedCornerShape(16.dp)).clickable {
+                onAlbumClick(album)
+            }
+    ) {
+        AsyncImage(
+            imageUrl = album.images.primary?.toString(),
+            contentDescription = album.name,
+            blurHash = album.images.primaryImageBlurHash,
+            targetWidth = 300.dp,
+            targetHeight = 220.dp,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+        )
+        Box(
+            modifier =
+                Modifier.fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)),
+                            startY = 100f,
+                        )
+                    )
+        )
+        Column(modifier = Modifier.align(Alignment.BottomStart).padding(16.dp)) {
+            Text(
+                text = album.name,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = album.artist ?: "",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White.copy(alpha = 0.75f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
 internal fun MusicArtistsRow(
     title: String,
-    artists: List<com.makd.afinity.data.models.music.AfinityArtist>,
-    onArtistClick: (com.makd.afinity.data.models.music.AfinityArtist) -> Unit,
+    artists: List<AfinityArtist>,
+    onArtistClick: (AfinityArtist) -> Unit,
     modifier: Modifier = Modifier,
     horizontalPadding: androidx.compose.ui.unit.Dp = 14.dp,
 ) {
@@ -1317,6 +1427,122 @@ internal fun MusicArtistsRow(
     }
 }
 
+@Composable
+private fun MusicPlaylistRowSection(
+    title: String,
+    playlists: List<AfinityPlaylist>,
+    onPlaylistClick: (UUID) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = title,
+            modifier = Modifier.padding(start = 14.dp, bottom = 12.dp),
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+        )
+        LazyRow(
+            modifier = Modifier.padding(horizontal = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(playlists, key = { it.id }) { playlist ->
+                Box(
+                    modifier =
+                        Modifier.width(200.dp)
+                            .height(100.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { onPlaylistClick(playlist.id) }
+                ) {
+                    AsyncImage(
+                        imageUrl = playlist.images.primary?.toString(),
+                        contentDescription = playlist.name,
+                        blurHash = playlist.images.primaryImageBlurHash,
+                        targetWidth = 200.dp,
+                        targetHeight = 100.dp,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                    Box(
+                        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f))
+                    )
+                    Text(
+                        text = playlist.name,
+                        color = Color.White,
+                        modifier = Modifier.align(Alignment.BottomStart).padding(12.dp),
+                        style =
+                            MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CompactTrackGridSection(
+    title: String,
+    tracks: List<AfinityTrack>,
+    onTrackClick: (AfinityTrack) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val rowsCount = if (tracks.size >= 6) 3 else if (tracks.size >= 3) 2 else 1
+    val gridHeight = (rowsCount * 64 + (rowsCount - 1) * 12).dp
+
+    Column(modifier = modifier) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            modifier = Modifier.padding(start = 14.dp, bottom = 12.dp),
+        )
+        LazyHorizontalGrid(
+            rows = GridCells.Fixed(rowsCount),
+            modifier = Modifier.height(gridHeight).padding(horizontal = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(tracks, key = { it.id }) { track ->
+                Row(
+                    modifier =
+                        Modifier.width(280.dp).clip(RoundedCornerShape(8.dp)).clickable {
+                            onTrackClick(track)
+                        },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AsyncImage(
+                        imageUrl = track.images.primary?.toString(),
+                        contentDescription = null,
+                        blurHash = track.images.primaryImageBlurHash,
+                        targetWidth = 56.dp,
+                        targetHeight = 56.dp,
+                        modifier = Modifier.size(56.dp).clip(RoundedCornerShape(6.dp)),
+                        contentScale = ContentScale.Crop,
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = track.name,
+                            style =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = track.artist ?: track.artists.firstOrNull() ?: "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 private interface AbsPlayerEntryPoint {
@@ -1332,7 +1558,6 @@ internal fun startMusicService(context: Context) {
         .audiobookshelfPlayer()
         .release()
     context.startService(
-        Intent(context, com.makd.afinity.player.AudioService::class.java)
-            .setAction(com.makd.afinity.player.AudioService.ACTION_ENGINE_MUSIC)
+        Intent(context, AudioService::class.java).setAction(AudioService.ACTION_ENGINE_MUSIC)
     )
 }

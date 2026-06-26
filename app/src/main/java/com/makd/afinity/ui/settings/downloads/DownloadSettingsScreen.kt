@@ -72,7 +72,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
-import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.download.DownloadInfo
@@ -89,10 +88,10 @@ fun DownloadSettingsScreen(
     onNavigateToAbsItem: (libraryItemId: String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: DownloadsViewModel = hiltViewModel(),
-    offlineModeManager: OfflineModeManager,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isOffline by offlineModeManager.isOffline.collectAsStateWithLifecycle(initialValue = false)
+    val isOffline by
+        viewModel.offlineModeManager.isOffline.collectAsStateWithLifecycle(initialValue = false)
     val snackbarHostState = remember { SnackbarHostState() }
     val playerOffset = LocalPlayerOffset.current
 
@@ -171,6 +170,22 @@ fun DownloadSettingsScreen(
             }
         val absUniqueItemCount = absBooks.size + absPodcastGroups.size
 
+        val musicDownloads =
+            remember(uiState.completedDownloads) {
+                uiState.completedDownloads.filter { it.itemType == "Audio" }
+            }
+        val videoDownloads =
+            remember(uiState.completedDownloads) {
+                uiState.completedDownloads.filter { it.itemType != "Audio" }
+            }
+        val musicAlbumGroups =
+            remember(musicDownloads) {
+                musicDownloads.filter { it.seriesId != null }.groupBy { it.seriesId.orEmpty() }
+            }
+        val standaloneMusicTracks =
+            remember(musicDownloads) { musicDownloads.filter { it.seriesId == null } }
+        val musicUniqueItemCount = musicAlbumGroups.size + standaloneMusicTracks.size
+
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding =
@@ -188,9 +203,10 @@ fun DownloadSettingsScreen(
                     totalStorageUsedAllServers = uiState.totalStorageUsedAllServers,
                     downloadCount =
                         uiState.activeDownloads.size +
-                            uiState.completedDownloads.size +
+                            videoDownloads.size +
                             uiState.absActiveDownloads.size +
-                            absUniqueItemCount,
+                            absUniqueItemCount +
+                            musicUniqueItemCount,
                     isOffline = isOffline,
                     wifiOnly = uiState.downloadOverWifiOnly,
                     maxConcurrentDownloads = uiState.maxConcurrentDownloads,
@@ -276,7 +292,7 @@ fun DownloadSettingsScreen(
                 }
             }
 
-            val allCompletedCount = uiState.completedDownloads.size + absUniqueItemCount
+            val allCompletedCount = videoDownloads.size + absUniqueItemCount + musicUniqueItemCount
             if (allCompletedCount > 0) {
                 item {
                     SectionHeader(
@@ -289,8 +305,8 @@ fun DownloadSettingsScreen(
                     )
                 }
 
-                if (uiState.completedDownloads.isNotEmpty()) {
-                    if (absUniqueItemCount > 0) {
+                if (videoDownloads.isNotEmpty()) {
+                    if (absUniqueItemCount > 0 || musicUniqueItemCount > 0) {
                         item {
                             SectionHeader(
                                 title = stringResource(R.string.section_videos),
@@ -298,8 +314,7 @@ fun DownloadSettingsScreen(
                             )
                         }
                     }
-                    items(uiState.completedDownloads, key = { "jf_completed_${it.id}" }) { download
-                        ->
+                    items(videoDownloads, key = { "jf_completed_${it.id}" }) { download ->
                         val unavailableVolumeIds =
                             uiState.volumeStorageStats
                                 .filter { !it.isAvailable }
@@ -355,6 +370,31 @@ fun DownloadSettingsScreen(
                                 formatSize = viewModel::formatStorageSize,
                             )
                         }
+                    }
+                }
+
+                if (musicAlbumGroups.isNotEmpty() || standaloneMusicTracks.isNotEmpty()) {
+                    item {
+                        SectionHeader(
+                            title = stringResource(R.string.section_download_music),
+                            modifier = Modifier.padding(horizontal = 32.dp, vertical = 4.dp),
+                        )
+                    }
+                    musicAlbumGroups.forEach { (albumSeriesId, tracks) ->
+                        item(key = "music_album_$albumSeriesId") {
+                            MusicAlbumGroupRow(
+                                tracks = tracks,
+                                onDelete = { viewModel.deleteMusicAlbum(albumSeriesId) },
+                                formatSize = viewModel::formatStorageSize,
+                            )
+                        }
+                    }
+                    items(standaloneMusicTracks, key = { "music_track_${it.id}" }) { download ->
+                        MusicTrackRow(
+                            download = download,
+                            onDelete = viewModel::deleteDownload,
+                            formatSize = viewModel::formatStorageSize,
+                        )
                     }
                 }
             }
@@ -660,14 +700,17 @@ fun ActiveDownloadCard(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            val imgWidth = if (isEpisode) 120.dp else 80.dp
             AsyncImage(
                 imageUrl = download.imageUrl,
                 contentDescription = download.itemName,
                 modifier =
-                    Modifier.width(if (isEpisode) 120.dp else 80.dp)
+                    Modifier.width(imgWidth)
                         .aspectRatio(imageRatio)
                         .clip(RoundedCornerShape(12.dp)),
                 contentScale = ContentScale.Crop,
+                targetWidth = imgWidth,
+                targetHeight = imgWidth / imageRatio,
             )
 
             Column(modifier = Modifier.weight(1f)) {
@@ -852,6 +895,8 @@ fun CompletedDownloadRow(
                         .clip(RoundedCornerShape(6.dp))
                         .alpha(if (isVolumeAvailable) 1f else 0.4f),
                 contentScale = ContentScale.Crop,
+                targetWidth = 56.dp,
+                targetHeight = 84.dp,
             )
         },
         headlineContent = {
@@ -1181,6 +1226,8 @@ fun AbsActiveDownloadCard(
                 contentDescription = download.title,
                 modifier = Modifier.width(64.dp).aspectRatio(1f).clip(RoundedCornerShape(12.dp)),
                 contentScale = ContentScale.Crop,
+                targetWidth = 64.dp,
+                targetHeight = 64.dp,
             )
 
             Column(modifier = Modifier.weight(1f)) {
@@ -1296,6 +1343,8 @@ fun AbsCompletedDownloadRow(
                 contentDescription = null,
                 modifier = Modifier.width(56.dp).aspectRatio(1f).clip(RoundedCornerShape(6.dp)),
                 contentScale = ContentScale.Crop,
+                targetWidth = 56.dp,
+                targetHeight = 56.dp,
             )
         },
         headlineContent = {
@@ -1351,6 +1400,8 @@ fun AbsPodcastGroupRow(
                 contentDescription = null,
                 modifier = Modifier.width(56.dp).aspectRatio(1f).clip(RoundedCornerShape(6.dp)),
                 contentScale = ContentScale.Crop,
+                targetWidth = 56.dp,
+                targetHeight = 56.dp,
             )
         },
         headlineContent = {
@@ -1516,4 +1567,109 @@ fun ImageCacheSettingsCard(
             }
         }
     }
+}
+
+@Composable
+fun MusicAlbumGroupRow(
+    tracks: List<DownloadInfo>,
+    onDelete: () -> Unit,
+    formatSize: (Long) -> String,
+) {
+    val first = tracks.first()
+    val albumName = first.seriesName?.takeIf { it.isNotBlank() } ?: first.itemName
+    val totalBytes = tracks.sumOf { it.totalBytes }
+    val count = tracks.size
+    val subtitleText = "$count track${if (count > 1) "s" else ""} · ${formatSize(totalBytes)}"
+
+    ListItem(
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        leadingContent = {
+            AsyncImage(
+                imageUrl = first.imageUrl,
+                contentDescription = null,
+                modifier = Modifier.width(56.dp).aspectRatio(1f).clip(RoundedCornerShape(6.dp)),
+                contentScale = ContentScale.Crop,
+                targetWidth = 56.dp,
+                targetHeight = 56.dp,
+            )
+        },
+        headlineContent = {
+            Text(
+                text = albumName,
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        supportingContent = {
+            Text(
+                text = subtitleText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        trailingContent = {
+            IconButton(onClick = onDelete) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_delete),
+                    contentDescription = stringResource(R.string.cd_delete_download),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                )
+            }
+        },
+    )
+}
+
+@Composable
+fun MusicTrackRow(
+    download: DownloadInfo,
+    onDelete: (UUID) -> Unit,
+    formatSize: (Long) -> String,
+) {
+    val subtitleText = buildString {
+        if (!download.seriesName.isNullOrBlank()) append("${download.seriesName} · ")
+        append(formatSize(download.totalBytes))
+    }
+
+    ListItem(
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        leadingContent = {
+            AsyncImage(
+                imageUrl = download.imageUrl,
+                contentDescription = null,
+                modifier = Modifier.width(56.dp).aspectRatio(1f).clip(RoundedCornerShape(6.dp)),
+                contentScale = ContentScale.Crop,
+                targetWidth = 56.dp,
+                targetHeight = 56.dp,
+            )
+        },
+        headlineContent = {
+            Text(
+                text = download.itemName,
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        supportingContent = {
+            Text(
+                text = subtitleText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        trailingContent = {
+            IconButton(onClick = { onDelete(download.id) }) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_delete),
+                    contentDescription = stringResource(R.string.cd_delete_download),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                )
+            }
+        },
+    )
 }

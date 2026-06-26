@@ -904,26 +904,6 @@ fun MainNavigation(
                                         onLogoutComplete = {
                                             // Logout handled by MainActivity observing auth state
                                         },
-                                        onLicensesClick = {
-                                            val route = Destination.createLicensesRoute()
-                                            navController.navigate(route)
-                                        },
-                                        onDownloadClick = {
-                                            val route = Destination.createDownloadSettingsRoute()
-                                            navController.navigate(route)
-                                        },
-                                        onPlayerOptionsClick = {
-                                            val route = Destination.createPlayerOptionsRoute()
-                                            navController.navigate(route)
-                                        },
-                                        onAppearanceOptionsClick = {
-                                            val route = Destination.createAppearanceOptionsRoute()
-                                            navController.navigate(route)
-                                        },
-                                        onServerManagementClick = {
-                                            val route = Destination.createServerManagementRoute()
-                                            navController.navigate(route)
-                                        },
                                     )
                                 }
 
@@ -935,7 +915,6 @@ fun MainNavigation(
                                                 Destination.createAudiobookshelfItemRoute(itemId)
                                             )
                                         },
-                                        offlineModeManager = offlineModeManager,
                                         modifier = Modifier.fillMaxSize(),
                                     )
                                 }
@@ -1077,6 +1056,12 @@ fun MainNavigation(
                                         listOf(navArgument("itemId") { type = NavType.StringType }),
                                 ) {
                                     AudiobookshelfItemScreen(
+                                        onNavigateHome = {
+                                            navController.navigate(Destination.HOME.route) {
+                                                popUpTo(Destination.HOME.route) { inclusive = false }
+                                                launchSingleTop = true
+                                            }
+                                        },
                                         onNavigateToPlayer = {
                                             itemId,
                                             episodeId,
@@ -1113,6 +1098,12 @@ fun MainNavigation(
                                         ),
                                 ) {
                                     AudiobookshelfSeriesScreen(
+                                        onNavigateHome = {
+                                            navController.navigate(Destination.HOME.route) {
+                                                popUpTo(Destination.HOME.route) { inclusive = false }
+                                                launchSingleTop = true
+                                            }
+                                        },
                                         onNavigateToPlayer = { itemId, episodeId, startPosition ->
                                             navController.navigate(
                                                 Destination.createAudiobookshelfPlayerRoute(

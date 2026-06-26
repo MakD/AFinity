@@ -53,6 +53,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -393,6 +395,12 @@ private fun CastCoverArt(currentItem: AfinityItem?, posterUrl: String?, isLandsc
     val cornerRadius = if (isLandscape) 24.dp else 32.dp
     val elevation = if (isLandscape) 16.dp else 24.dp
 
+    val density = LocalDensity.current
+    val windowInfo = LocalWindowInfo.current
+    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+    val targetWidth = screenWidthDp * posterFraction
+    val targetHeight = targetWidth / aspectRatio
+
     Surface(
         modifier =
             Modifier.fillMaxWidth(posterFraction)
@@ -412,6 +420,8 @@ private fun CastCoverArt(currentItem: AfinityItem?, posterUrl: String?, isLandsc
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
                 blurHash = null,
+                targetWidth = targetWidth,
+                targetHeight = targetHeight,
             )
         } else {
             Box(

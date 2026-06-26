@@ -36,6 +36,7 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.AfinitySegmentType
+import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
 import java.util.Locale
 
@@ -52,7 +53,7 @@ fun NextUpSkipOverlay(
 
     if (nextEpisode != null && segment.type == AfinitySegmentType.OUTRO) {
         Card(
-            modifier = modifier.widthIn(max = 320.dp),
+            modifier = modifier.widthIn(max = 420.dp),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = overlayColor),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -66,6 +67,8 @@ fun NextUpSkipOverlay(
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize(),
+                            targetWidth = 320.dp,
+                            targetHeight = 180.dp,
                         )
                     } else {
                         Box(
@@ -106,20 +109,22 @@ fun NextUpSkipOverlay(
                             modifier = Modifier.weight(1f),
                         )
 
-                        nextEpisode.communityRating?.let { rating ->
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_star),
-                                    contentDescription = "Rating",
-                                    tint = Color(0xFFFFC107),
-                                    modifier = Modifier.size(12.dp),
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = String.format(Locale.ROOT, "%.1f", rating),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White.copy(alpha = 0.8f),
-                                )
+                        if (LocalShowRatings.current) {
+                            nextEpisode.communityRating?.let { rating ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                        contentDescription = null,
+                                        tint = Color.Unspecified,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = String.format(Locale.ROOT, "%.1f", rating),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color.White.copy(alpha = 0.8f),
+                                    )
+                                }
                             }
                         }
                     }
@@ -143,7 +148,6 @@ fun NextUpSkipOverlay(
                                 color = Color.White.copy(alpha = 0.55f),
                                 maxLines = 3,
                                 overflow = TextOverflow.Ellipsis,
-                                lineHeight = 15.sp,
                                 modifier = Modifier.weight(1f).padding(end = 12.dp),
                             )
                         } else {

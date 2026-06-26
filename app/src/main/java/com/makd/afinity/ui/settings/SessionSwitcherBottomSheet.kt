@@ -49,18 +49,15 @@ import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.ui.components.AsyncImage
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SessionSwitcherBottomSheet(
+internal fun SessionSwitcherContent(
     onDismiss: () -> Unit,
     onAddAccountClick: (Server) -> Unit,
-    sheetState: SheetState,
     modifier: Modifier = Modifier,
     viewModel: SessionSwitcherViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(state.error) {
         state.error?.let { error ->
@@ -76,6 +73,75 @@ fun SessionSwitcherBottomSheet(
         }
     }
 
+    Column(modifier = modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_user),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp),
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = stringResource(R.string.session_switcher_title),
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Crossfade(targetState = state.isSwitching, label = "session_switch_animation") {
+            isSwitching ->
+            if (isSwitching) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (state.sessionGroups.isEmpty()) {
+                EmptySessionsState(modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp))
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                ) {
+                    items(items = state.sessionGroups, key = { it.server.id }) { sessionGroup ->
+                        ServerSessionGroupItem(
+                            sessionGroup = sessionGroup,
+                            onSessionClick = { session ->
+                                viewModel.switchSession(session.serverId, session.userId)
+                                onDismiss()
+                            },
+                            onAddAccountClick = {
+                                onDismiss()
+                                onAddAccountClick(sessionGroup.server)
+                            },
+                        )
+                    }
+                }
+            }
+        }
+
+        SnackbarHost(hostState = snackbarHostState)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SessionSwitcherBottomSheet(
+    onDismiss: () -> Unit,
+    onAddAccountClick: (Server) -> Unit,
+    sheetState: SheetState,
+    modifier: Modifier = Modifier,
+    viewModel: SessionSwitcherViewModel = hiltViewModel(),
+) {
+    val coroutineScope = rememberCoroutineScope()
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -83,68 +149,22 @@ fun SessionSwitcherBottomSheet(
         containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 0.dp,
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_user),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp),
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = stringResource(R.string.session_switcher_title),
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Crossfade(targetState = state.isSwitching, label = "session_switch_animation") {
-                isSwitching ->
-                if (isSwitching) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                } else if (state.sessionGroups.isEmpty()) {
-                    EmptySessionsState(modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp))
-                } else {
-                    LazyColumn(
-                        contentPadding = PaddingValues(vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(24.dp),
-                    ) {
-                        items(items = state.sessionGroups, key = { it.server.id }) { sessionGroup ->
-                            ServerSessionGroupItem(
-                                sessionGroup = sessionGroup,
-                                onSessionClick = { session ->
-                                    viewModel.switchSession(session.serverId, session.userId)
-                                    coroutineScope.launch {
-                                        sheetState.hide()
-                                        onDismiss()
-                                    }
-                                },
-                                onAddAccountClick = {
-                                    coroutineScope.launch {
-                                        sheetState.hide()
-                                        onDismiss()
-                                        onAddAccountClick(sessionGroup.server)
-                                    }
-                                },
-                            )
-                        }
-                    }
+        SessionSwitcherContent(
+            onDismiss = {
+                coroutineScope.launch {
+                    sheetState.hide()
+                    onDismiss()
                 }
-            }
-
-            SnackbarHost(hostState = snackbarHostState)
-        }
+            },
+            onAddAccountClick = { server ->
+                coroutineScope.launch {
+                    sheetState.hide()
+                    onDismiss()
+                    onAddAccountClick(server)
+                }
+            },
+            viewModel = viewModel,
+        )
     }
 }
 

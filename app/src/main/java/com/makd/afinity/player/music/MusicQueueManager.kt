@@ -1,6 +1,7 @@
 package com.makd.afinity.player.music
 
 import android.net.Uri
+import androidx.core.net.toUri
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -155,11 +156,15 @@ constructor(
         _currentIndex.value =
             when {
                 from == cur -> to
-                from < cur && to >= cur -> cur - 1
-                from > cur && to <= cur -> cur + 1
+                cur in (from + 1)..to -> cur - 1
+                cur in to..<from -> cur + 1
                 else -> cur
             }
         scope.launch { persistQueue(current) }
+    }
+
+    fun updateTrackInQueue(track: AfinityTrack) {
+        _queue.value = _queue.value.map { if (it.id == track.id) track else it }
     }
 
     fun clearQueue() {
@@ -241,44 +246,49 @@ constructor(
     }
 
     private fun buildMediaItem(track: AfinityTrack): MediaItem {
+        val artworkUri = track.images.primary
         val metadata =
             MediaMetadata.Builder()
                 .setTitle(track.name)
                 .setArtist(track.artist ?: track.artists.firstOrNull())
                 .setAlbumTitle(track.album)
-                .setArtworkUri(track.images.primary)
+                .setArtworkUri(artworkUri)
                 .build()
         return MediaItem.Builder()
-            .setUri(buildStreamUri(track.id))
+            .setUri(buildStreamUri(track))
             .setMediaId(track.id.toString())
             .setMediaMetadata(metadata)
             .build()
     }
 
-    private fun buildStreamUri(trackId: UUID): Uri {
+    private fun buildStreamUri(track: AfinityTrack): Uri {
+        val localPath = track.localFilePath
+        if (!localPath.isNullOrBlank()) {
+            val localUri = localPath.toUri()
+            if (localUri.scheme == "file") return localUri
+        }
         val baseUrl = sessionManager.currentSession.value?.serverUrl?.trimEnd('/') ?: ""
-        val token = sessionManager.getCurrentApiClient()?.accessToken ?: ""
-        return Uri.parse("$baseUrl/Audio/$trackId/stream?static=true&api_key=$token")
+        return "$baseUrl/Audio/${track.id}/stream?static=true".toUri()
     }
 
     private suspend fun persistQueue(tracks: List<AfinityTrack>) {
         val serverId = sessionManager.currentSession.value?.serverId ?: ""
         val entities = tracks.mapIndexed { index, track -> track.toEntity(index, serverId) }
         runCatching {
-                musicQueueDao.clearQueue()
-                musicQueueDao.insertAll(entities)
-            }
+            musicQueueDao.clearQueue()
+            musicQueueDao.insertAll(entities)
+        }
             .onFailure { Timber.w(it, "Failed to persist music queue") }
     }
 
     private suspend fun restoreFromRoom() {
         runCatching {
-                val entities = musicQueueDao.getQueue()
-                if (entities.isEmpty()) return@runCatching
-                val tracks = entities.map { it.toAfinityTrack() }
-                _queue.value = tracks
-                dataStore.edit {}
-            }
+            val entities = musicQueueDao.getQueue()
+            if (entities.isEmpty()) return@runCatching
+            val tracks = entities.map { it.toAfinityTrack() }
+            _queue.value = tracks
+            dataStore.edit {}
+        }
             .onFailure { Timber.w(it, "Failed to restore music queue") }
     }
 
@@ -331,5 +341,5 @@ private fun MusicQueueEntity.toAfinityTrack() =
         favorite = false,
         playCount = null,
         normalizationGain = normalizationGain,
-        images = AfinityImages(primary = imageUrl?.let { Uri.parse(it) }),
+        images = AfinityImages(primary = imageUrl?.toUri()),
     )

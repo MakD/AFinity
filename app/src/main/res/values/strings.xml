@@ -408,7 +408,7 @@
     <string name="error_unknown_occurred">Unknown error occurred</string>
 
     <string name="search_no_results">No results found</string>
-    <string name="search_placeholder">Search movies and TV shows</string>
+    <string name="search_placeholder">Search</string>
     <string name="cd_clear">Clear</string>
     <string name="filter_request">Request</string>
     <string name="filter_audiobooks">Audiobooks</string>
@@ -988,6 +988,7 @@
     <string name="section_videos">VIDEOS</string>
     <string name="section_download_audiobooks">AUDIOBOOKS</string>
     <string name="section_download_podcasts">PODCASTS</string>
+    <string name="section_download_music">MUSIC</string>
 
     <!--Server Management-->
     <string name="address_type_local">Local</string>

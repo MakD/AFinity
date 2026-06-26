@@ -39,7 +39,7 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
                 session.coverPath
             } else if (serverUrl != null) {
                 val base = "$serverUrl/api/items/${session.libraryItemId}/cover"
-                if (token != null) "$base?raw=1&token=$token" else "$base?raw=1"
+                "$base?raw=1"
             } else {
                 session.coverPath
             }

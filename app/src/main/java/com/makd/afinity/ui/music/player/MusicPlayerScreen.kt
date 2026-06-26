@@ -337,12 +337,15 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                             color = Color.Transparent,
                         ) {
                             if (coverUrl != null || coverBlurHash != null) {
+                                val coverSizeDp = LocalConfiguration.current.screenWidthDp.dp
                                 com.makd.afinity.ui.components.AsyncImage(
                                     imageUrl = coverUrl,
                                     contentDescription = null,
                                     blurHash = coverBlurHash,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize(),
+                                    targetWidth = coverSizeDp,
+                                    targetHeight = coverSizeDp,
                                 )
                             } else {
                                 Box(
@@ -625,12 +628,16 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                             color = Color.Transparent,
                         ) {
                             if (coverUrl != null || coverBlurHash != null) {
+                                val coverSizeDp =
+                                    (LocalConfiguration.current.screenWidthDp * 0.45f).dp
                                 com.makd.afinity.ui.components.AsyncImage(
                                     imageUrl = coverUrl,
                                     contentDescription = null,
                                     blurHash = coverBlurHash,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize(),
+                                    targetWidth = coverSizeDp,
+                                    targetHeight = coverSizeDp,
                                 )
                             } else {
                                 Box(

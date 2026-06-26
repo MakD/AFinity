@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -54,8 +55,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.makd.afinity.R
+import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
+import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
@@ -64,6 +67,7 @@ import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
+import com.makd.afinity.ui.utils.rememberTopBarOpacity
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -81,6 +85,8 @@ fun MusicPlaylistScreen(
     val playerOffset = LocalPlayerOffset.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val lazyListState = rememberLazyListState()
+    val topBarOpacity by rememberTopBarOpacity(lazyListState)
 
     var addToPlaylistTrackIds by remember { mutableStateOf<List<UUID>>(emptyList()) }
     var showAddToPlaylist by remember { mutableStateOf(false) }
@@ -124,6 +130,7 @@ fun MusicPlaylistScreen(
         )
 
         LazyColumn(
+            state = lazyListState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = playerOffset + 16.dp),
         ) {
@@ -289,9 +296,40 @@ fun MusicPlaylistScreen(
                         showAddToPlaylist = true
                     },
                     onRemoveFromPlaylist = { viewModel.removeTrack(track) },
+                    onDownload = { viewModel.downloadTrack(track.id) },
                 )
             }
         }
+
+        AfinityTopAppBar(
+            title = {
+                IconButton(
+                    onClick = {
+                        navController.navigate(Destination.HOME.route) {
+                            popUpTo(Destination.HOME.route) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    },
+                    modifier = Modifier.size(42.dp),
+                ) {
+                    Box(
+                        modifier =
+                            Modifier.fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.3f), CircleShape)
+                                .clip(CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_home),
+                            contentDescription = "Go to Home",
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
+                }
+            },
+            backgroundOpacity = { topBarOpacity },
+        )
 
         SnackbarHost(
             hostState = snackbarHostState,
@@ -390,6 +428,8 @@ private fun PlaylistArtistsRow(
                         blurHash = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
+                        targetWidth = containerSize,
+                        targetHeight = containerSize,
                     )
                 }
             }

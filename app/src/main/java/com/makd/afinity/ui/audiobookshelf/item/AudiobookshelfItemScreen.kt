@@ -28,7 +28,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -52,6 +54,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -76,6 +80,8 @@ import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeaderContent
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeroBackground
 import com.makd.afinity.ui.audiobookshelf.item.components.chapterListItems
 import com.makd.afinity.ui.audiobookshelf.item.components.episodeListItems
+import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.utils.rememberTopBarOpacity
 
 private val naturalOrderComparator =
     Comparator<String> { a, b ->
@@ -109,6 +115,7 @@ fun AudiobookshelfItemScreen(
     onNavigateToSeries: (seriesId: String, libraryId: String, seriesName: String) -> Unit =
         { _, _, _ ->
         },
+    onNavigateHome: () -> Unit = {},
     viewModel: AudiobookshelfItemViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -135,6 +142,9 @@ fun AudiobookshelfItemScreen(
     var showListDialog by remember { mutableStateOf(false) }
 
     var expandedEpisodeId by remember { mutableStateOf<String?>(null) }
+
+    val lazyListState = rememberLazyListState()
+    val topBarOpacity by rememberTopBarOpacity(lazyListState)
 
     val sortedEpisodes by
         remember(uiState.episodes, sortOption, sortAscending, isOffline, episodeDownloadMap) {
@@ -202,7 +212,10 @@ fun AudiobookshelfItemScreen(
             item != null -> {
                 if (isLandscape) {
                     val coverUrl =
-                        if (downloadInfo?.status == AbsDownloadStatus.COMPLETED && downloadInfo?.localDirPath != null) {
+                        if (
+                            downloadInfo?.status == AbsDownloadStatus.COMPLETED &&
+                                downloadInfo?.localDirPath != null
+                        ) {
                             "file://${downloadInfo?.localDirPath}/cover.jpg"
                         } else if (config?.serverUrl != null && item?.media?.coverPath != null) {
                             "${config?.serverUrl}/api/items/${item?.id}/cover"
@@ -261,6 +274,7 @@ fun AudiobookshelfItemScreen(
                         }
 
                         LazyColumn(
+                            state = lazyListState,
                             modifier =
                                 Modifier.weight(1f)
                                     .fillMaxHeight()
@@ -386,6 +400,7 @@ fun AudiobookshelfItemScreen(
                     }
                 } else {
                     LazyColumn(
+                        state = lazyListState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding =
                             PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
@@ -503,6 +518,31 @@ fun AudiobookshelfItemScreen(
                 )
             }
         }
+
+        AfinityTopAppBar(
+            title = {
+                IconButton(
+                    onClick = onNavigateHome,
+                    modifier = Modifier.size(42.dp),
+                ) {
+                    Box(
+                        modifier =
+                            Modifier.fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.3f), CircleShape)
+                                .clip(CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_home),
+                            contentDescription = "Go to Home",
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
+                }
+            },
+            backgroundOpacity = { topBarOpacity },
+        )
 
         AnimatedVisibility(
             visible = uiState.error != null,

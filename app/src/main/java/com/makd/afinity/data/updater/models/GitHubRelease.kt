@@ -40,6 +40,7 @@ sealed class UpdateState {
 }
 
 enum class UpdateCheckFrequency(val hours: Int, val displayName: String) {
+    NEVER(-1, "Never"),
     ON_APP_OPEN(0, "On App Open"),
     SIX_HOURS(6, "Every 6 Hours"),
     TWELVE_HOURS(12, "Every 12 Hours"),
@@ -47,7 +48,7 @@ enum class UpdateCheckFrequency(val hours: Int, val displayName: String) {
 
     companion object {
         fun fromHours(hours: Int): UpdateCheckFrequency {
-            return entries.find { it.hours == hours } ?: ON_APP_OPEN
+            return entries.find { it.hours == hours } ?: NEVER
         }
     }
 }

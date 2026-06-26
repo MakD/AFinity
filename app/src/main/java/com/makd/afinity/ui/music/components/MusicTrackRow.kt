@@ -53,10 +53,11 @@ fun MusicTrackRow(
     onFavorite: (() -> Unit)? = null,
     onAddToPlaylist: (() -> Unit)? = null,
     onRemoveFromPlaylist: (() -> Unit)? = null,
+    onDownload: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     var showMenu by remember { mutableStateOf(false) }
-    val hasMenuItems = onInstantMix != null || onStartRadio != null || onAddNext != null || onAddLast != null || onFavorite != null || onAddToPlaylist != null || onRemoveFromPlaylist != null
+    val hasMenuItems = onInstantMix != null || onStartRadio != null || onAddNext != null || onAddLast != null || onFavorite != null || onAddToPlaylist != null || onRemoveFromPlaylist != null || onDownload != null
 
     Row(
         modifier = modifier
@@ -240,6 +241,19 @@ fun MusicTrackRow(
                             leadingIcon = {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_delete),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            },
+                        )
+                    }
+                    if (onDownload != null) {
+                        DropdownMenuItem(
+                            text = { Text("Download") },
+                            onClick = { showMenu = false; onDownload() },
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_download),
                                     contentDescription = null,
                                     modifier = Modifier.size(18.dp),
                                 )

@@ -260,15 +260,19 @@ fun HeroCarouselPortrait(
         }
 
         Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-            Box(
+            Column(
                 modifier =
                     Modifier.align(Alignment.BottomCenter)
-                        .fillMaxWidth(0.8f)
-                        .padding(bottom = 144.dp)
-                        .sizeIn(maxHeight = 120.dp)
-                        .graphicsLayer { alpha = contentAlpha }
+                        .padding(bottom = 80.dp)
+                        .fillMaxWidth()
+                        .graphicsLayer { alpha = contentAlpha },
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(0.8f).sizeIn(maxHeight = 120.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
                     currentItem.images.logo?.let { _ ->
                         AsyncImage(
                             imageUrl = currentItem.images.logoImageUrlWithTransparency,
@@ -296,28 +300,17 @@ fun HeroCarouselPortrait(
                             )
                         }
                 }
-            }
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier =
-                    Modifier.align(Alignment.BottomCenter)
-                        .padding(bottom = 112.dp)
-                        .fillMaxWidth()
-                        .graphicsLayer { alpha = contentAlpha },
-            ) {
-                Spacer(modifier = Modifier.weight(1f))
-                HeroMetadata(currentItem)
-                Spacer(modifier = Modifier.weight(1f))
-            }
-            Box(
-                modifier =
-                    Modifier.align(Alignment.BottomCenter)
-                        .padding(bottom = 80.dp)
-                        .fillMaxWidth()
-                        .graphicsLayer { alpha = contentAlpha }
-            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Spacer(modifier = Modifier.weight(1f))
+                    HeroMetadata(currentItem)
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+
                 val genres =
                     when (currentItem) {
                         is AfinityMovie -> (currentItem as AfinityMovie).genres
@@ -554,44 +547,38 @@ private fun HeroCarouselLandscape(
                         }
                     }
 
-                    Box(modifier = Modifier.fillMaxWidth().height(28.dp)) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            HeroMetadata(currentItem)
-                        }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        HeroMetadata(currentItem)
                     }
 
-                    Box(modifier = Modifier.fillMaxWidth().height(20.dp)) {
-                        val genres =
-                            when (currentItem) {
-                                is AfinityMovie -> (currentItem as AfinityMovie).genres
-                                is AfinityShow -> (currentItem as AfinityShow).genres
-                                else -> emptyList()
-                            }
-                        if (genres.isNotEmpty()) {
-                            Text(
-                                text = genres.take(3).joinToString(" • "),
-                                style =
-                                    MaterialTheme.typography.bodyLarge.copy(
-                                        fontWeight = FontWeight.Medium
-                                    ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                    val genres =
+                        when (currentItem) {
+                            is AfinityMovie -> (currentItem as AfinityMovie).genres
+                            is AfinityShow -> (currentItem as AfinityShow).genres
+                            else -> emptyList()
                         }
+                    if (genres.isNotEmpty()) {
+                        Text(
+                            text = genres.take(3).joinToString(" • "),
+                            style =
+                                MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
 
-                    Box(modifier = Modifier.fillMaxWidth().height(40.dp)) {
-                        currentItem.overview?.let { overview ->
-                            Text(
-                                text = overview,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
+                    currentItem.overview?.let { overview ->
+                        Text(
+                            text = overview,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
                 }
 

@@ -1159,6 +1159,10 @@ constructor(
                     .toSet()
             val unavailableDownloadIds = unavailableMovieIds + unavailableShowIds
 
+            val downloadedMusicAlbums = databaseRepository.getAllMusicAlbumsByUser(userId)
+            val downloadedMusicTracks = databaseRepository.getAllMusicTracksByUser(userId)
+                .filter { it.localFilePath != null }
+
             _uiState.update {
                 it.copy(
                     downloadedMovies = downloadedMovies,
@@ -1166,6 +1170,8 @@ constructor(
                     offlineContinueWatching = sortedOfflineContinueWatching,
                     downloadedAudiobooks = downloadedAudiobooks,
                     downloadedPodcastEpisodes = downloadedPodcastEpisodes,
+                    downloadedMusicAlbums = downloadedMusicAlbums,
+                    downloadedMusicTracks = downloadedMusicTracks,
                     unavailableDownloadIds = unavailableDownloadIds,
                 )
             }
@@ -1465,6 +1471,8 @@ data class HomeUiState(
     val downloadedShows: List<AfinityShow> = emptyList(),
     val downloadedAudiobooks: List<AbsDownloadInfo> = emptyList(),
     val downloadedPodcastEpisodes: List<AbsDownloadInfo> = emptyList(),
+    val downloadedMusicAlbums: List<com.makd.afinity.data.models.music.AfinityAlbum> = emptyList(),
+    val downloadedMusicTracks: List<com.makd.afinity.data.models.music.AfinityTrack> = emptyList(),
     val unavailableDownloadIds: Set<UUID> = emptySet(),
     val isLoading: Boolean = false,
     val error: String? = null,

@@ -138,6 +138,8 @@ fun SpotlightCarousel(
                                     modifier = Modifier.fillMaxWidth().height(56.dp),
                                     contentScale = ContentScale.Fit,
                                     alignment = Alignment.CenterStart,
+                                    targetWidth = LocalConfiguration.current.screenWidthDp.dp,
+                                    targetHeight = 56.dp,
                                 )
                             } else {
                                 Text(

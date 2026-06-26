@@ -2,7 +2,10 @@
 
 package com.makd.afinity.ui.search
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,13 +48,17 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
@@ -89,6 +96,7 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicSearchResults
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenLoading
@@ -146,6 +154,11 @@ fun SearchScreen(
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     LocalFocusManager.current
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+        keyboardController?.show()
+    }
 
     Column(
         modifier =
@@ -428,6 +441,22 @@ private fun SearchTopBar(
     focusRequester: FocusRequester,
     onSearch: () -> Unit,
 ) {
+    var isFocused by remember { mutableStateOf(false) }
+    val primary = MaterialTheme.colorScheme.primary
+    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+    val borderColor by
+        animateColorAsState(
+            targetValue = if (isFocused) primary.copy(alpha = 0.5f) else Color.Transparent,
+            animationSpec = tween(200),
+            label = "searchBorder",
+        )
+    val iconColor by
+        animateColorAsState(
+            targetValue = if (isFocused) primary else onSurfaceVariant,
+            animationSpec = tween(200),
+            label = "searchIcon",
+        )
+
     Row(
         modifier = Modifier.fillMaxWidth().padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -444,18 +473,22 @@ private fun SearchTopBar(
         TextField(
             value = searchQuery,
             onValueChange = onSearchQueryChange,
-            modifier = Modifier.weight(1f).focusRequester(focusRequester),
+            modifier =
+                Modifier.weight(1f)
+                    .focusRequester(focusRequester)
+                    .onFocusChanged { isFocused = it.isFocused }
+                    .border(1.5.dp, borderColor, RoundedCornerShape(28.dp)),
             placeholder = {
                 Text(
                     text = stringResource(R.string.search_placeholder),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = onSurfaceVariant,
                 )
             },
             leadingIcon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_search),
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = iconColor,
                 )
             },
             trailingIcon = {
@@ -464,7 +497,7 @@ private fun SearchTopBar(
                         Icon(
                             painter = painterResource(id = R.drawable.ic_clear),
                             contentDescription = stringResource(R.string.cd_clear),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = onSurfaceVariant,
                         )
                     }
                 }
@@ -719,6 +752,8 @@ private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
                     Modifier.width(80.dp).height(120.dp)
                 }
 
+            val (imgTargetW, imgTargetH) =
+                if (item is AfinityEpisode) 142.dp to 80.dp else 80.dp to 120.dp
             Box(modifier = imageModifier) {
                 Card(modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(8.dp)) {
                     AsyncImage(
@@ -727,6 +762,8 @@ private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
                         blurHash = item.images.primaryBlurHash,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
+                        targetWidth = imgTargetW,
+                        targetHeight = imgTargetH,
                     )
                 }
 
@@ -805,35 +842,37 @@ private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
                         }
                     }
 
-                    val rating =
-                        when (item) {
-                            is AfinityMovie -> item.communityRating
-                            is AfinityShow -> item.communityRating
-                            is AfinityEpisode -> item.communityRating
-                            else -> null
-                        }
-                    rating?.let { r ->
-                        elements.add {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                    contentDescription = stringResource(R.string.cd_imdb),
-                                    tint = Color.Unspecified,
-                                    modifier = Modifier.size(16.dp),
-                                )
-                                Text(
-                                    text = String.format(Locale.US, "%.1f", r),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                    if (LocalShowRatings.current) {
+                        val rating =
+                            when (item) {
+                                is AfinityMovie -> item.communityRating
+                                is AfinityShow -> item.communityRating
+                                is AfinityEpisode -> item.communityRating
+                                else -> null
+                            }
+                        rating?.let { r ->
+                            elements.add {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                        contentDescription = stringResource(R.string.cd_imdb),
+                                        tint = Color.Unspecified,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                    Text(
+                                        text = String.format(Locale.US, "%.1f", r),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
                     }
 
-                    if (item is AfinityMovie) {
+                    if (LocalShowRatings.current && item is AfinityMovie) {
                         item.criticRating?.let { rtRating ->
                             elements.add {
                                 Row(
@@ -935,6 +974,8 @@ private fun JellyseerrSearchResultItem(item: SearchResultItem, onRequestClick: (
                     blurHash = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
+                    targetWidth = 80.dp,
+                    targetHeight = 120.dp,
                 )
             }
 
@@ -1136,7 +1177,7 @@ private fun AudiobookshelfSearchResultItem(
             Box(modifier = Modifier.size(80.dp)) {
                 Card(modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(8.dp)) {
                     AsyncImage(
-                        imageUrl = serverUrl?.let { "$it/api/items/${item.id}/cover" },
+                        imageUrl = serverUrl?.let { "$it/api/items/${item.id}/cover?width=240" },
                         contentDescription = item.media.metadata.title,
                         blurHash = null,
                         modifier = Modifier.fillMaxSize(),

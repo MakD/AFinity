@@ -22,4 +22,6 @@ data class AfinityTrack(
     val normalizationGain: Float?,
     val images: AfinityImages,
     val playlistItemId: String? = null,
+    val localFilePath: String? = null,
+    val localImagePath: String? = null,
 )

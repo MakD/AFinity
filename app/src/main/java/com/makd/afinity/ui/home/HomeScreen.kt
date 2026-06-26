@@ -62,6 +62,8 @@ import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.HeroCarousel
 import com.makd.afinity.ui.home.components.ContinueWatchingSkeleton
 import com.makd.afinity.ui.home.components.DownloadedAudiobooksSection
+import com.makd.afinity.ui.home.components.DownloadedMusicAlbumsSection
+import com.makd.afinity.ui.home.components.DownloadedMusicTracksSection
 import com.makd.afinity.ui.home.components.GenreSection
 import com.makd.afinity.ui.home.components.HighestRatedSection
 import com.makd.afinity.ui.home.components.LibrariesSection
@@ -79,6 +81,8 @@ import com.makd.afinity.ui.home.components.SpotlightCarousel
 import com.makd.afinity.ui.home.components.TvSeriesSectionSkeleton
 import com.makd.afinity.ui.home.components.UpcomingEpisodesSection
 import com.makd.afinity.ui.main.MainUiState
+import com.makd.afinity.ui.music.library.startMusicService
+import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 import com.makd.afinity.ui.utils.verticalLayoutOffset
 
@@ -92,6 +96,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     navController: NavController,
     viewModel: HomeViewModel = hiltViewModel(),
+    playerViewModel: MusicPlayerViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
     onAbsItemClick: (String) -> Unit = {},
 ) {
@@ -351,6 +356,48 @@ fun HomeScreen(
                                         title = stringResource(R.string.home_downloaded_episodes),
                                         items = uiState.downloadedPodcastEpisodes,
                                         onItemClick = { onAbsItemClick(it.libraryItemId) },
+                                    )
+                                }
+                            }
+                        }
+
+                        if (uiState.isOffline && uiState.downloadedMusicAlbums.isNotEmpty()) {
+                            item(key = "downloaded_music_albums") {
+                                val itemMod =
+                                    if (isLandscape && firstContentKey == "downloaded_music_albums")
+                                        landscapeOffsetModifier
+                                    else baseModifier
+                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                    DownloadedMusicAlbumsSection(
+                                        title = "Downloaded Albums",
+                                        albums = uiState.downloadedMusicAlbums,
+                                        onAlbumClick = { album ->
+                                            navController.navigate(
+                                                com.makd.afinity.navigation.Destination.createMusicAlbumRoute(album.id.toString())
+                                            )
+                                        },
+                                    )
+                                }
+                            }
+                        }
+
+                        if (uiState.isOffline && uiState.downloadedMusicTracks.isNotEmpty()) {
+                            item(key = "downloaded_music_tracks") {
+                                val itemMod =
+                                    if (isLandscape && firstContentKey == "downloaded_music_tracks")
+                                        landscapeOffsetModifier
+                                    else baseModifier
+                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                    DownloadedMusicTracksSection(
+                                        title = "Downloaded Tracks",
+                                        tracks = uiState.downloadedMusicTracks,
+                                        onTrackClick = { track ->
+                                            val tracks = uiState.downloadedMusicTracks
+                                            val index = tracks.indexOf(track).coerceAtLeast(0)
+                                            startMusicService(context)
+                                            playerViewModel.playQueue(tracks, index)
+                                            navController.navigate(Destination.MUSIC_PLAYER_ROUTE)
+                                        },
                                     )
                                 }
                             }

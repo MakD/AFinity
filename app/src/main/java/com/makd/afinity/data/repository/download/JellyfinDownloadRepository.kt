@@ -14,15 +14,18 @@ import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityMovie
+import com.makd.afinity.data.models.extensions.toAfinityTrack
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.data.storage.VolumeUnavailableException
 import com.makd.afinity.data.workers.ImageDownloadWorker
+import com.makd.afinity.data.workers.LyricsDownloadWorker
 import com.makd.afinity.data.workers.MediaDownloadWorker
 import com.makd.afinity.data.workers.SubtitleDownloadWorker
 import com.makd.afinity.data.workers.TrickplayDownloadWorker
@@ -50,6 +53,7 @@ constructor(
     @param:ApplicationContext private val context: Context,
     private val sessionManager: SessionManager,
     private val mediaRepository: MediaRepository,
+    private val musicRepository: MusicRepository,
     private val databaseRepository: DatabaseRepository,
     private val preferencesRepository: PreferencesRepository,
     private val storageLocationProvider: StorageLocationProvider,
@@ -112,7 +116,8 @@ constructor(
                 val requestedVolumeId =
                     volumeId ?: preferencesRepository.getDownloadStorageVolumeId()
                 val resolvedVolumeId =
-                    if (storageLocationProvider.isVolumeAvailable(requestedVolumeId)) requestedVolumeId
+                    if (storageLocationProvider.isVolumeAvailable(requestedVolumeId))
+                        requestedVolumeId
                     else StorageLocationProvider.PRIMARY_VOLUME_ID
 
                 val currentSession =
@@ -149,6 +154,59 @@ constructor(
                                 ItemFields.OVERVIEW,
                             ),
                     ) ?: return@withContext Result.failure(Exception("Item not found"))
+
+                if (baseItemDto.type == BaseItemKind.AUDIO) {
+                    val track = baseItemDto.toAfinityTrack(baseUrl)
+                    val mediaSource =
+                        if (sourceId.isEmpty()) {
+                            baseItemDto.mediaSources?.firstOrNull()
+                        } else {
+                            baseItemDto.mediaSources?.firstOrNull { it.id == sourceId }
+                                ?: baseItemDto.mediaSources?.firstOrNull()
+                        }
+                            ?: return@withContext Result.failure(
+                                Exception("No media source for audio item")
+                            )
+
+                    val resolvedSourceId = mediaSource.id ?: itemId.toString()
+                    val albumId = track.albumId ?: itemId
+                    val downloadId = UUID.randomUUID()
+
+                    val download =
+                        DownloadDto(
+                            id = downloadId,
+                            itemId = itemId,
+                            itemName = track.name,
+                            itemType = "Audio",
+                            sourceId = resolvedSourceId,
+                            sourceName = mediaSource.name ?: track.name,
+                            status = DownloadStatus.QUEUED,
+                            progress = 0f,
+                            bytesDownloaded = 0L,
+                            totalBytes = mediaSource.size ?: 0L,
+                            filePath = null,
+                            error = null,
+                            createdAt = System.currentTimeMillis(),
+                            updatedAt = System.currentTimeMillis(),
+                            serverId = serverId,
+                            userId = userId,
+                            imageUrl = track.images.primary?.toString(),
+                            seriesImageUrl = null,
+                            seriesName = track.album,
+                            seasonNumber = track.discNumber,
+                            episodeNumber = track.indexNumber,
+                            releaseYear = track.productionYear?.toString(),
+                            runtimeTicks = track.runtimeTicks,
+                            folderPath = "$serverId/music/$albumId/$itemId",
+                            seriesId = albumId.toString(),
+                            storageVolumeId = resolvedVolumeId,
+                        )
+
+                    databaseRepository.insertDownload(download)
+                    databaseRepository.insertMusicTrack(track, serverId, userId.toString())
+                    queueDownloadWork(download)
+                    return@withContext Result.success(downloadId)
+                }
 
                 val item =
                     when (baseItemDto.type) {
@@ -303,10 +361,26 @@ constructor(
                 .addTag("download_${download.id}")
                 .build()
 
-        workManager
-            .beginUniqueWork("download_${download.id}", policy, mediaDownloadRequest)
-            .then(listOf(trickplayDownloadRequest, imageDownloadRequest, subtitleDownloadRequest))
-            .enqueue()
+        val lyricsDownloadRequest =
+            OneTimeWorkRequestBuilder<LyricsDownloadWorker>()
+                .setConstraints(constraints)
+                .setInputData(inputData)
+                .addTag("download_${download.id}")
+                .build()
+
+        if (download.itemType == "Audio") {
+            workManager
+                .beginUniqueWork("download_${download.id}", policy, mediaDownloadRequest)
+                .then(listOf(imageDownloadRequest, lyricsDownloadRequest))
+                .enqueue()
+        } else {
+            workManager
+                .beginUniqueWork("download_${download.id}", policy, mediaDownloadRequest)
+                .then(
+                    listOf(trickplayDownloadRequest, imageDownloadRequest, subtitleDownloadRequest)
+                )
+                .enqueue()
+        }
     }
 
     override suspend fun pauseDownload(downloadId: UUID): Result<Unit> =
@@ -575,18 +649,27 @@ constructor(
     fun getDownloadDirectory(): File = baseDir(StorageLocationProvider.PRIMARY_VOLUME_ID)
 
     fun getItemDownloadDirectory(download: DownloadDto): File {
-        val dir = File(baseDir(download.storageVolumeId), download.folderPath ?: download.itemId.toString())
+        val dir =
+            File(
+                baseDir(download.storageVolumeId),
+                download.folderPath ?: download.itemId.toString(),
+            )
         if (!dir.exists() && !dir.mkdirs()) Timber.w("Failed to create item directory")
         return dir
     }
 
     suspend fun getItemDownloadDirectory(itemId: UUID): File {
         val session = sessionManager.currentSession.value
-        val download = if (session != null) {
-            databaseRepository.getDownloadByItemIdScoped(itemId, session.serverId, session.userId)
-        } else {
-            databaseRepository.getDownloadByItemId(itemId)
-        }
+        val download =
+            if (session != null) {
+                databaseRepository.getDownloadByItemIdScoped(
+                    itemId,
+                    session.serverId,
+                    session.userId,
+                )
+            } else {
+                databaseRepository.getDownloadByItemId(itemId)
+            }
         val folderPath = download?.folderPath
         val volumeId = download?.storageVolumeId ?: StorageLocationProvider.PRIMARY_VOLUME_ID
         val dir = File(baseDir(volumeId), folderPath ?: itemId.toString())
@@ -600,7 +683,12 @@ constructor(
         return dir
     }
 
-    fun getSeasonDirectory(serverId: String, showId: UUID, seasonNumber: Int, volumeId: String): File {
+    fun getSeasonDirectory(
+        serverId: String,
+        showId: UUID,
+        seasonNumber: Int,
+        volumeId: String,
+    ): File {
         val dir =
             File(
                 baseDir(volumeId),
@@ -670,6 +758,85 @@ constructor(
                 Result.success(Unit)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to cancel series downloads")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun startAlbumDownload(albumId: UUID, volumeId: String?): Result<Int> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val session =
+                    sessionManager.currentSession.value
+                        ?: return@withContext Result.failure(Exception("No active session"))
+
+                val album = musicRepository.getAlbumById(albumId)
+                if (album != null) {
+                    databaseRepository.insertMusicAlbum(
+                        album,
+                        session.serverId,
+                        session.userId.toString(),
+                    )
+                }
+
+                val tracks = musicRepository.getAlbumTracks(albumId)
+                var started = 0
+                for (track in tracks) {
+                    startDownload(track.id, "", volumeId)
+                        .onSuccess { started++ }
+                        .onFailure { error ->
+                            if (error is VolumeUnavailableException)
+                                return@withContext Result.failure(error)
+                            Timber.w(error, "Skipping track ${track.name}: ${error.message}")
+                        }
+                }
+                Timber.i("Album download queued $started/${tracks.size} tracks for album $albumId")
+                Result.success(started)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to start album download")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun startArtistDownload(artistId: UUID, volumeId: String?): Result<Int> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val albums = musicRepository.getArtistAlbums(artistId)
+                var totalStarted = 0
+                for (album in albums) {
+                    startAlbumDownload(album.id, volumeId)
+                        .onSuccess { count -> totalStarted += count }
+                        .onFailure { Timber.w(it, "Skipping album ${album.name}: ${it.message}") }
+                }
+                Timber.i(
+                    "Artist download queued $totalStarted tracks across ${albums.size} albums for artist $artistId"
+                )
+                Result.success(totalStarted)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to start artist download")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun startPlaylistDownload(playlistId: UUID, volumeId: String?): Result<Int> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val tracks = musicRepository.getPlaylistTracks(playlistId)
+                var started = 0
+                for (track in tracks) {
+                    startDownload(track.id, "", volumeId)
+                        .onSuccess { started++ }
+                        .onFailure { error ->
+                            if (error is VolumeUnavailableException)
+                                return@withContext Result.failure(error)
+                            Timber.w(error, "Skipping track ${track.name}: ${error.message}")
+                        }
+                }
+                Timber.i(
+                    "Playlist download queued $started/${tracks.size} tracks for playlist $playlistId"
+                )
+                Result.success(started)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to start playlist download")
                 Result.failure(e)
             }
         }

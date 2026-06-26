@@ -51,6 +51,8 @@ fun EpgChannelCell(
                     contentDescription = channel.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit,
+                    targetWidth = cellWidth,
+                    targetHeight = cellHeight,
                 )
             } else {
                 Icon(

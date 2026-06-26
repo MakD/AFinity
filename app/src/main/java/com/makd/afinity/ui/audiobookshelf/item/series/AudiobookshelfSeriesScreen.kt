@@ -23,7 +23,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,27 +38,31 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.makd.afinity.R
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeroBackground
 import com.makd.afinity.ui.audiobookshelf.item.components.SeriesCoverGrid
+import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.utils.rememberTopBarOpacity
 
 @Composable
 fun AudiobookshelfSeriesScreen(
     onNavigateToPlayer: (String, String?, Double?) -> Unit,
+    onNavigateHome: () -> Unit = {},
     viewModel: AudiobookshelfSeriesViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -67,6 +73,9 @@ fun AudiobookshelfSeriesScreen(
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val playerOffset = LocalPlayerOffset.current
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+
+    val lazyListState = rememberLazyListState()
+    val topBarOpacity by rememberTopBarOpacity(lazyListState)
 
     Box(modifier = Modifier.fillMaxSize()) {
         when {
@@ -129,13 +138,15 @@ fun AudiobookshelfSeriesScreen(
                         }
 
                         LazyColumn(
+                            state = lazyListState,
                             modifier =
                                 Modifier.weight(1f)
                                     .fillMaxHeight()
                                     .background(
                                         MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
                                     ),
-                            contentPadding = PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
+                            contentPadding =
+                                PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             item {
@@ -145,11 +156,16 @@ fun AudiobookshelfSeriesScreen(
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     modifier =
-                                        Modifier.padding(start = 16.dp, top = 16.dp, bottom = 16.dp),
+                                        Modifier.padding(
+                                            start = 16.dp,
+                                            top = 16.dp,
+                                            bottom = 16.dp,
+                                        ),
                                 )
                             }
 
-                            itemsIndexed(uiState.books, key = { _, book -> book.id }) { index, book ->
+                            itemsIndexed(uiState.books, key = { _, book -> book.id }) { index, book
+                                ->
                                 SeriesBookItem(
                                     book = book,
                                     bookNumber = index + 1,
@@ -161,8 +177,10 @@ fun AudiobookshelfSeriesScreen(
                     }
                 } else {
                     LazyColumn(
+                        state = lazyListState,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
+                        contentPadding =
+                            PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         item {
@@ -205,6 +223,30 @@ fun AudiobookshelfSeriesScreen(
             }
         }
 
+        AfinityTopAppBar(
+            title = {
+                IconButton(
+                    onClick = onNavigateHome,
+                    modifier = Modifier.size(42.dp),
+                ) {
+                    Box(
+                        modifier =
+                            Modifier.fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.3f), CircleShape)
+                                .clip(CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_home),
+                            contentDescription = "Go to Home",
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
+                }
+            },
+            backgroundOpacity = { topBarOpacity },
+        )
     }
 }
 
@@ -258,7 +300,8 @@ private fun SeriesBookItem(
     serverUrl: String?,
     onPlay: () -> Unit,
 ) {
-    val coverUrl = if (serverUrl != null) "$serverUrl/api/items/${book.id}/cover" else null
+    val coverUrl =
+        if (serverUrl != null) "$serverUrl/api/items/${book.id}/cover?width=216" else null
 
     val sequence = book.media.metadata.series?.firstOrNull()?.sequence
     val bookLabel = if (sequence != null) "Book $sequence" else "Book $bookNumber"

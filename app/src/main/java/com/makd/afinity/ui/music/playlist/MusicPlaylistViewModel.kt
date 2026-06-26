@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
+import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
@@ -31,6 +32,7 @@ data class MusicPlaylistUiState(
 @HiltViewModel
 class MusicPlaylistViewModel @Inject constructor(
     private val musicRepository: MusicRepository,
+    private val downloadRepository: DownloadRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -69,6 +71,20 @@ class MusicPlaylistViewModel @Inject constructor(
             runCatching { musicRepository.deletePlaylist(playlistId) }
                 .onSuccess { _uiState.update { it.copy(deleted = true) } }
                 .onFailure { Timber.e(it, "Failed to delete playlist $playlistId") }
+        }
+    }
+
+    fun downloadPlaylist() {
+        viewModelScope.launch {
+            downloadRepository.startPlaylistDownload(playlistId)
+                .onFailure { Timber.e(it, "Failed to start playlist download") }
+        }
+    }
+
+    fun downloadTrack(trackId: UUID) {
+        viewModelScope.launch {
+            downloadRepository.startDownload(trackId, "")
+                .onFailure { Timber.e(it, "Failed to download track $trackId") }
         }
     }
 

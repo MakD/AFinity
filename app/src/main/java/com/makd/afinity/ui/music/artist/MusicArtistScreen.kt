@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -42,6 +43,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -49,6 +51,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -63,6 +66,7 @@ import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
@@ -73,6 +77,7 @@ import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.utils.htmlToAnnotatedString
+import com.makd.afinity.ui.utils.rememberTopBarOpacity
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -91,6 +96,8 @@ fun MusicArtistScreen(
     val scope = rememberCoroutineScope()
     var addToPlaylistTrackIds by remember { mutableStateOf<List<UUID>>(emptyList()) }
     var showAddToPlaylist by remember { mutableStateOf(false) }
+    val lazyListState = rememberLazyListState()
+    val topBarOpacity by rememberTopBarOpacity(lazyListState)
 
     if (uiState.isLoading) {
         Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -101,6 +108,7 @@ fun MusicArtistScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         LazyColumn(
+            state = lazyListState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = playerOffset + 16.dp),
         ) {
@@ -143,6 +151,7 @@ fun MusicArtistScreen(
                 ) {
                     val logoUrl = uiState.artist?.images?.logo?.toString()
                     if (logoUrl != null) {
+                        val logoWidth = (LocalConfiguration.current.screenWidthDp * 0.8f).dp
                         AsyncImage(
                             imageUrl = logoUrl,
                             contentDescription = uiState.artist?.name,
@@ -153,6 +162,8 @@ fun MusicArtistScreen(
                                     .align(Alignment.CenterHorizontally),
                             contentScale = ContentScale.Fit,
                             alignment = Alignment.Center,
+                            targetWidth = logoWidth,
+                            targetHeight = 120.dp,
                         )
                     } else {
                         Text(
@@ -337,6 +348,7 @@ fun MusicArtistScreen(
                                             addToPlaylistViewModel.reset()
                                             showAddToPlaylist = true
                                         },
+                                        onDownload = { viewModel.downloadTrack(track.id) },
                                     )
                                 }
                                 AnimatedVisibility(
@@ -386,6 +398,7 @@ fun MusicArtistScreen(
                                                     addToPlaylistViewModel.reset()
                                                     showAddToPlaylist = true
                                                 },
+                                                onDownload = { viewModel.downloadTrack(track.id) },
                                             )
                                         }
                                     }
@@ -503,6 +516,36 @@ fun MusicArtistScreen(
                 }
             }
         }
+
+        AfinityTopAppBar(
+            title = {
+                IconButton(
+                    onClick = {
+                        navController.navigate(Destination.HOME.route) {
+                            popUpTo(Destination.HOME.route) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    },
+                    modifier = Modifier.size(42.dp),
+                ) {
+                    Box(
+                        modifier =
+                            Modifier.fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.3f), CircleShape)
+                                .clip(CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_home),
+                            contentDescription = "Go to Home",
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
+                }
+            },
+            backgroundOpacity = { topBarOpacity },
+        )
 
         SnackbarHost(
             hostState = snackbarHostState,

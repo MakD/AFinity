@@ -261,6 +261,8 @@ private fun QueueTrackRow(
                     blurHash = track.images.primaryImageBlurHash,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.matchParentSize().aspectRatio(1f),
+                    targetWidth = 48.dp,
+                    targetHeight = 48.dp,
                 )
                 if (isCurrentTrack) {
                     Box(

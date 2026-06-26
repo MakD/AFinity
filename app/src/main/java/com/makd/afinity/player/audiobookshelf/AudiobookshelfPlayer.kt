@@ -217,7 +217,7 @@ constructor(
                 if (enhancedSession.id?.startsWith("local_") == true) {
                     enhancedSession.coverPath
                 } else if (baseUrl.isNotEmpty()) {
-                    "$baseUrl/api/items/${enhancedSession.libraryItemId}/cover?token=$token&raw=1"
+                    "$baseUrl/api/items/${enhancedSession.libraryItemId}/cover?raw=1"
                 } else {
                     enhancedSession.coverPath
                 }

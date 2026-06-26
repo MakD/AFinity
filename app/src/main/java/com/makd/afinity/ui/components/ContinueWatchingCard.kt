@@ -110,6 +110,8 @@ fun ContinueWatchingCard(
                     contentDescription = item.name,
                     modifier = Modifier.fillMaxSize().alpha(if (isMissingAndAired) 0.5f else 1f),
                     contentScale = ContentScale.Crop,
+                    targetWidth = cardWidth,
+                    targetHeight = cardWidth / CardDimensions.ASPECT_RATIO_LANDSCAPE,
                 )
 
                 val progressPercentage =

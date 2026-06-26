@@ -414,6 +414,8 @@ fun ArtistAlbumsCarousel(
                                 modifier = Modifier.fillMaxWidth().height(48.dp),
                                 contentScale = ContentScale.Fit,
                                 alignment = Alignment.CenterStart,
+                                targetWidth = LocalConfiguration.current.screenWidthDp.dp,
+                                targetHeight = 48.dp,
                             )
                         } else {
                             Text(

@@ -7,6 +7,7 @@ import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicFilters
 import com.makd.afinity.data.models.music.MusicSearchResults
+import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 import java.util.UUID
@@ -116,4 +117,10 @@ interface MusicRepository {
     suspend fun getTopRatedAlbums(limit: Int = 15): List<AfinityAlbum>
 
     suspend fun getAlbumsByDecade(decade: Int, limit: Int = 15): List<AfinityAlbum>
+
+    fun getDownloadedTracksFlow(): Flow<List<AfinityTrack>>
+
+    fun getDownloadedAlbumsFlow(): Flow<List<AfinityAlbum>>
+
+    suspend fun getCachedLyrics(trackId: UUID): List<AfinityLyricLine>?
 }
