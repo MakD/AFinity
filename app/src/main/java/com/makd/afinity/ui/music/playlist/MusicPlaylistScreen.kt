@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.music.playlist
 
+import android.content.res.Configuration
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -9,6 +10,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,11 +20,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FloatingActionButton
@@ -45,6 +52,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -64,6 +72,7 @@ import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
+import com.makd.afinity.ui.music.components.MusicHeroBackground
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
@@ -80,13 +89,14 @@ fun MusicPlaylistScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val playbackState by playerViewModel.playbackState.collectAsStateWithLifecycle()
-
+    val isOffline by playerViewModel.isOffline.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val playerOffset = LocalPlayerOffset.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val lazyListState = rememberLazyListState()
     val topBarOpacity by rememberTopBarOpacity(lazyListState)
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     var addToPlaylistTrackIds by remember { mutableStateOf<List<UUID>>(emptyList()) }
     var showAddToPlaylist by remember { mutableStateOf(false) }
@@ -114,30 +124,20 @@ fun MusicPlaylistScreen(
         )
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        Box(
-            modifier =
-                Modifier.fillMaxWidth()
-                    .height(450.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            colors =
-                                listOf(
-                                    animatedDominantColor.copy(alpha = 0.65f),
-                                    MaterialTheme.colorScheme.background,
-                                )
-                        )
-                    )
-        )
+        if (isLandscape) {
+            MusicHeroBackground(coverUrl)
 
-        LazyColumn(
-            state = lazyListState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = playerOffset + 16.dp),
-        ) {
-            item { Spacer(modifier = Modifier.statusBarsPadding().height(24.dp)) }
+            Row(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.displayCutout)) {
+                Column(
+                    modifier =
+                        Modifier.weight(1f)
+                            .fillMaxHeight()
+                            .verticalScroll(rememberScrollState())
+                            .padding(bottom = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Spacer(modifier = Modifier.statusBarsPadding().height(64.dp))
 
-            item {
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     AsyncImage(
                         imageUrl = coverUrl,
                         contentDescription = uiState.playlist?.name,
@@ -145,7 +145,7 @@ fun MusicPlaylistScreen(
                         targetWidth = 400.dp,
                         targetHeight = 400.dp,
                         modifier =
-                            Modifier.size(260.dp)
+                            Modifier.size(200.dp)
                                 .shadow(
                                     elevation = 24.dp,
                                     shape = RoundedCornerShape(12.dp),
@@ -154,23 +154,19 @@ fun MusicPlaylistScreen(
                                 .clip(RoundedCornerShape(12.dp)),
                         contentScale = ContentScale.Crop,
                     )
-                }
-            }
 
-            item {
-                Column(
-                    modifier =
-                        Modifier.padding(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 12.dp)
-                ) {
+                    Spacer(Modifier.height(20.dp))
+
                     Text(
                         text = uiState.playlist?.name ?: "Playlist",
                         style =
-                            MaterialTheme.typography.headlineLarge.copy(
+                            MaterialTheme.typography.headlineSmall.copy(
                                 fontWeight = FontWeight.ExtraBold
                             ),
                         color = MaterialTheme.colorScheme.onBackground,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 20.dp),
                     )
 
                     val count = uiState.playlist?.songCount ?: uiState.tracks.size
@@ -182,122 +178,333 @@ fun MusicPlaylistScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                }
-            }
 
-            if (uiState.artistEntries.isNotEmpty()) {
-                item {
-                    PlaylistArtistsRow(
-                        entries = uiState.artistEntries,
-                        modifier = Modifier.padding(start = 20.dp, bottom = 12.dp),
-                    )
+                    if (uiState.artistEntries.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        PlaylistArtistsRow(
+                            entries = uiState.artistEntries,
+                            modifier = Modifier.padding(horizontal = 20.dp),
+                        )
+                    }
                 }
-            }
 
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+                LazyColumn(
+                    state = lazyListState,
+                    modifier =
+                        Modifier.weight(1f)
+                            .fillMaxHeight()
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
+                    contentPadding = PaddingValues(bottom = playerOffset + 16.dp),
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                    item { Spacer(modifier = Modifier.statusBarsPadding().height(64.dp)) }
+
+                    item {
+                        Row(
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                IconButton(onClick = { showDeleteConfirm = true }) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_delete),
+                                        contentDescription = "Delete playlist",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(26.dp),
+                                    )
+                                }
+                                uiState.playlist?.let { playlist ->
+                                    IconButton(
+                                        enabled = !isOffline,
+                                        onClick = {
+                                            startMusicService(context)
+                                            playerViewModel.playInstantMix(playlist.id)
+                                        },
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_compass),
+                                            contentDescription = "Instant Mix",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(26.dp),
+                                        )
+                                    }
+                                }
+                            }
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(end = 8.dp),
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        startMusicService(context)
+                                        playerViewModel.playQueue(uiState.tracks.shuffled(), 0)
+                                    }
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_arrows_shuffle),
+                                        contentDescription = "Shuffle",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(28.dp),
+                                    )
+                                }
+                                FloatingActionButton(
+                                    onClick = {
+                                        startMusicService(context)
+                                        playerViewModel.playQueue(uiState.tracks, 0)
+                                    },
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                    shape = CircleShape,
+                                    modifier = Modifier.size(56.dp),
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_player_play_filled),
+                                        contentDescription = "Play",
+                                        modifier = Modifier.size(26.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    itemsIndexed(uiState.tracks, key = { _, track -> track.id }) { index, track ->
+                        MusicTrackRow(
+                            track = track,
+                            isPlaying = track.id == playbackState.currentTrack?.id,
+                            showAlbumArt = true,
+                            onClick = {
+                                startMusicService(context)
+                                playerViewModel.playQueue(uiState.tracks, index)
+                            },
+                            onInstantMix =
+                                if (isOffline) null
+                                else
+                                    ({
+                                        startMusicService(context)
+                                        playerViewModel.playInstantMix(track.id)
+                                    }),
+                            onStartRadio =
+                                track.artistId?.let { artistId ->
+                                    {
+                                        startMusicService(context)
+                                        playerViewModel.playArtistRadio(artistId)
+                                    }
+                                },
+                            onAddNext = { playerViewModel.addNext(listOf(track)) },
+                            onAddLast = { playerViewModel.addLast(listOf(track)) },
+                            onFavorite = { viewModel.toggleTrackFavorite(track.id) },
+                            onAddToPlaylist =
+                                if (isOffline) null
+                                else
+                                    ({
+                                        addToPlaylistTrackIds = listOf(track.id)
+                                        addToPlaylistViewModel.reset()
+                                        showAddToPlaylist = true
+                                    }),
+                            onRemoveFromPlaylist = { viewModel.removeTrack(track) },
+                            onDownload = { viewModel.downloadTrack(track.id) },
+                        )
+                    }
+                }
+            }
+        } else {
+            Box(
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .height(450.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        animatedDominantColor.copy(alpha = 0.65f),
+                                        MaterialTheme.colorScheme.background,
+                                    )
+                            )
+                        )
+            )
+
+            LazyColumn(
+                state = lazyListState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = playerOffset + 16.dp),
+            ) {
+                item { Spacer(modifier = Modifier.statusBarsPadding().height(80.dp)) }
+
+                item {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        AsyncImage(
+                            imageUrl = coverUrl,
+                            contentDescription = uiState.playlist?.name,
+                            blurHash = uiState.playlist?.images?.primaryImageBlurHash,
+                            targetWidth = 400.dp,
+                            targetHeight = 400.dp,
+                            modifier =
+                                Modifier.size(260.dp)
+                                    .shadow(
+                                        elevation = 24.dp,
+                                        shape = RoundedCornerShape(12.dp),
+                                        spotColor = Color.Black,
+                                    )
+                                    .clip(RoundedCornerShape(12.dp)),
+                            contentScale = ContentScale.Crop,
+                        )
+                    }
+                }
+
+                item {
+                    Column(
+                        modifier =
+                            Modifier.padding(
+                                start = 20.dp,
+                                end = 20.dp,
+                                top = 28.dp,
+                                bottom = 12.dp,
+                            )
                     ) {
-                        IconButton(onClick = { showDeleteConfirm = true }) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_delete),
-                                contentDescription = "Delete playlist",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(26.dp),
+                        Text(
+                            text = uiState.playlist?.name ?: "Playlist",
+                            style =
+                                MaterialTheme.typography.headlineLarge.copy(
+                                    fontWeight = FontWeight.ExtraBold
+                                ),
+                            color = MaterialTheme.colorScheme.onBackground,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+
+                        val count = uiState.playlist?.songCount ?: uiState.tracks.size
+                        if (count > 0) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = "$count songs",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        uiState.playlist?.let { playlist ->
+                    }
+                }
+
+                if (uiState.artistEntries.isNotEmpty()) {
+                    item {
+                        PlaylistArtistsRow(
+                            entries = uiState.artistEntries,
+                            modifier = Modifier.padding(start = 20.dp, bottom = 12.dp),
+                        )
+                    }
+                }
+
+                item {
+                    Row(
+                        modifier =
+                            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            IconButton(onClick = { showDeleteConfirm = true }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_delete),
+                                    contentDescription = "Delete playlist",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(26.dp),
+                                )
+                            }
+                            uiState.playlist?.let { playlist ->
+                                IconButton(
+                                    onClick = {
+                                        startMusicService(context)
+                                        playerViewModel.playInstantMix(playlist.id)
+                                    }
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_compass),
+                                        contentDescription = "Instant Mix",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(26.dp),
+                                    )
+                                }
+                            }
+                        }
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(end = 8.dp),
+                        ) {
                             IconButton(
                                 onClick = {
                                     startMusicService(context)
-                                    playerViewModel.playInstantMix(playlist.id)
+                                    playerViewModel.playQueue(uiState.tracks.shuffled(), 0)
                                 }
                             ) {
                                 Icon(
-                                    painter = painterResource(R.drawable.ic_compass),
-                                    contentDescription = "Instant Mix",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    painter = painterResource(R.drawable.ic_arrows_shuffle),
+                                    contentDescription = "Shuffle",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(28.dp),
+                                )
+                            }
+                            FloatingActionButton(
+                                onClick = {
+                                    startMusicService(context)
+                                    playerViewModel.playQueue(uiState.tracks, 0)
+                                },
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                                shape = CircleShape,
+                                modifier = Modifier.size(56.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_player_play_filled),
+                                    contentDescription = "Play",
                                     modifier = Modifier.size(26.dp),
                                 )
                             }
                         }
                     }
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(end = 8.dp),
-                    ) {
-                        IconButton(
-                            onClick = {
-                                startMusicService(context)
-                                playerViewModel.playQueue(uiState.tracks.shuffled(), 0)
-                            }
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_arrows_shuffle),
-                                contentDescription = "Shuffle",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(28.dp),
-                            )
-                        }
-                        FloatingActionButton(
-                            onClick = {
-                                startMusicService(context)
-                                playerViewModel.playQueue(uiState.tracks, 0)
-                            },
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                            shape = CircleShape,
-                            modifier = Modifier.size(56.dp),
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_player_play_filled),
-                                contentDescription = "Play",
-                                modifier = Modifier.size(26.dp),
-                            )
-                        }
-                    }
                 }
-            }
 
-            itemsIndexed(uiState.tracks, key = { _, track -> track.id }) { index, track ->
-                MusicTrackRow(
-                    track = track,
-                    isPlaying = track.id == playbackState.currentTrack?.id,
-                    showAlbumArt = true,
-                    onClick = {
-                        startMusicService(context)
-                        playerViewModel.playQueue(uiState.tracks, index)
-                    },
-                    onInstantMix = {
-                        startMusicService(context)
-                        playerViewModel.playInstantMix(track.id)
-                    },
-                    onStartRadio =
-                        track.artistId?.let { artistId ->
-                            {
-                                startMusicService(context)
-                                playerViewModel.playArtistRadio(artistId)
-                            }
+                itemsIndexed(uiState.tracks, key = { _, track -> track.id }) { index, track ->
+                    MusicTrackRow(
+                        track = track,
+                        isPlaying = track.id == playbackState.currentTrack?.id,
+                        showAlbumArt = true,
+                        onClick = {
+                            startMusicService(context)
+                            playerViewModel.playQueue(uiState.tracks, index)
                         },
-                    onAddNext = { playerViewModel.addNext(listOf(track)) },
-                    onAddLast = { playerViewModel.addLast(listOf(track)) },
-                    onFavorite = { viewModel.toggleTrackFavorite(track.id) },
-                    onAddToPlaylist = {
-                        addToPlaylistTrackIds = listOf(track.id)
-                        addToPlaylistViewModel.reset()
-                        showAddToPlaylist = true
-                    },
-                    onRemoveFromPlaylist = { viewModel.removeTrack(track) },
-                    onDownload = { viewModel.downloadTrack(track.id) },
-                )
+                        onInstantMix = {
+                            startMusicService(context)
+                            playerViewModel.playInstantMix(track.id)
+                        },
+                        onStartRadio =
+                            track.artistId?.let { artistId ->
+                                {
+                                    startMusicService(context)
+                                    playerViewModel.playArtistRadio(artistId)
+                                }
+                            },
+                        onAddNext = { playerViewModel.addNext(listOf(track)) },
+                        onAddLast = { playerViewModel.addLast(listOf(track)) },
+                        onFavorite = { viewModel.toggleTrackFavorite(track.id) },
+                        onAddToPlaylist = {
+                            addToPlaylistTrackIds = listOf(track.id)
+                            addToPlaylistViewModel.reset()
+                            showAddToPlaylist = true
+                        },
+                        onRemoveFromPlaylist = { viewModel.removeTrack(track) },
+                        onDownload = { viewModel.downloadTrack(track.id) },
+                    )
+                }
             }
         }
 
@@ -328,7 +535,7 @@ fun MusicPlaylistScreen(
                     }
                 }
             },
-            backgroundOpacity = { topBarOpacity },
+            backgroundOpacity = { if (isLandscape) 0f else topBarOpacity },
         )
 
         SnackbarHost(

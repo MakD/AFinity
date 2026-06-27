@@ -570,7 +570,18 @@ fun SettingsScreen(
                                             ),
                                         onClick =
                                             if (!effectiveOfflineMode) {
-                                                { showQuickConnectDialog = true }
+                                                {
+                                                    if (isDualPane) {
+                                                        scope.launch {
+                                                            navigator.navigateTo(
+                                                                ListDetailPaneScaffoldRole.Detail,
+                                                                SettingsPaneDestination.QuickConnect,
+                                                            )
+                                                        }
+                                                    } else {
+                                                        showQuickConnectDialog = true
+                                                    }
+                                                }
                                             } else null,
                                     )
                                 }
@@ -621,7 +632,18 @@ fun SettingsScreen(
                                         icon = painterResource(id = R.drawable.ic_language),
                                         title = stringResource(R.string.pref_app_language),
                                         subtitle = appLanguageSubtitle,
-                                        onClick = { showLanguageDialog = true },
+                                        onClick = {
+                                            if (isDualPane) {
+                                                scope.launch {
+                                                    navigator.navigateTo(
+                                                        ListDetailPaneScaffoldRole.Detail,
+                                                        SettingsPaneDestination.Language,
+                                                    )
+                                                }
+                                            } else {
+                                                showLanguageDialog = true
+                                            }
+                                        },
                                     )
                                     SettingsDivider()
                                     SettingsItem(
@@ -800,6 +822,21 @@ fun SettingsScreen(
                                 navController.navigate(
                                     Destination.createLoginRoute(serverUrl = server.address)
                                 )
+                            },
+                        )
+                    is SettingsPaneDestination.Language ->
+                        LanguagePickerPane(
+                            onBackClick = { scope.launch { navigator.navigateBack() } }
+                        )
+                    is SettingsPaneDestination.QuickConnect ->
+                        QuickConnectPane(
+                            isAuthorizing = uiState.isAuthorizingQuickConnect,
+                            isSuccess = uiState.quickConnectAuthSuccess,
+                            errorMessage = uiState.quickConnectAuthError,
+                            onAuthorize = { code -> viewModel.authorizeQuickConnect(code) },
+                            onBackClick = {
+                                scope.launch { navigator.navigateBack() }
+                                viewModel.clearQuickConnectAuthState()
                             },
                         )
                     null -> Box(modifier = Modifier.fillMaxSize())
@@ -1253,6 +1290,246 @@ private fun LanguagePickerDialog(onDismiss: () -> Unit) {
         shape = RoundedCornerShape(28.dp),
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LanguagePickerPane(onBackClick: () -> Unit) {
+    val context = LocalContext.current
+    val localeManager = remember { context.getSystemService(LocaleManager::class.java) }
+    val supportedLocales = remember { LocaleConfig(context).supportedLocales }
+    var currentLocale by remember {
+        mutableStateOf(
+            localeManager.applicationLocales.let { if (it.isEmpty) null else it.get(0) }
+        )
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.pref_app_language)) },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_chevron_left),
+                            contentDescription = stringResource(R.string.cd_back),
+                        )
+                    }
+                },
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) { innerPadding ->
+        Column(
+            modifier =
+                Modifier.fillMaxSize()
+                    .padding(innerPadding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(vertical = 8.dp),
+        ) {
+            LanguageOption(
+                name = stringResource(R.string.lang_system_default),
+                isSelected = currentLocale == null,
+                onClick = {
+                    localeManager.applicationLocales = LocaleList.getEmptyLocaleList()
+                    currentLocale = null
+                    onBackClick()
+                },
+            )
+            if (supportedLocales != null) {
+                repeat(supportedLocales.size()) { index ->
+                    val locale = supportedLocales.get(index)
+                    LanguageOption(
+                        name = locale.getDisplayName(locale).replaceFirstChar(Char::uppercase),
+                        isSelected =
+                            currentLocale != null &&
+                                locale.language == currentLocale!!.language &&
+                                locale.country == currentLocale!!.country,
+                        onClick = {
+                            localeManager.applicationLocales = LocaleList(locale)
+                            currentLocale = locale
+                            onBackClick()
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun QuickConnectPane(
+    isAuthorizing: Boolean,
+    isSuccess: Boolean,
+    errorMessage: String?,
+    onAuthorize: (String) -> Unit,
+    onBackClick: () -> Unit,
+) {
+    val digits = remember { Array(6) { mutableStateOf("") } }
+    val focusRequesters = remember { Array(6) { FocusRequester() } }
+    val code = digits.joinToString("") { it.value }
+
+    LaunchedEffect(isSuccess) {
+        if (isSuccess) kotlinx.coroutines.delay(1200)
+        if (isSuccess) onBackClick()
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.pref_authorize_quickconnect)) },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_chevron_left),
+                            contentDescription = stringResource(R.string.cd_back),
+                        )
+                    }
+                },
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) { innerPadding ->
+        Column(
+            modifier =
+                Modifier.fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_security),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(48.dp).padding(top = 8.dp),
+            )
+            Text(
+                text = stringResource(R.string.dialog_quickconnect_message),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                digits.forEachIndexed { index, digitState ->
+                    BasicTextField(
+                        value = digitState.value,
+                        onValueChange = { input ->
+                            val filtered = input.filter { it.isDigit() }
+                            if (filtered.isEmpty()) {
+                                digitState.value = ""
+                            } else {
+                                digitState.value = filtered.takeLast(1)
+                                if (index < 5) focusRequesters[index + 1].requestFocus()
+                            }
+                        },
+                        modifier =
+                            Modifier.size(42.dp)
+                                .focusRequester(focusRequesters[index])
+                                .onKeyEvent { event ->
+                                    if (
+                                        event.type == KeyEventType.KeyDown &&
+                                            event.key == Key.Backspace &&
+                                            digitState.value.isEmpty() &&
+                                            index > 0
+                                    ) {
+                                        focusRequesters[index - 1].requestFocus()
+                                        digits[index - 1].value = ""
+                                        true
+                                    } else false
+                                },
+                        keyboardOptions =
+                            KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = if (index == 5) ImeAction.Done else ImeAction.Next,
+                            ),
+                        enabled = !isAuthorizing && !isSuccess,
+                        singleLine = true,
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                        textStyle =
+                            LocalTextStyle.current.copy(
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                            ),
+                        decorationBox = { innerTextField ->
+                            Box(
+                                modifier =
+                                    Modifier.fillMaxSize()
+                                        .background(
+                                            color =
+                                                MaterialTheme.colorScheme.surfaceContainerHighest,
+                                            shape = RoundedCornerShape(10.dp),
+                                        )
+                                        .border(
+                                            width = if (digitState.value.isNotEmpty()) 2.dp else 1.dp,
+                                            color =
+                                                when {
+                                                    isSuccess -> Color(0xFF4CAF50)
+                                                    errorMessage != null ->
+                                                        MaterialTheme.colorScheme.error
+                                                    digitState.value.isNotEmpty() ->
+                                                        MaterialTheme.colorScheme.primary
+                                                    else ->
+                                                        MaterialTheme.colorScheme.outline.copy(
+                                                            alpha = 0.4f
+                                                        )
+                                                },
+                                            shape = RoundedCornerShape(10.dp),
+                                        ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                innerTextField()
+                            }
+                        },
+                    )
+                }
+            }
+            when {
+                isSuccess ->
+                    Text(
+                        text = stringResource(R.string.dialog_quickconnect_authorized),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF4CAF50),
+                    )
+                errorMessage != null ->
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                else -> Spacer(modifier = Modifier.height(0.dp))
+            }
+            Button(
+                onClick = { onAuthorize(code) },
+                enabled = code.length == 6 && !isAuthorizing && !isSuccess,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                if (isAuthorizing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                } else {
+                    Text(stringResource(R.string.action_authorize))
+                }
+            }
+        }
+    }
 }
 
 @Composable

@@ -2,11 +2,14 @@ package com.makd.afinity.ui.music.player
 
 import android.content.Context
 import android.content.Intent
+import androidx.annotation.OptIn
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.cast.CastEvent
 import com.makd.afinity.cast.CastManager
+import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.music.AfinityLyricLine
 import com.makd.afinity.data.models.music.AfinityTrack
@@ -31,12 +34,15 @@ import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
-class MusicPlayerViewModel @Inject constructor(
+class MusicPlayerViewModel
+@Inject
+constructor(
     private val playbackManager: MusicPlaybackManager,
     private val queueManager: MusicQueueManager,
     private val musicRepository: MusicRepository,
     private val castManager: CastManager,
     private val sessionManager: SessionManager,
+    private val offlineModeManager: OfflineModeManager,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -44,9 +50,13 @@ class MusicPlayerViewModel @Inject constructor(
     val queue: StateFlow<List<AfinityTrack>> = queueManager.queue
     val currentIndex: StateFlow<Int> = queueManager.currentIndex
 
-    val isMusicCasting: StateFlow<Boolean> = castManager.castState
-        .map { it.isMusicCasting }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val isOffline: StateFlow<Boolean> =
+        offlineModeManager.isOffline.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    val isMusicCasting: StateFlow<Boolean> =
+        castManager.castState
+            .map { it.isMusicCasting }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private val _lyrics = MutableStateFlow<List<AfinityLyricLine>>(emptyList())
     val lyrics: StateFlow<List<AfinityLyricLine>> = _lyrics.asStateFlow()
@@ -63,15 +73,15 @@ class MusicPlayerViewModel @Inject constructor(
                 .map { it.currentTrack?.id }
                 .distinctUntilChanged()
                 .collectLatest { trackId ->
-                    if (trackId != null) loadLyrics(trackId)
-                    else _lyrics.value = emptyList()
+                    if (trackId != null) loadLyrics(trackId) else _lyrics.value = emptyList()
                 }
         }
         viewModelScope.launch {
             castManager.castState.collect { state ->
                 if (state.isMusicCasting) {
-                    val durationMs = playbackState.value.currentTrack?.runtimeTicks?.div(10_000)
-                        ?: state.duration
+                    val durationMs =
+                        playbackState.value.currentTrack?.runtimeTicks?.div(10_000)
+                            ?: state.duration
                     playbackManager.updatePosition(state.currentPosition, 0L, durationMs)
                     playbackManager.updatePlayingState(state.isPlaying)
                     playbackManager.updateBufferingState(state.isBuffering)
@@ -93,17 +103,18 @@ class MusicPlayerViewModel @Inject constructor(
         }
     }
 
+    @OptIn(UnstableApi::class)
     private fun resumeFromCast(lastPositionMs: Long) {
         val tracks = queueManager.queue.value
         val index = queueManager.currentIndex.value
         if (tracks.isEmpty()) return
         queueManager.loadQueue(tracks, index, lastPositionMs)
         context.startService(
-            Intent(context, AudioService::class.java)
-                .setAction(AudioService.ACTION_ENGINE_MUSIC)
+            Intent(context, AudioService::class.java).setAction(AudioService.ACTION_ENGINE_MUSIC)
         )
     }
 
+    @OptIn(UnstableApi::class)
     fun castCurrentQueue() {
         val tracks = queueManager.queue.value
         if (tracks.isEmpty()) return
@@ -120,8 +131,7 @@ class MusicPlayerViewModel @Inject constructor(
             token = token,
         )
         context.startService(
-            Intent(context, AudioService::class.java)
-                .setAction(AudioService.ACTION_PAUSE_FOR_CAST)
+            Intent(context, AudioService::class.java).setAction(AudioService.ACTION_PAUSE_FOR_CAST)
         )
     }
 
@@ -152,17 +162,22 @@ class MusicPlayerViewModel @Inject constructor(
     }
 
     fun seekTo(positionMs: Long) {
-        if (isMusicCasting.value) castManager.seekTo(positionMs) else playbackManager.seekTo(positionMs)
+        if (isMusicCasting.value) castManager.seekTo(positionMs)
+        else playbackManager.seekTo(positionMs)
     }
 
     fun seekForward(amountMs: Long = 15_000L) {
         if (isMusicCasting.value) {
-            val pos = (castManager.castState.value.currentPosition + amountMs)
-                .coerceAtMost(playbackState.value.durationMs)
+            val pos =
+                (castManager.castState.value.currentPosition + amountMs).coerceAtMost(
+                    playbackState.value.durationMs
+                )
             castManager.seekTo(pos)
         } else {
-            val pos = (playbackState.value.positionMs + amountMs)
-                .coerceAtMost(playbackState.value.durationMs)
+            val pos =
+                (playbackState.value.positionMs + amountMs).coerceAtMost(
+                    playbackState.value.durationMs
+                )
             playbackManager.seekTo(pos)
         }
     }
@@ -211,17 +226,19 @@ class MusicPlayerViewModel @Inject constructor(
     }
 
     fun cycleRepeatMode() {
-        val next = when (playbackState.value.repeatMode) {
-            RepeatMode.OFF -> RepeatMode.ALL
-            RepeatMode.ALL -> RepeatMode.ONE
-            RepeatMode.ONE -> RepeatMode.OFF
-        }
+        val next =
+            when (playbackState.value.repeatMode) {
+                RepeatMode.OFF -> RepeatMode.ALL
+                RepeatMode.ALL -> RepeatMode.ONE
+                RepeatMode.ONE -> RepeatMode.OFF
+            }
         playbackManager.updateRepeatMode(next)
-        playbackManager.getPlayer()?.repeatMode = when (next) {
-            RepeatMode.OFF -> Player.REPEAT_MODE_OFF
-            RepeatMode.ALL -> Player.REPEAT_MODE_ALL
-            RepeatMode.ONE -> Player.REPEAT_MODE_ONE
-        }
+        playbackManager.getPlayer()?.repeatMode =
+            when (next) {
+                RepeatMode.OFF -> Player.REPEAT_MODE_OFF
+                RepeatMode.ALL -> Player.REPEAT_MODE_ALL
+                RepeatMode.ONE -> Player.REPEAT_MODE_ONE
+            }
     }
 
     fun toggleLyrics() {
@@ -229,21 +246,31 @@ class MusicPlayerViewModel @Inject constructor(
     }
 
     fun addNext(tracks: List<AfinityTrack>) = queueManager.addNext(tracks)
+
     fun addLast(tracks: List<AfinityTrack>) = queueManager.addLast(tracks)
+
     fun removeFromQueue(index: Int) = queueManager.removeAt(index)
+
     fun moveInQueue(from: Int, to: Int) = queueManager.moveTrack(from, to)
+
     fun clearQueue() = queueManager.clearQueue()
 
     fun playInstantMix(itemId: UUID) {
         viewModelScope.launch {
-            val tracks = runCatching { musicRepository.getInstantMix(itemId) }.getOrDefault(emptyList())
+            val tracks = runCatching {
+                musicRepository.getInstantMix(itemId)
+            }
+                .getOrDefault(emptyList())
             if (tracks.isNotEmpty()) playQueue(tracks)
         }
     }
 
     fun playArtistRadio(artistId: UUID) {
         viewModelScope.launch {
-            val tracks = runCatching { musicRepository.getArtistRadio(artistId) }.getOrDefault(emptyList())
+            val tracks = runCatching {
+                musicRepository.getArtistRadio(artistId)
+            }
+                .getOrDefault(emptyList())
             if (tracks.isNotEmpty()) playQueue(tracks)
         }
     }
@@ -264,5 +291,6 @@ class MusicPlayerViewModel @Inject constructor(
     }
 
     fun setSleepTimer(durationMs: Long) = playbackManager.setSleepTimer(durationMs)
+
     fun cancelSleepTimer() = playbackManager.cancelSleepTimer()
 }

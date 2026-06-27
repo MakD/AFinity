@@ -89,9 +89,11 @@ fun MusicArtistCard(
     blurHash: String? = null,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    size: androidx.compose.ui.unit.Dp = 140.dp,
 ) {
+    val imageSize = size * 0.86f
     Column(
-        modifier = modifier.width(140.dp).clickable(indication = null, interactionSource = remember { MutableInteractionSource() }, onClick = onClick),
+        modifier = modifier.width(size).clickable(indication = null, interactionSource = remember { MutableInteractionSource() }, onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -99,9 +101,9 @@ fun MusicArtistCard(
             imageUrl = imageUrl,
             contentDescription = name,
             blurHash = blurHash,
-            targetWidth = 120.dp,
-            targetHeight = 120.dp,
-            modifier = Modifier.size(120.dp).clip(CircleShape),
+            targetWidth = imageSize,
+            targetHeight = imageSize,
+            modifier = Modifier.size(imageSize).clip(CircleShape),
             contentScale = ContentScale.Crop,
             placeholder = painterResource(R.drawable.ic_person_placeholder),
             error = painterResource(R.drawable.ic_person_placeholder),

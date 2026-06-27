@@ -450,9 +450,10 @@ constructor(
             }
 
         player.addListener(this@PlayerViewModel)
-        videoMediaSession = androidx.media3.session.MediaSession.Builder(context, player)
-            .setId("afinity_video")
-            .build()
+        videoMediaSession =
+            androidx.media3.session.MediaSession.Builder(context, player)
+                .setId("afinity_video")
+                .build()
         Timber.d("Player initialized: ${player.javaClass.simpleName}")
     }
 
@@ -1063,7 +1064,8 @@ constructor(
         if (musicPlaybackManager.state.value.currentTrack != null) {
             Timber.d("Stopping Music playback before starting Jellyfin playback")
             context.startService(
-                android.content.Intent(context, com.makd.afinity.player.AudioService::class.java)
+                android.content
+                    .Intent(context, com.makd.afinity.player.AudioService::class.java)
                     .setAction(com.makd.afinity.player.AudioService.ACTION_STOP)
             )
         }
@@ -1220,14 +1222,19 @@ constructor(
                     val forcedAny = subtitleStreams.indexOfFirst { it.isForced }.takeIf { it >= 0 }
 
                     forcedLangMatch
-                        ?: if (!audioLangKnown) forcedAny else null
-                        ?: if (serverSavedSubtitleIndex != null && serverSavedSubtitleIndex >= 0) {
-                            subtitleStreams
-                                .indexOfFirst { it.index == serverSavedSubtitleIndex }
-                                .takeIf { it >= 0 }
-                        } else {
+                        ?: if (!audioLangKnown) forcedAny
+                        else
                             null
-                        }
+                                ?: if (
+                                    serverSavedSubtitleIndex != null &&
+                                        serverSavedSubtitleIndex >= 0
+                                ) {
+                                    subtitleStreams
+                                        .indexOfFirst { it.index == serverSavedSubtitleIndex }
+                                        .takeIf { it >= 0 }
+                                } else {
+                                    null
+                                }
                 }
 
             pendingAudioTrackPosition = audioPosition
@@ -1874,7 +1881,7 @@ constructor(
 
         return if (skipMode == SkipMode.AUTO_SKIP) {
             val cleanText = baseText.replace(Regex("(?i)^skip\\s+"), "")
-            "Auto-skipping $cleanText..."
+            "Skipping $cleanText..."
         } else {
             baseText
         }

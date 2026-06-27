@@ -76,6 +76,8 @@ import com.makd.afinity.ui.login.LoginScreen
 import com.makd.afinity.ui.main.MainViewModel
 import com.makd.afinity.ui.music.album.MusicAlbumScreen
 import com.makd.afinity.ui.music.artist.MusicArtistScreen
+import com.makd.afinity.ui.music.library.LibraryFilter
+import com.makd.afinity.ui.music.library.MusicBrowseScreen
 import com.makd.afinity.ui.music.library.MusicLibraryScreen
 import com.makd.afinity.ui.music.player.MusicPlayerScreen
 import com.makd.afinity.ui.music.playlist.MusicPlaylistScreen
@@ -1005,6 +1007,28 @@ fun MainNavigation(
                                         ),
                                 ) {
                                     MusicLibraryScreen(navController = navController)
+                                }
+
+                                composable(
+                                    route = Destination.MUSIC_BROWSE_ROUTE,
+                                    arguments =
+                                        listOf(
+                                            navArgument("libraryId") { type = NavType.StringType },
+                                            navArgument("libraryName") {
+                                                type = NavType.StringType
+                                            },
+                                            navArgument("tab") { type = NavType.StringType },
+                                        ),
+                                ) { backStackEntry ->
+                                    val tabName =
+                                        backStackEntry.arguments?.getString("tab") ?: "Albums"
+                                    val tab =
+                                        LibraryFilter.entries.firstOrNull { it.name == tabName }
+                                            ?: LibraryFilter.Albums
+                                    MusicBrowseScreen(
+                                        tab = tab,
+                                        navController = navController,
+                                    )
                                 }
 
                                 composable(

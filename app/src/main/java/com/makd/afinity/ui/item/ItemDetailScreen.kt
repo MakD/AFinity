@@ -584,7 +584,7 @@ private fun LandscapeItemDetailContent(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding =
                     PaddingValues(
-                        top = with(density) { statusBarHeight.toDp() + 16.dp },
+                        top = with(density) { statusBarHeight.toDp() } + 64.dp,
                         start = with(density) { displayCutoutLeft.toDp() + 16.dp },
                         end = 16.dp,
                         bottom = 16.dp + playerOffset,

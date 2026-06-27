@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.music.artist
 
+import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
@@ -16,17 +17,25 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -73,6 +82,7 @@ import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
 import com.makd.afinity.ui.music.components.MusicAlbumCard
+import com.makd.afinity.ui.music.components.MusicHeroBackground
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
@@ -90,13 +100,18 @@ fun MusicArtistScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val playbackState by playerViewModel.playbackState.collectAsStateWithLifecycle()
+    val isOffline by playerViewModel.isOffline.collectAsStateWithLifecycle()
     val playerOffset = LocalPlayerOffset.current
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var addToPlaylistTrackIds by remember { mutableStateOf<List<UUID>>(emptyList()) }
     var showAddToPlaylist by remember { mutableStateOf(false) }
-    val lazyListState = rememberLazyListState()
+    var showAllTracks by remember { mutableStateOf(false) }
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val portraitListState = rememberLazyListState()
+    val landscapeListState = rememberLazyListState()
+    val lazyListState = if (isLandscape) landscapeListState else portraitListState
     val topBarOpacity by rememberTopBarOpacity(lazyListState)
 
     if (uiState.isLoading) {
@@ -107,206 +122,662 @@ fun MusicArtistScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        LazyColumn(
-            state = lazyListState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = playerOffset + 16.dp),
-        ) {
-            item {
-                Box(modifier = Modifier.fillMaxWidth().fillParentMaxHeight(0.6f)) {
-                    AsyncImage(
-                        imageUrl =
-                            (uiState.artist?.images?.backdrop ?: uiState.artist?.images?.primary)
-                                ?.toString(),
-                        contentDescription = uiState.artist?.name,
-                        blurHash =
-                            uiState.artist?.images?.backdropImageBlurHash
-                                ?: uiState.artist?.images?.primaryImageBlurHash,
-                        targetWidth = 800.dp,
-                        targetHeight = 600.dp,
-                        modifier =
-                            Modifier.fillMaxSize()
-                                .graphicsLayer { alpha = 0.99f }
-                                .drawWithCache {
-                                    val gradient =
-                                        Brush.verticalGradient(
-                                            colors = listOf(Color.Black, Color.Transparent),
-                                            startY = size.height * 0.72f,
-                                            endY = size.height,
-                                        )
-                                    onDrawWithContent {
-                                        drawContent()
-                                        drawRect(gradient, blendMode = BlendMode.DstIn)
-                                    }
-                                },
-                        contentScale = ContentScale.Crop,
-                    )
-                }
-            }
+        if (isLandscape) {
+            MusicHeroBackground(
+                coverUrl =
+                    (uiState.artist?.images?.backdrop ?: uiState.artist?.images?.primary)
+                        ?.toString()
+            )
 
-            item {
+            Row(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.displayCutout)) {
                 Column(
-                    modifier = Modifier.artistContentOffset(),
-                    verticalArrangement = Arrangement.spacedBy(0.dp),
+                    modifier =
+                        Modifier.weight(1f)
+                            .fillMaxHeight()
+                            .verticalScroll(rememberScrollState())
+                            .padding(bottom = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
+                    Spacer(modifier = Modifier.statusBarsPadding().height(64.dp))
+
+                    AsyncImage(
+                        imageUrl = uiState.artist?.images?.primary?.toString(),
+                        contentDescription = uiState.artist?.name,
+                        blurHash = uiState.artist?.images?.primaryImageBlurHash,
+                        targetWidth = 180.dp,
+                        targetHeight = 180.dp,
+                        modifier = Modifier.size(180.dp).clip(CircleShape),
+                        contentScale = ContentScale.Crop,
+                        placeholder = painterResource(R.drawable.ic_person_placeholder),
+                        error = painterResource(R.drawable.ic_person_placeholder),
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
                     val logoUrl = uiState.artist?.images?.logo?.toString()
                     if (logoUrl != null) {
-                        val logoWidth = (LocalConfiguration.current.screenWidthDp * 0.8f).dp
                         AsyncImage(
                             imageUrl = logoUrl,
                             contentDescription = uiState.artist?.name,
                             blurHash = null,
-                            modifier =
-                                Modifier.fillMaxWidth(0.8f)
-                                    .height(120.dp)
-                                    .align(Alignment.CenterHorizontally),
+                            modifier = Modifier.fillMaxWidth(0.75f).height(80.dp),
                             contentScale = ContentScale.Fit,
                             alignment = Alignment.Center,
-                            targetWidth = logoWidth,
-                            targetHeight = 120.dp,
+                            targetWidth = 240.dp,
+                            targetHeight = 80.dp,
                         )
                     } else {
                         Text(
                             text = uiState.artist?.name ?: "",
                             style =
-                                MaterialTheme.typography.headlineLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 32.sp,
+                                MaterialTheme.typography.headlineMedium.copy(
+                                    fontWeight = FontWeight.Bold
                                 ),
                             color = MaterialTheme.colorScheme.onBackground,
-                            maxLines = 3,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            modifier = Modifier.padding(horizontal = 20.dp),
                         )
                     }
+                }
 
-                    Row(
-                        modifier =
-                            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
+                LazyColumn(
+                    state = lazyListState,
+                    modifier =
+                        Modifier.weight(1f)
+                            .fillMaxHeight()
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
+                    contentPadding = PaddingValues(bottom = playerOffset + 16.dp),
+                ) {
+                    item { Spacer(Modifier.statusBarsPadding().height(64.dp)) }
+
+                    item {
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            IconButton(onClick = { viewModel.toggleFavorite() }) {
-                                Icon(
-                                    painter =
-                                        if (uiState.artist?.favorite == true)
-                                            painterResource(R.drawable.ic_favorite_filled)
-                                        else painterResource(R.drawable.ic_favorite),
-                                    contentDescription =
-                                        if (uiState.artist?.favorite == true)
-                                            "Remove from favorites"
-                                        else "Add to favorites",
-                                    tint =
-                                        if (uiState.artist?.favorite == true) Color.Red
-                                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(28.dp),
-                                )
-                            }
-                            uiState.artist?.let { artist ->
-                                IconButton(
-                                    onClick = {
-                                        startMusicService(context)
-                                        playerViewModel.playInstantMix(artist.id)
-                                    }
-                                ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                IconButton(onClick = { viewModel.toggleFavorite() }) {
                                     Icon(
-                                        painter = painterResource(R.drawable.ic_compass),
-                                        contentDescription = "Instant Mix",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        painter =
+                                            if (uiState.artist?.favorite == true)
+                                                painterResource(R.drawable.ic_favorite_filled)
+                                            else painterResource(R.drawable.ic_favorite),
+                                        contentDescription =
+                                            if (uiState.artist?.favorite == true)
+                                                "Remove from favorites"
+                                            else "Add to favorites",
+                                        tint =
+                                            if (uiState.artist?.favorite == true) Color.Red
+                                            else MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(28.dp),
                                     )
                                 }
+                                uiState.artist?.let { artist ->
+                                    IconButton(
+                                        enabled = !isOffline,
+                                        onClick = {
+                                            startMusicService(context)
+                                            playerViewModel.playInstantMix(artist.id)
+                                        },
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_compass),
+                                            contentDescription = "Instant Mix",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(28.dp),
+                                        )
+                                    }
+                                    IconButton(
+                                        enabled = !isOffline,
+                                        onClick = {
+                                            startMusicService(context)
+                                            playerViewModel.playArtistRadio(artist.id)
+                                        },
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_radio),
+                                            contentDescription = "Start Radio",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(28.dp),
+                                        )
+                                    }
+                                }
+                            }
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(end = 8.dp),
+                            ) {
                                 IconButton(
                                     onClick = {
-                                        startMusicService(context)
-                                        playerViewModel.playArtistRadio(artist.id)
+                                        if (uiState.topTracks.isNotEmpty()) {
+                                            startMusicService(context)
+                                            playerViewModel.playQueue(
+                                                uiState.topTracks.shuffled(),
+                                                0,
+                                            )
+                                        }
                                     }
                                 ) {
                                     Icon(
-                                        painter = painterResource(R.drawable.ic_radio),
-                                        contentDescription = "Start Radio",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        painter = painterResource(R.drawable.ic_arrows_shuffle),
+                                        contentDescription = "Shuffle",
+                                        tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(28.dp),
                                     )
                                 }
-                            }
-                        }
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            IconButton(
-                                onClick = {
-                                    if (uiState.topTracks.isNotEmpty()) {
-                                        startMusicService(context)
-                                        playerViewModel.playQueue(uiState.topTracks.shuffled(), 0)
-                                    }
+                                FloatingActionButton(
+                                    onClick = {
+                                        if (uiState.topTracks.isNotEmpty()) {
+                                            startMusicService(context)
+                                            playerViewModel.playQueue(uiState.topTracks, 0)
+                                        }
+                                    },
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                    shape = CircleShape,
+                                    modifier = Modifier.size(56.dp),
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_player_play_filled),
+                                        contentDescription = "Play",
+                                        modifier = Modifier.size(26.dp),
+                                    )
                                 }
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_arrows_shuffle),
-                                    contentDescription = "Shuffle",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(28.dp),
-                                )
-                            }
-                            FloatingActionButton(
-                                onClick = {
-                                    if (uiState.topTracks.isNotEmpty()) {
-                                        startMusicService(context)
-                                        playerViewModel.playQueue(uiState.topTracks, 0)
-                                    }
-                                },
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                                shape = CircleShape,
-                                modifier = Modifier.size(56.dp),
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_player_play_filled),
-                                    contentDescription = "Play",
-                                    modifier = Modifier.size(26.dp),
-                                )
                             }
                         }
                     }
 
                     val overview = uiState.artist?.overview
                     if (!overview.isNullOrBlank()) {
-                        ArtistOverviewSection(
-                            overview = overview,
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-                        )
+                        item {
+                            ArtistOverviewSection(
+                                overview = overview,
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                            )
+                        }
                     }
 
                     val genres = uiState.artist?.genres.orEmpty()
                     if (genres.isNotEmpty()) {
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            items(genres) { genre ->
-                                androidx.compose.material3.SuggestionChip(
-                                    onClick = {},
-                                    label = {
-                                        Text(genre, style = MaterialTheme.typography.labelMedium)
-                                    },
-                                )
+                        item {
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                items(genres) { genre ->
+                                    androidx.compose.material3.SuggestionChip(
+                                        onClick = {},
+                                        label = {
+                                            Text(
+                                                genre,
+                                                style = MaterialTheme.typography.labelMedium,
+                                            )
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
 
                     if (uiState.topTracks.isNotEmpty()) {
-                        var showAllTracks by remember { mutableStateOf(false) }
-                        val fixedTracks = uiState.topTracks.take(5)
-                        val extraTracks = uiState.topTracks.drop(5)
-                        val hasMore = extraTracks.isNotEmpty()
+                        item {
+                            val fixedTracks = uiState.topTracks.take(5)
+                            val extraTracks = uiState.topTracks.drop(5)
+                            val hasMore = extraTracks.isNotEmpty()
+                            val fadeOutModifier =
+                                if (hasMore && !showAllTracks) {
+                                    Modifier.graphicsLayer { alpha = 0.99f }
+                                        .drawWithCache {
+                                            val gradient =
+                                                Brush.verticalGradient(
+                                                    colors = listOf(Color.Black, Color.Transparent),
+                                                    startY = size.height - 80.dp.toPx(),
+                                                    endY = size.height,
+                                                )
+                                            onDrawWithContent {
+                                                drawContent()
+                                                drawRect(gradient, blendMode = BlendMode.DstIn)
+                                            }
+                                        }
+                                } else Modifier
 
+                            Text(
+                                text = "Popular",
+                                style =
+                                    MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                color = MaterialTheme.colorScheme.onBackground,
+                                modifier =
+                                    Modifier.padding(
+                                        start = 20.dp,
+                                        top = 24.dp,
+                                        bottom = 12.dp,
+                                    ),
+                            )
+
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                Column(modifier = fadeOutModifier) {
+                                    fixedTracks.forEachIndexed { index, track ->
+                                        MusicTrackRow(
+                                            track = track,
+                                            isPlaying = track.id == playbackState.currentTrack?.id,
+                                            trackNumber = index + 1,
+                                            showAlbumArt = true,
+                                            onClick = {
+                                                startMusicService(context)
+                                                playerViewModel.playQueue(
+                                                    uiState.topTracks,
+                                                    index,
+                                                )
+                                            },
+                                            onInstantMix =
+                                                if (isOffline) null
+                                                else
+                                                    ({
+                                                        startMusicService(context)
+                                                        playerViewModel.playInstantMix(track.id)
+                                                    }),
+                                            onStartRadio =
+                                                track.artistId?.let { artistId ->
+                                                    {
+                                                        startMusicService(context)
+                                                        playerViewModel.playArtistRadio(artistId)
+                                                    }
+                                                },
+                                            onAddNext = { playerViewModel.addNext(listOf(track)) },
+                                            onAddLast = { playerViewModel.addLast(listOf(track)) },
+                                            onFavorite = {
+                                                viewModel.toggleTrackFavorite(track.id)
+                                            },
+                                            onAddToPlaylist =
+                                                if (isOffline) null
+                                                else
+                                                    ({
+                                                        addToPlaylistTrackIds = listOf(track.id)
+                                                        addToPlaylistViewModel.reset()
+                                                        showAddToPlaylist = true
+                                                    }),
+                                            onDownload = { viewModel.downloadTrack(track.id) },
+                                        )
+                                    }
+                                    AnimatedVisibility(
+                                        visible = showAllTracks,
+                                        enter = expandVertically() + fadeIn(),
+                                        exit = shrinkVertically() + fadeOut(),
+                                    ) {
+                                        Column {
+                                            extraTracks.forEachIndexed { i, track ->
+                                                MusicTrackRow(
+                                                    track = track,
+                                                    isPlaying =
+                                                        track.id == playbackState.currentTrack?.id,
+                                                    trackNumber = fixedTracks.size + i + 1,
+                                                    showAlbumArt = true,
+                                                    onClick = {
+                                                        startMusicService(context)
+                                                        playerViewModel.playQueue(
+                                                            uiState.topTracks,
+                                                            fixedTracks.size + i,
+                                                        )
+                                                    },
+                                                    onInstantMix = {
+                                                        startMusicService(context)
+                                                        playerViewModel.playInstantMix(track.id)
+                                                    },
+                                                    onStartRadio =
+                                                        track.artistId?.let { artistId ->
+                                                            {
+                                                                startMusicService(context)
+                                                                playerViewModel.playArtistRadio(
+                                                                    artistId
+                                                                )
+                                                            }
+                                                        },
+                                                    onAddNext = {
+                                                        playerViewModel.addNext(listOf(track))
+                                                    },
+                                                    onAddLast = {
+                                                        playerViewModel.addLast(listOf(track))
+                                                    },
+                                                    onFavorite = {
+                                                        viewModel.toggleTrackFavorite(track.id)
+                                                    },
+                                                    onAddToPlaylist = {
+                                                        addToPlaylistTrackIds = listOf(track.id)
+                                                        addToPlaylistViewModel.reset()
+                                                        showAddToPlaylist = true
+                                                    },
+                                                    onDownload = {
+                                                        viewModel.downloadTrack(track.id)
+                                                    },
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (hasMore) {
+                                Box(
+                                    modifier =
+                                        Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 4.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    OutlinedButton(
+                                        onClick = { showAllTracks = !showAllTracks },
+                                        shape = CircleShape,
+                                        contentPadding =
+                                            PaddingValues(horizontal = 28.dp, vertical = 10.dp),
+                                    ) {
+                                        Crossfade(
+                                            targetState = showAllTracks,
+                                            label = "see_more_label",
+                                        ) { expanded ->
+                                            Text(
+                                                text = if (expanded) "See less" else "See more",
+                                                style = MaterialTheme.typography.labelLarge,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (uiState.albums.isNotEmpty()) {
+                        item {
+                            Text(
+                                text = "Albums",
+                                style =
+                                    MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                color = MaterialTheme.colorScheme.onBackground,
+                                modifier =
+                                    Modifier.padding(start = 20.dp, top = 32.dp, bottom = 16.dp),
+                            )
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 20.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            ) {
+                                items(uiState.albums, key = { it.id }) { album ->
+                                    Box(modifier = Modifier.width(140.dp)) {
+                                        MusicAlbumCard(
+                                            album = album,
+                                            onClick = {
+                                                navController.navigate(
+                                                    Destination.createMusicAlbumRoute(
+                                                        album.id.toString()
+                                                    )
+                                                )
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (uiState.appearsOn.isNotEmpty()) {
+                        item {
+                            Text(
+                                text = "Appears On",
+                                style =
+                                    MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                color = MaterialTheme.colorScheme.onBackground,
+                                modifier =
+                                    Modifier.padding(start = 20.dp, top = 32.dp, bottom = 16.dp),
+                            )
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 20.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            ) {
+                                items(uiState.appearsOn, key = { it.id }) { album ->
+                                    Box(modifier = Modifier.width(140.dp)) {
+                                        MusicAlbumCard(
+                                            album = album,
+                                            onClick = {
+                                                navController.navigate(
+                                                    Destination.createMusicAlbumRoute(
+                                                        album.id.toString()
+                                                    )
+                                                )
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    item { Spacer(Modifier.height(32.dp)) }
+                }
+            }
+        } else {
+            LazyColumn(
+                state = portraitListState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = playerOffset + 16.dp),
+            ) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().fillParentMaxHeight(0.6f)) {
+                        AsyncImage(
+                            imageUrl =
+                                (uiState.artist?.images?.backdrop
+                                        ?: uiState.artist?.images?.primary)
+                                    ?.toString(),
+                            contentDescription = uiState.artist?.name,
+                            blurHash =
+                                uiState.artist?.images?.backdropImageBlurHash
+                                    ?: uiState.artist?.images?.primaryImageBlurHash,
+                            targetWidth = 800.dp,
+                            targetHeight = 600.dp,
+                            modifier =
+                                Modifier.fillMaxSize()
+                                    .graphicsLayer { alpha = 0.99f }
+                                    .drawWithCache {
+                                        val gradient =
+                                            Brush.verticalGradient(
+                                                colors = listOf(Color.Black, Color.Transparent),
+                                                startY = size.height * 0.72f,
+                                                endY = size.height,
+                                            )
+                                        onDrawWithContent {
+                                            drawContent()
+                                            drawRect(gradient, blendMode = BlendMode.DstIn)
+                                        }
+                                    },
+                            contentScale = ContentScale.Crop,
+                        )
+                    }
+                }
+
+                item(key = "artist_header") {
+                    Column(
+                        modifier = Modifier.artistContentOffset(),
+                        verticalArrangement = Arrangement.spacedBy(0.dp),
+                    ) {
+                        val logoUrl = uiState.artist?.images?.logo?.toString()
+                        if (logoUrl != null) {
+                            val logoWidth = (LocalConfiguration.current.screenWidthDp * 0.8f).dp
+                            AsyncImage(
+                                imageUrl = logoUrl,
+                                contentDescription = uiState.artist?.name,
+                                blurHash = null,
+                                modifier =
+                                    Modifier.fillMaxWidth(0.8f)
+                                        .height(120.dp)
+                                        .align(Alignment.CenterHorizontally),
+                                contentScale = ContentScale.Fit,
+                                alignment = Alignment.Center,
+                                targetWidth = logoWidth,
+                                targetHeight = 120.dp,
+                            )
+                        } else {
+                            Text(
+                                text = uiState.artist?.name ?: "",
+                                style =
+                                    MaterialTheme.typography.headlineLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 32.sp,
+                                    ),
+                                color = MaterialTheme.colorScheme.onBackground,
+                                maxLines = 3,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            )
+                        }
+
+                        Row(
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                IconButton(onClick = { viewModel.toggleFavorite() }) {
+                                    Icon(
+                                        painter =
+                                            if (uiState.artist?.favorite == true)
+                                                painterResource(R.drawable.ic_favorite_filled)
+                                            else painterResource(R.drawable.ic_favorite),
+                                        contentDescription =
+                                            if (uiState.artist?.favorite == true)
+                                                "Remove from favorites"
+                                            else "Add to favorites",
+                                        tint =
+                                            if (uiState.artist?.favorite == true) Color.Red
+                                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(28.dp),
+                                    )
+                                }
+                                uiState.artist?.let { artist ->
+                                    IconButton(
+                                        enabled = !isOffline,
+                                        onClick = {
+                                            startMusicService(context)
+                                            playerViewModel.playInstantMix(artist.id)
+                                        },
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_compass),
+                                            contentDescription = "Instant Mix",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(28.dp),
+                                        )
+                                    }
+                                    IconButton(
+                                        enabled = !isOffline,
+                                        onClick = {
+                                            startMusicService(context)
+                                            playerViewModel.playArtistRadio(artist.id)
+                                        },
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_radio),
+                                            contentDescription = "Start Radio",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(28.dp),
+                                        )
+                                    }
+                                }
+                            }
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        if (uiState.topTracks.isNotEmpty()) {
+                                            startMusicService(context)
+                                            playerViewModel.playQueue(
+                                                uiState.topTracks.shuffled(),
+                                                0,
+                                            )
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_arrows_shuffle),
+                                        contentDescription = "Shuffle",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(28.dp),
+                                    )
+                                }
+                                FloatingActionButton(
+                                    onClick = {
+                                        if (uiState.topTracks.isNotEmpty()) {
+                                            startMusicService(context)
+                                            playerViewModel.playQueue(uiState.topTracks, 0)
+                                        }
+                                    },
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                    shape = CircleShape,
+                                    modifier = Modifier.size(56.dp),
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_player_play_filled),
+                                        contentDescription = "Play",
+                                        modifier = Modifier.size(26.dp),
+                                    )
+                                }
+                            }
+                        }
+
+                        val overview = uiState.artist?.overview
+                        if (!overview.isNullOrBlank()) {
+                            ArtistOverviewSection(
+                                overview = overview,
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                            )
+                        }
+
+                        val genres = uiState.artist?.genres.orEmpty()
+                        if (genres.isNotEmpty()) {
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                items(genres) { genre ->
+                                    androidx.compose.material3.SuggestionChip(
+                                        onClick = {},
+                                        label = {
+                                            Text(
+                                                genre,
+                                                style = MaterialTheme.typography.labelMedium,
+                                            )
+                                        },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (uiState.topTracks.isNotEmpty()) {
+                    val fixedTracks = uiState.topTracks.take(5)
+                    val extraTracks = uiState.topTracks.drop(5)
+                    val hasMore = extraTracks.isNotEmpty()
+
+                    item(key = "popular_header") {
                         Text(
                             text = "Popular",
                             style =
@@ -314,117 +785,139 @@ fun MusicArtistScreen(
                                     fontWeight = FontWeight.Bold
                                 ),
                             color = MaterialTheme.colorScheme.onBackground,
-                            modifier = Modifier.padding(start = 20.dp, top = 24.dp, bottom = 12.dp),
+                            modifier =
+                                Modifier.padding(
+                                    start = 20.dp,
+                                    top = 24.dp,
+                                    bottom = 12.dp,
+                                ),
                         )
+                    }
 
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            Column {
-                                fixedTracks.forEachIndexed { index, track ->
-                                    MusicTrackRow(
-                                        track = track,
-                                        isPlaying = track.id == playbackState.currentTrack?.id,
-                                        trackNumber = index + 1,
-                                        showAlbumArt = true,
-                                        onClick = {
-                                            startMusicService(context)
-                                            playerViewModel.playQueue(uiState.topTracks, index)
-                                        },
-                                        onInstantMix = {
+                    itemsIndexed(
+                        fixedTracks,
+                        key = { _, track -> "fixed_${track.id}" },
+                    ) { index, track ->
+                        val isLastFixedTrack = index == fixedTracks.lastIndex
+                        val rowModifier =
+                            if (isLastFixedTrack && hasMore && !showAllTracks) {
+                                Modifier.graphicsLayer { alpha = 0.99f }
+                                    .drawWithCache {
+                                        val gradient =
+                                            Brush.verticalGradient(
+                                                colors = listOf(Color.Black, Color.Transparent),
+                                                startY = size.height * 0.2f,
+                                                endY = size.height,
+                                            )
+                                        onDrawWithContent {
+                                            drawContent()
+                                            drawRect(gradient, blendMode = BlendMode.DstIn)
+                                        }
+                                    }
+                            } else Modifier
+
+                        Box(modifier = rowModifier) {
+                            MusicTrackRow(
+                                track = track,
+                                isPlaying = track.id == playbackState.currentTrack?.id,
+                                trackNumber = index + 1,
+                                showAlbumArt = true,
+                                onClick = {
+                                    startMusicService(context)
+                                    playerViewModel.playQueue(uiState.topTracks, index)
+                                },
+                                onInstantMix =
+                                    if (isOffline) null
+                                    else
+                                        ({
                                             startMusicService(context)
                                             playerViewModel.playInstantMix(track.id)
-                                        },
-                                        onStartRadio =
-                                            track.artistId?.let { artistId ->
-                                                {
-                                                    startMusicService(context)
-                                                    playerViewModel.playArtistRadio(artistId)
-                                                }
-                                            },
-                                        onAddNext = { playerViewModel.addNext(listOf(track)) },
-                                        onAddLast = { playerViewModel.addLast(listOf(track)) },
-                                        onFavorite = { viewModel.toggleTrackFavorite(track.id) },
-                                        onAddToPlaylist = {
+                                        }),
+                                onStartRadio =
+                                    track.artistId?.let { artistId ->
+                                        {
+                                            startMusicService(context)
+                                            playerViewModel.playArtistRadio(artistId)
+                                        }
+                                    },
+                                onAddNext = { playerViewModel.addNext(listOf(track)) },
+                                onAddLast = { playerViewModel.addLast(listOf(track)) },
+                                onFavorite = { viewModel.toggleTrackFavorite(track.id) },
+                                onAddToPlaylist =
+                                    if (isOffline) null
+                                    else
+                                        ({
                                             addToPlaylistTrackIds = listOf(track.id)
                                             addToPlaylistViewModel.reset()
                                             showAddToPlaylist = true
-                                        },
-                                        onDownload = { viewModel.downloadTrack(track.id) },
-                                    )
-                                }
-                                AnimatedVisibility(
-                                    visible = showAllTracks,
-                                    enter = expandVertically() + fadeIn(),
-                                    exit = shrinkVertically() + fadeOut(),
-                                ) {
-                                    Column {
-                                        extraTracks.forEachIndexed { i, track ->
-                                            MusicTrackRow(
-                                                track = track,
-                                                isPlaying =
-                                                    track.id == playbackState.currentTrack?.id,
-                                                trackNumber = fixedTracks.size + i + 1,
-                                                showAlbumArt = true,
-                                                onClick = {
-                                                    startMusicService(context)
-                                                    playerViewModel.playQueue(
-                                                        uiState.topTracks,
-                                                        fixedTracks.size + i,
-                                                    )
+                                        }),
+                                onDownload = { viewModel.downloadTrack(track.id) },
+                            )
+                        }
+                    }
+
+                    if (hasMore) {
+                        item(key = "extra_tracks") {
+                            AnimatedVisibility(
+                                visible = showAllTracks,
+                                enter = expandVertically() + fadeIn(),
+                                exit = shrinkVertically() + fadeOut(),
+                            ) {
+                                Column {
+                                    extraTracks.forEachIndexed { i, track ->
+                                        MusicTrackRow(
+                                            track = track,
+                                            isPlaying = track.id == playbackState.currentTrack?.id,
+                                            trackNumber = fixedTracks.size + i + 1,
+                                            showAlbumArt = true,
+                                            onClick = {
+                                                startMusicService(context)
+                                                playerViewModel.playQueue(
+                                                    uiState.topTracks,
+                                                    fixedTracks.size + i,
+                                                )
+                                            },
+                                            onInstantMix =
+                                                if (isOffline) null
+                                                else
+                                                    ({
+                                                        startMusicService(context)
+                                                        playerViewModel.playInstantMix(track.id)
+                                                    }),
+                                            onStartRadio =
+                                                track.artistId?.let { artistId ->
+                                                    {
+                                                        startMusicService(context)
+                                                        playerViewModel.playArtistRadio(artistId)
+                                                    }
                                                 },
-                                                onInstantMix = {
-                                                    startMusicService(context)
-                                                    playerViewModel.playInstantMix(track.id)
-                                                },
-                                                onStartRadio =
-                                                    track.artistId?.let { artistId ->
-                                                        {
-                                                            startMusicService(context)
-                                                            playerViewModel.playArtistRadio(
-                                                                artistId
-                                                            )
-                                                        }
-                                                    },
-                                                onAddNext = {
-                                                    playerViewModel.addNext(listOf(track))
-                                                },
-                                                onAddLast = {
-                                                    playerViewModel.addLast(listOf(track))
-                                                },
-                                                onFavorite = {
-                                                    viewModel.toggleTrackFavorite(track.id)
-                                                },
-                                                onAddToPlaylist = {
-                                                    addToPlaylistTrackIds = listOf(track.id)
-                                                    addToPlaylistViewModel.reset()
-                                                    showAddToPlaylist = true
-                                                },
-                                                onDownload = { viewModel.downloadTrack(track.id) },
-                                            )
-                                        }
+                                            onAddNext = {
+                                                playerViewModel.addNext(listOf(track))
+                                            },
+                                            onAddLast = {
+                                                playerViewModel.addLast(listOf(track))
+                                            },
+                                            onFavorite = {
+                                                viewModel.toggleTrackFavorite(track.id)
+                                            },
+                                            onAddToPlaylist =
+                                                if (isOffline) null
+                                                else
+                                                    ({
+                                                        addToPlaylistTrackIds = listOf(track.id)
+                                                        addToPlaylistViewModel.reset()
+                                                        showAddToPlaylist = true
+                                                    }),
+                                            onDownload = {
+                                                viewModel.downloadTrack(track.id)
+                                            },
+                                        )
                                     }
                                 }
                             }
-
-                            if (hasMore && !showAllTracks) {
-                                Box(
-                                    modifier =
-                                        Modifier.align(Alignment.BottomCenter)
-                                            .fillMaxWidth()
-                                            .height(80.dp)
-                                            .background(
-                                                Brush.verticalGradient(
-                                                    colors =
-                                                        listOf(
-                                                            Color.Transparent,
-                                                            MaterialTheme.colorScheme.background,
-                                                        )
-                                                )
-                                            )
-                                )
-                            }
                         }
 
-                        if (hasMore) {
+                        item(key = "see_more") {
                             Box(
                                 modifier =
                                     Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 4.dp),
@@ -449,8 +942,10 @@ fun MusicArtistScreen(
                             }
                         }
                     }
+                }
 
-                    if (uiState.albums.isNotEmpty()) {
+                if (uiState.albums.isNotEmpty()) {
+                    item(key = "albums_section") {
                         Text(
                             text = "Albums",
                             style =
@@ -480,8 +975,10 @@ fun MusicArtistScreen(
                             }
                         }
                     }
+                }
 
-                    if (uiState.appearsOn.isNotEmpty()) {
+                if (uiState.appearsOn.isNotEmpty()) {
+                    item(key = "appears_on_section") {
                         Text(
                             text = "Appears On",
                             style =
@@ -511,9 +1008,9 @@ fun MusicArtistScreen(
                             }
                         }
                     }
-
-                    Spacer(Modifier.height(32.dp))
                 }
+
+                item { Spacer(Modifier.height(32.dp)) }
             }
         }
 
@@ -544,7 +1041,7 @@ fun MusicArtistScreen(
                     }
                 }
             },
-            backgroundOpacity = { topBarOpacity },
+            backgroundOpacity = { if (isLandscape) 0f else topBarOpacity },
         )
 
         SnackbarHost(

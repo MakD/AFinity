@@ -86,6 +86,7 @@ fun SharedTransitionScope.MusicPlayerScreen(
     val showLyrics by viewModel.showLyrics.collectAsStateWithLifecycle()
     val lyricsLoading by viewModel.lyricsLoading.collectAsStateWithLifecycle()
     val isMusicCasting by viewModel.isMusicCasting.collectAsStateWithLifecycle()
+    val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var showQueue by remember { mutableStateOf(false) }
@@ -105,7 +106,7 @@ fun SharedTransitionScope.MusicPlayerScreen(
             showCastChooser = false
         }
     }
-    AndroidView(factory = { mediaRouteButton }, modifier = androidx.compose.ui.Modifier)
+    AndroidView(factory = { mediaRouteButton }, modifier = Modifier)
 
     val coverUrl = playbackState.currentTrack?.images?.primary?.toString()
     val coverBlurHash = playbackState.currentTrack?.images?.primaryImageBlurHash
@@ -151,13 +152,19 @@ fun SharedTransitionScope.MusicPlayerScreen(
                     onNavigateBack = onNavigateBack,
                     onOpenQueue = { showQueue = true },
                     onOpenSleepTimer = { showSleepTimer = true },
-                    onAddToPlaylist = {
-                        addToPlaylistViewModel.reset()
-                        showAddToPlaylist = true
-                    },
-                    onInstantMix = {
-                        playbackState.currentTrack?.id?.let { viewModel.playInstantMix(it) }
-                    },
+                    onAddToPlaylist =
+                        if (isOffline) null
+                        else
+                            ({
+                                addToPlaylistViewModel.reset()
+                                showAddToPlaylist = true
+                            }),
+                    onInstantMix =
+                        if (isOffline) null
+                        else
+                            ({
+                                playbackState.currentTrack?.id?.let { viewModel.playInstantMix(it) }
+                            }),
                     onCastClick = { showCastChooser = true },
                     isMusicCasting = isMusicCasting,
                     paddingValues = paddingValues,
@@ -175,13 +182,19 @@ fun SharedTransitionScope.MusicPlayerScreen(
                     onNavigateBack = onNavigateBack,
                     onOpenQueue = { showQueue = true },
                     onOpenSleepTimer = { showSleepTimer = true },
-                    onAddToPlaylist = {
-                        addToPlaylistViewModel.reset()
-                        showAddToPlaylist = true
-                    },
-                    onInstantMix = {
-                        playbackState.currentTrack?.id?.let { viewModel.playInstantMix(it) }
-                    },
+                    onAddToPlaylist =
+                        if (isOffline) null
+                        else
+                            ({
+                                addToPlaylistViewModel.reset()
+                                showAddToPlaylist = true
+                            }),
+                    onInstantMix =
+                        if (isOffline) null
+                        else
+                            ({
+                                playbackState.currentTrack?.id?.let { viewModel.playInstantMix(it) }
+                            }),
                     onCastClick = { showCastChooser = true },
                     isMusicCasting = isMusicCasting,
                     paddingValues = paddingValues,
@@ -242,8 +255,8 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
     onNavigateBack: () -> Unit,
     onOpenQueue: () -> Unit,
     onOpenSleepTimer: () -> Unit,
-    onAddToPlaylist: () -> Unit = {},
-    onInstantMix: () -> Unit = {},
+    onAddToPlaylist: (() -> Unit)? = null,
+    onInstantMix: (() -> Unit)? = null,
     onCastClick: () -> Unit = {},
     isMusicCasting: Boolean = false,
     paddingValues: PaddingValues,
@@ -319,8 +332,7 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Surface(
                             modifier =
-                                Modifier.fillMaxWidth()
-                                    .aspectRatio(1f)
+                                Modifier.aspectRatio(1f)
                                     .sharedElement(
                                         sharedContentState =
                                             rememberSharedContentState(
@@ -409,18 +421,25 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                 )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onAddToPlaylist) {
+                IconButton(
+                    enabled = onAddToPlaylist != null,
+                    onClick = onAddToPlaylist ?: {},
+                ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_playlist),
                         contentDescription = "Add to playlist",
-                        tint = Color.White.copy(alpha = 0.8f),
+                        tint =
+                            Color.White.copy(alpha = if (onAddToPlaylist != null) 0.8f else 0.3f),
                     )
                 }
-                IconButton(onClick = onInstantMix) {
+                IconButton(
+                    enabled = onInstantMix != null,
+                    onClick = onInstantMix ?: {},
+                ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_compass),
                         contentDescription = "Instant Mix",
-                        tint = Color.White.copy(alpha = 0.8f),
+                        tint = Color.White.copy(alpha = if (onInstantMix != null) 0.8f else 0.3f),
                     )
                 }
             }
@@ -446,7 +465,7 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
         Spacer(modifier = Modifier.height(28.dp))
 
         Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 50.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
@@ -572,8 +591,8 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
     onNavigateBack: () -> Unit,
     onOpenQueue: () -> Unit,
     onOpenSleepTimer: () -> Unit,
-    onAddToPlaylist: () -> Unit = {},
-    onInstantMix: () -> Unit = {},
+    onAddToPlaylist: (() -> Unit)? = null,
+    onInstantMix: (() -> Unit)? = null,
     onCastClick: () -> Unit = {},
     isMusicCasting: Boolean = false,
     paddingValues: PaddingValues,
@@ -746,18 +765,28 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                     )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onAddToPlaylist) {
+                    IconButton(
+                        enabled = onAddToPlaylist != null,
+                        onClick = onAddToPlaylist ?: {},
+                    ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_playlist),
                             contentDescription = "Add to playlist",
-                            tint = Color.White.copy(alpha = 0.8f),
+                            tint =
+                                Color.White.copy(
+                                    alpha = if (onAddToPlaylist != null) 0.8f else 0.3f
+                                ),
                         )
                     }
-                    IconButton(onClick = onInstantMix) {
+                    IconButton(
+                        enabled = onInstantMix != null,
+                        onClick = onInstantMix ?: {},
+                    ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_compass),
                             contentDescription = "Instant Mix",
-                            tint = Color.White.copy(alpha = 0.8f),
+                            tint =
+                                Color.White.copy(alpha = if (onInstantMix != null) 0.8f else 0.3f),
                         )
                     }
                 }

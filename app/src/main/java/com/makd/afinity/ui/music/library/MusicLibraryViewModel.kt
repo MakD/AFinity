@@ -85,6 +85,13 @@ val ARTIST_SORT_OPTIONS =
         MusicSortOption.Random,
     )
 
+data class MadeForYouSnapshot(
+    val randomTracks: List<AfinityTrack>,
+    val radioSections: List<Pair<String, List<AfinityTrack>>>,
+    val songsByGenreSections: List<Pair<String, List<AfinityTrack>>>,
+    val randomAlbums: List<AfinityAlbum>,
+)
+
 data class MusicLibraryUiState(
     val playlists: List<AfinityPlaylist> = emptyList(),
     val isLoadingPlaylists: Boolean = false,
@@ -110,6 +117,7 @@ data class MusicLibraryUiState(
     val newGenreReleases: List<Pair<String, List<AfinityAlbum>>> = emptyList(),
     val radioSections: List<Pair<String, List<AfinityTrack>>> = emptyList(),
     val homeRowOrder: List<Int> = generateHomeRowOrder(),
+    val madeForYouSnapshot: MadeForYouSnapshot? = null,
     val trackFavoriteOverrides: Map<UUID, Boolean> = emptyMap(),
 )
 
@@ -300,6 +308,19 @@ constructor(
         viewModelScope.launch { loadPlaylists() }
     }
 
+    private fun updateMadeForYouSnapshot() {
+        _uiState.update { state ->
+            state.copy(
+                madeForYouSnapshot = MadeForYouSnapshot(
+                    randomTracks = state.randomTracks,
+                    radioSections = state.radioSections,
+                    songsByGenreSections = state.songsByGenreSections,
+                    randomAlbums = state.randomAlbums,
+                )
+            )
+        }
+    }
+
     private suspend fun loadMusicHomeSections() {
         val hasMusicLibrary =
             appDataRepository.libraries.value.any { it.type == CollectionType.Music }
@@ -335,6 +356,10 @@ constructor(
                 runCatching { musicRepository.getRandomAlbums(limit = 15) }
                     .getOrDefault(emptyList())
             }
+            val randomTracksJob = async {
+                runCatching { musicRepository.getRandomTracks(limit = 15) }
+                    .getOrDefault(emptyList())
+            }
 
             seedRecentTracks = recentTracksJob.await()
             seedRecentAlbums = recentPlayedJob.await()
@@ -350,7 +375,15 @@ constructor(
             val mostPlayed = mostPlayedJob.await()
             if (mostPlayed.isNotEmpty()) _uiState.update { it.copy(mostPlayedAlbums = mostPlayed) }
             val randomAlbums = randomAlbumsJob.await()
-            if (randomAlbums.isNotEmpty()) _uiState.update { it.copy(randomAlbums = randomAlbums) }
+            if (randomAlbums.isNotEmpty()) {
+                _uiState.update { it.copy(randomAlbums = randomAlbums) }
+                updateMadeForYouSnapshot()
+            }
+            val randomTracks = randomTracksJob.await()
+            if (randomTracks.isNotEmpty()) {
+                _uiState.update { it.copy(randomTracks = randomTracks) }
+                updateMadeForYouSnapshot()
+            }
         }
 
         coroutineScope {
@@ -372,13 +405,13 @@ constructor(
                             .map { (artistId, _) ->
                                 async {
                                     runCatching {
-                                            val artist =
-                                                musicRepository.getArtistById(artistId)
-                                                    ?: return@runCatching null
-                                            val albums =
-                                                musicRepository.getArtistAlbums(artistId).take(12)
-                                            if (albums.size >= 3) artist to albums else null
-                                        }
+                                        val artist =
+                                            musicRepository.getArtistById(artistId)
+                                                ?: return@runCatching null
+                                        val albums =
+                                            musicRepository.getArtistAlbums(artistId).take(12)
+                                        if (albums.size >= 3) artist to albums else null
+                                    }
                                         .getOrNull()
                                 }
                             }
@@ -399,10 +432,10 @@ constructor(
                             .map { genre ->
                                 async {
                                     runCatching {
-                                            val albums =
-                                                musicRepository.getAlbumsByGenre(genre, limit = 15)
-                                            if (albums.isNotEmpty()) genre to albums else null
-                                        }
+                                        val albums =
+                                            musicRepository.getAlbumsByGenre(genre, limit = 15)
+                                        if (albums.isNotEmpty()) genre to albums else null
+                                    }
                                         .getOrNull()
                                 }
                             }
@@ -435,25 +468,21 @@ constructor(
                             .map { genre ->
                                 async {
                                     runCatching {
-                                            val tracks =
-                                                musicRepository.getTracksByGenre(genre, limit = 15)
-                                            if (tracks.isNotEmpty()) genre to tracks else null
-                                        }
+                                        val tracks =
+                                            musicRepository.getTracksByGenre(genre, limit = 15)
+                                        if (tracks.isNotEmpty()) genre to tracks else null
+                                    }
                                         .getOrNull()
                                 }
                             }
                             .awaitAll()
                             .filterNotNull()
-                    if (sections.isNotEmpty())
+                    if (sections.isNotEmpty()) {
                         _uiState.update { it.copy(songsByGenreSections = sections) }
+                        updateMadeForYouSnapshot()
+                    }
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load songs by genre")
-                }
-            }
-            launch {
-                runCatching {
-                    val t = musicRepository.getRandomTracks(limit = 15)
-                    if (t.isNotEmpty()) _uiState.update { it.copy(randomTracks = t) }
                 }
             }
             launch {
@@ -502,29 +531,28 @@ constructor(
             }
             launch {
                 try {
-                    val seedArtists =
-                        buildList {
-                                seedRecentAlbums.forEach { a ->
-                                    a.artistId?.let { id -> add(id to (a.artist ?: "")) }
-                                }
-                                seedRecentTracks.forEach { t ->
-                                    t.artistId?.let { id -> add(id to (t.artist ?: "")) }
-                                }
-                            }
-                            .distinctBy { it.first }
-                            .take(3)
+                    val seedArtists = buildList {
+                        seedRecentAlbums.forEach { a ->
+                            a.artistId?.let { id -> add(id to (a.artist ?: "")) }
+                        }
+                        seedRecentTracks.forEach { t ->
+                            t.artistId?.let { id -> add(id to (t.artist ?: "")) }
+                        }
+                    }
+                        .distinctBy { it.first }
+                        .take(3)
                     val sections =
                         seedArtists
                             .map { (artistId, artistName) ->
                                 async {
                                     runCatching {
-                                            val tracks =
-                                                musicRepository.getArtistTopTracks(
-                                                    artistId,
-                                                    limit = 8,
-                                                )
-                                            if (tracks.isNotEmpty()) artistName to tracks else null
-                                        }
+                                        val tracks =
+                                            musicRepository.getArtistTopTracks(
+                                                artistId,
+                                                limit = 8,
+                                            )
+                                        if (tracks.isNotEmpty()) artistName to tracks else null
+                                    }
                                         .getOrNull()
                                 }
                             }
@@ -545,13 +573,13 @@ constructor(
                             .map { genre ->
                                 async {
                                     runCatching {
-                                            val albums =
-                                                musicRepository.getRecentlyAddedAlbumsByGenre(
-                                                    genre,
-                                                    limit = 12,
-                                                )
-                                            if (albums.isNotEmpty()) genre to albums else null
-                                        }
+                                        val albums =
+                                            musicRepository.getRecentlyAddedAlbumsByGenre(
+                                                genre,
+                                                limit = 12,
+                                            )
+                                        if (albums.isNotEmpty()) genre to albums else null
+                                    }
                                         .getOrNull()
                                 }
                             }
@@ -586,7 +614,10 @@ constructor(
                             }
                         }
                     }
-                    if (sections.isNotEmpty()) _uiState.update { it.copy(radioSections = sections) }
+                    if (sections.isNotEmpty()) {
+                        _uiState.update { it.copy(radioSections = sections) }
+                        updateMadeForYouSnapshot()
+                    }
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load radio sections")
                 }

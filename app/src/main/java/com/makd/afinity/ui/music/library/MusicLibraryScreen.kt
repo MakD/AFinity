@@ -2,10 +2,8 @@ package com.makd.afinity.ui.music.library
 
 import android.content.Context
 import android.content.Intent
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
+import android.content.res.Configuration
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -15,11 +13,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -32,7 +32,6 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -42,11 +41,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -54,10 +54,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
+import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -66,13 +66,13 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -82,7 +82,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -91,7 +93,6 @@ import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
-import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityAlbum
@@ -107,20 +108,18 @@ import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.home.components.ArtistAlbumsCarousel
 import com.makd.afinity.ui.home.components.LatestAlbumsSection
+import com.makd.afinity.ui.home.components.MostPlayedAlbumsSection
 import com.makd.afinity.ui.home.components.MusicAlbumRowSection
 import com.makd.afinity.ui.home.components.MusicGenreHomeSection
-import com.makd.afinity.ui.music.components.AddToPlaylistDialog
-import com.makd.afinity.ui.music.components.AddToPlaylistResult
-import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
 import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.music.components.MusicArtistCard
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
+import com.makd.afinity.ui.theme.CardDimensions
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.launch
 import java.util.UUID
 
 enum class LibraryFilter(val displayName: String) {
@@ -137,30 +136,10 @@ fun MusicLibraryScreen(
     navController: NavController,
     viewModel: MusicLibraryViewModel = hiltViewModel(),
     playerViewModel: MusicPlayerViewModel = hiltViewModel(),
-    addToPlaylistViewModel: AddToPlaylistViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val playbackState by playerViewModel.playbackState.collectAsStateWithLifecycle()
     val userProfileImageUrl by viewModel.userProfileImageUrl.collectAsStateWithLifecycle()
-    val trackSort by viewModel.trackSort.collectAsStateWithLifecycle()
-    val albumSort by viewModel.albumSort.collectAsStateWithLifecycle()
-    val artistSort by viewModel.artistSort.collectAsStateWithLifecycle()
-    val albumLetterFilter by viewModel.albumLetterFilter.collectAsStateWithLifecycle()
-    val artistLetterFilter by viewModel.artistLetterFilter.collectAsStateWithLifecycle()
-    val trackFilters by viewModel.trackFilters.collectAsStateWithLifecycle()
-    val albumFilters by viewModel.albumFilters.collectAsStateWithLifecycle()
-    val artistFilters by viewModel.artistFilters.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-    var addToPlaylistTrackIds by remember { mutableStateOf<List<UUID>>(emptyList()) }
-    var showAddToPlaylist by remember { mutableStateOf(false) }
-
-    val lazyTracks = viewModel.tracksPagingFlow.collectAsLazyPagingItems()
-    val lazyAlbums = viewModel.albumsPagingFlow.collectAsLazyPagingItems()
-    val lazyArtists = viewModel.artistsPagingFlow.collectAsLazyPagingItems()
-
-    var selectedFilter by rememberSaveable { mutableStateOf(LibraryFilter.Home) }
 
     val navBackStackEntry = navController.currentBackStackEntry
     DisposableEffect(navBackStackEntry) {
@@ -174,45 +153,15 @@ fun MusicLibraryScreen(
     }
 
     val homeListState = rememberLazyListState()
-    val tracksListState = rememberLazyListState()
-    val albumsGridState = rememberLazyGridState()
-    val artistsGridState = rememberLazyGridState()
-    val playlistsGridState = rememberLazyGridState()
 
-    val topBarOpacity by
-        remember(selectedFilter) {
-            derivedStateOf {
-                when (selectedFilter) {
-                    LibraryFilter.Home -> {
-                        if (homeListState.firstVisibleItemIndex > 1) 1f
-                        else (homeListState.firstVisibleItemScrollOffset / 300f).coerceIn(0f, 1f)
-                    }
-                    LibraryFilter.Tracks -> {
-                        if (tracksListState.firstVisibleItemIndex > 0) 1f
-                        else (tracksListState.firstVisibleItemScrollOffset / 300f).coerceIn(0f, 1f)
-                    }
-                    LibraryFilter.Albums -> {
-                        if (albumsGridState.firstVisibleItemIndex > 0) 1f
-                        else (albumsGridState.firstVisibleItemScrollOffset / 300f).coerceIn(0f, 1f)
-                    }
-                    LibraryFilter.Artists -> {
-                        if (artistsGridState.firstVisibleItemIndex > 0) 1f
-                        else (artistsGridState.firstVisibleItemScrollOffset / 300f).coerceIn(0f, 1f)
-                    }
-                    LibraryFilter.Playlists -> {
-                        if (playlistsGridState.firstVisibleItemIndex > 0) 1f
-                        else
-                            (playlistsGridState.firstVisibleItemScrollOffset / 300f).coerceIn(
-                                0f,
-                                1f,
-                            )
-                    }
-                }
-            }
+    val topBarOpacity by remember {
+        derivedStateOf {
+            if (homeListState.firstVisibleItemIndex > 1) 1f
+            else (homeListState.firstVisibleItemScrollOffset / 300f).coerceIn(0f, 1f)
         }
+    }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             AfinityTopAppBar(
                 title = {
@@ -230,204 +179,60 @@ fun MusicLibraryScreen(
                 onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
                 onProfileClick = { navController.navigate(Destination.createSettingsRoute()) },
             )
-        },
-    ) { innerPadding ->
-        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(LibraryFilter.entries.toTypedArray()) { filter ->
-                    val isSelected = selectedFilter == filter
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { selectedFilter = filter },
-                        label = { Text(filter.displayName) },
-                        shape = CircleShape,
-                        colors =
-                            FilterChipDefaults.filterChipColors(
-                                containerColor = Color.Transparent,
-                                selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            ),
-                        border =
-                            FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = isSelected,
-                                borderColor = MaterialTheme.colorScheme.outlineVariant,
-                            ),
-                    )
-                }
-            }
-
-            AnimatedContent(
-                targetState = selectedFilter,
-                transitionSpec = { fadeIn() togetherWith fadeOut() },
-                label = "library_content_transition",
-                modifier = Modifier.fillMaxSize(),
-            ) { filter ->
-                when (filter) {
-                    LibraryFilter.Home ->
-                        MusicHomeContent(
-                            uiState = uiState,
-                            listState = homeListState,
-                            onTrackClick = { track ->
-                                startMusicService(context)
-                                playerViewModel.playQueue(
-                                    uiState.recentlyPlayedTracks,
-                                    uiState.recentlyPlayedTracks
-                                        .indexOfFirst { it.id == track.id }
-                                        .coerceAtLeast(0),
-                                )
-                                navController.navigate(Destination.MUSIC_PLAYER_ROUTE)
-                            },
-                            onTrackClickWithQueue = { track, queue ->
-                                startMusicService(context)
-                                playerViewModel.playQueue(
-                                    queue,
-                                    queue.indexOfFirst { it.id == track.id }.coerceAtLeast(0),
-                                )
-                                navController.navigate(Destination.MUSIC_PLAYER_ROUTE)
-                            },
-                            onQueuePlay = { tracks ->
-                                startMusicService(context)
-                                playerViewModel.playQueue(tracks, 0)
-                            },
-                            onInstantMixByTrack = { track ->
-                                startMusicService(context)
-                                playerViewModel.playInstantMix(track.id)
-                                navController.navigate(Destination.MUSIC_PLAYER_ROUTE)
-                            },
-                            onAlbumClick = { album ->
-                                navController.navigate(
-                                    Destination.createMusicAlbumRoute(album.id.toString())
-                                )
-                            },
-                            onArtistClick = { artist ->
-                                navController.navigate(
-                                    Destination.createMusicArtistRoute(artist.id.toString())
-                                )
-                            },
-                            onPlaylistClick = { playlistId ->
-                                navController.navigate(
-                                    Destination.createMusicPlaylistRoute(playlistId.toString())
-                                )
-                            },
-                        )
-                    LibraryFilter.Tracks ->
-                        TracksList(
-                            listState = tracksListState,
-                            tracks = lazyTracks,
-                            favoriteOverrides = uiState.trackFavoriteOverrides,
-                            currentTrackId = playbackState.currentTrack?.id?.toString(),
-                            sortOption = trackSort,
-                            onSortChange = viewModel::setTrackSort,
-                            filters = trackFilters,
-                            onFiltersChange = viewModel::setTrackFilters,
-                            onPlayAll = { queue ->
-                                startMusicService(context)
-                                playerViewModel.playQueue(queue, 0)
-                            },
-                            onShuffleAll = { queue ->
-                                startMusicService(context)
-                                playerViewModel.playQueue(queue.shuffled(), 0)
-                            },
-                            onTrackClick = { track, queue, index ->
-                                startMusicService(context)
-                                playerViewModel.playQueue(queue, index)
-                            },
-                            onInstantMix = { track ->
-                                startMusicService(context)
-                                playerViewModel.playInstantMix(track.id)
-                            },
-                            onStartRadio = { track ->
-                                track.artistId?.let { artistId ->
-                                    startMusicService(context)
-                                    playerViewModel.playArtistRadio(artistId)
-                                }
-                            },
-                            onAddNext = { track -> playerViewModel.addNext(listOf(track)) },
-                            onAddLast = { track -> playerViewModel.addLast(listOf(track)) },
-                            onFavorite = { track, isFavorite ->
-                                viewModel.toggleTrackFavorite(track.id, isFavorite)
-                            },
-                            onAddToPlaylist = { track ->
-                                addToPlaylistTrackIds = listOf(track.id)
-                                addToPlaylistViewModel.reset()
-                                showAddToPlaylist = true
-                            },
-                        )
-                    LibraryFilter.Albums ->
-                        AlbumsGrid(
-                            gridState = albumsGridState,
-                            albums = lazyAlbums,
-                            sortOption = albumSort,
-                            onSortChange = viewModel::setAlbumSort,
-                            filters = albumFilters,
-                            onFiltersChange = viewModel::setAlbumFilters,
-                            letterFilter = albumLetterFilter,
-                            onLetterSelected = viewModel::filterAlbumsByLetter,
-                            onAlbumClick = { album ->
-                                navController.navigate(
-                                    Destination.createMusicAlbumRoute(album.id.toString())
-                                )
-                            },
-                        )
-                    LibraryFilter.Artists ->
-                        ArtistsGrid(
-                            gridState = artistsGridState,
-                            artists = lazyArtists,
-                            sortOption = artistSort,
-                            onSortChange = viewModel::setArtistSort,
-                            filters = artistFilters,
-                            onFiltersChange = viewModel::setArtistFilters,
-                            letterFilter = artistLetterFilter,
-                            onLetterSelected = viewModel::filterArtistsByLetter,
-                            onArtistClick = { artist ->
-                                navController.navigate(
-                                    Destination.createMusicArtistRoute(artist.id.toString())
-                                )
-                            },
-                        )
-                    LibraryFilter.Playlists ->
-                        PlaylistsGrid(
-                            gridState = playlistsGridState,
-                            playlists = uiState.playlists,
-                            onPlaylistClick = { playlist ->
-                                navController.navigate(
-                                    Destination.createMusicPlaylistRoute(playlist.id.toString())
-                                )
-                            },
-                        )
-                }
-            }
         }
-    }
-
-    if (showAddToPlaylist) {
-        AddToPlaylistDialog(
-            trackIds = addToPlaylistTrackIds,
-            viewModel = addToPlaylistViewModel,
-            onDismiss = { showAddToPlaylist = false },
-            onResult = { result ->
-                showAddToPlaylist = false
-                val message =
-                    when (result) {
-                        is AddToPlaylistResult.Added -> "Added to \"${result.playlistName}\""
-                        is AddToPlaylistResult.Created -> "Created \"${result.playlistName}\""
-                        is AddToPlaylistResult.Error -> result.message
-                        else -> null
-                    }
-                message?.let { scope.launch { snackbarHostState.showSnackbar(it) } }
+    ) { innerPadding ->
+        MusicHomeContent(
+            uiState = uiState,
+            listState = homeListState,
+            onTrackClick = { track ->
+                startMusicService(context)
+                playerViewModel.playQueue(
+                    uiState.recentlyPlayedTracks,
+                    uiState.recentlyPlayedTracks
+                        .indexOfFirst { it.id == track.id }
+                        .coerceAtLeast(0),
+                )
+                navController.navigate(Destination.MUSIC_PLAYER_ROUTE)
             },
+            onTrackClickWithQueue = { track, queue ->
+                startMusicService(context)
+                playerViewModel.playQueue(
+                    queue,
+                    queue.indexOfFirst { it.id == track.id }.coerceAtLeast(0),
+                )
+                navController.navigate(Destination.MUSIC_PLAYER_ROUTE)
+            },
+            onQueuePlay = { tracks ->
+                startMusicService(context)
+                playerViewModel.playQueue(tracks, 0)
+            },
+            onInstantMixByTrack = { track ->
+                startMusicService(context)
+                playerViewModel.playInstantMix(track.id)
+                navController.navigate(Destination.MUSIC_PLAYER_ROUTE)
+            },
+            onAlbumClick = { album ->
+                navController.navigate(Destination.createMusicAlbumRoute(album.id.toString()))
+            },
+            onArtistClick = { artist ->
+                navController.navigate(Destination.createMusicArtistRoute(artist.id.toString()))
+            },
+            onBrowse = { filter ->
+                navController.navigate(
+                    Destination.createMusicBrowseRoute(
+                        libraryId = viewModel.libraryId.toString(),
+                        libraryName = viewModel.libraryName,
+                        tab = filter.name,
+                    )
+                )
+            },
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
         )
     }
 }
 
 @Composable
-private fun TracksList(
+internal fun TracksList(
     listState: LazyListState,
     tracks: LazyPagingItems<AfinityTrack>,
     favoriteOverrides: Map<UUID, Boolean>,
@@ -439,12 +244,13 @@ private fun TracksList(
     onPlayAll: (List<AfinityTrack>) -> Unit,
     onShuffleAll: (List<AfinityTrack>) -> Unit,
     onTrackClick: (AfinityTrack, List<AfinityTrack>, Int) -> Unit,
-    onInstantMix: (AfinityTrack) -> Unit,
+    onInstantMix: ((AfinityTrack) -> Unit)?,
     onStartRadio: (AfinityTrack) -> Unit,
     onAddNext: (AfinityTrack) -> Unit,
     onAddLast: (AfinityTrack) -> Unit,
     onFavorite: (AfinityTrack, Boolean) -> Unit,
-    onAddToPlaylist: (AfinityTrack) -> Unit,
+    onAddToPlaylist: ((AfinityTrack) -> Unit)?,
+    modifier: Modifier = Modifier,
 ) {
     val isInitialLoading = tracks.loadState.refresh is LoadState.Loading && tracks.itemCount == 0
     if (isInitialLoading) {
@@ -452,7 +258,7 @@ private fun TracksList(
         return
     }
 
-    LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+    LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
         item(key = "tracks_controls") {
             TabControlsRow(
                 sortOptions = TRACK_SORT_OPTIONS,
@@ -485,19 +291,19 @@ private fun TracksList(
                     val queueIndex = queue.indexOfFirst { it.id == track.id }.coerceAtLeast(0)
                     onTrackClick(track, queue, queueIndex)
                 },
-                onInstantMix = { onInstantMix(track) },
+                onInstantMix = onInstantMix?.let { mix -> { mix(track) } },
                 onStartRadio = { onStartRadio(track) },
                 onAddNext = { onAddNext(track) },
                 onAddLast = { onAddLast(track) },
                 onFavorite = { onFavorite(track, effectiveFavorite) },
-                onAddToPlaylist = { onAddToPlaylist(track) },
+                onAddToPlaylist = onAddToPlaylist?.let { atp -> { atp(track) } },
             )
         }
     }
 }
 
 @Composable
-private fun AlbumsGrid(
+internal fun AlbumsGrid(
     gridState: LazyGridState,
     albums: LazyPagingItems<AfinityAlbum>,
     sortOption: MusicSortOption,
@@ -507,6 +313,7 @@ private fun AlbumsGrid(
     letterFilter: String?,
     onLetterSelected: (String) -> Unit,
     onAlbumClick: (AfinityAlbum) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val isInitialLoading = albums.loadState.refresh is LoadState.Loading && albums.itemCount == 0
     if (isInitialLoading) {
@@ -522,11 +329,17 @@ private fun AlbumsGrid(
         }
     }
 
-    Row(modifier = Modifier.fillMaxSize()) {
+    Row(modifier = modifier.fillMaxSize()) {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(150.dp),
             state = gridState,
-            contentPadding = PaddingValues(bottom = 16.dp),
+            contentPadding =
+                PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 16.dp,
+                    bottom = 16.dp,
+                ),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.weight(1f).fillMaxHeight(),
@@ -555,7 +368,7 @@ private fun AlbumsGrid(
 }
 
 @Composable
-private fun ArtistsGrid(
+internal fun ArtistsGrid(
     gridState: LazyGridState,
     artists: LazyPagingItems<AfinityArtist>,
     sortOption: MusicSortOption,
@@ -565,6 +378,7 @@ private fun ArtistsGrid(
     letterFilter: String?,
     onLetterSelected: (String) -> Unit,
     onArtistClick: (AfinityArtist) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val isInitialLoading = artists.loadState.refresh is LoadState.Loading && artists.itemCount == 0
     if (isInitialLoading) {
@@ -580,11 +394,17 @@ private fun ArtistsGrid(
         }
     }
 
-    Row(modifier = Modifier.fillMaxSize()) {
+    Row(modifier = modifier.fillMaxSize()) {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(140.dp),
             state = gridState,
-            contentPadding = PaddingValues(bottom = 16.dp),
+            contentPadding =
+                PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 16.dp,
+                    bottom = 16.dp,
+                ),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.weight(1f).fillMaxHeight(),
@@ -618,10 +438,11 @@ private fun ArtistsGrid(
 }
 
 @Composable
-private fun PlaylistsGrid(
+internal fun PlaylistsGrid(
     gridState: LazyGridState,
     playlists: List<AfinityPlaylist>,
     onPlaylistClick: (AfinityPlaylist) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(150.dp),
@@ -629,7 +450,7 @@ private fun PlaylistsGrid(
         contentPadding = PaddingValues(16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
     ) {
         items(playlists, key = { it.id }) { playlist ->
             MusicAlbumCard(
@@ -902,7 +723,8 @@ private fun MusicHomeContent(
     onInstantMixByTrack: (AfinityTrack) -> Unit,
     onAlbumClick: (AfinityAlbum) -> Unit,
     onArtistClick: (AfinityArtist) -> Unit,
-    onPlaylistClick: (UUID) -> Unit,
+    onBrowse: (LibraryFilter) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val isEmpty =
         uiState.recentlyPlayedTracks.isEmpty() &&
@@ -936,32 +758,32 @@ private fun MusicHomeContent(
     }
 
     val madeForYouItems =
-        remember(
-            uiState.radioSections,
-            uiState.songsByGenreSections,
-            uiState.randomTracks,
-            uiState.randomAlbums,
-        ) {
-            buildList {
-                uiState.radioSections.forEach { (title, tracks) ->
+        remember(uiState.madeForYouSnapshot) {
+            val snapshot = uiState.madeForYouSnapshot ?: return@remember emptyList()
+
+            val randomMix =
+                if (snapshot.randomTracks.isNotEmpty()) {
+                    listOf(
+                        MadeForYouItem.TrackMix("Surprise Me", "Random Mix", snapshot.randomTracks)
+                    )
+                } else {
+                    emptyList()
+                }
+
+            val others = buildList {
+                snapshot.radioSections.forEach { (title, tracks) ->
                     add(MadeForYouItem.TrackMix(title, "Radio", tracks))
                 }
-                uiState.songsByGenreSections.forEach { (genre, tracks) ->
+                snapshot.songsByGenreSections.forEach { (genre, tracks) ->
                     add(MadeForYouItem.TrackMix("$genre Songs", "Instant Mix", tracks))
                 }
-                if (uiState.randomTracks.isNotEmpty()) {
-                    add(
-                        MadeForYouItem.TrackMix(
-                            "Surprise Me",
-                            "Random Mix",
-                            uiState.randomTracks,
-                        )
-                    )
-                }
-                uiState.randomAlbums.forEach { album ->
+                snapshot.randomAlbums.forEach { album ->
                     add(MadeForYouItem.AlbumItem(album))
                 }
             }
+                .shuffled()
+
+            randomMix + others
         }
 
     val shuffledRows =
@@ -992,7 +814,7 @@ private fun MusicHomeContent(
 
     LazyColumn(
         state = listState,
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 16.dp),
     ) {
         item(key = "top_spacer") { Spacer(Modifier.height(16.dp)) }
@@ -1009,15 +831,11 @@ private fun MusicHomeContent(
             }
         }
 
-        if (uiState.homePlaylists.isNotEmpty()) {
-            item(key = "pinned_playlists") {
-                MusicPlaylistRowSection(
-                    title = "Your Playlists",
-                    playlists = uiState.homePlaylists,
-                    onPlaylistClick = onPlaylistClick,
-                    modifier = Modifier.padding(bottom = 28.dp),
-                )
-            }
+        item(key = "library_shortcuts") {
+            LibraryShortcutsRow(
+                onBrowse = onBrowse,
+                modifier = Modifier.padding(bottom = 28.dp),
+            )
         }
 
         if (uiState.recentlyPlayedTracks.isNotEmpty()) {
@@ -1057,8 +875,7 @@ private fun MusicHomeContent(
 
         if (uiState.mostPlayedAlbums.isNotEmpty()) {
             item(key = "pinned_most_played") {
-                MusicAlbumRowSection(
-                    title = "Most Played",
+                MostPlayedAlbumsSection(
                     albums = uiState.mostPlayedAlbums,
                     onAlbumClick = onAlbumClick,
                     modifier = Modifier.padding(bottom = 28.dp),
@@ -1210,6 +1027,161 @@ private sealed class HomeRow {
         }
 }
 
+private data class LibraryShortcut(
+    val filter: LibraryFilter,
+    val label: String,
+    val iconRes: Int,
+    val gradientStart: Color,
+    val gradientEnd: Color,
+)
+
+@Composable
+private fun LibraryShortcutsRow(
+    onBrowse: (LibraryFilter) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val configuration = LocalConfiguration.current
+    val cardWidth =
+        when {
+            configuration.screenWidthDp < 600 -> 240.dp
+            configuration.screenWidthDp < 840 -> 260.dp
+            else -> 320.dp
+        }
+
+    val shortcuts = remember {
+        listOf(
+            LibraryShortcut(
+                filter = LibraryFilter.Playlists,
+                label = "Playlists",
+                iconRes = R.drawable.ic_music_playlist,
+                gradientStart = Color(0xFFB1AADA),
+                gradientEnd = Color(0xFF5A5482),
+            ),
+            LibraryShortcut(
+                filter = LibraryFilter.Artists,
+                label = "Artists",
+                iconRes = R.drawable.ic_microphone,
+                gradientStart = Color(0xFFE2AE95),
+                gradientEnd = Color(0xFF965243),
+            ),
+            LibraryShortcut(
+                filter = LibraryFilter.Albums,
+                label = "Albums",
+                iconRes = R.drawable.ic_disc,
+                gradientStart = Color(0xFFA4C4D6),
+                gradientEnd = Color(0xFF50787A),
+            ),
+            LibraryShortcut(
+                filter = LibraryFilter.Tracks,
+                label = "Tracks",
+                iconRes = R.drawable.ic_file_music,
+                gradientStart = Color(0xFFAED1AE),
+                gradientEnd = Color(0xFF4F7E70),
+            ),
+        )
+    }
+
+    Column(modifier = modifier) {
+        Text(
+            text = "Browse",
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(start = 14.dp, bottom = 12.dp),
+        )
+        LazyRow(
+            modifier = Modifier.padding(horizontal = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(shortcuts, key = { it.filter }) { shortcut ->
+                LibraryShortcutCard(
+                    label = shortcut.label,
+                    iconRes = shortcut.iconRes,
+                    gradientStart = shortcut.gradientStart,
+                    gradientEnd = shortcut.gradientEnd,
+                    cardWidth = cardWidth,
+                    onClick = { onBrowse(shortcut.filter) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LibraryShortcutCard(
+    label: String,
+    iconRes: Int,
+    gradientStart: Color,
+    gradientEnd: Color,
+    cardWidth: Dp,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.width(cardWidth).aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        onClick = onClick,
+    ) {
+        Box(
+            modifier =
+                Modifier.fillMaxSize()
+                    .background(Brush.linearGradient(colors = listOf(gradientStart, gradientEnd)))
+        ) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.25f),
+                modifier =
+                    Modifier.fillMaxHeight(0.85f)
+                        .aspectRatio(1f)
+                        .align(Alignment.BottomEnd)
+                        .offset(x = 20.dp, y = 20.dp)
+                        .rotate(-15f),
+            )
+
+            Box(
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .fillMaxHeight(0.5f)
+                        .align(Alignment.BottomCenter)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f))
+                            )
+                        )
+            )
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.align(Alignment.BottomStart).padding(16.dp),
+            ) {
+                Icon(
+                    painter = painterResource(iconRes),
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp),
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = label,
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.5.sp,
+                        ),
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MadeForYouCarousel(
     title: String,
@@ -1222,38 +1194,45 @@ private fun MadeForYouCarousel(
     Column(modifier = modifier) {
         Text(
             text = title,
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(start = 14.dp, bottom = 12.dp),
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
         )
-        LazyRow(
-            modifier = Modifier.padding(horizontal = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            items(
-                items,
-                key = { item ->
-                    when (item) {
-                        is MadeForYouItem.TrackMix -> "mix_${item.title}"
-                        is MadeForYouItem.AlbumItem -> "album_${item.album.id}"
-                    }
-                },
-            ) { item ->
-                val cardWidth = LocalConfiguration.current.screenWidthDp.dp * 0.85f
-                when (item) {
+
+        val configuration = LocalConfiguration.current
+        val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        val preferredItemWidth =
+            (configuration.screenWidthDp * if (isLandscape) 0.58f else 0.82f).dp
+        val carouselHeight = if (isLandscape) (configuration.screenHeightDp * 0.45f).dp else 220.dp
+        val state = rememberCarouselState { items.size }
+
+        HorizontalMultiBrowseCarousel(
+            state = state,
+            preferredItemWidth = preferredItemWidth,
+            modifier = Modifier.height(carouselHeight).padding(horizontal = 16.dp),
+            itemSpacing = 8.dp,
+        ) { index ->
+            Box(
+                modifier =
+                    Modifier.height(carouselHeight)
+                        .maskClip(MaterialTheme.shapes.extraLarge)
+                        .clip(MaterialTheme.shapes.extraLarge)
+            ) {
+                when (val item = items[index]) {
                     is MadeForYouItem.TrackMix -> {
                         MusicTracksCard(
                             title = item.title,
                             subtitle = item.subtitle,
                             tracks = item.tracks,
                             onPlay = { onPlayMix(item.tracks) },
-                            modifier = Modifier.width(cardWidth),
+                            modifier = Modifier.fillMaxSize(),
                         )
                     }
                     is MadeForYouItem.AlbumItem -> {
                         HeroDiscoverCard(
                             album = item.album,
                             onAlbumClick = { onAlbumClick(item.album) },
-                            modifier = Modifier.width(cardWidth),
+                            modifier = Modifier.fillMaxSize(),
                         )
                     }
                 }
@@ -1402,8 +1381,10 @@ internal fun MusicArtistsRow(
     artists: List<AfinityArtist>,
     onArtistClick: (AfinityArtist) -> Unit,
     modifier: Modifier = Modifier,
-    horizontalPadding: androidx.compose.ui.unit.Dp = 14.dp,
+    horizontalPadding: Dp = 16.dp,
 ) {
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val cardSize = if (isLandscape) 170.dp else 140.dp
     Column(modifier = modifier) {
         Text(
             text = title,
@@ -1421,59 +1402,8 @@ internal fun MusicArtistsRow(
                     imageUrl = artist.images.primary?.toString(),
                     blurHash = artist.images.primaryImageBlurHash,
                     onClick = { onArtistClick(artist) },
+                    size = cardSize,
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun MusicPlaylistRowSection(
-    title: String,
-    playlists: List<AfinityPlaylist>,
-    onPlaylistClick: (UUID) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier) {
-        Text(
-            text = title,
-            modifier = Modifier.padding(start = 14.dp, bottom = 12.dp),
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-        )
-        LazyRow(
-            modifier = Modifier.padding(horizontal = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            items(playlists, key = { it.id }) { playlist ->
-                Box(
-                    modifier =
-                        Modifier.width(200.dp)
-                            .height(100.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { onPlaylistClick(playlist.id) }
-                ) {
-                    AsyncImage(
-                        imageUrl = playlist.images.primary?.toString(),
-                        contentDescription = playlist.name,
-                        blurHash = playlist.images.primaryImageBlurHash,
-                        targetWidth = 200.dp,
-                        targetHeight = 100.dp,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
-                    Box(
-                        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f))
-                    )
-                    Text(
-                        text = playlist.name,
-                        color = Color.White,
-                        modifier = Modifier.align(Alignment.BottomStart).padding(12.dp),
-                        style =
-                            MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
             }
         }
     }
@@ -1486,8 +1416,11 @@ fun CompactTrackGridSection(
     onTrackClick: (AfinityTrack) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val rowsCount = if (tracks.size >= 6) 3 else if (tracks.size >= 3) 2 else 1
-    val gridHeight = (rowsCount * 64 + (rowsCount - 1) * 12).dp
+    val rowHeight = if (isLandscape) 70 else 64
+    val itemWidth = if (isLandscape) 320.dp else 280.dp
+    val gridHeight = (rowsCount * rowHeight + (rowsCount - 1) * 12).dp
 
     Column(modifier = modifier) {
         Text(
@@ -1504,7 +1437,7 @@ fun CompactTrackGridSection(
             items(tracks, key = { it.id }) { track ->
                 Row(
                     modifier =
-                        Modifier.width(280.dp).clip(RoundedCornerShape(8.dp)).clickable {
+                        Modifier.width(itemWidth).clip(RoundedCornerShape(8.dp)).clickable {
                             onTrackClick(track)
                         },
                     verticalAlignment = Alignment.CenterVertically,

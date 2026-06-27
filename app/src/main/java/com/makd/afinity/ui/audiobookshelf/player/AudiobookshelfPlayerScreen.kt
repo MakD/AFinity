@@ -263,15 +263,15 @@ fun SharedTransitionScope.PortraitPlayerContent(
         Spacer(modifier = Modifier.height(24.dp))
 
         val density = LocalDensity.current
-        val coverWidthPx = with(density) {
-            (LocalConfiguration.current.screenWidthDp.dp - 48.dp).roundToPx()
-        }
+        val coverWidthPx =
+            with(density) {
+                (LocalConfiguration.current.screenWidthDp.dp - 48.dp).roundToPx()
+            }
 
         Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             Surface(
                 modifier =
-                    Modifier.fillMaxWidth()
-                        .aspectRatio(1f)
+                    Modifier.aspectRatio(1f)
                         .sharedElement(
                             sharedContentState =
                                 rememberSharedContentState(
@@ -368,7 +368,7 @@ fun SharedTransitionScope.PortraitPlayerContent(
         Spacer(modifier = Modifier.height(28.dp))
 
         Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 50.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
@@ -475,9 +475,10 @@ fun SharedTransitionScope.LandscapePlayerContent(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val density = LocalDensity.current
-        val coverWidthPx = with(density) {
-            ((LocalConfiguration.current.screenWidthDp.dp - 64.dp) * 0.45f).roundToPx()
-        }
+        val coverWidthPx =
+            with(density) {
+                ((LocalConfiguration.current.screenWidthDp.dp - 64.dp) * 0.45f).roundToPx()
+            }
 
         Box(
             modifier = Modifier.weight(0.45f).fillMaxHeight(),

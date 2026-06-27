@@ -346,11 +346,12 @@ class AudioService : MediaSessionService() {
                         mapOf("Authorization" to "MediaBrowser Token=\"$token\"")
                     }
                 }
-            val httpFactory = DefaultHttpDataSource.Factory()
-                .setAllowCrossProtocolRedirects(true)
-                .setConnectTimeoutMs(15_000)
-                .setReadTimeoutMs(15_000)
-                .setDefaultRequestProperties(headers)
+            val httpFactory =
+                DefaultHttpDataSource.Factory()
+                    .setAllowCrossProtocolRedirects(true)
+                    .setConnectTimeoutMs(15_000)
+                    .setReadTimeoutMs(15_000)
+                    .setDefaultRequestProperties(headers)
             return DefaultDataSource.Factory(this@AudioService, httpFactory).createDataSource()
         }
     }
@@ -445,6 +446,8 @@ class AudioService : MediaSessionService() {
                         else -> RepeatMode.OFF
                     }
                 )
+                val isShuffled = musicPlaybackManager.state.value.shuffled
+                mediaSession?.setCustomLayout(musicCustomLayout(isShuffled, repeatMode))
             }
 
             override fun onPlayerError(error: PlaybackException) {
@@ -599,14 +602,25 @@ class AudioService : MediaSessionService() {
                 .build(),
         )
 
-    private fun musicCustomLayout() =
+    private fun musicCustomLayout(
+        shuffled: Boolean = false,
+        repeatMode: Int = Player.REPEAT_MODE_OFF,
+    ) =
         ImmutableList.of(
-            CommandButton.Builder(CommandButton.ICON_SHUFFLE_ON)
+            CommandButton.Builder(
+                    if (shuffled) CommandButton.ICON_SHUFFLE_ON else CommandButton.ICON_SHUFFLE_OFF
+                )
                 .setSessionCommand(SessionCommand("action_shuffle", Bundle.EMPTY))
-                .setDisplayName("Shuffle")
+                .setDisplayName(if (shuffled) "Shuffle On" else "Shuffle Off")
                 .setEnabled(true)
                 .build(),
-            CommandButton.Builder(CommandButton.ICON_REPEAT_ALL)
+            CommandButton.Builder(
+                    when (repeatMode) {
+                        Player.REPEAT_MODE_ONE -> CommandButton.ICON_REPEAT_ONE
+                        Player.REPEAT_MODE_ALL -> CommandButton.ICON_REPEAT_ALL
+                        else -> CommandButton.ICON_REPEAT_OFF
+                    }
+                )
                 .setSessionCommand(SessionCommand("action_repeat", Bundle.EMPTY))
                 .setDisplayName("Repeat")
                 .setEnabled(true)
@@ -659,7 +673,13 @@ class AudioService : MediaSessionService() {
                     return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
                 }
                 "action_shuffle" -> {
+                    val wasShuffled = musicPlaybackManager.state.value.shuffled
                     musicQueueManager.toggleShuffle(player.currentPosition)
+                    val isNowShuffled = !wasShuffled
+                    musicPlaybackManager.updateShuffled(isNowShuffled)
+                    mediaSession?.setCustomLayout(
+                        musicCustomLayout(isNowShuffled, player.repeatMode)
+                    )
                     return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
                 }
                 "action_repeat" -> {

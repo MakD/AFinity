@@ -21,4 +21,10 @@ sealed interface SettingsPaneDestination : Parcelable {
 
     @Parcelize
     data object SessionSwitcher : SettingsPaneDestination
+
+    @Parcelize
+    data object Language : SettingsPaneDestination
+
+    @Parcelize
+    data object QuickConnect : SettingsPaneDestination
 }
