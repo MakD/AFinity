@@ -408,4 +408,7 @@
     <string name="media_type_collection">Cofanetto</string>
     <string name="settings_group_theme">Tema</string>
     <string name="pref_combine_library_summary">Unisci film e serie TV in un unico elenco</string>
+    <string name="pref_max_concurrent_downloads">Numero massimo download contemporanei</string>
+    <string name="pref_download_wifi_only_subtitle">Scarica solo tramite Wi-Fi</string>
+    <string name="error_no_trailer">Nessun trailer disponibile</string>
 </resources>
