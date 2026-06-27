@@ -79,6 +79,25 @@ enum class Destination(
             "admin/identify/$itemId/$itemType"
         fun createEditImagesRoute(itemId: String): String = "admin/edit_images/$itemId"
 
+        const val MUSIC_LIBRARY_ROUTE = "music/library/{libraryId}/{libraryName}"
+        const val MUSIC_BROWSE_ROUTE = "music/library/{libraryId}/{libraryName}/browse/{tab}"
+        const val MUSIC_ALBUM_ROUTE = "music/album/{albumId}"
+        const val MUSIC_ARTIST_ROUTE = "music/artist/{artistId}"
+        const val MUSIC_PLAYLIST_ROUTE = "music/playlist/{playlistId}"
+        const val MUSIC_PLAYER_ROUTE = "music/player"
+
+        fun createMusicLibraryRoute(libraryId: String, libraryName: String): String =
+            "music/library/$libraryId/${libraryName.replace("/", "%2F")}"
+
+        fun createMusicBrowseRoute(libraryId: String, libraryName: String, tab: String): String =
+            "music/library/$libraryId/${libraryName.replace("/", "%2F")}/browse/$tab"
+
+        fun createMusicAlbumRoute(albumId: String): String = "music/album/$albumId"
+
+        fun createMusicArtistRoute(artistId: String): String = "music/artist/$artistId"
+
+        fun createMusicPlaylistRoute(playlistId: String): String = "music/playlist/$playlistId"
+
         const val AUDIOBOOKSHELF_LOGIN_ROUTE = "audiobookshelf/login"
         const val AUDIOBOOKSHELF_LIBRARIES_ROUTE = "audiobookshelf/libraries"
 

@@ -14,6 +14,8 @@ import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinityTrickplayInfo
+import com.makd.afinity.data.models.music.AfinityAlbum
+import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.server.ServerAddress
 import com.makd.afinity.data.models.server.ServerWithAddresses
@@ -254,4 +256,68 @@ interface DatabaseRepository {
     ): ItemMetadataCacheEntity?
 
     suspend fun insertItemMetadata(metadata: ItemMetadataCacheEntity)
+
+    suspend fun insertMusicTrack(track: AfinityTrack, serverId: String, userId: String)
+
+    suspend fun insertMusicAlbum(album: AfinityAlbum, serverId: String, userId: String)
+
+    suspend fun getMusicTrack(id: UUID, serverId: String, userId: String): AfinityTrack?
+
+    suspend fun getMusicAlbumTracks(
+        albumId: UUID,
+        serverId: String,
+        userId: String,
+    ): List<AfinityTrack>
+
+    fun getAllMusicTracksFlow(serverId: String, userId: String): Flow<List<AfinityTrack>>
+
+    fun getAllMusicAlbumsFlow(serverId: String, userId: String): Flow<List<AfinityAlbum>>
+
+    fun getAllMusicTracksFlowByUser(userId: UUID): Flow<List<AfinityTrack>>
+
+    fun getAllMusicAlbumsFlowByUser(userId: UUID): Flow<List<AfinityAlbum>>
+
+    suspend fun getAllMusicTracksByUser(userId: UUID): List<AfinityTrack>
+
+    suspend fun getAllMusicAlbumsByUser(userId: UUID): List<AfinityAlbum>
+
+    suspend fun deleteMusicTrack(id: UUID, serverId: String, userId: String)
+
+    suspend fun deleteMusicAlbum(id: UUID, serverId: String, userId: String)
+
+    suspend fun updateMusicTrackLocalFilePath(
+        id: UUID,
+        serverId: String,
+        userId: String,
+        path: String,
+    )
+
+    suspend fun updateMusicTrackLocalImagePath(
+        id: UUID,
+        serverId: String,
+        userId: String,
+        path: String,
+    )
+
+    suspend fun updateMusicAlbumLocalImagePath(
+        id: UUID,
+        serverId: String,
+        userId: String,
+        path: String,
+    )
+
+    suspend fun insertMusicLyrics(
+        trackId: UUID,
+        serverId: String,
+        userId: String,
+        lyricsJson: String,
+    )
+
+    suspend fun getMusicLyricsJson(trackId: UUID, serverId: String, userId: String): String?
+
+    suspend fun getCompletedAudioDownloadsByAlbum(
+        albumSeriesId: String,
+        serverId: String,
+        userId: UUID,
+    ): List<DownloadDto>
 }

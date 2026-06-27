@@ -69,9 +69,13 @@ constructor(
     private fun connect(baseUrl: String, token: String) {
         val wsUrl =
             baseUrl.trimEnd('/').replace("https://", "wss://").replace("http://", "ws://") +
-                "/socket?api_key=$token"
+                "/socket"
         Timber.d("SyncPlay: opening dedicated WebSocket")
-        val request = Request.Builder().url(wsUrl).build()
+        val request =
+            Request.Builder()
+                .url(wsUrl)
+                .header("Authorization", "MediaBrowser Token=\"$token\"")
+                .build()
         activeSocket = wsClient.newWebSocket(request, Listener())
     }
 

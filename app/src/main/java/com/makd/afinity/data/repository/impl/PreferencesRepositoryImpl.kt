@@ -592,11 +592,11 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
     }
 
     override suspend fun getUpdateCheckFrequency(): Int {
-        return dataStore.data.first()[Keys.UPDATE_CHECK_FREQUENCY] ?: 0
+        return dataStore.data.first()[Keys.UPDATE_CHECK_FREQUENCY] ?: -1
     }
 
     override fun getUpdateCheckFrequencyFlow(): Flow<Int> {
-        return dataStore.data.map { preferences -> preferences[Keys.UPDATE_CHECK_FREQUENCY] ?: 0 }
+        return dataStore.data.map { preferences -> preferences[Keys.UPDATE_CHECK_FREQUENCY] ?: -1 }
     }
 
     override suspend fun setLastUpdateCheck(timestamp: Long) {

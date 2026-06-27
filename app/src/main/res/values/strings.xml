@@ -296,6 +296,7 @@
     <string name="track_number_fmt">Track %1$d</string>
     <string name="audio_channel_fmt"> (%1$dch)</string>
     <string name="playback_channel_name">AFinity Audiobook Playback</string>
+    <string name="music_playback_channel_name">AFinity Music Playback</string>
 
     <string name="cd_logo">Logo</string>
     <string name="cd_series_logo">Series Logo</string>
@@ -407,7 +408,7 @@
     <string name="error_unknown_occurred">Unknown error occurred</string>
 
     <string name="search_no_results">No results found</string>
-    <string name="search_placeholder">Search movies and TV shows</string>
+    <string name="search_placeholder">Search</string>
     <string name="cd_clear">Clear</string>
     <string name="filter_request">Request</string>
     <string name="filter_audiobooks">Audiobooks</string>
@@ -719,7 +720,7 @@
     <string name="error_audiobookshelf_logout_failed_fmt">Failed to disconnect from Audiobookshelf: %1$s</string>
 
     <string name="notification_permission_title">Enable Notifications</string>
-    <string name="notification_permission_message">AFinity needs notification permission to show the media player in your notification panel and lock screen while playing audiobooks or podcasts.\n\nIf you change your mind later, you can enable it manually from App Info → Permissions → Notifications.</string>
+    <string name="notification_permission_message">AFinity uses notifications for music and audiobook playback controls (lock screen and notification shade) and to alert you when an app update is available.\n\nIf you change your mind later, you can enable it from App Info → Permissions → Notifications.</string>
     <string name="notification_permission_yes">Allow</string>
     <string name="notification_permission_no">No Thanks</string>
 
@@ -852,6 +853,7 @@
     <string name="cd_cast">Cast</string>
     <string name="cast_connected_to">Casting to %1$s</string>
     <string name="cast_stop">Stop Casting</string>
+    <string name="media_route_menu_title">Cast</string>
     <string name="cast_settings">Playback Settings</string>
     <string name="cast_quality">Quality</string>
     <string name="cast_volume">Volume</string>
@@ -986,6 +988,7 @@
     <string name="section_videos">VIDEOS</string>
     <string name="section_download_audiobooks">AUDIOBOOKS</string>
     <string name="section_download_podcasts">PODCASTS</string>
+    <string name="section_download_music">MUSIC</string>
 
     <!--Server Management-->
     <string name="address_type_local">Local</string>

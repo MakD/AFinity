@@ -294,6 +294,8 @@ private fun EpisodeSwitcherCard(
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
                 blurHash = cardBlurHash,
+                targetWidth = 140.dp,
+                targetHeight = 79.dp,
             )
 
             Box(

@@ -8,7 +8,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,14 +15,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,6 +32,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -44,9 +41,15 @@ import com.makd.afinity.R
 import com.makd.afinity.data.updater.models.GitHubRelease
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import com.makd.afinity.data.updater.models.UpdateState
+import com.makd.afinity.ui.settings.SettingsDivider
+import com.makd.afinity.ui.settings.SettingsGroup
 
 @Composable
-fun UpdateSection(modifier: Modifier = Modifier, viewModel: UpdateViewModel = hiltViewModel()) {
+fun UpdateSection(
+    modifier: Modifier = Modifier,
+    endPadding: Dp = 16.dp,
+    viewModel: UpdateViewModel = hiltViewModel(),
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
 
@@ -87,7 +90,11 @@ fun UpdateSection(modifier: Modifier = Modifier, viewModel: UpdateViewModel = hi
         )
     }
 
-    SettingsGroup(title = stringResource(R.string.pref_group_updates), modifier = modifier) {
+    SettingsGroup(
+        title = stringResource(R.string.pref_group_updates),
+        modifier = modifier,
+        endPadding = endPadding,
+    ) {
         CheckForUpdatesItem(
             updateState = updateState,
             lastCheckTime = uiState.lastCheckTime,
@@ -101,40 +108,6 @@ fun UpdateSection(modifier: Modifier = Modifier, viewModel: UpdateViewModel = hi
             onFrequencySelected = { viewModel.setCheckFrequency(it) },
         )
     }
-}
-
-@Composable
-private fun SettingsGroup(
-    title: String? = null,
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-        if (title != null) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
-            )
-        }
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(modifier = Modifier.padding(vertical = 4.dp)) { content() }
-        }
-    }
-}
-
-@Composable
-private fun SettingsDivider() {
-    HorizontalDivider(
-        modifier = Modifier.padding(start = 56.dp, end = 16.dp),
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
-    )
 }
 
 @Composable
@@ -321,6 +294,7 @@ private fun UpdateFrequencySelector(
 @Composable
 private fun getUpdateCheckFrequencyDisplayName(frequency: UpdateCheckFrequency): String {
     return when (frequency) {
+        UpdateCheckFrequency.NEVER -> stringResource(R.string.update_never_checked)
         UpdateCheckFrequency.ON_APP_OPEN -> stringResource(R.string.freq_on_app_open)
         UpdateCheckFrequency.SIX_HOURS -> stringResource(R.string.freq_6_hours)
         UpdateCheckFrequency.TWELVE_HOURS -> stringResource(R.string.freq_12_hours)

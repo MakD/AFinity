@@ -17,6 +17,7 @@ import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
@@ -41,6 +42,7 @@ class FavoritesViewModel
 constructor(
     private val userDataRepository: UserDataRepository,
     private val mediaRepository: MediaRepository,
+    private val musicRepository: MusicRepository,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
     private val watchlistRepository: WatchlistRepository,
@@ -78,8 +80,8 @@ constructor(
     init {
         viewModelScope.launch {
             appDataRepository.favoritesData.collect { data ->
-                _uiState.value =
-                    FavoritesUiState(
+                _uiState.update {
+                    it.copy(
                         movies = data.movies,
                         shows = data.shows,
                         seasons = data.seasons,
@@ -87,9 +89,13 @@ constructor(
                         boxSets = data.boxSets,
                         channels = data.channels,
                         people = data.people,
+                        favoriteAlbums = data.favoriteAlbums,
+                        favoriteArtists = data.favoriteArtists,
+                        favoriteTracks = data.favoriteTracks,
                         isLoading = false,
                         error = null,
                     )
+                }
                 lastFavoritesLoadedAt = System.currentTimeMillis()
             }
         }
@@ -229,6 +235,22 @@ constructor(
         _selectedEpisodeDownloadInfo.value = null
     }
 
+    fun toggleTrackFavorite(track: com.makd.afinity.data.models.music.AfinityTrack) {
+        val tracks = _uiState.value.favoriteTracks
+        val newFavorite = !track.favorite
+        _uiState.update { state ->
+            if (newFavorite) {
+                state.copy(favoriteTracks = (tracks.filterNot { it.id == track.id } + track.copy(favorite = true)).sortedBy { it.name })
+            } else {
+                state.copy(favoriteTracks = tracks.filterNot { it.id == track.id })
+            }
+        }
+        viewModelScope.launch {
+            runCatching { musicRepository.setFavorite(track.id, newFavorite) }
+                .onFailure { _uiState.update { it.copy(favoriteTracks = tracks) } }
+        }
+    }
+
     fun toggleEpisodeFavorite(episode: AfinityEpisode) {
         itemUserDataDelegate.toggleEpisodeFavorite(viewModelScope, episode) {
             _selectedEpisode.value = episode.copy(favorite = !episode.favorite)
@@ -278,6 +300,9 @@ data class FavoritesUiState(
     val boxSets: List<AfinityBoxSet> = emptyList(),
     val people: List<com.makd.afinity.data.models.media.AfinityPersonDetail> = emptyList(),
     val channels: List<com.makd.afinity.data.models.livetv.AfinityChannel> = emptyList(),
+    val favoriteAlbums: List<com.makd.afinity.data.models.music.AfinityAlbum> = emptyList(),
+    val favoriteArtists: List<com.makd.afinity.data.models.music.AfinityArtist> = emptyList(),
+    val favoriteTracks: List<com.makd.afinity.data.models.music.AfinityTrack> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
 )

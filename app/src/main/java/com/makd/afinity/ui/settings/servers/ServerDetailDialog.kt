@@ -91,7 +91,7 @@ private enum class DetailTab(
 }
 
 @Composable
-internal fun ServerDetailDialog(
+internal fun ServerDetailContent(
     serverWithCount: ServerWithUserCount,
     stats: ServerDetailStats?,
     statsLoading: Boolean,
@@ -102,7 +102,9 @@ internal fun ServerDetailDialog(
     onDeleteAudiobookshelfAddress: (UUID) -> Unit,
     onAddJellyseerrAddress: (String) -> Unit,
     onAddAudiobookshelfAddress: (String) -> Unit,
-    controlPanelViewModel: ControlPanelViewModel = hiltViewModel(key = serverWithCount.server.id),
+    modifier: Modifier = Modifier,
+    controlPanelViewModel: ControlPanelViewModel =
+        hiltViewModel(key = serverWithCount.server.id),
 ) {
     val status = serverWithCount.currentUserServiceStatus
     val tabs = buildList {
@@ -119,6 +121,206 @@ internal fun ServerDetailDialog(
         controlPanelViewModel.initialize(serverWithCount.server.id)
     }
 
+    AnimatedContent(
+        targetState = dialogView,
+        modifier = modifier,
+        transitionSpec = {
+            if (targetState != DialogView.STATS) {
+                (slideInHorizontally { it } + fadeIn()) togetherWith
+                    (slideOutHorizontally { -it } + fadeOut())
+            } else {
+                (slideInHorizontally { -it } + fadeIn()) togetherWith
+                    (slideOutHorizontally { it } + fadeOut())
+            }
+        },
+        label = "DialogTransition",
+    ) { viewState ->
+        when (viewState) {
+            DialogView.STATS -> {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Row(
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .padding(
+                                    start = 24.dp,
+                                    end = 16.dp,
+                                    top = 24.dp,
+                                    bottom = 16.dp,
+                                ),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(
+                            modifier =
+                                Modifier.size(48.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.primaryContainer,
+                                        RoundedCornerShape(14.dp),
+                                    ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_server),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = serverWithCount.server.name,
+                                style =
+                                    MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            if (serverWithCount.server.version != null) {
+                                Text(
+                                    text =
+                                        stringResource(
+                                            R.string.server_version_fmt,
+                                            serverWithCount.server.version ?: "",
+                                        ),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        IconButton(
+                            onClick = onDismiss,
+                            modifier =
+                                Modifier.background(
+                                    MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    CircleShape,
+                                ),
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_close),
+                                contentDescription = stringResource(R.string.action_close),
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
+
+                    if (tabs.size > 1) {
+                        SegmentedTabBar(
+                            tabs = tabs,
+                            selectedTabIndex = selectedTabIndex,
+                            onTabSelected = { selectedTabIndex = it },
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    Crossfade(
+                        targetState = tabs.getOrNull(selectedTabIndex) ?: DetailTab.JELLYFIN,
+                        animationSpec = tween(300),
+                        modifier = Modifier.weight(1f),
+                        label = "TabContentCrossfade",
+                    ) { currentTab ->
+                        Column(
+                            modifier =
+                                Modifier.fillMaxSize()
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(horizontal = 24.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(20.dp),
+                        ) {
+                            when (currentTab) {
+                                DetailTab.JELLYFIN ->
+                                    JellyfinTabContent(
+                                        serverWithCount = serverWithCount,
+                                        jellyfinStats = stats?.jellyfinStats,
+                                        statsLoading = statsLoading,
+                                        isAdmin = isAdmin,
+                                        onManageClick = { dialogView = DialogView.MANAGE_ADDRESSES },
+                                        onControlPanelClick = {
+                                            dialogView = DialogView.CONTROL_PANEL
+                                        },
+                                    )
+                                DetailTab.JELLYSEERR ->
+                                    JellyseerrTabContent(
+                                        serverWithCount = serverWithCount,
+                                        jellyseerrStats = stats?.jellyseerrStats,
+                                        statsLoading = statsLoading,
+                                        onManageClick = { dialogView = DialogView.MANAGE_ADDRESSES },
+                                    )
+                                DetailTab.AUDIOBOOKSHELF ->
+                                    AudiobookshelfTabContent(
+                                        serverWithCount = serverWithCount,
+                                        absStats = stats?.audiobookshelfStats,
+                                        statsLoading = statsLoading,
+                                        onManageClick = { dialogView = DialogView.MANAGE_ADDRESSES },
+                                    )
+                            }
+                        }
+                    }
+                }
+            }
+            DialogView.MANAGE_ADDRESSES -> {
+                val currentTab = tabs.getOrNull(selectedTabIndex) ?: DetailTab.JELLYFIN
+                ManageAddressesView(
+                    title = stringResource(R.string.server_manage_connections),
+                    onBack = { dialogView = DialogView.STATS },
+                ) {
+                    when (currentTab) {
+                        DetailTab.JELLYFIN -> {
+                            val primaryAddress = serverWithCount.server.address
+                            val allAddresses = buildList {
+                                add(primaryAddress)
+                                serverWithCount.addresses
+                                    .map { it.address }
+                                    .filter { it != primaryAddress }
+                                    .forEach { add(it) }
+                            }
+                            JellyfinManageAddresses(
+                                allAddresses,
+                                primaryAddress,
+                                serverWithCount,
+                                onDeleteAddress,
+                                onSetPrimary,
+                            )
+                        }
+                        DetailTab.JELLYSEERR ->
+                            JellyseerrManageAddresses(
+                                serverWithCount,
+                                onDeleteJellyseerrAddress,
+                                onAddJellyseerrAddress,
+                            )
+                        DetailTab.AUDIOBOOKSHELF ->
+                            AudiobookshelfManageAddresses(
+                                serverWithCount,
+                                onDeleteAudiobookshelfAddress,
+                                onAddAudiobookshelfAddress,
+                            )
+                    }
+                }
+            }
+            DialogView.CONTROL_PANEL ->
+                ControlPanelView(
+                    serverWithCount = serverWithCount,
+                    onBack = { dialogView = DialogView.STATS },
+                    viewModel = controlPanelViewModel,
+                )
+        }
+    }
+}
+
+@Composable
+internal fun ServerDetailDialog(
+    serverWithCount: ServerWithUserCount,
+    stats: ServerDetailStats?,
+    statsLoading: Boolean,
+    onDismiss: () -> Unit,
+    onDeleteAddress: (UUID) -> Unit,
+    onSetPrimary: (String) -> Unit,
+    onDeleteJellyseerrAddress: (UUID) -> Unit,
+    onDeleteAudiobookshelfAddress: (UUID) -> Unit,
+    onAddJellyseerrAddress: (String) -> Unit,
+    onAddAudiobookshelfAddress: (String) -> Unit,
+    controlPanelViewModel: ControlPanelViewModel = hiltViewModel(key = serverWithCount.server.id),
+) {
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -129,197 +331,20 @@ internal fun ServerDetailDialog(
             color = MaterialTheme.colorScheme.surfaceContainerLow,
             tonalElevation = 2.dp,
         ) {
-            AnimatedContent(
-                targetState = dialogView,
+            ServerDetailContent(
+                serverWithCount = serverWithCount,
+                stats = stats,
+                statsLoading = statsLoading,
+                onDismiss = onDismiss,
+                onDeleteAddress = onDeleteAddress,
+                onSetPrimary = onSetPrimary,
+                onDeleteJellyseerrAddress = onDeleteJellyseerrAddress,
+                onDeleteAudiobookshelfAddress = onDeleteAudiobookshelfAddress,
+                onAddJellyseerrAddress = onAddJellyseerrAddress,
+                onAddAudiobookshelfAddress = onAddAudiobookshelfAddress,
                 modifier = Modifier.fillMaxSize(),
-                transitionSpec = {
-                    if (targetState != DialogView.STATS) {
-                        (slideInHorizontally { it } + fadeIn()) togetherWith
-                            (slideOutHorizontally { -it } + fadeOut())
-                    } else {
-                        (slideInHorizontally { -it } + fadeIn()) togetherWith
-                            (slideOutHorizontally { it } + fadeOut())
-                    }
-                },
-                label = "DialogTransition",
-            ) { viewState ->
-                when (viewState) {
-                    DialogView.STATS -> {
-                        Column(modifier = Modifier.fillMaxSize()) {
-                            Row(
-                                modifier =
-                                    Modifier.fillMaxWidth()
-                                        .padding(
-                                            start = 24.dp,
-                                            end = 16.dp,
-                                            top = 24.dp,
-                                            bottom = 16.dp,
-                                        ),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Box(
-                                    modifier =
-                                        Modifier.size(48.dp)
-                                            .background(
-                                                MaterialTheme.colorScheme.primaryContainer,
-                                                RoundedCornerShape(14.dp),
-                                            ),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.ic_server),
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        modifier = Modifier.size(24.dp),
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = serverWithCount.server.name,
-                                        style =
-                                            MaterialTheme.typography.titleLarge.copy(
-                                                fontWeight = FontWeight.Bold
-                                            ),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                    if (serverWithCount.server.version != null) {
-                                        Text(
-                                            text =
-                                                stringResource(
-                                                    R.string.server_version_fmt,
-                                                    serverWithCount.server.version ?: "",
-                                                ),
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
-                                }
-                                IconButton(
-                                    onClick = onDismiss,
-                                    modifier =
-                                        Modifier.background(
-                                            MaterialTheme.colorScheme.surfaceContainerHigh,
-                                            CircleShape,
-                                        ),
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.ic_close),
-                                        contentDescription = stringResource(R.string.action_close),
-                                        modifier = Modifier.size(20.dp),
-                                        tint = MaterialTheme.colorScheme.onSurface,
-                                    )
-                                }
-                            }
-
-                            if (tabs.size > 1) {
-                                SegmentedTabBar(
-                                    tabs = tabs,
-                                    selectedTabIndex = selectedTabIndex,
-                                    onTabSelected = { selectedTabIndex = it },
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                            }
-
-                            Crossfade(
-                                targetState =
-                                    tabs.getOrNull(selectedTabIndex) ?: DetailTab.JELLYFIN,
-                                animationSpec = tween(300),
-                                modifier = Modifier.weight(1f),
-                                label = "TabContentCrossfade",
-                            ) { currentTab ->
-                                Column(
-                                    modifier =
-                                        Modifier.fillMaxSize()
-                                            .verticalScroll(rememberScrollState())
-                                            .padding(horizontal = 24.dp, vertical = 12.dp),
-                                    verticalArrangement = Arrangement.spacedBy(20.dp),
-                                ) {
-                                    when (currentTab) {
-                                        DetailTab.JELLYFIN ->
-                                            JellyfinTabContent(
-                                                serverWithCount = serverWithCount,
-                                                jellyfinStats = stats?.jellyfinStats,
-                                                statsLoading = statsLoading,
-                                                isAdmin = isAdmin,
-                                                onManageClick = {
-                                                    dialogView = DialogView.MANAGE_ADDRESSES
-                                                },
-                                                onControlPanelClick = {
-                                                    dialogView = DialogView.CONTROL_PANEL
-                                                },
-                                            )
-                                        DetailTab.JELLYSEERR ->
-                                            JellyseerrTabContent(
-                                                serverWithCount = serverWithCount,
-                                                jellyseerrStats = stats?.jellyseerrStats,
-                                                statsLoading = statsLoading,
-                                                onManageClick = {
-                                                    dialogView = DialogView.MANAGE_ADDRESSES
-                                                },
-                                            )
-                                        DetailTab.AUDIOBOOKSHELF ->
-                                            AudiobookshelfTabContent(
-                                                serverWithCount = serverWithCount,
-                                                absStats = stats?.audiobookshelfStats,
-                                                statsLoading = statsLoading,
-                                                onManageClick = {
-                                                    dialogView = DialogView.MANAGE_ADDRESSES
-                                                },
-                                            )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    DialogView.MANAGE_ADDRESSES -> {
-                        val currentTab = tabs.getOrNull(selectedTabIndex) ?: DetailTab.JELLYFIN
-                        ManageAddressesView(
-                            title = stringResource(R.string.server_manage_connections),
-                            onBack = { dialogView = DialogView.STATS },
-                        ) {
-                            when (currentTab) {
-                                DetailTab.JELLYFIN -> {
-                                    val primaryAddress = serverWithCount.server.address
-                                    val allAddresses = buildList {
-                                        add(primaryAddress)
-                                        serverWithCount.addresses
-                                            .map { it.address }
-                                            .filter { it != primaryAddress }
-                                            .forEach { add(it) }
-                                    }
-                                    JellyfinManageAddresses(
-                                        allAddresses,
-                                        primaryAddress,
-                                        serverWithCount,
-                                        onDeleteAddress,
-                                        onSetPrimary,
-                                    )
-                                }
-                                DetailTab.JELLYSEERR ->
-                                    JellyseerrManageAddresses(
-                                        serverWithCount,
-                                        onDeleteJellyseerrAddress,
-                                        onAddJellyseerrAddress,
-                                    )
-                                DetailTab.AUDIOBOOKSHELF ->
-                                    AudiobookshelfManageAddresses(
-                                        serverWithCount,
-                                        onDeleteAudiobookshelfAddress,
-                                        onAddAudiobookshelfAddress,
-                                    )
-                            }
-                        }
-                    }
-                    DialogView.CONTROL_PANEL ->
-                        ControlPanelView(
-                            serverWithCount = serverWithCount,
-                            onBack = { dialogView = DialogView.STATS },
-                            viewModel = controlPanelViewModel,
-                        )
-                }
-            }
+                controlPanelViewModel = controlPanelViewModel,
+            )
         }
     }
 }

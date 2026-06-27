@@ -43,7 +43,7 @@ fun PodcastCard(
         ) {
             val coverUrl =
                 if (serverUrl != null && item.media.coverPath != null) {
-                    "$serverUrl/api/items/${item.id}/cover"
+                    "$serverUrl/api/items/${item.id}/cover?width=192"
                 } else null
 
             if (coverUrl != null) {

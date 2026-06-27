@@ -329,7 +329,6 @@ constructor(
         params.add("Static=true")
 
         if (maxBitrate != null) params.add("maxStreamingBitrate=$maxBitrate")
-        if (accessToken != null) params.add("api_key=$accessToken")
 
         val queryString = params.joinToString("&")
 

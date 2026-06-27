@@ -112,6 +112,8 @@ fun EpisodeListCard(
                     contentDescription = item.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
+                    targetWidth = thumbnailWidth,
+                    targetHeight = thumbnailWidth / CardDimensions.ASPECT_RATIO_LANDSCAPE,
                 )
 
                 if (item.runtimeTicks > 0) {

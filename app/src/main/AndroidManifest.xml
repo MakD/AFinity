@@ -32,7 +32,6 @@
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize"
             android:exported="true"
-            android:label="@string/app_name"
             android:supportsPictureInPicture="true"
             android:theme="@style/Theme.AFinity.Splash"
             android:windowSoftInputMode="adjustResize">
@@ -43,13 +42,19 @@
         </activity>
 
         <activity
+            android:name=".cast.CastExpandedControllerActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
+
+        <activity
             android:name=".ui.player.PlayerActivity"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|uiMode|keyboard|keyboardHidden|navigation"
             android:exported="false"
             android:launchMode="singleTask"
             android:screenOrientation="fullSensor"
             android:supportsPictureInPicture="true"
-            android:theme="@style/Theme.AFinity" />
+            android:theme="@style/Theme.AFinity.Player" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -78,13 +83,17 @@
             tools:node="merge" />
 
         <service
-            android:name=".player.audiobookshelf.AudiobookshelfPlayerService"
+            android:name=".player.AudioService"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback">
             <intent-filter>
                 <action android:name="androidx.media3.session.MediaSessionService" />
             </intent-filter>
         </service>
+
+        <receiver
+            android:name="androidx.mediarouter.media.MediaTransferReceiver"
+            android:exported="true" />
     </application>
 
 </manifest>

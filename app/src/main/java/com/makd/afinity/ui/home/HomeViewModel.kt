@@ -296,11 +296,6 @@ constructor(
                 }
             }
         }
-
-        // Load downloaded content whenever we're offline and a user is available. Combining the two
-        // flows means we react once the user is known rather than reading it eagerly and racing the
-        // session restore (which would leave the offline home blank). distinctUntilChanged avoids
-        // reloading on the redundant emissions both source flows produce during startup.
         viewModelScope.launch {
             combine(offlineModeManager.isOffline, authRepository.currentUser) { isOffline, user ->
                     isOffline to user?.id
@@ -535,7 +530,8 @@ constructor(
 
         _uiState.update { it.copy(combinedSections = finalLayout) }
         Timber.d(
-            "Updated home layout with ${finalLayout.size} sections (${loadedSpotlightSections.size} spotlights)"
+            "Updated home layout with ${finalLayout.size} sections " +
+                "(${loadedSpotlightSections.size} spotlights)"
         )
     }
 
@@ -1074,10 +1070,6 @@ constructor(
 
             val completedDownloads = downloadRepository.getCompletedDownloadsFlow().first()
             val downloadedItemIds = completedDownloads.map { it.itemId }.toSet()
-
-            // A download is unavailable when the volume it was saved to (e.g. an SD card) is no
-            // longer mounted. Build the set of mounted volumes once and the per-item volume map so
-            // we can flag movies/shows whose files can't currently be reached.
             val mountedVolumeIds = storageLocationProvider.mountedVolumeIds()
             val volumeByItemId = completedDownloads.associate { it.itemId to it.storageVolumeId }
             fun isItemUnavailable(itemId: UUID): Boolean {
@@ -1150,8 +1142,6 @@ constructor(
                         )
                     }
 
-            // Movies are unavailable when their own download volume is gone; a show is unavailable
-            // only when every one of its downloaded episodes lives on a missing volume.
             val unavailableMovieIds =
                 downloadedMovies.map { it.id }.filter { isItemUnavailable(it) }.toSet()
             val unavailableShowIds =
@@ -1169,6 +1159,10 @@ constructor(
                     .toSet()
             val unavailableDownloadIds = unavailableMovieIds + unavailableShowIds
 
+            val downloadedMusicAlbums = databaseRepository.getAllMusicAlbumsByUser(userId)
+            val downloadedMusicTracks = databaseRepository.getAllMusicTracksByUser(userId)
+                .filter { it.localFilePath != null }
+
             _uiState.update {
                 it.copy(
                     downloadedMovies = downloadedMovies,
@@ -1176,6 +1170,8 @@ constructor(
                     offlineContinueWatching = sortedOfflineContinueWatching,
                     downloadedAudiobooks = downloadedAudiobooks,
                     downloadedPodcastEpisodes = downloadedPodcastEpisodes,
+                    downloadedMusicAlbums = downloadedMusicAlbums,
+                    downloadedMusicTracks = downloadedMusicTracks,
                     unavailableDownloadIds = unavailableDownloadIds,
                 )
             }
@@ -1475,6 +1471,8 @@ data class HomeUiState(
     val downloadedShows: List<AfinityShow> = emptyList(),
     val downloadedAudiobooks: List<AbsDownloadInfo> = emptyList(),
     val downloadedPodcastEpisodes: List<AbsDownloadInfo> = emptyList(),
+    val downloadedMusicAlbums: List<com.makd.afinity.data.models.music.AfinityAlbum> = emptyList(),
+    val downloadedMusicTracks: List<com.makd.afinity.data.models.music.AfinityTrack> = emptyList(),
     val unavailableDownloadIds: Set<UUID> = emptySet(),
     val isLoading: Boolean = false,
     val error: String? = null,

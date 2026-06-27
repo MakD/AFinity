@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -38,9 +39,11 @@ fun AudiobookCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val screenWidthPx = LocalWindowInfo.current.containerSize.width
     val coverUrl =
         if (serverUrl != null && item.media.coverPath != null) {
-            "$serverUrl/api/items/${item.id}/cover"
+            val coverPx = (screenWidthPx / 2).coerceAtLeast(100)
+            "$serverUrl/api/items/${item.id}/cover?width=$coverPx"
         } else null
 
     Column(modifier = modifier) {
@@ -55,7 +58,11 @@ fun AudiobookCard(
                 if (coverUrl != null) {
                     AsyncImage(
                         model = coverUrl,
-                        contentDescription = stringResource(R.string.cd_abs_cover_fmt, item.media.metadata.title ?: ""),
+                        contentDescription =
+                            stringResource(
+                                R.string.cd_abs_cover_fmt,
+                                item.media.metadata.title ?: "",
+                            ),
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
                     )

@@ -201,34 +201,20 @@ fun PlayerScreen(
     val castState by viewModel.castManager.castState.collectAsStateWithLifecycle()
     val isDarkTheme = isSystemInDarkTheme()
 
-    if (uiState.showCastChooser) {
-        val context = androidx.compose.ui.platform.LocalContext.current
-        LaunchedEffect(isDarkTheme) {
-            try {
-                val castContext =
-                    com.google.android.gms.cast.framework.CastContext.getSharedInstance()
-                        ?: return@LaunchedEffect
-                val selector = castContext.mergedSelector
-                if (selector != null) {
-                    val themeResId =
-                        if (isDarkTheme) {
-                            androidx.appcompat.R.style.Theme_AppCompat_Dialog
-                        } else {
-                            androidx.appcompat.R.style.Theme_AppCompat_Light_Dialog
-                        }
-                    val themedContext =
-                        androidx.appcompat.view.ContextThemeWrapper(context, themeResId)
-                    val dialog = androidx.mediarouter.app.MediaRouteChooserDialog(themedContext)
-                    dialog.routeSelector = selector
-                    dialog.setOnDismissListener { viewModel.dismissCastChooser() }
-                    dialog.show()
-                } else {
-                    viewModel.dismissCastChooser()
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to show cast chooser")
-                viewModel.dismissCastChooser()
-            }
+    val mediaRouteButton = remember {
+        androidx.mediarouter.app.MediaRouteButton(context).also { button ->
+            com.google.android.gms.cast.framework.CastButtonFactory.setUpMediaRouteButton(
+                context,
+                button,
+            )
+            button.visibility = android.view.View.GONE
+        }
+    }
+    AndroidView(factory = { mediaRouteButton })
+    LaunchedEffect(uiState.showCastChooser) {
+        if (uiState.showCastChooser) {
+            mediaRouteButton.performClick()
+            viewModel.dismissCastChooser()
         }
     }
 

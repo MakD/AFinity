@@ -64,7 +64,7 @@ constructor(
     fun checkForUpdates() {
         viewModelScope.launch {
             try {
-                val release = updateManager.checkForUpdates()
+                updateManager.checkForUpdates()
                 val lastCheck = preferencesRepository.getLastUpdateCheck()
                 _uiState.value = _uiState.value.copy(lastCheckTime = formatTimestamp(lastCheck))
             } catch (e: Exception) {

@@ -165,6 +165,15 @@ abstract class ServerDatabaseDao {
     abstract suspend fun getTotalBytesAllServers(): Long
 
     @Query(
+        "SELECT * FROM downloads WHERE seriesId = :albumSeriesId AND serverId = :serverId AND userId = :userId AND itemType = 'Audio' AND status = 'COMPLETED' ORDER BY seasonNumber ASC, episodeNumber ASC"
+    )
+    abstract suspend fun getCompletedAudioDownloadsByAlbum(
+        albumSeriesId: String,
+        serverId: String,
+        userId: UUID,
+    ): List<DownloadDto>
+
+    @Query(
         "SELECT storageVolumeId, COALESCE(SUM(totalBytes), 0) AS totalBytes FROM downloads WHERE serverId = :serverId AND status = 'COMPLETED' GROUP BY storageVolumeId"
     )
     abstract suspend fun getTotalBytesPerVolumeForServer(serverId: String): List<VolumeUsage>

@@ -25,6 +25,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.toAfinityEpisode
+import com.makd.afinity.data.models.music.MusicSearchResults
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.DatabaseRepository
@@ -34,6 +35,7 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import com.makd.afinity.util.NetworkConnectivityMonitor
@@ -80,6 +82,7 @@ constructor(
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val preferencesRepository: PreferencesRepository,
     private val networkMonitor: NetworkConnectivityMonitor,
+    private val musicRepository: MusicRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState())
@@ -114,6 +117,7 @@ constructor(
     private var searchJob: Job? = null
     private var jellyseerrSearchJob: Job? = null
     private var audiobookshelfSearchJob: Job? = null
+    private var musicSearchJob: Job? = null
 
     private val searchQueryFlow = MutableSharedFlow<String>(extraBufferCapacity = 1)
     private val pendingItemUpdates = mutableMapOf<UUID, AfinityItem>()
@@ -131,6 +135,7 @@ constructor(
                             launch { performSearch() }
                             launch { performAudiobookshelfSearch() }
                             launch { performJellyseerrSearch() }
+                            launch { performMusicSearch() }
                         }
                     }
                 }
@@ -318,6 +323,7 @@ constructor(
         searchJob?.cancel()
         jellyseerrSearchJob?.cancel()
         audiobookshelfSearchJob?.cancel()
+        musicSearchJob?.cancel()
     }
 
     fun loadLibraries() {
@@ -394,9 +400,11 @@ constructor(
                     searchResults = emptyList(),
                     jellyseerrSearchResults = emptyList(),
                     audiobookshelfSearchResults = emptyList(),
+                    musicSearchResults = null,
                     isSearching = false,
                     isAudiobookshelfSearching = false,
                     isJellyseerrSearching = false,
+                    isMusicSearching = false,
                 )
         }
     }
@@ -515,7 +523,30 @@ constructor(
                 isJellyseerrSearching = false,
                 audiobookshelfSearchResults = emptyList(),
                 isAudiobookshelfSearching = false,
+                musicSearchResults = null,
+                isMusicSearching = false,
             )
+    }
+
+    fun performMusicSearch() {
+        val query = _uiState.value.searchQuery.trim()
+        if (query.isEmpty()) return
+
+        musicSearchJob?.cancel()
+        musicSearchJob = viewModelScope.launch {
+            try {
+                _uiState.update { it.copy(isMusicSearching = true) }
+                val libraryId = _uiState.value.selectedLibrary
+                    ?.takeIf { it.type == CollectionType.Music }
+                    ?.id
+                val results = musicRepository.searchMusic(query, libraryId)
+                _uiState.update { it.copy(musicSearchResults = results, isMusicSearching = false) }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                _uiState.update { it.copy(musicSearchResults = null, isMusicSearching = false) }
+                Timber.e(e, "Music search failed")
+            }
+        }
     }
 
     fun selectJellyseerrSearchMode() {
@@ -988,6 +1019,24 @@ constructor(
         }
     }
 
+    fun toggleTrackFavorite(trackId: UUID) {
+        val musicResults = _uiState.value.musicSearchResults ?: return
+        val tracks = musicResults.tracks
+        val track = tracks.find { it.id == trackId } ?: return
+        val newFavorite = !track.favorite
+        _uiState.update {
+            it.copy(
+                musicSearchResults = musicResults.copy(
+                    tracks = tracks.map { t -> if (t.id == trackId) t.copy(favorite = newFavorite) else t }
+                )
+            )
+        }
+        viewModelScope.launch {
+            runCatching { musicRepository.setFavorite(trackId, newFavorite) }
+                .onFailure { _uiState.update { it.copy(musicSearchResults = musicResults) } }
+        }
+    }
+
     private fun updateItemInSearchResults(updatedItem: AfinityItem) {
         val currentResults = _uiState.value.searchResults
         val index = currentResults.indexOfFirst { it.id == updatedItem.id }
@@ -1030,6 +1079,8 @@ data class SearchUiState(
     val selectedRootFolder: String? = null,
     val isLoadingServers: Boolean = false,
     val isLoadingProfiles: Boolean = false,
+    val musicSearchResults: MusicSearchResults? = null,
+    val isMusicSearching: Boolean = false,
 )
 
 data class PendingRequestSearch(

@@ -7,8 +7,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
+import com.makd.afinity.cast.CastEvent
+import com.makd.afinity.cast.CastManager
 import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.repository.AudiobookshelfRepository
+import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfEqualizerManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
@@ -18,8 +21,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -36,6 +42,8 @@ constructor(
     val playbackManager: AudiobookshelfPlaybackManager,
     private val equalizerManager: AudiobookshelfEqualizerManager,
     private val skipSilenceManager: AudiobookshelfSkipSilenceManager,
+    private val castManager: CastManager,
+    private val securePreferencesRepository: SecurePreferencesRepository,
 ) : ViewModel() {
 
     private val itemId: String = savedStateHandle.get<String>("itemId") ?: ""
@@ -52,12 +60,90 @@ constructor(
     val equalizerState = equalizerManager.state
     val skipSilenceEnabled = skipSilenceManager.isEnabled
 
+    val isAbsCasting: StateFlow<Boolean> =
+        castManager.castState
+            .map { it.isAbsCasting }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     init {
         startPlayback()
+        observePlayerErrors()
+        observeCastState()
+        observeCastEvents()
+    }
+
+    private fun observePlayerErrors() {
+        viewModelScope.launch {
+            playbackManager.playbackState.collect { state ->
+                val error = state.playerError ?: return@collect
+                _uiState.value = _uiState.value.copy(error = error)
+                playbackManager.updatePlayerError(null)
+            }
+        }
+    }
+
+    private fun observeCastState() {
+        viewModelScope.launch {
+            castManager.castState.collect { state ->
+                if (state.isAbsCasting) {
+                    val globalPositionSeconds = state.currentPosition / 1000.0
+                    playbackManager.updatePosition(globalPositionSeconds)
+                    playbackManager.updatePlayingState(state.isPlaying)
+                    playbackManager.updateBufferingState(state.isBuffering)
+                }
+            }
+        }
+    }
+
+    private fun observeCastEvents() {
+        viewModelScope.launch {
+            castManager.castEvents.collect { event ->
+                when (event) {
+                    is CastEvent.Connected -> {
+                        val state = playbackManager.playbackState.value
+                        val sessionId = state.sessionId
+                        if (
+                            sessionId != null &&
+                                !sessionId.startsWith("local_") &&
+                                !isAbsCasting.value
+                        ) {
+                            castCurrentSession()
+                        }
+                    }
+                    is CastEvent.AbsCastDisconnected -> {
+                        audiobookshelfPlayer.seekToPosition(event.lastPositionSeconds)
+                        audiobookshelfPlayer.play()
+                    }
+                    else -> {}
+                }
+            }
+        }
+    }
+
+    fun castCurrentSession() {
+        val state = playbackManager.playbackState.value
+        val sessionId = state.sessionId ?: return
+        if (sessionId.startsWith("local_")) return
+        val tracks = state.audioTracks
+        if (tracks.isEmpty()) return
+        val baseUrl = currentConfig.value?.serverUrl ?: return
+        val token = securePreferencesRepository.getCachedAudiobookshelfToken() ?: return
+
+        castManager.loadAbsSession(
+            tracks = tracks,
+            startGlobalTimeSeconds = state.currentTime,
+            displayTitle = state.displayTitle,
+            author = state.displayAuthor,
+            coverUrl = state.coverUrl,
+            baseUrl = baseUrl,
+            token = token,
+        )
+        audiobookshelfPlayer.pause()
     }
 
     @UnstableApi
     private fun startPlayback() {
+        if (castManager.castState.value.isAbsCasting) return
         val currentState = playbackManager.playbackState.value
         if (currentState.sessionId != null && currentState.itemId == itemId) {
             Timber.d("Resuming existing playback session for item: $itemId")
@@ -69,6 +155,14 @@ constructor(
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            val needsPreload = currentState.displayTitle.isEmpty() || currentState.itemId != itemId
+            if (needsPreload) {
+                val cached = audiobookshelfRepository.getCachedItemMetadata(itemId)
+                if (cached != null) {
+                    val (title, author, coverUrl) = cached
+                    playbackManager.preloadDisplayMetadata(itemId, title, author, coverUrl)
+                }
+            }
 
             val result = audiobookshelfRepository.startPlaybackSession(itemId, episodeId)
 
@@ -101,7 +195,9 @@ constructor(
     }
 
     fun togglePlayPause() {
-        if (audiobookshelfPlayer.isPlaying()) {
+        if (isAbsCasting.value) {
+            if (castManager.castState.value.isPlaying) castManager.pause() else castManager.play()
+        } else if (audiobookshelfPlayer.isPlaying()) {
             audiobookshelfPlayer.pause()
         } else {
             audiobookshelfPlayer.play()
@@ -109,19 +205,42 @@ constructor(
     }
 
     fun seekTo(positionSeconds: Double) {
-        audiobookshelfPlayer.seekToPosition(positionSeconds)
+        if (isAbsCasting.value) {
+            castManager.seekAbsGlobalPosition((positionSeconds * 1000).toLong())
+        } else {
+            audiobookshelfPlayer.seekToPosition(positionSeconds)
+        }
     }
 
     fun skipForward() {
-        audiobookshelfPlayer.skipForward(30)
+        if (isAbsCasting.value) {
+            val newPos =
+                (castManager.castState.value.currentPosition + 30_000L).coerceAtMost(
+                    (playbackManager.playbackState.value.duration * 1000).toLong()
+                )
+            castManager.seekAbsGlobalPosition(newPos)
+        } else {
+            audiobookshelfPlayer.skipForward(30)
+        }
     }
 
     fun skipBackward() {
-        audiobookshelfPlayer.skipBackward(30)
+        if (isAbsCasting.value) {
+            val newPos = (castManager.castState.value.currentPosition - 30_000L).coerceAtLeast(0L)
+            castManager.seekAbsGlobalPosition(newPos)
+        } else {
+            audiobookshelfPlayer.skipBackward(30)
+        }
     }
 
     fun seekToChapter(chapterIndex: Int) {
-        audiobookshelfPlayer.seekToChapter(chapterIndex)
+        if (isAbsCasting.value) {
+            val chapter =
+                playbackManager.playbackState.value.chapters.getOrNull(chapterIndex) ?: return
+            castManager.seekAbsGlobalPosition((chapter.start * 1000).toLong())
+        } else {
+            audiobookshelfPlayer.seekToChapter(chapterIndex)
+        }
         dismissChapterSelector()
     }
 

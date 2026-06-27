@@ -25,8 +25,10 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -89,6 +91,7 @@ fun PersonDetailContent(
     onToggleFavorite: () -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
+    lazyListState: LazyListState = rememberLazyListState(),
 ) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -101,6 +104,7 @@ fun PersonDetailContent(
             onItemClick = onItemClick,
             onToggleFavorite = onToggleFavorite,
             modifier = modifier,
+            lazyListState = lazyListState,
         )
     } else {
         PortraitPersonDetailContent(
@@ -111,6 +115,7 @@ fun PersonDetailContent(
             onToggleFavorite = onToggleFavorite,
             widthSizeClass = widthSizeClass,
             modifier = modifier,
+            lazyListState = lazyListState,
         )
     }
 }
@@ -123,17 +128,21 @@ private fun LandscapePersonDetailContent(
     onItemClick: (AfinityItem) -> Unit,
     onToggleFavorite: () -> Unit,
     modifier: Modifier = Modifier,
+    lazyListState: LazyListState = rememberLazyListState(),
 ) {
     val paddingValues = WindowInsets.safeDrawing.asPaddingValues()
     val playerOffset = LocalPlayerOffset.current
 
     Box(modifier = modifier.fillMaxSize()) {
+        val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
         AsyncImage(
             imageUrl = person.images.primaryImageUrl,
             contentDescription = null,
             blurHash = person.images.primaryBlurHash,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize().blur(radius = 20.dp).alpha(0.6f),
+            targetWidth = screenWidthDp,
+            targetHeight = screenWidthDp,
         )
 
         Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)))
@@ -157,11 +166,14 @@ private fun LandscapePersonDetailContent(
                         contentDescription = person.name,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
+                        targetWidth = 280.dp,
+                        targetHeight = 420.dp,
                     )
                 }
             }
 
             LazyColumn(
+                state = lazyListState,
                 modifier = Modifier.weight(1f).fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(bottom = 16.dp + playerOffset),
@@ -211,11 +223,13 @@ private fun PortraitPersonDetailContent(
     onToggleFavorite: () -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
+    lazyListState: LazyListState = rememberLazyListState(),
 ) {
     val cardWidth = widthSizeClass.portraitWidth
     val playerOffset = LocalPlayerOffset.current
 
     LazyColumn(
+        state = lazyListState,
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = playerOffset),
     ) {
@@ -289,6 +303,7 @@ private fun PersonSharedContentBlocks(
 @Composable
 private fun PersonHeroSection(person: AfinityPersonDetail, modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxWidth()) {
+        val heroWidthDp = LocalConfiguration.current.screenWidthDp.dp
         AsyncImage(
             imageUrl = person.images.primaryImageUrl,
             contentDescription = stringResource(R.string.cd_person_image_fmt, person.name),
@@ -310,6 +325,8 @@ private fun PersonHeroSection(person: AfinityPersonDetail, modifier: Modifier = 
                     },
             contentScale = ContentScale.Crop,
             alignment = Alignment.Center,
+            targetWidth = heroWidthDp,
+            targetHeight = heroWidthDp,
         )
     }
 }

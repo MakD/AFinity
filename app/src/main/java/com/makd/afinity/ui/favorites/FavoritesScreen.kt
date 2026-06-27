@@ -21,9 +21,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -32,10 +37,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -69,7 +77,11 @@ import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.MediaRowSection
+import com.makd.afinity.ui.home.components.MusicAlbumRowSection
 import com.makd.afinity.ui.main.MainUiState
+import com.makd.afinity.ui.music.library.MusicArtistsRow
+import com.makd.afinity.ui.music.library.startMusicService
+import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
@@ -83,10 +95,12 @@ fun FavoritesScreen(
     onPersonClick: (String) -> Unit = {},
     navController: NavController,
     viewModel: FavoritesViewModel = hiltViewModel(),
+    playerViewModel: MusicPlayerViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val playbackState by playerViewModel.playbackState.collectAsStateWithLifecycle()
     val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
     val selectedEpisodeWatchlistStatus by
         viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
@@ -146,7 +160,10 @@ fun FavoritesScreen(
                             uiState.episodes.isNotEmpty() ||
                             uiState.boxSets.isNotEmpty() ||
                             uiState.people.isNotEmpty() ||
-                            uiState.channels.isNotEmpty()
+                            uiState.channels.isNotEmpty() ||
+                            uiState.favoriteAlbums.isNotEmpty() ||
+                            uiState.favoriteArtists.isNotEmpty() ||
+                            uiState.favoriteTracks.isNotEmpty()
 
                     if (!hasAnyFavorites) {
                         FullScreenEmpty(
@@ -251,6 +268,66 @@ fun FavoritesScreen(
                                         people = uiState.people,
                                         onPersonClick = onPersonClick,
                                         cardWidth = portraitWidth,
+                                    )
+                                }
+                            }
+                            if (uiState.favoriteAlbums.isNotEmpty()) {
+                                item {
+                                    MusicAlbumRowSection(
+                                        title = "Favorite Albums",
+                                        albums = uiState.favoriteAlbums,
+                                        horizontalPadding = 0.dp,
+                                        onAlbumClick = { album ->
+                                            navController.navigate(
+                                                Destination.createMusicAlbumRoute(
+                                                    album.id.toString()
+                                                )
+                                            )
+                                        },
+                                    )
+                                }
+                            }
+                            if (uiState.favoriteArtists.isNotEmpty()) {
+                                item {
+                                    MusicArtistsRow(
+                                        title = "Favorite Artists",
+                                        artists = uiState.favoriteArtists,
+                                        horizontalPadding = 0.dp,
+                                        onArtistClick = { artist ->
+                                            navController.navigate(
+                                                Destination.createMusicArtistRoute(
+                                                    artist.id.toString()
+                                                )
+                                            )
+                                        },
+                                    )
+                                }
+                            }
+                            if (uiState.favoriteTracks.isNotEmpty()) {
+                                item {
+                                    FavoriteTracksSection(
+                                        tracks = uiState.favoriteTracks,
+                                        currentTrackId = playbackState.currentTrack?.id,
+                                        onTrackClick = { track ->
+                                            startMusicService(context)
+                                            playerViewModel.playQueue(
+                                                uiState.favoriteTracks,
+                                                uiState.favoriteTracks.indexOf(track),
+                                            )
+                                        },
+                                        onInstantMix = { track ->
+                                            startMusicService(context)
+                                            playerViewModel.playInstantMix(track.id)
+                                        },
+                                        onAddNext = { track ->
+                                            playerViewModel.addNext(listOf(track))
+                                        },
+                                        onAddLast = { track ->
+                                            playerViewModel.addLast(listOf(track))
+                                        },
+                                        onFavorite = { track ->
+                                            viewModel.toggleTrackFavorite(track)
+                                        },
                                     )
                                 }
                             }
@@ -390,6 +467,8 @@ private fun FavoriteChannelCard(channel: AfinityChannel, onClick: () -> Unit, ca
                         contentDescription = channel.name,
                         modifier = Modifier.fillMaxSize().padding(16.dp),
                         contentScale = ContentScale.Fit,
+                        targetWidth = cardWidth,
+                        targetHeight = cardWidth * 9f / 16f,
                     )
                 } else {
                     Text(
@@ -419,6 +498,188 @@ private fun FavoriteChannelCard(channel: AfinityChannel, onClick: () -> Unit, ca
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+        }
+    }
+}
+
+@Composable
+private fun FavoriteTracksSection(
+    tracks: List<com.makd.afinity.data.models.music.AfinityTrack>,
+    currentTrackId: java.util.UUID?,
+    onTrackClick: (com.makd.afinity.data.models.music.AfinityTrack) -> Unit,
+    onInstantMix: (com.makd.afinity.data.models.music.AfinityTrack) -> Unit,
+    onAddNext: (com.makd.afinity.data.models.music.AfinityTrack) -> Unit,
+    onAddLast: (com.makd.afinity.data.models.music.AfinityTrack) -> Unit,
+    onFavorite: (com.makd.afinity.data.models.music.AfinityTrack) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text(
+            text = "Favorite Songs",
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 0.dp),
+        ) {
+            items(tracks, key = { it.id }) { track ->
+                FavoriteTrackCard(
+                    track = track,
+                    isPlaying = track.id == currentTrackId,
+                    onClick = { onTrackClick(track) },
+                    onInstantMix = { onInstantMix(track) },
+                    onAddNext = { onAddNext(track) },
+                    onAddLast = { onAddLast(track) },
+                    onFavorite = { onFavorite(track) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FavoriteTrackCard(
+    track: com.makd.afinity.data.models.music.AfinityTrack,
+    isPlaying: Boolean,
+    onClick: () -> Unit,
+    onInstantMix: () -> Unit,
+    onAddNext: () -> Unit,
+    onAddLast: () -> Unit,
+    onFavorite: () -> Unit,
+) {
+    var showMenu by remember { mutableStateOf(false) }
+    val cardWidth = 140.dp
+
+    Column(
+        modifier =
+            Modifier.width(cardWidth)
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() },
+                    onClick = onClick,
+                ),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+            shape = RoundedCornerShape(8.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        ) {
+            AsyncImage(
+                imageUrl = track.images.primary?.toString(),
+                contentDescription = track.name,
+                targetWidth = cardWidth,
+                targetHeight = cardWidth,
+                modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+                contentScale = ContentScale.Crop,
+            )
+        }
+        Column(modifier = Modifier.padding(horizontal = 2.dp)) {
+            Text(
+                text = track.name,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                color =
+                    if (isPlaying) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = track.artist ?: track.artists.firstOrNull() ?: "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Box {
+                    IconButton(
+                        onClick = { showMenu = true },
+                        modifier = Modifier.size(24.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_dots_vertical),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    if (track.favorite) "Remove from Favorites"
+                                    else "Add to Favorites"
+                                )
+                            },
+                            onClick = {
+                                showMenu = false
+                                onFavorite()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    painter =
+                                        painterResource(
+                                            if (track.favorite) R.drawable.ic_favorite_filled
+                                            else R.drawable.ic_favorite
+                                        ),
+                                    contentDescription = null,
+                                    tint =
+                                        if (track.favorite) Color.Red
+                                        else androidx.compose.material3.LocalContentColor.current,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Play Instant Mix") },
+                            onClick = {
+                                showMenu = false
+                                onInstantMix()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_arrows_shuffle),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Play Next") },
+                            onClick = {
+                                showMenu = false
+                                onAddNext()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_player_skip_forward),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Add to Queue") },
+                            onClick = {
+                                showMenu = false
+                                onAddLast()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_playlist_alt),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            },
+                        )
+                    }
+                }
+            }
         }
     }
 }

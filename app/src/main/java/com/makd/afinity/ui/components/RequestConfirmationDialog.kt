@@ -43,8 +43,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
@@ -52,7 +54,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -134,7 +135,9 @@ fun RequestConfirmationDialog(
         onDismissRequest = { if (!isLoading) onDismiss() },
         title = {
             Text(
-                text = if (isManagementMode) stringResource(R.string.request_manage_title) else stringResource(R.string.request_on_seerr_title),
+                text =
+                    if (isManagementMode) stringResource(R.string.request_manage_title)
+                    else stringResource(R.string.request_on_seerr_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
             )
@@ -155,6 +158,8 @@ fun RequestConfirmationDialog(
                             blurHash = null,
                             modifier = Modifier.fillMaxWidth(),
                             contentScale = ContentScale.Crop,
+                            targetWidth = LocalConfiguration.current.screenWidthDp.dp,
+                            targetHeight = 200.dp,
                         )
                         Box(
                             modifier =
@@ -615,7 +620,8 @@ fun RequestConfirmationDialog(
                                     modifier = Modifier.padding(start = 4.dp),
                                 )
                                 val serverLabel =
-                                    if (mediaType == MediaType.MOVIE) stringResource(R.string.request_radarr_server)
+                                    if (mediaType == MediaType.MOVIE)
+                                        stringResource(R.string.request_radarr_server)
                                     else stringResource(R.string.request_sonarr_server)
                                 MinimalSelectionTile(
                                     serverLabel,
@@ -724,7 +730,11 @@ fun RequestConfirmationDialog(
                             color = MaterialTheme.colorScheme.onPrimary,
                             strokeWidth = 2.dp,
                         )
-                    else Text(if (alreadyRequested) stringResource(R.string.request_already_requested) else stringResource(R.string.request_on_seerr_title))
+                    else
+                        Text(
+                            if (alreadyRequested) stringResource(R.string.request_already_requested)
+                            else stringResource(R.string.request_on_seerr_title)
+                        )
                 }
             }
         },
@@ -755,7 +765,9 @@ fun RequestConfirmationDialog(
                         }
                     }
                 }
-                TextButton(onClick = onDismiss, enabled = !isLoading) { Text(stringResource(R.string.action_cancel)) }
+                TextButton(onClick = onDismiss, enabled = !isLoading) {
+                    Text(stringResource(R.string.action_cancel))
+                }
             }
         },
         modifier = modifier,

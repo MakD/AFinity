@@ -18,9 +18,9 @@ class UpdateScheduler @Inject constructor(@param:ApplicationContext private val 
     private val workManager = WorkManager.getInstance(context)
 
     fun scheduleUpdateChecks(frequency: UpdateCheckFrequency) {
-        if (frequency == UpdateCheckFrequency.ON_APP_OPEN) {
+        if (frequency == UpdateCheckFrequency.NEVER || frequency == UpdateCheckFrequency.ON_APP_OPEN) {
             cancelUpdateChecks()
-            Timber.d("Update checks set to ON_APP_OPEN, periodic checks cancelled")
+            Timber.d("Update checks set to ${frequency.displayName}, periodic checks cancelled")
             return
         }
 

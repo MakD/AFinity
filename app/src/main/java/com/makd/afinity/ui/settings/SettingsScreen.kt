@@ -2,6 +2,7 @@ package com.makd.afinity.ui.settings
 
 import android.app.LocaleConfig
 import android.app.LocaleManager
+import android.content.res.Configuration
 import android.os.LocaleList
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,15 +14,22 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -49,12 +57,25 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.layout.AnimatedPane
+import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
+import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
+import androidx.compose.material3.adaptive.layout.PaneScaffoldDirective
+import androidx.compose.material3.adaptive.layout.ThreePaneScaffoldDestinationItem
+import androidx.compose.material3.adaptive.layout.calculatePaneScaffoldDirective
+import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
+import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,6 +92,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
@@ -80,6 +102,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.compose.ui.unit.sp
@@ -94,24 +117,24 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.ConnectionType
+import com.makd.afinity.ui.settings.appearance.AppearanceOptionsScreen
+import com.makd.afinity.ui.settings.downloads.DownloadSettingsScreen
+import com.makd.afinity.ui.settings.player.PlayerOptionsScreen
 import com.makd.afinity.ui.settings.servers.ControlPanelView
 import com.makd.afinity.ui.settings.servers.ControlPanelViewModel
+import com.makd.afinity.ui.settings.servers.ServerManagementScreen
 import com.makd.afinity.ui.settings.update.UpdateSection
 import com.makd.afinity.util.isLocalAddress
 import com.makd.afinity.util.isTailscaleAddress
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 fun SettingsScreen(
     navController: NavHostController,
     onBackClick: () -> Unit,
     onLogoutComplete: () -> Unit,
-    onLicensesClick: () -> Unit,
-    onDownloadClick: () -> Unit,
-    onPlayerOptionsClick: () -> Unit,
-    onAppearanceOptionsClick: () -> Unit,
-    onServerManagementClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -161,6 +184,56 @@ fun SettingsScreen(
     val playerOffset = LocalPlayerOffset.current
     val controlPanelViewModel: ControlPanelViewModel = hiltViewModel(key = "settings_control_panel")
     val isAdmin by controlPanelViewModel.isAdmin.collectAsStateWithLifecycle()
+    val windowAdaptiveInfo = currentWindowAdaptiveInfo()
+    val defaultDirective = calculatePaneScaffoldDirective(windowAdaptiveInfo)
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    val customDirective =
+        PaneScaffoldDirective(
+            maxHorizontalPartitions =
+                if (isLandscape) 2 else defaultDirective.maxHorizontalPartitions,
+            horizontalPartitionSpacerSize = 0.dp,
+            maxVerticalPartitions = defaultDirective.maxVerticalPartitions,
+            verticalPartitionSpacerSize = defaultDirective.verticalPartitionSpacerSize,
+            defaultPanePreferredWidth = 420.dp,
+            excludedBounds = defaultDirective.excludedBounds,
+        )
+
+    var activeRole by rememberSaveable { mutableStateOf(ListDetailPaneScaffoldRole.List) }
+    var activePane by rememberSaveable { mutableStateOf<SettingsPaneDestination?>(null) }
+
+    val navigator =
+        key(isLandscape) {
+            val initialHistory =
+                mutableListOf<ThreePaneScaffoldDestinationItem<SettingsPaneDestination>>(
+                    ThreePaneScaffoldDestinationItem(ListDetailPaneScaffoldRole.List, null)
+                )
+
+            if (activePane != null) {
+                initialHistory.add(ThreePaneScaffoldDestinationItem(activeRole, activePane))
+            }
+
+            rememberListDetailPaneScaffoldNavigator(
+                scaffoldDirective = customDirective,
+                initialDestinationHistory = initialHistory,
+            )
+        }
+
+    LaunchedEffect(navigator.currentDestination) {
+        navigator.currentDestination?.let { dest ->
+            activeRole = dest.pane
+            activePane = dest.contentKey
+        }
+    }
+
+    val scope = rememberCoroutineScope()
+    val isDualPane =
+        navigator.scaffoldValue[ListDetailPaneScaffoldRole.List] == PaneAdaptedValue.Expanded &&
+            navigator.scaffoldValue[ListDetailPaneScaffoldRole.Detail] == PaneAdaptedValue.Expanded
+
+    val listEndPadding = if (isDualPane) 0.dp else 16.dp
+    val logoutEndPadding = if (isDualPane) 8.dp else 24.dp
 
     LaunchedEffect(uiState.serverId) {
         uiState.serverId?.let { controlPanelViewModel.initialize(it) }
@@ -214,17 +287,49 @@ fun SettingsScreen(
     }
 
     if (showJellyseerrBottomSheet) {
-        JellyseerrBottomSheet(
-            onDismiss = { showJellyseerrBottomSheet = false },
-            sheetState = jellyseerrSheetState,
-        )
+        if (isDualPane) {
+            Dialog(
+                onDismissRequest = { showJellyseerrBottomSheet = false },
+                properties = DialogProperties(usePlatformDefaultWidth = false),
+            ) {
+                Surface(
+                    modifier = Modifier.width(480.dp).padding(16.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                ) {
+                    JellyseerrLoginContent(onDismiss = { showJellyseerrBottomSheet = false })
+                }
+            }
+        } else {
+            JellyseerrBottomSheet(
+                onDismiss = { showJellyseerrBottomSheet = false },
+                sheetState = jellyseerrSheetState,
+            )
+        }
     }
 
     if (showAudiobookshelfBottomSheet) {
-        AudiobookshelfBottomSheet(
-            onDismiss = { showAudiobookshelfBottomSheet = false },
-            sheetState = audiobookshelfSheetState,
-        )
+        if (isDualPane) {
+            Dialog(
+                onDismissRequest = { showAudiobookshelfBottomSheet = false },
+                properties = DialogProperties(usePlatformDefaultWidth = false),
+            ) {
+                Surface(
+                    modifier = Modifier.width(480.dp).padding(16.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                ) {
+                    AudiobookshelfLoginContent(
+                        onDismiss = { showAudiobookshelfBottomSheet = false }
+                    )
+                }
+            }
+        } else {
+            AudiobookshelfBottomSheet(
+                onDismiss = { showAudiobookshelfBottomSheet = false },
+                sheetState = audiobookshelfSheetState,
+            )
+        }
     }
 
     if (showSessionSwitcherSheet) {
@@ -281,286 +386,474 @@ fun SettingsScreen(
         )
     }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.settings_title),
-                        style =
-                            MaterialTheme.typography.headlineMedium.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_chevron_left),
-                            contentDescription = stringResource(R.string.cd_back),
-                        )
-                    }
-                },
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.surface,
-    ) { innerPadding ->
-        val layoutDirection = LocalLayoutDirection.current
-        val customPadding =
-            PaddingValues(
-                top = innerPadding.calculateTopPadding(),
-                start = innerPadding.calculateStartPadding(layoutDirection),
-                end = innerPadding.calculateEndPadding(layoutDirection),
-                bottom = max(innerPadding.calculateBottomPadding(), playerOffset),
-            )
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(customPadding),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding =
-                    PaddingValues(
-                        top = customPadding.calculateTopPadding() + 16.dp,
-                        start = customPadding.calculateStartPadding(layoutDirection),
-                        end = customPadding.calculateEndPadding(layoutDirection),
-                        bottom = customPadding.calculateBottomPadding() + 16.dp,
-                    ),
-                verticalArrangement = Arrangement.spacedBy(24.dp),
-            ) {
-                item(key = "profile") {
-                    ProfileHeader(
-                        userName =
-                            uiState.currentUser?.name ?: stringResource(R.string.unknown_user),
-                        serverName = uiState.serverName,
-                        serverUrl = uiState.serverUrl,
-                        userProfileImageUrl = uiState.userProfileImageUrl,
-                        connectionType = connectionType,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        isAdmin = isAdmin == true,
-                        onControlPanelClick = { showControlPanel = true },
-                    )
-                }
-
-                item {
-                    SettingsGroup(title = stringResource(R.string.pref_group_general)) {
-                        SettingsSwitchItem(
-                            icon = painterResource(id = R.drawable.ic_cloud_off),
-                            title = stringResource(R.string.pref_offline_mode),
-                            subtitle =
-                                if (!isNetworkAvailable)
-                                    stringResource(R.string.offline_mode_no_connection)
-                                else if (manualOfflineMode)
-                                    stringResource(R.string.offline_mode_manual)
-                                else stringResource(R.string.offline_mode_force),
-                            checked = effectiveOfflineMode,
-                            onCheckedChange = viewModel::toggleOfflineMode,
-                            enabled = isNetworkAvailable,
-                        )
-                        SettingsDivider()
-                        SettingsSwitchItem(
-                            icon = painterResource(id = R.drawable.ic_seerr_logo),
-                            title = stringResource(R.string.pref_discovery_requests),
-                            subtitle =
-                                if (isJellyseerrAuthenticated)
-                                    stringResource(R.string.discovery_connected)
-                                else stringResource(R.string.discovery_connect),
-                            checked = isJellyseerrAuthenticated,
-                            onCheckedChange = { enabled ->
-                                if (enabled) showJellyseerrBottomSheet = true
-                                else showJellyseerrLogoutDialog = true
-                            },
-                            enabled = !effectiveOfflineMode,
-                        )
-                        SettingsDivider()
-                        SettingsSwitchItem(
-                            icon = painterResource(id = R.drawable.ic_audiobookshelf_light),
-                            title = stringResource(R.string.pref_audiobookshelf),
-                            subtitle =
-                                if (isAudiobookshelfAuthenticated)
-                                    stringResource(R.string.audiobookshelf_connected)
-                                else stringResource(R.string.audiobookshelf_connect),
-                            checked = isAudiobookshelfAuthenticated,
-                            onCheckedChange = { enabled ->
-                                if (enabled) showAudiobookshelfBottomSheet = true
-                                else showAudiobookshelfLogoutDialog = true
-                            },
-                            enabled = !effectiveOfflineMode,
-                        )
-                        SettingsDivider()
-                        SettingsItem(
-                            icon = painterResource(id = R.drawable.ic_database),
-                            title = stringResource(R.string.pref_downloads_and_storage),
-                            subtitle = stringResource(R.string.pref_downloads_and_storage_summary),
-                            onClick = onDownloadClick,
-                        )
-                        SettingsDivider()
-                        SettingsItem(
-                            icon = painterResource(id = R.drawable.ic_user),
-                            title = stringResource(R.string.pref_switch_session),
-                            subtitle = stringResource(R.string.pref_switch_session_summary),
-                            onClick =
-                                if (!effectiveOfflineMode) {
-                                    { showSessionSwitcherSheet = true }
-                                } else null,
-                        )
-                        SettingsDivider()
-                        SettingsItem(
-                            icon = painterResource(id = R.drawable.ic_quickconnect),
-                            title = stringResource(R.string.pref_authorize_quickconnect),
-                            subtitle = stringResource(R.string.pref_authorize_quickconnect_summary),
-                            onClick =
-                                if (!effectiveOfflineMode) {
-                                    { showQuickConnectDialog = true }
-                                } else null,
-                        )
-                    }
-                }
-
-                item {
-                    SettingsGroup(title = stringResource(R.string.pref_group_connections)) {
-                        SettingsItem(
-                            icon = painterResource(id = R.drawable.ic_server),
-                            title = stringResource(R.string.pref_manage_servers),
-                            subtitle = stringResource(R.string.pref_manage_servers_summary),
-                            onClick = onServerManagementClick,
-                        )
-                    }
-                }
-
-                item {
-                    SettingsGroup(title = stringResource(R.string.pref_group_preferences)) {
-                        SettingsItem(
-                            icon = painterResource(id = R.drawable.ic_color_swatch),
-                            title = stringResource(R.string.pref_appearance),
-                            subtitle = stringResource(R.string.pref_appearance_summary),
-                            onClick = onAppearanceOptionsClick,
-                        )
-                        SettingsDivider()
-                        SettingsItem(
-                            icon = painterResource(id = R.drawable.ic_language),
-                            title = stringResource(R.string.pref_app_language),
-                            subtitle = appLanguageSubtitle,
-                            onClick = { showLanguageDialog = true },
-                        )
-                        SettingsDivider()
-                        SettingsItem(
-                            icon = painterResource(id = R.drawable.ic_playback_settings),
-                            title = stringResource(R.string.pref_playback),
-                            subtitle = stringResource(R.string.pref_playback_summary),
-                            onClick = onPlayerOptionsClick,
-                        )
-                    }
-                }
-
-                item { UpdateSection() }
-
-                item {
-                    SettingsGroup(title = stringResource(R.string.pref_group_about)) {
-                        val buildType =
-                            if (AppConstants.IS_DEBUG) stringResource(R.string.build_debug)
-                            else stringResource(R.string.build_release)
-                        SettingsItem(
-                            icon = painterResource(id = R.drawable.ic_versions),
-                            title = stringResource(R.string.pref_version),
-                            subtitle =
-                                stringResource(
-                                    R.string.version_fmt,
-                                    AppConstants.VERSION_NAME,
-                                    buildType,
-                                ),
-                            onClick = null,
-                        )
-                        SettingsDivider()
-                        SettingsItem(
-                            icon = painterResource(id = R.drawable.ic_source_code),
-                            title = stringResource(R.string.pref_licenses),
-                            subtitle = stringResource(R.string.pref_licenses_summary),
-                            onClick = onLicensesClick,
-                        )
-                        SettingsDivider()
-                        SettingsItem(
-                            icon = painterResource(id = R.drawable.ic_logs),
-                            title = stringResource(R.string.pref_send_logs),
-                            subtitle = stringResource(R.string.pref_send_logs_summary),
-                            onClick =
-                                if (uiState.isExportingLogs) null else ({ viewModel.exportLogs() }),
-                            trailing =
-                                if (uiState.isExportingLogs)
-                                    ({
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(20.dp),
-                                            strokeWidth = 2.dp,
-                                        )
-                                    })
-                                else null,
-                        )
-                    }
-                }
-
-                item {
-                    Box(
-                        modifier =
-                            Modifier.fillMaxWidth()
-                                .padding(horizontal = 24.dp)
-                                .padding(bottom = 32.dp)
-                    ) {
-                        Button(
-                            onClick = { showLogoutDialog = true },
-                            modifier = Modifier.fillMaxWidth().height(52.dp),
-                            colors =
-                                ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                                ),
-                            shape = RoundedCornerShape(16.dp),
-                            enabled = !uiState.isLoggingOut,
-                        ) {
-                            if (uiState.isLoggingOut) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    color = MaterialTheme.colorScheme.onErrorContainer,
-                                    strokeWidth = 2.dp,
-                                )
-                            } else {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_logout),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
+    NavigableListDetailPaneScaffold(
+        navigator = navigator,
+        modifier = modifier,
+        listPane = {
+            AnimatedPane(modifier = Modifier.preferredWidth(420.dp)) {
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    topBar = {
+                        TopAppBar(
+                            title = {
                                 Text(
-                                    text = stringResource(R.string.action_logout),
+                                    text = stringResource(R.string.settings_title),
                                     style =
-                                        MaterialTheme.typography.labelLarge.copy(
+                                        MaterialTheme.typography.headlineMedium.copy(
                                             fontWeight = FontWeight.Bold
                                         ),
                                 )
+                            },
+                            navigationIcon = {
+                                IconButton(onClick = onBackClick) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_chevron_left),
+                                        contentDescription = stringResource(R.string.cd_back),
+                                    )
+                                }
+                            },
+                            colors =
+                                TopAppBarDefaults.topAppBarColors(
+                                    containerColor = MaterialTheme.colorScheme.surface
+                                ),
+                        )
+                    },
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ) { innerPadding ->
+                    val layoutDirection = LocalLayoutDirection.current
+                    val customPadding =
+                        PaddingValues(
+                            top = innerPadding.calculateTopPadding(),
+                            start = innerPadding.calculateStartPadding(layoutDirection),
+                            end = innerPadding.calculateEndPadding(layoutDirection),
+                            bottom = max(innerPadding.calculateBottomPadding(), playerOffset),
+                        )
+                    if (uiState.isLoading) {
+                        Box(
+                            modifier = Modifier.fillMaxSize().padding(customPadding),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding =
+                                PaddingValues(
+                                    top = customPadding.calculateTopPadding() + 16.dp,
+                                    start = customPadding.calculateStartPadding(layoutDirection),
+                                    end = customPadding.calculateEndPadding(layoutDirection),
+                                    bottom = customPadding.calculateBottomPadding() + 16.dp,
+                                ),
+                            verticalArrangement = Arrangement.spacedBy(24.dp),
+                        ) {
+                            item(key = "profile") {
+                                ProfileHeader(
+                                    userName =
+                                        uiState.currentUser?.name
+                                            ?: stringResource(R.string.unknown_user),
+                                    serverName = uiState.serverName,
+                                    serverUrl = uiState.serverUrl,
+                                    userProfileImageUrl = uiState.userProfileImageUrl,
+                                    connectionType = connectionType,
+                                    modifier =
+                                        Modifier.padding(
+                                            start = 16.dp,
+                                            end = listEndPadding,
+                                            top = 8.dp,
+                                            bottom = 8.dp,
+                                        ),
+                                    isAdmin = isAdmin == true,
+                                    onControlPanelClick = { showControlPanel = true },
+                                )
+                            }
+
+                            item {
+                                SettingsGroup(
+                                    title = stringResource(R.string.pref_group_general),
+                                    endPadding = listEndPadding,
+                                ) {
+                                    SettingsSwitchItem(
+                                        icon = painterResource(id = R.drawable.ic_cloud_off),
+                                        title = stringResource(R.string.pref_offline_mode),
+                                        subtitle =
+                                            if (!isNetworkAvailable)
+                                                stringResource(R.string.offline_mode_no_connection)
+                                            else if (manualOfflineMode)
+                                                stringResource(R.string.offline_mode_manual)
+                                            else stringResource(R.string.offline_mode_force),
+                                        checked = effectiveOfflineMode,
+                                        onCheckedChange = viewModel::toggleOfflineMode,
+                                        enabled = isNetworkAvailable,
+                                    )
+                                    SettingsDivider()
+                                    SettingsSwitchItem(
+                                        icon = painterResource(id = R.drawable.ic_seerr_logo),
+                                        title = stringResource(R.string.pref_discovery_requests),
+                                        subtitle =
+                                            if (isJellyseerrAuthenticated)
+                                                stringResource(R.string.discovery_connected)
+                                            else stringResource(R.string.discovery_connect),
+                                        checked = isJellyseerrAuthenticated,
+                                        onCheckedChange = { enabled ->
+                                            if (enabled) showJellyseerrBottomSheet = true
+                                            else showJellyseerrLogoutDialog = true
+                                        },
+                                        enabled = !effectiveOfflineMode,
+                                    )
+                                    SettingsDivider()
+                                    SettingsSwitchItem(
+                                        icon =
+                                            painterResource(
+                                                id = R.drawable.ic_audiobookshelf_light
+                                            ),
+                                        title = stringResource(R.string.pref_audiobookshelf),
+                                        subtitle =
+                                            if (isAudiobookshelfAuthenticated)
+                                                stringResource(R.string.audiobookshelf_connected)
+                                            else stringResource(R.string.audiobookshelf_connect),
+                                        checked = isAudiobookshelfAuthenticated,
+                                        onCheckedChange = { enabled ->
+                                            if (enabled) showAudiobookshelfBottomSheet = true
+                                            else showAudiobookshelfLogoutDialog = true
+                                        },
+                                        enabled = !effectiveOfflineMode,
+                                    )
+                                    SettingsDivider()
+                                    SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_database),
+                                        title = stringResource(R.string.pref_downloads_and_storage),
+                                        subtitle =
+                                            stringResource(
+                                                R.string.pref_downloads_and_storage_summary
+                                            ),
+                                        onClick = {
+                                            scope.launch {
+                                                navigator.navigateTo(
+                                                    ListDetailPaneScaffoldRole.Detail,
+                                                    SettingsPaneDestination.Downloads,
+                                                )
+                                            }
+                                        },
+                                    )
+                                    SettingsDivider()
+                                    SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_user),
+                                        title = stringResource(R.string.pref_switch_session),
+                                        subtitle =
+                                            stringResource(R.string.pref_switch_session_summary),
+                                        onClick =
+                                            if (!effectiveOfflineMode) {
+                                                {
+                                                    if (isDualPane) {
+                                                        scope.launch {
+                                                            navigator.navigateTo(
+                                                                ListDetailPaneScaffoldRole.Detail,
+                                                                SettingsPaneDestination
+                                                                    .SessionSwitcher,
+                                                            )
+                                                        }
+                                                    } else {
+                                                        showSessionSwitcherSheet = true
+                                                    }
+                                                }
+                                            } else null,
+                                    )
+                                    SettingsDivider()
+                                    SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_quickconnect),
+                                        title =
+                                            stringResource(R.string.pref_authorize_quickconnect),
+                                        subtitle =
+                                            stringResource(
+                                                R.string.pref_authorize_quickconnect_summary
+                                            ),
+                                        onClick =
+                                            if (!effectiveOfflineMode) {
+                                                {
+                                                    if (isDualPane) {
+                                                        scope.launch {
+                                                            navigator.navigateTo(
+                                                                ListDetailPaneScaffoldRole.Detail,
+                                                                SettingsPaneDestination.QuickConnect,
+                                                            )
+                                                        }
+                                                    } else {
+                                                        showQuickConnectDialog = true
+                                                    }
+                                                }
+                                            } else null,
+                                    )
+                                }
+                            }
+
+                            item {
+                                SettingsGroup(
+                                    title = stringResource(R.string.pref_group_connections),
+                                    endPadding = listEndPadding,
+                                ) {
+                                    SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_server),
+                                        title = stringResource(R.string.pref_manage_servers),
+                                        subtitle =
+                                            stringResource(R.string.pref_manage_servers_summary),
+                                        onClick = {
+                                            scope.launch {
+                                                navigator.navigateTo(
+                                                    ListDetailPaneScaffoldRole.Detail,
+                                                    SettingsPaneDestination.ServerManagement,
+                                                )
+                                            }
+                                        },
+                                    )
+                                }
+                            }
+
+                            item {
+                                SettingsGroup(
+                                    title = stringResource(R.string.pref_group_preferences),
+                                    endPadding = listEndPadding,
+                                ) {
+                                    SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_color_swatch),
+                                        title = stringResource(R.string.pref_appearance),
+                                        subtitle = stringResource(R.string.pref_appearance_summary),
+                                        onClick = {
+                                            scope.launch {
+                                                navigator.navigateTo(
+                                                    ListDetailPaneScaffoldRole.Detail,
+                                                    SettingsPaneDestination.Appearance,
+                                                )
+                                            }
+                                        },
+                                    )
+                                    SettingsDivider()
+                                    SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_language),
+                                        title = stringResource(R.string.pref_app_language),
+                                        subtitle = appLanguageSubtitle,
+                                        onClick = {
+                                            if (isDualPane) {
+                                                scope.launch {
+                                                    navigator.navigateTo(
+                                                        ListDetailPaneScaffoldRole.Detail,
+                                                        SettingsPaneDestination.Language,
+                                                    )
+                                                }
+                                            } else {
+                                                showLanguageDialog = true
+                                            }
+                                        },
+                                    )
+                                    SettingsDivider()
+                                    SettingsItem(
+                                        icon =
+                                            painterResource(id = R.drawable.ic_playback_settings),
+                                        title = stringResource(R.string.pref_playback),
+                                        subtitle = stringResource(R.string.pref_playback_summary),
+                                        onClick = {
+                                            scope.launch {
+                                                navigator.navigateTo(
+                                                    ListDetailPaneScaffoldRole.Detail,
+                                                    SettingsPaneDestination.Player,
+                                                )
+                                            }
+                                        },
+                                    )
+                                }
+                            }
+
+                            item { UpdateSection(endPadding = listEndPadding) }
+
+                            item {
+                                SettingsGroup(
+                                    title = stringResource(R.string.pref_group_about),
+                                    endPadding = listEndPadding,
+                                ) {
+                                    val buildType =
+                                        if (AppConstants.IS_DEBUG)
+                                            stringResource(R.string.build_debug)
+                                        else stringResource(R.string.build_release)
+                                    SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_versions),
+                                        title = stringResource(R.string.pref_version),
+                                        subtitle =
+                                            stringResource(
+                                                R.string.version_fmt,
+                                                AppConstants.VERSION_NAME,
+                                                buildType,
+                                            ),
+                                        onClick = null,
+                                    )
+                                    SettingsDivider()
+                                    SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_source_code),
+                                        title = stringResource(R.string.pref_licenses),
+                                        subtitle = stringResource(R.string.pref_licenses_summary),
+                                        onClick = {
+                                            scope.launch {
+                                                navigator.navigateTo(
+                                                    ListDetailPaneScaffoldRole.Detail,
+                                                    SettingsPaneDestination.Licenses,
+                                                )
+                                            }
+                                        },
+                                    )
+                                    SettingsDivider()
+                                    SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_logs),
+                                        title = stringResource(R.string.pref_send_logs),
+                                        subtitle = stringResource(R.string.pref_send_logs_summary),
+                                        onClick =
+                                            if (uiState.isExportingLogs) null
+                                            else ({ viewModel.exportLogs() }),
+                                        trailing =
+                                            if (uiState.isExportingLogs)
+                                                ({
+                                                    CircularProgressIndicator(
+                                                        modifier = Modifier.size(20.dp),
+                                                        strokeWidth = 2.dp,
+                                                    )
+                                                })
+                                            else null,
+                                    )
+                                }
+                            }
+
+                            item {
+                                Box(
+                                    modifier =
+                                        Modifier.fillMaxWidth()
+                                            .padding(start = 24.dp, end = logoutEndPadding)
+                                            .padding(bottom = 32.dp)
+                                ) {
+                                    Button(
+                                        onClick = { showLogoutDialog = true },
+                                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                                        colors =
+                                            ButtonDefaults.buttonColors(
+                                                containerColor =
+                                                    MaterialTheme.colorScheme.errorContainer,
+                                                contentColor =
+                                                    MaterialTheme.colorScheme.onErrorContainer,
+                                            ),
+                                        shape = RoundedCornerShape(16.dp),
+                                        enabled = !uiState.isLoggingOut,
+                                    ) {
+                                        if (uiState.isLoggingOut) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(20.dp),
+                                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                                strokeWidth = 2.dp,
+                                            )
+                                        } else {
+                                            Icon(
+                                                painter =
+                                                    painterResource(id = R.drawable.ic_logout),
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp),
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = stringResource(R.string.action_logout),
+                                                style =
+                                                    MaterialTheme.typography.labelLarge.copy(
+                                                        fontWeight = FontWeight.Bold
+                                                    ),
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-    }
+        },
+        detailPane = {
+            AnimatedPane(
+                modifier =
+                    Modifier.windowInsetsPadding(
+                        WindowInsets.systemBars
+                            .union(WindowInsets.displayCutout)
+                            .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)
+                    )
+            ) {
+                when (navigator.currentDestination?.contentKey) {
+                    is SettingsPaneDestination.Appearance ->
+                        AppearanceOptionsScreen(
+                            onBackClick = { scope.launch { navigator.navigateBack() } }
+                        )
+                    is SettingsPaneDestination.Player ->
+                        PlayerOptionsScreen(
+                            onBackClick = { scope.launch { navigator.navigateBack() } }
+                        )
+                    is SettingsPaneDestination.Downloads ->
+                        DownloadSettingsScreen(
+                            onBackClick = { scope.launch { navigator.navigateBack() } },
+                            onNavigateToAbsItem = { itemId ->
+                                navController.navigate(
+                                    Destination.createAudiobookshelfItemRoute(itemId)
+                                )
+                            },
+                        )
+                    is SettingsPaneDestination.ServerManagement ->
+                        ServerManagementScreen(
+                            onBackClick = { scope.launch { navigator.navigateBack() } },
+                            onAddServerClick = {
+                                navController.navigate(
+                                    Destination.createAddEditServerRoute(serverId = null)
+                                )
+                            },
+                            onEditServerClick = { serverId ->
+                                navController.navigate(
+                                    Destination.createAddEditServerRoute(serverId = serverId)
+                                )
+                            },
+                            isDualPane = isDualPane,
+                        )
+                    is SettingsPaneDestination.Licenses ->
+                        LicensesScreen(onBackClick = { scope.launch { navigator.navigateBack() } })
+                    is SettingsPaneDestination.SessionSwitcher ->
+                        SessionSwitcherContent(
+                            onDismiss = { scope.launch { navigator.navigateBack() } },
+                            onAddAccountClick = { server ->
+                                scope.launch { navigator.navigateBack() }
+                                navController.navigate(
+                                    Destination.createLoginRoute(serverUrl = server.address)
+                                )
+                            },
+                        )
+                    is SettingsPaneDestination.Language ->
+                        LanguagePickerPane(
+                            onBackClick = { scope.launch { navigator.navigateBack() } }
+                        )
+                    is SettingsPaneDestination.QuickConnect ->
+                        QuickConnectPane(
+                            isAuthorizing = uiState.isAuthorizingQuickConnect,
+                            isSuccess = uiState.quickConnectAuthSuccess,
+                            errorMessage = uiState.quickConnectAuthError,
+                            onAuthorize = { code -> viewModel.authorizeQuickConnect(code) },
+                            onBackClick = {
+                                scope.launch { navigator.navigateBack() }
+                                viewModel.clearQuickConnectAuthState()
+                            },
+                        )
+                    null -> Box(modifier = Modifier.fillMaxSize())
+                }
+            }
+        },
+    )
 }
 
 @Composable
-private fun SettingsGroup(
+internal fun SettingsGroup(
     modifier: Modifier = Modifier,
     title: String? = null,
+    endPadding: Dp = 16.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+    Column(modifier = modifier.fillMaxWidth().padding(start = 16.dp, end = endPadding)) {
         if (title != null) {
             Text(
                 text = title,
@@ -581,7 +874,7 @@ private fun SettingsGroup(
 }
 
 @Composable
-private fun SettingsDivider() {
+internal fun SettingsDivider() {
     HorizontalDivider(
         modifier = Modifier.padding(start = 56.dp, end = 16.dp),
         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
@@ -999,6 +1292,246 @@ private fun LanguagePickerDialog(onDismiss: () -> Unit) {
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LanguagePickerPane(onBackClick: () -> Unit) {
+    val context = LocalContext.current
+    val localeManager = remember { context.getSystemService(LocaleManager::class.java) }
+    val supportedLocales = remember { LocaleConfig(context).supportedLocales }
+    var currentLocale by remember {
+        mutableStateOf(
+            localeManager.applicationLocales.let { if (it.isEmpty) null else it.get(0) }
+        )
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.pref_app_language)) },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_chevron_left),
+                            contentDescription = stringResource(R.string.cd_back),
+                        )
+                    }
+                },
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) { innerPadding ->
+        Column(
+            modifier =
+                Modifier.fillMaxSize()
+                    .padding(innerPadding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(vertical = 8.dp),
+        ) {
+            LanguageOption(
+                name = stringResource(R.string.lang_system_default),
+                isSelected = currentLocale == null,
+                onClick = {
+                    localeManager.applicationLocales = LocaleList.getEmptyLocaleList()
+                    currentLocale = null
+                    onBackClick()
+                },
+            )
+            if (supportedLocales != null) {
+                repeat(supportedLocales.size()) { index ->
+                    val locale = supportedLocales.get(index)
+                    LanguageOption(
+                        name = locale.getDisplayName(locale).replaceFirstChar(Char::uppercase),
+                        isSelected =
+                            currentLocale != null &&
+                                locale.language == currentLocale!!.language &&
+                                locale.country == currentLocale!!.country,
+                        onClick = {
+                            localeManager.applicationLocales = LocaleList(locale)
+                            currentLocale = locale
+                            onBackClick()
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun QuickConnectPane(
+    isAuthorizing: Boolean,
+    isSuccess: Boolean,
+    errorMessage: String?,
+    onAuthorize: (String) -> Unit,
+    onBackClick: () -> Unit,
+) {
+    val digits = remember { Array(6) { mutableStateOf("") } }
+    val focusRequesters = remember { Array(6) { FocusRequester() } }
+    val code = digits.joinToString("") { it.value }
+
+    LaunchedEffect(isSuccess) {
+        if (isSuccess) kotlinx.coroutines.delay(1200)
+        if (isSuccess) onBackClick()
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.pref_authorize_quickconnect)) },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_chevron_left),
+                            contentDescription = stringResource(R.string.cd_back),
+                        )
+                    }
+                },
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) { innerPadding ->
+        Column(
+            modifier =
+                Modifier.fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_security),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(48.dp).padding(top = 8.dp),
+            )
+            Text(
+                text = stringResource(R.string.dialog_quickconnect_message),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                digits.forEachIndexed { index, digitState ->
+                    BasicTextField(
+                        value = digitState.value,
+                        onValueChange = { input ->
+                            val filtered = input.filter { it.isDigit() }
+                            if (filtered.isEmpty()) {
+                                digitState.value = ""
+                            } else {
+                                digitState.value = filtered.takeLast(1)
+                                if (index < 5) focusRequesters[index + 1].requestFocus()
+                            }
+                        },
+                        modifier =
+                            Modifier.size(42.dp)
+                                .focusRequester(focusRequesters[index])
+                                .onKeyEvent { event ->
+                                    if (
+                                        event.type == KeyEventType.KeyDown &&
+                                            event.key == Key.Backspace &&
+                                            digitState.value.isEmpty() &&
+                                            index > 0
+                                    ) {
+                                        focusRequesters[index - 1].requestFocus()
+                                        digits[index - 1].value = ""
+                                        true
+                                    } else false
+                                },
+                        keyboardOptions =
+                            KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = if (index == 5) ImeAction.Done else ImeAction.Next,
+                            ),
+                        enabled = !isAuthorizing && !isSuccess,
+                        singleLine = true,
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                        textStyle =
+                            LocalTextStyle.current.copy(
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                            ),
+                        decorationBox = { innerTextField ->
+                            Box(
+                                modifier =
+                                    Modifier.fillMaxSize()
+                                        .background(
+                                            color =
+                                                MaterialTheme.colorScheme.surfaceContainerHighest,
+                                            shape = RoundedCornerShape(10.dp),
+                                        )
+                                        .border(
+                                            width = if (digitState.value.isNotEmpty()) 2.dp else 1.dp,
+                                            color =
+                                                when {
+                                                    isSuccess -> Color(0xFF4CAF50)
+                                                    errorMessage != null ->
+                                                        MaterialTheme.colorScheme.error
+                                                    digitState.value.isNotEmpty() ->
+                                                        MaterialTheme.colorScheme.primary
+                                                    else ->
+                                                        MaterialTheme.colorScheme.outline.copy(
+                                                            alpha = 0.4f
+                                                        )
+                                                },
+                                            shape = RoundedCornerShape(10.dp),
+                                        ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                innerTextField()
+                            }
+                        },
+                    )
+                }
+            }
+            when {
+                isSuccess ->
+                    Text(
+                        text = stringResource(R.string.dialog_quickconnect_authorized),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF4CAF50),
+                    )
+                errorMessage != null ->
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                else -> Spacer(modifier = Modifier.height(0.dp))
+            }
+            Button(
+                onClick = { onAuthorize(code) },
+                enabled = code.length == 6 && !isAuthorizing && !isSuccess,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                if (isAuthorizing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                } else {
+                    Text(stringResource(R.string.action_authorize))
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun AuthorizeQuickConnectDialog(
     isAuthorizing: Boolean,
@@ -1046,7 +1579,7 @@ private fun AuthorizeQuickConnectDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     digits.forEachIndexed { index, digitState ->
-                        val isFocused = remember { mutableStateOf(false) }
+                        remember { mutableStateOf(false) }
                         BasicTextField(
                             value = digitState.value,
                             onValueChange = { input ->

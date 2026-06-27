@@ -25,8 +25,11 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.withBaseUrl
+import com.makd.afinity.data.models.music.AfinityAlbum
+import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.util.JellyfinImageUrlBuilder
@@ -79,6 +82,7 @@ constructor(
     private val serverRepository: ServerRepository,
     private val mediaRefreshBus: MediaRefreshBus,
     private val mediaChangeManager: MediaChangeManager,
+    private val musicRepository: MusicRepository,
 ) {
     private val recentCacheTTL = 6.hours.inWholeMilliseconds
     private var recentWatchedCache: Pair<Long, List<AfinityMovie>>? = null
@@ -668,8 +672,8 @@ constructor(
                     launch {
                         val (latestMovies, latestTvSeries, _) =
                             loadHomeSpecificData(libs, existingHighestRated = _highestRated.value)
-                        _latestMovies.value = latestMovies
-                        _latestTvSeries.value = latestTvSeries
+                        if (latestMovies.isNotEmpty()) _latestMovies.value = latestMovies
+                        if (latestTvSeries.isNotEmpty()) _latestTvSeries.value = latestTvSeries
                     }
                 }
                 launch {
@@ -805,6 +809,27 @@ constructor(
                         emptyList()
                     }
                 }
+                val albumsDeferred = async {
+                    try {
+                        musicRepository.getFavoriteAlbums()
+                    } catch (_: Exception) {
+                        emptyList()
+                    }
+                }
+                val artistsDeferred = async {
+                    try {
+                        musicRepository.getFavoriteArtists()
+                    } catch (_: Exception) {
+                        emptyList()
+                    }
+                }
+                val tracksDeferred = async {
+                    try {
+                        musicRepository.getFavoriteTracks()
+                    } catch (_: Exception) {
+                        emptyList()
+                    }
+                }
 
                 _favoritesData.value =
                     FavoritesData(
@@ -814,7 +839,11 @@ constructor(
                         episodes = episodesDeferred.await().sortedBy { it.name },
                         boxSets = boxSetsDeferred.await().sortedBy { it.name },
                         people = peopleDeferred.await().sortedBy { it.name },
-                        channels = channelsDeferred.await().sortedBy { it.channelNumber ?: it.name },
+                        channels =
+                            channelsDeferred.await().sortedBy { it.channelNumber ?: it.name },
+                        favoriteAlbums = albumsDeferred.await().sortedBy { it.name },
+                        favoriteArtists = artistsDeferred.await().sortedBy { it.name },
+                        favoriteTracks = tracksDeferred.await().sortedBy { it.name },
                     )
             }
         } catch (e: Exception) {
@@ -1007,6 +1036,9 @@ data class FavoritesData(
     val boxSets: List<AfinityBoxSet> = emptyList(),
     val people: List<AfinityPersonDetail> = emptyList(),
     val channels: List<AfinityChannel> = emptyList(),
+    val favoriteAlbums: List<AfinityAlbum> = emptyList(),
+    val favoriteArtists: List<AfinityArtist> = emptyList(),
+    val favoriteTracks: List<com.makd.afinity.data.models.music.AfinityTrack> = emptyList(),
 )
 
 data class WatchlistData(

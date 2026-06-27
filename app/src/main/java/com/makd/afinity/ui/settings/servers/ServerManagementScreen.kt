@@ -1,5 +1,11 @@
 package com.makd.afinity.ui.settings.servers
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -50,6 +56,7 @@ fun ServerManagementScreen(
     onBackClick: () -> Unit,
     onAddServerClick: () -> Unit,
     onEditServerClick: (serverId: String) -> Unit,
+    isDualPane: Boolean = false,
     modifier: Modifier = Modifier,
     viewModel: ServerManagementViewModel = hiltViewModel(),
 ) {
@@ -67,6 +74,69 @@ fun ServerManagementScreen(
         }
     }
 
+    val inlineDualPaneServer = if (isDualPane) state.detailServer else null
+
+    AnimatedContent(
+        targetState = inlineDualPaneServer,
+        modifier = modifier.fillMaxSize(),
+        transitionSpec = {
+            if (targetState != null) {
+                (slideInHorizontally { it } + fadeIn()) togetherWith
+                    (slideOutHorizontally { -it } + fadeOut())
+            } else {
+                (slideInHorizontally { -it } + fadeIn()) togetherWith
+                    (slideOutHorizontally { it } + fadeOut())
+            }
+        },
+        label = "ServerDetailInline",
+    ) { inlineServer ->
+        if (inlineServer != null) {
+            ServerDetailContent(
+                serverWithCount = inlineServer,
+                stats = state.detailStats,
+                statsLoading = state.statsLoading,
+                onDismiss = { viewModel.hideServerDetail() },
+                onDeleteAddress = { viewModel.deleteAddress(it) },
+                onSetPrimary = { viewModel.setPrimaryAddress(inlineServer.server.id, it) },
+                onDeleteJellyseerrAddress = { viewModel.deleteJellyseerrAddress(it) },
+                onDeleteAudiobookshelfAddress = { viewModel.deleteAudiobookshelfAddress(it) },
+                onAddJellyseerrAddress = { address ->
+                    viewModel.addJellyseerrAddress(inlineServer.server.id, address)
+                },
+                onAddAudiobookshelfAddress = { address ->
+                    viewModel.addAudiobookshelfAddress(inlineServer.server.id, address)
+                },
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            ServerListPane(
+                state = state,
+                isOffline = isOffline,
+                snackbarHostState = snackbarHostState,
+                playerOffset = playerOffset,
+                showDetailDialog = !isDualPane,
+                onBackClick = onBackClick,
+                onAddServerClick = onAddServerClick,
+                onEditServerClick = onEditServerClick,
+                viewModel = viewModel,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ServerListPane(
+    state: ServerManagementState,
+    isOffline: Boolean,
+    snackbarHostState: SnackbarHostState,
+    playerOffset: androidx.compose.ui.unit.Dp,
+    showDetailDialog: Boolean,
+    onBackClick: () -> Unit,
+    onAddServerClick: () -> Unit,
+    onEditServerClick: (serverId: String) -> Unit,
+    viewModel: ServerManagementViewModel,
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -109,7 +179,7 @@ fun ServerManagementScreen(
             }
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
     ) { paddingValues ->
         val layoutDirection = LocalLayoutDirection.current
@@ -164,7 +234,8 @@ fun ServerManagementScreen(
                         ServerSectionHeader(
                             text = stringResource(R.string.server_section_saved),
                             modifier =
-                                if (activeServer != null) Modifier.padding(top = 8.dp) else Modifier,
+                                if (activeServer != null) Modifier.padding(top = 8.dp)
+                                else Modifier,
                         )
                     }
                     items(items = savedServers, key = { it.server.id }) { serverWithCount ->
@@ -188,23 +259,25 @@ fun ServerManagementScreen(
             )
         }
 
-        state.detailServer?.let { detailServer ->
-            ServerDetailDialog(
-                serverWithCount = detailServer,
-                stats = state.detailStats,
-                statsLoading = state.statsLoading,
-                onDismiss = { viewModel.hideServerDetail() },
-                onDeleteAddress = { viewModel.deleteAddress(it) },
-                onSetPrimary = { viewModel.setPrimaryAddress(detailServer.server.id, it) },
-                onDeleteJellyseerrAddress = { viewModel.deleteJellyseerrAddress(it) },
-                onDeleteAudiobookshelfAddress = { viewModel.deleteAudiobookshelfAddress(it) },
-                onAddJellyseerrAddress = { address ->
-                    viewModel.addJellyseerrAddress(detailServer.server.id, address)
-                },
-                onAddAudiobookshelfAddress = { address ->
-                    viewModel.addAudiobookshelfAddress(detailServer.server.id, address)
-                },
-            )
+        if (showDetailDialog) {
+            state.detailServer?.let { detailServer ->
+                ServerDetailDialog(
+                    serverWithCount = detailServer,
+                    stats = state.detailStats,
+                    statsLoading = state.statsLoading,
+                    onDismiss = { viewModel.hideServerDetail() },
+                    onDeleteAddress = { viewModel.deleteAddress(it) },
+                    onSetPrimary = { viewModel.setPrimaryAddress(detailServer.server.id, it) },
+                    onDeleteJellyseerrAddress = { viewModel.deleteJellyseerrAddress(it) },
+                    onDeleteAudiobookshelfAddress = { viewModel.deleteAudiobookshelfAddress(it) },
+                    onAddJellyseerrAddress = { address ->
+                        viewModel.addJellyseerrAddress(detailServer.server.id, address)
+                    },
+                    onAddAudiobookshelfAddress = { address ->
+                        viewModel.addAudiobookshelfAddress(detailServer.server.id, address)
+                    },
+                )
+            }
         }
     }
 }

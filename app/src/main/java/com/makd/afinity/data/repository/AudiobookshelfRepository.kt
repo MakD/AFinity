@@ -68,6 +68,9 @@ interface AudiobookshelfRepository {
 
     suspend fun getItemDetails(itemId: String): Result<LibraryItem>
 
+    /** Reads title/author/coverUrl from Room cache only — no network call. */
+    suspend fun getCachedItemMetadata(itemId: String): Triple<String, String?, String?>?
+
     suspend fun searchLibrary(libraryId: String, query: String): Result<SearchResponse>
 
     suspend fun getSeries(

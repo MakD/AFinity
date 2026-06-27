@@ -2,8 +2,8 @@ package com.makd.afinity.data.repository.download
 
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
-import java.util.UUID
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 interface DownloadRepository {
 
@@ -63,4 +63,10 @@ interface DownloadRepository {
     suspend fun cancelAllSeriesDownloads(showId: UUID): Result<Unit>
 
     suspend fun cancelAllSeasonDownloads(seriesId: UUID, seasonNumber: Int): Result<Unit>
+
+    suspend fun startAlbumDownload(albumId: UUID, volumeId: String? = null): Result<Int>
+
+    suspend fun startArtistDownload(artistId: UUID, volumeId: String? = null): Result<Int>
+
+    suspend fun startPlaylistDownload(playlistId: UUID, volumeId: String? = null): Result<Int>
 }

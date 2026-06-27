@@ -196,7 +196,10 @@ internal fun ControlPanelView(
             IconButton(
                 onClick = onBack,
                 modifier =
-                    Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh, CircleShape),
+                    Modifier.background(
+                        MaterialTheme.colorScheme.surfaceContainerHigh,
+                        CircleShape,
+                    ),
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_chevron_left),
@@ -451,7 +454,7 @@ private fun PlayingSessionCard(session: SessionInfoDto, baseUrl: String) {
     val basePositionTicks = session.playState?.positionTicks ?: 0L
     val isPaused = session.playState?.isPaused ?: true
 
-    val positionTicks = session.playState?.positionTicks
+    session.playState?.positionTicks
     val runtimeTicks = item.runTimeTicks
 
     var localPositionTicks by remember(basePositionTicks) { mutableStateOf(basePositionTicks) }

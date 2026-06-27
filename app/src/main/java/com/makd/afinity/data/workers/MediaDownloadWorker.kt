@@ -21,6 +21,7 @@ import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityMovie
 import com.makd.afinity.data.models.extensions.toAfinitySeason
 import com.makd.afinity.data.models.extensions.toAfinityShow
+import com.makd.afinity.data.models.extensions.toAfinityTrack
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityMediaStream
@@ -185,20 +186,33 @@ constructor(
                             null
                         } ?: throw Exception("Item not found")
 
-                    val item =
-                        when (baseItemDto.type) {
-                            BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(baseUrl)
-                            BaseItemKind.EPISODE ->
-                                baseItemDto.toAfinityEpisode(baseUrl)
-                                    ?: throw Exception("Failed to convert episode")
+                    val isAudio = baseItemDto.type == BaseItemKind.AUDIO
+                    val audioMediaSource =
+                        if (isAudio) {
+                            (if (sourceId.isEmpty()) baseItemDto.mediaSources?.firstOrNull()
+                            else
+                                baseItemDto.mediaSources?.firstOrNull { it.id == sourceId }
+                                    ?: baseItemDto.mediaSources?.firstOrNull())
+                                ?: throw Exception("No media source for audio item")
+                        } else null
 
-                            else ->
-                                throw Exception("Unsupported item type: ${baseItemDto.type}")
-                        }
+                    val item =
+                        if (!isAudio) {
+                            when (baseItemDto.type) {
+                                BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(baseUrl)
+                                BaseItemKind.EPISODE ->
+                                    baseItemDto.toAfinityEpisode(baseUrl)
+                                        ?: throw Exception("Failed to convert episode")
+                                else ->
+                                    throw Exception("Unsupported item type: ${baseItemDto.type}")
+                            }
+                        } else null
 
                     val source =
-                        item.sources.find { it.id == sourceId }
-                            ?: throw Exception("Source not found")
+                        if (!isAudio) {
+                            item!!.sources.find { it.id == sourceId }
+                                ?: throw Exception("Source not found")
+                        } else null
 
                     val itemDir = downloadRepository.getItemDownloadDirectory(download)
                     val mediaDir = File(itemDir, "media")
@@ -210,13 +224,20 @@ constructor(
                         )
                     }
 
-                    val extension = source.container?.lowercase() ?: "mkv"
+                    val extension =
+                        if (isAudio) {
+                            audioMediaSource!!.container?.lowercase() ?: "mp3"
+                        } else {
+                            source!!.container?.lowercase() ?: "mkv"
+                        }
 
                     val outputFile = File(mediaDir, "$sourceId.$extension.download")
                     val finalFile = File(mediaDir, "$sourceId.$extension")
 
-                    // Each sourceId is actually an itemId corresponding to the specific version that was requested in the download dialog
-                    // Unfortunately, because the SDK expects a UUID, but UUID.fromString doesn't handle strings without dashes, we have
+                    // Each sourceId is actually an itemId corresponding to the specific version
+                    // that was requested in the download dialog
+                    // Unfortunately, because the SDK expects a UUID, but UUID.fromString doesn't
+                    // handle strings without dashes, we have
                     // to do some special handling here to get a UUID to pass to getDownloadUrl
                     val sourceUuid =
                         try {
@@ -343,12 +364,30 @@ constructor(
                         )
                     databaseRepository.insertDownload(updatedDownload)
 
-                    ensureItemInDatabase(apiClient, download.serverId, baseItemDto, userId, download.storageVolumeId)
-                    if (itemType.uppercase() == "MOVIE") {
-                        downloadPersonImages(apiClient, download.serverId, itemId, userId)
+                    ensureItemInDatabase(
+                        apiClient,
+                        download.serverId,
+                        baseItemDto,
+                        userId,
+                        download.storageVolumeId,
+                    )
+                    if (isAudio) {
+                        databaseRepository.updateMusicTrackLocalFilePath(
+                            itemId,
+                            download.serverId,
+                            userId.toString(),
+                            android.net.Uri.fromFile(finalFile).toString(),
+                        )
+                    } else {
+                        if (itemType.uppercase() == "MOVIE") {
+                            downloadPersonImages(apiClient, download.serverId, itemId, userId)
+                        }
+                        downloadSegments(itemId)
                     }
-                    downloadSegments(itemId)
-                    createLocalSource(itemId, sourceId, source.name, finalFile, source.mediaStreams)
+                    val sourceName =
+                        if (isAudio) audioMediaSource!!.name ?: itemName else source!!.name
+                    val sourceStreams = if (isAudio) emptyList() else source!!.mediaStreams
+                    createLocalSource(itemId, sourceId, sourceName, finalFile, sourceStreams)
 
                     Timber.i("Media download completed successfully for: $itemName")
 
@@ -495,6 +534,11 @@ constructor(
                     databaseRepository.insertEpisode(episode, serverId)
                 }
 
+                BaseItemKind.AUDIO -> {
+                    val track = baseItemDto.toAfinityTrack(baseUrl)
+                    databaseRepository.insertMusicTrack(track, serverId, userId.toString())
+                }
+
                 else -> Timber.w("Unsupported item type: ${baseItemDto.type}")
             }
         } catch (e: Exception) {
@@ -633,7 +677,12 @@ constructor(
         try {
             val season = databaseRepository.getSeason(seasonId, userId) ?: return
             val seasonDir =
-                downloadRepository.getSeasonDirectory(serverId, season.seriesId, season.indexNumber, volumeId)
+                downloadRepository.getSeasonDirectory(
+                    serverId,
+                    season.seriesId,
+                    season.indexNumber,
+                    volumeId,
+                )
             val imagesDir = File(seasonDir, "images")
             if (!imagesDir.exists() && !imagesDir.mkdirs()) {
                 Timber.w("Failed to create season images directory for season $seasonId")

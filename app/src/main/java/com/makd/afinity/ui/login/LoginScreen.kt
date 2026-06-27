@@ -857,7 +857,7 @@ private fun UserAvatarItem(
     onClick: () -> Unit,
 ) {
     val imageUrl =
-        user.primaryImageTag?.let { "$serverUrl/Users/${user.id}/Images/Primary?tag=$it" }
+        user.primaryImageTag?.let { "$serverUrl/Users/${user.id}/Images/Primary?tag=$it&maxWidth=252" }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,

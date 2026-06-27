@@ -295,6 +295,8 @@ fun PlayerControls(
                                     modifier = Modifier.height(60.dp).widthIn(max = 200.dp),
                                     contentScale = ContentScale.Fit,
                                     blurHash = null,
+                                    targetWidth = 200.dp,
+                                    targetHeight = 60.dp,
                                 )
                             } else {
                                 Text(
@@ -333,6 +335,8 @@ fun PlayerControls(
                                             stringResource(R.string.cd_series_logo),
                                         modifier = Modifier.height(60.dp).widthIn(max = 200.dp),
                                         contentScale = ContentScale.Fit,
+                                        targetWidth = 200.dp,
+                                        targetHeight = 60.dp,
                                     )
                                 } else {
                                     Text(
@@ -803,6 +807,8 @@ fun PlayerControls(
                                                         .background(Color.White.copy(alpha = 0.1f)),
                                                 contentScale = ContentScale.Crop,
                                                 blurHash = null,
+                                                targetWidth = 32.dp,
+                                                targetHeight = 32.dp,
                                             )
                                         } else {
                                             Box(
@@ -1360,13 +1366,14 @@ private fun SeekBar(
                                     val x =
                                         (chapter.startPosition.toFloat() / duration.toFloat()) *
                                             size.width
-                                    if (x > bufferStartX) {
-                                        drawCircle(
-                                            color = Color.White.copy(alpha = 0.8f),
-                                            radius = 2.dp.toPx(),
-                                            center = Offset(x, h / 2),
-                                        )
-                                    }
+                                    val markerColor =
+                                        if (x < thumbCenterX) Color.White.copy(alpha = 0.6f)
+                                        else Color.White.copy(alpha = 0.8f)
+                                    drawCircle(
+                                        color = markerColor,
+                                        radius = 2.dp.toPx(),
+                                        center = Offset(x, h / 2),
+                                    )
                                 }
                             }
                         }

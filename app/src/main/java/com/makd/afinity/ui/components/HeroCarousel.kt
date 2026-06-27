@@ -123,6 +123,7 @@ private fun HeroCarouselAutoScrollAndPrefetch(
     pagerState: PagerState,
     items: List<AfinityItem>,
     isScrolling: Boolean,
+    fillWidthPx: Int,
 ) {
     val context = LocalContext.current
     val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
@@ -161,9 +162,19 @@ private fun HeroCarouselAutoScrollAndPrefetch(
 
         listOf(nextIndex, prevIndex).forEach { index ->
             val item = items[index]
-            val imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl
-            if (imageUrl != null) {
-                val request = ImageRequest.Builder(context).data(imageUrl).build()
+            val rawUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl
+            if (rawUrl != null) {
+                val url = if (
+                    rawUrl.contains("/Items/") &&
+                    rawUrl.contains("/Images/") &&
+                    !rawUrl.contains("fillWidth")
+                ) {
+                    val sep = if ('?' in rawUrl) "&" else "?"
+                    "${rawUrl}${sep}fillWidth=${fillWidthPx.coerceAtLeast(50)}&quality=90"
+                } else {
+                    rawUrl
+                }
+                val request = ImageRequest.Builder(context).data(url).build()
                 context.imageLoader.enqueue(request)
             }
         }
@@ -187,13 +198,14 @@ fun HeroCarouselPortrait(
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
     val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+    val screenWidthPx = windowInfo.containerSize.width
     val infinitePageCount = Int.MAX_VALUE
     val pagerState =
         rememberPagerState(initialPage = initialPageIndex, pageCount = { infinitePageCount })
 
     LaunchedEffect(pagerState.currentPage) { onPageChanged(pagerState.currentPage) }
 
-    HeroCarouselAutoScrollAndPrefetch(pagerState, items, isScrolling)
+    HeroCarouselAutoScrollAndPrefetch(pagerState, items, isScrolling, fillWidthPx = screenWidthPx)
 
     val currentItem by remember { derivedStateOf { items[pagerState.currentPage % items.size] } }
 
@@ -248,15 +260,19 @@ fun HeroCarouselPortrait(
         }
 
         Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-            Box(
+            Column(
                 modifier =
                     Modifier.align(Alignment.BottomCenter)
-                        .fillMaxWidth(0.8f)
-                        .padding(bottom = 144.dp)
-                        .sizeIn(maxHeight = 120.dp)
-                        .graphicsLayer { alpha = contentAlpha }
+                        .padding(bottom = 80.dp)
+                        .fillMaxWidth()
+                        .graphicsLayer { alpha = contentAlpha },
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(0.8f).sizeIn(maxHeight = 120.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
                     currentItem.images.logo?.let { _ ->
                         AsyncImage(
                             imageUrl = currentItem.images.logoImageUrlWithTransparency,
@@ -284,28 +300,17 @@ fun HeroCarouselPortrait(
                             )
                         }
                 }
-            }
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier =
-                    Modifier.align(Alignment.BottomCenter)
-                        .padding(bottom = 112.dp)
-                        .fillMaxWidth()
-                        .graphicsLayer { alpha = contentAlpha },
-            ) {
-                Spacer(modifier = Modifier.weight(1f))
-                HeroMetadata(currentItem)
-                Spacer(modifier = Modifier.weight(1f))
-            }
-            Box(
-                modifier =
-                    Modifier.align(Alignment.BottomCenter)
-                        .padding(bottom = 80.dp)
-                        .fillMaxWidth()
-                        .graphicsLayer { alpha = contentAlpha }
-            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Spacer(modifier = Modifier.weight(1f))
+                    HeroMetadata(currentItem)
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+
                 val genres =
                     when (currentItem) {
                         is AfinityMovie -> (currentItem as AfinityMovie).genres
@@ -429,6 +434,7 @@ private fun HeroCarouselLandscape(
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
     val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+    val screenWidthPx = windowInfo.containerSize.width
     val screenHeightDp = with(density) { windowInfo.containerSize.height.toDp() }
     val infinitePageCount = Int.MAX_VALUE
     val pagerState =
@@ -438,7 +444,7 @@ private fun HeroCarouselLandscape(
 
     val landscapeHeight = screenHeightDp * 0.95f
 
-    HeroCarouselAutoScrollAndPrefetch(pagerState, items, isScrolling)
+    HeroCarouselAutoScrollAndPrefetch(pagerState, items, isScrolling, fillWidthPx = screenWidthPx)
 
     val currentItem by remember { derivedStateOf { items[pagerState.currentPage % items.size] } }
 
@@ -541,44 +547,38 @@ private fun HeroCarouselLandscape(
                         }
                     }
 
-                    Box(modifier = Modifier.fillMaxWidth().height(28.dp)) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            HeroMetadata(currentItem)
-                        }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        HeroMetadata(currentItem)
                     }
 
-                    Box(modifier = Modifier.fillMaxWidth().height(20.dp)) {
-                        val genres =
-                            when (currentItem) {
-                                is AfinityMovie -> (currentItem as AfinityMovie).genres
-                                is AfinityShow -> (currentItem as AfinityShow).genres
-                                else -> emptyList()
-                            }
-                        if (genres.isNotEmpty()) {
-                            Text(
-                                text = genres.take(3).joinToString(" • "),
-                                style =
-                                    MaterialTheme.typography.bodyLarge.copy(
-                                        fontWeight = FontWeight.Medium
-                                    ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                    val genres =
+                        when (currentItem) {
+                            is AfinityMovie -> (currentItem as AfinityMovie).genres
+                            is AfinityShow -> (currentItem as AfinityShow).genres
+                            else -> emptyList()
                         }
+                    if (genres.isNotEmpty()) {
+                        Text(
+                            text = genres.take(3).joinToString(" • "),
+                            style =
+                                MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
 
-                    Box(modifier = Modifier.fillMaxWidth().height(40.dp)) {
-                        currentItem.overview?.let { overview ->
-                            Text(
-                                text = overview,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
+                    currentItem.overview?.let { overview ->
+                        Text(
+                            text = overview,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
                 }
 

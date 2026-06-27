@@ -81,7 +81,7 @@ fun ActionButtonsRow(
                     else stringResource(R.string.cd_watchlist_add),
                 tint =
                     if (isInWatchlist) Color(0xFFFF9800)
-                    else MaterialTheme.colorScheme.onBackground,
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(28.dp),
             )
         }
@@ -92,7 +92,7 @@ fun ActionButtonsRow(
                     painter = painterResource(id = R.drawable.ic_arrows_shuffle),
                     contentDescription = stringResource(R.string.cd_shuffle_play),
                     tint =
-                        if (hasPlayableItems) MaterialTheme.colorScheme.onBackground
+                        if (hasPlayableItems) MaterialTheme.colorScheme.onSurfaceVariant
                         else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
                     modifier = Modifier.size(28.dp),
                 )
@@ -107,7 +107,7 @@ fun ActionButtonsRow(
                 contentDescription =
                     if (item.favorite) stringResource(R.string.cd_favorite_remove)
                     else stringResource(R.string.cd_favorite_add),
-                tint = if (item.favorite) Color.Red else MaterialTheme.colorScheme.onBackground,
+                tint = if (item.favorite) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(28.dp),
             )
         }
@@ -125,7 +125,7 @@ fun ActionButtonsRow(
                 tint =
                     when {
                         visuallyPlayed -> Color.Green
-                        hasPlayableItems -> MaterialTheme.colorScheme.onBackground
+                        hasPlayableItems -> MaterialTheme.colorScheme.onSurfaceVariant
                         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                     },
                 modifier = Modifier.size(28.dp),
@@ -151,7 +151,7 @@ fun ActionButtonsRow(
                     Icon(
                         painter = painterResource(id = R.drawable.ic_options),
                         contentDescription = stringResource(R.string.cd_admin_manage),
-                        tint = MaterialTheme.colorScheme.onBackground,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(28.dp),
                     )
                 }

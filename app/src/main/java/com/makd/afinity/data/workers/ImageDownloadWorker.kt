@@ -11,6 +11,7 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.di.DownloadClient
@@ -94,6 +95,28 @@ constructor(
                         )
 
                 val userId = download.userId
+
+                val musicTrack =
+                    databaseRepository.getMusicTrack(itemId, download.serverId, userId.toString())
+                if (musicTrack != null) {
+                    val result =
+                        downloadMusicTrackImages(
+                            apiClient,
+                            musicTrack,
+                            download.serverId,
+                            userId.toString(),
+                            download,
+                        )
+                    return@withContext if (result)
+                        Result.success(
+                            workDataOf(
+                                KEY_DOWNLOAD_ID to downloadIdString,
+                                KEY_ITEM_ID to itemIdString,
+                                KEY_SOURCE_ID to sourceId,
+                            )
+                        )
+                    else Result.failure(workDataOf("error" to "Music image download failed"))
+                }
 
                 val item =
                     databaseRepository.getMovie(itemId, userId)
@@ -323,6 +346,45 @@ constructor(
 
             Timber.d("Downloaded image: ${outputFile.name}")
             return android.net.Uri.fromFile(outputFile)
+        }
+    }
+
+    private suspend fun downloadMusicTrackImages(
+        apiClient: ApiClient,
+        track: AfinityTrack,
+        serverId: String,
+        userId: String,
+        download: DownloadDto,
+    ): Boolean {
+        return try {
+            val primaryUrl = track.images.primary?.toString() ?: return true
+            if (primaryUrl.startsWith("file://")) return true
+
+            val itemDir = downloadRepository.getItemDownloadDirectory(download)
+            val imagesDir = File(itemDir, "images")
+            if (!imagesDir.exists() && !imagesDir.mkdirs()) return false
+
+            val localUri = downloadImage(apiClient, primaryUrl, imagesDir, "primary")
+            if (localUri != null) {
+                databaseRepository.updateMusicTrackLocalImagePath(
+                    track.id,
+                    serverId,
+                    userId,
+                    localUri.toString(),
+                )
+                track.albumId?.let { albumId ->
+                    databaseRepository.updateMusicAlbumLocalImagePath(
+                        albumId,
+                        serverId,
+                        userId,
+                        localUri.toString(),
+                    )
+                }
+            }
+            true
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to download music track images")
+            false
         }
     }
 

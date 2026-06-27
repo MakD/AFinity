@@ -68,6 +68,12 @@ import com.makd.afinity.ui.components.CircleFlagIcon
 import com.makd.afinity.ui.components.getAutoFlagUrl
 import com.makd.afinity.ui.utils.htmlToAnnotatedString
 
+private fun String.withAbsWidth(px: Int): String {
+    if (startsWith("file://")) return this
+    val sep = if ('?' in this) "&" else "?"
+    return "${this}${sep}width=$px"
+}
+
 @Composable
 fun ItemHeader(
     item: LibraryItem,
@@ -114,7 +120,7 @@ fun ItemHeroBackground(coverUrl: String?, modifier: Modifier = Modifier) {
             AsyncImage(
                 model =
                     ImageRequest.Builder(LocalContext.current)
-                        .data(coverUrl)
+                        .data(coverUrl.withAbsWidth(600))
                         .crossfade(true)
                         .build(),
                 contentDescription = null,
@@ -166,7 +172,7 @@ fun ItemHeaderContent(
 
         if (coverUrl != null) {
             AsyncImage(
-                model = coverUrl,
+                model = coverUrl.withAbsWidth(600),
                 contentDescription = stringResource(R.string.cd_abs_cover),
                 modifier =
                     Modifier.width(200.dp)

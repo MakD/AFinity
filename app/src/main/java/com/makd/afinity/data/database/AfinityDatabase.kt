@@ -16,6 +16,10 @@ import com.makd.afinity.data.database.dao.LibraryCacheDao
 import com.makd.afinity.data.database.dao.MediaStreamDao
 import com.makd.afinity.data.database.dao.MovieDao
 import com.makd.afinity.data.database.dao.MovieSectionDao
+import com.makd.afinity.data.database.dao.MusicAlbumDao
+import com.makd.afinity.data.database.dao.MusicLyricsDao
+import com.makd.afinity.data.database.dao.MusicQueueDao
+import com.makd.afinity.data.database.dao.MusicTrackDao
 import com.makd.afinity.data.database.dao.PersonSectionDao
 import com.makd.afinity.data.database.dao.SeasonDao
 import com.makd.afinity.data.database.dao.ServerAddressDao
@@ -55,6 +59,10 @@ import com.makd.afinity.data.database.entities.JellyseerrConfigEntity
 import com.makd.afinity.data.database.entities.JellyseerrRequestEntity
 import com.makd.afinity.data.database.entities.LibraryCacheEntity
 import com.makd.afinity.data.database.entities.MovieSectionCacheEntity
+import com.makd.afinity.data.database.entities.MusicAlbumEntity
+import com.makd.afinity.data.database.entities.MusicLyricsEntity
+import com.makd.afinity.data.database.entities.MusicQueueEntity
+import com.makd.afinity.data.database.entities.MusicTrackEntity
 import com.makd.afinity.data.database.entities.PersonSectionCacheEntity
 import com.makd.afinity.data.database.entities.ShowGenreCacheEntity
 import com.makd.afinity.data.database.entities.StudioCacheEntity
@@ -103,8 +111,12 @@ import com.makd.afinity.data.models.user.User
             JellyfinStatsCacheEntity::class,
             AbsDownloadEntity::class,
             AudibleRatingEntity::class,
+            MusicQueueEntity::class,
+            MusicTrackEntity::class,
+            MusicAlbumEntity::class,
+            MusicLyricsEntity::class,
         ],
-    version = 49,
+    version = 51,
     exportSchema = false,
 )
 @TypeConverters(AfinityTypeConverters::class)
@@ -157,4 +169,12 @@ abstract class AfinityDatabase : RoomDatabase() {
     abstract fun absDownloadDao(): AbsDownloadDao
 
     abstract fun audibleRatingDao(): AudibleRatingDao
+
+    abstract fun musicQueueDao(): MusicQueueDao
+
+    abstract fun musicTrackDao(): MusicTrackDao
+
+    abstract fun musicAlbumDao(): MusicAlbumDao
+
+    abstract fun musicLyricsDao(): MusicLyricsDao
 }

@@ -4,6 +4,9 @@ import com.makd.afinity.data.database.dao.EpisodeDao
 import com.makd.afinity.data.database.dao.ItemMetadataCacheDao
 import com.makd.afinity.data.database.dao.MediaStreamDao
 import com.makd.afinity.data.database.dao.MovieDao
+import com.makd.afinity.data.database.dao.MusicAlbumDao
+import com.makd.afinity.data.database.dao.MusicLyricsDao
+import com.makd.afinity.data.database.dao.MusicTrackDao
 import com.makd.afinity.data.database.dao.SeasonDao
 import com.makd.afinity.data.database.dao.ServerAddressDao
 import com.makd.afinity.data.database.dao.ServerDao
@@ -19,6 +22,8 @@ import com.makd.afinity.data.database.entities.AfinityShowDto
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
+import com.makd.afinity.data.database.entities.MusicLyricsEntity
+import com.makd.afinity.data.database.entities.toAfinityAlbum
 import com.makd.afinity.data.database.entities.toAfinityEpisodeDto
 import com.makd.afinity.data.database.entities.toAfinityMediaStreamDto
 import com.makd.afinity.data.database.entities.toAfinityMovieDto
@@ -26,7 +31,10 @@ import com.makd.afinity.data.database.entities.toAfinitySeasonDto
 import com.makd.afinity.data.database.entities.toAfinitySegmentsDto
 import com.makd.afinity.data.database.entities.toAfinityShowDto
 import com.makd.afinity.data.database.entities.toAfinitySourceDto
+import com.makd.afinity.data.database.entities.toAfinityTrack
 import com.makd.afinity.data.database.entities.toAfinityTrickplayInfoDto
+import com.makd.afinity.data.database.entities.toMusicAlbumEntity
+import com.makd.afinity.data.database.entities.toMusicTrackEntity
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -44,6 +52,8 @@ import com.makd.afinity.data.models.media.toAfinityMediaStream
 import com.makd.afinity.data.models.media.toAfinitySegment
 import com.makd.afinity.data.models.media.toAfinitySource
 import com.makd.afinity.data.models.media.toAfinityTrickplayInfo
+import com.makd.afinity.data.models.music.AfinityAlbum
+import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.server.ServerAddress
 import com.makd.afinity.data.models.server.ServerWithAddresses
@@ -80,6 +90,9 @@ constructor(
     private val userDataDao: UserDataDao,
     private val serverDatabaseDao: ServerDatabaseDao,
     private val itemMetadataCacheDao: ItemMetadataCacheDao,
+    private val musicTrackDao: MusicTrackDao,
+    private val musicAlbumDao: MusicAlbumDao,
+    private val musicLyricsDao: MusicLyricsDao,
 ) : DatabaseRepository {
 
     private val sessionManager: SessionManager
@@ -816,4 +829,113 @@ constructor(
     override suspend fun insertItemMetadata(metadata: ItemMetadataCacheEntity) {
         itemMetadataCacheDao.insertOrUpdateMetadata(metadata)
     }
+
+    override suspend fun insertMusicTrack(track: AfinityTrack, serverId: String, userId: String) {
+        musicTrackDao.insert(track.toMusicTrackEntity(serverId, userId))
+    }
+
+    override suspend fun insertMusicAlbum(album: AfinityAlbum, serverId: String, userId: String) {
+        musicAlbumDao.insert(album.toMusicAlbumEntity(serverId, userId))
+    }
+
+    override suspend fun getMusicTrack(id: UUID, serverId: String, userId: String): AfinityTrack? {
+        return musicTrackDao.getById(id.toString(), serverId, userId)?.toAfinityTrack()
+    }
+
+    override suspend fun getMusicAlbumTracks(
+        albumId: UUID,
+        serverId: String,
+        userId: String,
+    ): List<AfinityTrack> {
+        return musicTrackDao.getByAlbum(albumId.toString(), serverId, userId).map {
+            it.toAfinityTrack()
+        }
+    }
+
+    override fun getAllMusicTracksFlow(serverId: String, userId: String): Flow<List<AfinityTrack>> {
+        return musicTrackDao.getAllFlow(serverId, userId).map { list ->
+            list.map { it.toAfinityTrack() }
+        }
+    }
+
+    override fun getAllMusicAlbumsFlow(serverId: String, userId: String): Flow<List<AfinityAlbum>> {
+        return musicAlbumDao.getAllFlow(serverId, userId).map { list ->
+            list.map { it.toAfinityAlbum() }
+        }
+    }
+
+    override suspend fun deleteMusicTrack(id: UUID, serverId: String, userId: String) {
+        musicTrackDao.delete(id.toString(), serverId, userId)
+    }
+
+    override suspend fun deleteMusicAlbum(id: UUID, serverId: String, userId: String) {
+        musicAlbumDao.delete(id.toString(), serverId, userId)
+    }
+
+    override suspend fun updateMusicTrackLocalFilePath(
+        id: UUID,
+        serverId: String,
+        userId: String,
+        path: String,
+    ) {
+        musicTrackDao.updateLocalFilePath(id.toString(), serverId, userId, path)
+    }
+
+    override suspend fun updateMusicTrackLocalImagePath(
+        id: UUID,
+        serverId: String,
+        userId: String,
+        path: String,
+    ) {
+        musicTrackDao.updateLocalImagePath(id.toString(), serverId, userId, path)
+    }
+
+    override suspend fun updateMusicAlbumLocalImagePath(
+        id: UUID,
+        serverId: String,
+        userId: String,
+        path: String,
+    ) {
+        musicAlbumDao.updateLocalImagePath(id.toString(), serverId, userId, path)
+    }
+
+    override suspend fun insertMusicLyrics(
+        trackId: UUID,
+        serverId: String,
+        userId: String,
+        lyricsJson: String,
+    ) {
+        musicLyricsDao.insert(MusicLyricsEntity(trackId.toString(), serverId, userId, lyricsJson))
+    }
+
+    override suspend fun getMusicLyricsJson(
+        trackId: UUID,
+        serverId: String,
+        userId: String,
+    ): String? {
+        return musicLyricsDao.get(trackId.toString(), serverId, userId)?.lyricsJson
+    }
+
+    override fun getAllMusicTracksFlowByUser(userId: UUID): Flow<List<AfinityTrack>> =
+        musicTrackDao.getAllFlowByUser(userId.toString()).map { list ->
+            list.map { it.toAfinityTrack() }
+        }
+
+    override fun getAllMusicAlbumsFlowByUser(userId: UUID): Flow<List<AfinityAlbum>> =
+        musicAlbumDao.getAllFlowByUser(userId.toString()).map { list ->
+            list.map { it.toAfinityAlbum() }
+        }
+
+    override suspend fun getAllMusicTracksByUser(userId: UUID): List<AfinityTrack> =
+        musicTrackDao.getAllByUser(userId.toString()).map { it.toAfinityTrack() }
+
+    override suspend fun getAllMusicAlbumsByUser(userId: UUID): List<AfinityAlbum> =
+        musicAlbumDao.getAllByUser(userId.toString()).map { it.toAfinityAlbum() }
+
+    override suspend fun getCompletedAudioDownloadsByAlbum(
+        albumSeriesId: String,
+        serverId: String,
+        userId: UUID,
+    ): List<DownloadDto> =
+        serverDatabaseDao.getCompletedAudioDownloadsByAlbum(albumSeriesId, serverId, userId)
 }

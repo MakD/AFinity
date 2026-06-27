@@ -2,6 +2,7 @@ package com.makd.afinity.player.audiobookshelf
 
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import androidx.annotation.OptIn
 import androidx.core.net.toUri
 import androidx.media3.common.C.TRACK_TYPE_AUDIO
@@ -24,6 +25,7 @@ import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsProgressSyncScheduler
+import com.makd.afinity.player.music.MusicPlaybackManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -51,6 +53,7 @@ constructor(
     private val audiobookshelfRepository: AudiobookshelfRepository,
     private val sessionManager: SessionManager,
     private val absSyncScheduler: AbsProgressSyncScheduler,
+    private val musicPlaybackManager: MusicPlaybackManager,
 ) {
     private var mediaController: MediaController? = null
     private var controllerFuture: ListenableFuture<MediaController>? = null
@@ -90,20 +93,31 @@ constructor(
 
     @UnstableApi
     private suspend fun getConnectedController(): MediaController? {
-        if (mediaController != null) return mediaController
+        if (mediaController != null) {
+            Timber.d(
+                "ABS getConnectedController: FAST PATH — reusing cached controller, switchToAbs() may not have run yet"
+            )
+            return mediaController
+        }
 
+        Timber.d(
+            "ABS getConnectedController: building new connection (coroutine will suspend during await)"
+        )
         val sessionToken =
-            SessionToken(context, ComponentName(context, AudiobookshelfPlayerService::class.java))
+            SessionToken(
+                context,
+                ComponentName(context, com.makd.afinity.player.AudioService::class.java),
+            )
 
         val future = MediaController.Builder(context, sessionToken).buildAsync()
         controllerFuture = future
 
         return try {
             mediaController = future.await()
-            Timber.d("MediaController connected to Service")
+            Timber.d("ABS getConnectedController: connected to AudioService")
             mediaController
         } catch (e: Exception) {
-            Timber.e(e, "Failed to connect MediaController (Fix with AI)")
+            Timber.e(e, "ABS getConnectedController: FAILED to connect to AudioService")
             controllerFuture = null
             null
         }
@@ -117,7 +131,19 @@ constructor(
         episodeSort: String? = null,
     ) {
         scope.launch {
+            val trackBefore = musicPlaybackManager.state.value.currentTrack
+            Timber.d(
+                "ABS loadSession: START itemId=${session.libraryItemId} musicTrack=${trackBefore?.name} controllerCached=${mediaController != null}"
+            )
+            musicPlaybackManager.updateTrack(null)
+            Timber.d("ABS loadSession: music track cleared synchronously")
+            context.startService(
+                Intent(context, com.makd.afinity.player.AudioService::class.java)
+                    .setAction(com.makd.afinity.player.AudioService.ACTION_ENGINE_ABS)
+            )
+            Timber.d("ABS loadSession: ACTION_ENGINE_ABS intent sent")
             val controller = getConnectedController() ?: return@launch
+            Timber.d("ABS loadSession: controller connected")
 
             val token = securePreferencesRepository.getCachedAudiobookshelfToken()
             val isLocalSession = session.id.startsWith("local_")
@@ -191,7 +217,7 @@ constructor(
                 if (enhancedSession.id?.startsWith("local_") == true) {
                     enhancedSession.coverPath
                 } else if (baseUrl.isNotEmpty()) {
-                    "$baseUrl/api/items/${enhancedSession.libraryItemId}/cover?token=$token&raw=1"
+                    "$baseUrl/api/items/${enhancedSession.libraryItemId}/cover?raw=1"
                 } else {
                     enhancedSession.coverPath
                 }
@@ -432,7 +458,7 @@ constructor(
             videoBitrate =
                 if (bitrateKbps > 0) String.format(Locale.US, "%.1f kbps", bitrateKbps)
                 else "Unknown",
-            hwDec = AudiobookshelfPlayerService.currentAudioDecoder,
+            hwDec = playbackManager.currentAudioDecoder.value,
         )
     }
 
@@ -516,6 +542,7 @@ constructor(
         playbackManager.setSleepTimer(null)
     }
 
+    @OptIn(UnstableApi::class)
     fun closeSession() {
         cancelSleepTimer()
         val state = playbackManager.playbackState.value
@@ -600,8 +627,20 @@ constructor(
         mediaController = null
         controllerFuture = null
 
+        val musicTrackAtClose = musicPlaybackManager.state.value.currentTrack
+        Timber.d(
+            "ABS closeSession: calling clearSession — musicTrack at this point=${musicTrackAtClose?.name}"
+        )
         playbackManager.clearSession()
-        Timber.d("Session closed locally")
+        Timber.d(
+            "ABS closeSession: DONE — sessionId now=${playbackManager.playbackState.value.sessionId} musicTrack=${musicPlaybackManager.state.value.currentTrack?.name}"
+        )
+        if (sessionId != null) {
+            context.startService(
+                Intent(context, com.makd.afinity.player.AudioService::class.java)
+                    .setAction(com.makd.afinity.player.AudioService.ACTION_STOP)
+            )
+        }
     }
 
     fun release() {

@@ -59,6 +59,8 @@ import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.music.AfinityAlbum
+import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
@@ -397,6 +399,8 @@ fun UpcomingEpisodeCard(
                     contentDescription = episode.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
+                    targetWidth = cardWidth,
+                    targetHeight = cardWidth / CardDimensions.ASPECT_RATIO_LANDSCAPE,
                 )
             }
         }
@@ -486,6 +490,8 @@ fun DownloadedAudiobooksSection(
                             contentDescription = download.title,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop,
+                            targetWidth = 100.dp,
+                            targetHeight = 100.dp,
                         )
                     }
                     Spacer(modifier = Modifier.height(4.dp))
@@ -501,6 +507,132 @@ fun DownloadedAudiobooksSection(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.width(100.dp),
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DownloadedMusicAlbumsSection(
+    title: String,
+    albums: List<AfinityAlbum>,
+    onAlbumClick: (AfinityAlbum) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.padding(horizontal = 14.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(bottom = 16.dp),
+        )
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(items = albums, key = { "album_${it.id}" }) { album ->
+                Column(modifier = Modifier.width(100.dp).clickable { onAlbumClick(album) }) {
+                    Card(
+                        modifier = Modifier.width(100.dp).aspectRatio(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            ),
+                    ) {
+                        com.makd.afinity.ui.components.AsyncImage(
+                            imageUrl = album.images.primary?.toString(),
+                            contentDescription = album.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                            targetWidth = 100.dp,
+                            targetHeight = 100.dp,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = album.name,
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 11.sp,
+                            ),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.width(100.dp),
+                    )
+                    album.artist?.let { artist ->
+                        Text(
+                            text = artist,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.width(100.dp),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DownloadedMusicTracksSection(
+    title: String,
+    tracks: List<AfinityTrack>,
+    onTrackClick: (AfinityTrack) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.padding(horizontal = 14.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(bottom = 16.dp),
+        )
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(items = tracks, key = { "track_${it.id}" }) { track ->
+                Column(modifier = Modifier.width(100.dp).clickable { onTrackClick(track) }) {
+                    Card(
+                        modifier = Modifier.width(100.dp).aspectRatio(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            ),
+                    ) {
+                        com.makd.afinity.ui.components.AsyncImage(
+                            imageUrl = track.images.primary?.toString(),
+                            contentDescription = track.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                            targetWidth = 100.dp,
+                            targetHeight = 100.dp,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = track.name,
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 11.sp,
+                            ),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.width(100.dp),
+                    )
+                    track.artist?.let { artist ->
+                        Text(
+                            text = artist,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.width(100.dp),
+                        )
+                    }
                 }
             }
         }
