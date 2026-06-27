@@ -249,7 +249,7 @@ tools are strictly prohibited and will be removed.
 
 ## License
 
-This project is licensed under the **LGPL-3.0 License** - see the [LICENSE](LICENSE.md) file for
+This project is licensed under the **GPL-3.0 License** - see the [LICENSE](LICENSE.md) file for
 details.
 
 ## Support the Project
