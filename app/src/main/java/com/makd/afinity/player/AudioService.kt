@@ -55,6 +55,7 @@ import com.makd.afinity.player.audiobookshelf.AudiobookshelfSkipSilenceManager
 import com.makd.afinity.player.music.MusicPlaybackManager
 import com.makd.afinity.player.music.MusicProgressReporter
 import com.makd.afinity.player.music.MusicQueueManager
+import com.makd.afinity.player.music.RadioManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -97,6 +98,7 @@ class AudioService : MediaSessionService() {
     @Inject lateinit var musicPlaybackManager: MusicPlaybackManager
     @Inject lateinit var musicQueueManager: MusicQueueManager
     @Inject lateinit var musicProgressReporter: MusicProgressReporter
+    @Inject lateinit var radioManager: RadioManager
     @Inject lateinit var securePreferencesRepository: SecurePreferencesRepository
     @Inject lateinit var preferencesRepository: PreferencesRepository
     @Inject lateinit var sessionManager: SessionManager
@@ -435,6 +437,7 @@ class AudioService : MediaSessionService() {
                     applyNormalizationGain(track.normalizationGain)
                     musicProgressReporter.onPlaybackStarted(track.id, 0L)
                 }
+                radioManager.onTrackChanged(track)
             }
 
             override fun onRepeatModeChanged(repeatMode: Int) {

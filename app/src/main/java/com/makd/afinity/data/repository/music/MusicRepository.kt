@@ -78,6 +78,8 @@ interface MusicRepository {
 
     suspend fun getArtistRadio(artistId: UUID, limit: Int = 50): List<AfinityTrack>
 
+    suspend fun getSimilarAlbums(itemId: UUID, limit: Int = 5): List<AfinityAlbum>
+
     suspend fun getLyrics(trackId: UUID): List<AfinityLyricLine>
 
     suspend fun searchMusic(query: String, libraryId: UUID? = null): MusicSearchResults

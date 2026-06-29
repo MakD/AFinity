@@ -3,6 +3,8 @@ package com.makd.afinity.ui.music.playlist
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.download.DownloadRepository
@@ -27,6 +29,8 @@ data class MusicPlaylistUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
     val deleted: Boolean = false,
+    val playlistDownloadInfo: DownloadInfo? = null,
+    val trackDownloadInfos: Map<UUID, DownloadInfo> = emptyMap(),
 )
 
 @HiltViewModel
@@ -43,6 +47,7 @@ class MusicPlaylistViewModel @Inject constructor(
 
     init {
         load()
+        observeDownloads()
     }
 
     fun toggleTrackFavorite(trackId: UUID) {
@@ -79,6 +84,75 @@ class MusicPlaylistViewModel @Inject constructor(
             downloadRepository.startPlaylistDownload(playlistId)
                 .onFailure { Timber.e(it, "Failed to start playlist download") }
         }
+    }
+
+    fun cancelPlaylistDownload() {
+        viewModelScope.launch {
+            _uiState.value.trackDownloadInfos.values.forEach {
+                downloadRepository.cancelDownload(it.id)
+            }
+        }
+    }
+
+    private var lastAllDownloads: List<DownloadInfo> = emptyList()
+
+    private fun observeDownloads() {
+        viewModelScope.launch {
+            downloadRepository.getAllDownloadsFlow().collect { allDownloads ->
+                lastAllDownloads = allDownloads
+                updateDownloadState(allDownloads)
+            }
+        }
+    }
+
+    private fun updateDownloadState(allDownloads: List<DownloadInfo>) {
+        val playlistTrackIds = _uiState.value.tracks.map { it.id }.toSet()
+        val audioDownloads = allDownloads.filter { it.itemType == "Audio" }
+        val playlistDownloads = audioDownloads.filter { it.itemId in playlistTrackIds }
+        val totalTracks = _uiState.value.tracks.size
+        _uiState.update {
+            it.copy(
+                playlistDownloadInfo = aggregatePlaylistDownloadInfo(playlistDownloads, totalTracks),
+                trackDownloadInfos = audioDownloads.associateBy { it.itemId },
+            )
+        }
+    }
+
+    private fun aggregatePlaylistDownloadInfo(downloads: List<DownloadInfo>, totalTracks: Int): DownloadInfo? {
+        if (downloads.isEmpty()) return null
+        val hasActive = downloads.any {
+            it.status == DownloadStatus.DOWNLOADING || it.status == DownloadStatus.QUEUED
+        }
+        val allComplete = downloads.all { it.status == DownloadStatus.COMPLETED }
+        if (!hasActive && !(allComplete && totalTracks > 0 && downloads.size >= totalTracks)) return null
+        val status =
+            when {
+                downloads.any { it.status == DownloadStatus.DOWNLOADING } ->
+                    DownloadStatus.DOWNLOADING
+                downloads.any { it.status == DownloadStatus.QUEUED } -> DownloadStatus.QUEUED
+                downloads.all { it.status == DownloadStatus.COMPLETED } -> DownloadStatus.COMPLETED
+                downloads.any { it.status == DownloadStatus.FAILED } -> DownloadStatus.FAILED
+                else -> DownloadStatus.PAUSED
+            }
+        val first = downloads.first()
+        return DownloadInfo(
+            id = playlistId,
+            itemId = playlistId,
+            itemName = _uiState.value.playlist?.name ?: first.itemName,
+            itemType = "Playlist",
+            sourceId = "",
+            sourceName = "",
+            status = status,
+            progress = downloads.map { it.progress }.average().toFloat(),
+            bytesDownloaded = downloads.sumOf { it.bytesDownloaded },
+            totalBytes = downloads.sumOf { it.totalBytes },
+            filePath = null,
+            error = null,
+            createdAt = downloads.minOf { it.createdAt },
+            updatedAt = downloads.maxOf { it.updatedAt },
+            serverId = first.serverId,
+            userId = first.userId,
+        )
     }
 
     fun downloadTrack(trackId: UUID) {
@@ -122,6 +196,7 @@ class MusicPlaylistViewModel @Inject constructor(
                         isLoading = false,
                     )
                 }
+                updateDownloadState(lastAllDownloads)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load playlist $playlistId")
                 _uiState.update { it.copy(isLoading = false, error = e.message) }

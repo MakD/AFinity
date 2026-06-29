@@ -292,6 +292,8 @@ interface DatabaseRepository {
         path: String,
     )
 
+    suspend fun clearMusicTrackLocalFilePath(id: UUID, serverId: String, userId: String)
+
     suspend fun updateMusicTrackLocalImagePath(
         id: UUID,
         serverId: String,

@@ -116,7 +116,7 @@ import com.makd.afinity.data.models.user.User
             MusicAlbumEntity::class,
             MusicLyricsEntity::class,
         ],
-    version = 51,
+    version = 52,
     exportSchema = false,
 )
 @TypeConverters(AfinityTypeConverters::class)

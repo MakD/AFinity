@@ -73,6 +73,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.makd.afinity.R
+import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
@@ -84,6 +86,7 @@ import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
 import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.music.components.MusicHeroBackground
 import com.makd.afinity.ui.music.components.MusicTrackRow
+import com.makd.afinity.ui.music.components.RadioModeBottomSheet
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.utils.htmlToAnnotatedString
@@ -107,6 +110,7 @@ fun MusicArtistScreen(
     val scope = rememberCoroutineScope()
     var addToPlaylistTrackIds by remember { mutableStateOf<List<UUID>>(emptyList()) }
     var showAddToPlaylist by remember { mutableStateOf(false) }
+    var radioSeed by remember { mutableStateOf<RadioSeed?>(null) }
     var showAllTracks by remember { mutableStateOf(false) }
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val portraitListState = rememberLazyListState()
@@ -236,10 +240,16 @@ fun MusicArtistScreen(
                                         )
                                     }
                                     IconButton(
-                                        enabled = !isOffline,
+                                        enabled = !isOffline && uiState.topTracks.isNotEmpty(),
                                         onClick = {
-                                            startMusicService(context)
-                                            playerViewModel.playArtistRadio(artist.id)
+                                            val firstTrack =
+                                                uiState.topTracks.firstOrNull() ?: return@IconButton
+                                            radioSeed =
+                                                RadioSeed(
+                                                    trackId = firstTrack.id,
+                                                    albumId = firstTrack.albumId,
+                                                    sourceTracks = uiState.topTracks,
+                                                )
                                         },
                                     ) {
                                         Icon(
@@ -388,12 +398,16 @@ fun MusicArtistScreen(
                                                         playerViewModel.playInstantMix(track.id)
                                                     }),
                                             onStartRadio =
-                                                track.artistId?.let { artistId ->
-                                                    {
-                                                        startMusicService(context)
-                                                        playerViewModel.playArtistRadio(artistId)
-                                                    }
-                                                },
+                                                if (isOffline) null
+                                                else
+                                                    ({
+                                                        radioSeed =
+                                                            RadioSeed(
+                                                                trackId = track.id,
+                                                                albumId = track.albumId,
+                                                                sourceTracks = uiState.topTracks,
+                                                            )
+                                                    }),
                                             onAddNext = { playerViewModel.addNext(listOf(track)) },
                                             onAddLast = { playerViewModel.addLast(listOf(track)) },
                                             onFavorite = {
@@ -408,6 +422,9 @@ fun MusicArtistScreen(
                                                         showAddToPlaylist = true
                                                     }),
                                             onDownload = { viewModel.downloadTrack(track.id) },
+                                            isDownloaded =
+                                                uiState.trackDownloadInfos[track.id]?.status ==
+                                                    DownloadStatus.COMPLETED,
                                         )
                                     }
                                     AnimatedVisibility(
@@ -435,14 +452,17 @@ fun MusicArtistScreen(
                                                         playerViewModel.playInstantMix(track.id)
                                                     },
                                                     onStartRadio =
-                                                        track.artistId?.let { artistId ->
-                                                            {
-                                                                startMusicService(context)
-                                                                playerViewModel.playArtistRadio(
-                                                                    artistId
-                                                                )
-                                                            }
-                                                        },
+                                                        if (isOffline) null
+                                                        else
+                                                            ({
+                                                                radioSeed =
+                                                                    RadioSeed(
+                                                                        trackId = track.id,
+                                                                        albumId = track.albumId,
+                                                                        sourceTracks =
+                                                                            uiState.topTracks,
+                                                                    )
+                                                            }),
                                                     onAddNext = {
                                                         playerViewModel.addNext(listOf(track))
                                                     },
@@ -460,6 +480,9 @@ fun MusicArtistScreen(
                                                     onDownload = {
                                                         viewModel.downloadTrack(track.id)
                                                     },
+                                                    isDownloaded =
+                                                        uiState.trackDownloadInfos[track.id]
+                                                            ?.status == DownloadStatus.COMPLETED,
                                                 )
                                             }
                                         }
@@ -684,10 +707,16 @@ fun MusicArtistScreen(
                                         )
                                     }
                                     IconButton(
-                                        enabled = !isOffline,
+                                        enabled = !isOffline && uiState.topTracks.isNotEmpty(),
                                         onClick = {
-                                            startMusicService(context)
-                                            playerViewModel.playArtistRadio(artist.id)
+                                            val firstTrack =
+                                                uiState.topTracks.firstOrNull() ?: return@IconButton
+                                            radioSeed =
+                                                RadioSeed(
+                                                    trackId = firstTrack.id,
+                                                    albumId = firstTrack.albumId,
+                                                    sourceTracks = uiState.topTracks,
+                                                )
                                         },
                                     ) {
                                         Icon(
@@ -834,12 +863,16 @@ fun MusicArtistScreen(
                                             playerViewModel.playInstantMix(track.id)
                                         }),
                                 onStartRadio =
-                                    track.artistId?.let { artistId ->
-                                        {
-                                            startMusicService(context)
-                                            playerViewModel.playArtistRadio(artistId)
-                                        }
-                                    },
+                                    if (isOffline) null
+                                    else
+                                        ({
+                                            radioSeed =
+                                                RadioSeed(
+                                                    trackId = track.id,
+                                                    albumId = track.albumId,
+                                                    sourceTracks = uiState.topTracks,
+                                                )
+                                        }),
                                 onAddNext = { playerViewModel.addNext(listOf(track)) },
                                 onAddLast = { playerViewModel.addLast(listOf(track)) },
                                 onFavorite = { viewModel.toggleTrackFavorite(track.id) },
@@ -852,6 +885,9 @@ fun MusicArtistScreen(
                                             showAddToPlaylist = true
                                         }),
                                 onDownload = { viewModel.downloadTrack(track.id) },
+                                isDownloaded =
+                                    uiState.trackDownloadInfos[track.id]?.status ==
+                                        DownloadStatus.COMPLETED,
                             )
                         }
                     }
@@ -885,12 +921,16 @@ fun MusicArtistScreen(
                                                         playerViewModel.playInstantMix(track.id)
                                                     }),
                                             onStartRadio =
-                                                track.artistId?.let { artistId ->
-                                                    {
-                                                        startMusicService(context)
-                                                        playerViewModel.playArtistRadio(artistId)
-                                                    }
-                                                },
+                                                if (isOffline) null
+                                                else
+                                                    ({
+                                                        radioSeed =
+                                                            RadioSeed(
+                                                                trackId = track.id,
+                                                                albumId = track.albumId,
+                                                                sourceTracks = uiState.topTracks,
+                                                            )
+                                                    }),
                                             onAddNext = {
                                                 playerViewModel.addNext(listOf(track))
                                             },
@@ -911,6 +951,9 @@ fun MusicArtistScreen(
                                             onDownload = {
                                                 viewModel.downloadTrack(track.id)
                                             },
+                                            isDownloaded =
+                                                uiState.trackDownloadInfos[track.id]?.status ==
+                                                    DownloadStatus.COMPLETED,
                                         )
                                     }
                                 }
@@ -1047,6 +1090,18 @@ fun MusicArtistScreen(
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
+        )
+    }
+
+    radioSeed?.let { seed ->
+        RadioModeBottomSheet(
+            seed = seed,
+            onDismiss = { radioSeed = null },
+            onSelectMode = { s, mode ->
+                startMusicService(context)
+                playerViewModel.startRadio(s, mode)
+                radioSeed = null
+            },
         )
     }
 

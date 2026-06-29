@@ -65,11 +65,13 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.gms.cast.framework.CastButtonFactory
 import com.makd.afinity.R
+import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.data.models.music.RepeatMode
 import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
+import com.makd.afinity.ui.music.components.RadioModeBottomSheet
 import com.makd.afinity.ui.music.player.components.MusicPlayerControls
 import kotlinx.coroutines.launch
 
@@ -87,12 +89,15 @@ fun SharedTransitionScope.MusicPlayerScreen(
     val lyricsLoading by viewModel.lyricsLoading.collectAsStateWithLifecycle()
     val isMusicCasting by viewModel.isMusicCasting.collectAsStateWithLifecycle()
     val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
+    val radioState by viewModel.radioState.collectAsStateWithLifecycle()
+    val queue by viewModel.queue.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var showQueue by remember { mutableStateOf(false) }
     var showSleepTimer by remember { mutableStateOf(false) }
     var showAddToPlaylist by remember { mutableStateOf(false) }
     var showCastChooser by remember { mutableStateOf(false) }
+    var radioSeed by remember { mutableStateOf<RadioSeed?>(null) }
     val context = LocalContext.current
     val mediaRouteButton = remember {
         androidx.mediarouter.app.MediaRouteButton(context).also { button ->
@@ -165,6 +170,19 @@ fun SharedTransitionScope.MusicPlayerScreen(
                             ({
                                 playbackState.currentTrack?.id?.let { viewModel.playInstantMix(it) }
                             }),
+                    onStartRadio =
+                        if (isOffline) null
+                        else
+                            ({
+                                playbackState.currentTrack?.let { track ->
+                                    radioSeed = RadioSeed(
+                                        trackId = track.id,
+                                        albumId = track.albumId,
+                                        sourceTracks = queue,
+                                    )
+                                }
+                            }),
+                    isRadioActive = radioState.isActive,
                     onCastClick = { showCastChooser = true },
                     isMusicCasting = isMusicCasting,
                     paddingValues = paddingValues,
@@ -195,6 +213,19 @@ fun SharedTransitionScope.MusicPlayerScreen(
                             ({
                                 playbackState.currentTrack?.id?.let { viewModel.playInstantMix(it) }
                             }),
+                    onStartRadio =
+                        if (isOffline) null
+                        else
+                            ({
+                                playbackState.currentTrack?.let { track ->
+                                    radioSeed = RadioSeed(
+                                        trackId = track.id,
+                                        albumId = track.albumId,
+                                        sourceTracks = queue,
+                                    )
+                                }
+                            }),
+                    isRadioActive = radioState.isActive,
                     onCastClick = { showCastChooser = true },
                     isMusicCasting = isMusicCasting,
                     paddingValues = paddingValues,
@@ -213,6 +244,17 @@ fun SharedTransitionScope.MusicPlayerScreen(
                 onSetTimer = viewModel::setSleepTimer,
                 onCancel = viewModel::cancelSleepTimer,
                 onDismiss = { showSleepTimer = false },
+            )
+        }
+
+        radioSeed?.let { seed ->
+            RadioModeBottomSheet(
+                seed = seed,
+                onDismiss = { radioSeed = null },
+                onSelectMode = { s, mode ->
+                    viewModel.startRadio(s, mode)
+                    radioSeed = null
+                },
             )
         }
 
@@ -257,6 +299,8 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
     onOpenSleepTimer: () -> Unit,
     onAddToPlaylist: (() -> Unit)? = null,
     onInstantMix: (() -> Unit)? = null,
+    onStartRadio: (() -> Unit)? = null,
+    isRadioActive: Boolean = false,
     onCastClick: () -> Unit = {},
     isMusicCasting: Boolean = false,
     paddingValues: PaddingValues,
@@ -442,6 +486,27 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                         tint = Color.White.copy(alpha = if (onInstantMix != null) 0.8f else 0.3f),
                     )
                 }
+                IconButton(
+                    enabled = onStartRadio != null,
+                    onClick = onStartRadio ?: {},
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_radio),
+                            contentDescription = "Start Radio",
+                            tint =
+                                if (isRadioActive) animatedColor
+                                else Color.White.copy(alpha = if (onStartRadio != null) 0.8f else 0.3f),
+                        )
+                        Box(
+                            modifier =
+                                Modifier.size(4.dp)
+                                    .align(Alignment.BottomCenter)
+                                    .alpha(if (isRadioActive) 1f else 0f)
+                                    .background(animatedColor, CircleShape)
+                        )
+                    }
+                }
             }
         }
 
@@ -593,6 +658,8 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
     onOpenSleepTimer: () -> Unit,
     onAddToPlaylist: (() -> Unit)? = null,
     onInstantMix: (() -> Unit)? = null,
+    onStartRadio: (() -> Unit)? = null,
+    isRadioActive: Boolean = false,
     onCastClick: () -> Unit = {},
     isMusicCasting: Boolean = false,
     paddingValues: PaddingValues,
@@ -788,6 +855,27 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                             tint =
                                 Color.White.copy(alpha = if (onInstantMix != null) 0.8f else 0.3f),
                         )
+                    }
+                    IconButton(
+                        enabled = onStartRadio != null,
+                        onClick = onStartRadio ?: {},
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_radio),
+                                contentDescription = "Start Radio",
+                                tint =
+                                    if (isRadioActive) animatedColor
+                                    else Color.White.copy(alpha = if (onStartRadio != null) 0.8f else 0.3f),
+                            )
+                            Box(
+                                modifier =
+                                    Modifier.size(4.dp)
+                                        .align(Alignment.BottomCenter)
+                                        .alpha(if (isRadioActive) 1f else 0f)
+                                        .background(animatedColor, CircleShape)
+                            )
+                        }
                     }
                 }
             }

@@ -250,6 +250,8 @@ internal fun TracksList(
     onAddLast: (AfinityTrack) -> Unit,
     onFavorite: (AfinityTrack, Boolean) -> Unit,
     onAddToPlaylist: ((AfinityTrack) -> Unit)?,
+    onDownload: ((AfinityTrack) -> Unit)? = null,
+    downloadedTrackIds: Set<UUID> = emptySet(),
     modifier: Modifier = Modifier,
 ) {
     val isInitialLoading = tracks.loadState.refresh is LoadState.Loading && tracks.itemCount == 0
@@ -297,6 +299,8 @@ internal fun TracksList(
                 onAddLast = { onAddLast(track) },
                 onFavorite = { onFavorite(track, effectiveFavorite) },
                 onAddToPlaylist = onAddToPlaylist?.let { atp -> { atp(track) } },
+                onDownload = onDownload?.let { dl -> { dl(track) } },
+                isDownloaded = downloadedTrackIds.contains(track.id),
             )
         }
     }

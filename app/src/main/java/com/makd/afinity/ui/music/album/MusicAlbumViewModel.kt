@@ -111,7 +111,8 @@ constructor(
         viewModelScope.launch {
             downloadRepository.getAllDownloadsFlow().collect { allDownloads ->
                 val albumTracks = allDownloads.filter { it.seriesId == albumId.toString() }
-                val albumInfo = aggregateAlbumDownloadInfo(albumTracks)
+                val totalTracks = _uiState.value.tracks.size
+                val albumInfo = aggregateAlbumDownloadInfo(albumTracks, totalTracks)
                 val trackMap =
                     allDownloads.filter { it.itemType == "Audio" }.associateBy { it.itemId }
                 _uiState.update {
@@ -121,8 +122,17 @@ constructor(
         }
     }
 
-    private fun aggregateAlbumDownloadInfo(downloads: List<DownloadInfo>): DownloadInfo? {
+    private fun aggregateAlbumDownloadInfo(
+        downloads: List<DownloadInfo>,
+        totalTracks: Int,
+    ): DownloadInfo? {
         if (downloads.isEmpty()) return null
+        val hasActive = downloads.any {
+            it.status == DownloadStatus.DOWNLOADING || it.status == DownloadStatus.QUEUED
+        }
+        val allComplete = downloads.all { it.status == DownloadStatus.COMPLETED }
+        if (!hasActive && !(allComplete && totalTracks > 0 && downloads.size >= totalTracks))
+            return null
         val status =
             when {
                 downloads.any { it.status == DownloadStatus.DOWNLOADING } ->

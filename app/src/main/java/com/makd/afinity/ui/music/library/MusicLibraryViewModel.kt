@@ -8,6 +8,8 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.makd.afinity.data.models.common.CollectionType
+import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityPlaylist
@@ -17,6 +19,7 @@ import com.makd.afinity.data.paging.MusicAlbumsPagingSource
 import com.makd.afinity.data.paging.MusicArtistsPagingSource
 import com.makd.afinity.data.paging.MusicTracksPagingSource
 import com.makd.afinity.data.repository.AppDataRepository
+import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -151,6 +154,7 @@ class MusicLibraryViewModel
 constructor(
     private val musicRepository: MusicRepository,
     private val appDataRepository: AppDataRepository,
+    private val downloadRepository: DownloadRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -161,6 +165,9 @@ constructor(
 
     private val _uiState = MutableStateFlow(MusicLibraryUiState())
     val uiState: StateFlow<MusicLibraryUiState> = _uiState.asStateFlow()
+
+    private val _trackDownloadInfos = MutableStateFlow<Map<UUID, DownloadInfo>>(emptyMap())
+    val trackDownloadInfos: StateFlow<Map<UUID, DownloadInfo>> = _trackDownloadInfos.asStateFlow()
 
     private val _trackSort = MutableStateFlow(MusicSortOption.NameAZ)
     val trackSort: StateFlow<MusicSortOption> = _trackSort.asStateFlow()
@@ -246,6 +253,18 @@ constructor(
     init {
         viewModelScope.launch { loadPlaylists() }
         viewModelScope.launch { loadMusicHomeSections() }
+        observeDownloads()
+    }
+
+    private fun observeDownloads() {
+        viewModelScope.launch {
+            downloadRepository.getAllDownloadsFlow().collect { allDownloads ->
+                _trackDownloadInfos.value =
+                    allDownloads
+                        .filter { it.itemType == "Audio" && it.status == DownloadStatus.COMPLETED }
+                        .associateBy { it.itemId }
+            }
+        }
     }
 
     fun setTrackSort(option: MusicSortOption) {
@@ -295,6 +314,14 @@ constructor(
         }
     }
 
+    fun downloadTrack(trackId: UUID) {
+        viewModelScope.launch {
+            downloadRepository.startDownload(trackId, "").onFailure {
+                Timber.e(it, "Failed to download track $trackId")
+            }
+        }
+    }
+
     private suspend fun loadPlaylists() {
         try {
             val result = musicRepository.getPlaylists()
@@ -311,12 +338,13 @@ constructor(
     private fun updateMadeForYouSnapshot() {
         _uiState.update { state ->
             state.copy(
-                madeForYouSnapshot = MadeForYouSnapshot(
-                    randomTracks = state.randomTracks,
-                    radioSections = state.radioSections,
-                    songsByGenreSections = state.songsByGenreSections,
-                    randomAlbums = state.randomAlbums,
-                )
+                madeForYouSnapshot =
+                    MadeForYouSnapshot(
+                        randomTracks = state.randomTracks,
+                        radioSections = state.radioSections,
+                        songsByGenreSections = state.songsByGenreSections,
+                        randomAlbums = state.randomAlbums,
+                    )
             )
         }
     }

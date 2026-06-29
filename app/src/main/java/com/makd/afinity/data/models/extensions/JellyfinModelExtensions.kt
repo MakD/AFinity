@@ -423,7 +423,7 @@ fun BaseItemDto.toAfinityChapters(): List<AfinityChapter> {
         AfinityChapter(
             startPosition = chapter.startPositionTicks / 10000,
             name = chapter.name,
-            imageIndex = index,
+            imageIndex = if (chapter.imagePath.isNullOrEmpty()) null else index,
         )
     } ?: emptyList()
 }

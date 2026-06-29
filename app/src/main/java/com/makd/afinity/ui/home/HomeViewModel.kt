@@ -1159,9 +1159,11 @@ constructor(
                     .toSet()
             val unavailableDownloadIds = unavailableMovieIds + unavailableShowIds
 
-            val downloadedMusicAlbums = databaseRepository.getAllMusicAlbumsByUser(userId)
             val downloadedMusicTracks = databaseRepository.getAllMusicTracksByUser(userId)
                 .filter { it.localFilePath != null }
+            val downloadedTrackAlbumIds = downloadedMusicTracks.mapNotNull { it.albumId }.toSet()
+            val downloadedMusicAlbums = databaseRepository.getAllMusicAlbumsByUser(userId)
+                .filter { it.id in downloadedTrackAlbumIds }
 
             _uiState.update {
                 it.copy(

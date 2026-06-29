@@ -142,12 +142,20 @@ constructor(
                 .mapNotNull { it.id }
                 .toSet()
 
-        val justCompleted = previousRunningTaskIds - currentRunningIds
-        if (justCompleted.isNotEmpty()) {
-            Timber.d("Tasks completed: $justCompleted — invalidating media caches")
-            appDataRepository.scheduleHomeRefreshAfterTaskCompletion()
+        val justCompletedIds = previousRunningTaskIds - currentRunningIds
+        if (justCompletedIds.isNotEmpty()) {
+            val completedLibraryTasks = newTasks.filter { it.id in justCompletedIds && it.isLibraryRelated() }
+            if (completedLibraryTasks.isNotEmpty()) {
+                Timber.d("Library tasks completed: ${completedLibraryTasks.map { it.key }} — invalidating media caches")
+                appDataRepository.scheduleHomeRefreshAfterTaskCompletion()
+            }
         }
         previousRunningTaskIds = currentRunningIds
+    }
+
+    private fun TaskInfo.isLibraryRelated(): Boolean {
+        val text = listOfNotNull(key, name, category, description).joinToString(" ").lowercase()
+        return "library" in text || "scan" in text || "refresh" in text
     }
 
     fun restartServer() {

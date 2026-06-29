@@ -235,10 +235,6 @@ fun SettingsScreen(
     val listEndPadding = if (isDualPane) 0.dp else 16.dp
     val logoutEndPadding = if (isDualPane) 8.dp else 24.dp
 
-    LaunchedEffect(uiState.serverId) {
-        uiState.serverId?.let { controlPanelViewModel.initialize(it) }
-    }
-
     if (showLogoutDialog) {
         LogoutConfirmationDialog(
             onConfirm = {
@@ -344,6 +340,9 @@ fun SettingsScreen(
     }
 
     if (showControlPanel) {
+        LaunchedEffect(uiState.serverId) {
+            uiState.serverId?.let { controlPanelViewModel.initialize(it) }
+        }
         Dialog(
             onDismissRequest = { showControlPanel = false },
             properties = DialogProperties(usePlatformDefaultWidth = false),

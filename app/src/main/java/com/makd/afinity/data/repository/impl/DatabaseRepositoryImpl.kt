@@ -881,6 +881,10 @@ constructor(
         musicTrackDao.updateLocalFilePath(id.toString(), serverId, userId, path)
     }
 
+    override suspend fun clearMusicTrackLocalFilePath(id: UUID, serverId: String, userId: String) {
+        musicTrackDao.clearLocalFilePath(id.toString(), serverId, userId)
+    }
+
     override suspend fun updateMusicTrackLocalImagePath(
         id: UUID,
         serverId: String,

@@ -14,11 +14,15 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.music.AfinityLyricLine
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicPlaybackState
+import com.makd.afinity.data.models.music.RadioMode
+import com.makd.afinity.data.models.music.RadioSeed
+import com.makd.afinity.data.models.music.RadioState
 import com.makd.afinity.data.models.music.RepeatMode
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.player.AudioService
 import com.makd.afinity.player.music.MusicPlaybackManager
 import com.makd.afinity.player.music.MusicQueueManager
+import com.makd.afinity.player.music.RadioManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,12 +47,14 @@ constructor(
     private val castManager: CastManager,
     private val sessionManager: SessionManager,
     private val offlineModeManager: OfflineModeManager,
+    private val radioManager: RadioManager,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     val playbackState: StateFlow<MusicPlaybackState> = playbackManager.state
     val queue: StateFlow<List<AfinityTrack>> = queueManager.queue
     val currentIndex: StateFlow<Int> = queueManager.currentIndex
+    val radioState: StateFlow<RadioState> = radioManager.radioState
 
     val isOffline: StateFlow<Boolean> =
         offlineModeManager.isOffline.stateIn(viewModelScope, SharingStarted.Eagerly, false)
@@ -142,6 +148,7 @@ constructor(
     }
 
     fun playQueue(tracks: List<AfinityTrack>, startIndex: Int = 0) {
+        radioManager.stopRadio()
         queueManager.loadQueue(tracks, startIndex)
     }
 
@@ -274,6 +281,12 @@ constructor(
             if (tracks.isNotEmpty()) playQueue(tracks)
         }
     }
+
+    fun startRadio(seed: RadioSeed, mode: RadioMode) {
+        radioManager.startRadio(seed, mode)
+    }
+
+    fun stopRadio() = radioManager.stopRadio()
 
     fun toggleCurrentTrackFavorite() {
         val track = playbackState.value.currentTrack ?: return

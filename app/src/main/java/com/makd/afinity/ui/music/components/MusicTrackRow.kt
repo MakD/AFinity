@@ -54,6 +54,7 @@ fun MusicTrackRow(
     onAddToPlaylist: (() -> Unit)? = null,
     onRemoveFromPlaylist: (() -> Unit)? = null,
     onDownload: (() -> Unit)? = null,
+    isDownloaded: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -137,11 +138,20 @@ fun MusicTrackRow(
             }
         }
 
+        if (isDownloaded) {
+            Icon(
+                painter = painterResource(R.drawable.ic_sd_card),
+                contentDescription = "Downloaded",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 6.dp).size(14.dp),
+            )
+        }
+
         Text(
             text = formatDuration(track.runtimeTicks / 10_000L),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 8.dp),
+            modifier = Modifier.padding(start = 6.dp),
         )
 
         if (hasMenuItems) {

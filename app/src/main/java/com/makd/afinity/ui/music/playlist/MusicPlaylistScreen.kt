@@ -63,17 +63,21 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.makd.afinity.R
+import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.item.components.DownloadProgressIndicator
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
 import com.makd.afinity.ui.music.components.MusicHeroBackground
 import com.makd.afinity.ui.music.components.MusicTrackRow
+import com.makd.afinity.ui.music.components.RadioModeBottomSheet
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
@@ -100,6 +104,7 @@ fun MusicPlaylistScreen(
 
     var addToPlaylistTrackIds by remember { mutableStateOf<List<UUID>>(emptyList()) }
     var showAddToPlaylist by remember { mutableStateOf(false) }
+    var radioSeed by remember { mutableStateOf<RadioSeed?>(null) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.deleted) {
@@ -233,7 +238,35 @@ fun MusicPlaylistScreen(
                                             modifier = Modifier.size(26.dp),
                                         )
                                     }
+                                    IconButton(
+                                        enabled = !isOffline && uiState.tracks.isNotEmpty(),
+                                        onClick = {
+                                            val firstTrack =
+                                                uiState.tracks.firstOrNull() ?: return@IconButton
+                                            radioSeed =
+                                                RadioSeed(
+                                                    trackId = firstTrack.id,
+                                                    albumId = firstTrack.albumId,
+                                                    sourceTracks = uiState.tracks,
+                                                )
+                                        },
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_radio),
+                                            contentDescription = "Start Radio",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(26.dp),
+                                        )
+                                    }
                                 }
+                                DownloadProgressIndicator(
+                                    downloadInfo = uiState.playlistDownloadInfo,
+                                    onDownloadClick = { viewModel.downloadPlaylist() },
+                                    onPauseClick = {},
+                                    onResumeClick = { viewModel.downloadPlaylist() },
+                                    onCancelClick = { viewModel.cancelPlaylistDownload() },
+                                    iconSize = 26.dp,
+                                )
                             }
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -290,12 +323,16 @@ fun MusicPlaylistScreen(
                                         playerViewModel.playInstantMix(track.id)
                                     }),
                             onStartRadio =
-                                track.artistId?.let { artistId ->
-                                    {
-                                        startMusicService(context)
-                                        playerViewModel.playArtistRadio(artistId)
-                                    }
-                                },
+                                if (isOffline) null
+                                else
+                                    ({
+                                        radioSeed =
+                                            RadioSeed(
+                                                trackId = track.id,
+                                                albumId = track.albumId,
+                                                sourceTracks = uiState.tracks,
+                                            )
+                                    }),
                             onAddNext = { playerViewModel.addNext(listOf(track)) },
                             onAddLast = { playerViewModel.addLast(listOf(track)) },
                             onFavorite = { viewModel.toggleTrackFavorite(track.id) },
@@ -309,6 +346,9 @@ fun MusicPlaylistScreen(
                                     }),
                             onRemoveFromPlaylist = { viewModel.removeTrack(track) },
                             onDownload = { viewModel.downloadTrack(track.id) },
+                            isDownloaded =
+                                uiState.trackDownloadInfos[track.id]?.status ==
+                                    DownloadStatus.COMPLETED,
                         )
                     }
                 }
@@ -432,7 +472,35 @@ fun MusicPlaylistScreen(
                                         modifier = Modifier.size(26.dp),
                                     )
                                 }
+                                IconButton(
+                                    enabled = !isOffline && uiState.tracks.isNotEmpty(),
+                                    onClick = {
+                                        val firstTrack =
+                                            uiState.tracks.firstOrNull() ?: return@IconButton
+                                        radioSeed =
+                                            RadioSeed(
+                                                trackId = firstTrack.id,
+                                                albumId = firstTrack.albumId,
+                                                sourceTracks = uiState.tracks,
+                                            )
+                                    },
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_radio),
+                                        contentDescription = "Start Radio",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(26.dp),
+                                    )
+                                }
                             }
+                            DownloadProgressIndicator(
+                                downloadInfo = uiState.playlistDownloadInfo,
+                                onDownloadClick = { viewModel.downloadPlaylist() },
+                                onPauseClick = {},
+                                onResumeClick = { viewModel.downloadPlaylist() },
+                                onCancelClick = { viewModel.cancelPlaylistDownload() },
+                                iconSize = 26.dp,
+                            )
                         }
 
                         Row(
@@ -487,12 +555,16 @@ fun MusicPlaylistScreen(
                             playerViewModel.playInstantMix(track.id)
                         },
                         onStartRadio =
-                            track.artistId?.let { artistId ->
-                                {
-                                    startMusicService(context)
-                                    playerViewModel.playArtistRadio(artistId)
-                                }
-                            },
+                            if (isOffline) null
+                            else
+                                ({
+                                    radioSeed =
+                                        RadioSeed(
+                                            trackId = track.id,
+                                            albumId = track.albumId,
+                                            sourceTracks = uiState.tracks,
+                                        )
+                                }),
                         onAddNext = { playerViewModel.addNext(listOf(track)) },
                         onAddLast = { playerViewModel.addLast(listOf(track)) },
                         onFavorite = { viewModel.toggleTrackFavorite(track.id) },
@@ -503,6 +575,9 @@ fun MusicPlaylistScreen(
                         },
                         onRemoveFromPlaylist = { viewModel.removeTrack(track) },
                         onDownload = { viewModel.downloadTrack(track.id) },
+                        isDownloaded =
+                            uiState.trackDownloadInfos[track.id]?.status ==
+                                DownloadStatus.COMPLETED,
                     )
                 }
             }
@@ -541,6 +616,18 @@ fun MusicPlaylistScreen(
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
+        )
+    }
+
+    radioSeed?.let { seed ->
+        RadioModeBottomSheet(
+            seed = seed,
+            onDismiss = { radioSeed = null },
+            onSelectMode = { s, mode ->
+                startMusicService(context)
+                playerViewModel.startRadio(s, mode)
+                radioSeed = null
+            },
         )
     }
 

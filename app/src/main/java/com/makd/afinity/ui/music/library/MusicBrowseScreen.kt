@@ -23,6 +23,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.Destination.Companion.createSearchRoute
 import com.makd.afinity.navigation.Destination.Companion.createSettingsRoute
@@ -30,6 +31,7 @@ import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
+import com.makd.afinity.ui.music.components.RadioModeBottomSheet
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -60,6 +62,7 @@ fun MusicBrowseScreen(
     val scope = rememberCoroutineScope()
     var addToPlaylistTrackIds by remember { mutableStateOf<List<UUID>>(emptyList()) }
     var showAddToPlaylist by remember { mutableStateOf(false) }
+    var radioSeed by remember { mutableStateOf<RadioSeed?>(null) }
 
     val lazyTracks = viewModel.tracksPagingFlow.collectAsLazyPagingItems()
     val lazyAlbums = viewModel.albumsPagingFlow.collectAsLazyPagingItems()
@@ -169,9 +172,13 @@ fun MusicBrowseScreen(
                                 navController.navigate(Destination.MUSIC_PLAYER_ROUTE)
                             }),
                     onStartRadio = { track ->
-                        track.artistId?.let { artistId ->
-                            startMusicService(context)
-                            playerViewModel.playArtistRadio(artistId)
+                        if (!isOffline) {
+                            radioSeed =
+                                RadioSeed(
+                                    trackId = track.id,
+                                    albumId = track.albumId,
+                                    sourceTracks = listOf(track),
+                                )
                         }
                     },
                     onAddNext = { track -> playerViewModel.addNext(listOf(track)) },
@@ -187,10 +194,25 @@ fun MusicBrowseScreen(
                                 addToPlaylistViewModel.reset()
                                 showAddToPlaylist = true
                             }),
+                    onDownload = { track -> viewModel.downloadTrack(track.id) },
+                    downloadedTrackIds =
+                        viewModel.trackDownloadInfos.collectAsStateWithLifecycle().value.keys,
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
                 )
             LibraryFilter.Home -> Unit
         }
+    }
+
+    radioSeed?.let { seed ->
+        RadioModeBottomSheet(
+            seed = seed,
+            onDismiss = { radioSeed = null },
+            onSelectMode = { s, mode ->
+                startMusicService(context)
+                playerViewModel.startRadio(s, mode)
+                radioSeed = null
+            },
+        )
     }
 
     if (showAddToPlaylist) {

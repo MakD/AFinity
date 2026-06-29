@@ -28,4 +28,5 @@ data class DownloadInfo(
     val runtimeTicks: Long? = null,
     val seriesId: String? = null,
     val storageVolumeId: String = "primary",
+    val playlistId: String? = null,
 )

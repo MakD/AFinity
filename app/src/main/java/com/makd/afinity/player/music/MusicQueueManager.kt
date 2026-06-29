@@ -50,7 +50,7 @@ private val KEY_POSITION_MS = longPreferencesKey("music_position_ms")
 private val KEY_REPEAT_MODE = stringPreferencesKey("music_repeat_mode")
 private val KEY_SHUFFLED = booleanPreferencesKey("music_shuffled")
 
-private const val MAX_QUEUE_SIZE = 500
+private const val MAX_QUEUE_SIZE = 5000
 
 @Singleton
 class MusicQueueManager
@@ -129,9 +129,29 @@ constructor(
     fun addLast(tracks: List<AfinityTrack>) {
         val current = _queue.value.toMutableList()
         current.addAll(tracks)
-        val clamped = current.take(MAX_QUEUE_SIZE)
-        _queue.value = clamped
-        scope.launch { persistQueue(clamped) }
+
+        val trimmed: List<AfinityTrack>
+        val newIndex: Int
+        if (current.size > MAX_QUEUE_SIZE) {
+            val excess = current.size - MAX_QUEUE_SIZE
+            val trimCount = excess.coerceAtMost(_currentIndex.value)
+            trimmed = current.drop(trimCount).take(MAX_QUEUE_SIZE)
+            newIndex = (_currentIndex.value - trimCount).coerceAtLeast(0)
+        } else {
+            trimmed = current
+            newIndex = _currentIndex.value
+        }
+
+        _queue.value = trimmed
+        if (newIndex != _currentIndex.value) {
+            _currentIndex.value = newIndex
+            scope.launch { dataStore.edit { prefs -> prefs[KEY_CURRENT_INDEX] = newIndex } }
+        }
+        scope.launch { persistQueue(trimmed) }
+        val mediaItems = trimmed.map { buildMediaItem(it) }
+        scope.launch {
+            _rearrangeQueueEvents.emit(RearrangeQueueEvent(mediaItems, newIndex))
+        }
     }
 
     fun removeAt(index: Int) {

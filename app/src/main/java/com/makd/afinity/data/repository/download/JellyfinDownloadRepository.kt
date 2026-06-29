@@ -97,6 +97,7 @@ constructor(
         itemId: UUID,
         sourceId: String,
         volumeId: String?,
+        playlistId: String?,
     ): Result<UUID> =
         withContext(Dispatchers.IO) {
             return@withContext try {
@@ -200,6 +201,7 @@ constructor(
                             folderPath = "$serverId/music/$albumId/$itemId",
                             seriesId = albumId.toString(),
                             storageVolumeId = resolvedVolumeId,
+                            playlistId = playlistId,
                         )
 
                     databaseRepository.insertDownload(download)
@@ -496,6 +498,14 @@ constructor(
                 sources
                     .filter { it.type == AfinitySourceType.LOCAL }
                     .forEach { databaseRepository.deleteSource(it.id) }
+
+                if (download.itemType == "Audio") {
+                    databaseRepository.clearMusicTrackLocalFilePath(
+                        download.itemId,
+                        download.serverId,
+                        download.userId.toString(),
+                    )
+                }
 
                 databaseRepository.deleteDownload(downloadId)
 
@@ -822,8 +832,9 @@ constructor(
             return@withContext try {
                 val tracks = musicRepository.getPlaylistTracks(playlistId)
                 var started = 0
+                val playlistIdStr = playlistId.toString()
                 for (track in tracks) {
-                    startDownload(track.id, "", volumeId)
+                    startDownload(track.id, "", volumeId, playlistIdStr)
                         .onSuccess { started++ }
                         .onFailure { error ->
                             if (error is VolumeUnavailableException)

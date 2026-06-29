@@ -34,6 +34,7 @@ data class DownloadDto(
     val folderPath: String? = null,
     val seriesId: String? = null,
     val storageVolumeId: String = "primary",
+    val playlistId: String? = null,
 )
 
 fun DownloadDto.toDownloadInfo(): DownloadInfo {
@@ -63,5 +64,6 @@ fun DownloadDto.toDownloadInfo(): DownloadInfo {
         runtimeTicks = runtimeTicks,
         seriesId = seriesId,
         storageVolumeId = storageVolumeId,
+        playlistId = playlistId,
     )
 }

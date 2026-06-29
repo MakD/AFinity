@@ -719,6 +719,30 @@ constructor(
             }
         }
 
+    override suspend fun getSimilarAlbums(itemId: UUID, limit: Int): List<AfinityAlbum> =
+        withContext(Dispatchers.IO) {
+            try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
+                val userId = getCurrentUserId() ?: return@withContext emptyList()
+                val baseUrl = getBaseUrlInternal()
+                val response = org.jellyfin.sdk.api.operations.LibraryApi(apiClient).getSimilarItems(
+                    itemId = itemId,
+                    userId = userId,
+                    limit = limit,
+                    fields = FieldSets.MUSIC_ALBUM,
+                )
+                response.content.items
+                    .filter { it.type == BaseItemKind.MUSIC_ALBUM }
+                    .mapNotNull { runCatching { it.toAfinityAlbum(baseUrl) }.getOrNull() }
+            } catch (e: ApiClientException) {
+                Timber.e(e, "Failed to get similar albums for item: $itemId")
+                emptyList()
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error getting similar albums for item: $itemId")
+                emptyList()
+            }
+        }
+
     override suspend fun getLyrics(trackId: UUID): List<AfinityLyricLine> =
         withContext(Dispatchers.IO) {
             val cached = getCachedLyrics(trackId)

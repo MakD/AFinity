@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
+import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityTrack
@@ -27,6 +28,7 @@ data class MusicArtistUiState(
     val appearsOn: List<AfinityAlbum> = emptyList(),
     val isLoading: Boolean = true,
     val error: String? = null,
+    val trackDownloadInfos: Map<UUID, DownloadInfo> = emptyMap(),
 )
 
 @HiltViewModel
@@ -44,6 +46,17 @@ class MusicArtistViewModel @Inject constructor(
 
     init {
         load()
+        observeDownloads()
+    }
+
+    private fun observeDownloads() {
+        viewModelScope.launch {
+            downloadRepository.getAllDownloadsFlow().collect { allDownloads ->
+                _uiState.update {
+                    it.copy(trackDownloadInfos = allDownloads.filter { d -> d.itemType == "Audio" }.associateBy { d -> d.itemId })
+                }
+            }
+        }
     }
 
     private fun load() {

@@ -11,6 +11,7 @@ interface DownloadRepository {
         itemId: UUID,
         sourceId: String,
         volumeId: String? = null,
+        playlistId: String? = null,
     ): Result<UUID>
 
     suspend fun pauseDownload(downloadId: UUID): Result<Unit>

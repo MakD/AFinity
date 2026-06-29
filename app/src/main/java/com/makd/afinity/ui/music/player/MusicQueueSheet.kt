@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -140,14 +140,17 @@ fun MusicQueueSheet(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     contentPadding = PaddingValues(bottom = 24.dp),
                 ) {
-                    items(nextTracks, key = { it.id }) { track ->
-                        ReorderableItem(reorderState, key = track.id) { isDragging ->
+                    itemsIndexed(nextTracks, key = { index, _ -> currentIndex + 1 + index }) {
+                        localIndex,
+                        track ->
+                        val absoluteIndex = currentIndex + 1 + localIndex
+                        ReorderableItem(reorderState, key = currentIndex + 1 + localIndex) {
+                            isDragging ->
                             val elevation by
                                 animateDpAsState(
                                     if (isDragging) 8.dp else 0.dp,
                                     label = "drag_elev",
                                 )
-                            val absoluteIndex = queue.indexOf(track)
 
                             val dismissState = rememberSwipeToDismissBoxState()
 
