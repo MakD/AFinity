@@ -518,81 +518,6 @@ fun StatusHub(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Surface(
-                    shape = RoundedCornerShape(100),
-                    color =
-                        if (isOffline) MaterialTheme.colorScheme.tertiaryContainer
-                        else MaterialTheme.colorScheme.secondaryContainer,
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    ) {
-                        Icon(
-                            painter =
-                                painterResource(
-                                    id =
-                                        if (isOffline) R.drawable.ic_wifi_off
-                                        else R.drawable.ic_wifi
-                                ),
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint =
-                                if (isOffline) MaterialTheme.colorScheme.onTertiaryContainer
-                                else MaterialTheme.colorScheme.onSecondaryContainer,
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text =
-                                if (isOffline) stringResource(R.string.network_status_offline)
-                                else stringResource(R.string.network_status_online),
-                            style =
-                                MaterialTheme.typography.labelLarge.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                            color =
-                                if (isOffline) MaterialTheme.colorScheme.onTertiaryContainer
-                                else MaterialTheme.colorScheme.onSecondaryContainer,
-                        )
-                    }
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = stringResource(R.string.pref_download_wifi_only_title),
-                        style =
-                            MaterialTheme.typography.labelLarge.copy(
-                                fontWeight = FontWeight.Medium
-                            ),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(end = 8.dp),
-                    )
-                    Switch(
-                        checked = wifiOnly,
-                        onCheckedChange = onWifiOnlyChanged,
-                        modifier = Modifier.scale(0.8f),
-                        colors =
-                            SwitchDefaults.colors(
-                                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                                checkedTrackColor = MaterialTheme.colorScheme.primary,
-                                uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                                uncheckedTrackColor =
-                                    MaterialTheme.colorScheme.surfaceContainerHighest,
-                                uncheckedBorderColor = MaterialTheme.colorScheme.outline,
-                            ),
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
                 Text(
                     text = stringResource(R.string.pref_max_concurrent_downloads),
                     style =
@@ -672,6 +597,36 @@ fun StatusHub(
                         }
                     }
                 }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.pref_download_wifi_only_title),
+                    style =
+                        MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Switch(
+                    checked = wifiOnly,
+                    onCheckedChange = onWifiOnlyChanged,
+                    modifier = Modifier.scale(0.8f),
+                    colors =
+                        SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primary,
+                            uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            uncheckedBorderColor = MaterialTheme.colorScheme.outline,
+                        ),
+                )
             }
         }
     }

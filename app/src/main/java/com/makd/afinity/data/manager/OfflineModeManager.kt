@@ -4,6 +4,8 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.onEach
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -18,17 +20,18 @@ constructor(
 ) {
     val isOffline: Flow<Boolean> =
         combine(
-            preferencesRepository.getOfflineModeFlow(),
-            networkConnectivityMonitor.isNetworkAvailable,
-            sessionManager.isServerReachable,
-        ) { manualOfflineMode, isNetworkAvailable, isServerReachable ->
-            val isOffline = manualOfflineMode || !isNetworkAvailable || !isServerReachable
-
-            Timber.d(
-                "Offline mode status: manual=$manualOfflineMode, network=$isNetworkAvailable, serverReachable=$isServerReachable, result=$isOffline"
-            )
-            isOffline
-        }
+                preferencesRepository.getOfflineModeFlow(),
+                networkConnectivityMonitor.isNetworkAvailable,
+                sessionManager.isServerReachable,
+            ) { manualOfflineMode, isNetworkAvailable, isServerReachable ->
+                manualOfflineMode || !isNetworkAvailable || !isServerReachable
+            }
+            .distinctUntilChanged()
+            .onEach { isOffline ->
+                Timber.d(
+                    "Offline mode changed: $isOffline"
+                )
+            }
 
     suspend fun isCurrentlyOffline(): Boolean {
         val manualOfflineMode = preferencesRepository.getOfflineMode()

@@ -27,4 +27,7 @@ sealed interface SettingsPaneDestination : Parcelable {
 
     @Parcelize
     data object QuickConnect : SettingsPaneDestination
+
+    @Parcelize
+    data object ControlPanel : SettingsPaneDestination
 }

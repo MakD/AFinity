@@ -134,7 +134,7 @@ fun DiscoverSection(
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = headerBottomPadding),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = title,
@@ -151,7 +151,7 @@ fun DiscoverSection(
                                 indication = null,
                                 onClick = onViewAllClick,
                             ),
-                    contentAlignment = Alignment.TopEnd,
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         painter = painterResource(id = drawable.ic_chevron_right),

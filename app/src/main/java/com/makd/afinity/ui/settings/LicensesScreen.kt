@@ -37,6 +37,13 @@ import com.mikepenz.aboutlibraries.ui.compose.LibraryDefaults
 import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
 import com.mikepenz.aboutlibraries.ui.compose.m3.libraryColors
+import com.mikepenz.aboutlibraries.ui.compose.m3.style.accentDerivedLicenseHueResolver
+import com.mikepenz.aboutlibraries.ui.compose.m3.style.m3VariantColors
+import com.mikepenz.aboutlibraries.ui.compose.variant.LibrariesDensity
+import com.mikepenz.aboutlibraries.ui.compose.variant.LibrariesVariant
+import com.mikepenz.aboutlibraries.ui.compose.variant.LibraryActionMode
+import com.mikepenz.aboutlibraries.ui.compose.variant.LibraryBadges
+import com.mikepenz.aboutlibraries.ui.compose.variant.LibraryDetailMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,86 +88,105 @@ fun LicensesScreen(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
                 bottom = max(innerPadding.calculateBottomPadding(), playerOffset),
             )
         LibrariesContainer(
-            libraries = libraries,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding =
-                PaddingValues(
-                    top = customPadding.calculateTopPadding() + 16.dp,
-                    start = customPadding.calculateStartPadding(layoutDirection) + 16.dp,
-                    end = customPadding.calculateEndPadding(layoutDirection) + 16.dp,
-                    bottom = customPadding.calculateBottomPadding() + 16.dp,
-                ),
-            colors =
-                LibraryDefaults.libraryColors(
-                    libraryBackgroundColor = MaterialTheme.colorScheme.surface,
-                    libraryContentColor = MaterialTheme.colorScheme.onSurface,
-                ),
-            header = {
-                item {
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                libraries = libraries,
+                modifier = Modifier.fillMaxSize(),
+                detailMode = LibraryDetailMode.Sheet,
+                variant = LibrariesVariant.Refined,
+                density = LibrariesDensity.Compact,
+                actionMode = LibraryActionMode.Icons,
+                badges =
+                    LibraryBadges(
+                        version = true,
+                        license = true,
+                        author = false,
+                        description = false,
+                        funding = false,
+                    ),
+                contentPadding =
+                    PaddingValues(
+                        top = customPadding.calculateTopPadding() + 16.dp,
+                        start = customPadding.calculateStartPadding(layoutDirection) + 16.dp,
+                        end = customPadding.calculateEndPadding(layoutDirection) + 16.dp,
+                        bottom = customPadding.calculateBottomPadding() + 16.dp,
+                    ),
+                colors =
+                    LibraryDefaults.libraryColors(
+                        libraryBackgroundColor = MaterialTheme.colorScheme.surface,
+                        libraryContentColor = MaterialTheme.colorScheme.onSurface,
+                    ),
+                variantColors =
+                    LibraryDefaults.m3VariantColors(
+                        licenseHueResolver = accentDerivedLicenseHueResolver()
+                    ),
+                header = {
+                    item {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_launcher_foreground),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(120.dp),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Text(
+                                    text = stringResource(R.string.licenses_header_title),
+                                    style =
+                                        MaterialTheme.typography.titleLarge.copy(
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = stringResource(R.string.licenses_header_subtitle),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                HorizontalDivider()
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+                        }
+                    }
+                },
+                divider = { Spacer(modifier = Modifier.height(12.dp)) },
+                footer = {
+                    item {
                         Column(
-                            modifier = Modifier.padding(horizontal = 16.dp),
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_launcher_foreground),
-                                contentDescription = null,
-                                modifier = Modifier.size(120.dp),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Text(
-                                text = stringResource(R.string.licenses_header_title),
-                                style =
-                                    MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = stringResource(R.string.licenses_header_subtitle),
-                                style = MaterialTheme.typography.bodyLarge,
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
                             Spacer(modifier = Modifier.height(16.dp))
                             HorizontalDivider()
                             Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = stringResource(R.string.licenses_footer_built_with),
+                                style =
+                                    MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.Medium
+                                    ),
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = stringResource(R.string.licenses_footer_terms),
+                                style = MaterialTheme.typography.bodySmall,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
-                }
-            },
-            divider = { Spacer(modifier = Modifier.height(12.dp)) },
-            footer = {
-                item {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        HorizontalDivider()
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(R.string.licenses_footer_built_with),
-                            style =
-                                MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.licenses_footer_terms),
-                            style = MaterialTheme.typography.bodySmall,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                }
-            },
-        )
+                },
+            )
     }
 }

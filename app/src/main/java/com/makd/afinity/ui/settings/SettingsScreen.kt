@@ -453,6 +453,7 @@ fun SettingsScreen(
                                             ?: stringResource(R.string.unknown_user),
                                     serverName = uiState.serverName,
                                     serverUrl = uiState.serverUrl,
+                                    serverVersion = uiState.serverVersion,
                                     userProfileImageUrl = uiState.userProfileImageUrl,
                                     connectionType = connectionType,
                                     modifier =
@@ -463,7 +464,18 @@ fun SettingsScreen(
                                             bottom = 8.dp,
                                         ),
                                     isAdmin = isAdmin == true,
-                                    onControlPanelClick = { showControlPanel = true },
+                                    onControlPanelClick = {
+                                        if (isDualPane) {
+                                            scope.launch {
+                                                navigator.navigateTo(
+                                                    ListDetailPaneScaffoldRole.Detail,
+                                                    SettingsPaneDestination.ControlPanel,
+                                                )
+                                            }
+                                        } else {
+                                            showControlPanel = true
+                                        }
+                                    },
                                 )
                             }
 
@@ -838,6 +850,20 @@ fun SettingsScreen(
                                 viewModel.clearQuickConnectAuthState()
                             },
                         )
+                    is SettingsPaneDestination.ControlPanel -> {
+                        LaunchedEffect(uiState.serverId) {
+                            uiState.serverId?.let { controlPanelViewModel.initialize(it) }
+                        }
+                        uiState.activeServer?.let { activeServer ->
+                            ControlPanelView(
+                                serverWithCount = activeServer,
+                                onBack = { scope.launch { navigator.navigateBack() } },
+                                viewModel = controlPanelViewModel,
+                            )
+                        } ?: Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    }
                     null -> Box(modifier = Modifier.fillMaxSize())
                 }
             }
@@ -885,6 +911,7 @@ fun ProfileHeader(
     userName: String,
     serverName: String?,
     serverUrl: String?,
+    serverVersion: String? = null,
     userProfileImageUrl: String?,
     connectionType: ConnectionType,
     modifier: Modifier = Modifier,
@@ -994,10 +1021,10 @@ fun ProfileHeader(
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
-                    if (serverUrl != null) {
+                    if (serverVersion != null) {
                         VerticalDivider(modifier = Modifier.height(12.dp))
                         Text(
-                            text = serverUrl,
+                            text = "v$serverVersion",
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurface,
                         )

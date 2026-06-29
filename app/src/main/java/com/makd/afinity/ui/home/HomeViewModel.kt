@@ -67,6 +67,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -216,12 +217,7 @@ constructor(
         }
 
         viewModelScope.launch {
-            var isFirstEmission = true
-            appDataRepository.getHomeSortByDateAddedFlow().collect { sortByDateAdded ->
-                if (isFirstEmission) {
-                    isFirstEmission = false
-                    return@collect
-                }
+            appDataRepository.getHomeSortByDateAddedFlow().distinctUntilChanged().drop(1).collect {
                 appDataRepository.reloadHomeData()
             }
         }
@@ -287,13 +283,15 @@ constructor(
         }
 
         viewModelScope.launch {
-            offlineModeManager.isOffline.collect { isOffline ->
+            var previousIsOffline: Boolean? = null
+            offlineModeManager.isOffline.distinctUntilChanged().collect { isOffline ->
                 Timber.d("Offline mode changed: $isOffline")
                 _uiState.update { it.copy(isOffline = isOffline) }
 
-                if (!isOffline) {
+                if (previousIsOffline == true && !isOffline) {
                     scheduleHomeDataReload()
                 }
+                previousIsOffline = isOffline
             }
         }
         viewModelScope.launch {
@@ -1159,11 +1157,15 @@ constructor(
                     .toSet()
             val unavailableDownloadIds = unavailableMovieIds + unavailableShowIds
 
-            val downloadedMusicTracks = databaseRepository.getAllMusicTracksByUser(userId)
-                .filter { it.localFilePath != null }
+            val downloadedMusicTracks =
+                databaseRepository.getAllMusicTracksByUser(userId).filter {
+                    it.localFilePath != null
+                }
             val downloadedTrackAlbumIds = downloadedMusicTracks.mapNotNull { it.albumId }.toSet()
-            val downloadedMusicAlbums = databaseRepository.getAllMusicAlbumsByUser(userId)
-                .filter { it.id in downloadedTrackAlbumIds }
+            val downloadedMusicAlbums =
+                databaseRepository.getAllMusicAlbumsByUser(userId).filter {
+                    it.id in downloadedTrackAlbumIds
+                }
 
             _uiState.update {
                 it.copy(
