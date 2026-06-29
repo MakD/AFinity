@@ -114,6 +114,7 @@ fun AsyncImage(
             ImageRequest.Builder(context)
                 .data(optimizedUrl)
                 .size(imageSize)
+                .memoryCacheKey(optimizedUrl)
                 .memoryCachePolicy(CachePolicy.ENABLED)
                 .diskCachePolicy(CachePolicy.ENABLED)
                 .networkCachePolicy(

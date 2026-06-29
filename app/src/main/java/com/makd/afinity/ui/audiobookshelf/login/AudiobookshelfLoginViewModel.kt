@@ -32,7 +32,13 @@ constructor(
     val currentConfig = audiobookshelfRepository.currentConfig
 
     fun updateServerUrl(url: String) {
-        _uiState.value = _uiState.value.copy(serverUrl = url.trim(), error = null)
+        val trimmed = url.trim()
+        val urlError = if (trimmed.isNotBlank() && !isValidUrl(trimmed)) "Invalid URL format" else null
+        _uiState.value = _uiState.value.copy(serverUrl = trimmed, serverUrlError = urlError, error = null)
+    }
+
+    private fun isValidUrl(url: String): Boolean {
+        return url.isNotBlank() && !url.contains(" ")
     }
 
     fun updateUsername(username: String) {
@@ -95,12 +101,7 @@ constructor(
             _uiState.value = currentState.copy(isLoggingIn = true, error = null)
 
             val rawUrl = currentState.serverUrl.trim().removeSuffix("/")
-            val candidateUrls =
-                if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
-                    listOf(rawUrl)
-                } else {
-                    listOf("https://$rawUrl", "http://$rawUrl")
-                }
+            val candidateUrls = generateCandidateUrls(rawUrl)
 
             var validUrl: String? = null
             for (url in candidateUrls) {
@@ -191,6 +192,23 @@ constructor(
         viewModelScope.launch { preferencesRepository.setNotificationPermissionDeclined(true) }
     }
 
+    private fun generateCandidateUrls(input: String): List<String> {
+        val hasScheme = input.startsWith("http://") || input.startsWith("https://")
+        val withScheme = if (hasScheme) input else "http://$input"
+        val uri = runCatching { java.net.URI(withScheme) }.getOrNull()
+        val host = uri?.host?.takeIf { it.isNotBlank() } ?: input
+        val port = uri?.port ?: -1
+        val scheme = if (hasScheme) uri?.scheme else null
+
+        return when {
+            hasScheme && port != -1 -> listOf(input)
+            !hasScheme && port != -1 -> listOf("https://$input", "http://$input")
+            hasScheme && scheme == "https" -> listOf(input, "https://$host:13378")
+            hasScheme && scheme == "http" -> listOf(input, "http://$host:13378")
+            else -> listOf("https://$host", "https://$host:13378", "http://$host:13378", "http://$host")
+        }
+    }
+
     private fun normalizeUrl(url: String): String {
         var normalized = url.trim()
 
@@ -215,4 +233,5 @@ data class AudiobookshelfLoginUiState(
     val isLoggingIn: Boolean = false,
     val isLoggedIn: Boolean = false,
     val error: String? = null,
+    val serverUrlError: String? = null,
 )

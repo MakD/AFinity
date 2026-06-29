@@ -120,11 +120,19 @@ constructor(
 
         _serverUrl.value = trimmedUrl
 
+        val urlError = if (trimmedUrl.isNotBlank() && !isValidUrl(trimmedUrl)) "Invalid URL format" else null
+        _uiState.update { it.copy(serverUrlError = urlError) }
+
         if (trimmedUrl.isBlank()) {
             clearServerConnection()
         } else if (currentConnectedUrl.isNotBlank() && trimmedUrl != currentConnectedUrl) {
             clearServerConnection()
         }
+    }
+
+    private fun isValidUrl(url: String): Boolean {
+        val trimmed = url.trim()
+        return trimmed.isNotBlank() && !trimmed.contains(" ")
     }
 
     fun connectToServer() {
@@ -683,6 +691,7 @@ data class LoginUiState(
     val isDiscovering: Boolean = false,
     val discoveredServers: List<Server> = emptyList(),
     val error: String? = null,
+    val serverUrlError: String? = null,
     val quickConnectCode: String? = null,
     val quickConnectSecret: String? = null,
 )

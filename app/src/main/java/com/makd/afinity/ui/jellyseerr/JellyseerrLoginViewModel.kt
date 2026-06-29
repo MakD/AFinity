@@ -67,7 +67,8 @@ constructor(
     }
 
     fun updateServerUrl(url: String) {
-        _uiState.update { it.copy(serverUrl = url, serverUrlError = null) }
+        val error = if (url.isNotBlank() && !isValidUrl(url)) "Invalid URL format" else null
+        _uiState.update { it.copy(serverUrl = url, serverUrlError = error) }
     }
 
     fun updateEmail(email: String) {
@@ -102,12 +103,7 @@ constructor(
                 _uiState.update { it.copy(isLoading = true, error = null) }
 
                 val rawUrl = _uiState.value.serverUrl.trim().removeSuffix("/")
-                val candidateUrls =
-                    if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
-                        listOf(rawUrl)
-                    } else {
-                        listOf("https://$rawUrl", "http://$rawUrl")
-                    }
+                val candidateUrls = generateCandidateUrls(rawUrl)
 
                 var validUrl: String? = null
 
@@ -206,18 +202,26 @@ constructor(
         return isValid
     }
 
-    private fun isValidUrl(url: String): Boolean {
-        return try {
-            val trimmedUrl = url.trim()
-            when {
-                trimmedUrl.isBlank() -> false
-                trimmedUrl.startsWith("http://") || trimmedUrl.startsWith("https://") -> true
-                trimmedUrl.contains(".") || trimmedUrl.contains(":") -> true
-                else -> false
-            }
-        } catch (e: Exception) {
-            false
+    private fun generateCandidateUrls(input: String): List<String> {
+        val hasScheme = input.startsWith("http://") || input.startsWith("https://")
+        val withScheme = if (hasScheme) input else "http://$input"
+        val uri = runCatching { java.net.URI(withScheme) }.getOrNull()
+        val host = uri?.host?.takeIf { it.isNotBlank() } ?: input
+        val port = uri?.port ?: -1
+        val scheme = if (hasScheme) uri?.scheme else null
+
+        return when {
+            hasScheme && port != -1 -> listOf(input)
+            !hasScheme && port != -1 -> listOf("https://$input", "http://$input")
+            hasScheme && scheme == "https" -> listOf(input, "https://$host:5055")
+            hasScheme && scheme == "http" -> listOf(input, "http://$host:5055")
+            else -> listOf("https://$host", "https://$host:5055", "http://$host:5055", "http://$host")
         }
+    }
+
+    private fun isValidUrl(url: String): Boolean {
+        val trimmed = url.trim()
+        return trimmed.isNotBlank() && !trimmed.contains(" ")
     }
 
     private fun parseErrorMessage(message: String?): String {

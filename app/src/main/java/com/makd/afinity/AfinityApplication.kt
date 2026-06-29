@@ -10,7 +10,6 @@ import coil3.annotation.ExperimentalCoilApi
 import coil3.disk.DiskCache
 import coil3.gif.AnimatedImageDecoder
 import coil3.memory.MemoryCache
-import coil3.network.cachecontrol.CacheControlCacheStrategy
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.CachePolicy
 import coil3.request.crossfade
@@ -99,12 +98,7 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
 
         return ImageLoader.Builder(context)
             .components {
-                add(
-                    OkHttpNetworkFetcherFactory(
-                        callFactory = { imageOkHttpClient },
-                        cacheStrategy = { CacheControlCacheStrategy() },
-                    )
-                )
+                add(OkHttpNetworkFetcherFactory(callFactory = { imageOkHttpClient }))
                 add(SvgDecoder.Factory())
                 add(AnimatedImageDecoder.Factory())
             }

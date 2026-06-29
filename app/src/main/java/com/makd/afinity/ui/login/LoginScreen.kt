@@ -211,6 +211,7 @@ fun LoginScreen(
                                     onSavedServerSelect = viewModel::selectServer,
                                     onAddNewServer = viewModel::showAddNewServer,
                                     onCancelAddServer = viewModel::cancelAddServer,
+                                    serverUrlError = loginState.uiState.serverUrlError,
                                 )
                                 Spacer(modifier = Modifier.height(expandedBottomSpacer))
                             }
@@ -325,6 +326,7 @@ fun LoginScreen(
                                     onSavedServerSelect = viewModel::selectServer,
                                     onAddNewServer = viewModel::showAddNewServer,
                                     onCancelAddServer = viewModel::cancelAddServer,
+                                    serverUrlError = loginState.uiState.serverUrlError,
                                 )
 
                                 LocalDiscoveryContent(
@@ -531,6 +533,7 @@ private fun ManualServerContent(
     onSavedServerSelect: (Server) -> Unit,
     onAddNewServer: () -> Unit,
     onCancelAddServer: () -> Unit,
+    serverUrlError: String? = null,
 ) {
     val showSavedServers = savedServers.isNotEmpty() && !showAddServerInput
 
@@ -582,6 +585,8 @@ private fun ManualServerContent(
                             contentDescription = null,
                         )
                     },
+                    supportingText = serverUrlError?.let { { Text(it) } },
+                    isError = serverUrlError != null,
                     singleLine = true,
                     shape = RoundedCornerShape(16.dp),
                     keyboardOptions =

@@ -110,6 +110,8 @@ internal fun AudiobookshelfLoginContent(
                     contentDescription = null,
                 )
             },
+            supportingText = uiState.serverUrlError?.let { { Text(it) } },
+            isError = uiState.serverUrlError != null,
             enabled = !uiState.isLoggingIn,
             keyboardOptions =
                 KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),

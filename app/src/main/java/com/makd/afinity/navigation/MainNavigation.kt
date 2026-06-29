@@ -9,8 +9,6 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
@@ -359,18 +357,6 @@ fun MainNavigation(
                                 navController = navController,
                                 startDestination = Destination.HOME.route,
                                 modifier = Modifier.fillMaxSize(),
-                                enterTransition = {
-                                    fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.95f)
-                                },
-                                exitTransition = {
-                                    fadeOut(tween(300)) + scaleOut(tween(300), targetScale = 0.95f)
-                                },
-                                popEnterTransition = {
-                                    fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.95f)
-                                },
-                                popExitTransition = {
-                                    fadeOut(tween(300)) + scaleOut(tween(300), targetScale = 0.95f)
-                                },
                             ) {
                                 composable(Destination.HOME.route) {
                                     HomeScreen(

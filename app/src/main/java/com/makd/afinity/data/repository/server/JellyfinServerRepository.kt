@@ -155,15 +155,35 @@ constructor(
         }
     }
 
+    private fun generateCandidateUrls(input: String): List<String> {
+        val clean = input.trim().removeSuffix("/")
+        val hasScheme = clean.startsWith("http://") || clean.startsWith("https://")
+        val withScheme = if (hasScheme) clean else "http://$clean"
+        val uri = runCatching { java.net.URI(withScheme) }.getOrNull()
+        val host = uri?.host?.takeIf { it.isNotBlank() } ?: clean
+        val port = uri?.port ?: -1
+        val scheme = if (hasScheme) uri?.scheme else null
+
+        return when {
+            hasScheme && port != -1 -> listOf(clean)
+            !hasScheme && port != -1 -> listOf("https://$clean", "http://$clean")
+            hasScheme && scheme == "https" ->
+                listOf(clean, "https://$host:8920", "https://$host:8096")
+            hasScheme && scheme == "http" -> listOf(clean, "http://$host:8096")
+            else ->
+                listOf(
+                    "https://$host",
+                    "https://$host:8096",
+                    "https://$host:8920",
+                    "http://$host:8096",
+                    "http://$host",
+                )
+        }
+    }
+
     override suspend fun testServerConnection(serverAddress: String): ServerConnectionResult {
         return withContext(Dispatchers.IO) {
-            val cleanAddress = serverAddress.trim().removeSuffix("/")
-            val urlsToTry =
-                if (!cleanAddress.startsWith("http://") && !cleanAddress.startsWith("https://")) {
-                    listOf("https://$cleanAddress", "http://$cleanAddress")
-                } else {
-                    listOf(cleanAddress)
-                }
+            val urlsToTry = generateCandidateUrls(serverAddress)
 
             var lastException: Exception? = null
 
