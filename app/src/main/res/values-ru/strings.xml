@@ -334,7 +334,7 @@
     <string name="empty_genre_podcasts">Не найдено подкастов в этом жанре</string>
     <string name="error_unknown_occurred">Произошла неизвестная ошибка</string>
     <string name="search_no_results">Результаты не найдены</string>
-    <string name="search_placeholder">Поиск фильмов и сериалов</string>
+    <string name="search_placeholder">Поиск</string>
     <string name="cd_clear">Очистить</string>
     <string name="filter_request">Запрос</string>
     <string name="playback_channel_name">Вопроизведение аудиокниг в AFinity</string>
@@ -592,7 +592,7 @@
     <string name="dialog_disconnect_audiobookshelf_message">Отключение удалит ваши настройки Audiobookshelf. Переподключение доступно в любой момент.</string>
     <string name="error_audiobookshelf_logout_failed_fmt">Не удалось отключиться от Audiobookshelf: %1$s</string>
     <string name="notification_permission_title">Включить уведомления</string>
-    <string name="notification_permission_message">AFinity нужно разрешение на отправку уведомлений, чтобы отобразить плеер в вашей панели уведомлений и на экране блокировки во время прослушивания аудиокниг или подкастов.\n\nЕсли вы передумаете, разрешение можно дать вручную через меню О приложении → Разрешения → Уведомления.</string>
+    <string name="notification_permission_message">AFinity использует уведомления для управления воспроизведением музыки и аудиокниг (на экране блокировки и панели уведомлений), и для оповещений о доступных обновлениях.\n\nЕсли вы передумаете, разрешение можно дать вручную через меню О приложении → Разрешения → Уведомления.</string>
     <string name="notification_permission_yes">Разрешить</string>
     <string name="notification_permission_no">Нет, спасибо</string>
     <string name="pref_downloads">Загрузки</string>
@@ -996,4 +996,23 @@
     <string name="dialog_quickconnect_title">Быстрое подключение</string>
     <string name="pref_authorize_quickconnect_summary">Авторизация входа на другом устройстве</string>
     <string name="pref_authorize_quickconnect">Быстрое подключение</string>
+    <string name="section_download_music">МУЗЫКА</string>
+    <string name="pref_max_concurrent_downloads">Максимум параллельных загрузок</string>
+    <string name="download_unavailable_delete_confirm">Удалить из списка</string>
+    <string name="download_unavailable_delete_message">Эта загрузка находится в неподключенном хранилище, а потому удалить файлы на данный момент нельзя. Все равно удалить ее из списка? Файлы останутся в хранилище при переподключении.</string>
+    <string name="download_unavailable_delete_title">Хранилище недоступно</string>
+    <string name="download_unavailable_indicator">Загружено — хранилище недоступно</string>
+    <string name="download_unavailable_label">Недоступно — %1$s удалено</string>
+    <string name="storage_unavailable_used_fmt">%1$s использовано • хранилище не подключено</string>
+    <string name="storage_unavailable_badge">Недоступно</string>
+    <string name="storage_unavailable_volume">Недоступное хранилище</string>
+    <string name="storage_set_as_default">Установить по умолчанию</string>
+    <string name="storage_default_badge">По умолчанию</string>
+    <string name="storage_usage_combined_fmt">%1$s использовано здесь • %2$s свободно из %3$s</string>
+    <string name="storage_free_of_total_fmt">%1$s свободно из %2$s</string>
+    <string name="storage_used_on_volume_fmt">%1$s использовано на этом сервере</string>
+    <string name="section_storage_locations">РАСПОЛОЖЕНИЯ ХРАНИЛИЩ</string>
+    <string name="music_playback_channel_name">Воспроизведение музыки в AFinity</string>
+    <string name="download_location_section">Место хранения</string>
+    <string name="media_route_menu_title">Транслировать</string>
 </resources>
