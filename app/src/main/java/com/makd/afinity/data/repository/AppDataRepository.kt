@@ -265,10 +265,11 @@ constructor(
                 } catch (e: Exception) {
                     Timber.e(e, "Carousel fetch failed on cache-hit path, proceeding without it")
                 }
+                updateProgress(0.5f, context.getString(R.string.loading_phase_fetching))
+                startLiveDataCollectors()
+                performBackgroundNetworkRefresh(cacheKey)
                 updateProgress(1f, context.getString(R.string.loading_phase_ready))
                 _isInitialDataLoaded.value = true
-                startLiveDataCollectors()
-                scope.launch { performBackgroundNetworkRefresh(cacheKey) }
                 return
             }
         }
