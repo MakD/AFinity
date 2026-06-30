@@ -65,6 +65,8 @@ fun MusicBrowseScreen(
     var showAddToPlaylist by remember { mutableStateOf(false) }
     var radioSeed by remember { mutableStateOf<RadioSeed?>(null) }
 
+    val lazyGenres = viewModel.genresPagingFlow.collectAsLazyPagingItems()
+
     val lazyTracks = viewModel.tracksPagingFlow.collectAsLazyPagingItems()
     val lazyAlbums = viewModel.albumsPagingFlow.collectAsLazyPagingItems()
     val lazyArtists = viewModel.artistsPagingFlow.collectAsLazyPagingItems()
@@ -73,6 +75,7 @@ fun MusicBrowseScreen(
     val albumsGridState = rememberLazyGridState()
     val artistsGridState = rememberLazyGridState()
     val playlistsGridState = rememberLazyGridState()
+    val genresGridState = rememberLazyGridState()
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -198,6 +201,17 @@ fun MusicBrowseScreen(
                     onDownload = { track -> viewModel.downloadTrack(track.id) },
                     downloadedTrackIds =
                         viewModel.trackDownloadInfos.collectAsStateWithLifecycle().value.keys,
+                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                )
+            LibraryFilter.Genres ->
+                GenresGrid(
+                    gridState = genresGridState,
+                    genres = lazyGenres,
+                    onGenreClick = { genre ->
+                        navController.navigate(
+                            Destination.createMusicGenreRoute(genre.name, genre.imageUrl, genre.id)
+                        )
+                    },
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
                 )
             LibraryFilter.Home -> Unit

@@ -1214,6 +1214,7 @@
     <string name="music_tab_artists">Artists</string>
     <string name="music_tab_albums">Albums</string>
     <string name="music_tab_tracks">Tracks</string>
+    <string name="music_tab_genres">Genres</string>
     <!-- Actions -->
     <string name="music_action_shuffle">Shuffle</string>
     <string name="music_action_play_all">Play All</string>
@@ -1275,6 +1276,7 @@
     <string name="music_nav_artists">Artists</string>
     <string name="music_nav_albums">Albums</string>
     <string name="music_nav_tracks">Tracks</string>
+    <string name="music_nav_genres">Genres</string>
     <!-- Radio Modes -->
     <string name="music_radio_mode_similar">Similar</string>
     <string name="music_radio_mode_similar_desc">Plays tracks similar to the seed, sourced from Jellyfin\'s Instant Mix</string>

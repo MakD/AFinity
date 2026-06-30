@@ -14,11 +14,13 @@ import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
+import com.makd.afinity.data.models.music.AfinityMusicGenre
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicFilters
 import com.makd.afinity.data.paging.MusicAlbumsPagingSource
 import com.makd.afinity.data.paging.MusicArtistsPagingSource
+import com.makd.afinity.data.paging.MusicGenresPagingSource
 import com.makd.afinity.data.paging.MusicTracksPagingSource
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
@@ -203,6 +205,13 @@ constructor(
     private val _artistFilters = MutableStateFlow(MusicFilters())
     val artistFilters: StateFlow<MusicFilters> = _artistFilters.asStateFlow()
 
+    val genresPagingFlow: Flow<PagingData<AfinityMusicGenre>> =
+        Pager(PagingConfig(pageSize = MusicGenresPagingSource.PAGE_SIZE, prefetchDistance = PREFETCH_DISTANCE)) {
+            MusicGenresPagingSource(musicRepository = musicRepository, libraryId = libraryId)
+        }
+            .flow
+            .cachedIn(viewModelScope)
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val tracksPagingFlow: Flow<PagingData<AfinityTrack>> =
         combine(_trackSort, _trackFilters) { sort, filters -> Pair(sort, filters) }
@@ -368,7 +377,7 @@ constructor(
 
         val seedRecentTracks: List<AfinityTrack>
         val seedRecentAlbums: List<AfinityAlbum>
-        val seedGenres: List<String>
+        val seedGenres: List<AfinityMusicGenre>
 
         coroutineScope {
             val recentTracksJob = async {
@@ -471,8 +480,8 @@ constructor(
                                 async {
                                     runCatching {
                                         val albums =
-                                            musicRepository.getAlbumsByGenre(genre, limit = 15)
-                                        if (albums.isNotEmpty()) genre to albums else null
+                                            musicRepository.getAlbumsByGenre(genre.name, limit = 15)
+                                        if (albums.isNotEmpty()) genre.name to albums else null
                                     }
                                         .getOrNull()
                                 }
@@ -507,8 +516,8 @@ constructor(
                                 async {
                                     runCatching {
                                         val tracks =
-                                            musicRepository.getTracksByGenre(genre, limit = 15)
-                                        if (tracks.isNotEmpty()) genre to tracks else null
+                                            musicRepository.getTracksByGenre(genre.name, limit = 15)
+                                        if (tracks.isNotEmpty()) genre.name to tracks else null
                                     }
                                         .getOrNull()
                                 }
@@ -613,10 +622,10 @@ constructor(
                                     runCatching {
                                         val albums =
                                             musicRepository.getRecentlyAddedAlbumsByGenre(
-                                                genre,
+                                                genre.name,
                                                 limit = 12,
                                             )
-                                        if (albums.isNotEmpty()) genre to albums else null
+                                        if (albums.isNotEmpty()) genre.name to albums else null
                                     }
                                         .getOrNull()
                                 }
@@ -644,11 +653,11 @@ constructor(
                     seedGenres.take(2).forEach { genre ->
                         runCatching {
                             val genreAlbum =
-                                musicRepository.getAlbumsByGenre(genre, limit = 5).randomOrNull()
+                                musicRepository.getAlbumsByGenre(genre.name, limit = 5).randomOrNull()
                             if (genreAlbum != null) {
                                 val tracks =
                                     musicRepository.getInstantMix(genreAlbum.id, limit = 25)
-                                if (tracks.isNotEmpty()) sections.add("$genre Radio" to tracks)
+                                if (tracks.isNotEmpty()) sections.add("${genre.name} Radio" to tracks)
                             }
                         }
                     }

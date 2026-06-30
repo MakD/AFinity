@@ -3,6 +3,7 @@ package com.makd.afinity.data.repository.music
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityLyricLine
+import com.makd.afinity.data.models.music.AfinityMusicGenre
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicFilters
@@ -90,9 +91,13 @@ interface MusicRepository {
 
     suspend fun getRecentlyAddedAlbums(limit: Int = 15): List<AfinityAlbum>
 
-    suspend fun getMusicGenres(limit: Int = 10): List<String>
+    suspend fun getMusicGenres(limit: Int = 10): List<AfinityMusicGenre>
+
+    suspend fun getAllMusicGenres(libraryId: UUID? = null, startIndex: Int = 0, limit: Int = 100): List<AfinityMusicGenre>
 
     suspend fun getAlbumsByGenre(genreName: String, limit: Int = 15): List<AfinityAlbum>
+
+    suspend fun getArtistsByGenre(genreName: String, limit: Int = 30): List<AfinityArtist>
 
     suspend fun getRecentlyAddedAlbumsByGenre(genreName: String, limit: Int = 12): List<AfinityAlbum>
 

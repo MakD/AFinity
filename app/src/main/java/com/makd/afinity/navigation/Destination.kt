@@ -1,6 +1,7 @@
 package com.makd.afinity.navigation
 
 import com.makd.afinity.R
+import java.net.URLEncoder
 
 enum class Destination(
     val route: String,
@@ -85,6 +86,17 @@ enum class Destination(
         const val MUSIC_ARTIST_ROUTE = "music/artist/{artistId}"
         const val MUSIC_PLAYLIST_ROUTE = "music/playlist/{playlistId}"
         const val MUSIC_PLAYER_ROUTE = "music/player"
+        const val MUSIC_GENRE_ROUTE = "music/genre/{genreName}?imageUrl={imageUrl}&genreId={genreId}"
+
+        fun createMusicGenreRoute(genreName: String, imageUrl: String? = null, genreId: java.util.UUID? = null): String {
+            val encodedName = genreName.replace("/", "%2F")
+            val params = buildList {
+                if (imageUrl != null) add("imageUrl=${URLEncoder.encode(imageUrl, "UTF-8")}")
+                if (genreId != null) add("genreId=$genreId")
+            }
+            return if (params.isEmpty()) "music/genre/$encodedName"
+            else "music/genre/$encodedName?${params.joinToString("&")}"
+        }
 
         fun createMusicLibraryRoute(libraryId: String, libraryName: String): String =
             "music/library/$libraryId/${libraryName.replace("/", "%2F")}"

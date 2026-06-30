@@ -76,6 +76,7 @@ import com.makd.afinity.ui.login.LoginScreen
 import com.makd.afinity.ui.main.MainViewModel
 import com.makd.afinity.ui.music.album.MusicAlbumScreen
 import com.makd.afinity.ui.music.artist.MusicArtistScreen
+import com.makd.afinity.ui.music.genre.MusicGenreScreen
 import com.makd.afinity.ui.music.library.LibraryFilter
 import com.makd.afinity.ui.music.library.MusicBrowseScreen
 import com.makd.afinity.ui.music.library.MusicLibraryScreen
@@ -187,6 +188,7 @@ fun MainNavigation(
                 !route.startsWith("music/library/") &&
                 !route.startsWith("music/album/") &&
                 !route.startsWith("music/artist/") &&
+                !route.startsWith("music/genre/") &&
                 !route.startsWith("music/playlist/") &&
                 route != "music/player"
         } ?: true
@@ -1052,6 +1054,26 @@ fun MainNavigation(
                                         ),
                                 ) {
                                     MusicPlaylistScreen(navController = navController)
+                                }
+
+                                composable(
+                                    route = Destination.MUSIC_GENRE_ROUTE,
+                                    arguments =
+                                        listOf(
+                                            navArgument("genreName") { type = NavType.StringType },
+                                            navArgument("imageUrl") {
+                                                type = NavType.StringType
+                                                nullable = true
+                                                defaultValue = null
+                                            },
+                                            navArgument("genreId") {
+                                                type = NavType.StringType
+                                                nullable = true
+                                                defaultValue = null
+                                            },
+                                        ),
+                                ) {
+                                    MusicGenreScreen(navController = navController)
                                 }
 
                                 composable(Destination.AUDIOBOOKSHELF_LIBRARIES_ROUTE) {

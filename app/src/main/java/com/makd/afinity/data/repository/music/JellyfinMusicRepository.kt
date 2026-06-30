@@ -1,5 +1,6 @@
 package com.makd.afinity.data.repository.music
 
+import androidx.core.net.toUri
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.extensions.toAfinityAlbum
@@ -10,6 +11,7 @@ import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityLyricLine
+import com.makd.afinity.data.models.music.AfinityMusicGenre
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicFilters
@@ -298,10 +300,7 @@ constructor(
                             favorite = false,
                             playCount = null,
                             normalizationGain = null,
-                            images =
-                                com.makd.afinity.data.models.media.AfinityImages(
-                                    primary = dl.imageUrl?.let { android.net.Uri.parse(it) }
-                                ),
+                            images = AfinityImages(primary = dl.imageUrl?.toUri()),
                             localFilePath = dl.filePath?.let { toFileUri(it) },
                         )
                     }
@@ -722,15 +721,19 @@ constructor(
     override suspend fun getSimilarAlbums(itemId: UUID, limit: Int): List<AfinityAlbum> =
         withContext(Dispatchers.IO) {
             try {
-                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
+                val apiClient =
+                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
                 val userId = getCurrentUserId() ?: return@withContext emptyList()
                 val baseUrl = getBaseUrlInternal()
-                val response = org.jellyfin.sdk.api.operations.LibraryApi(apiClient).getSimilarItems(
-                    itemId = itemId,
-                    userId = userId,
-                    limit = limit,
-                    fields = FieldSets.MUSIC_ALBUM,
-                )
+                val response =
+                    org.jellyfin.sdk.api.operations
+                        .LibraryApi(apiClient)
+                        .getSimilarItems(
+                            itemId = itemId,
+                            userId = userId,
+                            limit = limit,
+                            fields = FieldSets.MUSIC_ALBUM,
+                        )
                 response.content.items
                     .filter { it.type == BaseItemKind.MUSIC_ALBUM }
                     .mapNotNull { runCatching { it.toAfinityAlbum(baseUrl) }.getOrNull() }
@@ -921,12 +924,13 @@ constructor(
             }
         }
 
-    override suspend fun getMusicGenres(limit: Int): List<String> =
+    override suspend fun getMusicGenres(limit: Int): List<AfinityMusicGenre> =
         withContext(Dispatchers.IO) {
             try {
                 val apiClient =
                     sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
                 val userId = getCurrentUserId() ?: return@withContext emptyList()
+                val baseUrl = getBaseUrlInternal()
 
                 val response =
                     GenresApi(apiClient)
@@ -934,17 +938,79 @@ constructor(
                             userId = userId,
                             includeItemTypes = listOf(BaseItemKind.AUDIO, BaseItemKind.MUSIC_ALBUM),
                             sortBy = listOf(ItemSortBy.SORT_NAME),
-                            sortOrder = listOf(SortOrder.DESCENDING),
+                            sortOrder = listOf(SortOrder.ASCENDING),
                             limit = limit,
-                            enableImages = false,
+                            enableImages = true,
                             enableTotalRecordCount = false,
                         )
-                response.content.items.mapNotNull { it.name?.takeIf { n -> n.isNotBlank() } }
+                response.content.items.mapNotNull { dto ->
+                    val name = dto.name?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                    val id = dto.id ?: return@mapNotNull null
+                    val imageUrl =
+                        dto.imageTags?.get(org.jellyfin.sdk.model.api.ImageType.PRIMARY)?.let { tag
+                            ->
+                            baseUrl
+                                .trimEnd('/')
+                                .toUri()
+                                .buildUpon()
+                                .appendEncodedPath("Items/$id/Images/Primary")
+                                .appendQueryParameter("tag", tag)
+                                .build()
+                                .toString()
+                        }
+                    AfinityMusicGenre(id = id, name = name, imageUrl = imageUrl)
+                }
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to fetch music genres")
                 emptyList()
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error fetching music genres")
+                emptyList()
+            }
+        }
+
+    override suspend fun getAllMusicGenres(libraryId: UUID?, startIndex: Int, limit: Int): List<AfinityMusicGenre> =
+        withContext(Dispatchers.IO) {
+            try {
+                val apiClient =
+                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
+                val userId = getCurrentUserId() ?: return@withContext emptyList()
+                val baseUrl = getBaseUrlInternal()
+
+                val response =
+                    GenresApi(apiClient)
+                        .getGenres(
+                            userId = userId,
+                            parentId = libraryId,
+                            sortBy = listOf(ItemSortBy.SORT_NAME),
+                            sortOrder = listOf(SortOrder.ASCENDING),
+                            enableImages = true,
+                            enableTotalRecordCount = false,
+                            startIndex = startIndex,
+                            limit = limit,
+                        )
+                response.content.items.mapNotNull { dto ->
+                    val name = dto.name?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                    val id = dto.id ?: return@mapNotNull null
+                    val imageUrl =
+                        dto.imageTags?.get(org.jellyfin.sdk.model.api.ImageType.PRIMARY)?.let { tag
+                            ->
+                            baseUrl
+                                .trimEnd('/')
+                                .toUri()
+                                .buildUpon()
+                                .appendEncodedPath("Items/$id/Images/Primary")
+                                .appendQueryParameter("tag", tag)
+                                .build()
+                                .toString()
+                        }
+                    AfinityMusicGenre(id = id, name = name, imageUrl = imageUrl)
+                }
+            } catch (e: ApiClientException) {
+                Timber.e(e, "Failed to fetch all music genres")
+                emptyList()
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error fetching all music genres")
                 emptyList()
             }
         }
@@ -977,6 +1043,37 @@ constructor(
                 emptyList()
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error fetching albums for genre: $genreName")
+                emptyList()
+            }
+        }
+
+    override suspend fun getArtistsByGenre(genreName: String, limit: Int): List<AfinityArtist> =
+        withContext(Dispatchers.IO) {
+            try {
+                val apiClient =
+                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
+                val userId = getCurrentUserId() ?: return@withContext emptyList()
+                val baseUrl = getBaseUrlInternal()
+
+                val response =
+                    ArtistsApi(apiClient)
+                        .getAlbumArtists(
+                            userId = userId,
+                            genres = listOf(genreName),
+                            sortBy = listOf(ItemSortBy.SORT_NAME),
+                            sortOrder = listOf(SortOrder.ASCENDING),
+                            limit = limit,
+                            fields = FieldSets.MUSIC_ARTIST,
+                            enableUserData = true,
+                        )
+                response.content.items.mapNotNull { dto ->
+                    runCatching { dto.toAfinityArtist(baseUrl) }.getOrNull()
+                }
+            } catch (e: ApiClientException) {
+                Timber.e(e, "Failed to fetch artists for genre: $genreName")
+                emptyList()
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error fetching artists for genre: $genreName")
                 emptyList()
             }
         }

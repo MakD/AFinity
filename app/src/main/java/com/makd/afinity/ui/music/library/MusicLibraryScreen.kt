@@ -99,6 +99,7 @@ import androidx.paging.compose.itemKey
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
+import com.makd.afinity.data.models.music.AfinityMusicGenre
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicFilters
@@ -115,6 +116,7 @@ import com.makd.afinity.ui.home.components.MusicAlbumRowSection
 import com.makd.afinity.ui.home.components.MusicGenreHomeSection
 import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.music.components.MusicArtistCard
+import com.makd.afinity.ui.music.components.MusicGenreCard
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.theme.CardDimensions
@@ -130,6 +132,7 @@ enum class LibraryFilter(@StringRes val displayNameRes: Int) {
     Artists(R.string.music_tab_artists),
     Albums(R.string.music_tab_albums),
     Tracks(R.string.music_tab_tracks),
+    Genres(R.string.music_tab_genres),
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -478,6 +481,39 @@ internal fun PlaylistsGrid(
                         images = playlist.images,
                     ),
                 onClick = { onPlaylistClick(playlist) },
+            )
+        }
+    }
+}
+
+@Composable
+internal fun GenresGrid(
+    gridState: LazyGridState,
+    genres: LazyPagingItems<AfinityMusicGenre>,
+    onGenreClick: (AfinityMusicGenre) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val isInitialLoading = genres.loadState.refresh is LoadState.Loading && genres.itemCount == 0
+    if (isInitialLoading) {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            FullScreenLoading()
+        }
+        return
+    }
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(150.dp),
+        state = gridState,
+        contentPadding = PaddingValues(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = modifier.fillMaxSize(),
+    ) {
+        items(count = genres.itemCount, key = genres.itemKey { it.id }) { index ->
+            val genre = genres[index] ?: return@items
+            MusicGenreCard(
+                genre = genre,
+                index = index,
+                onClick = { onGenreClick(genre) },
             )
         }
     }
@@ -1099,6 +1135,13 @@ private fun LibraryShortcutsRow(
                 iconRes = R.drawable.ic_file_music,
                 gradientStart = Color(0xFFAED1AE),
                 gradientEnd = Color(0xFF4F7E70),
+            ),
+            LibraryShortcut(
+                filter = LibraryFilter.Genres,
+                labelRes = R.string.music_nav_genres,
+                iconRes = R.drawable.ic_genre,
+                gradientStart = Color(0xFFD4A5C9),
+                gradientEnd = Color(0xFF7B4F8C),
             ),
         )
     }
