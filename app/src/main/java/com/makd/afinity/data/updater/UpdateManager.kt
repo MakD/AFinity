@@ -13,11 +13,10 @@ import com.makd.afinity.BuildConfig
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.updater.models.GitHubRelease
 import com.makd.afinity.data.updater.models.UpdateState
+import com.makd.afinity.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,6 +35,7 @@ constructor(
     @param:ApplicationContext private val context: Context,
     private val gitHubApiService: GitHubApiService,
     private val preferencesRepository: PreferencesRepository,
+    @ApplicationScope private val coroutineScope: CoroutineScope,
 ) {
     private val _updateState = MutableStateFlow<UpdateState>(UpdateState.Idle)
     val updateState: StateFlow<UpdateState> = _updateState.asStateFlow()
@@ -45,7 +45,7 @@ constructor(
     private val downloadManager =
         context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
     private var progressJob: Job? = null
-    private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var receiverRegistered = false
 
     private val downloadReceiver =
         object : BroadcastReceiver() {
@@ -65,13 +65,22 @@ constructor(
             }
         }
 
-    init {
+    private fun registerDownloadReceiver() {
+        if (receiverRegistered) return
         context.registerReceiver(
             downloadReceiver,
             IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
             Context.RECEIVER_NOT_EXPORTED,
         )
-        Timber.d("UpdateManager initialized, download receiver registered")
+        receiverRegistered = true
+        Timber.d("Download receiver registered")
+    }
+
+    private fun unregisterDownloadReceiver() {
+        if (!receiverRegistered) return
+        context.unregisterReceiver(downloadReceiver)
+        receiverRegistered = false
+        Timber.d("Download receiver unregistered")
     }
 
     suspend fun checkForUpdates(): GitHubRelease? {
@@ -151,6 +160,7 @@ constructor(
                     )
                     .setMimeType("application/vnd.android.package-archive")
 
+            registerDownloadReceiver()
             currentDownloadId = downloadManager.enqueue(request)
             _updateState.value = UpdateState.Downloading(0)
 
@@ -339,6 +349,7 @@ constructor(
         }
         cursor.close()
         currentDownloadId = null
+        unregisterDownloadReceiver()
     }
 
     private fun getDownloadedApkFile(release: GitHubRelease): File? {

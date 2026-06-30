@@ -6,9 +6,8 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.di.ApplicationScope
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
@@ -26,8 +25,8 @@ constructor(
     private val databaseRepository: DatabaseRepository,
     private val sessionManager: SessionManager,
     private val mediaRefreshBus: MediaRefreshBus,
+    @ApplicationScope private val scope: CoroutineScope,
 ) {
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private val _mediaChanges = MutableSharedFlow<MediaChangeEvent>(extraBufferCapacity = 64)
     val mediaChanges = _mediaChanges.asSharedFlow()

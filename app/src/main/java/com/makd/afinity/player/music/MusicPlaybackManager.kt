@@ -4,10 +4,9 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicPlaybackState
 import com.makd.afinity.data.models.music.RepeatMode
+import com.makd.afinity.di.ApplicationScope
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,9 +17,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class MusicPlaybackManager @Inject constructor() {
-
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+class MusicPlaybackManager
+@Inject
+constructor(@ApplicationScope private val scope: CoroutineScope) {
 
     private val _state = MutableStateFlow(MusicPlaybackState())
     val state: StateFlow<MusicPlaybackState> = _state.asStateFlow()

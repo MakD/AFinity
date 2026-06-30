@@ -3,11 +3,11 @@ package com.makd.afinity.data.repository.server
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,6 +38,7 @@ constructor(
     private val databaseRepository: DatabaseRepository,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
     private val serverAddressResolverProvider: Provider<ServerAddressResolver>,
+    @ApplicationScope private val scope: CoroutineScope,
 ) : ServerRepository {
 
     private val sessionManager: SessionManager
@@ -54,8 +55,6 @@ constructor(
 
     private val _currentServer = MutableStateFlow<Server?>(null)
     override val currentServer: StateFlow<Server?> = _currentServer.asStateFlow()
-
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     init {
         scope.launch {

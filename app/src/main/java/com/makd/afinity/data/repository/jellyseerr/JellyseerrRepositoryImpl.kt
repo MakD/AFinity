@@ -25,11 +25,11 @@ import com.makd.afinity.data.network.JellyseerrApiService
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.RequestEvent
 import com.makd.afinity.data.repository.SecurePreferencesRepository
+import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Lazy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
@@ -61,6 +61,7 @@ constructor(
     private val database: AfinityDatabase,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
     private val addressResolver: JellyseerrAddressResolver,
+    @ApplicationScope private val repositoryScope: CoroutineScope,
 ) : JellyseerrRepository {
 
     private val jellyseerrDao = database.jellyseerrDao()
@@ -75,8 +76,6 @@ constructor(
     override val requestEvents: SharedFlow<RequestEvent> = _requestEvents.asSharedFlow()
 
     private var activeContext: Pair<String, UUID>? = null
-
-    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     companion object {
         private const val CACHE_VALIDITY_MS = 5 * 60 * 1000L
@@ -504,7 +503,8 @@ constructor(
                                             requestedByName =
                                                 base.requestedByName ?: existing.requestedByName,
                                             requestedByAvatar =
-                                                base.requestedByAvatar ?: existing.requestedByAvatar,
+                                                base.requestedByAvatar
+                                                    ?: existing.requestedByAvatar,
                                         )
                                 }
                             )

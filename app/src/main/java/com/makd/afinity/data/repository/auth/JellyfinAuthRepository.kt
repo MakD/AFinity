@@ -6,9 +6,9 @@ import com.makd.afinity.data.models.auth.QuickConnectState
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
+import com.makd.afinity.di.ApplicationScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -39,9 +39,8 @@ constructor(
     private val sessionManager: SessionManager,
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val databaseRepository: DatabaseRepository,
+    @ApplicationScope private val scope: CoroutineScope,
 ) : AuthRepository {
-
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     override val currentUser: StateFlow<User?> by lazy {
         sessionManager.currentSession.map { it?.user }.stateIn(scope, SharingStarted.Eagerly, null)
@@ -93,23 +92,28 @@ constructor(
                         return@withContext AuthRepository.RestoreResult.Failed
                     }
 
-                val startResult = sessionManager.startSession(
-                    serverUrl = serverUrl,
-                    serverId = serverId ?: "",
-                    userId = userUuid,
-                    accessToken = accessToken,
-                )
+                val startResult =
+                    sessionManager.startSession(
+                        serverUrl = serverUrl,
+                        serverId = serverId ?: "",
+                        userId = userUuid,
+                        accessToken = accessToken,
+                    )
 
                 val startFailure = startResult.exceptionOrNull()
                 if (startFailure != null) {
-                    val is401 = startFailure is InvalidStatusException && startFailure.status == 401
-                        || startFailure.message?.contains("401") == true
+                    val is401 =
+                        startFailure is InvalidStatusException && startFailure.status == 401 ||
+                            startFailure.message?.contains("401") == true
                     if (is401) {
                         Timber.e("Token rejected by server (401) - Logging out")
                         clearAllAuthData()
                         return@withContext AuthRepository.RestoreResult.Failed
                     }
-                    Timber.w(startFailure, "SessionManager start failed during restore (server unreachable)")
+                    Timber.w(
+                        startFailure,
+                        "SessionManager start failed during restore (server unreachable)",
+                    )
                     return@withContext AuthRepository.RestoreResult.Degraded(startFailure)
                 }
 

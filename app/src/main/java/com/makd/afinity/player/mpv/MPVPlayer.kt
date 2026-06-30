@@ -796,6 +796,7 @@ class MPVPlayer(
     }
 
     override fun release() {
+        if (isReleased) return
         isReleased = true
         handler.removeCallbacksAndMessages(null)
         if (handleAudioFocus) {

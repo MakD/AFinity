@@ -23,7 +23,6 @@ import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSiz
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -87,12 +86,12 @@ class MainActivity : AppCompatActivity() {
             @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
             val windowSize = calculateWindowSizeClass(this)
             val themeMode by
-                preferencesRepository.getThemeModeFlow().collectAsState(initial = "SYSTEM")
+                preferencesRepository.getThemeModeFlow().collectAsStateWithLifecycle(initialValue ="SYSTEM")
             val dynamicColors by
-                preferencesRepository.getDynamicColorsFlow().collectAsState(initial = true)
+                preferencesRepository.getDynamicColorsFlow().collectAsStateWithLifecycle(initialValue =true)
 
             val appFont by
-                preferencesRepository.getAppFontFlow().collectAsState(initial = "DEFAULT")
+                preferencesRepository.getAppFontFlow().collectAsStateWithLifecycle(initialValue ="DEFAULT")
             AFinityTheme(themeMode = themeMode, dynamicColor = dynamicColors, appFont = appFont) {
                 val windowInsetsController =
                     WindowCompat.getInsetsController(window, window.decorView)
@@ -118,7 +117,7 @@ class MainActivity : AppCompatActivity() {
                     widthSizeClass = windowSize.widthSizeClass,
                 )
 
-                val showRationale by showNotificationRationale.collectAsState()
+                val showRationale by showNotificationRationale.collectAsStateWithLifecycle()
                 if (showRationale) {
                     AlertDialog(
                         onDismissRequest = {

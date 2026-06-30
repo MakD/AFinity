@@ -10,10 +10,10 @@ import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.server.AddressResolutionResult
 import com.makd.afinity.data.repository.server.ServerAddressResolver
 import com.makd.afinity.data.repository.server.ServerRepository
+import com.makd.afinity.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,6 +53,7 @@ constructor(
     private val okHttpFactory: OkHttpFactory,
     private val jellyfin: Jellyfin,
     @param:ApplicationContext private val context: Context,
+    @ApplicationScope private val sessionScope: CoroutineScope,
 ) {
     private val _currentSession = MutableStateFlow<Session?>(null)
     val currentSession: StateFlow<Session?> = _currentSession.asStateFlow()
@@ -61,7 +62,6 @@ constructor(
     val isServerReachable: StateFlow<Boolean> = _isServerReachable.asStateFlow()
 
     private val apiClients = ConcurrentHashMap<String, ApiClient>()
-    private val sessionScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     suspend fun startSession(
         serverUrl: String,

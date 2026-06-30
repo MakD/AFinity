@@ -1,9 +1,8 @@
 package com.makd.afinity.data.syncplay
 
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.di.ApplicationScope
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -34,6 +33,7 @@ class SyncPlayRawWebSocket
 constructor(
     private val sessionManager: SessionManager,
     private val okHttpClient: OkHttpClient,
+    @ApplicationScope private val scope: CoroutineScope,
 ) {
     private val _groupEvents = MutableSharedFlow<SyncPlayGroupEvent>(extraBufferCapacity = 16)
     val groupEvents: SharedFlow<SyncPlayGroupEvent> = _groupEvents.asSharedFlow()
@@ -43,8 +43,6 @@ constructor(
 
     private val _commands = MutableSharedFlow<SendCommand>(extraBufferCapacity = 16)
     val commands: SharedFlow<SendCommand> = _commands.asSharedFlow()
-
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private val wsClient = okHttpClient.newBuilder().pingInterval(30, TimeUnit.SECONDS).build()
 

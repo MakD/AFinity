@@ -8,10 +8,9 @@ import com.makd.afinity.data.manager.MediaRefreshBus
 import com.makd.afinity.data.manager.RefreshTrigger
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.syncplay.SyncPlayGroupUpdate
+import com.makd.afinity.di.ApplicationScope
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -49,9 +48,10 @@ constructor(
     private val sessionManager: SessionManager,
     private val mediaChangeManager: MediaChangeManager,
     private val mediaRefreshBus: MediaRefreshBus,
+    @ApplicationScope private val scope: CoroutineScope,
 ) : DefaultLifecycleObserver {
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var connectionJob: Job? = null
+    private var reconnectJob: Job? = null
 
     private val _connectionState = MutableStateFlow(WebSocketState.DISCONNECTED)
     val connectionState: StateFlow<WebSocketState> = _connectionState.asStateFlow()
@@ -116,6 +116,8 @@ constructor(
     }
 
     fun disconnect() {
+        reconnectJob?.cancel()
+        reconnectJob = null
         connectionJob?.cancel()
         connectionJob = null
         _connectionState.value = WebSocketState.DISCONNECTED
@@ -262,7 +264,8 @@ constructor(
     private suspend fun handleServerRestarting() {
         Timber.w("Server is restarting")
         _connectionState.value = WebSocketState.SERVER_RESTARTING
-        scope.launch {
+        reconnectJob?.cancel()
+        reconnectJob = scope.launch {
             delay(20_000L)
             disconnect()
             connect()
@@ -272,7 +275,7 @@ constructor(
     private suspend fun handleServerShutdown() {
         Timber.w("Server is shutting down")
         _connectionState.value = WebSocketState.SERVER_SHUTDOWN
-        scope.launch { disconnect() }
+        disconnect()
     }
 
     private suspend fun subscribeToSyncPlayCommands(apiClient: ApiClient) {

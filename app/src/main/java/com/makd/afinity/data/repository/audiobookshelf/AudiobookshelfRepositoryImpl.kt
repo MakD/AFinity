@@ -38,12 +38,12 @@ import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.ItemWithProgress
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.SeriesItemsResult
+import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Lazy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
@@ -74,12 +74,11 @@ constructor(
     private val absSyncScheduler: AbsProgressSyncScheduler,
     private val audnexusApiService: AudnexusApiService,
     private val audibleRatingDao: AudibleRatingDao,
+    @ApplicationScope private val repositoryScope: CoroutineScope,
 ) : AudiobookshelfRepository {
 
     private val audiobookshelfDao = database.audiobookshelfDao()
     private val json = Json { ignoreUnknownKeys = true }
-
-    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _isAuthenticated = MutableStateFlow(false)
     override val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
@@ -645,8 +644,9 @@ constructor(
     override suspend fun getCachedItemMetadata(itemId: String): Triple<String, String?, String?>? {
         return withContext(Dispatchers.IO) {
             val (serverId, userId) = activeContext ?: return@withContext null
-            val entity = audiobookshelfDao.getItem(itemId, serverId, userId.toString())
-                ?: return@withContext null
+            val entity =
+                audiobookshelfDao.getItem(itemId, serverId, userId.toString())
+                    ?: return@withContext null
             Triple(entity.title, entity.authorName, entity.coverUrl)
         }
     }

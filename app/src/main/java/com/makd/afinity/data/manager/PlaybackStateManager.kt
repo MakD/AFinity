@@ -6,10 +6,9 @@ import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.data.sync.UserDataSyncScheduler
+import com.makd.afinity.di.ApplicationScope
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
@@ -29,8 +28,8 @@ constructor(
     private val syncScheduler: UserDataSyncScheduler,
     private val mediaChangeManager: MediaChangeManager,
     private val mediaRefreshBus: MediaRefreshBus,
+    @ApplicationScope private val scope: CoroutineScope,
 ) {
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private val _playbackEvents = MutableSharedFlow<PlaybackEvent>(replay = 1)
     val playbackEvents = _playbackEvents.asSharedFlow()
