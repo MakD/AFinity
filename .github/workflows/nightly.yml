@@ -1,0 +1,123 @@
+name: Nightly Build
+
+on:
+  schedule:
+    - cron: '30 19 * * *'  # 1:00 AM IST (UTC+5:30)
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.check.outputs.should_build }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for relevant commits
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "Manual trigger — skipping commit check"
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          else
+            CHANGED=$(git log --since="24 hours ago" --oneline -- \
+              app/src/ \
+              app/build.gradle.kts \
+              gradle/ \
+              build.gradle.kts \
+              settings.gradle.kts \
+              | wc -l)
+            echo "Relevant commits in last 24h: $CHANGED"
+            if [ "$CHANGED" -gt 0 ]; then
+              echo "should_build=true" >> $GITHUB_OUTPUT
+            else
+              echo "No relevant commits. Skipping nightly build."
+              echo "should_build=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+  build:
+    needs: check
+    if: needs.check.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build nightly APKs
+        run: ./gradlew assembleNightly
+
+      - name: Sign APKs
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
+          DATE=$(TZ=Asia/Kolkata date +%Y-%m-%d)
+          APKSIGNER=$(find "$ANDROID_SDK_ROOT/build-tools" -name "apksigner" | sort -V | tail -1)
+
+          for APK in app/build/outputs/apk/nightly/*.apk; do
+            ABI=$(basename "$APK" | grep -oP '(arm64-v8a|armeabi-v7a)')
+            OUT="AFinity-nightly-${DATE}-${ABI}.apk"
+            "$APKSIGNER" sign \
+              --ks keystore.jks \
+              --ks-pass pass:${{ secrets.STORE_PASSWORD }} \
+              --ks-key-alias ${{ secrets.KEY_ALIAS }} \
+              --key-pass pass:${{ secrets.KEY_PASSWORD }} \
+              --out "$OUT" \
+              "$APK"
+            echo "Signed: $OUT"
+          done
+
+          rm keystore.jks
+
+      - name: Build release notes
+        id: notes
+        run: |
+          DATE=$(TZ=Asia/Kolkata date +%Y-%m-%d)
+          echo "date=${DATE}" >> $GITHUB_OUTPUT
+
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            COMMITS=$(git log -15 --oneline --no-merges -- \
+              app/src/ app/build.gradle.kts gradle/ build.gradle.kts settings.gradle.kts)
+          else
+            COMMITS=$(git log --since="24 hours ago" --oneline --no-merges -- \
+              app/src/ app/build.gradle.kts gradle/ build.gradle.kts settings.gradle.kts)
+          fi
+
+          DELIMITER="EOF_$(date +%s)"
+          echo "commits<<$DELIMITER" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "$DELIMITER" >> $GITHUB_OUTPUT
+
+      - name: Publish pre-release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DATE="${{ steps.notes.outputs.date }}"
+          TAG="nightly-${DATE}"
+
+          # Replace if same-date release already exists (e.g. manual re-run)
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+
+          gh release create "$TAG" \
+            --title "Nightly ${DATE}" \
+            --notes "**Automated nightly build** — ${DATE} (IST)
+
+          ### Changes
+          \`\`\`
+          ${{ steps.notes.outputs.commits }}
+          \`\`\`
+
+          > ⚠️ Nightly builds may be unstable. Installs alongside the stable release." \
+            --prerelease \
+            AFinity-nightly-${DATE}-*.apk

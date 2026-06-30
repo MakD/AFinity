@@ -61,6 +61,11 @@ configure<ApplicationExtension> {
                 "proguard-rules.pro",
             )
         }
+        create("nightly") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".nightly"
+            resValue("string", "app_name", "AFinity Nightly")
+        }
     }
 
     splits {
