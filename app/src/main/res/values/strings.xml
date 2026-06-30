@@ -758,6 +758,7 @@
     <string name="version_fmt">%1$s (%2$s)</string>
     <string name="build_debug">Debug Build</string>
     <string name="build_release">Release Build</string>
+    <string name="build_nightly">Nightly Build</string>
 
     <string name="pref_licenses">Licenses</string>
     <string name="pref_licenses_summary">Open source libraries</string>
@@ -1193,4 +1194,115 @@
     <string name="admin_images_on_server">Current Images</string>
     <string name="admin_images_from_providers">Available from Providers</string>
     <string name="cd_admin_no_image">No image placeholder</string>
+
+    <!--Music Player / Library-->
+    <!-- Sort Options -->
+    <string name="music_sort_name_az">A → Z</string>
+    <string name="music_sort_name_za">Z → A</string>
+    <string name="music_sort_recently_added">Recently Added</string>
+    <string name="music_sort_recently_played">Recently Played</string>
+    <string name="music_sort_most_played">Most Played</string>
+    <string name="music_sort_by_year">By Year</string>
+    <string name="music_sort_duration">Duration</string>
+    <string name="music_sort_by_album">By Album</string>
+    <string name="music_sort_by_artist">By Artist</string>
+    <string name="music_sort_track_number">Track Number</string>
+    <string name="music_sort_random">Random</string>
+    <!-- Library Tabs -->
+    <string name="music_tab_home">Home</string>
+    <string name="music_tab_playlists">Playlists</string>
+    <string name="music_tab_artists">Artists</string>
+    <string name="music_tab_albums">Albums</string>
+    <string name="music_tab_tracks">Tracks</string>
+    <!-- Actions -->
+    <string name="music_action_shuffle">Shuffle</string>
+    <string name="music_action_play_all">Play All</string>
+    <string name="music_action_play_next">Play Next</string>
+    <string name="music_action_add_to_queue">Add to Queue</string>
+    <string name="music_action_add_to_playlist">Add to Playlist</string>
+    <string name="music_action_remove_from_playlist">Remove from Playlist</string>
+    <string name="music_action_instant_mix">Instant Mix</string>
+    <string name="music_action_start_radio">Start Radio</string>
+    <string name="music_action_browse">Browse</string>
+    <string name="music_action_start_radio_header">START RADIO</string>
+    <!-- Filter -->
+    <string name="music_filter_status">Status</string>
+    <string name="music_filter_unplayed">Unplayed</string>
+    <string name="music_filter_played">Played</string>
+    <!-- Sections -->
+    <string name="music_section_made_for_you">Made For You</string>
+    <string name="music_section_jump_back_in">Jump Back In</string>
+    <string name="music_section_recently_played_albums">Recently Played Albums</string>
+    <string name="music_section_recently_added">Recently Added</string>
+    <string name="music_section_favorite_artists">Favorite Artists</string>
+    <string name="music_section_top_artists">Your Top Artists</string>
+    <string name="music_section_top_rated">Top Rated</string>
+    <string name="music_section_artists_to_explore">Artists to Explore</string>
+    <string name="music_section_popular">Popular</string>
+    <string name="music_section_albums">Albums</string>
+    <string name="music_section_appears_on">Appears On</string>
+    <string name="music_section_most_played">Most Played</string>
+    <!-- Mixes -->
+    <string name="music_mix_surprise_me">Surprise Me</string>
+    <string name="music_mix_random">Random Mix</string>
+    <string name="music_mix_radio">Radio</string>
+    <string name="music_mix_instant_mix_genre_fmt">%1$s Songs</string>
+    <!-- Player -->
+    <string name="music_player_now_playing">NOW PLAYING</string>
+    <string name="music_player_nothing_playing">Nothing playing</string>
+    <string name="music_player_no_lyrics">No lyrics available</string>
+    <!-- Queue -->
+    <string name="music_queue_title">Queue</string>
+    <string name="music_queue_now_playing">Now Playing</string>
+    <string name="music_queue_next">Next In Queue</string>
+    <!-- Sleep Timer -->
+    <string name="music_sleep_timer_set_new">Set new timer</string>
+    <!-- Fallbacks -->
+    <string name="music_fallback_album">Album</string>
+    <string name="music_fallback_playlist">Playlist</string>
+    <!-- Playlist -->
+    <string name="music_delete_playlist_title">Delete Playlist</string>
+    <string name="music_new_playlist_title">New Playlist</string>
+    <string name="music_new_playlist_name_label">Playlist name</string>
+    <string name="music_playlist_public_label">Public</string>
+    <string name="music_playlist_visible_all">Visible to all users</string>
+    <string name="music_playlist_visible_only_you">Only visible to you</string>
+    <string name="action_create">Create</string>
+    <string name="action_back">Back</string>
+    <!-- Nav Shortcuts -->
+    <string name="music_nav_playlists">Playlists</string>
+    <string name="music_nav_artists">Artists</string>
+    <string name="music_nav_albums">Albums</string>
+    <string name="music_nav_tracks">Tracks</string>
+    <!-- Radio Modes -->
+    <string name="music_radio_mode_similar">Similar</string>
+    <string name="music_radio_mode_similar_desc">Plays tracks similar to the seed, sourced from Jellyfin\'s Instant Mix</string>
+    <string name="music_radio_mode_continuous">Continuous</string>
+    <string name="music_radio_mode_continuous_desc">Each new track is similar to the previous one, flowing naturally</string>
+    <string name="music_radio_mode_album_mix">Album Mix</string>
+    <string name="music_radio_mode_album_mix_desc">Queues full albums that are similar to the seed album</string>
+    <string name="music_radio_mode_reshuffle">Reshuffle</string>
+    <string name="music_radio_mode_reshuffle_desc">Reshuffles the source tracks on repeat, like shuffle-repeat</string>
+    <string name="music_radio_mode_random">Random</string>
+    <string name="music_radio_mode_random_desc">Picks tracks randomly from the source, duplicates allowed</string>
+    <!-- Accessibility -->
+    <string name="cd_music_minimize">Minimize</string>
+    <string name="cd_music_sleep_timer">Sleep timer</string>
+    <string name="cd_music_queue">Queue</string>
+    <string name="cd_music_add_to_playlist">Add to playlist</string>
+    <string name="cd_music_instant_mix">Instant Mix</string>
+    <string name="cd_music_start_radio">Start Radio</string>
+    <string name="cd_music_shuffle">Shuffle</string>
+    <string name="cd_music_repeat">Repeat</string>
+    <string name="cd_music_lyrics">Lyrics</string>
+    <string name="cd_music_go_to_home">Go to Home</string>
+    <string name="cd_music_now_playing">Now playing</string>
+    <string name="cd_music_more_options">More options</string>
+    <string name="cd_music_downloaded">Downloaded</string>
+    <string name="cd_music_drag_reorder">Drag to reorder</string>
+    <string name="cd_music_remove">Remove</string>
+    <string name="cd_music_seek_backward">Seek backward</string>
+    <string name="cd_music_seek_forward">Seek forward</string>
+    <string name="cd_music_filter">Filter</string>
+    <string name="cd_music_delete_playlist">Delete playlist</string>
 </resources>

@@ -12,6 +12,8 @@ object AppConstants {
 
     val IS_DEBUG: Boolean = BuildConfig.DEBUG
 
+    val IS_NIGHTLY: Boolean = BuildConfig.IS_NIGHTLY
+
     const val CLIENT_ICON_URL =
         "https://raw.githubusercontent.com/MakD/AFinity/refs/heads/master/screenshots/Logo/afinity_client_logo.png"
 }

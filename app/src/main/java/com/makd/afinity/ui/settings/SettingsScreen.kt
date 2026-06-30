@@ -682,9 +682,11 @@ fun SettingsScreen(
                                     endPadding = listEndPadding,
                                 ) {
                                     val buildType =
-                                        if (AppConstants.IS_DEBUG)
-                                            stringResource(R.string.build_debug)
-                                        else stringResource(R.string.build_release)
+                                        when {
+                                            AppConstants.IS_DEBUG -> stringResource(R.string.build_debug)
+                                            AppConstants.IS_NIGHTLY -> stringResource(R.string.build_nightly)
+                                            else -> stringResource(R.string.build_release)
+                                        }
                                     SettingsItem(
                                         icon = painterResource(id = R.drawable.ic_versions),
                                         title = stringResource(R.string.pref_version),
