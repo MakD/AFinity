@@ -86,11 +86,16 @@ constructor(
     suspend fun checkForUpdates(): GitHubRelease? {
         _updateState.value = UpdateState.Checking
 
-        val result = gitHubApiService.getLatestRelease()
+        val result =
+            if (BuildConfig.IS_NIGHTLY) gitHubApiService.getLatestPrereleaseRelease()
+            else gitHubApiService.getLatestRelease()
 
         return result.fold(
             onSuccess = { release ->
-                if (isNewerVersion(release.tagName)) {
+                val hasUpdate =
+                    if (BuildConfig.IS_NIGHTLY) isNewerNightlyTag(release.tagName)
+                    else isNewerVersion(release.tagName)
+                if (hasUpdate) {
                     currentRelease = release
                     val existingFile = getDownloadedApkFile(release)
                     if (existingFile != null) {
@@ -380,6 +385,12 @@ constructor(
                 .sortedByDescending { it.lastModified() }
 
         return matchingFiles.firstOrNull()?.also { Timber.d("Found existing download: ${it.name}") }
+    }
+
+    private fun isNewerNightlyTag(remoteTag: String): Boolean {
+        val remote = remoteTag.removePrefix("v")
+        val current = BuildConfig.VERSION_NAME
+        return remote != current
     }
 
     private fun isNewerVersion(remoteVersion: String): Boolean {

@@ -21,8 +21,10 @@ constructor(@param:GitHubClient private val okHttpClient: OkHttpClient) {
     }
 
     companion object {
-        private const val GITHUB_API_URL =
+        private const val GITHUB_LATEST_URL =
             "https://api.github.com/repos/MakD/AFinity/releases/latest"
+        private const val GITHUB_RELEASES_URL =
+            "https://api.github.com/repos/MakD/AFinity/releases"
         private const val USER_AGENT = "AFinity-Android-App"
     }
 
@@ -31,7 +33,7 @@ constructor(@param:GitHubClient private val okHttpClient: OkHttpClient) {
             try {
                 val request =
                     Request.Builder()
-                        .url(GITHUB_API_URL)
+                        .url(GITHUB_LATEST_URL)
                         .addHeader("Accept", "application/vnd.github.v3+json")
                         .addHeader("User-Agent", USER_AGENT)
                         .build()
@@ -51,10 +53,45 @@ constructor(@param:GitHubClient private val okHttpClient: OkHttpClient) {
 
                 val release = json.decodeFromString<GitHubRelease>(body)
 
-                Timber.d("Fetched latest release: ${release.tagName}")
+                Timber.d("Fetched latest stable release: ${release.tagName}")
                 Result.success(release)
             } catch (e: Exception) {
                 Timber.e(e, "Error fetching latest release")
+                Result.failure(e)
+            }
+        }
+
+    suspend fun getLatestPrereleaseRelease(): Result<GitHubRelease> =
+        withContext(Dispatchers.IO) {
+            try {
+                val request =
+                    Request.Builder()
+                        .url(GITHUB_RELEASES_URL)
+                        .addHeader("Accept", "application/vnd.github.v3+json")
+                        .addHeader("User-Agent", USER_AGENT)
+                        .build()
+
+                val response = okHttpClient.newCall(request).execute()
+
+                if (!response.isSuccessful) {
+                    Timber.e("GitHub API request failed: ${response.code}")
+                    return@withContext Result.failure(
+                        Exception("Failed to fetch releases: HTTP ${response.code}")
+                    )
+                }
+
+                val body =
+                    response.body?.string()
+                        ?: return@withContext Result.failure(Exception("Empty response body"))
+
+                val releases = json.decodeFromString<List<GitHubRelease>>(body)
+                val latest = releases.firstOrNull { it.prerelease && !it.draft }
+                    ?: return@withContext Result.failure(Exception("No nightly releases found"))
+
+                Timber.d("Fetched latest nightly release: ${latest.tagName}")
+                Result.success(latest)
+            } catch (e: Exception) {
+                Timber.e(e, "Error fetching nightly releases")
                 Result.failure(e)
             }
         }
