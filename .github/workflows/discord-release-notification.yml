@@ -4,6 +4,11 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag to notify about (leave empty for latest)'
+        required: false
+        default: ''
 
 jobs:
   notify:
@@ -39,9 +44,14 @@ jobs:
 
           else
             # --- MANUAL TRIGGER (Fetch via CURL) ---
-            
-            RELEASE_DATA=$(curl -s -H "Authorization: token ${{ github.token }}" \
-              "https://api.github.com/repos/${{ github.repository }}/releases/latest")
+
+            if [ -n "${{ github.event.inputs.release_tag }}" ]; then
+              RELEASE_DATA=$(curl -s -H "Authorization: token ${{ github.token }}" \
+                "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ github.event.inputs.release_tag }}")
+            else
+              RELEASE_DATA=$(curl -s -H "Authorization: token ${{ github.token }}" \
+                "https://api.github.com/repos/${{ github.repository }}/releases/latest")
+            fi
             
             echo "RELEASE_NAME=$(echo "$RELEASE_DATA" | jq -r '.name')" >> $GITHUB_ENV
             echo "RELEASE_TAG=$(echo "$RELEASE_DATA" | jq -r '.tag_name')" >> $GITHUB_ENV

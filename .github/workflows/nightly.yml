@@ -130,6 +130,14 @@ jobs:
             ```
             ${{ steps.info.outputs.commits }}
             ```
-
-            > ⚠️ Nightly builds may be unstable. Installs alongside the stable release.
+            > [!CAUTION]
+            > ⚠️ Nightly builds may be unstable. Expect Bugs. Installs alongside the stable release.
           files: AFinity-nightly-${{ steps.info.outputs.date }}-*.apk
+
+      - name: Notify Discord
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run discord-release-notification.yml \
+            --ref master \
+            -f release_tag=${{ steps.info.outputs.tag }}
