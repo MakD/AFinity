@@ -143,7 +143,13 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideDeviceInfo(@ApplicationContext context: Context): DeviceInfo = androidDevice(context)
+    fun provideDeviceInfo(@ApplicationContext context: Context): DeviceInfo {
+        val base = androidDevice(context)
+        return base.copy(
+            id = "${base.id}-${BuildConfig.APPLICATION_ID}",
+            name = "${base.name} (${BuildConfig.BUILD_TYPE})",
+        )
+    }
 
     @Provides
     @Singleton
