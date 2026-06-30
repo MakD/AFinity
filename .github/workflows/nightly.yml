@@ -42,6 +42,8 @@ jobs:
     needs: check
     if: needs.check.outputs.should_build == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -56,35 +58,31 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build nightly APKs
-        run: ./gradlew assembleNightly
-
-      - name: Sign APKs
+      - name: Decode keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
-          DATE=$(TZ=Asia/Kolkata date +%Y-%m-%d)
-          APKSIGNER=$(find "$ANDROID_SDK_ROOT/build-tools" -name "apksigner" | sort -V | tail -1)
+          cat > key.properties <<EOF
+          storeFile=../keystore.jks
+          storePassword=${{ secrets.STORE_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          EOF
 
-          for APK in app/build/outputs/apk/nightly/*.apk; do
-            ABI=$(basename "$APK" | grep -oP '(arm64-v8a|armeabi-v7a)')
-            OUT="AFinity-nightly-${DATE}-${ABI}.apk"
-            "$APKSIGNER" sign \
-              --ks keystore.jks \
-              --ks-pass pass:${{ secrets.STORE_PASSWORD }} \
-              --ks-key-alias ${{ secrets.KEY_ALIAS }} \
-              --key-pass pass:${{ secrets.KEY_PASSWORD }} \
-              --out "$OUT" \
-              "$APK"
-            echo "Signed: $OUT"
-          done
+      - name: Build nightly APKs
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleNightly
 
-          rm keystore.jks
+      - name: Clean up keystore
+        if: always()
+        run: rm -f keystore.jks key.properties
 
-      - name: Build release notes
-        id: notes
+      - name: Set release info
+        id: info
         run: |
           DATE=$(TZ=Asia/Kolkata date +%Y-%m-%d)
           echo "date=${DATE}" >> $GITHUB_OUTPUT
+          echo "tag=nightly-${DATE}" >> $GITHUB_OUTPUT
 
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             COMMITS=$(git log -15 --oneline --no-merges -- \
@@ -99,25 +97,39 @@ jobs:
           echo "$COMMITS" >> $GITHUB_OUTPUT
           echo "$DELIMITER" >> $GITHUB_OUTPUT
 
-      - name: Publish pre-release
+      - name: Rename APKs
+        run: |
+          DATE="${{ steps.info.outputs.date }}"
+          for APK in app/build/outputs/apk/nightly/*.apk; do
+            ABI=$(basename "$APK" | grep -oP '(arm64-v8a|armeabi-v7a)')
+            cp "$APK" "AFinity-nightly-${DATE}-${ABI}.apk"
+          done
+
+      - name: Delete existing release for this date
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          DATE="${{ steps.notes.outputs.date }}"
-          TAG="nightly-${DATE}"
+          TAG="${{ steps.info.outputs.tag }}"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Deleting existing release $TAG..."
+            gh release delete "$TAG" --yes --cleanup-tag
+          else
+            echo "No existing release for $TAG"
+          fi
 
-          # Replace if same-date release already exists (e.g. manual re-run)
-          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+      - name: Publish pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.info.outputs.tag }}
+          name: Nightly ${{ steps.info.outputs.date }}
+          prerelease: true
+          body: |
+            **Automated nightly build** — ${{ steps.info.outputs.date }} (IST)
 
-          gh release create "$TAG" \
-            --title "Nightly ${DATE}" \
-            --notes "**Automated nightly build** — ${DATE} (IST)
+            ### Changes
+            ```
+            ${{ steps.info.outputs.commits }}
+            ```
 
-          ### Changes
-          \`\`\`
-          ${{ steps.notes.outputs.commits }}
-          \`\`\`
-
-          > ⚠️ Nightly builds may be unstable. Installs alongside the stable release." \
-            --prerelease \
-            AFinity-nightly-${DATE}-*.apk
+            > ⚠️ Nightly builds may be unstable. Installs alongside the stable release.
+          files: AFinity-nightly-${{ steps.info.outputs.date }}-*.apk

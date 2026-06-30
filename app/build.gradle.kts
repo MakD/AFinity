@@ -1,4 +1,5 @@
 import com.android.build.api.dsl.ApplicationExtension
+import java.util.Properties
 import java.util.regex.Pattern
 
 plugins {
@@ -33,6 +34,21 @@ configure<ApplicationExtension> {
     namespace = "com.makd.afinity"
     compileSdk = 37
 
+    signingConfigs {
+        create("release") {
+            val keyPropertiesFile = rootProject.file("key.properties")
+            if (keyPropertiesFile.exists()) {
+                val keyProperties = Properties().apply {
+                    load(keyPropertiesFile.inputStream())
+                }
+                storeFile = file(keyProperties["storeFile"] as String)
+                storePassword = keyProperties["storePassword"] as String
+                keyAlias = keyProperties["keyAlias"] as String
+                keyPassword = keyProperties["keyPassword"] as String
+            }
+        }
+    }
+
     defaultConfig {
         applicationId = "com.makd.afinity"
         minSdk = 35
@@ -56,6 +72,7 @@ configure<ApplicationExtension> {
             isShrinkResources = true
             isDebuggable = false
             buildConfigField("boolean", "DEBUG", "false")
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -92,6 +109,7 @@ configure<ApplicationExtension> {
     buildFeatures {
         buildConfig = true
         compose = true
+        resValues = true
     }
 
     androidResources { generateLocaleConfig = true }
