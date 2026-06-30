@@ -59,6 +59,29 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Set release info
+        id: info
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DATE=$(TZ=Asia/Kolkata date +%Y-%m-%d)
+          echo "date=${DATE}" >> $GITHUB_OUTPUT
+
+          if gh release view nightly > /dev/null 2>&1; then
+            echo "Comparing commits since last nightly"
+            COMMITS=$(git log nightly..HEAD --oneline --no-merges -- \
+              app/src/ app/build.gradle.kts gradle/ build.gradle.kts settings.gradle.kts)
+          else
+            echo "No previous nightly found, using last 15 commits"
+            COMMITS=$(git log -15 --oneline --no-merges -- \
+              app/src/ app/build.gradle.kts gradle/ build.gradle.kts settings.gradle.kts)
+          fi
+
+          DELIMITER="EOF_$(date +%s)"
+          echo "commits<<$DELIMITER" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "$DELIMITER" >> $GITHUB_OUTPUT
+
       - name: Decode keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
@@ -72,38 +95,11 @@ jobs:
       - name: Build nightly APKs
         run: |
           chmod +x gradlew
-          ./gradlew assembleNightly -Papp.versionName=${{ steps.info.outputs.tag }}
+          ./gradlew assembleNightly
 
       - name: Clean up keystore
         if: always()
         run: rm -f keystore.jks key.properties
-
-      - name: Set release info
-        id: info
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          DATE=$(TZ=Asia/Kolkata date +%Y-%m-%d)
-          echo "date=${DATE}" >> $GITHUB_OUTPUT
-          echo "tag=nightly-${DATE}" >> $GITHUB_OUTPUT
-
-          LAST_NIGHTLY=$(gh release list --limit 50 --json tagName,isPrerelease \
-            --jq '[.[] | select(.isPrerelease and (.tagName | startswith("nightly-")))] | first | .tagName' 2>/dev/null)
-
-          if [ -n "$LAST_NIGHTLY" ]; then
-            echo "Comparing commits since last nightly: $LAST_NIGHTLY"
-            COMMITS=$(git log ${LAST_NIGHTLY}..HEAD --oneline --no-merges -- \
-              app/src/ app/build.gradle.kts gradle/ build.gradle.kts settings.gradle.kts)
-          else
-            echo "No previous nightly found, using last 15 commits"
-            COMMITS=$(git log -15 --oneline --no-merges -- \
-              app/src/ app/build.gradle.kts gradle/ build.gradle.kts settings.gradle.kts)
-          fi
-
-          DELIMITER="EOF_$(date +%s)"
-          echo "commits<<$DELIMITER" >> $GITHUB_OUTPUT
-          echo "$COMMITS" >> $GITHUB_OUTPUT
-          echo "$DELIMITER" >> $GITHUB_OUTPUT
 
       - name: Rename APKs
         run: |
@@ -113,22 +109,21 @@ jobs:
             cp "$APK" "AFinity-nightly-${DATE}-${ABI}.apk"
           done
 
-      - name: Delete existing release for this date
+      - name: Delete existing nightly release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${{ steps.info.outputs.tag }}"
-          if gh release view "$TAG" > /dev/null 2>&1; then
-            echo "Deleting existing release $TAG..."
-            gh release delete "$TAG" --yes --cleanup-tag
+          if gh release view nightly > /dev/null 2>&1; then
+            echo "Deleting existing nightly release..."
+            gh release delete nightly --yes --cleanup-tag
           else
-            echo "No existing release for $TAG"
+            echo "No existing nightly release found"
           fi
 
       - name: Publish pre-release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.info.outputs.tag }}
+          tag_name: nightly
           name: Nightly ${{ steps.info.outputs.date }}
           prerelease: true
           body: |
@@ -148,4 +143,4 @@ jobs:
         run: |
           gh workflow run discord-release-notification.yml \
             --ref master \
-            -f release_tag=${{ steps.info.outputs.tag }}
+            -f release_tag=nightly

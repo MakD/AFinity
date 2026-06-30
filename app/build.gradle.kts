@@ -66,6 +66,7 @@ configure<ApplicationExtension> {
             isDebuggable = true
             buildConfigField("boolean", "DEBUG", "true")
             buildConfigField("boolean", "IS_NIGHTLY", "false")
+            buildConfigField("String", "BUILD_TIME", "\"\"")
             applicationIdSuffix = ".debug"
         }
         release {
@@ -74,6 +75,7 @@ configure<ApplicationExtension> {
             isDebuggable = false
             buildConfigField("boolean", "DEBUG", "false")
             buildConfigField("boolean", "IS_NIGHTLY", "false")
+            buildConfigField("String", "BUILD_TIME", "\"\"")
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -85,6 +87,7 @@ configure<ApplicationExtension> {
             applicationIdSuffix = ".nightly"
             resValue("string", "app_name", "AFinity Nightly")
             buildConfigField("boolean", "IS_NIGHTLY", "true")
+            buildConfigField("String", "BUILD_TIME", "\"${System.currentTimeMillis()}\"")
         }
     }
 

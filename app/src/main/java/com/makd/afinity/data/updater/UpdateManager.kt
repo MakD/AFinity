@@ -93,7 +93,7 @@ constructor(
         return result.fold(
             onSuccess = { release ->
                 val hasUpdate =
-                    if (BuildConfig.IS_NIGHTLY) isNewerNightlyTag(release.tagName)
+                    if (BuildConfig.IS_NIGHTLY) isNewerNightly(release.publishedAt)
                     else isNewerVersion(release.tagName)
                 if (hasUpdate) {
                     currentRelease = release
@@ -387,10 +387,17 @@ constructor(
         return matchingFiles.firstOrNull()?.also { Timber.d("Found existing download: ${it.name}") }
     }
 
-    private fun isNewerNightlyTag(remoteTag: String): Boolean {
-        val remote = remoteTag.removePrefix("v")
-        val current = BuildConfig.VERSION_NAME
-        return remote != current
+    private fun isNewerNightly(publishedAt: String): Boolean {
+        return try {
+            val buildTime = BuildConfig.BUILD_TIME.toLongOrNull() ?: return false
+            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US)
+            sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
+            val releaseTime = sdf.parse(publishedAt)?.time ?: return false
+            releaseTime > buildTime
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to compare nightly build times")
+            false
+        }
     }
 
     private fun isNewerVersion(remoteVersion: String): Boolean {
