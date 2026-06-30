@@ -72,7 +72,7 @@ jobs:
       - name: Build nightly APKs
         run: |
           chmod +x gradlew
-          ./gradlew assembleNightly
+          ./gradlew assembleNightly -Papp.versionName=${{ steps.info.outputs.tag }}
 
       - name: Clean up keystore
         if: always()
