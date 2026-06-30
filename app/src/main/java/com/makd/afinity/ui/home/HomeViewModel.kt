@@ -157,6 +157,7 @@ constructor(
                     Timber.d(
                         "Initial Data Loaded: Triggering secondary content load (Studios, Genres, Recs)"
                     )
+                    _uiState.update { it.copy(isLoading = false) }
                     launch {
                         coroutineScope {
                             launch { loadStudios() }
@@ -224,7 +225,7 @@ constructor(
 
         viewModelScope.launch {
             adminChangeBroadcaster.itemChanged.collect {
-                appDataRepository.refreshLiveSections()
+                appDataRepository.refreshPlaybackSections()
             }
         }
 
@@ -357,10 +358,10 @@ constructor(
                 ) {
                     launch {
                         try {
-                            appDataRepository.refreshLiveSections()
+                            appDataRepository.refreshPlaybackSections()
                             lastHomeRefreshedAt = System.currentTimeMillis()
                         } catch (e: Exception) {
-                            Timber.e(e, "Failed background sync of live sections")
+                            Timber.e(e, "Failed background sync of playback sections")
                         }
                     }
                 }
@@ -550,22 +551,30 @@ constructor(
                     renderedWatchedMovies.clear()
                     renderedStarringWatchedMovies.clear()
                     renderedActorNames.clear()
+                    coroutineScope {
+                        awaitAll(
+                            async { loadAllActorSections() },
+                            async { loadAllDirectorSections() },
+                        )
+                    }
+                    withContext(Dispatchers.Main) {
+                        updateCombinedSections(appDataRepository.combinedGenres.value)
+                    }
 
                     coroutineScope {
-                        val actorTask = async { loadAllActorSections() }
-                        val directorTask = async { loadAllDirectorSections() }
-                        val writerTask = async { loadAllWriterSections() }
-                        val becauseYouWatchedTask = async { loadAllBecauseYouWatchedSections() }
-                        val actorFromRecentTask = async { loadAllActorFromRecentSections() }
-                        val spotlightTask = async { loadSpotlightSections() }
-
                         awaitAll(
-                            actorTask,
-                            directorTask,
-                            writerTask,
-                            becauseYouWatchedTask,
-                            actorFromRecentTask,
-                            spotlightTask,
+                            async { loadAllWriterSections() },
+                            async { loadAllBecauseYouWatchedSections() },
+                        )
+                    }
+                    withContext(Dispatchers.Main) {
+                        updateCombinedSections(appDataRepository.combinedGenres.value)
+                    }
+
+                    coroutineScope {
+                        awaitAll(
+                            async { loadAllActorFromRecentSections() },
+                            async { loadSpotlightSections() },
                         )
                     }
 
@@ -576,6 +585,18 @@ constructor(
                     withContext(Dispatchers.Main) {
                         appDataRepository.combinedGenres.value.let { genres ->
                             updateCombinedSections(genres)
+                        }
+                    }
+
+                    coroutineScope {
+                        cachedShuffledGenres.forEach { genreSection ->
+                            launch {
+                                when (genreSection.genreItem.type) {
+                                    GenreType.MOVIE ->
+                                        loadMoviesForGenre(genreSection.genreItem.name)
+                                    GenreType.SHOW -> loadShowsForGenre(genreSection.genreItem.name)
+                                }
+                            }
                         }
                     }
                 } catch (e: kotlinx.coroutines.CancellationException) {
@@ -858,8 +879,10 @@ constructor(
                             items = actorMovies,
                         )
 
-                    actorMovies.forEach { renderedItemIds.add(it.id) }
-                    loadedRecommendationSections.add(HomeSection.PersonFromMovie(section))
+                    recommendationMutex.withLock {
+                        actorMovies.forEach { renderedItemIds.add(it.id) }
+                        loadedRecommendationSections.add(HomeSection.PersonFromMovie(section))
+                    }
                     loadedCount++
                     Timber.d(
                         "Loaded 'Starring ${selectedActor.name} because you watched ${randomMovie.name}' section (${actorMovies.size} items)"
@@ -1410,7 +1433,7 @@ constructor(
     fun onScreenResumed() {
         if (appDataRepository.lastUserDataChangedAt.value > lastHomeRefreshedAt) {
             viewModelScope.launch {
-                appDataRepository.refreshLiveSections()
+                appDataRepository.refreshPlaybackSections()
                 lastHomeRefreshedAt = System.currentTimeMillis()
             }
         }
@@ -1478,7 +1501,7 @@ data class HomeUiState(
     val downloadedMusicAlbums: List<com.makd.afinity.data.models.music.AfinityAlbum> = emptyList(),
     val downloadedMusicTracks: List<com.makd.afinity.data.models.music.AfinityTrack> = emptyList(),
     val unavailableDownloadIds: Set<UUID> = emptySet(),
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val error: String? = null,
     val combineLibrarySections: Boolean = false,
     val libraries: List<AfinityCollection> = emptyList(),

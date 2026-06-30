@@ -9,6 +9,7 @@ import com.makd.afinity.data.database.dao.AudiobookshelfDao
 import com.makd.afinity.data.database.dao.BoxSetCacheDao
 import com.makd.afinity.data.database.dao.EpisodeDao
 import com.makd.afinity.data.database.dao.GenreCacheDao
+import com.makd.afinity.data.database.dao.HomeCacheDao
 import com.makd.afinity.data.database.dao.ItemMetadataCacheDao
 import com.makd.afinity.data.database.dao.JellyfinStatsDao
 import com.makd.afinity.data.database.dao.JellyseerrDao
@@ -52,6 +53,7 @@ import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.database.entities.GenreCacheEntity
 import com.makd.afinity.data.database.entities.GenreMovieCacheEntity
 import com.makd.afinity.data.database.entities.GenreShowCacheEntity
+import com.makd.afinity.data.database.entities.HomeCacheEntity
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
 import com.makd.afinity.data.database.entities.JellyfinStatsCacheEntity
 import com.makd.afinity.data.database.entities.JellyseerrAddressEntity
@@ -115,8 +117,9 @@ import com.makd.afinity.data.models.user.User
             MusicTrackEntity::class,
             MusicAlbumEntity::class,
             MusicLyricsEntity::class,
+            HomeCacheEntity::class,
         ],
-    version = 52,
+    version = 53,
     exportSchema = false,
 )
 @TypeConverters(AfinityTypeConverters::class)
@@ -177,4 +180,6 @@ abstract class AfinityDatabase : RoomDatabase() {
     abstract fun musicAlbumDao(): MusicAlbumDao
 
     abstract fun musicLyricsDao(): MusicLyricsDao
+
+    abstract fun homeCacheDao(): HomeCacheDao
 }

@@ -158,13 +158,6 @@ fun HomeScreen(
                         WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                     val showCarousel = !uiState.isOffline && uiState.heroCarouselItems.isNotEmpty()
 
-                    val continueWatchingItems =
-                        if (uiState.isOffline) {
-                            uiState.offlineContinueWatching
-                        } else {
-                            uiState.continueWatching
-                        }
-
                     val firstContentKey =
                         remember(
                             uiState.isOffline,
@@ -545,7 +538,7 @@ fun HomeScreen(
                                 key = { section ->
                                     when (section) {
                                         is HomeSection.Person ->
-                                            "person_${section.section.person.id}"
+                                            "person_${section.section.sectionType.name}_${section.section.person.id}"
                                         is HomeSection.Movie ->
                                             "movie_rec_${section.section.referenceMovie.id}"
                                         is HomeSection.PersonFromMovie ->

@@ -1213,6 +1213,21 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_52_53 =
+        object : Migration(52, 53) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS home_cache (
+                        `key` TEXT NOT NULL PRIMARY KEY,
+                        json TEXT NOT NULL,
+                        updatedAt INTEGER NOT NULL
+                    )
+                    """
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1266,5 +1281,6 @@ object DatabaseMigrations {
             MIGRATION_49_50,
             MIGRATION_50_51,
             MIGRATION_51_52,
+            MIGRATION_52_53,
         )
 }

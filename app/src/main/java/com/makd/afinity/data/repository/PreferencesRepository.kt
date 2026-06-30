@@ -194,6 +194,10 @@ interface PreferencesRepository {
 
     suspend fun getLastUpdateCheck(): Long
 
+    suspend fun setLastCacheInvalidatedAt(timestamp: Long)
+
+    suspend fun getLastCacheInvalidatedAt(): Long
+
     suspend fun setCrashReporting(enabled: Boolean)
 
     suspend fun getCrashReporting(): Boolean

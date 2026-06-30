@@ -7,6 +7,7 @@ import com.makd.afinity.data.database.DatabaseMigrations
 import com.makd.afinity.data.database.dao.BoxSetCacheDao
 import com.makd.afinity.data.database.dao.EpisodeDao
 import com.makd.afinity.data.database.dao.GenreCacheDao
+import com.makd.afinity.data.database.dao.HomeCacheDao
 import com.makd.afinity.data.database.dao.ItemMetadataCacheDao
 import com.makd.afinity.data.database.dao.JellyfinStatsDao
 import com.makd.afinity.data.database.dao.LibraryCacheDao
@@ -169,5 +170,10 @@ object DatabaseModule {
     @Provides
     fun provideMusicLyricsDao(database: AfinityDatabase): MusicLyricsDao {
         return database.musicLyricsDao()
+    }
+
+    @Provides
+    fun provideHomeCacheDao(database: AfinityDatabase): HomeCacheDao {
+        return database.homeCacheDao()
     }
 }

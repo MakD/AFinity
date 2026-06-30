@@ -27,6 +27,7 @@ import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
+import com.makd.afinity.data.repository.home.HomeCacheRepository
 import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.music.MusicRepository
@@ -42,7 +43,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -83,6 +83,7 @@ constructor(
     private val mediaRefreshBus: MediaRefreshBus,
     private val mediaChangeManager: MediaChangeManager,
     private val musicRepository: MusicRepository,
+    private val homeCacheRepository: HomeCacheRepository,
 ) {
     private val recentCacheTTL = 6.hours.inWholeMilliseconds
     private var recentWatchedCache: Pair<Long, List<AfinityMovie>>? = null
@@ -201,8 +202,6 @@ constructor(
                     )
                     clearAllData()
 
-                    delay(300)
-
                     try {
                         loadInitialData()
                     } catch (e: Exception) {
@@ -247,13 +246,49 @@ constructor(
             return
         }
 
+        val session = sessionManager.currentSession.value
+        val cacheKey = "${session?.serverId}_${session?.userId}"
+        val hasSession = session != null && session.serverId.isNotBlank()
+
+        if (hasSession) {
+            val cachedMovies = homeCacheRepository.getLatestMovies("latest_movies_$cacheKey")
+            if (cachedMovies != null) {
+                Timber.d("Cache hit — fetching carousel in parallel, rendering once both are ready")
+                try {
+                    coroutineScope {
+                        val heroDeferred = async { loadHeroCarousel() }
+                        _latestMovies.value = cachedMovies
+                        _latestTvSeries.value =
+                            homeCacheRepository.getLatestShows("latest_shows_$cacheKey")
+                                ?: emptyList()
+                        _heroCarouselItems.value = heroDeferred.await()
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "Carousel fetch failed on cache-hit path, proceeding without it")
+                }
+                updateProgress(1f, context.getString(R.string.loading_phase_ready))
+                _isInitialDataLoaded.value = true
+                startLiveDataCollectors()
+                scope.launch { performBackgroundNetworkRefresh(cacheKey) }
+                return
+            }
+        }
+
         try {
             coroutineScope {
-                delay(300)
-
                 updateProgress(0.1f, context.getString(R.string.loading_phase_connecting))
 
-                val cacheDeferred = async { mediaRepository.invalidateAllCaches() }
+                val continueWatchingDeferred = async {
+                    mediaRepository.invalidateContinueWatchingCache()
+                }
+                val nextUpDeferred = async { mediaRepository.invalidateNextUpCache() }
+                val cacheDeferred = async {
+                    val lastInvalidated = preferencesRepository.getLastCacheInvalidatedAt()
+                    if (System.currentTimeMillis() - lastInvalidated > 5 * 60 * 1000L) {
+                        mediaRepository.invalidateLatestMediaCache()
+                        preferencesRepository.setLastCacheInvalidatedAt(System.currentTimeMillis())
+                    }
+                }
                 val heroCarouselDeferred = async { loadHeroCarousel() }
                 val librariesDeferred = async { loadLibraries() }
                 val watchlistCountDeferred = async {
@@ -275,11 +310,11 @@ constructor(
 
                 updateProgress(0.5f, context.getString(R.string.loading_phase_processing))
 
+                continueWatchingDeferred.await()
+                nextUpDeferred.await()
                 cacheDeferred.await()
-                _heroCarouselItems.value = heroCarouselDeferred.await()
-                watchlistCountDeferred.await()
-                favoritesDeferred.await()
-                watchlistDeferred.await()
+                val heroItems = heroCarouselDeferred.await()
+                _heroCarouselItems.value = heroItems
 
                 updateProgress(0.8f, context.getString(R.string.loading_phase_finalizing))
 
@@ -292,10 +327,77 @@ constructor(
                 _isInitialDataLoaded.value = true
 
                 startLiveDataCollectors()
+
+                if (hasSession) {
+                    launch {
+                        homeCacheRepository.putLatestMovies("latest_movies_$cacheKey", latestMovies)
+                    }
+                    launch {
+                        homeCacheRepository.putLatestShows("latest_shows_$cacheKey", latestTvSeries)
+                    }
+                }
+                watchlistCountDeferred.await()
+                favoritesDeferred.await()
+                watchlistDeferred.await()
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to load initial app data")
             throw e
+        }
+    }
+
+    private suspend fun performBackgroundNetworkRefresh(cacheKey: String) {
+        try {
+            Timber.d("Background network refresh starting")
+            coroutineScope {
+                val librariesDeferred = async { loadLibraries() }
+                val continueWatchingDeferred = async {
+                    mediaRepository.invalidateContinueWatchingCache()
+                }
+                val nextUpDeferred = async { mediaRepository.invalidateNextUpCache() }
+                val latestMediaDeferred = async {
+                    val lastInvalidated = preferencesRepository.getLastCacheInvalidatedAt()
+                    if (System.currentTimeMillis() - lastInvalidated > 5 * 60 * 1000L) {
+                        mediaRepository.invalidateLatestMediaCache()
+                        preferencesRepository.setLastCacheInvalidatedAt(System.currentTimeMillis())
+                    }
+                }
+
+                val libraries = librariesDeferred.await()
+                _libraries.value = libraries
+
+                val homeDataDeferred = async {
+                    loadHomeSpecificData(
+                        libraries,
+                        existingHighestRated = _highestRated.value.takeIf { it.isNotEmpty() },
+                    )
+                }
+
+                val (latestMovies, latestTvSeries, highestRated) = homeDataDeferred.await()
+                _latestMovies.value = latestMovies
+                _latestTvSeries.value = latestTvSeries
+                _highestRated.value = highestRated
+
+                continueWatchingDeferred.await()
+                nextUpDeferred.await()
+                latestMediaDeferred.await()
+                launch {
+                    homeCacheRepository.putLatestMovies("latest_movies_$cacheKey", latestMovies)
+                }
+                launch {
+                    homeCacheRepository.putLatestShows("latest_shows_$cacheKey", latestTvSeries)
+                }
+                launch {
+                    try {
+                        watchlistRepository.refreshWatchlistCount()
+                    } catch (_: Exception) {}
+                }
+                launch { loadFavoritesData() }
+                launch { loadWatchlistData() }
+            }
+            Timber.d("Background network refresh complete")
+        } catch (e: Exception) {
+            Timber.e(e, "Background network refresh failed")
         }
     }
 
@@ -325,9 +427,9 @@ constructor(
                     .debounce(1_500L)
                     .collect {
                         if (!_isInitialDataLoaded.value) return@collect
-                        Timber.d("Bus: library changed — invalidating and reloading home")
+                        Timber.d("Bus: library changed — refreshing library sections")
                         mediaRepository.invalidateLatestMediaCache()
-                        reloadHomeData()
+                        refreshLibrarySections()
                     }
             }
 
@@ -408,8 +510,8 @@ constructor(
         val raw =
             mediaRepository.getLatestMedia(
                 parentId = libraryId,
-                limit = limit * 5,
-                groupItems = false,
+                limit = limit,
+                groupItems = true,
             )
         val directShows = raw.filterIsInstance<AfinityShow>()
         val seenIds = directShows.map { it.id }.toMutableSet()
@@ -661,6 +763,32 @@ constructor(
         _loadingPhase.value = phase
     }
 
+    suspend fun refreshPlaybackSections() {
+        if (!_isInitialDataLoaded.value) return
+        try {
+            mediaRepository.invalidateContinueWatchingCache()
+            mediaRepository.invalidateNextUpCache()
+            Timber.d("Refreshed playback sections (continue watching + next up)")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to refresh playback sections")
+        }
+    }
+
+    suspend fun refreshLibrarySections() {
+        if (!_isInitialDataLoaded.value) return
+        val libs = _libraries.value
+        if (libs.isEmpty()) return
+        try {
+            val (latestMovies, latestTvSeries, _) =
+                loadHomeSpecificData(libs, existingHighestRated = _highestRated.value)
+            if (latestMovies.isNotEmpty()) _latestMovies.value = latestMovies
+            if (latestTvSeries.isNotEmpty()) _latestTvSeries.value = latestTvSeries
+            Timber.d("Refreshed library sections (latest movies + shows)")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to refresh library sections")
+        }
+    }
+
     suspend fun refreshLiveSections() {
         if (!_isInitialDataLoaded.value) return
         try {
@@ -674,20 +802,6 @@ constructor(
                             loadHomeSpecificData(libs, existingHighestRated = _highestRated.value)
                         if (latestMovies.isNotEmpty()) _latestMovies.value = latestMovies
                         if (latestTvSeries.isNotEmpty()) _latestTvSeries.value = latestTvSeries
-                    }
-                }
-                launch {
-                    try {
-                        loadFavoritesData()
-                    } catch (e: Exception) {
-                        Timber.e(e, "refreshLiveSections: failed to reload favorites")
-                    }
-                }
-                launch {
-                    try {
-                        loadWatchlistData()
-                    } catch (e: Exception) {
-                        Timber.e(e, "refreshLiveSections: failed to reload watchlist")
                     }
                 }
             }
@@ -1013,6 +1127,8 @@ constructor(
         }
 
         recentWatchedCache = null
+        scope.launch { preferencesRepository.setLastCacheInvalidatedAt(0L) }
+        scope.launch { homeCacheRepository.invalidateAll() }
         _heroCarouselItems.value = emptyList()
         _libraries.value = emptyList()
         _latestMovies.value = emptyList()

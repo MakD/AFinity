@@ -80,6 +80,7 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
         val UPDATE_CHECK_FREQUENCY = intPreferencesKey("update_check_frequency")
         val LAST_UPDATE_CHECK = longPreferencesKey("last_update_check")
+        val LAST_CACHE_INVALIDATED = longPreferencesKey("last_cache_invalidated")
 
         val VIDEO_ZOOM_MODE = intPreferencesKey("video_zoom_mode")
         val EPISODE_LAYOUT = stringPreferencesKey("episode_layout")
@@ -605,6 +606,14 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
     override suspend fun getLastUpdateCheck(): Long {
         return dataStore.data.first()[Keys.LAST_UPDATE_CHECK] ?: 0L
+    }
+
+    override suspend fun setLastCacheInvalidatedAt(timestamp: Long) {
+        dataStore.edit { preferences -> preferences[Keys.LAST_CACHE_INVALIDATED] = timestamp }
+    }
+
+    override suspend fun getLastCacheInvalidatedAt(): Long {
+        return dataStore.data.first()[Keys.LAST_CACHE_INVALIDATED] ?: 0L
     }
 
     override suspend fun setSubtitlePreferences(preferences: SubtitlePreferences) {
