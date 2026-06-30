@@ -132,7 +132,7 @@ jobs:
             ${{ steps.info.outputs.commits }}
             ```
             > [!CAUTION]
-            > ⚠️ Nightly builds may be unstable. Expect Bugs. Installs alongside the stable release.
+            > ⚠️ Nightly builds may be unstable. Expect Bugs. Installs alongside the beta release.
           files: AFinity-nightly-${{ steps.info.outputs.date }}-*.apk
 
       - name: Notify Discord
