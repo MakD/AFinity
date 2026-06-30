@@ -3,6 +3,7 @@ package com.makd.afinity.ui.music.library
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
+import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -79,6 +80,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -122,12 +124,12 @@ import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import java.util.UUID
 
-enum class LibraryFilter(val displayName: String) {
-    Home("Home"),
-    Playlists("Playlists"),
-    Artists("Artists"),
-    Albums("Albums"),
-    Tracks("Tracks"),
+enum class LibraryFilter(@StringRes val displayNameRes: Int) {
+    Home(R.string.music_tab_home),
+    Playlists(R.string.music_tab_playlists),
+    Artists(R.string.music_tab_artists),
+    Albums(R.string.music_tab_albums),
+    Tracks(R.string.music_tab_tracks),
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -505,13 +507,13 @@ private fun TabControlsRow(
                 TextButton(onClick = { showSortMenu = true }) {
                     Icon(
                         painter = painterResource(R.drawable.ic_arrows_sort),
-                        contentDescription = "Sort",
+                        contentDescription = stringResource(R.string.cd_sort_fab),
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        text = currentSort.label,
+                        text = stringResource(currentSort.labelRes),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -519,7 +521,7 @@ private fun TabControlsRow(
                 DropdownMenu(expanded = showSortMenu, onDismissRequest = { showSortMenu = false }) {
                     sortOptions.forEach { option ->
                         DropdownMenuItem(
-                            text = { Text(option.label) },
+                            text = { Text(stringResource(option.labelRes)) },
                             onClick = {
                                 onSortChange(option)
                                 showSortMenu = false
@@ -548,7 +550,7 @@ private fun TabControlsRow(
                 IconButton(onClick = { showFilterSheet = true }) {
                     Icon(
                         painter = painterResource(R.drawable.ic_filter),
-                        contentDescription = "Filter",
+                        contentDescription = stringResource(R.string.cd_music_filter),
                         modifier = Modifier.size(20.dp),
                         tint =
                             if (currentFilters.isActive) MaterialTheme.colorScheme.primary
@@ -571,7 +573,10 @@ private fun TabControlsRow(
                             modifier = Modifier.size(16.dp),
                         )
                         Spacer(Modifier.width(4.dp))
-                        Text("Shuffle", style = MaterialTheme.typography.labelLarge)
+                        Text(
+                            stringResource(R.string.music_action_shuffle),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
                     }
                 }
                 if (onPlayAll != null) {
@@ -585,7 +590,10 @@ private fun TabControlsRow(
                             modifier = Modifier.size(16.dp),
                         )
                         Spacer(Modifier.width(4.dp))
-                        Text("Play All", style = MaterialTheme.typography.labelLarge)
+                        Text(
+                            stringResource(R.string.music_action_play_all),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
                     }
                 }
             }
@@ -611,19 +619,19 @@ private fun TabControlsRow(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "Filter",
+                        text = stringResource(R.string.music_filter_status),
                         style =
                             MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     )
                     if (currentFilters.isActive) {
                         TextButton(onClick = { onFiltersChange(MusicFilters()) }) {
-                            Text("Clear")
+                            Text(stringResource(R.string.music_filter_clear))
                         }
                     }
                 }
                 HorizontalDivider()
                 Text(
-                    text = "Status",
+                    text = stringResource(R.string.music_filter_status),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -635,7 +643,7 @@ private fun TabControlsRow(
                                 currentFilters.copy(favoritesOnly = !currentFilters.favoritesOnly)
                             )
                         },
-                        label = { Text("Favorites") },
+                        label = { Text(stringResource(R.string.filter_favorites)) },
                     )
                     FilterChip(
                         selected = currentFilters.unplayedOnly,
@@ -647,7 +655,7 @@ private fun TabControlsRow(
                                 )
                             )
                         },
-                        label = { Text("Unplayed") },
+                        label = { Text(stringResource(R.string.music_filter_unplayed)) },
                     )
                     FilterChip(
                         selected = currentFilters.playedOnly,
@@ -659,7 +667,7 @@ private fun TabControlsRow(
                                 )
                             )
                         },
-                        label = { Text("Played") },
+                        label = { Text(stringResource(R.string.music_filter_played)) },
                     )
                 }
             }
@@ -761,6 +769,12 @@ private fun MusicHomeContent(
         }
     }
 
+    val surpriseMeLabel = stringResource(R.string.music_mix_surprise_me)
+    val randomMixLabel = stringResource(R.string.music_mix_random)
+    val radioLabel = stringResource(R.string.music_mix_radio)
+    val instantMixLabel = stringResource(R.string.music_action_instant_mix)
+    val songsFmt = stringResource(R.string.music_mix_instant_mix_genre_fmt)
+
     val madeForYouItems =
         remember(uiState.madeForYouSnapshot) {
             val snapshot = uiState.madeForYouSnapshot ?: return@remember emptyList()
@@ -768,7 +782,11 @@ private fun MusicHomeContent(
             val randomMix =
                 if (snapshot.randomTracks.isNotEmpty()) {
                     listOf(
-                        MadeForYouItem.TrackMix("Surprise Me", "Random Mix", snapshot.randomTracks)
+                        MadeForYouItem.TrackMix(
+                            surpriseMeLabel,
+                            randomMixLabel,
+                            snapshot.randomTracks,
+                        )
                     )
                 } else {
                     emptyList()
@@ -776,10 +794,10 @@ private fun MusicHomeContent(
 
             val others = buildList {
                 snapshot.radioSections.forEach { (title, tracks) ->
-                    add(MadeForYouItem.TrackMix(title, "Radio", tracks))
+                    add(MadeForYouItem.TrackMix(title, radioLabel, tracks))
                 }
                 snapshot.songsByGenreSections.forEach { (genre, tracks) ->
-                    add(MadeForYouItem.TrackMix("$genre Songs", "Instant Mix", tracks))
+                    add(MadeForYouItem.TrackMix(songsFmt.format(genre), instantMixLabel, tracks))
                 }
                 snapshot.randomAlbums.forEach { album ->
                     add(MadeForYouItem.AlbumItem(album))
@@ -826,7 +844,7 @@ private fun MusicHomeContent(
         if (madeForYouItems.isNotEmpty()) {
             item(key = "made_for_you_carousel") {
                 MadeForYouCarousel(
-                    title = "Made For You",
+                    title = stringResource(R.string.music_section_made_for_you),
                     items = madeForYouItems,
                     onPlayMix = onQueuePlay,
                     onAlbumClick = onAlbumClick,
@@ -845,7 +863,7 @@ private fun MusicHomeContent(
         if (uiState.recentlyPlayedTracks.isNotEmpty()) {
             item(key = "recently_played_tracks") {
                 CompactTrackGridSection(
-                    title = "Jump Back In",
+                    title = stringResource(R.string.music_section_jump_back_in),
                     tracks = uiState.recentlyPlayedTracks,
                     onTrackClick = { track ->
                         onTrackClickWithQueue(track, uiState.recentlyPlayedTracks)
@@ -858,7 +876,7 @@ private fun MusicHomeContent(
         if (uiState.recentlyPlayedAlbums.isNotEmpty()) {
             item(key = "recently_played") {
                 MusicAlbumRowSection(
-                    title = "Recently Played Albums",
+                    title = stringResource(R.string.music_section_recently_played_albums),
                     albums = uiState.recentlyPlayedAlbums,
                     onAlbumClick = onAlbumClick,
                     modifier = Modifier.padding(bottom = 28.dp),
@@ -869,7 +887,7 @@ private fun MusicHomeContent(
         if (uiState.latestAlbums.isNotEmpty()) {
             item(key = "latest_albums") {
                 MusicAlbumRowSection(
-                    title = "Recently Added",
+                    title = stringResource(R.string.music_section_recently_added),
                     albums = uiState.latestAlbums,
                     onAlbumClick = onAlbumClick,
                     modifier = Modifier.padding(bottom = 28.dp),
@@ -890,7 +908,7 @@ private fun MusicHomeContent(
         if (uiState.favoriteAlbums.isNotEmpty()) {
             item(key = "pinned_favorites") {
                 MusicAlbumRowSection(
-                    title = "Favorites",
+                    title = stringResource(R.string.favorites_title),
                     albums = uiState.favoriteAlbums,
                     onAlbumClick = onAlbumClick,
                     modifier = Modifier.padding(bottom = 28.dp),
@@ -903,28 +921,28 @@ private fun MusicHomeContent(
             when (row) {
                 HomeRow.FavoriteArtists ->
                     MusicArtistsRow(
-                        title = "Favorite Artists",
+                        title = stringResource(R.string.music_section_favorite_artists),
                         artists = uiState.favoriteArtists,
                         onArtistClick = onArtistClick,
                         modifier = m,
                     )
                 HomeRow.TopArtists ->
                     MusicArtistsRow(
-                        title = "Your Top Artists",
+                        title = stringResource(R.string.music_section_top_artists),
                         artists = uiState.topArtists,
                         onArtistClick = onArtistClick,
                         modifier = m,
                     )
                 HomeRow.TopRated ->
                     LatestAlbumsSection(
-                        title = "Top Rated",
+                        title = stringResource(R.string.music_section_top_rated),
                         albums = uiState.topRatedAlbums,
                         onAlbumClick = onAlbumClick,
                         modifier = m,
                     )
                 HomeRow.ArtistsToExplore ->
                     MusicArtistsRow(
-                        title = "Artists to Explore",
+                        title = stringResource(R.string.music_section_artists_to_explore),
                         artists = uiState.randomArtists,
                         onArtistClick = onArtistClick,
                         modifier = m,
@@ -1033,7 +1051,7 @@ private sealed class HomeRow {
 
 private data class LibraryShortcut(
     val filter: LibraryFilter,
-    val label: String,
+    @StringRes val labelRes: Int,
     val iconRes: Int,
     val gradientStart: Color,
     val gradientEnd: Color,
@@ -1056,28 +1074,28 @@ private fun LibraryShortcutsRow(
         listOf(
             LibraryShortcut(
                 filter = LibraryFilter.Playlists,
-                label = "Playlists",
+                labelRes = R.string.music_nav_playlists,
                 iconRes = R.drawable.ic_music_playlist,
                 gradientStart = Color(0xFFB1AADA),
                 gradientEnd = Color(0xFF5A5482),
             ),
             LibraryShortcut(
                 filter = LibraryFilter.Artists,
-                label = "Artists",
+                labelRes = R.string.music_nav_artists,
                 iconRes = R.drawable.ic_microphone,
                 gradientStart = Color(0xFFE2AE95),
                 gradientEnd = Color(0xFF965243),
             ),
             LibraryShortcut(
                 filter = LibraryFilter.Albums,
-                label = "Albums",
+                labelRes = R.string.music_nav_albums,
                 iconRes = R.drawable.ic_disc,
                 gradientStart = Color(0xFFA4C4D6),
                 gradientEnd = Color(0xFF50787A),
             ),
             LibraryShortcut(
                 filter = LibraryFilter.Tracks,
-                label = "Tracks",
+                labelRes = R.string.music_nav_tracks,
                 iconRes = R.drawable.ic_file_music,
                 gradientStart = Color(0xFFAED1AE),
                 gradientEnd = Color(0xFF4F7E70),
@@ -1087,7 +1105,7 @@ private fun LibraryShortcutsRow(
 
     Column(modifier = modifier) {
         Text(
-            text = "Browse",
+            text = stringResource(R.string.music_action_browse),
             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(start = 14.dp, bottom = 12.dp),
@@ -1098,7 +1116,7 @@ private fun LibraryShortcutsRow(
         ) {
             items(shortcuts, key = { it.filter }) { shortcut ->
                 LibraryShortcutCard(
-                    label = shortcut.label,
+                    label = stringResource(shortcut.labelRes),
                     iconRes = shortcut.iconRes,
                     gradientStart = shortcut.gradientStart,
                     gradientEnd = shortcut.gradientEnd,
@@ -1319,7 +1337,7 @@ private fun MusicTracksCard(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_player_play_filled),
-                        contentDescription = "Play",
+                        contentDescription = stringResource(R.string.cd_play),
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(20.dp),
                     )

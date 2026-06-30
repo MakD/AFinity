@@ -35,11 +35,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.ui.components.AsyncImage
@@ -156,10 +158,10 @@ fun LatestAlbumsSection(
     albums: List<AfinityAlbum>,
     onAlbumClick: (AfinityAlbum) -> Unit,
     modifier: Modifier = Modifier,
-    title: String = "Recently Added",
+    title: String? = null,
 ) {
     MusicCarouselSection(
-        title = title,
+        title = title ?: stringResource(R.string.music_section_recently_added),
         count = albums.size,
         modifier = modifier,
         imageUrl = { albums[it].images.primary?.toString() },
@@ -217,7 +219,7 @@ fun MostPlayedAlbumsSection(
 
     Column(modifier = modifier) {
         Text(
-            text = "Most Played",
+            text = stringResource(R.string.music_section_most_played),
             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(start = 14.dp, bottom = 12.dp),

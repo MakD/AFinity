@@ -25,9 +25,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityLyricLine
 
 @Composable
@@ -41,17 +43,18 @@ fun MusicLyricsView(
 ) {
     val listState = rememberLazyListState()
 
-    val currentLineIndex by remember(positionMs, lyrics) {
-        derivedStateOf {
-            if (lyrics.isEmpty()) return@derivedStateOf -1
-            val posSeconds = positionMs / 1000.0
-            var last = 0
-            for (i in lyrics.indices) {
-                if (lyrics[i].startSeconds <= posSeconds) last = i else break
+    val currentLineIndex by
+        remember(positionMs, lyrics) {
+            derivedStateOf {
+                if (lyrics.isEmpty()) return@derivedStateOf -1
+                val posSeconds = positionMs / 1000.0
+                var last = 0
+                for (i in lyrics.indices) {
+                    if (lyrics[i].startSeconds <= posSeconds) last = i else break
+                }
+                last
             }
-            last
         }
-    }
 
     LaunchedEffect(currentLineIndex) {
         if (currentLineIndex >= 0) {
@@ -71,7 +74,7 @@ fun MusicLyricsView(
             }
             lyrics.isEmpty() -> {
                 Text(
-                    text = "No lyrics available",
+                    text = stringResource(R.string.music_player_no_lyrics),
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.5f),
                     modifier = Modifier.align(Alignment.Center),
@@ -108,34 +111,42 @@ private fun LyricLine(
     accentColor: Color,
     onClick: () -> Unit,
 ) {
-    val alpha by animateFloatAsState(
-        targetValue = when {
-            isCurrent -> 1f
-            isPast -> 0.45f
-            else -> 0.35f
-        },
-        animationSpec = tween(durationMillis = 300),
-        label = "lyricAlpha",
-    )
+    val alpha by
+        animateFloatAsState(
+            targetValue =
+                when {
+                    isCurrent -> 1f
+                    isPast -> 0.45f
+                    else -> 0.35f
+                },
+            animationSpec = tween(durationMillis = 300),
+            label = "lyricAlpha",
+        )
 
-    val scale by animateFloatAsState(
-        targetValue = if (isCurrent) 1.05f else 1f,
-        animationSpec = tween(durationMillis = 300),
-        label = "lyricScale",
-    )
+    val scale by
+        animateFloatAsState(
+            targetValue = if (isCurrent) 1.05f else 1f,
+            animationSpec = tween(durationMillis = 300),
+            label = "lyricScale",
+        )
 
     Text(
         text = line.text,
-        style = MaterialTheme.typography.titleMedium.copy(
-            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-            fontSize = MaterialTheme.typography.titleMedium.fontSize * scale,
-        ),
+        style =
+            MaterialTheme.typography.titleMedium.copy(
+                fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                fontSize = MaterialTheme.typography.titleMedium.fontSize * scale,
+            ),
         color = if (isCurrent) accentColor else Color.White,
         textAlign = TextAlign.Center,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }, onClick = onClick)
-            .padding(horizontal = 24.dp, vertical = 10.dp)
-            .alpha(alpha),
+        modifier =
+            Modifier.fillMaxWidth()
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() },
+                    onClick = onClick,
+                )
+                .padding(horizontal = 24.dp, vertical = 10.dp)
+                .alpha(alpha),
     )
 }

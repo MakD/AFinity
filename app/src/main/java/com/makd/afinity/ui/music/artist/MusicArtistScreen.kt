@@ -63,6 +63,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -216,8 +217,8 @@ fun MusicArtistScreen(
                                             else painterResource(R.drawable.ic_favorite),
                                         contentDescription =
                                             if (uiState.artist?.favorite == true)
-                                                "Remove from favorites"
-                                            else "Add to favorites",
+                                                stringResource(R.string.cd_favorite_remove)
+                                            else stringResource(R.string.cd_favorite_add),
                                         tint =
                                             if (uiState.artist?.favorite == true) Color.Red
                                             else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -234,7 +235,7 @@ fun MusicArtistScreen(
                                     ) {
                                         Icon(
                                             painter = painterResource(R.drawable.ic_compass),
-                                            contentDescription = "Instant Mix",
+                                            contentDescription = stringResource(R.string.cd_music_instant_mix),
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(28.dp),
                                         )
@@ -254,7 +255,7 @@ fun MusicArtistScreen(
                                     ) {
                                         Icon(
                                             painter = painterResource(R.drawable.ic_radio),
-                                            contentDescription = "Start Radio",
+                                            contentDescription = stringResource(R.string.cd_music_start_radio),
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(28.dp),
                                         )
@@ -279,7 +280,7 @@ fun MusicArtistScreen(
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_arrows_shuffle),
-                                        contentDescription = "Shuffle",
+                                        contentDescription = stringResource(R.string.cd_music_shuffle),
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(28.dp),
                                     )
@@ -298,7 +299,7 @@ fun MusicArtistScreen(
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_player_play_filled),
-                                        contentDescription = "Play",
+                                        contentDescription = stringResource(R.string.cd_play),
                                         modifier = Modifier.size(26.dp),
                                     )
                                 }
@@ -361,7 +362,7 @@ fun MusicArtistScreen(
                                 } else Modifier
 
                             Text(
-                                text = "Popular",
+                                text = stringResource(R.string.music_section_popular),
                                 style =
                                     MaterialTheme.typography.titleLarge.copy(
                                         fontWeight = FontWeight.Bold
@@ -507,7 +508,7 @@ fun MusicArtistScreen(
                                             label = "see_more_label",
                                         ) { expanded ->
                                             Text(
-                                                text = if (expanded) "See less" else "See more",
+                                                text = stringResource(if (expanded) R.string.action_see_less else R.string.action_see_more),
                                                 style = MaterialTheme.typography.labelLarge,
                                             )
                                         }
@@ -520,7 +521,7 @@ fun MusicArtistScreen(
                     if (uiState.albums.isNotEmpty()) {
                         item {
                             Text(
-                                text = "Albums",
+                                text = stringResource(R.string.music_section_albums),
                                 style =
                                     MaterialTheme.typography.titleLarge.copy(
                                         fontWeight = FontWeight.Bold
@@ -554,7 +555,7 @@ fun MusicArtistScreen(
                     if (uiState.appearsOn.isNotEmpty()) {
                         item {
                             Text(
-                                text = "Appears On",
+                                text = stringResource(R.string.music_section_appears_on),
                                 style =
                                     MaterialTheme.typography.titleLarge.copy(
                                         fontWeight = FontWeight.Bold
@@ -683,8 +684,8 @@ fun MusicArtistScreen(
                                             else painterResource(R.drawable.ic_favorite),
                                         contentDescription =
                                             if (uiState.artist?.favorite == true)
-                                                "Remove from favorites"
-                                            else "Add to favorites",
+                                                stringResource(R.string.cd_favorite_remove)
+                                            else stringResource(R.string.cd_favorite_add),
                                         tint =
                                             if (uiState.artist?.favorite == true) Color.Red
                                             else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -701,7 +702,7 @@ fun MusicArtistScreen(
                                     ) {
                                         Icon(
                                             painter = painterResource(R.drawable.ic_compass),
-                                            contentDescription = "Instant Mix",
+                                            contentDescription = stringResource(R.string.cd_music_instant_mix),
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(28.dp),
                                         )
@@ -721,7 +722,7 @@ fun MusicArtistScreen(
                                     ) {
                                         Icon(
                                             painter = painterResource(R.drawable.ic_radio),
-                                            contentDescription = "Start Radio",
+                                            contentDescription = stringResource(R.string.cd_music_start_radio),
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(28.dp),
                                         )
@@ -745,7 +746,7 @@ fun MusicArtistScreen(
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_arrows_shuffle),
-                                        contentDescription = "Shuffle",
+                                        contentDescription = stringResource(R.string.cd_music_shuffle),
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(28.dp),
                                     )
@@ -764,7 +765,7 @@ fun MusicArtistScreen(
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_player_play_filled),
-                                        contentDescription = "Play",
+                                        contentDescription = stringResource(R.string.cd_play),
                                         modifier = Modifier.size(26.dp),
                                     )
                                 }
@@ -1077,7 +1078,7 @@ fun MusicArtistScreen(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_home),
-                            contentDescription = "Go to Home",
+                            contentDescription = stringResource(R.string.cd_music_go_to_home),
                             tint = Color.White,
                             modifier = Modifier.size(22.dp),
                         )
@@ -1176,7 +1177,7 @@ private fun ArtistOverviewSection(overview: String, modifier: Modifier = Modifie
 
         if (isEllipsized || isExpanded) {
             Text(
-                text = if (isExpanded) "Show less" else "Show more",
+                text = stringResource(if (isExpanded) R.string.action_show_less else R.string.action_show_more),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier =

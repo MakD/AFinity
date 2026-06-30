@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -63,7 +64,7 @@ fun MusicSleepTimerSheet(
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(24.dp).padding(bottom = 24.dp)) {
             Text(
-                text = "SLEEP TIMER",
+                text = stringResource(R.string.abs_sleep_timer_title),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 modifier = Modifier.fillMaxWidth(),
@@ -116,13 +117,13 @@ fun MusicSleepTimerSheet(
                         ) {
                             Icon(painterResource(id = R.drawable.ic_timer_off), null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Stop Timer")
+                            Text(stringResource(R.string.abs_sleep_timer_stop))
                         }
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
-                    "Set new timer",
+                    stringResource(R.string.music_sleep_timer_set_new),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                 )

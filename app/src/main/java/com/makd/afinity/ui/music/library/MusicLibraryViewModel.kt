@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.music.library
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,6 +8,7 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.makd.afinity.R
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
@@ -41,21 +43,29 @@ import java.util.UUID
 import javax.inject.Inject
 
 enum class MusicSortOption(
-    val label: String,
+    @StringRes val labelRes: Int,
     val sortBy: ItemSortBy,
     val sortOrder: SortOrder,
 ) {
-    NameAZ("A → Z", ItemSortBy.SORT_NAME, SortOrder.ASCENDING),
-    NameZA("Z → A", ItemSortBy.SORT_NAME, SortOrder.DESCENDING),
-    RecentlyAdded("Recently Added", ItemSortBy.DATE_CREATED, SortOrder.DESCENDING),
-    RecentlyPlayed("Recently Played", ItemSortBy.DATE_PLAYED, SortOrder.DESCENDING),
-    MostPlayed("Most Played", ItemSortBy.PLAY_COUNT, SortOrder.DESCENDING),
-    Year("By Year", ItemSortBy.PRODUCTION_YEAR, SortOrder.DESCENDING),
-    Duration("Duration", ItemSortBy.RUNTIME, SortOrder.ASCENDING),
-    ByAlbum("By Album", ItemSortBy.ALBUM, SortOrder.ASCENDING),
-    ByArtist("By Artist", ItemSortBy.ALBUM_ARTIST, SortOrder.ASCENDING),
-    TrackNumber("Track Number", ItemSortBy.INDEX_NUMBER, SortOrder.ASCENDING),
-    Random("Random", ItemSortBy.RANDOM, SortOrder.ASCENDING),
+    NameAZ(R.string.music_sort_name_az, ItemSortBy.SORT_NAME, SortOrder.ASCENDING),
+    NameZA(R.string.music_sort_name_za, ItemSortBy.SORT_NAME, SortOrder.DESCENDING),
+    RecentlyAdded(
+        R.string.music_sort_recently_added,
+        ItemSortBy.DATE_CREATED,
+        SortOrder.DESCENDING,
+    ),
+    RecentlyPlayed(
+        R.string.music_sort_recently_played,
+        ItemSortBy.DATE_PLAYED,
+        SortOrder.DESCENDING,
+    ),
+    MostPlayed(R.string.music_sort_most_played, ItemSortBy.PLAY_COUNT, SortOrder.DESCENDING),
+    Year(R.string.music_sort_by_year, ItemSortBy.PRODUCTION_YEAR, SortOrder.DESCENDING),
+    Duration(R.string.music_sort_duration, ItemSortBy.RUNTIME, SortOrder.ASCENDING),
+    ByAlbum(R.string.music_sort_by_album, ItemSortBy.ALBUM, SortOrder.ASCENDING),
+    ByArtist(R.string.music_sort_by_artist, ItemSortBy.ALBUM_ARTIST, SortOrder.ASCENDING),
+    TrackNumber(R.string.music_sort_track_number, ItemSortBy.INDEX_NUMBER, SortOrder.ASCENDING),
+    Random(R.string.music_sort_random, ItemSortBy.RANDOM, SortOrder.ASCENDING),
 }
 
 val TRACK_SORT_OPTIONS =

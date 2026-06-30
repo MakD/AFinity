@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -95,7 +96,7 @@ fun MusicTrackRow(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_music),
-                            contentDescription = "Now playing",
+                            contentDescription = stringResource(R.string.cd_music_now_playing),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp),
                         )
@@ -141,7 +142,7 @@ fun MusicTrackRow(
         if (isDownloaded) {
             Icon(
                 painter = painterResource(R.drawable.ic_sd_card),
-                contentDescription = "Downloaded",
+                contentDescription = stringResource(R.string.cd_music_downloaded),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(start = 6.dp).size(14.dp),
             )
@@ -159,7 +160,7 @@ fun MusicTrackRow(
                 IconButton(onClick = { showMenu = true }, modifier = Modifier.size(36.dp)) {
                     Icon(
                         painter = painterResource(R.drawable.ic_dots_vertical),
-                        contentDescription = "More options",
+                        contentDescription = stringResource(R.string.cd_music_more_options),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp),
                     )
@@ -167,7 +168,7 @@ fun MusicTrackRow(
                 DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                     if (onFavorite != null) {
                         DropdownMenuItem(
-                            text = { Text(if (track.favorite) "Remove from Favorites" else "Add to Favorites") },
+                            text = { Text(stringResource(if (track.favorite) R.string.cd_favorite_remove else R.string.cd_favorite_add)) },
                             onClick = { showMenu = false; onFavorite() },
                             leadingIcon = {
                                 Icon(
@@ -181,7 +182,7 @@ fun MusicTrackRow(
                     }
                     if (onInstantMix != null) {
                         DropdownMenuItem(
-                            text = { Text("Instant Mix") },
+                            text = { Text(stringResource(R.string.music_action_instant_mix)) },
                             onClick = { showMenu = false; onInstantMix() },
                             leadingIcon = {
                                 Icon(
@@ -194,7 +195,7 @@ fun MusicTrackRow(
                     }
                     if (onStartRadio != null) {
                         DropdownMenuItem(
-                            text = { Text("Start Radio") },
+                            text = { Text(stringResource(R.string.music_action_start_radio)) },
                             onClick = { showMenu = false; onStartRadio() },
                             leadingIcon = {
                                 Icon(
@@ -207,7 +208,7 @@ fun MusicTrackRow(
                     }
                     if (onAddNext != null) {
                         DropdownMenuItem(
-                            text = { Text("Play Next") },
+                            text = { Text(stringResource(R.string.music_action_play_next)) },
                             onClick = { showMenu = false; onAddNext() },
                             leadingIcon = {
                                 Icon(
@@ -220,7 +221,7 @@ fun MusicTrackRow(
                     }
                     if (onAddLast != null) {
                         DropdownMenuItem(
-                            text = { Text("Add to Queue") },
+                            text = { Text(stringResource(R.string.music_action_add_to_queue)) },
                             onClick = { showMenu = false; onAddLast() },
                             leadingIcon = {
                                 Icon(
@@ -233,7 +234,7 @@ fun MusicTrackRow(
                     }
                     if (onAddToPlaylist != null) {
                         DropdownMenuItem(
-                            text = { Text("Add to Playlist") },
+                            text = { Text(stringResource(R.string.music_action_add_to_playlist)) },
                             onClick = { showMenu = false; onAddToPlaylist() },
                             leadingIcon = {
                                 Icon(
@@ -246,7 +247,7 @@ fun MusicTrackRow(
                     }
                     if (onRemoveFromPlaylist != null) {
                         DropdownMenuItem(
-                            text = { Text("Remove from Playlist") },
+                            text = { Text(stringResource(R.string.music_action_remove_from_playlist)) },
                             onClick = { showMenu = false; onRemoveFromPlaylist() },
                             leadingIcon = {
                                 Icon(
@@ -259,7 +260,7 @@ fun MusicTrackRow(
                     }
                     if (onDownload != null) {
                         DropdownMenuItem(
-                            text = { Text("Download") },
+                            text = { Text(stringResource(R.string.action_download)) },
                             onClick = { showMenu = false; onDownload() },
                             leadingIcon = {
                                 Icon(

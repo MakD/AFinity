@@ -1229,6 +1229,7 @@
     <string name="music_filter_status">Status</string>
     <string name="music_filter_unplayed">Unplayed</string>
     <string name="music_filter_played">Played</string>
+    <string name="music_filter_clear">Clear</string>
     <!-- Sections -->
     <string name="music_section_made_for_you">Made For You</string>
     <string name="music_section_jump_back_in">Jump Back In</string>

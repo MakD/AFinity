@@ -36,6 +36,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import java.util.Locale
@@ -151,7 +152,7 @@ fun MusicPlayerControls(
             IconButton(onClick = onPrevious) {
                 Icon(
                     painter = painterResource(R.drawable.ic_player_skip_back),
-                    contentDescription = "Previous",
+                    contentDescription = stringResource(R.string.cd_previous),
                     tint = Color.White.copy(alpha = 0.7f),
                     modifier = Modifier.size(28.dp),
                 )
@@ -160,7 +161,7 @@ fun MusicPlayerControls(
             IconButton(onClick = onSeekBackward) {
                 Icon(
                     painter = painterResource(R.drawable.ic_rewind_backward_30),
-                    contentDescription = "Seek backward",
+                    contentDescription = stringResource(R.string.cd_music_seek_backward),
                     tint = Color.White,
                     modifier = Modifier.size(34.dp),
                 )
@@ -184,7 +185,7 @@ fun MusicPlayerControls(
                         Icon(
                             painter = if (isPlaying) painterResource(R.drawable.ic_player_pause_filled)
                             else painterResource(R.drawable.ic_player_play_filled),
-                            contentDescription = if (isPlaying) "Pause" else "Play",
+                            contentDescription = stringResource(if (isPlaying) R.string.cd_pause else R.string.cd_play),
                             tint = Color.Black,
                             modifier = Modifier.size(38.dp),
                         )
@@ -195,7 +196,7 @@ fun MusicPlayerControls(
             IconButton(onClick = onSeekForward) {
                 Icon(
                     painter = painterResource(R.drawable.ic_rewind_forward_30),
-                    contentDescription = "Seek forward",
+                    contentDescription = stringResource(R.string.cd_music_seek_forward),
                     tint = Color.White,
                     modifier = Modifier.size(34.dp),
                 )
@@ -204,7 +205,7 @@ fun MusicPlayerControls(
             IconButton(onClick = onNext) {
                 Icon(
                     painter = painterResource(R.drawable.ic_player_skip_forward),
-                    contentDescription = "Next",
+                    contentDescription = stringResource(R.string.cd_next),
                     tint = Color.White.copy(alpha = 0.7f),
                     modifier = Modifier.size(28.dp),
                 )

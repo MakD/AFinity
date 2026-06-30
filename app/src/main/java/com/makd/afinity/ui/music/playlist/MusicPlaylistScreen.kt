@@ -55,6 +55,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -163,7 +164,7 @@ fun MusicPlaylistScreen(
                     Spacer(Modifier.height(20.dp))
 
                     Text(
-                        text = uiState.playlist?.name ?: "Playlist",
+                        text = uiState.playlist?.name ?: stringResource(R.string.music_fallback_playlist),
                         style =
                             MaterialTheme.typography.headlineSmall.copy(
                                 fontWeight = FontWeight.ExtraBold
@@ -218,7 +219,7 @@ fun MusicPlaylistScreen(
                                 IconButton(onClick = { showDeleteConfirm = true }) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_delete),
-                                        contentDescription = "Delete playlist",
+                                        contentDescription = stringResource(R.string.cd_music_delete_playlist),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(26.dp),
                                     )
@@ -233,7 +234,7 @@ fun MusicPlaylistScreen(
                                     ) {
                                         Icon(
                                             painter = painterResource(R.drawable.ic_compass),
-                                            contentDescription = "Instant Mix",
+                                            contentDescription = stringResource(R.string.cd_music_instant_mix),
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(26.dp),
                                         )
@@ -253,7 +254,7 @@ fun MusicPlaylistScreen(
                                     ) {
                                         Icon(
                                             painter = painterResource(R.drawable.ic_radio),
-                                            contentDescription = "Start Radio",
+                                            contentDescription = stringResource(R.string.cd_music_start_radio),
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(26.dp),
                                         )
@@ -281,7 +282,7 @@ fun MusicPlaylistScreen(
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_arrows_shuffle),
-                                        contentDescription = "Shuffle",
+                                        contentDescription = stringResource(R.string.cd_music_shuffle),
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(28.dp),
                                     )
@@ -298,7 +299,7 @@ fun MusicPlaylistScreen(
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_player_play_filled),
-                                        contentDescription = "Play",
+                                        contentDescription = stringResource(R.string.cd_play),
                                         modifier = Modifier.size(26.dp),
                                     )
                                 }
@@ -408,7 +409,7 @@ fun MusicPlaylistScreen(
                             )
                     ) {
                         Text(
-                            text = uiState.playlist?.name ?: "Playlist",
+                            text = uiState.playlist?.name ?: stringResource(R.string.music_fallback_playlist),
                             style =
                                 MaterialTheme.typography.headlineLarge.copy(
                                     fontWeight = FontWeight.ExtraBold
@@ -603,7 +604,7 @@ fun MusicPlaylistScreen(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_home),
-                            contentDescription = "Go to Home",
+                            contentDescription = stringResource(R.string.cd_music_go_to_home),
                             tint = Color.White,
                             modifier = Modifier.size(22.dp),
                         )
@@ -660,7 +661,7 @@ fun MusicPlaylistScreen(
 
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete Playlist") },
+            title = { Text(stringResource(R.string.music_delete_playlist_title)) },
             text = {
                 Text(
                     "Are you sure you want to delete \"${uiState.playlist?.name ?: "this playlist"}\"? This cannot be undone."
@@ -673,12 +674,12 @@ fun MusicPlaylistScreen(
                         viewModel.deletePlaylist()
                     }
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.action_delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             },
         )

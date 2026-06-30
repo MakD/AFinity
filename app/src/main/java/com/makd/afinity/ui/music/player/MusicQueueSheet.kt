@@ -45,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -92,7 +93,7 @@ fun MusicQueueSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Queue",
+                    text = stringResource(R.string.music_queue_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface,
                 )
@@ -102,14 +103,14 @@ fun MusicQueueSheet(
                         onDismiss()
                     }
                 ) {
-                    Text("Clear", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.music_filter_clear), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
             if (currentTrack != null) {
                 Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 8.dp)) {
                     Text(
-                        text = "Now Playing",
+                        text = stringResource(R.string.music_queue_now_playing),
                         style =
                             MaterialTheme.typography.labelMedium.copy(
                                 fontWeight = FontWeight.SemiBold
@@ -127,7 +128,7 @@ fun MusicQueueSheet(
 
             if (nextTracks.isNotEmpty()) {
                 Text(
-                    text = "Next In Queue",
+                    text = stringResource(R.string.music_queue_next),
                     style =
                         MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -199,7 +200,7 @@ fun MusicQueueSheet(
                                     ) {
                                         Icon(
                                             painter = painterResource(R.drawable.ic_delete),
-                                            contentDescription = "Remove",
+                                            contentDescription = stringResource(R.string.cd_music_remove),
                                             tint =
                                                 MaterialTheme.colorScheme.onErrorContainer.copy(
                                                     alpha = iconAlpha
@@ -276,7 +277,7 @@ private fun QueueTrackRow(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_volume_up),
-                            contentDescription = "Now playing",
+                            contentDescription = stringResource(R.string.cd_music_now_playing),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp),
                         )
@@ -317,7 +318,7 @@ private fun QueueTrackRow(
             if (!isCurrentTrack) {
                 Icon(
                     painter = painterResource(R.drawable.ic_arrows_sort),
-                    contentDescription = "Drag to reorder",
+                    contentDescription = stringResource(R.string.cd_music_drag_reorder),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     modifier =
                         dragHandleModifier

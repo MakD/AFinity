@@ -43,6 +43,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -106,7 +107,7 @@ private fun PlaylistListDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add to Playlist") },
+        title = { Text(stringResource(R.string.music_action_add_to_playlist)) },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 if (state.isLoadingPlaylists) {
@@ -212,7 +213,7 @@ private fun PlaylistListDialog(
                         modifier = Modifier.size(20.dp),
                     )
                     Text(
-                        text = "New Playlist",
+                        text = stringResource(R.string.music_new_playlist_title),
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -221,7 +222,7 @@ private fun PlaylistListDialog(
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
     )
 }
@@ -242,13 +243,13 @@ fun CreatePlaylistDialogContent(
 
     AlertDialog(
         onDismissRequest = { if (!isLoading) onDismiss() },
-        title = { Text("New Playlist") },
+        title = { Text(stringResource(R.string.music_new_playlist_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Playlist name") },
+                    label = { Text(stringResource(R.string.music_new_playlist_name_label)) },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -265,11 +266,11 @@ fun CreatePlaylistDialogContent(
                 ) {
                     Column {
                         Text(
-                            text = "Public",
+                            text = stringResource(R.string.music_playlist_public_label),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         Text(
-                            text = if (isPublic) "Visible to all users" else "Only visible to you",
+                            text = stringResource(if (isPublic) R.string.music_playlist_visible_all else R.string.music_playlist_visible_only_you),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -290,13 +291,13 @@ fun CreatePlaylistDialogContent(
                 if (isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                 } else {
-                    Text("Create")
+                    Text(stringResource(R.string.action_create))
                 }
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss, enabled = !isLoading) {
-                Text("Back")
+                Text(stringResource(R.string.action_back))
             }
         },
     )

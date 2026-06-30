@@ -55,6 +55,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -141,8 +142,8 @@ fun MusicAlbumScreen(
                                 painterResource(R.drawable.ic_favorite_filled)
                             else painterResource(R.drawable.ic_favorite),
                         contentDescription =
-                            if (uiState.album?.favorite == true) "Remove from favorites"
-                            else "Add to favorites",
+                            if (uiState.album?.favorite == true) stringResource(R.string.cd_favorite_remove)
+                            else stringResource(R.string.cd_favorite_add),
                         tint =
                             if (uiState.album?.favorite == true) Color.Red
                             else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -159,7 +160,7 @@ fun MusicAlbumScreen(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_compass),
-                            contentDescription = "Instant Mix",
+                            contentDescription = stringResource(R.string.cd_music_instant_mix),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(26.dp),
                         )
@@ -180,7 +181,7 @@ fun MusicAlbumScreen(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_radio),
-                            contentDescription = "Start Radio",
+                            contentDescription = stringResource(R.string.cd_music_start_radio),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(26.dp),
                         )
@@ -210,7 +211,7 @@ fun MusicAlbumScreen(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_arrows_shuffle),
-                        contentDescription = "Shuffle",
+                        contentDescription = stringResource(R.string.cd_music_shuffle),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(28.dp),
                     )
@@ -228,7 +229,7 @@ fun MusicAlbumScreen(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_player_play_filled),
-                        contentDescription = "Play",
+                        contentDescription = stringResource(R.string.cd_play),
                         modifier = Modifier.size(26.dp),
                     )
                 }
@@ -282,7 +283,7 @@ fun MusicAlbumScreen(
                             text =
                                 uiState.album?.name
                                     ?: uiState.tracks.firstOrNull()?.album
-                                    ?: "Album",
+                                    ?: stringResource(R.string.music_fallback_album),
                             style =
                                 MaterialTheme.typography.headlineSmall.copy(
                                     fontWeight = FontWeight.ExtraBold
@@ -487,7 +488,7 @@ fun MusicAlbumScreen(
                             text =
                                 uiState.album?.name
                                     ?: uiState.tracks.firstOrNull()?.album
-                                    ?: "Album",
+                                    ?: stringResource(R.string.music_fallback_album),
                             style =
                                 MaterialTheme.typography.headlineLarge.copy(
                                     fontWeight = FontWeight.ExtraBold
@@ -646,7 +647,7 @@ fun MusicAlbumScreen(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_home),
-                            contentDescription = "Go to Home",
+                            contentDescription = stringResource(R.string.cd_music_go_to_home),
                             tint = Color.White,
                             modifier = Modifier.size(22.dp),
                         )

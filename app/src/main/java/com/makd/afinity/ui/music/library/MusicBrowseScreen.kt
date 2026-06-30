@@ -18,6 +18,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -79,7 +80,7 @@ fun MusicBrowseScreen(
             AfinityTopAppBar(
                 title = {
                     Text(
-                        text = tab.displayName,
+                        text = stringResource(tab.displayNameRes),
                         style =
                             MaterialTheme.typography.headlineLarge.copy(
                                 fontWeight = FontWeight.Bold

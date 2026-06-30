@@ -56,6 +56,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -320,13 +321,13 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
             IconButton(onClick = onNavigateBack) {
                 Icon(
                     painter = painterResource(R.drawable.ic_keyboard_arrow_down),
-                    contentDescription = "Minimize",
+                    contentDescription = stringResource(R.string.cd_music_minimize),
                     tint = Color.White,
                     modifier = Modifier.size(32.dp),
                 )
             }
             Text(
-                "NOW PLAYING",
+                stringResource(R.string.music_player_now_playing),
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.7f),
                 letterSpacing = 2.sp,
@@ -339,7 +340,7 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                                 if (playbackState.sleepTimerEndMs != null) R.drawable.ic_moon_filled
                                 else R.drawable.ic_moon
                             ),
-                        contentDescription = "Sleep timer",
+                        contentDescription = stringResource(R.string.cd_music_sleep_timer),
                         tint =
                             if (playbackState.sleepTimerEndMs != null) animatedColor
                             else Color.White,
@@ -348,7 +349,7 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                 IconButton(onClick = onOpenQueue) {
                     Icon(
                         painter = painterResource(R.drawable.ic_playlist_alt),
-                        contentDescription = "Queue",
+                        contentDescription = stringResource(R.string.cd_music_queue),
                         tint = Color.White,
                     )
                 }
@@ -432,7 +433,7 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = playbackState.currentTrack?.name ?: "Nothing playing",
+                    text = playbackState.currentTrack?.name ?: stringResource(R.string.music_player_nothing_playing),
                     style =
                         MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.ExtraBold
@@ -471,7 +472,7 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_playlist),
-                        contentDescription = "Add to playlist",
+                        contentDescription = stringResource(R.string.cd_music_add_to_playlist),
                         tint =
                             Color.White.copy(alpha = if (onAddToPlaylist != null) 0.8f else 0.3f),
                     )
@@ -482,7 +483,7 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_compass),
-                        contentDescription = "Instant Mix",
+                        contentDescription = stringResource(R.string.cd_music_instant_mix),
                         tint = Color.White.copy(alpha = if (onInstantMix != null) 0.8f else 0.3f),
                     )
                 }
@@ -542,7 +543,7 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                                     R.drawable.ic_favorite_filled
                                 else R.drawable.ic_favorite
                             ),
-                        contentDescription = "Favorite",
+                        contentDescription = stringResource(R.string.cd_favorite),
                         tint =
                             if (playbackState.currentTrack?.favorite == true) Color.Red
                             else Color.White.copy(alpha = 0.8f),
@@ -561,7 +562,7 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                         Icon(
                             painter = painterResource(R.drawable.ic_arrows_shuffle),
-                            contentDescription = "Shuffle",
+                            contentDescription = stringResource(R.string.cd_music_shuffle),
                             tint =
                                 if (playbackState.shuffled) animatedColor
                                 else Color.White.copy(alpha = 0.8f),
@@ -584,7 +585,7 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                                     RepeatMode.ALL -> painterResource(R.drawable.ic_repeat)
                                     RepeatMode.ONE -> painterResource(R.drawable.ic_repeat_once)
                                 },
-                            contentDescription = "Repeat",
+                            contentDescription = stringResource(R.string.cd_music_repeat),
                             tint =
                                 if (playbackState.repeatMode != RepeatMode.OFF) animatedColor
                                 else Color.White.copy(alpha = 0.8f),
@@ -604,7 +605,7 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                         Icon(
                             painter = painterResource(R.drawable.ic_article),
-                            contentDescription = "Lyrics",
+                            contentDescription = stringResource(R.string.cd_music_lyrics),
                             tint =
                                 if (showLyrics) animatedColor else Color.White.copy(alpha = 0.8f),
                         )
@@ -759,12 +760,12 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                 IconButton(onClick = onNavigateBack) {
                     Icon(
                         painter = painterResource(R.drawable.ic_keyboard_arrow_down),
-                        contentDescription = "Minimize",
+                        contentDescription = stringResource(R.string.cd_music_minimize),
                         tint = Color.White,
                     )
                 }
                 Text(
-                    "NOW PLAYING",
+                    stringResource(R.string.music_player_now_playing),
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.7f),
                     letterSpacing = 2.sp,
@@ -778,7 +779,7 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                                         R.drawable.ic_moon_filled
                                     else R.drawable.ic_moon
                                 ),
-                            contentDescription = "Sleep timer",
+                            contentDescription = stringResource(R.string.cd_music_sleep_timer),
                             tint =
                                 if (playbackState.sleepTimerEndMs != null) animatedColor
                                 else Color.White,
@@ -787,7 +788,7 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                     IconButton(onClick = onOpenQueue) {
                         Icon(
                             painter = painterResource(R.drawable.ic_playlist_alt),
-                            contentDescription = "Queue",
+                            contentDescription = stringResource(R.string.cd_music_queue),
                             tint = Color.White,
                         )
                     }
@@ -802,7 +803,7 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = playbackState.currentTrack?.name ?: "Nothing playing",
+                        text = playbackState.currentTrack?.name ?: stringResource(R.string.music_player_nothing_playing),
                         style =
                             MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                         color = Color.White,
@@ -838,7 +839,7 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_playlist),
-                            contentDescription = "Add to playlist",
+                            contentDescription = stringResource(R.string.cd_music_add_to_playlist),
                             tint =
                                 Color.White.copy(
                                     alpha = if (onAddToPlaylist != null) 0.8f else 0.3f
@@ -851,7 +852,7 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_compass),
-                            contentDescription = "Instant Mix",
+                            contentDescription = stringResource(R.string.cd_music_instant_mix),
                             tint =
                                 Color.White.copy(alpha = if (onInstantMix != null) 0.8f else 0.3f),
                         )
@@ -863,7 +864,7 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_radio),
-                                contentDescription = "Start Radio",
+                                contentDescription = stringResource(R.string.cd_music_start_radio),
                                 tint =
                                     if (isRadioActive) animatedColor
                                     else Color.White.copy(alpha = if (onStartRadio != null) 0.8f else 0.3f),
@@ -912,7 +913,7 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                                         R.drawable.ic_favorite_filled
                                     else R.drawable.ic_favorite
                                 ),
-                            contentDescription = "Favorite",
+                            contentDescription = stringResource(R.string.cd_favorite),
                             tint =
                                 if (playbackState.currentTrack?.favorite == true) Color.Red
                                 else Color.White.copy(alpha = 0.8f),
@@ -934,7 +935,7 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_arrows_shuffle),
-                                contentDescription = "Shuffle",
+                                contentDescription = stringResource(R.string.cd_music_shuffle),
                                 tint =
                                     if (playbackState.shuffled) animatedColor
                                     else Color.White.copy(alpha = 0.8f),
@@ -960,7 +961,7 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                                         RepeatMode.ALL -> painterResource(R.drawable.ic_repeat)
                                         RepeatMode.ONE -> painterResource(R.drawable.ic_repeat_once)
                                     },
-                                contentDescription = "Repeat",
+                                contentDescription = stringResource(R.string.cd_music_repeat),
                                 tint =
                                     if (playbackState.repeatMode != RepeatMode.OFF) animatedColor
                                     else Color.White.copy(alpha = 0.8f),
@@ -984,7 +985,7 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_article),
-                                contentDescription = "Lyrics",
+                                contentDescription = stringResource(R.string.cd_music_lyrics),
                                 tint =
                                     if (showLyrics) animatedColor
                                     else Color.White.copy(alpha = 0.8f),
@@ -1008,7 +1009,7 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_cast_devices),
-                                contentDescription = "Cast",
+                                contentDescription = stringResource(R.string.cd_cast),
                                 tint =
                                     if (isMusicCasting) animatedColor
                                     else Color.White.copy(alpha = 0.8f),
