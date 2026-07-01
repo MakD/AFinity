@@ -65,6 +65,8 @@ import com.makd.afinity.ui.audiobookshelf.genre.AudiobookshelfGenreResultsScreen
 import com.makd.afinity.ui.audiobookshelf.item.AudiobookshelfItemScreen
 import com.makd.afinity.ui.audiobookshelf.item.series.AudiobookshelfSeriesScreen
 import com.makd.afinity.ui.audiobookshelf.libraries.AudiobookshelfLibrariesScreen
+import com.makd.afinity.ui.audiobookshelf.libraries.AudiobookshelfLibraryScreen
+import com.makd.afinity.ui.audiobookshelf.libraries.AudiobookshelfSeriesListScreen
 import com.makd.afinity.ui.audiobookshelf.player.AudiobookshelfPlayerScreen
 import com.makd.afinity.ui.components.AfinitySplashScreen
 import com.makd.afinity.ui.favorites.FavoritesScreen
@@ -180,6 +182,7 @@ fun MainNavigation(
                 !route.startsWith("add_edit_server") &&
                 !route.startsWith("login") &&
                 !route.startsWith("audiobookshelf/library/") &&
+                route != Destination.AUDIOBOOKSHELF_SERIES_LIST_ROUTE &&
                 !route.startsWith("audiobookshelf/item/") &&
                 !route.startsWith("audiobookshelf/series/") &&
                 !route.startsWith("audiobookshelf/genre/") &&
@@ -1086,6 +1089,40 @@ fun MainNavigation(
                                         navController = navController,
                                         mainUiState = mainUiState,
                                         widthSizeClass = widthSizeClass,
+                                    )
+                                }
+
+                                composable(Destination.AUDIOBOOKSHELF_SERIES_LIST_ROUTE) {
+                                    AudiobookshelfSeriesListScreen(
+                                        onNavigateToItem = { itemId ->
+                                            navController.navigate(
+                                                Destination.createAudiobookshelfItemRoute(itemId)
+                                            )
+                                        },
+                                        navController = navController,
+                                        mainUiState = mainUiState,
+                                        widthSizeClass = widthSizeClass,
+                                    )
+                                }
+
+                                composable(
+                                    route = Destination.AUDIOBOOKSHELF_LIBRARY_ROUTE,
+                                    arguments =
+                                        listOf(
+                                            navArgument("libraryId") { type = NavType.StringType },
+                                            navArgument("libraryName") {
+                                                type = NavType.StringType
+                                            },
+                                        ),
+                                ) {
+                                    AudiobookshelfLibraryScreen(
+                                        onNavigateToItem = { itemId ->
+                                            navController.navigate(
+                                                Destination.createAudiobookshelfItemRoute(itemId)
+                                            )
+                                        },
+                                        navController = navController,
+                                        mainUiState = mainUiState,
                                     )
                                 }
 

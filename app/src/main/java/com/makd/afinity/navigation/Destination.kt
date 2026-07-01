@@ -112,6 +112,9 @@ enum class Destination(
 
         const val AUDIOBOOKSHELF_LOGIN_ROUTE = "audiobookshelf/login"
         const val AUDIOBOOKSHELF_LIBRARIES_ROUTE = "audiobookshelf/libraries"
+        const val AUDIOBOOKSHELF_SERIES_LIST_ROUTE = "audiobookshelf/series-browse"
+        const val AUDIOBOOKSHELF_LIBRARY_ROUTE =
+            "audiobookshelf/library/{libraryId}/{libraryName}"
 
         const val AUDIOBOOKSHELF_ITEM_ROUTE = "audiobookshelf/item/{itemId}"
         const val AUDIOBOOKSHELF_SERIES_ROUTE =
@@ -126,6 +129,14 @@ enum class Destination(
 
         fun createAudiobookshelfLibrariesRoute(): String {
             return AUDIOBOOKSHELF_LIBRARIES_ROUTE
+        }
+
+        fun createAudiobookshelfSeriesListRoute(): String {
+            return AUDIOBOOKSHELF_SERIES_LIST_ROUTE
+        }
+
+        fun createAudiobookshelfLibraryRoute(libraryId: String, libraryName: String): String {
+            return "audiobookshelf/library/$libraryId/${libraryName.replace("/", "%2F")}"
         }
 
         fun createAudiobookshelfItemRoute(itemId: String): String {

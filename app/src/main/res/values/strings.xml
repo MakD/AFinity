@@ -868,6 +868,7 @@
     <string name="pref_cast_hevc_title">Enable HEVC</string>
     <string name="pref_cast_hevc_description">Enable for Chromecast Ultra/Google TV</string>
     <string name="pref_cast_max_bitrate_title">Max Bitrate</string>
+    <string name="pref_cast_max_bitrate_auto">Auto (network test)</string>
     <string name="pref_buffer_size_title">Video Buffer Size</string>
 
     <!--Audiobookshelf Libraries / Item Screens-->
@@ -875,6 +876,7 @@
     <string name="abs_connect_button">Connect</string>
     <string name="abs_tab_home">Home</string>
     <string name="abs_tab_series">Series</string>
+    <string name="abs_action_browse">Browse</string>
     <string name="abs_placeholder_server_url">https://abs.example.com</string>
     <string name="abs_no_libraries_found">No libraries found</string>
     <string name="abs_no_items_in_library">No items in library</string>

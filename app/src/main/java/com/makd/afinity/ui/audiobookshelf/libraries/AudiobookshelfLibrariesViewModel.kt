@@ -2,7 +2,6 @@ package com.makd.afinity.ui.audiobookshelf.libraries
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
@@ -56,15 +55,6 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
     private val _personalizedSections = MutableStateFlow<List<PersonalizedSection>>(emptyList())
     private val _genreSections = MutableStateFlow<List<PersonalizedSection>>(emptyList())
 
-    private val _libraryItems = MutableStateFlow<Map<String, List<LibraryItem>>>(emptyMap())
-
-    private val _selectedLetter = MutableStateFlow<String?>(null)
-    val selectedLetter: StateFlow<String?> = _selectedLetter.asStateFlow()
-
-    private val _filteredLibraryItems = MutableStateFlow<Map<String, List<LibraryItem>>>(emptyMap())
-
-    private val _allSeries = MutableStateFlow<List<AudiobookshelfSeries>>(emptyList())
-
     private val progressMap: StateFlow<Map<String, MediaProgress>> =
         audiobookshelfRepository
             .getAllProgressFlow()
@@ -90,36 +80,11 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
             .flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val libraryItems: StateFlow<Map<String, List<LibraryItem>>> =
-        combine(_libraryItems, progressMap) { items, progress ->
-                items.mapValues { (_, list) -> enrichItems(list, progress) }
-            }
-            .flowOn(Dispatchers.Default)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
-
-    val filteredLibraryItems: StateFlow<Map<String, List<LibraryItem>>> =
-        combine(_filteredLibraryItems, progressMap) { items, progress ->
-                items.mapValues { (_, list) -> enrichItems(list, progress) }
-            }
-            .flowOn(Dispatchers.Default)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
-
-    val allSeries: StateFlow<List<AudiobookshelfSeries>> =
-        combine(_allSeries, progressMap) { series, progress ->
-                series.map { s -> s.copy(books = enrichItems(s.books, progress)) }
-            }
-            .flowOn(Dispatchers.Default)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
     init {
         viewModelScope.launch {
             audiobookshelfRepository.currentSessionId.collect { sessionId ->
-                _libraryItems.value = emptyMap()
-                _filteredLibraryItems.value = emptyMap()
                 _personalizedSections.value = emptyList()
                 _genreSections.value = emptyList()
-                _allSeries.value = emptyList()
-                _selectedLetter.value = null
 
                 if (sessionId != null && audiobookshelfRepository.isAuthenticated.value) {
                     refreshLibraries()
@@ -181,11 +146,9 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
                     _uiState.update { it.copy(isRefreshing = false) }
                 }
 
-                launch(Dispatchers.IO) { _allSeries.value = fetchAllSeries(activeLibraries) }
                 launch(Dispatchers.IO) {
                     _genreSections.value = fetchGenreSections(activeLibraries)
                 }
-                activeLibraries.forEach { loadLibraryItems(it.id) }
             } else {
                 _uiState.update { it.copy(isRefreshing = false, error = "No libraries found") }
             }
@@ -248,41 +211,6 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
         return buildSectionsFromViews(viewsByLibrary)
     }
 
-    private suspend fun fetchAllSeries(libraryList: List<Library>): List<AudiobookshelfSeries> {
-        val allSeriesMap = mutableMapOf<String, AudiobookshelfSeries>()
-        val results = coroutineScope {
-            libraryList
-                .map { library ->
-                    async { library.id to audiobookshelfRepository.getSeries(library.id) }
-                }
-                .awaitAll()
-        }
-
-        for ((libraryId, result) in results) {
-            result.fold(
-                onSuccess = { seriesList ->
-                    for (series in seriesList) {
-                        val existing = allSeriesMap[series.id]
-                        if (existing != null) {
-                            val mergedBooks = (existing.books + series.books).distinctBy { it.id }
-                            allSeriesMap[series.id] = existing.copy(books = mergedBooks)
-                        } else {
-                            allSeriesMap[series.id] =
-                                series.copy(books = series.books.distinctBy { it.id })
-                        }
-                    }
-                },
-                onFailure = { error ->
-                    Timber.e(error, "Failed to load series for library $libraryId")
-                },
-            )
-        }
-
-        return allSeriesMap.values
-            .filter { it.books.isNotEmpty() }
-            .sortedBy { it.nameIgnorePrefix ?: it.name }
-    }
-
     private suspend fun fetchGenreSections(libraryList: List<Library>): List<PersonalizedSection> =
         coroutineScope {
             try {
@@ -336,50 +264,6 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
                 return@coroutineScope emptyList()
             }
         }
-
-    fun loadLibraryItems(libraryId: String) {
-        if (_libraryItems.value.containsKey(libraryId)) return
-        viewModelScope.launch(Dispatchers.Default) {
-            val result = audiobookshelfRepository.refreshLibraryItems(libraryId)
-            result.fold(
-                onSuccess = { items ->
-                    _libraryItems.update { currentMap -> currentMap + (libraryId to items) }
-                },
-                onFailure = { error ->
-                    Timber.e(error, "Failed to load items for library $libraryId")
-                },
-            )
-        }
-    }
-
-    fun onLetterSelected(letter: String) {
-        val newLetter = if (_selectedLetter.value == letter) null else letter
-        _selectedLetter.value = newLetter
-        applyLetterFilter(newLetter)
-    }
-
-    private fun applyLetterFilter(letter: String?) {
-        viewModelScope.launch(Dispatchers.Default) {
-            val allItems = _libraryItems.value
-            val filtered =
-                if (letter == null) {
-                    allItems
-                } else {
-                    allItems.mapValues { (_, items) ->
-                        items.filter { item ->
-                            val firstChar =
-                                item.media.metadata.title?.firstOrNull()?.uppercase() ?: ""
-                            if (letter == "#") {
-                                firstChar.isNotEmpty() && !firstChar[0].isLetter()
-                            } else {
-                                firstChar == letter
-                            }
-                        }
-                    }
-                }
-            _filteredLibraryItems.value = filtered
-        }
-    }
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)

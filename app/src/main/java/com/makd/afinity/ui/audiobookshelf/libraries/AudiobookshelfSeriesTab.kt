@@ -18,14 +18,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.res.stringResource
-import com.makd.afinity.R
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
@@ -37,16 +37,17 @@ fun AudiobookshelfSeriesTab(
     onItemClick: (LibraryItem) -> Unit,
     isLoading: Boolean,
     widthSizeClass: WindowWidthSizeClass,
+    modifier: Modifier = Modifier,
 ) {
     when {
         isLoading -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }
 
         seriesList.isEmpty() -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     text = stringResource(R.string.abs_no_series_found),
                     style = MaterialTheme.typography.bodyMedium,
@@ -62,7 +63,7 @@ fun AudiobookshelfSeriesTab(
             val playerOffset = LocalPlayerOffset.current
 
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = playerOffset),
             ) {
                 items(items = seriesList, key = { it.id }) { series ->
