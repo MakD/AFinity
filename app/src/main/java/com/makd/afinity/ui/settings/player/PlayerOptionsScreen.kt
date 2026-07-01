@@ -347,6 +347,7 @@ fun PlayerOptionsScreen(
                     var showBitrateMenu by remember { mutableStateOf(false) }
                     val bitrateOptions =
                         listOf(
+                            0 to stringResource(R.string.pref_cast_max_bitrate_auto),
                             16_000_000 to "16 Mbps",
                             8_000_000 to "8 Mbps",
                             4_000_000 to "4 Mbps",

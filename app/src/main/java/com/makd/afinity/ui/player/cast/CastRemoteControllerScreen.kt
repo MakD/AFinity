@@ -3,6 +3,7 @@ package com.makd.afinity.ui.player.cast
 import android.content.res.Configuration
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -49,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -496,18 +498,45 @@ private fun CastSeekSection(
     animatedColor: Color,
 ) {
     val displayPosition = seekDragPosition ?: castState.currentPosition.toFloat()
+    val duration = castState.duration.toFloat().coerceAtLeast(1f)
+    val chapters = castState.currentItem?.chapters ?: emptyList()
 
     Slider(
         value = displayPosition,
         onValueChange = onSeekDragChange,
         onValueChangeFinished = onSeekDragFinished,
-        valueRange = 0f..castState.duration.toFloat().coerceAtLeast(1f),
+        valueRange = 0f..duration,
         colors =
             SliderDefaults.colors(
                 thumbColor = animatedColor,
                 activeTrackColor = animatedColor,
                 inactiveTrackColor = Color.White.copy(alpha = 0.2f),
             ),
+        track = { sliderState ->
+            Box(modifier = Modifier.fillMaxWidth().height(18.dp), contentAlignment = Alignment.Center) {
+                SliderDefaults.Track(
+                    sliderState = sliderState,
+                    modifier = Modifier.height(4.dp),
+                    colors =
+                        SliderDefaults.colors(
+                            activeTrackColor = animatedColor,
+                            inactiveTrackColor = Color.White.copy(alpha = 0.2f),
+                        ),
+                )
+                if (chapters.isNotEmpty()) {
+                    Canvas(modifier = Modifier.fillMaxWidth().height(4.dp)) {
+                        chapters.forEach { chapter ->
+                            val x = (chapter.startPosition.toFloat() / duration) * size.width
+                            drawCircle(
+                                color = Color.White.copy(alpha = 0.7f),
+                                radius = 2.dp.toPx(),
+                                center = Offset(x, size.height / 2),
+                            )
+                        }
+                    }
+                }
+            }
+        },
         modifier = Modifier.fillMaxWidth(),
     )
 
@@ -537,11 +566,29 @@ private fun CastControlsRow(
     castManager: CastManager,
     animatedColor: Color,
 ) {
+    val hasChapters = (castState.currentItem?.chapters?.size ?: 0) > 0
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (hasChapters) {
+            IconButton(
+                onClick = { castManager.seekToPreviousChapter() },
+                modifier = Modifier.size(56.dp),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_player_skip_back),
+                    contentDescription = stringResource(R.string.cd_previous),
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp),
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+        }
+
         IconButton(
             onClick = { castManager.seekTo((castState.currentPosition - 10_000).coerceAtLeast(0)) },
             modifier = Modifier.size(56.dp),
@@ -608,6 +655,22 @@ private fun CastControlsRow(
                 tint = Color.White,
                 modifier = Modifier.size(32.dp),
             )
+        }
+
+        if (hasChapters) {
+            Spacer(modifier = Modifier.width(16.dp))
+
+            IconButton(
+                onClick = { castManager.seekToNextChapter() },
+                modifier = Modifier.size(56.dp),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_player_skip_forward),
+                    contentDescription = stringResource(R.string.cd_next),
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp),
+                )
+            }
         }
     }
 }

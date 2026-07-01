@@ -42,6 +42,8 @@ import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private const val DEFAULT_MAX_BITRATE = 16_000_000
+
 @Singleton
 class CastManager
 @Inject
@@ -99,7 +101,7 @@ constructor(
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
         startPositionMs: Long = 0L,
-        maxBitrate: Int = 16_000_000,
+        maxBitrate: Int = DEFAULT_MAX_BITRATE,
         enableHevc: Boolean = false,
     ) {
         scope.launch {
@@ -114,14 +116,23 @@ constructor(
                 currentServerBaseUrl = serverBaseUrl
                 currentEnableHevc = enableHevc
 
-                val deviceProfile = castDeviceProfileFactory.createProfile(enableHevc, maxBitrate)
+                val resolvedMaxBitrate =
+                    if (maxBitrate <= 0) {
+                        withContext(Dispatchers.IO) { playbackRepository.detectMaxBitrate() }
+                            ?: DEFAULT_MAX_BITRATE
+                    } else {
+                        maxBitrate
+                    }
+
+                val deviceProfile =
+                    castDeviceProfileFactory.createProfile(enableHevc, resolvedMaxBitrate)
 
                 val playbackInfo =
                     withContext(Dispatchers.IO) {
                         playbackRepository.getPlaybackInfoForCast(
                             itemId = item.id,
                             deviceProfile = deviceProfile,
-                            maxStreamingBitrate = maxBitrate,
+                            maxStreamingBitrate = resolvedMaxBitrate,
                             maxAudioChannels = 6,
                             audioStreamIndex = audioStreamIndex,
                             subtitleStreamIndex = subtitleStreamIndex,
@@ -265,7 +276,7 @@ constructor(
                         sessionId = playSessionId,
                         audioStreamIndex = audioStreamIndex,
                         subtitleStreamIndex = subtitleStreamIndex,
-                        castBitrate = maxBitrate,
+                        castBitrate = resolvedMaxBitrate,
                         duration = item.runtimeTicks / 10000,
                         playMethod = playMethod,
                         serverBaseUrl = serverBaseUrl,
@@ -495,6 +506,33 @@ constructor(
 
     fun seekTo(positionMs: Long) {
         remoteMediaClient?.seek(MediaSeekOptions.Builder().setPosition(positionMs).build())
+    }
+
+    fun seekToNextChapter() {
+        val chapters = _castState.value.currentItem?.chapters ?: return
+        if (chapters.isEmpty()) return
+        val currentPosition = _castState.value.currentPosition
+        val nextChapter = chapters.find { it.startPosition > currentPosition + 1000 } ?: return
+        seekTo(nextChapter.startPosition)
+    }
+
+    fun seekToPreviousChapter() {
+        val chapters = _castState.value.currentItem?.chapters ?: return
+        if (chapters.isEmpty()) return
+        val currentPosition = _castState.value.currentPosition
+        val currentChapterIndex = chapters.indexOfLast { it.startPosition <= currentPosition }
+        if (currentChapterIndex == -1) return
+
+        val currentChapter = chapters[currentChapterIndex]
+        val targetPosition =
+            if (currentPosition - currentChapter.startPosition > 3000) {
+                currentChapter.startPosition
+            } else if (currentChapterIndex > 0) {
+                chapters[currentChapterIndex - 1].startPosition
+            } else {
+                0L
+            }
+        seekTo(targetPosition)
     }
 
     fun stop() {

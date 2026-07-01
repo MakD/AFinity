@@ -1,7 +1,5 @@
 package com.makd.afinity.cast
 
-import javax.inject.Inject
-import javax.inject.Singleton
 import org.jellyfin.sdk.model.api.CodecProfile
 import org.jellyfin.sdk.model.api.CodecType
 import org.jellyfin.sdk.model.api.DeviceProfile
@@ -15,6 +13,8 @@ import org.jellyfin.sdk.model.api.ProfileConditionValue
 import org.jellyfin.sdk.model.api.SubtitleDeliveryMethod
 import org.jellyfin.sdk.model.api.SubtitleProfile
 import org.jellyfin.sdk.model.api.TranscodingProfile
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class CastDeviceProfileFactory @Inject constructor() {
@@ -30,58 +30,44 @@ class CastDeviceProfileFactory @Inject constructor() {
                 DirectPlayProfile(
                     container = "mp4,webm,mkv",
                     videoCodec = videoCodecs,
-                    audioCodec = "aac,mp3,opus,flac,vorbis",
+                    audioCodec = "aac,mp3,opus,flac,vorbis,ac3,eac3",
                     type = DlnaProfileType.VIDEO,
                 )
             )
         }
 
-        val transcodingProfiles = listOf(
-            TranscodingProfile(
-                container = "ts",
-                videoCodec = "h264",
-                audioCodec = "aac",
-                type = DlnaProfileType.VIDEO,
-                context = EncodingContext.STREAMING,
-                protocol = MediaStreamProtocol.HLS,
-                maxAudioChannels = "6",
-                breakOnNonKeyFrames = false,
-                conditions = emptyList(),
+        val transcodingProfiles =
+            listOf(
+                TranscodingProfile(
+                    container = "ts",
+                    videoCodec = "h264",
+                    audioCodec = "aac,ac3,eac3",
+                    type = DlnaProfileType.VIDEO,
+                    context = EncodingContext.STREAMING,
+                    protocol = MediaStreamProtocol.HLS,
+                    maxAudioChannels = "6",
+                    breakOnNonKeyFrames = false,
+                    conditions = emptyList(),
+                )
             )
-        )
 
         val codecProfiles = buildList {
             add(
                 CodecProfile(
                     type = CodecType.VIDEO,
                     codec = "h264",
-                    conditions = listOf(
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.VIDEO_LEVEL,
-                            value = "51",
-                            isRequired = false,
-                        ),
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.WIDTH,
-                            value = "3840",
-                            isRequired = false,
-                        ),
-                    ),
-                    applyConditions = emptyList(),
-                )
-            )
-            if (enableHevc) {
-                add(
-                    CodecProfile(
-                        type = CodecType.VIDEO,
-                        codec = "hevc",
-                        conditions = listOf(
+                    conditions =
+                        listOf(
                             ProfileCondition(
                                 condition = ProfileConditionType.LESS_THAN_EQUAL,
                                 property = ProfileConditionValue.VIDEO_LEVEL,
-                                value = "153",
+                                value = "51",
+                                isRequired = false,
+                            ),
+                            ProfileCondition(
+                                condition = ProfileConditionType.NOT_EQUALS,
+                                property = ProfileConditionValue.VIDEO_PROFILE,
+                                value = "high 10",
                                 isRequired = false,
                             ),
                             ProfileCondition(
@@ -90,7 +76,60 @@ class CastDeviceProfileFactory @Inject constructor() {
                                 value = "3840",
                                 isRequired = false,
                             ),
+                            ProfileCondition(
+                                condition = ProfileConditionType.LESS_THAN_EQUAL,
+                                property = ProfileConditionValue.HEIGHT,
+                                value = "2160",
+                                isRequired = false,
+                            ),
+                            ProfileCondition(
+                                condition = ProfileConditionType.LESS_THAN_EQUAL,
+                                property = ProfileConditionValue.VIDEO_FRAMERATE,
+                                value = "60",
+                                isRequired = false,
+                            ),
                         ),
+                    applyConditions = emptyList(),
+                )
+            )
+            if (enableHevc) {
+                add(
+                    CodecProfile(
+                        type = CodecType.VIDEO,
+                        codec = "hevc",
+                        conditions =
+                            listOf(
+                                ProfileCondition(
+                                    condition = ProfileConditionType.LESS_THAN_EQUAL,
+                                    property = ProfileConditionValue.VIDEO_LEVEL,
+                                    value = "153",
+                                    isRequired = false,
+                                ),
+                                ProfileCondition(
+                                    condition = ProfileConditionType.NOT_EQUALS,
+                                    property = ProfileConditionValue.VIDEO_PROFILE,
+                                    value = "high 10",
+                                    isRequired = false,
+                                ),
+                                ProfileCondition(
+                                    condition = ProfileConditionType.LESS_THAN_EQUAL,
+                                    property = ProfileConditionValue.WIDTH,
+                                    value = "3840",
+                                    isRequired = false,
+                                ),
+                                ProfileCondition(
+                                    condition = ProfileConditionType.LESS_THAN_EQUAL,
+                                    property = ProfileConditionValue.HEIGHT,
+                                    value = "2160",
+                                    isRequired = false,
+                                ),
+                                ProfileCondition(
+                                    condition = ProfileConditionType.LESS_THAN_EQUAL,
+                                    property = ProfileConditionValue.VIDEO_FRAMERATE,
+                                    value = "60",
+                                    isRequired = false,
+                                ),
+                            ),
                         applyConditions = emptyList(),
                     )
                 )
@@ -98,28 +137,30 @@ class CastDeviceProfileFactory @Inject constructor() {
             add(
                 CodecProfile(
                     type = CodecType.VIDEO_AUDIO,
-                    conditions = listOf(
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.AUDIO_CHANNELS,
-                            value = "6",
-                            isRequired = false,
+                    conditions =
+                        listOf(
+                            ProfileCondition(
+                                condition = ProfileConditionType.LESS_THAN_EQUAL,
+                                property = ProfileConditionValue.AUDIO_CHANNELS,
+                                value = "6",
+                                isRequired = false,
+                            )
                         ),
-                    ),
                     applyConditions = emptyList(),
                 )
             )
         }
 
-        val subtitleProfiles = listOf(
-            SubtitleProfile("vtt", SubtitleDeliveryMethod.EXTERNAL),
-            SubtitleProfile("srt", SubtitleDeliveryMethod.EXTERNAL),
-            SubtitleProfile("ass", SubtitleDeliveryMethod.ENCODE),
-            SubtitleProfile("ssa", SubtitleDeliveryMethod.ENCODE),
-            SubtitleProfile("sub", SubtitleDeliveryMethod.ENCODE),
-            SubtitleProfile("pgssub", SubtitleDeliveryMethod.ENCODE),
-            SubtitleProfile("dvdsub", SubtitleDeliveryMethod.ENCODE),
-        )
+        val subtitleProfiles =
+            listOf(
+                SubtitleProfile("vtt", SubtitleDeliveryMethod.EXTERNAL),
+                SubtitleProfile("srt", SubtitleDeliveryMethod.EXTERNAL),
+                SubtitleProfile("ass", SubtitleDeliveryMethod.ENCODE),
+                SubtitleProfile("ssa", SubtitleDeliveryMethod.ENCODE),
+                SubtitleProfile("sub", SubtitleDeliveryMethod.ENCODE),
+                SubtitleProfile("pgssub", SubtitleDeliveryMethod.ENCODE),
+                SubtitleProfile("dvdsub", SubtitleDeliveryMethod.ENCODE),
+            )
 
         return DeviceProfile(
             name = "Chromecast",
