@@ -9,6 +9,7 @@ interface AuthRepository {
 
     val currentUser: StateFlow<User?>
     val isAuthenticated: StateFlow<Boolean>
+    val isSwitchingSession: StateFlow<Boolean>
 
     suspend fun restoreAuthenticationState(): RestoreResult
 

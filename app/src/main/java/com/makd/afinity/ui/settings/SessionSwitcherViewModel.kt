@@ -68,34 +68,33 @@ constructor(
                     currentSession ->
                     withContext(Dispatchers.IO) {
                         try {
-                            val sessionGroups =
-                                servers.map { server ->
-                                    val tokens =
-                                        securePreferencesRepository
-                                            .getAllServerUserTokens()
-                                            .filter { it.serverId == server.id }
+                            val sessionGroups = servers.map { server ->
+                                val tokens =
+                                    securePreferencesRepository.getAllServerUserTokens().filter {
+                                        it.serverId == server.id
+                                    }
 
-                                    val userSessions =
-                                        tokens.mapNotNull { token ->
-                                            val user = databaseRepository.getUser(token.userId)
-                                            if (user == null) return@mapNotNull null
-                                            val baseUrl = server.address.removeSuffix("/")
+                                val userSessions = tokens.mapNotNull { token ->
+                                    val user =
+                                        databaseRepository.getUser(token.userId)
+                                            ?: return@mapNotNull null
+                                    val baseUrl = server.address.removeSuffix("/")
 
-                                            UserSession(
-                                                serverId = server.id,
-                                                userId = token.userId,
-                                                username = token.username,
-                                                userAvatar =
-                                                    user.primaryImageTag?.let { tag ->
-                                                        "$baseUrl/Users/${user.id}/Images/Primary?tag=$tag"
-                                                    },
-                                                isCurrent =
-                                                    currentSession?.serverId == server.id &&
-                                                        currentSession.userId == token.userId,
-                                            )
-                                        }
-                                    ServerSessionGroup(server = server, sessions = userSessions)
+                                    UserSession(
+                                        serverId = server.id,
+                                        userId = token.userId,
+                                        username = token.username,
+                                        userAvatar =
+                                            user.primaryImageTag?.let { tag ->
+                                                "$baseUrl/Users/${user.id}/Images/Primary?tag=$tag"
+                                            },
+                                        isCurrent =
+                                            currentSession?.serverId == server.id &&
+                                                currentSession.userId == token.userId,
+                                    )
                                 }
+                                ServerSessionGroup(server = server, sessions = userSessions)
+                            }
                             sessionGroups to currentSession
                         } catch (e: Exception) {
                             Timber.e(e, "Error building session groups")
@@ -111,6 +110,7 @@ constructor(
     }
 
     fun switchSession(serverId: String, userId: UUID) {
+        if (_state.value.isSwitching) return
         viewModelScope.launch {
             _state.value =
                 _state.value.copy(isSwitching = true, error = null, switchSuccess = false)

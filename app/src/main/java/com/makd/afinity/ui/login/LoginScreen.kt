@@ -794,10 +794,12 @@ private fun UserSelectionAndTabs(
                         isSelected = isSelected,
                         serverUrl = serverUrl,
                         onClick = {
-                            if (savedUsers.any { it.id == user.id }) {
-                                onSavedUserLogin(user)
-                            } else {
-                                onUserSelect(user)
+                            if (!uiState.isLoggingIn) {
+                                if (savedUsers.any { it.id == user.id }) {
+                                    onSavedUserLogin(user)
+                                } else {
+                                    onUserSelect(user)
+                                }
                             }
                         },
                     )

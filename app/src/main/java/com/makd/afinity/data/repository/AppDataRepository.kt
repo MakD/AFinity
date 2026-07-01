@@ -1117,18 +1117,7 @@ constructor(
     suspend fun clearAllData() {
         Timber.d("Clearing all cached app data")
         liveDataJob?.cancel()
-
-        try {
-            studioRepository.clearAllData()
-            peopleRepository.clearAllData()
-            genreRepository.clearAllData()
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to clear database caches")
-        }
-
         recentWatchedCache = null
-        scope.launch { preferencesRepository.setLastCacheInvalidatedAt(0L) }
-        scope.launch { homeCacheRepository.invalidateAll() }
         _heroCarouselItems.value = emptyList()
         _libraries.value = emptyList()
         _latestMovies.value = emptyList()
@@ -1141,6 +1130,17 @@ constructor(
         _separateTvLibrarySections.value = emptyList()
         _favoritesData.value = FavoritesData()
         _watchlistData.value = WatchlistData()
+
+        scope.launch { preferencesRepository.setLastCacheInvalidatedAt(0L) }
+        scope.launch { homeCacheRepository.invalidateAll() }
+
+        try {
+            studioRepository.clearAllData()
+            peopleRepository.clearAllData()
+            genreRepository.clearAllData()
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to clear database caches")
+        }
     }
 }
 

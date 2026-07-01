@@ -86,12 +86,18 @@ class MainActivity : AppCompatActivity() {
             @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
             val windowSize = calculateWindowSizeClass(this)
             val themeMode by
-                preferencesRepository.getThemeModeFlow().collectAsStateWithLifecycle(initialValue ="SYSTEM")
+                preferencesRepository
+                    .getThemeModeFlow()
+                    .collectAsStateWithLifecycle(initialValue = "SYSTEM")
             val dynamicColors by
-                preferencesRepository.getDynamicColorsFlow().collectAsStateWithLifecycle(initialValue =true)
+                preferencesRepository
+                    .getDynamicColorsFlow()
+                    .collectAsStateWithLifecycle(initialValue = true)
 
             val appFont by
-                preferencesRepository.getAppFontFlow().collectAsStateWithLifecycle(initialValue ="DEFAULT")
+                preferencesRepository
+                    .getAppFontFlow()
+                    .collectAsStateWithLifecycle(initialValue = "DEFAULT")
             AFinityTheme(themeMode = themeMode, dynamicColor = dynamicColors, appFont = appFont) {
                 val windowInsetsController =
                     WindowCompat.getInsetsController(window, window.decorView)

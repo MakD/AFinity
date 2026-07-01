@@ -14,10 +14,13 @@ import com.makd.afinity.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.Jellyfin
@@ -28,6 +31,7 @@ import org.jellyfin.sdk.api.operations.UserApi
 import timber.log.Timber
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -61,14 +65,24 @@ constructor(
     private val _isServerReachable = MutableStateFlow(true)
     val isServerReachable: StateFlow<Boolean> = _isServerReachable.asStateFlow()
 
+    /**
+     * True while switchUser() is running. currentSession is overwritten in place during a switch
+     * (never nulled), so isAuthenticated never toggles false->true on its own; UI layers that need
+     * to react to an account switch (e.g. showing a loading screen) should observe this instead.
+     */
+    private val _isSwitchingSession = MutableStateFlow(false)
+    val isSwitchingSession: StateFlow<Boolean> = _isSwitchingSession.asStateFlow()
+    private val switchingCallCount = AtomicInteger(0)
+
     private val apiClients = ConcurrentHashMap<String, ApiClient>()
+    private val sessionMutex = Mutex()
 
     suspend fun startSession(
         serverUrl: String,
         serverId: String,
         userId: UUID,
         accessToken: String,
-    ): Result<Unit> =
+    ): Result<Unit> = sessionMutex.withLock {
         withContext(Dispatchers.IO) {
             try {
                 val user = databaseRepository.getUser(userId)
@@ -158,6 +172,18 @@ constructor(
                     )
 
                 securePrefsRepository.saveActiveSession(serverId, userId, resolvedUrl)
+
+                try {
+                    jellyseerrRepository.setActiveJellyfinSession(serverId, userId)
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to link Jellyseerr session")
+                }
+                try {
+                    audiobookshelfRepository.setActiveJellyfinSession(serverId, userId)
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to link Audiobookshelf session")
+                }
+
                 sessionScope.launch {
                     try {
                         val userDto = UserApi(apiClient).getCurrentUser().content
@@ -183,20 +209,6 @@ constructor(
                         Timber.w(e, "Failed to refresh user policy; using cached isAdmin")
                     }
                 }
-                sessionScope.launch {
-                    try {
-                        jellyseerrRepository.setActiveJellyfinSession(serverId, userId)
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to link Jellyseerr session")
-                    }
-                }
-                sessionScope.launch {
-                    try {
-                        audiobookshelfRepository.setActiveJellyfinSession(serverId, userId)
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to link Audiobookshelf session")
-                    }
-                }
 
                 Result.success(Unit)
             } catch (e: Exception) {
@@ -204,6 +216,7 @@ constructor(
                 Result.failure(e)
             }
         }
+    }
 
     fun setServerReachable(reachable: Boolean) {
         _isServerReachable.value = reachable
@@ -218,14 +231,6 @@ constructor(
         securePrefsRepository.saveActiveSession(current.serverId, current.userId, newUrl)
 
         Timber.d("Session URL updated: $newUrl")
-    }
-
-    fun updateCurrentUser(user: User) {
-        val current = _currentSession.value
-        if (current != null && current.userId == user.id) {
-            _currentSession.value = current.copy(user = user)
-            Timber.d("Updated current user in session: ${user.name} (Tag: ${user.primaryImageTag})")
-        }
     }
 
     suspend fun getOrRestoreApiClient(serverId: String): ApiClient? {
@@ -258,13 +263,24 @@ constructor(
                     IllegalStateException("Could not find Server URL for target user")
                 )
 
-        return startSession(serverUrl, serverId, userId, token)
+        switchingCallCount.incrementAndGet()
+        _isSwitchingSession.value = true
+        val switchStartTime = System.currentTimeMillis()
+        return try {
+            startSession(serverUrl, serverId, userId, token)
+        } finally {
+            val remaining = MIN_SWITCH_DISPLAY_MS - (System.currentTimeMillis() - switchStartTime)
+            if (remaining > 0) delay(remaining)
+            if (switchingCallCount.decrementAndGet() == 0) {
+                _isSwitchingSession.value = false
+            }
+        }
     }
 
-    suspend fun logout() {
+    suspend fun logout() = sessionMutex.withLock {
         if (_currentSession.value == null) {
             Timber.w("No session to logout from")
-            return
+            return@withLock
         }
 
         securePrefsRepository.clearActiveSession()
@@ -295,5 +311,9 @@ constructor(
     fun getCurrentApiClient(): ApiClient? {
         val session = _currentSession.value ?: return null
         return apiClients[session.serverId]
+    }
+
+    companion object {
+        private const val MIN_SWITCH_DISPLAY_MS = 500L
     }
 }

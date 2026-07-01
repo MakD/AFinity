@@ -52,6 +52,8 @@ constructor(
             .stateIn(scope, SharingStarted.Eagerly, false)
     }
 
+    override val isSwitchingSession: StateFlow<Boolean> = sessionManager.isSwitchingSession
+
     init {
         Timber.d("AuthRepository initialized")
     }

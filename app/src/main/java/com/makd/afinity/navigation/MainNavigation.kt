@@ -1134,7 +1134,9 @@ fun MainNavigation(
                                     AudiobookshelfItemScreen(
                                         onNavigateHome = {
                                             navController.navigate(Destination.HOME.route) {
-                                                popUpTo(Destination.HOME.route) { inclusive = false }
+                                                popUpTo(Destination.HOME.route) {
+                                                    inclusive = false
+                                                }
                                                 launchSingleTop = true
                                             }
                                         },
@@ -1176,7 +1178,9 @@ fun MainNavigation(
                                     AudiobookshelfSeriesScreen(
                                         onNavigateHome = {
                                             navController.navigate(Destination.HOME.route) {
-                                                popUpTo(Destination.HOME.route) { inclusive = false }
+                                                popUpTo(Destination.HOME.route) {
+                                                    inclusive = false
+                                                }
                                                 launchSingleTop = true
                                             }
                                         },
@@ -1188,7 +1192,7 @@ fun MainNavigation(
                                                     startPosition = startPosition,
                                                 )
                                             )
-                                        }
+                                        },
                                     )
                                 }
 
@@ -1267,18 +1271,18 @@ fun MainNavigation(
                                         onCloseClick = {
                                             when (miniPlayerState) {
                                                 is AudioMiniPlayerState.Abs -> {
-                                                    android.util.Log.d(
-                                                        "ABS-MiniPlayer",
-                                                        "MainNavigation: ABS onCloseClick — calling pause()+closeSession()",
-                                                    )
+                                                    Timber.tag("ABS-MiniPlayer")
+                                                        .d(
+                                                            "MainNavigation: ABS onCloseClick — calling pause()+closeSession()"
+                                                        )
                                                     viewModel.audiobookshelfPlayer.pause()
                                                     viewModel.audiobookshelfPlayer.closeSession()
                                                 }
                                                 is AudioMiniPlayerState.Music -> {
-                                                    android.util.Log.d(
-                                                        "ABS-MiniPlayer",
-                                                        "MainNavigation: Music onCloseClick — calling stop()+ACTION_STOP",
-                                                    )
+                                                    Timber.tag("ABS-MiniPlayer")
+                                                        .d(
+                                                            "MainNavigation: Music onCloseClick — calling stop()+ACTION_STOP"
+                                                        )
                                                     viewModel.musicPlaybackManager.stop()
                                                     navController.context.startService(
                                                         android.content

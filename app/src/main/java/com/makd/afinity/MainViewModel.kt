@@ -8,12 +8,13 @@ import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel
@@ -48,7 +49,10 @@ constructor(
                         _authenticationState.value = AuthenticationState.Authenticated
                     }
                     is AuthRepository.RestoreResult.Degraded -> {
-                        Timber.w(result.reason, "Session restored in degraded state (server unreachable)")
+                        Timber.w(
+                            result.reason,
+                            "Session restored in degraded state (server unreachable)",
+                        )
                         _authenticationState.value = AuthenticationState.Authenticated
                     }
                     is AuthRepository.RestoreResult.Failed -> {
@@ -65,23 +69,33 @@ constructor(
 
     private fun observeAuthenticationChanges() {
         viewModelScope.launch {
-            authRepository.isAuthenticated.collect { isAuthenticated ->
-                if (
-                    isAuthenticated &&
-                        _authenticationState.value != AuthenticationState.Authenticated
-                ) {
-                    Timber.d("User authenticated via auth repository")
-                    _authenticationState.value = AuthenticationState.Authenticated
-                    webSocketManager.connect()
-                } else if (
-                    !isAuthenticated &&
-                        _authenticationState.value == AuthenticationState.Authenticated
-                ) {
-                    Timber.d("User logged out via auth repository")
-                    _authenticationState.value = AuthenticationState.NotAuthenticated
-                    webSocketManager.disconnect()
+            combine(authRepository.isAuthenticated, authRepository.isSwitchingSession) {
+                    isAuthenticated,
+                    isSwitchingSession ->
+                    isAuthenticated to isSwitchingSession
                 }
-            }
+                .collect { (isAuthenticated, isSwitchingSession) ->
+                    if (isSwitchingSession) {
+                        if (_authenticationState.value != AuthenticationState.Loading) {
+                            Timber.d("Session switch started, showing loading state")
+                            _authenticationState.value = AuthenticationState.Loading
+                        }
+                    } else if (
+                        isAuthenticated &&
+                            _authenticationState.value != AuthenticationState.Authenticated
+                    ) {
+                        Timber.d("User authenticated via auth repository")
+                        _authenticationState.value = AuthenticationState.Authenticated
+                        webSocketManager.connect()
+                    } else if (
+                        !isAuthenticated &&
+                            _authenticationState.value == AuthenticationState.Authenticated
+                    ) {
+                        Timber.d("User logged out via auth repository")
+                        _authenticationState.value = AuthenticationState.NotAuthenticated
+                        webSocketManager.disconnect()
+                    }
+                }
         }
     }
 
