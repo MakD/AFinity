@@ -325,7 +325,7 @@
     <string name="empty_genre_podcasts">Er zijn geen podcasts gevonden in dit genre</string>
     <string name="error_unknown_occurred">Er is een onbekende fout opgetreden</string>
     <string name="search_no_results">Geen resultaten gevonden</string>
-    <string name="search_placeholder">Zoek naar films en tv-programma\'s</string>
+    <string name="search_placeholder">Zoek</string>
     <string name="cd_clear">Duidelijk</string>
     <string name="filter_request">Verzoek</string>
     <string name="filter_audiobooks">Audioboeken</string>
@@ -688,4 +688,18 @@
     <string name="storage_unavailable_volume">Niet beschikbare opslag</string>
     <string name="storage_unavailable_badge">Niet beschikbaar</string>
     <string name="storage_unavailable_used_fmt">%1$s gebruikt • opslag niet aangesloten</string>
+    <string name="music_playback_channel_name">AFinity Muziek Speler</string>
+    <string name="download_unavailable_label">Niet beschikbaar - %1$s verwijderd</string>
+    <string name="download_unavailable_indicator">Gedownload - opslag niet beschikbaar</string>
+    <string name="download_unavailable_delete_title">Opslag niet beschikbaar</string>
+    <string name="download_unavailable_delete_message">Deze download is opgeslagen in opslag die op dit moment niet verbonden is, dus de bestanden kunnen nu niet verwijderd worden. Toch van de lijst verwijderen? De bestanden zullen blijven in de opslag als je het opnieuw verbindt.</string>
+    <string name="download_unavailable_delete_confirm">Verwijder van lijst</string>
+    <string name="error_quickconnect_invalid_code">Foute of oude code. Probeer a.u.b. opnieuw.</string>
+    <string name="lang_system_default">Systeemstandaard</string>
+    <string name="build_nightly">Nightly-uitgave</string>
+    <string name="watchlists_empty_message">Items die u toevoegt aan watchlist zullen hier verschijnen</string>
+    <string name="warning_http_insecure">Waarschuwing: Verbinden over HTTP verstuurt uw wachtwoord in normale tekst. HTTPS wordt sterk aanbevolen.</string>
+    <string name="dialog_shutdown_server_title">Zet server uit</string>
+    <string name="action_refresh_libraries">Ververs Bibliotheken</string>
+    <string name="active_sessions_count_fmt">Actieve Sessies (%1$d)</string>
 </resources>
