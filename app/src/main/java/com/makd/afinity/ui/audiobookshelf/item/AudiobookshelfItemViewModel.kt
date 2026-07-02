@@ -16,6 +16,9 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsDownloadRepository
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -181,26 +184,33 @@ constructor(
 
     private fun loadSeriesDetails(libraryId: String, seriesItems: List<SeriesItem>) {
         viewModelScope.launch {
-            val loadedSeries = mutableListOf<SeriesDisplayData>()
-
-            for (seriesItem in seriesItems) {
-                audiobookshelfRepository
-                    .getSeriesItems(libraryId, seriesItem.id, limit = 4)
-                    .fold(
-                        onSuccess = { result ->
-                            loadedSeries.add(
-                                SeriesDisplayData(
-                                    id = seriesItem.id,
-                                    name = seriesItem.name,
-                                    totalBooks = result.totalBooks,
-                                    bookItems = result.items,
+            val loadedSeries = coroutineScope {
+                seriesItems
+                    .map { seriesItem ->
+                        async {
+                            audiobookshelfRepository
+                                .getSeriesItems(libraryId, seriesItem.id, limit = 4)
+                                .fold(
+                                    onSuccess = { result ->
+                                        SeriesDisplayData(
+                                            id = seriesItem.id,
+                                            name = seriesItem.name,
+                                            totalBooks = result.totalBooks,
+                                            bookItems = result.items,
+                                        )
+                                    },
+                                    onFailure = { e ->
+                                        Timber.w(
+                                            e,
+                                            "Failed to load series items: ${seriesItem.name}",
+                                        )
+                                        null
+                                    },
                                 )
-                            )
-                        },
-                        onFailure = { e ->
-                            Timber.w(e, "Failed to load series items: ${seriesItem.name}")
-                        },
-                    )
+                        }
+                    }
+                    .awaitAll()
+                    .filterNotNull()
             }
 
             _uiState.value = _uiState.value.copy(seriesDetails = loadedSeries)
