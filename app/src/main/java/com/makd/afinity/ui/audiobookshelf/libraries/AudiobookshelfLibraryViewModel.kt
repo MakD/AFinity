@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -34,15 +35,20 @@ constructor(
 
     val currentConfig: StateFlow<AudiobookshelfConfig?> = audiobookshelfRepository.currentConfig
 
-    private val _isLoading = MutableStateFlow(true)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-
-    private val _items = MutableStateFlow<List<LibraryItem>>(emptyList())
+    private val _isRefreshing = MutableStateFlow(true)
 
     private val _selectedLetter = MutableStateFlow<String?>(null)
     val selectedLetter: StateFlow<String?> = _selectedLetter.asStateFlow()
 
-    private val _filteredItems = MutableStateFlow<List<LibraryItem>?>(null)
+    private val items: StateFlow<List<LibraryItem>> =
+        audiobookshelfRepository
+            .getLibraryItemsFlow(libraryId)
+            .flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val isLoading: StateFlow<Boolean> =
+        combine(items, _isRefreshing) { loaded, refreshing -> refreshing && loaded.isEmpty() }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     private val progressMap: StateFlow<Map<String, MediaProgress>> =
         audiobookshelfRepository
@@ -50,40 +56,37 @@ constructor(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     val displayItems: StateFlow<List<LibraryItem>> =
-        combine(_items, _filteredItems, progressMap) { items, filtered, progress ->
-                enrichItems(filtered ?: items, progress)
+        combine(items, _selectedLetter, progressMap) { loaded, letter, progress ->
+                val filtered =
+                    if (letter == null) {
+                        loaded
+                    } else {
+                        loaded.filter { item ->
+                            val firstChar =
+                                item.media.metadata.title?.firstOrNull()?.uppercase() ?: ""
+                            if (letter == "#") {
+                                firstChar.isNotEmpty() && !firstChar[0].isLetter()
+                            } else {
+                                firstChar == letter
+                            }
+                        }
+                    }
+                enrichItems(filtered, progress)
             }
+            .flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         viewModelScope.launch(Dispatchers.Default) {
-            val result = audiobookshelfRepository.refreshLibraryItems(libraryId)
-            result.fold(
-                onSuccess = { items -> _items.value = items },
-                onFailure = { error ->
-                    Timber.e(error, "Failed to load items for library $libraryId")
-                },
-            )
-            _isLoading.value = false
+            audiobookshelfRepository.refreshLibraryItems(libraryId).onFailure { error ->
+                Timber.e(error, "Failed to load items for library $libraryId")
+            }
+            _isRefreshing.value = false
         }
     }
 
     fun onLetterSelected(letter: String) {
-        val newLetter = if (_selectedLetter.value == letter) null else letter
-        _selectedLetter.value = newLetter
-        _filteredItems.value =
-            if (newLetter == null) {
-                null
-            } else {
-                _items.value.filter { item ->
-                    val firstChar = item.media.metadata.title?.firstOrNull()?.uppercase() ?: ""
-                    if (newLetter == "#") {
-                        firstChar.isNotEmpty() && !firstChar[0].isLetter()
-                    } else {
-                        firstChar == newLetter
-                    }
-                }
-            }
+        _selectedLetter.value = if (_selectedLetter.value == letter) null else letter
     }
 
     private fun enrichItems(

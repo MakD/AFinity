@@ -11,11 +11,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -31,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
+import com.makd.afinity.data.models.audiobookshelf.coverUrl
 
 @Composable
 fun AudiobookCard(
@@ -43,7 +46,7 @@ fun AudiobookCard(
     val coverUrl =
         if (serverUrl != null && item.media.coverPath != null) {
             val coverPx = (screenWidthPx / 2).coerceAtLeast(100)
-            "$serverUrl/api/items/${item.id}/cover?width=$coverPx"
+            item.coverUrl(serverUrl, width = coverPx)
         } else null
 
     Column(modifier = modifier) {
@@ -68,8 +71,12 @@ fun AudiobookCard(
                     )
                 }
 
-                item.userMediaProgress?.let { progress ->
-                    if (progress.isFinished) {
+                val progress = item.userMediaProgress
+                val isFinished = progress?.isFinished == true
+                val unheardCount = item.numEpisodesIncomplete ?: 0
+
+                when {
+                    isFinished -> {
                         Box(
                             modifier =
                                 Modifier.align(Alignment.TopEnd)
@@ -85,15 +92,35 @@ fun AudiobookCard(
                                 modifier = Modifier.size(16.dp),
                             )
                         }
-                    } else if (progress.progress > 0) {
-                        LinearProgressIndicator(
-                            progress = { progress.progress.toFloat() },
-                            modifier =
-                                Modifier.fillMaxWidth().height(4.dp).align(Alignment.BottomCenter),
-                            color = MaterialTheme.colorScheme.primary,
-                            trackColor = Color.Black.copy(alpha = 0.3f),
-                        )
                     }
+
+                    unheardCount > 0 -> {
+                        Surface(
+                            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                            shape = RoundedCornerShape(4.dp),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
+                        ) {
+                            Text(
+                                text = if (unheardCount > 99) "99+ EP" else "$unheardCount EP",
+                                style =
+                                    MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            )
+                        }
+                    }
+                }
+
+                if (!isFinished && (progress?.progress ?: 0.0) > 0) {
+                    LinearProgressIndicator(
+                        progress = { progress!!.progress.toFloat() },
+                        modifier =
+                            Modifier.fillMaxWidth().height(4.dp).align(Alignment.BottomCenter),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = Color.Black.copy(alpha = 0.3f),
+                    )
                 }
             }
         }

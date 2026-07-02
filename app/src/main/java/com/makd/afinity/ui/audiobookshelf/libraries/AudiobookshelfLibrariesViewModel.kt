@@ -24,6 +24,8 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
@@ -31,6 +33,8 @@ import timber.log.Timber
 import javax.inject.Inject
 
 data class PersonalizedSection(val id: String, val label: String, val items: List<LibraryItem>)
+
+private data class LibraryViews(val views: List<PersonalizedView>, val isFull: Boolean)
 
 @HiltViewModel
 class AudiobookshelfLibrariesViewModel
@@ -83,8 +87,13 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
     init {
         viewModelScope.launch {
             audiobookshelfRepository.currentSessionId.collect { sessionId ->
-                _personalizedSections.value = emptyList()
-                _genreSections.value = emptyList()
+                if (sessionId != cachedSessionId) {
+                    _personalizedSections.value = emptyList()
+                    _genreSections.value = emptyList()
+                    cachedGenreSections = emptyList()
+                    lastFullRefreshAt = 0L
+                    cachedSessionId = sessionId
+                }
 
                 if (sessionId != null && audiobookshelfRepository.isAuthenticated.value) {
                     refreshLibraries()
@@ -103,7 +112,7 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
         }
     }
 
-    fun refreshLibraries() {
+    fun refreshLibraries(force: Boolean = false) {
         if (refreshJob?.isActive == true) return
 
         refreshJob = viewModelScope.launch {
@@ -136,21 +145,121 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
                     _uiState.update { it.copy(isRefreshing = false) }
                 }
 
-                val personalized =
-                    withContext(Dispatchers.Default) {
-                        fetchPersonalizedData(activeLibraries)
-                    }
-                _personalizedSections.value = personalized
-
-                if (!hasCachedSections) {
-                    _uiState.update { it.copy(isRefreshing = false) }
+                if (cachedGenreSections.isNotEmpty()) {
+                    _genreSections.value = cachedGenreSections
                 }
 
-                launch(Dispatchers.IO) {
-                    _genreSections.value = fetchGenreSections(activeLibraries)
+                val withinCooldown =
+                    !force &&
+                        System.currentTimeMillis() - lastFullRefreshAt < FULL_REFRESH_COOLDOWN_MS
+                if (withinCooldown && hasCachedSections) {
+                    refreshContinueListening(activeLibraries)
+                } else {
+                    lastFullRefreshAt = System.currentTimeMillis()
+                    fetchPersonalizedIncrementally(
+                        libraryList = activeLibraries,
+                        quickFirst = !hasCachedSections,
+                    )
+                }
+                _uiState.update { it.copy(isRefreshing = false) }
+
+                if (cachedGenreSections.isEmpty()) {
+                    launch(Dispatchers.IO) {
+                        val genres = fetchGenreSections(activeLibraries)
+                        cachedGenreSections = genres
+                        _genreSections.value = genres
+                    }
                 }
             } else {
                 _uiState.update { it.copy(isRefreshing = false, error = "No libraries found") }
+            }
+        }
+    }
+
+    private suspend fun fetchPersonalizedIncrementally(
+        libraryList: List<Library>,
+        quickFirst: Boolean,
+    ) = coroutineScope {
+        val stateMutex = Mutex()
+        val viewsByLibrary = mutableMapOf<String, LibraryViews>()
+
+        suspend fun record(libraryId: String, views: List<PersonalizedView>, isFull: Boolean) {
+            stateMutex.withLock {
+                val existing = viewsByLibrary[libraryId]
+                if (!isFull && existing?.isFull == true) return@withLock
+                viewsByLibrary[libraryId] = LibraryViews(views, isFull)
+                val ordered = linkedMapOf<String, List<PersonalizedView>>()
+                for (library in libraryList) {
+                    viewsByLibrary[library.id]?.let { ordered[library.id] = it.views }
+                }
+                val sections = buildSectionsFromViews(ordered)
+                if (sections.isNotEmpty()) {
+                    _personalizedSections.value = sections
+                    _uiState.update { it.copy(isRefreshing = false) }
+                }
+            }
+        }
+
+        if (quickFirst) {
+            libraryList.forEach { library ->
+                launch(Dispatchers.IO) {
+                    audiobookshelfRepository
+                        .getPersonalized(
+                            libraryId = library.id,
+                            shelves = listOf(CONTINUE_LISTENING_SHELF),
+                            limit = 10,
+                        )
+                        .onSuccess { views -> record(library.id, views, isFull = false) }
+                }
+            }
+        }
+
+        libraryList.forEach { library ->
+            launch(Dispatchers.IO) {
+                audiobookshelfRepository
+                    .getPersonalized(library.id)
+                    .onSuccess { views -> record(library.id, views, isFull = true) }
+                    .onFailure { error ->
+                        Timber.e(
+                            error,
+                            "Failed to load personalized data for library ${library.id}",
+                        )
+                    }
+            }
+        }
+    }
+
+    private suspend fun refreshContinueListening(libraryList: List<Library>) = coroutineScope {
+        val results =
+            libraryList
+                .map { library ->
+                    async(Dispatchers.IO) {
+                        audiobookshelfRepository
+                            .getPersonalized(
+                                libraryId = library.id,
+                                shelves = listOf(CONTINUE_LISTENING_SHELF),
+                                limit = 10,
+                            )
+                            .getOrNull()
+                            ?.let { library.id to it }
+                    }
+                }
+                .awaitAll()
+                .filterNotNull()
+                .toMap()
+        if (results.isEmpty()) return@coroutineScope
+
+        val freshSections = buildSectionsFromViews(results)
+        if (freshSections.isEmpty()) return@coroutineScope
+        val freshById = freshSections.associateBy { it.id }
+
+        _personalizedSections.update { current ->
+            if (current.isEmpty()) {
+                freshSections
+            } else {
+                val existingIds = current.map { it.id }.toSet()
+                val missing = freshSections.filterNot { it.id in existingIds }
+                missing + current.map { section -> freshById[section.id] ?: section }
             }
         }
     }
@@ -186,29 +295,6 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
             }
         }
         return allSections.values.toList()
-    }
-
-    private suspend fun fetchPersonalizedData(
-        libraryList: List<Library>
-    ): List<PersonalizedSection> {
-        val results = coroutineScope {
-            libraryList
-                .map { library ->
-                    async { library.id to audiobookshelfRepository.getPersonalized(library.id) }
-                }
-                .awaitAll()
-        }
-
-        val viewsByLibrary = mutableMapOf<String, List<PersonalizedView>>()
-        for ((libraryId, result) in results) {
-            result.fold(
-                onSuccess = { views -> viewsByLibrary[libraryId] = views },
-                onFailure = { error ->
-                    Timber.e(error, "Failed to load personalized data for library $libraryId")
-                },
-            )
-        }
-        return buildSectionsFromViews(viewsByLibrary)
     }
 
     private suspend fun fetchGenreSections(libraryList: List<Library>): List<PersonalizedSection> =
@@ -267,6 +353,14 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    companion object {
+        private const val FULL_REFRESH_COOLDOWN_MS = 30_000L
+        private const val CONTINUE_LISTENING_SHELF = "continue-listening"
+        @Volatile private var lastFullRefreshAt = 0L
+        @Volatile private var cachedGenreSections: List<PersonalizedSection> = emptyList()
+        @Volatile private var cachedSessionId: String? = null
     }
 
     private fun enrichItems(

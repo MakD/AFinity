@@ -28,4 +28,5 @@ data class AudiobookshelfItemEntity(
     val updatedAt: Long?,
     val cachedAt: Long,
     val serializedEpisodes: String? = null,
+    val numEpisodesIncomplete: Int? = null,
 )

@@ -64,6 +64,7 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.audiobookshelf.AudibleRating
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
+import com.makd.afinity.data.models.audiobookshelf.coverUrl
 import com.makd.afinity.ui.components.CircleFlagIcon
 import com.makd.afinity.ui.components.getAutoFlagUrl
 import com.makd.afinity.ui.utils.htmlToAnnotatedString
@@ -88,10 +89,12 @@ fun ItemHeader(
     modifier: Modifier = Modifier,
 ) {
     val coverUrl =
-        if (downloadInfo?.status == AbsDownloadStatus.COMPLETED && downloadInfo.localDirPath != null) {
+        if (
+            downloadInfo?.status == AbsDownloadStatus.COMPLETED && downloadInfo.localDirPath != null
+        ) {
             "file://${downloadInfo.localDirPath}/cover.jpg"
         } else if (serverUrl != null && item.media.coverPath != null) {
-            "$serverUrl/api/items/${item.id}/cover"
+            item.coverUrl(serverUrl)
         } else null
 
     Box(modifier = modifier.fillMaxWidth()) {

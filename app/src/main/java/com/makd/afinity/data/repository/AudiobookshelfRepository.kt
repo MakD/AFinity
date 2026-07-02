@@ -62,7 +62,7 @@ interface AudiobookshelfRepository {
 
     suspend fun refreshLibraryItems(
         libraryId: String,
-        limit: Int = 100,
+        limit: Int = 50,
         page: Int = 0,
     ): Result<List<LibraryItem>>
 
@@ -87,7 +87,11 @@ interface AudiobookshelfRepository {
 
     val personalizedCache: StateFlow<Map<String, List<PersonalizedView>>>
 
-    suspend fun getPersonalized(libraryId: String): Result<List<PersonalizedView>>
+    suspend fun getPersonalized(
+        libraryId: String,
+        shelves: List<String>? = null,
+        limit: Int = 15,
+    ): Result<List<PersonalizedView>>
 
     fun getInProgressItemsFlow(): Flow<List<ItemWithProgress>>
 

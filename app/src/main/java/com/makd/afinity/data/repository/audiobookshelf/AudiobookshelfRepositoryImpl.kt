@@ -576,11 +576,11 @@ constructor(
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
+                val refreshStartedAt = System.currentTimeMillis()
                 val allItems = mutableListOf<LibraryItem>()
                 var currentPage = 0
                 var totalFetched = 0
                 var total = Int.MAX_VALUE
-                var isFirstPage = true
 
                 while (totalFetched < total) {
                     val response =
@@ -590,7 +590,7 @@ constructor(
                                 id = libraryId,
                                 limit = limit,
                                 page = currentPage,
-                                include = "progress",
+                                include = "progress,numEpisodesIncomplete",
                                 sort = "media.metadata.title",
                             )
 
@@ -603,14 +603,6 @@ constructor(
                             item.toEntity(currentServerId, currentUserId.toString())
                         }
 
-                        if (isFirstPage) {
-                            audiobookshelfDao.deleteItemsByLibrary(
-                                currentServerId,
-                                currentUserId.toString(),
-                                libraryId,
-                            )
-                            isFirstPage = false
-                        }
                         audiobookshelfDao.insertItems(entities)
                         items.forEach { item ->
                             item.userMediaProgress?.let { progress -> cacheProgress(progress) }
@@ -631,6 +623,13 @@ constructor(
                         )
                     }
                 }
+
+                audiobookshelfDao.deleteStaleItemsByLibrary(
+                    currentServerId,
+                    currentUserId.toString(),
+                    libraryId,
+                    refreshStartedAt,
+                )
 
                 Timber.d("Fetched all ${allItems.size} items for library $libraryId")
                 Result.success(allItems)
@@ -833,6 +832,7 @@ constructor(
                             limit = limit,
                             page = 0,
                             filter = encodedFilter,
+                            sort = "media.metadata.series.sequence",
                             minified = 1,
                         )
 
@@ -849,7 +849,11 @@ constructor(
         }
     }
 
-    override suspend fun getPersonalized(libraryId: String): Result<List<PersonalizedView>> {
+    override suspend fun getPersonalized(
+        libraryId: String,
+        shelves: List<String>?,
+        limit: Int,
+    ): Result<List<PersonalizedView>> {
         return withContext(Dispatchers.IO) {
             try {
                 if (!networkConnectivityMonitor.isCurrentlyConnected()) {
@@ -861,13 +865,17 @@ constructor(
                         .get()
                         .getPersonalized(
                             id = libraryId,
-                            limit = 15,
+                            limit = limit,
                             minified = 1,
+                            include = "numEpisodesIncomplete",
+                            shelves = shelves?.joinToString(","),
                         )
 
                 if (response.isSuccessful && response.body() != null) {
                     val views = response.body()!!
-                    _personalizedCache.value += (libraryId to views)
+                    if (shelves == null) {
+                        _personalizedCache.value += (libraryId to views)
+                    }
                     Result.success(views)
                 } else {
                     Result.failure(Exception("Failed to fetch personalized: ${response.message()}"))
@@ -1339,7 +1347,7 @@ constructor(
                                 page = currentPage,
                                 filter = encodedFilter,
                                 minified = 0,
-                                include = "progress",
+                                include = "progress,numEpisodesIncomplete",
                             )
 
                     if (response.isSuccessful && response.body() != null) {
@@ -1396,7 +1404,7 @@ constructor(
                             page = 0,
                             filter = encodedFilter,
                             minified = 0,
-                            include = "progress",
+                            include = "progress,numEpisodesIncomplete",
                         )
 
                 if (response.isSuccessful && response.body() != null) {
@@ -1563,6 +1571,7 @@ constructor(
             updatedAt = updatedAt,
             cachedAt = System.currentTimeMillis(),
             serializedEpisodes = media.episodes?.let { json.encodeToString(it) },
+            numEpisodesIncomplete = numEpisodesIncomplete,
         )
     }
 
@@ -1606,6 +1615,7 @@ constructor(
                 ),
             addedAt = addedAt,
             updatedAt = updatedAt,
+            numEpisodesIncomplete = numEpisodesIncomplete,
         )
     }
 

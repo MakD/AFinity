@@ -1228,6 +1228,15 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_53_54 =
+        object : Migration(53, 54) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE audiobookshelf_items ADD COLUMN numEpisodesIncomplete INTEGER"
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1282,5 +1291,6 @@ object DatabaseMigrations {
             MIGRATION_50_51,
             MIGRATION_51_52,
             MIGRATION_52_53,
+            MIGRATION_53_54,
         )
 }

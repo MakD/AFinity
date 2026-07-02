@@ -9,8 +9,8 @@ import com.makd.afinity.data.database.entities.AudiobookshelfConfigEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfItemEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfLibraryEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfProgressEntity
-import java.util.UUID
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 @Dao
 interface AudiobookshelfDao {
@@ -105,6 +105,16 @@ interface AudiobookshelfDao {
         "DELETE FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryId = :libraryId"
     )
     suspend fun deleteItemsByLibrary(serverId: String, userId: String, libraryId: String)
+
+    @Query(
+        "DELETE FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryId = :libraryId AND cachedAt < :threshold"
+    )
+    suspend fun deleteStaleItemsByLibrary(
+        serverId: String,
+        userId: String,
+        libraryId: String,
+        threshold: Long,
+    )
 
     @Query(
         "DELETE FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"

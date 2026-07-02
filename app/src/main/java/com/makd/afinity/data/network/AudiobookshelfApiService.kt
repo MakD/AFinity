@@ -77,6 +77,7 @@ interface AudiobookshelfApiService {
         @Query("limit") limit: Int? = null,
         @Query("minified") minified: Int? = null,
         @Query("include") include: String? = null,
+        @Query("shelves") shelves: String? = null,
     ): Response<List<PersonalizedView>>
 
     @GET("api/libraries/{libraryId}/search")

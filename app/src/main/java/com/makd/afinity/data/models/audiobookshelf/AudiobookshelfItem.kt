@@ -35,7 +35,17 @@ data class LibraryItem(
     @SerialName("size") val size: Long? = null,
     @SerialName("userMediaProgress") val userMediaProgress: MediaProgress? = null,
     @SerialName("rssFeedUrl") val rssFeedUrl: String? = null,
+    @SerialName("numEpisodesIncomplete") val numEpisodesIncomplete: Int? = null,
 )
+
+fun LibraryItem.coverUrl(serverUrl: String, width: Int? = null): String {
+    val params = buildList {
+        width?.let { add("width=$it") }
+        updatedAt?.let { add("ts=$it") }
+    }
+    val query = if (params.isEmpty()) "" else "?" + params.joinToString("&")
+    return "$serverUrl/api/items/$id/cover$query"
+}
 
 @Serializable
 data class Media(

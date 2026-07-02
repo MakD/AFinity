@@ -17,10 +17,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
 import com.makd.afinity.R
+import com.makd.afinity.data.models.audiobookshelf.coverUrl
 import com.makd.afinity.ui.audiobookshelf.item.SeriesDisplayData
 
 @Composable
@@ -44,7 +45,7 @@ fun IncludedInSeriesSection(
         seriesList.forEach { series ->
             val coverUrls =
                 if (serverUrl != null) {
-                    series.bookItems.take(4).map { "$serverUrl/api/items/${it.id}/cover" }
+                    series.bookItems.take(4).map { it.coverUrl(serverUrl) }
                 } else {
                     emptyList()
                 }

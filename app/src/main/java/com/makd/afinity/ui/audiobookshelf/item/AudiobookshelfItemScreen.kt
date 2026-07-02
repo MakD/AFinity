@@ -69,6 +69,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
+import com.makd.afinity.data.models.audiobookshelf.coverUrl
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.item.components.ChapterListDialog
 import com.makd.afinity.ui.audiobookshelf.item.components.EpisodeListDialog
@@ -218,7 +219,7 @@ fun AudiobookshelfItemScreen(
                         ) {
                             "file://${downloadInfo?.localDirPath}/cover.jpg"
                         } else if (config?.serverUrl != null && item?.media?.coverPath != null) {
-                            "${config?.serverUrl}/api/items/${item?.id}/cover"
+                            item?.coverUrl(config?.serverUrl ?: "")
                         } else null
 
                     ItemHeroBackground(coverUrl = coverUrl)

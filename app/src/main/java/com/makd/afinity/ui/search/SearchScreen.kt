@@ -80,6 +80,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
+import com.makd.afinity.data.models.audiobookshelf.coverUrl
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
@@ -1177,7 +1178,7 @@ private fun AudiobookshelfSearchResultItem(
             Box(modifier = Modifier.size(80.dp)) {
                 Card(modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(8.dp)) {
                     AsyncImage(
-                        imageUrl = serverUrl?.let { "$it/api/items/${item.id}/cover?width=240" },
+                        imageUrl = serverUrl?.let { item.coverUrl(it, width = 240) },
                         contentDescription = item.media.metadata.title,
                         blurHash = null,
                         modifier = Modifier.fillMaxSize(),
