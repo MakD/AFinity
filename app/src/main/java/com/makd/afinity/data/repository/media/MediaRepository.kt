@@ -41,6 +41,8 @@ interface MediaRepository {
 
     suspend fun invalidateAllCaches()
 
+    fun clearPlaybackCaches()
+
     suspend fun invalidateItemCache(itemId: UUID)
 
     suspend fun refreshItemUserData(itemId: UUID, fields: List<ItemFields>? = null): AfinityItem?

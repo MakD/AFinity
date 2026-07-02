@@ -322,6 +322,13 @@ constructor(
     private val _libraries = MutableStateFlow<List<AfinityCollection>>(emptyList())
     override val libraries: Flow<List<AfinityCollection>> = _libraries.asStateFlow()
 
+    override fun clearPlaybackCaches() {
+        Timber.d("Clearing in-memory playback caches")
+        _continueWatching.value = emptyList()
+        _nextUp.value = emptyList()
+        _latestMedia.value = emptyList()
+    }
+
     private val _latestMedia = MutableStateFlow<List<AfinityItem>>(emptyList())
     override val latestMedia: Flow<List<AfinityItem>> = _latestMedia.asStateFlow()
 

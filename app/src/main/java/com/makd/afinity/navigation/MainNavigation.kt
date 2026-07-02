@@ -68,7 +68,6 @@ import com.makd.afinity.ui.audiobookshelf.libraries.AudiobookshelfLibrariesScree
 import com.makd.afinity.ui.audiobookshelf.libraries.AudiobookshelfLibraryScreen
 import com.makd.afinity.ui.audiobookshelf.libraries.AudiobookshelfSeriesListScreen
 import com.makd.afinity.ui.audiobookshelf.player.AudiobookshelfPlayerScreen
-import com.makd.afinity.ui.components.AfinitySplashScreen
 import com.makd.afinity.ui.favorites.FavoritesScreen
 import com.makd.afinity.ui.home.HomeScreen
 import com.makd.afinity.ui.item.ItemDetailScreen
@@ -220,11 +219,7 @@ fun MainNavigation(
         label = "MainNavigationLoadingState",
     ) { isLoading ->
         if (isLoading) {
-            AfinitySplashScreen(
-                statusText = appLoadingState.loadingPhase.ifEmpty { "Loading..." },
-                progress = appLoadingState.loadingProgress,
-                modifier = modifier,
-            )
+            Box(modifier = modifier.fillMaxSize())
         } else {
             NavigationSuiteScaffold(
                 layoutType =

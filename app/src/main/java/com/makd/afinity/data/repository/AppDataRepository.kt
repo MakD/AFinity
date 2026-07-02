@@ -8,9 +8,6 @@ import com.makd.afinity.data.manager.MediaRefreshBus
 import com.makd.afinity.data.manager.RefreshTrigger
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.GenreItem
-import com.makd.afinity.data.models.PersonSection
-import com.makd.afinity.data.models.PersonSectionType
-import com.makd.afinity.data.models.PersonWithCount
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityItem
@@ -27,7 +24,9 @@ import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
+import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.home.HomeCacheRepository
+import com.makd.afinity.data.repository.home.HomeSectionsRepository
 import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.music.MusicRepository
@@ -55,13 +54,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.jellyfin.sdk.model.api.PersonKind
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.random.Random
-import kotlin.time.Duration.Companion.hours
 
 @OptIn(FlowPreview::class)
 @Singleton
@@ -83,10 +79,9 @@ constructor(
     private val mediaChangeManager: MediaChangeManager,
     private val musicRepository: MusicRepository,
     private val homeCacheRepository: HomeCacheRepository,
+    private val homeSectionsRepository: HomeSectionsRepository,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
-    private val recentCacheTTL = 6.hours.inWholeMilliseconds
-    private var recentWatchedCache: Pair<Long, List<AfinityMovie>>? = null
     private var liveDataJob: Job? = null
     private val _lastUserDataChangedAt = MutableStateFlow(0L)
     val lastUserDataChangedAt: StateFlow<Long> = _lastUserDataChangedAt.asStateFlow()
@@ -250,7 +245,9 @@ constructor(
         val hasSession = session != null && session.serverId.isNotBlank()
 
         if (hasSession) {
-            val cachedMovies = homeCacheRepository.getLatestMovies("latest_movies_$cacheKey")
+            val currentBaseUrl = mediaRepository.getBaseUrl()
+            val cachedMovies =
+                homeCacheRepository.getLatestMovies("latest_movies_$cacheKey", currentBaseUrl)
             if (cachedMovies != null) {
                 Timber.d("Cache hit — fetching carousel in parallel, rendering once both are ready")
                 try {
@@ -258,8 +255,10 @@ constructor(
                         val heroDeferred = async { loadHeroCarousel() }
                         _latestMovies.value = cachedMovies
                         _latestTvSeries.value =
-                            homeCacheRepository.getLatestShows("latest_shows_$cacheKey")
-                                ?: emptyList()
+                            homeCacheRepository.getLatestShows(
+                                "latest_shows_$cacheKey",
+                                currentBaseUrl,
+                            ) ?: emptyList()
                         _heroCarouselItems.value = heroDeferred.await()
                     }
                 } catch (e: Exception) {
@@ -709,55 +708,6 @@ constructor(
 
     suspend fun loadStudios() = studioRepository.loadStudios()
 
-    suspend fun getTopPeople(
-        type: PersonKind,
-        limit: Int = 100,
-        minAppearances: Int = 10,
-    ): List<PersonWithCount> = peopleRepository.getTopPeople(type, limit, minAppearances)
-
-    suspend fun getPersonSection(
-        personWithCount: PersonWithCount,
-        sectionType: PersonSectionType,
-    ): PersonSection? = peopleRepository.getPersonSection(personWithCount, sectionType)
-
-    suspend fun getRandomRecentlyWatchedMovie(excludedMovies: Set<UUID>): AfinityMovie? {
-        try {
-            val now = System.currentTimeMillis()
-            val cached = recentWatchedCache
-
-            val allRecentWatched =
-                if (cached != null && now - cached.first < recentCacheTTL) {
-                    cached.second
-                } else {
-                    val movies =
-                        mediaRepository.getMovies(
-                            sortBy = SortBy.DATE_PLAYED,
-                            sortDescending = true,
-                            limit = 10,
-                            isPlayed = true,
-                        )
-                    recentWatchedCache = now to movies
-                    movies
-                }
-
-            val recentWatched = allRecentWatched.filterNot { it.id in excludedMovies }
-
-            if (recentWatched.isEmpty()) return null
-
-            val random = Random.nextFloat()
-            return if (random < 0.7f && recentWatched.size >= 5) {
-                recentWatched.take(5).random()
-            } else if (recentWatched.size > 5) {
-                recentWatched.drop(5).take(5).randomOrNull() ?: recentWatched.random()
-            } else {
-                recentWatched.random()
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get random recently watched movie")
-            return null
-        }
-    }
-
     private fun updateProgress(progress: Float, phase: String) {
         _loadingProgress.value = progress
         _loadingPhase.value = phase
@@ -813,7 +763,7 @@ constructor(
     suspend fun updateItemInCaches(updatedItem: AfinityItem) {
         genreRepository.updateItemInCaches(updatedItem)
         peopleRepository.updateItemInCaches(updatedItem)
-        recentWatchedCache = null
+        homeSectionsRepository.updateItem(updatedItem)
 
         when (updatedItem) {
             is AfinityMovie -> {
@@ -1117,7 +1067,8 @@ constructor(
     suspend fun clearAllData() {
         Timber.d("Clearing all cached app data")
         liveDataJob?.cancel()
-        recentWatchedCache = null
+        homeSectionsRepository.clearAllData()
+        mediaRepository.clearPlaybackCaches()
         _heroCarouselItems.value = emptyList()
         _libraries.value = emptyList()
         _latestMovies.value = emptyList()
@@ -1130,9 +1081,8 @@ constructor(
         _separateTvLibrarySections.value = emptyList()
         _favoritesData.value = FavoritesData()
         _watchlistData.value = WatchlistData()
-
-        scope.launch { preferencesRepository.setLastCacheInvalidatedAt(0L) }
-        scope.launch { homeCacheRepository.invalidateAll() }
+        preferencesRepository.setLastCacheInvalidatedAt(0L)
+        homeCacheRepository.invalidateAll()
 
         try {
             studioRepository.clearAllData()
@@ -1154,7 +1104,7 @@ data class FavoritesData(
     val channels: List<AfinityChannel> = emptyList(),
     val favoriteAlbums: List<AfinityAlbum> = emptyList(),
     val favoriteArtists: List<AfinityArtist> = emptyList(),
-    val favoriteTracks: List<com.makd.afinity.data.models.music.AfinityTrack> = emptyList(),
+    val favoriteTracks: List<AfinityTrack> = emptyList(),
 )
 
 data class WatchlistData(

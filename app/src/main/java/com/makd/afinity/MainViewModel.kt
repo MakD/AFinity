@@ -7,11 +7,14 @@ import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.websocket.JellyfinWebSocketManager
+import com.makd.afinity.navigation.AppLoadingState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -31,6 +34,24 @@ constructor(
         MutableStateFlow<AuthenticationState>(AuthenticationState.Loading)
     val authenticationState: StateFlow<AuthenticationState> = _authenticationState.asStateFlow()
     val webSocketState = webSocketManager.connectionState
+
+    val appLoadingState =
+        combine(
+                appDataRepository.isInitialDataLoaded,
+                appDataRepository.loadingProgress,
+                appDataRepository.loadingPhase,
+            ) { isLoaded, progress, phase ->
+                AppLoadingState(
+                    isLoading = !isLoaded,
+                    loadingProgress = progress,
+                    loadingPhase = phase,
+                )
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = AppLoadingState(isLoading = true),
+            )
 
     init {
         checkAuthenticationState()

@@ -10,13 +10,17 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
@@ -115,13 +119,18 @@ class MainActivity : AppCompatActivity() {
                 windowInsetsController.isAppearanceLightStatusBars = isLightTheme
                 windowInsetsController.isAppearanceLightNavigationBars = isLightTheme
 
-                MainContent(
+                Surface(
                     modifier = Modifier.fillMaxSize(),
-                    viewModel = mainViewModel,
-                    updateManager = updateManager,
-                    offlineModeManager = offlineModeManager,
-                    widthSizeClass = windowSize.widthSizeClass,
-                )
+                    color = MaterialTheme.colorScheme.background,
+                ) {
+                    MainContent(
+                        modifier = Modifier.fillMaxSize(),
+                        viewModel = mainViewModel,
+                        updateManager = updateManager,
+                        offlineModeManager = offlineModeManager,
+                        widthSizeClass = windowSize.widthSizeClass,
+                    )
+                }
 
                 val showRationale by showNotificationRationale.collectAsStateWithLifecycle()
                 if (showRationale) {
@@ -205,37 +214,45 @@ private fun MainContent(
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val authState by viewModel.authenticationState.collectAsStateWithLifecycle()
+    val appLoadingState by viewModel.appLoadingState.collectAsStateWithLifecycle()
 
     AnimatedContent(
-        targetState = authState,
+        targetState = authState is AuthenticationState.NotAuthenticated,
         transitionSpec = {
             fadeIn(animationSpec = tween(400)) togetherWith fadeOut(animationSpec = tween(400))
         },
         label = "AuthTransition",
-    ) { state ->
-        when (state) {
-            AuthenticationState.Loading -> {
-                AfinitySplashScreen(
-                    statusText = stringResource(R.string.splash_status_authenticating),
-                    modifier = modifier,
-                )
-            }
+    ) { showLogin ->
+        if (showLogin) {
+            LoginScreen(onLoginSuccess = {}, modifier = modifier, widthSizeClass = widthSizeClass)
+        } else {
+            Box(modifier = modifier) {
+                if (authState is AuthenticationState.Authenticated) {
+                    MainNavigation(
+                        modifier = Modifier.fillMaxSize(),
+                        updateManager = updateManager,
+                        offlineModeManager = offlineModeManager,
+                        widthSizeClass = widthSizeClass,
+                    )
+                }
 
-            AuthenticationState.Authenticated -> {
-                MainNavigation(
-                    modifier = modifier,
-                    updateManager = updateManager,
-                    offlineModeManager = offlineModeManager,
-                    widthSizeClass = widthSizeClass,
-                )
-            }
-
-            AuthenticationState.NotAuthenticated -> {
-                LoginScreen(
-                    onLoginSuccess = {},
-                    modifier = modifier,
-                    widthSizeClass = widthSizeClass,
-                )
+                val isAuthenticating = authState is AuthenticationState.Loading
+                AnimatedVisibility(
+                    visible = isAuthenticating || appLoadingState.isLoading,
+                    enter = fadeIn(animationSpec = tween(400)),
+                    exit = fadeOut(animationSpec = tween(400)),
+                ) {
+                    AfinitySplashScreen(
+                        statusText =
+                            if (isAuthenticating) {
+                                stringResource(R.string.splash_status_authenticating)
+                            } else {
+                                appLoadingState.loadingPhase.ifEmpty { "Loading..." }
+                            },
+                        progress = if (isAuthenticating) null else appLoadingState.loadingProgress,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
         }
     }

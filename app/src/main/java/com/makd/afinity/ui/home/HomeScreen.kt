@@ -73,6 +73,7 @@ import com.makd.afinity.ui.home.components.NextUpSection
 import com.makd.afinity.ui.home.components.OptimizedContinueWatchingSection
 import com.makd.afinity.ui.home.components.OptimizedLatestMoviesSection
 import com.makd.afinity.ui.home.components.OptimizedLatestTvSeriesSection
+import com.makd.afinity.ui.home.components.PendingSection
 import com.makd.afinity.ui.home.components.PersonFromMovieSection
 import com.makd.afinity.ui.home.components.PersonSection
 import com.makd.afinity.ui.home.components.PopularStudiosSection
@@ -535,22 +536,21 @@ fun HomeScreen(
                         if (!uiState.isOffline && uiState.combinedSections.isNotEmpty()) {
                             items(
                                 items = uiState.combinedSections,
-                                key = { section ->
-                                    when (section) {
-                                        is HomeSection.Person ->
-                                            "person_${section.section.sectionType.name}_${section.section.person.id}"
-                                        is HomeSection.Movie ->
-                                            "movie_rec_${section.section.referenceMovie.id}"
-                                        is HomeSection.PersonFromMovie ->
-                                            "person_movie_${section.section.person.id}_${section.section.referenceMovie.id}"
-                                        is HomeSection.Genre ->
-                                            "genre_${section.genreItem.name}_${section.genreItem.type}"
-                                        is HomeSection.Spotlight -> "spotlight_${section.title}"
-                                    }
-                                },
+                                key = { section -> section.key },
                             ) { section ->
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     when (section) {
+                                        is HomeSection.Pending -> {
+                                            PendingSection(
+                                                title = section.title,
+                                                isSpotlight = section.isSpotlight,
+                                                onVisible = {
+                                                    viewModel.hydrateSection(section.key)
+                                                },
+                                                widthSizeClass = widthSizeClass,
+                                            )
+                                        }
+
                                         is HomeSection.Person -> {
                                             PersonSection(
                                                 section = section.section,

@@ -141,6 +141,7 @@ kotlin {
 
 dependencies {
     coreLibraryDesugaring(libs.android.desugar.jdk)
+    debugImplementation(libs.leakcanary.android)
     implementation(libs.aboutlibraries.compose.m3)
     implementation(libs.aboutlibraries.core)
     implementation(libs.androidx.activity.compose)
