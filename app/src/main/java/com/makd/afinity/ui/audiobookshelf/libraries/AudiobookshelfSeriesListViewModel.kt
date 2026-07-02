@@ -3,13 +3,10 @@ package com.makd.afinity.ui.audiobookshelf.libraries
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
-import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.repository.AudiobookshelfConfig
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -19,7 +16,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import timber.log.Timber
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 
 @HiltViewModel
@@ -46,7 +44,8 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
                         books =
                             s.books.map { item ->
                                 if (item.userMediaProgress != null) item
-                                else progress[item.id]?.let { item.copy(userMediaProgress = it) }
+                                else
+                                    progress[item.id]?.let { item.copy(userMediaProgress = it) }
                                         ?: item
                             }
                     )
@@ -56,45 +55,35 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
 
     init {
         viewModelScope.launch {
-            val libraries =
-                audiobookshelfRepository.getLibrariesFlow().first { it.isNotEmpty() }
-            _rawSeries.value = fetchAllSeries(libraries)
-            _isLoading.value = false
-        }
-    }
+            val libraries = audiobookshelfRepository.getLibrariesFlow().first { it.isNotEmpty() }
 
-    private suspend fun fetchAllSeries(libraryList: List<Library>): List<AudiobookshelfSeries> {
-        val allSeriesMap = mutableMapOf<String, AudiobookshelfSeries>()
-        val results = coroutineScope {
-            libraryList
-                .map { library ->
-                    async { library.id to audiobookshelfRepository.getSeries(library.id) }
-                }
-                .awaitAll()
-        }
+            val seriesById = mutableMapOf<String, AudiobookshelfSeries>()
+            val mergeMutex = Mutex()
 
-        for ((libraryId, result) in results) {
-            result.fold(
-                onSuccess = { seriesList ->
-                    for (series in seriesList) {
-                        val existing = allSeriesMap[series.id]
-                        if (existing != null) {
-                            val mergedBooks = (existing.books + series.books).distinctBy { it.id }
-                            allSeriesMap[series.id] = existing.copy(books = mergedBooks)
-                        } else {
-                            allSeriesMap[series.id] =
-                                series.copy(books = series.books.distinctBy { it.id })
+            coroutineScope {
+                libraries.forEach { library ->
+                    launch {
+                        audiobookshelfRepository.getSeriesPages(library.id).collect { page ->
+                            val snapshot = mergeMutex.withLock {
+                                for (series in page) {
+                                    val existing = seriesById[series.id]
+                                    seriesById[series.id] =
+                                        existing?.copy(
+                                            books =
+                                                (existing.books + series.books).distinctBy { it.id }
+                                        ) ?: series.copy(books = series.books.distinctBy { it.id })
+                                }
+                                seriesById.values
+                                    .filter { it.books.isNotEmpty() }
+                                    .sortedBy { it.nameIgnorePrefix ?: it.name }
+                            }
+                            _rawSeries.value = snapshot
+                            _isLoading.value = false
                         }
                     }
-                },
-                onFailure = { error ->
-                    Timber.e(error, "Failed to load series for library $libraryId")
-                },
-            )
+                }
+            }
+            _isLoading.value = false
         }
-
-        return allSeriesMap.values
-            .filter { it.books.isNotEmpty() }
-            .sortedBy { it.nameIgnorePrefix ?: it.name }
     }
 }

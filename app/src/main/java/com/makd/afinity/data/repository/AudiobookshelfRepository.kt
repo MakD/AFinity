@@ -73,11 +73,7 @@ interface AudiobookshelfRepository {
 
     suspend fun searchLibrary(libraryId: String, query: String): Result<SearchResponse>
 
-    suspend fun getSeries(
-        libraryId: String,
-        limit: Int = 100,
-        page: Int = 0,
-    ): Result<List<AudiobookshelfSeries>>
+    fun getSeriesPages(libraryId: String, limit: Int = 100): Flow<List<AudiobookshelfSeries>>
 
     suspend fun getSeriesItems(
         libraryId: String,

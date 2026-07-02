@@ -51,7 +51,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -753,55 +755,41 @@ constructor(
         }
     }
 
-    override suspend fun getSeries(
+    override fun getSeriesPages(
         libraryId: String,
         limit: Int,
-        page: Int,
-    ): Result<List<AudiobookshelfSeries>> {
-        return withContext(Dispatchers.IO) {
-            try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
-                    return@withContext Result.failure(Exception("No network connection"))
+    ): Flow<List<AudiobookshelfSeries>> = flow {
+        if (!networkConnectivityMonitor.isCurrentlyConnected()) return@flow
+
+        var currentPage = 0
+        var totalFetched = 0
+        var total = Int.MAX_VALUE
+
+        while (totalFetched < total) {
+            val response =
+                try {
+                    apiService.get().getSeries(id = libraryId, limit = limit, page = currentPage)
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to fetch series page for library $libraryId")
+                    return@flow
                 }
 
-                val allSeries = mutableListOf<AudiobookshelfSeries>()
-                var currentPage = 0
-                var totalFetched = 0
-                var total = Int.MAX_VALUE
-
-                while (totalFetched < total) {
-                    val response =
-                        apiService
-                            .get()
-                            .getSeries(id = libraryId, limit = limit, page = currentPage)
-
-                    if (response.isSuccessful && response.body() != null) {
-                        val body = response.body()!!
-                        total = body.total
-                        allSeries.addAll(body.results)
-                        totalFetched += body.results.size
-                        currentPage++
-
-                        Timber.d(
-                            "Fetched series page $currentPage: ${body.results.size} items, total: $total"
-                        )
-
-                        if (body.results.isEmpty()) break
-                    } else {
-                        return@withContext Result.failure(
-                            Exception("Failed to fetch series: ${response.message()}")
-                        )
-                    }
-                }
-
-                Timber.d("Fetched all ${allSeries.size} series for library $libraryId")
-                Result.success(allSeries)
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get series for library $libraryId")
-                Result.failure(e)
+            if (!response.isSuccessful || response.body() == null) {
+                Timber.e("Failed to fetch series: ${response.message()}")
+                return@flow
             }
+
+            val body = response.body()!!
+            total = body.total
+            if (body.results.isEmpty()) break
+            totalFetched += body.results.size
+            currentPage++
+
+            Timber.d("Fetched series page $currentPage: ${body.results.size} items, total: $total")
+            emit(body.results)
         }
     }
+        .flowOn(Dispatchers.IO)
 
     override suspend fun getSeriesItems(
         libraryId: String,
@@ -1424,8 +1412,6 @@ constructor(
     }
 
     override suspend fun syncPendingProgress(serverId: String, userId: UUID): Result<Int> {
-        val currentServerId = serverId
-        val currentUserId = userId
         return withContext(Dispatchers.IO) {
             if (!networkConnectivityMonitor.isCurrentlyConnected()) {
                 return@withContext Result.failure(Exception("No network connection"))
@@ -1434,12 +1420,12 @@ constructor(
             try {
                 val pendingProgress =
                     audiobookshelfDao.getPendingSyncProgress(
-                        currentServerId,
-                        currentUserId.toString(),
+                        serverId,
+                        userId.toString(),
                     )
 
                 Timber.d(
-                    "syncPendingProgress: found ${pendingProgress.size} pending records for serverId=$currentServerId userId=$currentUserId"
+                    "syncPendingProgress: found ${pendingProgress.size} pending records for serverId=$serverId userId=$userId"
                 )
 
                 if (pendingProgress.isEmpty()) return@withContext Result.success(0)
@@ -1489,8 +1475,8 @@ constructor(
                     if (successfulIds.isEmpty() || sessionId in successfulIds) {
                         audiobookshelfDao.markSynced(
                             progress.id,
-                            currentServerId,
-                            currentUserId.toString(),
+                            serverId,
+                            userId.toString(),
                         )
                         syncedCount++
                         Timber.d(
