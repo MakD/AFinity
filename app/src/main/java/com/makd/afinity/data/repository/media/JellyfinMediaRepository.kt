@@ -218,9 +218,13 @@ constructor(
         }
     }
 
+    private fun currentSessionKey(): String? =
+        sessionManager.currentSession.value?.let { "${it.serverId}_${it.userId}" }
+
     override suspend fun invalidateContinueWatchingCache() {
         withContext(Dispatchers.IO) {
             try {
+                val sessionKeyAtStart = currentSessionKey() ?: return@withContext
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext
                 val userId = getCurrentUserId() ?: return@withContext
                 val itemsApi = ItemsApi(apiClient)
@@ -238,6 +242,10 @@ constructor(
                         baseItemDto.toAfinityItem(getBaseUrl())
                     }
 
+                if (currentSessionKey() != sessionKeyAtStart) {
+                    Timber.d("Session changed during continue watching refresh — discarding")
+                    return@withContext
+                }
                 _continueWatching.value = continueWatchingItems
                 Timber.d("Full refresh of continue watching cache completed")
             } catch (e: Exception) {
@@ -249,6 +257,7 @@ constructor(
     override suspend fun invalidateLatestMediaCache() {
         withContext(Dispatchers.IO) {
             try {
+                val sessionKeyAtStart = currentSessionKey() ?: return@withContext
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext
                 val userId = getCurrentUserId() ?: return@withContext
                 val userLibraryApi = UserLibraryApi(apiClient)
@@ -268,6 +277,10 @@ constructor(
                         baseItemDto.toAfinityItem(getBaseUrl())
                     }
 
+                if (currentSessionKey() != sessionKeyAtStart) {
+                    Timber.d("Session changed during latest media refresh — discarding")
+                    return@withContext
+                }
                 _latestMedia.value = latestItems
                 Timber.d("Full refresh of latest media cache completed")
             } catch (e: Exception) {
@@ -279,6 +292,7 @@ constructor(
     override suspend fun invalidateNextUpCache() {
         withContext(Dispatchers.IO) {
             try {
+                val sessionKeyAtStart = currentSessionKey() ?: return@withContext
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext
                 val userId = getCurrentUserId() ?: return@withContext
                 val tvShowsApi = TvShowsApi(apiClient)
@@ -298,6 +312,10 @@ constructor(
                         baseItemDto.toAfinityEpisode(getBaseUrl())
                     }
 
+                if (currentSessionKey() != sessionKeyAtStart) {
+                    Timber.d("Session changed during next up refresh — discarding")
+                    return@withContext
+                }
                 _nextUp.value = nextUpEpisodes
                 Timber.d("Full refresh of next up cache completed")
             } catch (e: Exception) {

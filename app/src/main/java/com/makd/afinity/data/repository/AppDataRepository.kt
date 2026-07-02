@@ -36,10 +36,12 @@ import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.util.JellyfinImageUrlBuilder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,6 +56,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -83,6 +87,8 @@ constructor(
     @ApplicationScope private val scope: CoroutineScope,
 ) {
     private var liveDataJob: Job? = null
+    private var initialLoadJob: Deferred<Unit>? = null
+    private val initialLoadMutex = Mutex()
     private val _lastUserDataChangedAt = MutableStateFlow(0L)
     val lastUserDataChangedAt: StateFlow<Long> = _lastUserDataChangedAt.asStateFlow()
 
@@ -239,6 +245,16 @@ constructor(
             Timber.d("Initial data already loaded, skipping...")
             return
         }
+
+        val job = initialLoadMutex.withLock {
+            initialLoadJob?.takeIf { it.isActive }
+                ?: scope.async { performInitialDataLoad() }.also { initialLoadJob = it }
+        }
+        job.await()
+    }
+
+    private suspend fun performInitialDataLoad() {
+        if (_isInitialDataLoaded.value) return
 
         val session = sessionManager.currentSession.value
         val cacheKey = "${session?.serverId}_${session?.userId}"
@@ -1066,6 +1082,10 @@ constructor(
 
     suspend fun clearAllData() {
         Timber.d("Clearing all cached app data")
+        initialLoadMutex.withLock {
+            initialLoadJob?.cancelAndJoin()
+            initialLoadJob = null
+        }
         liveDataJob?.cancel()
         homeSectionsRepository.clearAllData()
         mediaRepository.clearPlaybackCaches()
