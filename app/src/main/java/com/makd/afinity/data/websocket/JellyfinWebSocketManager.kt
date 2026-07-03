@@ -9,6 +9,7 @@ import com.makd.afinity.data.manager.RefreshTrigger
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.syncplay.SyncPlayGroupUpdate
 import com.makd.afinity.di.ApplicationScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
@@ -52,6 +53,7 @@ constructor(
 ) : DefaultLifecycleObserver {
     private var connectionJob: Job? = null
     private var reconnectJob: Job? = null
+    private var libraryTaskWasRunning = false
 
     private val _connectionState = MutableStateFlow(WebSocketState.DISCONNECTED)
     val connectionState: StateFlow<WebSocketState> = _connectionState.asStateFlow()
@@ -135,6 +137,8 @@ constructor(
                         is SocketApiState.Disconnected -> WebSocketState.DISCONNECTED
                     }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to monitor WebSocket state")
             _connectionState.value = WebSocketState.ERROR
@@ -203,6 +207,10 @@ constructor(
         Timber.d(
             "Library changed - added=${update?.itemsAdded?.size ?: 0}, updated=${update?.itemsUpdated?.size ?: 0}, removed=${update?.itemsRemoved?.size ?: 0}"
         )
+        val hasStructuralChange =
+            !update?.itemsAdded.isNullOrEmpty() || !update?.itemsRemoved.isNullOrEmpty()
+        if (!hasStructuralChange) return
+
         mediaRefreshBus.emit(RefreshTrigger.LIBRARY_CHANGED)
         mediaChangeManager.notifyLibraryContentChanged("library changed websocket event")
     }
@@ -223,11 +231,16 @@ constructor(
         val runningLibraryTask = tasks.firstOrNull { task ->
             task.state == TaskState.RUNNING && task.libraryScanTask()
         }
+        val isRunning = runningLibraryTask != null
 
-        if (runningLibraryTask != null) {
-            Timber.d("Library task running: ${runningLibraryTask.key ?: runningLibraryTask.name}")
+        if (isRunning && !libraryTaskWasRunning) {
+            Timber.d("Library task running: ${runningLibraryTask?.key ?: runningLibraryTask?.name}")
+        } else if (!isRunning && libraryTaskWasRunning) {
+            Timber.d("Library task finished - refreshing library sections")
             mediaRefreshBus.emit(RefreshTrigger.LIBRARY_CHANGED)
+            mediaChangeManager.notifyLibraryContentChanged("library scan completed")
         }
+        libraryTaskWasRunning = isRunning
     }
 
     private fun TaskInfo.libraryScanTask(): Boolean {
@@ -244,7 +257,6 @@ constructor(
         if (userDataList.isNotEmpty()) {
             Timber.d("Batch processing ${userDataList.size} user data changes")
             mediaChangeManager.applyUserDataChangesBatch(userDataList)
-            mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
         }
     }
 

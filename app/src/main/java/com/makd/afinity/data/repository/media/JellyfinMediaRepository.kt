@@ -633,7 +633,10 @@ constructor(
     override suspend fun getItemById(itemId: UUID): AfinityItem? =
         getItem(itemId, FieldSets.ITEM_DETAIL)?.toAfinityItem(getBaseUrl())
 
-    override suspend fun getItemsByIds(ids: List<UUID>): List<AfinityItem> =
+    override suspend fun getItemsByIds(
+        ids: List<UUID>,
+        fields: List<ItemFields>?,
+    ): List<AfinityItem> =
         withContext(Dispatchers.IO) {
             if (ids.isEmpty()) return@withContext emptyList()
             try {
@@ -645,7 +648,7 @@ constructor(
                     itemsApi.getItems(
                         userId = userId,
                         ids = ids,
-                        fields = FieldSets.MEDIA_ITEM_CARDS,
+                        fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                         enableImages = true,
                         enableUserData = true,
                     )

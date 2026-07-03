@@ -94,7 +94,6 @@ constructor(
                         }
                     }
             }
-            .cachedIn(viewModelScope)
     }
 
     private val _pagingData = MutableStateFlow<Flow<PagingData<AfinityItem>>>(emptyFlow())
@@ -151,10 +150,16 @@ constructor(
 
                 if (event.source == MediaChangeSource.WEBSOCKET) {
                     try {
-                        val directItem = mediaRepository.getItemById(event.itemId)
-                        directItem?.let { pendingUpdates[it.id] = it }
+                        if (event.updatedItem == null) {
+                            val directItem = mediaRepository.getItemById(event.itemId)
+                            directItem?.let { pendingUpdates[it.id] = it }
+                        }
 
-                        if (event.seriesId != null && event.seriesId != event.itemId) {
+                        if (
+                            event.seriesId != null &&
+                                event.seriesId != event.itemId &&
+                                event.parentItem?.id != event.seriesId
+                        ) {
                             val seriesItem = mediaRepository.getItemById(event.seriesId)
                             seriesItem?.let { pendingUpdates[it.id] = it }
                         }

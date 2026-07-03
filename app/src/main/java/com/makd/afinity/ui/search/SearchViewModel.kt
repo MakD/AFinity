@@ -198,10 +198,13 @@ constructor(
                         ?: (targetItem as? AfinityEpisode)?.seriesId
                         ?: (targetItem as? AfinitySeason)?.seriesId
                 if (trueSeriesId != null && trueSeriesId != targetItem?.id) {
-                    try {
-                        parentShowItem = mediaRepository.getItemById(trueSeriesId)
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to resolve parent show for search patch")
+                    parentShowItem = event.parentItem?.takeIf { it.id == trueSeriesId }
+                    if (parentShowItem == null) {
+                        try {
+                            parentShowItem = mediaRepository.getItemById(trueSeriesId)
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to resolve parent show for search patch")
+                        }
                     }
                 }
 

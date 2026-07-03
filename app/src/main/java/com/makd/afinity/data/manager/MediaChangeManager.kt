@@ -66,8 +66,10 @@ constructor(
         val userId = currentSession.userId
         val serverId = currentSession.serverId
 
+        val userDataByItemId = linkedMapOf<UUID, UserItemDataDto>()
         userDataList.forEach { userData ->
             val itemId = userData.itemId ?: return@forEach
+            userDataByItemId[itemId] = userData
             try {
                 databaseRepository.patchUserDataLocally(itemId, userId, serverId, userData)
             } catch (e: Exception) {
@@ -75,59 +77,61 @@ constructor(
             }
         }
         mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
+        if (userDataByItemId.isEmpty()) return
 
-        if (userDataList.size == 1) {
-            val userData = userDataList.first()
-            val itemId = userData.itemId ?: return
-            val cachedItem =
-                try {
-                    mediaRepository.getItemById(itemId)
-                } catch (_: Exception) {
-                    null
+        val itemIds = userDataByItemId.keys.toList()
+        val resolvedById =
+            try {
+                val items =
+                    if (itemIds.size == 1) {
+                        listOfNotNull(mediaRepository.getItemById(itemIds.first()))
+                    } else {
+                        mediaRepository.getItemsByIds(itemIds, FieldSets.ITEM_DETAIL)
+                    }
+                items.associateBy { it.id }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to resolve items for user data changes")
+                emptyMap()
+            }
+
+        val parentIdsCarriedByChildren =
+            resolvedById.values
+                .mapNotNull { item ->
+                    when (item) {
+                        is AfinityEpisode -> item.seriesId
+                        is AfinitySeason -> item.seriesId
+                        else -> null
+                    }
                 }
+                .filter { it in userDataByItemId }
+                .toSet()
+
+        for (itemId in itemIds) {
+            if (itemId in parentIdsCarriedByChildren) continue
+
+            val item = resolvedById[itemId]
             val resolvedSeriesId =
-                (cachedItem as? AfinityEpisode)?.seriesId
-                    ?: (cachedItem as? AfinitySeason)?.seriesId
-            val resolvedSeasonId = (cachedItem as? AfinityEpisode)?.seasonId
+                (item as? AfinityEpisode)?.seriesId ?: (item as? AfinitySeason)?.seriesId
+            val resolvedSeasonId = (item as? AfinityEpisode)?.seasonId
+            val parentItem =
+                resolvedSeriesId?.let { seriesId ->
+                    resolvedById[seriesId] ?: resolveParentItem(item, seriesId)
+                }
+            val seasonItem = resolvedSeasonId?.let { resolvedById[it] }
+
             _mediaChanges.emit(
                 MediaChangeEvent(
                     itemId = itemId,
-                    updatedItem = null,
+                    updatedItem = item,
+                    parentItem = parentItem,
+                    seasonItem = seasonItem,
                     seriesId = resolvedSeriesId,
                     seasonId = resolvedSeasonId,
                     source = MediaChangeSource.WEBSOCKET,
-                    userData = userData,
-                    isBatchEvent = false,
+                    userData = userDataByItemId[itemId],
                 )
             )
-            return
         }
-
-        val firstItemId = userDataList.first().itemId ?: return
-        val firstItem =
-            try {
-                mediaRepository.getItemById(firstItemId)
-            } catch (_: Exception) {
-                null
-            }
-        val resolvedSeriesId =
-            (firstItem as? AfinityEpisode)?.seriesId ?: (firstItem as? AfinitySeason)?.seriesId
-        val resolvedSeasonId =
-            when (firstItem) {
-                is AfinityEpisode -> firstItem.seasonId
-                is AfinitySeason -> firstItem.id
-                else -> null
-            }
-
-        _mediaChanges.emit(
-            MediaChangeEvent(
-                itemId = firstItemId,
-                seriesId = resolvedSeriesId,
-                seasonId = resolvedSeasonId,
-                source = MediaChangeSource.WEBSOCKET,
-                isBatchEvent = true,
-            )
-        )
     }
 
     suspend fun refreshAndPublish(
@@ -278,7 +282,6 @@ data class MediaChangeEvent(
     val seasonId: UUID? = null,
     val source: MediaChangeSource,
     val userData: UserItemDataDto? = null,
-    val isBatchEvent: Boolean = false,
 )
 
 enum class MediaChangeSource {

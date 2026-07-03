@@ -134,13 +134,11 @@ constructor(
     private fun applyUpdatesToPagingFlow(
         baseFlow: Flow<PagingData<AfinityEpisode>>
     ): Flow<PagingData<AfinityEpisode>> {
-        return baseFlow
-            .combine(pagingUpdateTrigger) { pagingData, _ ->
-                pagingData.map { episode ->
-                    pendingItemUpdates[episode.id] as? AfinityEpisode ?: episode
-                }
+        return baseFlow.combine(pagingUpdateTrigger) { pagingData, _ ->
+            pagingData.map { episode ->
+                pendingItemUpdates[episode.id] as? AfinityEpisode ?: episode
             }
-            .cachedIn(viewModelScope)
+        }
     }
 
     private var bulkDownloadJob: Job? = null

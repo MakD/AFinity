@@ -12,7 +12,6 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
-import com.makd.afinity.data.manager.MediaChangeSource
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.GenreItem
@@ -162,6 +161,7 @@ constructor(
 
         viewModelScope.launch {
             mediaRepository.getContinueWatchingFlow().collect { items ->
+                lastHomeRefreshedAt = System.currentTimeMillis()
                 _uiState.update { it.copy(continueWatching = items) }
             }
         }
@@ -304,10 +304,16 @@ constructor(
                         ?: (targetItem as? AfinityEpisode)?.seriesId
                         ?: (targetItem as? AfinitySeason)?.seriesId
                 if (trueSeriesId != null && trueSeriesId != targetItem?.id) {
-                    try {
-                        parentShowItem = mediaRepository.getItemById(trueSeriesId)
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to resolve parent show for home patch: $trueSeriesId")
+                    parentShowItem = event.parentItem?.takeIf { it.id == trueSeriesId }
+                    if (parentShowItem == null) {
+                        try {
+                            parentShowItem = mediaRepository.getItemById(trueSeriesId)
+                        } catch (e: Exception) {
+                            Timber.e(
+                                e,
+                                "Failed to resolve parent show for home patch: $trueSeriesId",
+                            )
+                        }
                     }
                 }
 
@@ -333,20 +339,6 @@ constructor(
                 parentShowItem?.let { show ->
                     homeSectionsRepository.updateItem(show)
                     patchUiStateItem(show)
-                }
-
-                if (
-                    event.source == MediaChangeSource.WEBSOCKET ||
-                        event.source == MediaChangeSource.PLAYBACK
-                ) {
-                    launch {
-                        try {
-                            appDataRepository.refreshPlaybackSections()
-                            lastHomeRefreshedAt = System.currentTimeMillis()
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed background sync of playback sections")
-                        }
-                    }
                 }
             }
         }

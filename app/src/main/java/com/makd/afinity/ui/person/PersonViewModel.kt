@@ -112,7 +112,10 @@ constructor(
 
                 if (targetIdToFetch != null) {
                     try {
-                        val freshItem = mediaRepository.getItemById(targetIdToFetch)
+                        val freshItem =
+                            listOfNotNull(event.updatedItem, event.parentItem, event.seasonItem)
+                                .firstOrNull { it.id == targetIdToFetch }
+                                ?: mediaRepository.getItemById(targetIdToFetch)
                         freshItem?.let { item ->
                             pendingItemUpdates[item.id] = item
                             personListUpdateTrigger.tryEmit(Unit)

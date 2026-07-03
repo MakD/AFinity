@@ -127,6 +127,9 @@ constructor(
 
                 if (targetIdsToFetch.isNotEmpty()) {
                     try {
+                        val providedItems =
+                            listOfNotNull(event.updatedItem, event.parentItem, event.seasonItem)
+                                .associateBy { it.id }
                         val newMovies = currentState.movies.toMutableList()
                         val newShows = currentState.shows.toMutableList()
                         val newSeasons = currentState.seasons.toMutableList()
@@ -134,7 +137,8 @@ constructor(
                         var hasChanges = false
 
                         for (id in targetIdsToFetch) {
-                            val freshItem = mediaRepository.getItemById(id) ?: continue
+                            val freshItem =
+                                providedItems[id] ?: mediaRepository.getItemById(id) ?: continue
                             hasChanges = true
 
                             when (freshItem) {

@@ -3,7 +3,6 @@ package com.makd.afinity.data.repository
 import android.content.Context
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.MediaChangeManager
-import com.makd.afinity.data.manager.MediaChangeSource
 import com.makd.afinity.data.manager.MediaRefreshBus
 import com.makd.afinity.data.manager.RefreshTrigger
 import com.makd.afinity.data.manager.SessionManager
@@ -450,18 +449,24 @@ constructor(
 
             launch {
                 mediaChangeManager.mediaChanges.collect { event ->
-                    if (event.source == MediaChangeSource.WEBSOCKET) return@collect
-                    if (event.isBatchEvent) {
-                        event.seriesId?.let { seriesId ->
+                    event.updatedItem?.let { updateItemInCaches(it) }
+                    event.parentItem?.let { updateItemInCaches(it) }
+                    event.seasonItem?.let { updateItemInCaches(it) }
+
+                    val userData = event.userData ?: return@collect
+                    val item = event.updatedItem ?: return@collect
+                    if (item.id != userData.itemId) return@collect
+
+                    updateFavoriteStatus(item, userData.isFavorite)
+
+                    val shouldBeOnWatchlist = userData.likes == true
+                    if (isInWatchlistData(item.id) != shouldBeOnWatchlist) {
+                        updateWatchlistStatus(item, shouldBeOnWatchlist)
+                        launch {
                             try {
-                                val series = mediaRepository.getItemById(seriesId)
-                                if (series != null) updateItemInCaches(series)
+                                watchlistRepository.refreshWatchlistCount()
                             } catch (_: Exception) {}
                         }
-                    } else {
-                        event.updatedItem?.let { updateItemInCaches(it) }
-                        event.parentItem?.let { updateItemInCaches(it) }
-                        event.seasonItem?.let { updateItemInCaches(it) }
                     }
                 }
             }
@@ -1011,6 +1016,15 @@ constructor(
                 }
             }
         }
+    }
+
+    private fun isInWatchlistData(itemId: UUID): Boolean {
+        val data = _watchlistData.value
+        return data.movies.any { it.id == itemId } ||
+            data.shows.any { it.id == itemId } ||
+            data.seasons.any { it.id == itemId } ||
+            data.episodes.any { it.id == itemId } ||
+            data.boxSets.any { it.id == itemId }
     }
 
     fun updateWatchlistStatus(item: AfinityItem, isOnWatchlist: Boolean) {
