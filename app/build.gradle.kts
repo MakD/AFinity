@@ -204,6 +204,7 @@ dependencies {
     implementation(libs.richtext.commonmark)
     implementation(libs.richtext.ui)
     implementation(libs.richtext.ui.material3)
+    implementation(libs.socketio) { exclude(group = "org.json", module = "json") }
     implementation(libs.timber)
     implementation(libs.tink.android)
     implementation(platform(libs.androidx.compose.bom))

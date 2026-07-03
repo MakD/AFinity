@@ -8,12 +8,17 @@ import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.PersonalizedView
 import com.makd.afinity.data.repository.AudiobookshelfConfig
 import com.makd.afinity.data.repository.AudiobookshelfRepository
+import com.makd.afinity.data.websocket.AbsSocketEvent
+import com.makd.afinity.data.websocket.AudiobookshelfSocketManager
+import com.makd.afinity.data.websocket.WebSocketState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -30,7 +35,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import timber.log.Timber
-import javax.inject.Inject
 
 data class PersonalizedSection(val id: String, val label: String, val items: List<LibraryItem>)
 
@@ -39,13 +43,18 @@ private data class LibraryViews(val views: List<PersonalizedView>, val isFull: B
 @HiltViewModel
 class AudiobookshelfLibrariesViewModel
 @Inject
-constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : ViewModel() {
+constructor(
+    private val audiobookshelfRepository: AudiobookshelfRepository,
+    private val socketManager: AudiobookshelfSocketManager,
+) : ViewModel() {
 
     private val json = Json { ignoreUnknownKeys = true }
 
     private val _uiState = MutableStateFlow(AudiobookshelfLibrariesUiState())
     val uiState: StateFlow<AudiobookshelfLibrariesUiState> = _uiState.asStateFlow()
     private var refreshJob: Job? = null
+    private var shelfRefreshJob: Job? = null
+    private var fullRefreshJob: Job? = null
 
     val libraries: StateFlow<List<Library>> =
         audiobookshelfRepository
@@ -110,6 +119,35 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
                 wasAuthenticated = authenticated
             }
         }
+
+        viewModelScope.launch {
+            socketManager.events.collect { event ->
+                when (event) {
+                    AbsSocketEvent.ProgressChanged -> scheduleShelfRefresh()
+                    AbsSocketEvent.ItemsChanged,
+                    AbsSocketEvent.SeriesChanged -> scheduleFullRefresh()
+                }
+            }
+        }
+    }
+
+    private fun scheduleShelfRefresh() {
+        shelfRefreshJob?.cancel()
+        shelfRefreshJob = viewModelScope.launch {
+            delay(2_000L)
+            val activeLibraries = libraries.value
+            if (activeLibraries.isNotEmpty()) {
+                refreshContinueListening(activeLibraries)
+            }
+        }
+    }
+
+    private fun scheduleFullRefresh() {
+        fullRefreshJob?.cancel()
+        fullRefreshJob = viewModelScope.launch {
+            delay(2_000L)
+            refreshLibraries(force = true)
+        }
     }
 
     fun refreshLibraries(force: Boolean = false) {
@@ -149,9 +187,14 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
                     _genreSections.value = cachedGenreSections
                 }
 
+                val cooldownMs =
+                    if (socketManager.connectionState.value == WebSocketState.CONNECTED) {
+                        SOCKET_CONNECTED_COOLDOWN_MS
+                    } else {
+                        FULL_REFRESH_COOLDOWN_MS
+                    }
                 val withinCooldown =
-                    !force &&
-                        System.currentTimeMillis() - lastFullRefreshAt < FULL_REFRESH_COOLDOWN_MS
+                    !force && System.currentTimeMillis() - lastFullRefreshAt < cooldownMs
                 if (withinCooldown && hasCachedSections) {
                     refreshContinueListening(activeLibraries)
                 } else {
@@ -357,6 +400,7 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
 
     companion object {
         private const val FULL_REFRESH_COOLDOWN_MS = 30_000L
+        private const val SOCKET_CONNECTED_COOLDOWN_MS = 5 * 60_000L
         private const val CONTINUE_LISTENING_SHELF = "continue-listening"
         @Volatile private var lastFullRefreshAt = 0L
         @Volatile private var cachedGenreSections: List<PersonalizedSection> = emptyList()

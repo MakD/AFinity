@@ -14,6 +14,9 @@ import com.makd.afinity.data.models.audiobookshelf.SeriesItem
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsDownloadRepository
+import com.makd.afinity.data.websocket.AudiobookshelfSocketManager
+import com.makd.afinity.data.websocket.WebSocketState
+import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
@@ -24,6 +27,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -39,6 +43,8 @@ constructor(
     private val offlineModeManager: OfflineModeManager,
     private val preferencesRepository: PreferencesRepository,
     private val networkMonitor: NetworkConnectivityMonitor,
+    private val playbackManager: AudiobookshelfPlaybackManager,
+    private val socketManager: AudiobookshelfSocketManager,
 ) : ViewModel() {
 
     val itemId: String = savedStateHandle.get<String>("itemId") ?: ""
@@ -149,7 +155,9 @@ constructor(
                     Timber.d("Loaded item: ${item.media.metadata.title}")
 
                     if (item.mediaType.lowercase() == "podcast") {
-                        audiobookshelfRepository.refreshProgress()
+                        if (socketManager.connectionState.value != WebSocketState.CONNECTED) {
+                            audiobookshelfRepository.refreshProgress()
+                        }
                     } else {
                         loadAudibleRating(item)
                     }
@@ -214,6 +222,57 @@ constructor(
             }
 
             _uiState.value = _uiState.value.copy(seriesDetails = loadedSeries)
+        }
+    }
+
+    val nowPlayingEpisodeId: StateFlow<String?> =
+        playbackManager.playbackState
+            .map { state ->
+                if (state.sessionId != null && state.itemId == itemId) state.episodeId else null
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val isThisItemPlaying: StateFlow<Boolean> =
+        playbackManager.playbackState
+            .map { state ->
+                state.sessionId != null && state.itemId == itemId && state.episodeId == null
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun toggleItemFinished() {
+        val current = item.value ?: return
+        if (isThisItemPlaying.value) return
+        val finished = progress.value?.isFinished == true
+        val duration = current.media.duration ?: progress.value?.duration ?: 0.0
+        viewModelScope.launch {
+            audiobookshelfRepository
+                .updateProgress(
+                    itemId = current.id,
+                    episodeId = null,
+                    currentTime = if (finished) 0.0 else duration,
+                    duration = duration,
+                    isFinished = !finished,
+                )
+                .onFailure { Timber.e(it, "Failed to toggle finished for ${current.id}") }
+        }
+    }
+
+    fun toggleEpisodeFinished(episode: PodcastEpisode) {
+        val current = item.value ?: return
+        if (nowPlayingEpisodeId.value == episode.id) return
+        val existing = episodeProgressMap.value[episode.id]
+        val finished = existing?.isFinished == true
+        val duration = episode.duration ?: existing?.duration ?: 0.0
+        viewModelScope.launch {
+            audiobookshelfRepository
+                .updateProgress(
+                    itemId = current.id,
+                    episodeId = episode.id,
+                    currentTime = if (finished) 0.0 else duration,
+                    duration = duration,
+                    isFinished = !finished,
+                )
+                .onFailure { Timber.e(it, "Failed to toggle finished for episode ${episode.id}") }
         }
     }
 

@@ -67,6 +67,8 @@ fun LazyListScope.episodeListItems(
     onEpisodeDownload: ((String) -> Unit)? = null,
     onEpisodeCancelDownload: ((String) -> Unit)? = null,
     onEpisodeDeleteDownload: ((String) -> Unit)? = null,
+    onEpisodeToggleFinished: ((PodcastEpisode) -> Unit)? = null,
+    nowPlayingEpisodeId: String? = null,
 ) {
     items(items = episodes, key = { it.id }) { episode ->
         val isExpanded = expandedEpisodeId == episode.id
@@ -84,6 +86,8 @@ fun LazyListScope.episodeListItems(
                 onDownload = onEpisodeDownload?.let { { it(episode.id) } },
                 onCancelDownload = onEpisodeCancelDownload?.let { { it(episode.id) } },
                 onDeleteDownload = onEpisodeDeleteDownload?.let { { it(episode.id) } },
+                onToggleFinished = onEpisodeToggleFinished?.let { { it(episode) } },
+                toggleFinishedEnabled = nowPlayingEpisodeId != episode.id,
             )
         }
     }
@@ -100,6 +104,8 @@ private fun ExpandableEpisodeItem(
     onDownload: (() -> Unit)? = null,
     onCancelDownload: (() -> Unit)? = null,
     onDeleteDownload: (() -> Unit)? = null,
+    onToggleFinished: (() -> Unit)? = null,
+    toggleFinishedEnabled: Boolean = true,
 ) {
     Row(
         modifier =
@@ -228,6 +234,32 @@ private fun ExpandableEpisodeItem(
                 }
             }
 
+            if (onToggleFinished != null) {
+                val finished = progress?.isFinished == true
+                IconButton(
+                    onClick = onToggleFinished,
+                    enabled = toggleFinishedEnabled,
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(
+                        painter =
+                            if (finished) painterResource(id = R.drawable.ic_circle_check)
+                            else painterResource(id = R.drawable.ic_circle_check_outline),
+                        contentDescription =
+                            if (finished) stringResource(R.string.cd_watched_unmark)
+                            else stringResource(R.string.cd_watched_mark),
+                        tint =
+                            when {
+                                !toggleFinishedEnabled ->
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                finished -> Color.Green
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+
             if (onDownload != null || downloadInfo != null) {
                 when {
                     downloadInfo?.status == AbsDownloadStatus.COMPLETED ->
@@ -349,6 +381,8 @@ fun EpisodeListDialog(
     onEpisodeDownload: ((String) -> Unit)? = null,
     onEpisodeCancelDownload: ((String) -> Unit)? = null,
     onEpisodeDeleteDownload: ((String) -> Unit)? = null,
+    onEpisodeToggleFinished: ((PodcastEpisode) -> Unit)? = null,
+    nowPlayingEpisodeId: String? = null,
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -407,6 +441,8 @@ fun EpisodeListDialog(
                         onEpisodeDownload = onEpisodeDownload,
                         onEpisodeCancelDownload = onEpisodeCancelDownload,
                         onEpisodeDeleteDownload = onEpisodeDeleteDownload,
+                        onEpisodeToggleFinished = onEpisodeToggleFinished,
+                        nowPlayingEpisodeId = nowPlayingEpisodeId,
                     )
                 }
             }

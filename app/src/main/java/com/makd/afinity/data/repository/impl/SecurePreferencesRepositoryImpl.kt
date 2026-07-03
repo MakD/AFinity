@@ -632,6 +632,7 @@ constructor(@param:ApplicationContext private val context: Context) : SecurePref
     override fun updateCachedAudiobookshelfTokens(accessToken: String, refreshToken: String?) {
         cachedAudiobookshelfToken = accessToken
         cachedAudiobookshelfRefreshToken = refreshToken
+        onAbsTokenRefreshed?.invoke(accessToken)
         val serverId = activeAbsServerId
         val userId = activeAbsUserId
         if (serverId == null || userId == null) {
@@ -698,6 +699,8 @@ constructor(@param:ApplicationContext private val context: Context) : SecurePref
     }
 
     @Volatile override var onAbsAuthInvalidated: (() -> Unit)? = null
+
+    @Volatile override var onAbsTokenRefreshed: ((String) -> Unit)? = null
 
     override fun getCachedJellyfinToken(): String? = cachedJellyfinToken
 

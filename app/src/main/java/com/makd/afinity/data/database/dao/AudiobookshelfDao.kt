@@ -102,6 +102,11 @@ interface AudiobookshelfDao {
     suspend fun insertItem(item: AudiobookshelfItemEntity)
 
     @Query(
+        "DELETE FROM audiobookshelf_items WHERE id = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    suspend fun deleteItem(itemId: String, serverId: String, userId: String)
+
+    @Query(
         "DELETE FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryId = :libraryId"
     )
     suspend fun deleteItemsByLibrary(serverId: String, userId: String, libraryId: String)
@@ -159,6 +164,27 @@ interface AudiobookshelfDao {
         serverId: String,
         userId: String,
     ): AudiobookshelfProgressEntity?
+
+    @Query(
+        "DELETE FROM audiobookshelf_progress WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryItemId = :itemId AND episodeId = :episodeId AND id != :keepId"
+    )
+    suspend fun deleteDuplicateEpisodeProgress(
+        serverId: String,
+        userId: String,
+        itemId: String,
+        episodeId: String,
+        keepId: String,
+    )
+
+    @Query(
+        "DELETE FROM audiobookshelf_progress WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryItemId = :itemId AND (episodeId IS NULL OR episodeId = '') AND id != :keepId"
+    )
+    suspend fun deleteDuplicateItemProgress(
+        serverId: String,
+        userId: String,
+        itemId: String,
+        keepId: String,
+    )
 
     @Query(
         "SELECT * FROM audiobookshelf_progress WHERE libraryItemId = :itemId AND episodeId = :episodeId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"

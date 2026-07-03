@@ -39,6 +39,7 @@ reorderable = "3.1.0"
 richtext = "1.0.0-alpha05"
 retrofit = "3.0.0"
 room = "2.8.4"
+socketio = "2.1.2"
 timber = "5.0.1"
 tinkAndroid = "1.22.0"
 work = "2.11.2"
@@ -107,6 +108,7 @@ play-services-cast-framework = { group = "com.google.android.gms", name = "play-
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 retrofit-kotlinx-serialization = { group = "com.squareup.retrofit2", name = "converter-kotlinx-serialization", version.ref = "retrofit" }
+socketio = { group = "io.socket", name = "socket.io-client", version.ref = "socketio" }
 richtext-commonmark = { group = "com.halilibo.compose-richtext", name = "richtext-commonmark", version.ref = "richtext" }
 richtext-ui = { group = "com.halilibo.compose-richtext", name = "richtext-ui", version.ref = "richtext" }
 richtext-ui-material3 = { group = "com.halilibo.compose-richtext", name = "richtext-ui-material3", version.ref = "richtext" }

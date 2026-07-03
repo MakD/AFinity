@@ -101,6 +101,12 @@ interface AudiobookshelfRepository {
         isFinished: Boolean,
     ): Result<MediaProgress>
 
+    suspend fun applyRemoteProgress(progressList: List<MediaProgress>): Int
+
+    suspend fun applyRemoteItem(item: LibraryItem)
+
+    suspend fun removeRemoteItem(itemId: String)
+
     fun getProgressForItemFlow(itemId: String): Flow<MediaProgress?>
 
     fun getEpisodeProgressMapFlow(itemId: String): Flow<Map<String, MediaProgress>>

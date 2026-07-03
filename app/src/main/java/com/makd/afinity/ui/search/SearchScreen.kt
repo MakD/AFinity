@@ -1163,7 +1163,12 @@ private fun AudiobookshelfSearchResultItem(
     serverUrl: String?,
     onClick: () -> Unit,
 ) {
-    val isFinished = item.userMediaProgress?.isFinished == true
+    val isFinished =
+        if (item.mediaType.equals("podcast", ignoreCase = true)) {
+            item.numEpisodesIncomplete == 0
+        } else {
+            item.userMediaProgress?.isFinished == true
+        }
     val progress = item.userMediaProgress?.progress ?: 0.0
 
     Card(

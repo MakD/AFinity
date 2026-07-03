@@ -153,6 +153,8 @@ interface SecurePreferencesRepository {
 
     var onAbsAuthInvalidated: (() -> Unit)?
 
+    var onAbsTokenRefreshed: ((String) -> Unit)?
+
     fun getCachedJellyfinToken(): String?
 
     fun getCachedJellyfinServerUrl(): String?

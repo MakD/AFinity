@@ -42,6 +42,7 @@ import com.makd.afinity.data.updater.UpdateManager
 import com.makd.afinity.data.updater.UpdateScheduler
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import com.makd.afinity.data.updater.notification.UpdateNotificationManager
+import com.makd.afinity.data.websocket.AudiobookshelfSocketManager
 import com.makd.afinity.navigation.MainNavigation
 import com.makd.afinity.ui.components.AfinitySplashScreen
 import com.makd.afinity.ui.login.LoginScreen
@@ -61,6 +62,8 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var offlineModeManager: OfflineModeManager
 
     @Inject lateinit var updateScheduler: UpdateScheduler
+
+    @Inject lateinit var audiobookshelfSocketManager: AudiobookshelfSocketManager
 
     private val mainViewModel: MainViewModel by viewModels()
 

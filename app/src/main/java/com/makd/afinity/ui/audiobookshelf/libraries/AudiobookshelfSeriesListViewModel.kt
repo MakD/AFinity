@@ -6,8 +6,12 @@ import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.repository.AudiobookshelfConfig
 import com.makd.afinity.data.repository.AudiobookshelfRepository
+import com.makd.afinity.data.websocket.AbsSocketEvent
+import com.makd.afinity.data.websocket.AudiobookshelfSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +27,10 @@ import javax.inject.Inject
 @HiltViewModel
 class AudiobookshelfSeriesListViewModel
 @Inject
-constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : ViewModel() {
+constructor(
+    private val audiobookshelfRepository: AudiobookshelfRepository,
+    private val socketManager: AudiobookshelfSocketManager,
+) : ViewModel() {
 
     val currentConfig: StateFlow<AudiobookshelfConfig?> = audiobookshelfRepository.currentConfig
 
@@ -53,8 +60,28 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    private var loadJob: Job? = null
+    private var seriesRefreshJob: Job? = null
+
     init {
+        loadSeries()
+
         viewModelScope.launch {
+            socketManager.events.collect { event ->
+                if (event == AbsSocketEvent.SeriesChanged) {
+                    seriesRefreshJob?.cancel()
+                    seriesRefreshJob = viewModelScope.launch {
+                        delay(2_000L)
+                        loadSeries()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun loadSeries() {
+        if (loadJob?.isActive == true) return
+        loadJob = viewModelScope.launch {
             val libraries = audiobookshelfRepository.getLibrariesFlow().first { it.isNotEmpty() }
 
             val seriesById = mutableMapOf<String, AudiobookshelfSeries>()

@@ -28,6 +28,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -86,6 +87,8 @@ fun ItemHeader(
     onCancelDownload: (() -> Unit)? = null,
     onDeleteDownload: (() -> Unit)? = null,
     audibleRating: AudibleRating? = null,
+    onToggleFinished: (() -> Unit)? = null,
+    toggleFinishedEnabled: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val coverUrl =
@@ -112,6 +115,8 @@ fun ItemHeader(
             onCancelDownload = onCancelDownload,
             onDeleteDownload = onDeleteDownload,
             audibleRating = audibleRating,
+            onToggleFinished = onToggleFinished,
+            toggleFinishedEnabled = toggleFinishedEnabled,
         )
     }
 }
@@ -164,6 +169,8 @@ fun ItemHeaderContent(
     onCancelDownload: (() -> Unit)? = null,
     onDeleteDownload: (() -> Unit)? = null,
     audibleRating: AudibleRating? = null,
+    onToggleFinished: (() -> Unit)? = null,
+    toggleFinishedEnabled: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -509,6 +516,29 @@ fun ItemHeaderContent(
                         }
                     }
                 }
+            }
+        }
+
+        if (onToggleFinished != null) {
+            Spacer(modifier = Modifier.height(4.dp))
+            val finished = progress?.isFinished == true
+            IconButton(onClick = onToggleFinished, enabled = toggleFinishedEnabled) {
+                Icon(
+                    painter =
+                        if (finished) painterResource(id = R.drawable.ic_circle_check)
+                        else painterResource(id = R.drawable.ic_circle_check_outline),
+                    contentDescription =
+                        if (finished) stringResource(R.string.cd_watched_unmark)
+                        else stringResource(R.string.cd_watched_mark),
+                    tint =
+                        when {
+                            !toggleFinishedEnabled ->
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            finished -> Color.Green
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    modifier = Modifier.size(28.dp),
+                )
             }
         }
     }

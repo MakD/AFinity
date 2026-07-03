@@ -126,6 +126,8 @@ fun AudiobookshelfItemScreen(
     val episodeProgressMap by viewModel.episodeProgressMap.collectAsStateWithLifecycle()
     val downloadInfo by viewModel.downloadInfo.collectAsStateWithLifecycle()
     val episodeDownloadMap by viewModel.episodeDownloadMap.collectAsStateWithLifecycle()
+    val nowPlayingEpisodeId by viewModel.nowPlayingEpisodeId.collectAsStateWithLifecycle()
+    val isThisItemPlaying by viewModel.isThisItemPlaying.collectAsStateWithLifecycle()
     val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
     val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
     val audibleRating by viewModel.audibleRating.collectAsStateWithLifecycle()
@@ -271,6 +273,9 @@ fun AudiobookshelfItemScreen(
                                 onDeleteDownload =
                                     if (!isPodcast) ({ viewModel.deleteDownload() }) else null,
                                 audibleRating = if (!isPodcast) audibleRating else null,
+                                onToggleFinished =
+                                    if (!isPodcast) ({ viewModel.toggleItemFinished() }) else null,
+                                toggleFinishedEnabled = !isThisItemPlaying,
                             )
                         }
 
@@ -371,6 +376,10 @@ fun AudiobookshelfItemScreen(
                                             onEpisodeDeleteDownload = {
                                                 viewModel.deleteDownload(it)
                                             },
+                                            onEpisodeToggleFinished = {
+                                                viewModel.toggleEpisodeFinished(it)
+                                            },
+                                            nowPlayingEpisodeId = nowPlayingEpisodeId,
                                         )
 
                                         item {
@@ -444,6 +453,9 @@ fun AudiobookshelfItemScreen(
                                 onDeleteDownload =
                                     if (!isPodcast) ({ viewModel.deleteDownload() }) else null,
                                 audibleRating = if (!isPodcast) audibleRating else null,
+                                onToggleFinished =
+                                    if (!isPodcast) ({ viewModel.toggleItemFinished() }) else null,
+                                toggleFinishedEnabled = !isThisItemPlaying,
                             )
                         }
 
@@ -605,6 +617,8 @@ fun AudiobookshelfItemScreen(
                 onEpisodeDownload = if (canDownload) ({ viewModel.startDownload(it) }) else null,
                 onEpisodeCancelDownload = { viewModel.cancelDownload(it) },
                 onEpisodeDeleteDownload = { viewModel.deleteDownload(it) },
+                onEpisodeToggleFinished = { viewModel.toggleEpisodeFinished(it) },
+                nowPlayingEpisodeId = nowPlayingEpisodeId,
             )
         } else if (uiState.chapters.isNotEmpty()) {
             ChapterListDialog(

@@ -717,8 +717,10 @@ constructor(
                             updatedAt = itemResponse.updatedAt,
                             userMediaProgress = itemResponse.userMediaProgress,
                         )
-                    audiobookshelfDao.insertItem(
-                        item.toEntity(currentServerId, currentUserId.toString())
+                    upsertItemPreservingEpisodeCount(
+                        item,
+                        currentServerId,
+                        currentUserId.toString(),
                     )
 
                     itemResponse.userMediaProgress?.let { progress -> cacheProgress(progress) }
@@ -915,8 +917,10 @@ constructor(
                     val items = response.body()!!.libraryItems
                     val progressList = items.mapNotNull { it.userMediaProgress }
                     items.forEach { item ->
-                        audiobookshelfDao.insertItem(
-                            item.toEntity(currentServerId, currentUserId.toString())
+                        upsertItemPreservingEpisodeCount(
+                            item,
+                            currentServerId,
+                            currentUserId.toString(),
                         )
                         item.userMediaProgress?.let { progress -> cacheProgress(progress) }
                     }
@@ -956,6 +960,52 @@ constructor(
 
             try {
                 val progress = if (duration > 0) currentTime / duration else 0.0
+                val previousFinished =
+                    if (episodeId != null) {
+                        audiobookshelfDao
+                            .getProgressForEpisode(
+                                itemId,
+                                episodeId,
+                                currentServerId,
+                                currentUserId.toString(),
+                            )
+                            ?.isFinished == true
+                    } else false
+
+                val localProgress =
+                    AudiobookshelfProgressEntity(
+                        id = "${itemId}_${episodeId ?: ""}",
+                        jellyfinServerId = currentServerId,
+                        jellyfinUserId = currentUserId.toString(),
+                        libraryItemId = itemId,
+                        episodeId = episodeId,
+                        currentTime = currentTime,
+                        duration = duration,
+                        progress = progress,
+                        isFinished = isFinished,
+                        lastUpdate = System.currentTimeMillis(),
+                        startedAt = System.currentTimeMillis(),
+                        finishedAt = if (isFinished) System.currentTimeMillis() else null,
+                        pendingSync = true,
+                    )
+                audiobookshelfDao.insertProgress(localProgress)
+                pruneDuplicateProgress(
+                    currentServerId,
+                    currentUserId.toString(),
+                    itemId,
+                    episodeId,
+                    localProgress.id,
+                )
+
+                if (episodeId != null && previousFinished != isFinished) {
+                    adjustEpisodesIncomplete(
+                        itemId,
+                        currentServerId,
+                        currentUserId.toString(),
+                        if (isFinished) -1 else 1,
+                    )
+                }
+
                 val request =
                     ProgressUpdateRequest(
                         currentTime = currentTime,
@@ -975,25 +1025,11 @@ constructor(
                         response.isSuccessful
                     } else false
 
-                val localProgress =
-                    AudiobookshelfProgressEntity(
-                        id = "${itemId}_${episodeId ?: ""}",
-                        jellyfinServerId = currentServerId,
-                        jellyfinUserId = currentUserId.toString(),
-                        libraryItemId = itemId,
-                        episodeId = episodeId,
-                        currentTime = currentTime,
-                        duration = duration,
-                        progress = progress,
-                        isFinished = isFinished,
-                        lastUpdate = System.currentTimeMillis(),
-                        startedAt = System.currentTimeMillis(),
-                        finishedAt = if (isFinished) System.currentTimeMillis() else null,
-                        pendingSync = !synced,
-                    )
-                audiobookshelfDao.insertProgress(localProgress)
+                if (synced) {
+                    audiobookshelfDao.insertProgress(localProgress.copy(pendingSync = false))
+                }
 
-                Result.success(localProgress.toMediaProgress())
+                Result.success(localProgress.copy(pendingSync = !synced).toMediaProgress())
             } catch (e: Exception) {
                 Timber.e(e, "Failed to update progress")
                 Result.failure(e)
@@ -1497,14 +1533,144 @@ constructor(
         }
     }
 
+    override suspend fun applyRemoteProgress(progressList: List<MediaProgress>): Int {
+        return withContext(Dispatchers.IO) {
+            val (currentServerId, currentUserId) = activeContext ?: return@withContext 0
+            val userId = currentUserId.toString()
+            var applied = 0
+
+            for (remote in progressList) {
+                try {
+                    val existing =
+                        if (remote.episodeId != null) {
+                            audiobookshelfDao.getProgressForEpisode(
+                                remote.libraryItemId,
+                                remote.episodeId,
+                                currentServerId,
+                                userId,
+                            )
+                        } else {
+                            audiobookshelfDao.getProgressForItem(
+                                remote.libraryItemId,
+                                currentServerId,
+                                userId,
+                            )
+                        }
+
+                    if (
+                        existing != null &&
+                            (existing.pendingSync || existing.lastUpdate >= remote.lastUpdate)
+                    ) {
+                        continue
+                    }
+
+
+                    val rowId = "${remote.libraryItemId}_${remote.episodeId ?: ""}"
+                    audiobookshelfDao.insertProgress(
+                        AudiobookshelfProgressEntity(
+                            id = rowId,
+                            jellyfinServerId = currentServerId,
+                            jellyfinUserId = userId,
+                            libraryItemId = remote.libraryItemId,
+                            episodeId = remote.episodeId,
+                            currentTime = remote.currentTime,
+                            duration = remote.duration,
+                            progress = remote.progress,
+                            isFinished = remote.isFinished,
+                            lastUpdate = remote.lastUpdate,
+                            startedAt = remote.startedAt,
+                            finishedAt = remote.finishedAt,
+                            pendingSync = false,
+                        )
+                    )
+                    pruneDuplicateProgress(
+                        currentServerId,
+                        userId,
+                        remote.libraryItemId,
+                        remote.episodeId,
+                        rowId,
+                    )
+                    applied++
+
+                    if (
+                        remote.episodeId != null &&
+                            (existing?.isFinished == true) != remote.isFinished
+                    ) {
+                        adjustEpisodesIncomplete(
+                            remote.libraryItemId,
+                            currentServerId,
+                            userId,
+                            if (remote.isFinished) -1 else 1,
+                        )
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to apply remote progress for ${remote.libraryItemId}")
+                }
+            }
+            applied
+        }
+    }
+
+    override suspend fun applyRemoteItem(item: LibraryItem) {
+        withContext(Dispatchers.IO) {
+            val (currentServerId, currentUserId) = activeContext ?: return@withContext
+            try {
+                upsertItemPreservingEpisodeCount(item, currentServerId, currentUserId.toString())
+                item.userMediaProgress?.let { cacheProgress(it) }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to apply remote item ${item.id}")
+            }
+        }
+    }
+
+    override suspend fun removeRemoteItem(itemId: String) {
+        withContext(Dispatchers.IO) {
+            val (currentServerId, currentUserId) = activeContext ?: return@withContext
+            try {
+                audiobookshelfDao.deleteItem(itemId, currentServerId, currentUserId.toString())
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to remove remote item $itemId")
+            }
+        }
+    }
+
+    private suspend fun upsertItemPreservingEpisodeCount(
+        item: LibraryItem,
+        serverId: String,
+        userId: String,
+    ) {
+        val entity = item.toEntity(serverId, userId)
+        val preservedCount =
+            entity.numEpisodesIncomplete
+                ?: audiobookshelfDao.getItem(item.id, serverId, userId)?.numEpisodesIncomplete
+        audiobookshelfDao.insertItem(entity.copy(numEpisodesIncomplete = preservedCount))
+    }
+
+    private suspend fun adjustEpisodesIncomplete(
+        itemId: String,
+        serverId: String,
+        userId: String,
+        delta: Int,
+    ) {
+        audiobookshelfDao.getItem(itemId, serverId, userId)?.let { entity ->
+            entity.numEpisodesIncomplete?.let { count ->
+                audiobookshelfDao.insertItem(
+                    entity.copy(numEpisodesIncomplete = (count + delta).coerceAtLeast(0))
+                )
+            }
+        }
+    }
+
     private suspend fun cacheProgress(progress: MediaProgress) {
         val (currentServerId, currentUserId) = activeContext ?: return
+        val userId = currentUserId.toString()
+        val rowId = "${progress.libraryItemId}_${progress.episodeId ?: ""}"
 
         val entity =
             AudiobookshelfProgressEntity(
-                id = progress.id,
+                id = rowId,
                 jellyfinServerId = currentServerId,
-                jellyfinUserId = currentUserId.toString(),
+                jellyfinUserId = userId,
                 libraryItemId = progress.libraryItemId,
                 episodeId = progress.episodeId,
                 currentTime = progress.currentTime,
@@ -1518,6 +1684,27 @@ constructor(
             )
 
         audiobookshelfDao.insertProgress(entity)
+        pruneDuplicateProgress(currentServerId, userId, progress.libraryItemId, progress.episodeId, rowId)
+    }
+
+    private suspend fun pruneDuplicateProgress(
+        serverId: String,
+        userId: String,
+        itemId: String,
+        episodeId: String?,
+        keepId: String,
+    ) {
+        if (episodeId != null) {
+            audiobookshelfDao.deleteDuplicateEpisodeProgress(
+                serverId,
+                userId,
+                itemId,
+                episodeId,
+                keepId,
+            )
+        } else {
+            audiobookshelfDao.deleteDuplicateItemProgress(serverId, userId, itemId, keepId)
+        }
     }
 
     private fun getDeviceId(): String {

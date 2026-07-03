@@ -72,7 +72,10 @@ fun AudiobookCard(
                 }
 
                 val progress = item.userMediaProgress
-                val isFinished = progress?.isFinished == true
+                val isPodcast = item.mediaType.equals("podcast", ignoreCase = true)
+                val isFinished =
+                    if (isPodcast) item.numEpisodesIncomplete == 0
+                    else progress?.isFinished == true
                 val unheardCount = item.numEpisodesIncomplete ?: 0
 
                 when {
@@ -113,9 +116,9 @@ fun AudiobookCard(
                     }
                 }
 
-                if (!isFinished && (progress?.progress ?: 0.0) > 0) {
+                if (!isFinished && progress != null && !progress.isFinished && progress.progress > 0) {
                     LinearProgressIndicator(
-                        progress = { progress!!.progress.toFloat() },
+                        progress = { progress.progress.toFloat() },
                         modifier =
                             Modifier.fillMaxWidth().height(4.dp).align(Alignment.BottomCenter),
                         color = MaterialTheme.colorScheme.primary,
