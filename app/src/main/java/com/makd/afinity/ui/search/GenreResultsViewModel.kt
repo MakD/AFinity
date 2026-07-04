@@ -12,10 +12,9 @@ import androidx.paging.cachedIn
 import androidx.paging.map
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
+import com.makd.afinity.data.manager.resolveChangedItems
 import com.makd.afinity.data.models.extensions.toAfinityItem
-import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -93,45 +92,9 @@ constructor(
 
         viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
-                var targetItem = event.updatedItem ?: event.parentItem ?: event.seasonItem
-                if (targetItem == null) {
-                    try {
-                        targetItem = mediaRepository.getItemById(event.itemId)
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to resolve item for genre patch: ${event.itemId}")
-                    }
-                }
-
-                var parentShowItem: AfinityItem? = null
-                val trueSeriesId =
-                    event.seriesId
-                        ?: (targetItem as? AfinityEpisode)?.seriesId
-                        ?: (targetItem as? AfinitySeason)?.seriesId
-                if (trueSeriesId != null && trueSeriesId != targetItem?.id) {
-                    parentShowItem = event.parentItem?.takeIf { it.id == trueSeriesId }
-                    if (parentShowItem == null) {
-                        try {
-                            parentShowItem = mediaRepository.getItemById(trueSeriesId)
-                        } catch (e: Exception) {
-                            Timber.e(
-                                e,
-                                "Failed to resolve parent show for genre patch: $trueSeriesId",
-                            )
-                        }
-                    }
-                }
-
-                var hasUpdates = false
-                targetItem?.let { item ->
-                    pendingUpdates[item.id] = item
-                    hasUpdates = true
-                }
-                parentShowItem?.let { show ->
-                    pendingUpdates[show.id] = show
-                    hasUpdates = true
-                }
-
-                if (hasUpdates) {
+                val resolved = event.resolveChangedItems(mediaRepository)
+                if (resolved.isNotEmpty()) {
+                    resolved.forEach { pendingUpdates[it.id] = it }
                     genreUpdateTrigger.tryEmit(Unit)
                 }
             }

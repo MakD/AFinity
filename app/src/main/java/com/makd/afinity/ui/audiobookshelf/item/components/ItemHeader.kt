@@ -9,11 +9,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,12 +19,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -404,140 +402,105 @@ fun ItemHeaderContent(
             Spacer(modifier = Modifier.height(24.dp))
         }
 
-        val showSplit = onDownload != null
-        val primaryColors =
-            ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            )
-
         Row(
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            horizontalArrangement = Arrangement.spacedBy(0.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Button(
-                onClick = onPlay,
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-                shape =
-                    if (showSplit) RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp)
-                    else RoundedCornerShape(28.dp),
-                colors = primaryColors,
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_player_play_filled),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text =
-                            when {
-                                progress != null && progress.isFinished ->
-                                    stringResource(R.string.abs_listen_again)
-                                progress != null && progress.progress > 0 ->
-                                    stringResource(R.string.abs_continue_listening)
-                                else -> stringResource(R.string.action_play)
-                            },
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
+                if (onToggleFinished != null) {
+                    val finished = progress?.isFinished == true
+                    IconButton(onClick = onToggleFinished, enabled = toggleFinishedEnabled) {
+                        Icon(
+                            painter =
+                                if (finished) painterResource(id = R.drawable.ic_circle_check)
+                                else painterResource(id = R.drawable.ic_circle_check_outline),
+                            contentDescription =
+                                if (finished) stringResource(R.string.cd_watched_unmark)
+                                else stringResource(R.string.cd_watched_mark),
+                            tint =
+                                when {
+                                    !toggleFinishedEnabled ->
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                    finished -> Color.Green
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                            modifier = Modifier.size(26.dp),
+                        )
+                    }
                 }
-            }
 
-            if (showSplit) {
-                Box(
-                    modifier =
-                        Modifier.width(1.dp)
-                            .fillMaxHeight()
-                            .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.25f))
-                )
-
-                Button(
-                    onClick = {
-                        when (downloadInfo?.status) {
-                            AbsDownloadStatus.QUEUED,
-                            AbsDownloadStatus.DOWNLOADING -> onCancelDownload?.invoke()
-                            AbsDownloadStatus.COMPLETED -> onDeleteDownload?.invoke()
-                            else -> onDownload?.invoke()
-                        }
-                    },
-                    modifier = Modifier.width(64.dp).fillMaxHeight(),
-                    shape = RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp),
-                    colors = primaryColors,
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
-                    contentPadding = PaddingValues(0.dp),
-                ) {
-                    when (downloadInfo?.status) {
-                        AbsDownloadStatus.DOWNLOADING -> {
-                            Box(contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(
-                                    progress = { downloadInfo.progress },
-                                    modifier = Modifier.size(30.dp),
-                                    strokeWidth = 2.5.dp,
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    trackColor =
-                                        MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f),
-                                )
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_cancel),
-                                    contentDescription =
-                                        stringResource(R.string.cd_cancel_download),
-                                    modifier = Modifier.size(14.dp),
-                                )
+                if (onDownload != null) {
+                    IconButton(
+                        onClick = {
+                            when (downloadInfo?.status) {
+                                AbsDownloadStatus.QUEUED,
+                                AbsDownloadStatus.DOWNLOADING -> onCancelDownload?.invoke()
+                                AbsDownloadStatus.COMPLETED -> onDeleteDownload?.invoke()
+                                else -> onDownload.invoke()
                             }
                         }
-                        AbsDownloadStatus.QUEUED -> {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(22.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                trackColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f),
-                            )
-                        }
-                        AbsDownloadStatus.COMPLETED -> {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_delete),
-                                contentDescription = stringResource(R.string.cd_delete_download),
-                                modifier = Modifier.size(22.dp),
-                                tint = MaterialTheme.colorScheme.errorContainer,
-                            )
-                        }
-                        else -> {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_download),
-                                contentDescription = stringResource(R.string.cd_abs_download),
-                                modifier = Modifier.size(22.dp),
-                            )
+                    ) {
+                        when (downloadInfo?.status) {
+                            AbsDownloadStatus.DOWNLOADING -> {
+                                Box(contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator(
+                                        progress = { downloadInfo.progress },
+                                        modifier = Modifier.size(26.dp),
+                                        strokeWidth = 2.dp,
+                                    )
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_cancel),
+                                        contentDescription =
+                                            stringResource(R.string.cd_cancel_download),
+                                        modifier = Modifier.size(14.dp),
+                                        tint = Color.Red,
+                                    )
+                                }
+                            }
+                            AbsDownloadStatus.QUEUED -> {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(26.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                            AbsDownloadStatus.COMPLETED -> {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_delete),
+                                    contentDescription =
+                                        stringResource(R.string.cd_delete_download),
+                                    tint = Color.Red,
+                                    modifier = Modifier.size(26.dp),
+                                )
+                            }
+                            else -> {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_download),
+                                    contentDescription = stringResource(R.string.cd_abs_download),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(26.dp),
+                                )
+                            }
                         }
                     }
                 }
             }
-        }
 
-        if (onToggleFinished != null) {
-            Spacer(modifier = Modifier.height(4.dp))
-            val finished = progress?.isFinished == true
-            IconButton(onClick = onToggleFinished, enabled = toggleFinishedEnabled) {
+            FloatingActionButton(
+                onClick = onPlay,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = CircleShape,
+                modifier = Modifier.size(56.dp),
+            ) {
                 Icon(
-                    painter =
-                        if (finished) painterResource(id = R.drawable.ic_circle_check)
-                        else painterResource(id = R.drawable.ic_circle_check_outline),
-                    contentDescription =
-                        if (finished) stringResource(R.string.cd_watched_unmark)
-                        else stringResource(R.string.cd_watched_mark),
-                    tint =
-                        when {
-                            !toggleFinishedEnabled ->
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                            finished -> Color.Green
-                            else -> MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                    modifier = Modifier.size(28.dp),
+                    painter = painterResource(id = R.drawable.ic_player_play_filled),
+                    contentDescription = stringResource(R.string.action_play),
+                    modifier = Modifier.size(26.dp),
                 )
             }
         }

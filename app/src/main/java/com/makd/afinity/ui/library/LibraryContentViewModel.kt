@@ -11,7 +11,7 @@ import androidx.paging.map
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
-import com.makd.afinity.data.manager.MediaChangeSource
+import com.makd.afinity.data.manager.resolveChangedItems
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.media.AfinityItem
@@ -144,31 +144,9 @@ constructor(
 
         viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
-                event.updatedItem?.let { pendingUpdates[it.id] = it }
-                event.parentItem?.let { pendingUpdates[it.id] = it }
-                event.seasonItem?.let { pendingUpdates[it.id] = it }
-
-                if (event.source == MediaChangeSource.WEBSOCKET) {
-                    try {
-                        if (event.updatedItem == null) {
-                            val directItem = mediaRepository.getItemById(event.itemId)
-                            directItem?.let { pendingUpdates[it.id] = it }
-                        }
-
-                        if (
-                            event.seriesId != null &&
-                                event.seriesId != event.itemId &&
-                                event.parentItem?.id != event.seriesId
-                        ) {
-                            val seriesItem = mediaRepository.getItemById(event.seriesId)
-                            seriesItem?.let { pendingUpdates[it.id] = it }
-                        }
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to resolve items for granular update: ${event.itemId}")
-                    }
-                }
-
-                if (pendingUpdates.isNotEmpty()) {
+                val resolved = event.resolveChangedItems(mediaRepository)
+                if (resolved.isNotEmpty()) {
+                    resolved.forEach { pendingUpdates[it.id] = it }
                     libraryUpdateTrigger.tryEmit(Unit)
                 }
             }

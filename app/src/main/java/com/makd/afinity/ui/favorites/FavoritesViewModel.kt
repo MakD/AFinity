@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
+import com.makd.afinity.data.manager.resolveChangedItems
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -107,75 +108,63 @@ constructor(
         viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
                 val currentState = _uiState.value
-
-                val currentMovieIds = currentState.movies.map { it.id }
-                val currentShowIds = currentState.shows.map { it.id }
-                val currentSeasonIds = currentState.seasons.map { it.id }
-                val currentEpisodeIds = currentState.episodes.map { it.id }
-                val targetIdsToFetch = mutableSetOf<java.util.UUID>()
-
-                if (currentMovieIds.contains(event.itemId)) targetIdsToFetch.add(event.itemId)
-                if (currentShowIds.contains(event.itemId)) targetIdsToFetch.add(event.itemId)
-                if (currentSeasonIds.contains(event.itemId)) targetIdsToFetch.add(event.itemId)
-                if (currentEpisodeIds.contains(event.itemId)) targetIdsToFetch.add(event.itemId)
-                if (event.seriesId != null && currentShowIds.contains(event.seriesId)) {
-                    targetIdsToFetch.add(event.seriesId)
-                }
-                if (event.seasonId != null && currentSeasonIds.contains(event.seasonId)) {
-                    targetIdsToFetch.add(event.seasonId)
+                val displayedIds = buildSet {
+                    currentState.movies.forEach { add(it.id) }
+                    currentState.shows.forEach { add(it.id) }
+                    currentState.seasons.forEach { add(it.id) }
+                    currentState.episodes.forEach { add(it.id) }
                 }
 
-                if (targetIdsToFetch.isNotEmpty()) {
-                    try {
-                        val providedItems =
-                            listOfNotNull(event.updatedItem, event.parentItem, event.seasonItem)
-                                .associateBy { it.id }
-                        val newMovies = currentState.movies.toMutableList()
-                        val newShows = currentState.shows.toMutableList()
-                        val newSeasons = currentState.seasons.toMutableList()
-                        val newEpisodes = currentState.episodes.toMutableList()
-                        var hasChanges = false
+                val resolved = event.resolveChangedItems(mediaRepository, displayedIds)
+                if (resolved.isEmpty()) return@collect
 
-                        for (id in targetIdsToFetch) {
-                            val freshItem =
-                                providedItems[id] ?: mediaRepository.getItemById(id) ?: continue
-                            hasChanges = true
+                val newMovies = currentState.movies.toMutableList()
+                val newShows = currentState.shows.toMutableList()
+                val newSeasons = currentState.seasons.toMutableList()
+                val newEpisodes = currentState.episodes.toMutableList()
+                var hasChanges = false
 
-                            when (freshItem) {
-                                is AfinityMovie -> {
-                                    val idx = newMovies.indexOfFirst { it.id == id }
-                                    if (idx != -1) newMovies[idx] = freshItem
-                                }
-                                is AfinityShow -> {
-                                    val idx = newShows.indexOfFirst { it.id == id }
-                                    if (idx != -1) newShows[idx] = freshItem
-                                }
-                                is AfinitySeason -> {
-                                    val idx = newSeasons.indexOfFirst { it.id == id }
-                                    if (idx != -1) newSeasons[idx] = freshItem
-                                }
-                                is AfinityEpisode -> {
-                                    val idx = newEpisodes.indexOfFirst { it.id == id }
-                                    if (idx != -1) newEpisodes[idx] = freshItem
-                                }
-                                else -> {}
+                for (freshItem in resolved) {
+                    when (freshItem) {
+                        is AfinityMovie -> {
+                            val idx = newMovies.indexOfFirst { it.id == freshItem.id }
+                            if (idx != -1) {
+                                newMovies[idx] = freshItem
+                                hasChanges = true
                             }
                         }
-
-                        if (hasChanges) {
-                            _uiState.update {
-                                it.copy(
-                                    movies = newMovies,
-                                    shows = newShows,
-                                    seasons = newSeasons,
-                                    episodes = newEpisodes,
-                                )
+                        is AfinityShow -> {
+                            val idx = newShows.indexOfFirst { it.id == freshItem.id }
+                            if (idx != -1) {
+                                newShows[idx] = freshItem
+                                hasChanges = true
                             }
                         }
-                    } catch (e: Exception) {
-                        Timber.e(
-                            e,
-                            "Failed to resolve items for granular update in favorites: $targetIdsToFetch",
+                        is AfinitySeason -> {
+                            val idx = newSeasons.indexOfFirst { it.id == freshItem.id }
+                            if (idx != -1) {
+                                newSeasons[idx] = freshItem
+                                hasChanges = true
+                            }
+                        }
+                        is AfinityEpisode -> {
+                            val idx = newEpisodes.indexOfFirst { it.id == freshItem.id }
+                            if (idx != -1) {
+                                newEpisodes[idx] = freshItem
+                                hasChanges = true
+                            }
+                        }
+                        else -> {}
+                    }
+                }
+
+                if (hasChanges) {
+                    _uiState.update {
+                        it.copy(
+                            movies = newMovies,
+                            shows = newShows,
+                            seasons = newSeasons,
+                            episodes = newEpisodes,
                         )
                     }
                 }

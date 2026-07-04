@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
+import com.makd.afinity.data.manager.resolveChangedItems
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
@@ -98,31 +99,15 @@ constructor(
         }
         viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
-                val currentMovieIds = _uiState.value.movies.map { it.id }
-                val currentShowIds = _uiState.value.shows.map { it.id }
+                val displayedIds = buildSet {
+                    _uiState.value.movies.forEach { add(it.id) }
+                    _uiState.value.shows.forEach { add(it.id) }
+                }
 
-                val targetIdToFetch =
-                    when {
-                        currentMovieIds.contains(event.itemId) -> event.itemId
-                        currentShowIds.contains(event.itemId) -> event.itemId
-                        event.seriesId != null && currentShowIds.contains(event.seriesId) ->
-                            event.seriesId
-                        else -> null
-                    }
-
-                if (targetIdToFetch != null) {
-                    try {
-                        val freshItem =
-                            listOfNotNull(event.updatedItem, event.parentItem, event.seasonItem)
-                                .firstOrNull { it.id == targetIdToFetch }
-                                ?: mediaRepository.getItemById(targetIdToFetch)
-                        freshItem?.let { item ->
-                            pendingItemUpdates[item.id] = item
-                            personListUpdateTrigger.tryEmit(Unit)
-                        }
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to resolve item for granular update: $targetIdToFetch")
-                    }
+                val resolved = event.resolveChangedItems(mediaRepository, displayedIds)
+                if (resolved.isNotEmpty()) {
+                    resolved.forEach { pendingItemUpdates[it.id] = it }
+                    personListUpdateTrigger.tryEmit(Unit)
                 }
             }
         }

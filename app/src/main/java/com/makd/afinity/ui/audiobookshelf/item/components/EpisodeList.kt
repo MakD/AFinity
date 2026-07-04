@@ -6,7 +6,6 @@ import android.text.style.ClickableSpan
 import android.view.MotionEvent
 import android.widget.TextView
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,13 +21,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -73,9 +69,7 @@ fun LazyListScope.episodeListItems(
     items(items = episodes, key = { it.id }) { episode ->
         val isExpanded = expandedEpisodeId == episode.id
 
-        Box(modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)) {
+        Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
             ExpandableEpisodeItem(
                 episode = episode,
                 isExpanded = isExpanded,
@@ -107,12 +101,14 @@ private fun ExpandableEpisodeItem(
     onToggleFinished: (() -> Unit)? = null,
     toggleFinishedEnabled: Boolean = true,
 ) {
+    val hasDescription = !episode.description.isNullOrBlank()
+    val isFinished = progress?.isFinished == true
+
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
+            Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
-                .clickable { onExpandToggle() }
+                .clickable(onClick = onPlay)
                 .padding(12.dp)
                 .animateContentSize(),
         verticalAlignment = Alignment.Top,
@@ -122,7 +118,9 @@ private fun ExpandableEpisodeItem(
                 text = episode.title,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
+                color =
+                    if (isFinished) MaterialTheme.colorScheme.onSurfaceVariant
+                    else MaterialTheme.colorScheme.onSurface,
                 maxLines = if (isExpanded) Int.MAX_VALUE else 2,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -195,47 +193,10 @@ private fun ExpandableEpisodeItem(
             }
         }
 
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(4.dp))
 
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            if (progress != null && progress.isFinished) {
-                Box(
-                    modifier =
-                        Modifier
-                            .size(40.dp)
-                            .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_check),
-                        contentDescription = stringResource(R.string.cd_finished),
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(24.dp),
-                    )
-                }
-            } else {
-                FilledIconButton(
-                    onClick = onPlay,
-                    modifier = Modifier.size(40.dp),
-                    colors =
-                        IconButtonDefaults.filledIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.primary,
-                        ),
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_player_play_filled),
-                        contentDescription = stringResource(R.string.cd_abs_play_episode),
-                        modifier = Modifier.size(24.dp),
-                    )
-                }
-            }
-
+        Row(verticalAlignment = Alignment.CenterVertically) {
             if (onToggleFinished != null) {
-                val finished = progress?.isFinished == true
                 IconButton(
                     onClick = onToggleFinished,
                     enabled = toggleFinishedEnabled,
@@ -243,16 +204,16 @@ private fun ExpandableEpisodeItem(
                 ) {
                     Icon(
                         painter =
-                            if (finished) painterResource(id = R.drawable.ic_circle_check)
+                            if (isFinished) painterResource(id = R.drawable.ic_circle_check)
                             else painterResource(id = R.drawable.ic_circle_check_outline),
                         contentDescription =
-                            if (finished) stringResource(R.string.cd_watched_unmark)
+                            if (isFinished) stringResource(R.string.cd_watched_unmark)
                             else stringResource(R.string.cd_watched_mark),
                         tint =
                             when {
                                 !toggleFinishedEnabled ->
                                     MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                                finished -> Color.Green
+                                isFinished -> Color.Green
                                 else -> MaterialTheme.colorScheme.onSurfaceVariant
                             },
                         modifier = Modifier.size(20.dp),
@@ -269,14 +230,15 @@ private fun ExpandableEpisodeItem(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_check),
-                                contentDescription = stringResource(R.string.cd_abs_downloaded_delete),
+                                contentDescription =
+                                    stringResource(R.string.cd_abs_downloaded_delete),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(18.dp),
                             )
                         }
 
                     downloadInfo?.status == AbsDownloadStatus.DOWNLOADING ||
-                            downloadInfo?.status == AbsDownloadStatus.QUEUED -> {
+                        downloadInfo?.status == AbsDownloadStatus.QUEUED -> {
                         Box(modifier = Modifier.size(32.dp), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator(
                                 progress = { downloadInfo.progress },
@@ -289,7 +251,8 @@ private fun ExpandableEpisodeItem(
                             ) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_cancel),
-                                    contentDescription = stringResource(R.string.cd_cancel_download),
+                                    contentDescription =
+                                        stringResource(R.string.cd_cancel_download),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(14.dp),
                                 )
@@ -304,11 +267,30 @@ private fun ExpandableEpisodeItem(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_download),
-                                contentDescription = stringResource(R.string.cd_abs_download_episode),
+                                contentDescription =
+                                    stringResource(R.string.cd_abs_download_episode),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(18.dp),
                             )
                         }
+                }
+            }
+
+            if (hasDescription) {
+                IconButton(onClick = onExpandToggle, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        painter =
+                            painterResource(
+                                id =
+                                    if (isExpanded) R.drawable.ic_keyboard_arrow_up
+                                    else R.drawable.ic_keyboard_arrow_down
+                            ),
+                        contentDescription =
+                            if (isExpanded) stringResource(R.string.cd_collapse)
+                            else stringResource(R.string.cd_expand),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
+                    )
                 }
             }
         }
@@ -386,9 +368,7 @@ fun EpisodeListDialog(
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(600.dp),
+            modifier = Modifier.fillMaxWidth().height(600.dp),
             shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
             tonalElevation = 6.dp,
@@ -396,8 +376,7 @@ fun EpisodeListDialog(
             Column(modifier = Modifier.fillMaxSize()) {
                 Row(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
+                        Modifier.fillMaxWidth()
                             .padding(start = 24.dp, end = 12.dp, top = 20.dp, bottom = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
@@ -425,9 +404,7 @@ fun EpisodeListDialog(
                         }
                     }
                 }
-                LazyColumn(modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)) {
+                LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     episodeListItems(
                         episodes = episodes,
                         onEpisodePlay = { episode ->

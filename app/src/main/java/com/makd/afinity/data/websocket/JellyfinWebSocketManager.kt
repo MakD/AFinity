@@ -14,13 +14,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.sockets.SocketApiState
@@ -54,6 +54,11 @@ constructor(
     private var connectionJob: Job? = null
     private var reconnectJob: Job? = null
     private var libraryTaskWasRunning = false
+    private var hasConnectedBefore = false
+
+    private companion object {
+        const val SUBSCRIPTION_RETRY_DELAY_MS = 3_000L
+    }
 
     private val _connectionState = MutableStateFlow(WebSocketState.DISCONNECTED)
     val connectionState: StateFlow<WebSocketState> = _connectionState.asStateFlow()
@@ -77,6 +82,7 @@ constructor(
 
         scope.launch {
             sessionManager.currentSession.collect { session ->
+                hasConnectedBefore = false
                 if (session != null) {
                     disconnect()
                     connect()
@@ -130,12 +136,25 @@ constructor(
             _connectionState.value = WebSocketState.CONNECTING
 
             apiClient.webSocket.state.collect { socketState ->
-                _connectionState.value =
+                val newState =
                     when (socketState) {
                         is SocketApiState.Connected -> WebSocketState.CONNECTED
                         is SocketApiState.Connecting -> WebSocketState.CONNECTING
                         is SocketApiState.Disconnected -> WebSocketState.DISCONNECTED
                     }
+
+                if (
+                    newState == WebSocketState.CONNECTED &&
+                        _connectionState.value != WebSocketState.CONNECTED
+                ) {
+                    if (hasConnectedBefore) {
+                        Timber.d("WebSocket reconnected - triggering user data resync")
+                        mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
+                    }
+                    hasConnectedBefore = true
+                }
+
+                _connectionState.value = newState
             }
         } catch (e: CancellationException) {
             throw e
@@ -145,41 +164,68 @@ constructor(
         }
     }
 
+    private suspend fun <T : Any> collectWithRetry(
+        name: String,
+        subscribe: () -> Flow<T>,
+        handler: suspend (T) -> Unit,
+    ) {
+        while (true) {
+            try {
+                subscribe().collect { handler(it) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "$name subscription failed - resubscribing")
+            }
+            delay(SUBSCRIPTION_RETRY_DELAY_MS)
+        }
+    }
+
     private suspend fun subscribeToLibraryChanges(apiClient: ApiClient) {
-        apiClient.webSocket
-            .subscribe(LibraryChangedMessage::class)
-            .catch { e -> Timber.e(e, "Library changes subscription failed") }
-            .collect { message -> handleLibraryChanged(message) }
+        collectWithRetry(
+            "Library changes",
+            { apiClient.webSocket.subscribe(LibraryChangedMessage::class) },
+        ) { message ->
+            handleLibraryChanged(message)
+        }
     }
 
     private suspend fun subscribeToUserDataChanges(apiClient: ApiClient) {
-        apiClient.webSocket
-            .subscribe(UserDataChangedMessage::class)
-            .catch { e -> Timber.e(e, "User data changes subscription failed") }
-            .collect { message -> handleUserDataChanged(message) }
+        collectWithRetry(
+            "User data changes",
+            { apiClient.webSocket.subscribe(UserDataChangedMessage::class) },
+        ) { message ->
+            handleUserDataChanged(message)
+        }
     }
 
     private suspend fun subscribeToSessionChanges(apiClient: ApiClient) {
-        apiClient.webSocket
-            .subscribe(SessionsMessage::class)
-            .catch { e -> Timber.e(e, "Sessions subscription failed") }
-            .collect { message -> handleSessionsUpdate(message) }
+        collectWithRetry(
+            "Sessions",
+            { apiClient.webSocket.subscribe(SessionsMessage::class) },
+        ) { message ->
+            handleSessionsUpdate(message)
+        }
     }
 
     private suspend fun subscribeToPlayCommands(apiClient: ApiClient) {
         coroutineScope {
             launch {
-                apiClient.webSocket
-                    .subscribe(PlayMessage::class)
-                    .catch { e -> Timber.e(e, "Play commands subscription failed") }
-                    .collect { message -> handlePlayCommand(message) }
+                collectWithRetry(
+                    "Play commands",
+                    { apiClient.webSocket.subscribe(PlayMessage::class) },
+                ) { message ->
+                    handlePlayCommand(message)
+                }
             }
 
             launch {
-                apiClient.webSocket
-                    .subscribe(PlaystateMessage::class)
-                    .catch { e -> Timber.e(e, "Playstate commands subscription failed") }
-                    .collect { message -> handlePlaystateCommand(message) }
+                collectWithRetry(
+                    "Playstate commands",
+                    { apiClient.webSocket.subscribe(PlaystateMessage::class) },
+                ) { message ->
+                    handlePlaystateCommand(message)
+                }
             }
         }
     }
@@ -187,17 +233,21 @@ constructor(
     private suspend fun subscribeToServerMessages(apiClient: ApiClient) {
         coroutineScope {
             launch {
-                apiClient.webSocket
-                    .subscribe(ServerRestartingMessage::class)
-                    .catch { e -> Timber.e(e, "Server restarting subscription failed") }
-                    .collect { handleServerRestarting() }
+                collectWithRetry(
+                    "Server restarting",
+                    { apiClient.webSocket.subscribe(ServerRestartingMessage::class) },
+                ) {
+                    handleServerRestarting()
+                }
             }
 
             launch {
-                apiClient.webSocket
-                    .subscribe(ServerShuttingDownMessage::class)
-                    .catch { e -> Timber.e(e, "Server shutdown subscription failed") }
-                    .collect { handleServerShutdown() }
+                collectWithRetry(
+                    "Server shutdown",
+                    { apiClient.webSocket.subscribe(ServerShuttingDownMessage::class) },
+                ) {
+                    handleServerShutdown()
+                }
             }
         }
     }
@@ -216,15 +266,15 @@ constructor(
     }
 
     private suspend fun subscribeToTaskChanges(apiClient: ApiClient) {
-        apiClient.webSocket
-            .subscribe(ScheduledTasksInfoMessage::class)
-            .catch { e -> Timber.e(e, "Tasks subscription failed") }
-            .collect { message ->
-                message.data?.let { tasks ->
-                    _liveTasks.emit(tasks)
-                    handleScheduledTasksChanged(tasks)
-                }
+        collectWithRetry(
+            "Tasks",
+            { apiClient.webSocket.subscribe(ScheduledTasksInfoMessage::class) },
+        ) { message ->
+            message.data?.let { tasks ->
+                _liveTasks.emit(tasks)
+                handleScheduledTasksChanged(tasks)
             }
+        }
     }
 
     private fun handleScheduledTasksChanged(tasks: List<TaskInfo>) {
@@ -291,36 +341,36 @@ constructor(
     }
 
     private suspend fun subscribeToSyncPlayCommands(apiClient: ApiClient) {
-        apiClient.webSocket
-            .subscribe(SyncPlayCommandMessage::class)
-            .catch { e -> Timber.e(e, "SyncPlay commands subscription failed") }
-            .collect { message ->
-                if (message.data == null) {
-                    Timber.w(
-                        "SyncPlay: SyncPlayCommandMessage received but data is null — SDK deserialization failed"
-                    )
-                } else {
-                    Timber.d(
-                        "SyncPlay: command received — type=${message.data!!.command}, ticks=${message.data!!.positionTicks}"
-                    )
-                    _syncPlayCommands.emit(message.data!!)
-                }
+        collectWithRetry(
+            "SyncPlay commands",
+            { apiClient.webSocket.subscribe(SyncPlayCommandMessage::class) },
+        ) { message ->
+            if (message.data == null) {
+                Timber.w(
+                    "SyncPlay: SyncPlayCommandMessage received but data is null — SDK deserialization failed"
+                )
+            } else {
+                Timber.d(
+                    "SyncPlay: command received — type=${message.data!!.command}, ticks=${message.data!!.positionTicks}"
+                )
+                _syncPlayCommands.emit(message.data!!)
             }
+        }
     }
 
     private suspend fun subscribeToSyncPlayGroupUpdates(apiClient: ApiClient) {
-        apiClient.webSocket
-            .subscribe(SyncPlayGroupUpdateCommandMessage::class)
-            .catch { e -> Timber.e(e, "SyncPlay group updates subscription failed") }
-            .collect { message ->
-                message.data?.let { groupUpdate ->
-                    _syncPlayGroupUpdates.emit(
-                        SyncPlayGroupUpdate(
-                            type = groupUpdate.type,
-                            groupId = groupUpdate.groupId,
-                        )
+        collectWithRetry(
+            "SyncPlay group updates",
+            { apiClient.webSocket.subscribe(SyncPlayGroupUpdateCommandMessage::class) },
+        ) { message ->
+            message.data?.let { groupUpdate ->
+                _syncPlayGroupUpdates.emit(
+                    SyncPlayGroupUpdate(
+                        type = groupUpdate.type,
+                        groupId = groupUpdate.groupId,
                     )
-                }
+                )
             }
+        }
     }
 }

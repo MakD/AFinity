@@ -3,6 +3,7 @@ package com.makd.afinity.ui.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.MediaChangeManager
+import com.makd.afinity.data.manager.resolveChangedItems
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
@@ -22,7 +23,6 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
-import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.music.MusicSearchResults
@@ -183,38 +183,15 @@ constructor(
 
         viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
-                var targetItem = event.updatedItem ?: event.parentItem ?: event.seasonItem
-                if (targetItem == null) {
-                    try {
-                        targetItem = mediaRepository.getItemById(event.itemId)
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to resolve item for search patch: ${event.itemId}")
-                    }
-                }
-
-                var parentShowItem: AfinityItem? = null
-                val trueSeriesId =
-                    event.seriesId
-                        ?: (targetItem as? AfinityEpisode)?.seriesId
-                        ?: (targetItem as? AfinitySeason)?.seriesId
-                if (trueSeriesId != null && trueSeriesId != targetItem?.id) {
-                    parentShowItem = event.parentItem?.takeIf { it.id == trueSeriesId }
-                    if (parentShowItem == null) {
-                        try {
-                            parentShowItem = mediaRepository.getItemById(trueSeriesId)
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed to resolve parent show for search patch")
-                        }
-                    }
-                }
+                val resolved = event.resolveChangedItems(mediaRepository)
 
                 _selectedEpisode.value?.let { ep ->
-                    if (ep.id == event.itemId && targetItem is AfinityEpisode) {
-                        _selectedEpisode.value = targetItem
+                    val freshEpisode = resolved.firstOrNull { it.id == ep.id } as? AfinityEpisode
+                    if (freshEpisode != null) {
+                        _selectedEpisode.value = freshEpisode
                     }
                 }
-                targetItem?.let { updateItemInSearchResults(it) }
-                parentShowItem?.let { updateItemInSearchResults(it) }
+                resolved.forEach { updateItemInSearchResults(it) }
             }
         }
     }
