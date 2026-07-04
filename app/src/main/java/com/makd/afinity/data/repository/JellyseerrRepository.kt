@@ -1,14 +1,17 @@
 package com.makd.afinity.data.repository
 
+import com.makd.afinity.data.models.jellyseerr.DiscoverSlider
 import com.makd.afinity.data.models.jellyseerr.GenreSliderItem
 import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
 import com.makd.afinity.data.models.jellyseerr.JellyseerrSearchResult
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import com.makd.afinity.data.models.jellyseerr.MediaType
+import com.makd.afinity.data.models.jellyseerr.PublicSettings
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.ServiceDetailsResponse
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
+import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,6 +38,10 @@ interface JellyseerrRepository {
     suspend fun logout(): Result<Unit>
 
     suspend fun getCurrentUser(): Result<JellyseerrUser>
+
+    suspend fun getPublicSettings(forceRefresh: Boolean = false): Result<PublicSettings>
+
+    suspend fun getUserQuota(userId: Int): Result<UserQuotaResponse>
 
     suspend fun isLoggedIn(): Boolean
 
@@ -111,11 +118,16 @@ interface JellyseerrRepository {
 
     suspend fun getTrending(page: Int = 1, limit: Int? = null): Result<JellyseerrSearchResult>
 
+    suspend fun getDiscoverSliders(): Result<List<DiscoverSlider>>
+
     suspend fun getDiscoverMovies(
         page: Int = 1,
         sortBy: String = "popularity.desc",
         studio: Int? = null,
         limit: Int? = null,
+        keywords: String? = null,
+        watchRegion: String? = null,
+        watchProviders: String? = null,
     ): Result<JellyseerrSearchResult>
 
     suspend fun getDiscoverTv(
@@ -123,6 +135,9 @@ interface JellyseerrRepository {
         sortBy: String = "popularity.desc",
         network: Int? = null,
         limit: Int? = null,
+        keywords: String? = null,
+        watchRegion: String? = null,
+        watchProviders: String? = null,
     ): Result<JellyseerrSearchResult>
 
     suspend fun getUpcomingMovies(page: Int = 1, limit: Int? = null): Result<JellyseerrSearchResult>

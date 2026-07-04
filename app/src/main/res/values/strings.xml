@@ -959,6 +959,13 @@
     <string name="request_manage_title">Manage Request</string>
     <string name="request_approve">Approve</string>
     <string name="request_decline">Decline</string>
+    <string name="request_all_seasons_note">All seasons will be requested</string>
+    <string name="request_quota_movie_label">Movie request limit</string>
+    <string name="request_quota_tv_label">Season request limit</string>
+    <string name="request_quota_remaining_fmt">%1$d of %2$d remaining</string>
+    <string name="request_quota_period_fmt">per %1$d days</string>
+    <string name="request_quota_exceeded">Limit Reached</string>
+    <string name="request_quota_exceeded_message">You don\'t have enough requests remaining. Your quota resets automatically.</string>
 
     <!--Season Selector-->
     <string name="season_selector_title">Select Seasons</string>

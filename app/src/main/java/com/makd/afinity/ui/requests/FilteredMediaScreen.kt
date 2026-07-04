@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.Permissions
 import com.makd.afinity.data.models.jellyseerr.hasPermission
 import com.makd.afinity.navigation.LocalPlayerOffset
@@ -194,6 +195,12 @@ fun FilteredMediaScreen(
             selectedSeasons = requestsUiState.selectedSeasons,
             onSeasonsChange = { requestsViewModel.setSelectedSeasons(it) },
             disabledSeasons = requestsUiState.disabledSeasons,
+            canSelectSeasons = requestsUiState.publicSettings?.partialRequestsEnabled ?: true,
+            quota =
+                requestsUiState.userQuota?.let {
+                    if (requestsUiState.pendingRequest!!.mediaType == MediaType.TV) it.tv
+                    else it.movie
+                },
             existingStatus = requestsUiState.pendingRequest!!.existingStatus,
             isLoading = requestsUiState.isCreatingRequest,
             onConfirm = { requestsViewModel.confirmRequest() },
@@ -209,7 +216,12 @@ fun FilteredMediaScreen(
             director = requestsUiState.pendingRequest!!.director,
             genres = requestsUiState.pendingRequest!!.genres,
             ratingsCombined = requestsUiState.pendingRequest!!.ratingsCombined,
-            can4k = currentUser?.hasPermission(Permissions.REQUEST_4K) == true,
+            can4k =
+                (requestsUiState.publicSettings?.let {
+                    if (requestsUiState.pendingRequest!!.mediaType == MediaType.MOVIE)
+                        it.movie4kEnabled
+                    else it.series4kEnabled
+                } ?: true) && currentUser?.hasPermission(Permissions.REQUEST_4K) == true,
             is4k = requestsUiState.is4kRequested,
             onIs4kChange = { requestsViewModel.setIs4kRequested(it) },
             canAdvanced =

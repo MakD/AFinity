@@ -23,6 +23,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -62,6 +63,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.QualityProfile
+import com.makd.afinity.data.models.jellyseerr.QuotaStatus
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.RequestStatus
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
@@ -81,6 +83,8 @@ fun RequestConfirmationDialog(
     selectedSeasons: List<Int>,
     onSeasonsChange: (List<Int>) -> Unit,
     disabledSeasons: List<Int> = emptyList(),
+    canSelectSeasons: Boolean = true,
+    quota: QuotaStatus? = null,
     existingStatus: MediaStatus? = null,
     isLoading: Boolean,
     onConfirm: () -> Unit,
@@ -126,6 +130,14 @@ fun RequestConfirmationDialog(
             (mediaType == MediaType.MOVIE ||
                 existingStatus == MediaStatus.AVAILABLE ||
                 existingStatus == MediaStatus.PROCESSING)
+
+    val quotaActive = quota != null && quota.hasLimit()
+    val overQuota =
+        quotaActive &&
+            when (mediaType) {
+                MediaType.MOVIE -> (quota!!.remaining ?: 0) <= 0
+                MediaType.TV -> selectedSeasons.size > (quota!!.remaining ?: 0)
+            }
 
     val headerImageUrl = mediaBackdropUrl?.takeIf { it.isNotBlank() } ?: mediaPosterUrl
     val scrollState = rememberScrollState()
@@ -589,13 +601,30 @@ fun RequestConfirmationDialog(
                             fontWeight = FontWeight.Medium,
                         )
 
-                        if (mediaType == MediaType.TV) {
-                            SeasonSelector(
-                                availableSeasons,
-                                selectedSeasons,
-                                onSeasonsChange,
-                                disabledSeasons,
+                        if (quotaActive) {
+                            QuotaBanner(
+                                mediaType = mediaType,
+                                quota = quota!!,
+                                selectedSeasonCount = selectedSeasons.size,
+                                overQuota = overQuota,
                             )
+                        }
+
+                        if (mediaType == MediaType.TV) {
+                            if (canSelectSeasons) {
+                                SeasonSelector(
+                                    availableSeasons,
+                                    selectedSeasons,
+                                    onSeasonsChange,
+                                    disabledSeasons,
+                                )
+                            } else {
+                                Text(
+                                    text = stringResource(R.string.request_all_seasons_note),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
 
                         if (can4k) {
@@ -720,6 +749,7 @@ fun RequestConfirmationDialog(
                     enabled =
                         !alreadyRequested &&
                             !isLoading &&
+                            !overQuota &&
                             (mediaType == MediaType.MOVIE ||
                                 selectedSeasons.isNotEmpty() ||
                                 availableSeasons == 0),
@@ -733,6 +763,7 @@ fun RequestConfirmationDialog(
                     else
                         Text(
                             if (alreadyRequested) stringResource(R.string.request_already_requested)
+                            else if (overQuota) stringResource(R.string.request_quota_exceeded)
                             else stringResource(R.string.request_on_seerr_title)
                         )
                 }
@@ -772,6 +803,74 @@ fun RequestConfirmationDialog(
         },
         modifier = modifier,
     )
+}
+
+@Composable
+private fun QuotaBanner(
+    mediaType: MediaType,
+    quota: QuotaStatus,
+    selectedSeasonCount: Int,
+    overQuota: Boolean,
+) {
+    val limit = quota.limit ?: 0
+    val remaining =
+        if (mediaType == MediaType.TV)
+            ((quota.remaining ?: 0) - selectedSeasonCount).coerceAtLeast(0)
+        else (quota.remaining ?: 0)
+    val accentColor =
+        if (overQuota || remaining <= 0) MaterialTheme.colorScheme.error
+        else MaterialTheme.colorScheme.primary
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                .padding(12.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text =
+                    stringResource(
+                        if (mediaType == MediaType.TV) R.string.request_quota_tv_label
+                        else R.string.request_quota_movie_label
+                    ),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text =
+                    buildString {
+                        append(stringResource(R.string.request_quota_remaining_fmt, remaining, limit))
+                        quota.days?.takeIf { it > 0 }?.let {
+                            append(" ")
+                            append(stringResource(R.string.request_quota_period_fmt, it))
+                        }
+                    },
+                style =
+                    MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = accentColor,
+            )
+        }
+        LinearProgressIndicator(
+            progress = { if (limit > 0) remaining.toFloat() / limit else 0f },
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp)),
+            color = accentColor,
+            trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        )
+        if (overQuota) {
+            Text(
+                text = stringResource(R.string.request_quota_exceeded_message),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+    }
 }
 
 @Composable

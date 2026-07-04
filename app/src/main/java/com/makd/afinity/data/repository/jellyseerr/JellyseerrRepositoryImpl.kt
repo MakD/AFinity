@@ -5,6 +5,7 @@ import com.makd.afinity.data.database.entities.JellyseerrAddressEntity
 import com.makd.afinity.data.database.entities.JellyseerrConfigEntity
 import com.makd.afinity.data.database.entities.JellyseerrRequestEntity
 import com.makd.afinity.data.models.jellyseerr.CreateRequestBody
+import com.makd.afinity.data.models.jellyseerr.DiscoverSlider
 import com.makd.afinity.data.models.jellyseerr.GenreSliderItem
 import com.makd.afinity.data.models.jellyseerr.JellyfinLoginRequest
 import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
@@ -15,12 +16,14 @@ import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import com.makd.afinity.data.models.jellyseerr.MediaInfo
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
+import com.makd.afinity.data.models.jellyseerr.PublicSettings
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.RequestStatus
 import com.makd.afinity.data.models.jellyseerr.RequestUser
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.ServiceDetailsResponse
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
+import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import com.makd.afinity.data.network.JellyseerrApiService
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.RequestEvent
@@ -76,6 +79,8 @@ constructor(
     override val requestEvents: SharedFlow<RequestEvent> = _requestEvents.asSharedFlow()
 
     private var activeContext: Pair<String, UUID>? = null
+
+    private var cachedPublicSettings: PublicSettings? = null
 
     companion object {
         private const val CACHE_VALIDITY_MS = 5 * 60 * 1000L
@@ -139,6 +144,7 @@ constructor(
     override suspend fun setActiveJellyfinSession(serverId: String, userId: UUID) {
         Timber.d("Switching Jellyseerr context to Server: $serverId, User: $userId")
         _isAuthenticated.value = false
+        cachedPublicSettings = null
         activeContext = serverId to userId
         _currentSessionId.value = "${serverId}_$userId"
 
@@ -177,6 +183,7 @@ constructor(
 
     override fun clearActiveSession() {
         activeContext = null
+        cachedPublicSettings = null
         _currentSessionId.value = null
         securePreferencesRepository.clearActiveJellyseerrCache()
         _isAuthenticated.value = false
@@ -331,6 +338,7 @@ constructor(
 
                 securePreferencesRepository.clearActiveJellyseerrCache()
 
+                cachedPublicSettings = null
                 _isAuthenticated.value = false
                 Timber.d("Jellyseerr logout successful")
                 Result.success(Unit)
@@ -359,6 +367,52 @@ constructor(
     }
 
     override suspend fun isLoggedIn(): Boolean = _isAuthenticated.value
+
+    override suspend fun getPublicSettings(forceRefresh: Boolean): Result<PublicSettings> {
+        return withContext(Dispatchers.IO) {
+            val cached = cachedPublicSettings
+            if (cached != null && !forceRefresh) {
+                return@withContext Result.success(cached)
+            }
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+                val response = apiService.get().getPublicSettings()
+                if (response.isSuccessful && response.body() != null) {
+                    val settings = response.body()!!
+                    cachedPublicSettings = settings
+                    Result.success(settings)
+                } else {
+                    Result.failure(
+                        Exception("Failed to get public settings: ${response.message()}")
+                    )
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get Jellyseerr public settings")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getUserQuota(userId: Int): Result<UserQuotaResponse> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+                val response = apiService.get().getUserQuota(userId)
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
+                } else {
+                    Result.failure(Exception("Failed to get user quota: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get Jellyseerr user quota")
+                Result.failure(e)
+            }
+        }
+    }
 
     override suspend fun setServerUrl(url: String) {
         withContext(Dispatchers.IO) {
@@ -941,18 +995,49 @@ constructor(
         }
     }
 
+    override suspend fun getDiscoverSliders(): Result<List<DiscoverSlider>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+                val response = apiService.get().getDiscoverSliders()
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
+                } else {
+                    Result.failure(
+                        Exception("Failed to get discover sliders: ${response.message()}")
+                    )
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get Jellyseerr discover sliders")
+                Result.failure(e)
+            }
+        }
+    }
+
     override suspend fun getDiscoverMovies(
         page: Int,
         sortBy: String,
         studio: Int?,
         limit: Int?,
+        keywords: String?,
+        watchRegion: String?,
+        watchProviders: String?,
     ): Result<JellyseerrSearchResult> {
         return withContext(Dispatchers.IO) {
             try {
                 val response =
                     apiService
                         .get()
-                        .getDiscoverMovies(page = page, sortBy = sortBy, studio = studio)
+                        .getDiscoverMovies(
+                            page = page,
+                            sortBy = sortBy,
+                            studio = studio,
+                            keywords = keywords,
+                            watchRegion = watchRegion,
+                            watchProviders = watchProviders,
+                        )
                 if (response.isSuccessful && response.body() != null) {
                     val body = response.body()!!
                     Result.success(
@@ -970,11 +1055,23 @@ constructor(
         sortBy: String,
         network: Int?,
         limit: Int?,
+        keywords: String?,
+        watchRegion: String?,
+        watchProviders: String?,
     ): Result<JellyseerrSearchResult> {
         return withContext(Dispatchers.IO) {
             try {
                 val response =
-                    apiService.get().getDiscoverTv(page = page, sortBy = sortBy, network = network)
+                    apiService
+                        .get()
+                        .getDiscoverTv(
+                            page = page,
+                            sortBy = sortBy,
+                            network = network,
+                            keywords = keywords,
+                            watchRegion = watchRegion,
+                            watchProviders = watchProviders,
+                        )
                 if (response.isSuccessful && response.body() != null) {
                     val body = response.body()!!
                     Result.success(

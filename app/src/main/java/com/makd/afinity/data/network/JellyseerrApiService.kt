@@ -1,6 +1,7 @@
 package com.makd.afinity.data.network
 
 import com.makd.afinity.data.models.jellyseerr.CreateRequestBody
+import com.makd.afinity.data.models.jellyseerr.DiscoverSlider
 import com.makd.afinity.data.models.jellyseerr.JellyfinLoginRequest
 import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
 import com.makd.afinity.data.models.jellyseerr.JellyseerrSearchResult
@@ -8,11 +9,13 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.LoginRequest
 import com.makd.afinity.data.models.jellyseerr.LoginResponse
 import com.makd.afinity.data.models.jellyseerr.MediaDetails
+import com.makd.afinity.data.models.jellyseerr.PublicSettings
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.RequestsResponse
 import com.makd.afinity.data.models.jellyseerr.RottenTomatoesRating
 import com.makd.afinity.data.models.jellyseerr.ServiceDetailsResponse
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
+import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -30,6 +33,11 @@ interface JellyseerrApiService {
     suspend fun loginJellyfin(@Body request: JellyfinLoginRequest): Response<LoginResponse>
 
     @GET("api/v1/auth/me") suspend fun getCurrentUser(): Response<JellyseerrUser>
+
+    @GET("api/v1/settings/public") suspend fun getPublicSettings(): Response<PublicSettings>
+
+    @GET("api/v1/user/{userId}/quota")
+    suspend fun getUserQuota(@Path("userId") userId: Int): Response<UserQuotaResponse>
 
     @POST("api/v1/auth/logout") suspend fun logout(): Response<Unit>
 
@@ -91,6 +99,9 @@ interface JellyseerrApiService {
     @GET("api/v1/tv/{tvId}/ratings")
     suspend fun getTvRatings(@Path("tvId") tvId: Int): Response<RottenTomatoesRating>
 
+    @GET("api/v1/settings/discover")
+    suspend fun getDiscoverSliders(): Response<List<DiscoverSlider>>
+
     @GET("api/v1/discover/trending")
     suspend fun getTrending(
         @Query("page") page: Int = 1,
@@ -103,6 +114,9 @@ interface JellyseerrApiService {
         @Query("language") language: String = "en",
         @Query("sortBy") sortBy: String = "popularity.desc",
         @Query("studio") studio: Int? = null,
+        @Query("keywords") keywords: String? = null,
+        @Query("watchRegion") watchRegion: String? = null,
+        @Query("watchProviders") watchProviders: String? = null,
     ): Response<JellyseerrSearchResult>
 
     @GET("api/v1/discover/tv")
@@ -111,6 +125,9 @@ interface JellyseerrApiService {
         @Query("language") language: String = "en",
         @Query("sortBy") sortBy: String = "popularity.desc",
         @Query("network") network: Int? = null,
+        @Query("keywords") keywords: String? = null,
+        @Query("watchRegion") watchRegion: String? = null,
+        @Query("watchProviders") watchProviders: String? = null,
     ): Response<JellyseerrSearchResult>
 
     @GET("api/v1/discover/movies/upcoming")

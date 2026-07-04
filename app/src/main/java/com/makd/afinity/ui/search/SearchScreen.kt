@@ -85,6 +85,7 @@ import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
+import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.Permissions
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.hasPermission
@@ -387,6 +388,12 @@ fun SearchScreen(
                 selectedSeasons = uiState.selectedSeasons,
                 onSeasonsChange = { viewModel.setSelectedSeasons(it) },
                 disabledSeasons = uiState.disabledSeasons,
+                canSelectSeasons = uiState.publicSettings?.partialRequestsEnabled ?: true,
+                quota =
+                    uiState.userQuota?.let {
+                        if (uiState.pendingRequest!!.mediaType == MediaType.TV) it.tv
+                        else it.movie
+                    },
                 existingStatus = uiState.pendingRequest!!.existingStatus,
                 isLoading = uiState.isCreatingRequest,
                 onConfirm = { viewModel.confirmRequest() },
@@ -402,7 +409,11 @@ fun SearchScreen(
                 director = uiState.pendingRequest!!.director,
                 genres = uiState.pendingRequest!!.genres,
                 ratingsCombined = uiState.pendingRequest!!.ratingsCombined,
-                can4k = currentUser?.hasPermission(Permissions.REQUEST_4K) == true,
+                can4k =
+                    (uiState.publicSettings?.let {
+                        if (uiState.pendingRequest!!.mediaType == MediaType.MOVIE) it.movie4kEnabled
+                        else it.series4kEnabled
+                    } ?: true) && currentUser?.hasPermission(Permissions.REQUEST_4K) == true,
                 is4k = uiState.is4kRequested,
                 onIs4kChange = { viewModel.setIs4kRequested(it) },
                 canAdvanced =

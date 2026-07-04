@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.data.models.jellyseerr.DiscoverSlider
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.Permissions
@@ -97,13 +99,13 @@ fun RequestsScreen(
             )
         } else {
             when {
-                uiState.isLoadingDiscover && uiState.trendingItems.isEmpty() -> {
+                uiState.isLoadingDiscover && uiState.discoverSections.isEmpty() -> {
                     FullScreenLoading(modifier = Modifier.padding(innerPadding))
                 }
 
                 uiState.error != null &&
                     uiState.requests.isEmpty() &&
-                    uiState.trendingItems.isEmpty() -> {
+                    uiState.discoverSections.isEmpty() -> {
                     ErrorView(
                         message = uiState.error ?: stringResource(R.string.error_unknown),
                         onRetry = {
@@ -165,306 +167,125 @@ fun RequestsScreen(
                             }
                         }
 
-                        if (uiState.trendingItems.isNotEmpty()) {
-                            item {
-                                val trendingTitle = stringResource(R.string.section_trending)
-                                DiscoverSection(
-                                    title = trendingTitle,
-                                    items = uiState.trendingItems.take(15),
-                                    onItemClick = { item ->
-                                        if (item.mediaInfo?.isFullyAvailable() == true) {
-                                            item.mediaInfo?.getJellyfinItemId()?.let { jellyfinId ->
-                                                val mappedType =
-                                                    when (item.mediaType.lowercase()) {
-                                                        "tv" -> "Series"
-                                                        "movie" -> "Movie"
-                                                        else -> null
-                                                    }
-                                                onItemClick(jellyfinId, mappedType)
+                        items(
+                            items = uiState.discoverSections,
+                            key = { section -> section.key },
+                        ) { section ->
+                            when (section) {
+                                is DiscoverSectionContent.MediaRow -> {
+                                    val title =
+                                        section.customTitle
+                                            ?: builtInSectionTitleRes(section.sliderType)?.let {
+                                                stringResource(it)
                                             }
-                                        } else {
-                                            item.getMediaType()?.let { mediaType ->
-                                                viewModel.showRequestDialog(
-                                                    tmdbId = item.id,
-                                                    mediaType = mediaType,
-                                                    title = item.getDisplayTitle(),
-                                                    posterUrl = item.getPosterUrl(),
-                                                    availableSeasons = 0,
-                                                    existingStatus = item.getDisplayStatus(),
+                                            ?: ""
+                                    DiscoverSection(
+                                        title = title,
+                                        items = section.items,
+                                        onItemClick = { item ->
+                                            if (item.mediaInfo?.isFullyAvailable() == true) {
+                                                item.mediaInfo?.getJellyfinItemId()?.let {
+                                                    jellyfinId ->
+                                                    val mappedType =
+                                                        when (item.mediaType.lowercase()) {
+                                                            "tv" -> "Series"
+                                                            "movie" -> "Movie"
+                                                            else -> null
+                                                        }
+                                                    onItemClick(jellyfinId, mappedType)
+                                                }
+                                            } else {
+                                                item.getMediaType()?.let { mediaType ->
+                                                    viewModel.showRequestDialog(
+                                                        tmdbId = item.id,
+                                                        mediaType = mediaType,
+                                                        title = item.getDisplayTitle(),
+                                                        posterUrl = item.getPosterUrl(),
+                                                        availableSeasons = 0,
+                                                        existingStatus = item.getDisplayStatus(),
+                                                    )
+                                                }
+                                            }
+                                        },
+                                        onViewAllClick =
+                                            section.viewAllType?.let { viewAllType ->
+                                                {
+                                                    onNavigateToFilteredMedia(
+                                                        FilterParams(
+                                                            type = viewAllType,
+                                                            id = section.viewAllId,
+                                                            name = title,
+                                                        )
+                                                    )
+                                                }
+                                            },
+                                        widthSizeClass = widthSizeClass,
+                                    )
+                                }
+                                is DiscoverSectionContent.MovieGenres ->
+                                    MovieGenresSection(
+                                        genres = section.genres,
+                                        onGenreClick = { genre ->
+                                            onNavigateToFilteredMedia(
+                                                FilterParams(
+                                                    type = FilterType.GENRE_MOVIE,
+                                                    id = genre.id,
+                                                    name = genre.name,
                                                 )
-                                            }
-                                        }
-                                    },
-                                    onViewAllClick = {
-                                        onNavigateToFilteredMedia(
-                                            FilterParams(
-                                                type = FilterType.TRENDING,
-                                                id = 0,
-                                                name = trendingTitle,
                                             )
-                                        )
-                                    },
-                                    widthSizeClass = widthSizeClass,
-                                )
-                            }
-                        }
-
-                        if (uiState.popularMovies.isNotEmpty()) {
-                            item {
-                                val popMoviesTitle = stringResource(R.string.section_popular_movies)
-                                DiscoverSection(
-                                    title = popMoviesTitle,
-                                    items = uiState.popularMovies.take(15),
-                                    onItemClick = { item ->
-                                        if (item.mediaInfo?.isFullyAvailable() == true) {
-                                            item.mediaInfo?.getJellyfinItemId()?.let { jellyfinId ->
-                                                val mappedType =
-                                                    when (item.mediaType.lowercase()) {
-                                                        "tv" -> "Series"
-                                                        "movie" -> "Movie"
-                                                        else -> null
-                                                    }
-                                                onItemClick(jellyfinId, mappedType)
-                                            }
-                                        } else {
-                                            item.getMediaType()?.let { mediaType ->
-                                                viewModel.showRequestDialog(
-                                                    tmdbId = item.id,
-                                                    mediaType = mediaType,
-                                                    title = item.getDisplayTitle(),
-                                                    posterUrl = item.getPosterUrl(),
-                                                    availableSeasons = 0,
-                                                    existingStatus = item.getDisplayStatus(),
+                                        },
+                                        genreBackdrops = section.backdrops,
+                                        widthSizeClass = widthSizeClass,
+                                    )
+                                is DiscoverSectionContent.TvGenres ->
+                                    TvGenresSection(
+                                        genres = section.genres,
+                                        onGenreClick = { genre ->
+                                            onNavigateToFilteredMedia(
+                                                FilterParams(
+                                                    type = FilterType.GENRE_TV,
+                                                    id = genre.id,
+                                                    name = genre.name,
                                                 )
-                                            }
-                                        }
-                                    },
-                                    onViewAllClick = {
-                                        onNavigateToFilteredMedia(
-                                            FilterParams(
-                                                type = FilterType.POPULAR_MOVIES,
-                                                id = 0,
-                                                name = popMoviesTitle,
                                             )
-                                        )
-                                    },
-                                    widthSizeClass = widthSizeClass,
-                                )
-                            }
-                        }
-
-                        if (uiState.movieGenres.isNotEmpty()) {
-                            item {
-                                MovieGenresSection(
-                                    genres = uiState.movieGenres,
-                                    onGenreClick = { genre ->
-                                        onNavigateToFilteredMedia(
-                                            FilterParams(
-                                                type = FilterType.GENRE_MOVIE,
-                                                id = genre.id,
-                                                name = genre.name,
-                                            )
-                                        )
-                                    },
-                                    genreBackdrops = uiState.movieGenreBackdrops,
-                                    widthSizeClass = widthSizeClass,
-                                )
-                            }
-                        }
-
-                        if (uiState.upcomingMovies.isNotEmpty()) {
-                            item {
-                                val upcomingMoviesTitle =
-                                    stringResource(R.string.section_upcoming_movies)
-                                DiscoverSection(
-                                    title = upcomingMoviesTitle,
-                                    items = uiState.upcomingMovies.take(15),
-                                    onItemClick = { item ->
-                                        if (item.mediaInfo?.isFullyAvailable() == true) {
-                                            item.mediaInfo?.getJellyfinItemId()?.let { jellyfinId ->
-                                                val mappedType =
-                                                    when (item.mediaType.lowercase()) {
-                                                        "tv" -> "Series"
-                                                        "movie" -> "Movie"
-                                                        else -> null
-                                                    }
-                                                onItemClick(jellyfinId, mappedType)
-                                            }
-                                        } else {
-                                            item.getMediaType()?.let { mediaType ->
-                                                viewModel.showRequestDialog(
-                                                    tmdbId = item.id,
-                                                    mediaType = mediaType,
-                                                    title = item.getDisplayTitle(),
-                                                    posterUrl = item.getPosterUrl(),
-                                                    availableSeasons = 0,
-                                                    existingStatus = item.getDisplayStatus(),
+                                        },
+                                        genreBackdrops = section.backdrops,
+                                        widthSizeClass = widthSizeClass,
+                                    )
+                                is DiscoverSectionContent.Studios ->
+                                    StudiosSection(
+                                        studios = section.studios,
+                                        onStudioClick = { studio ->
+                                            onNavigateToFilteredMedia(
+                                                FilterParams(
+                                                    type = FilterType.STUDIO,
+                                                    id = studio.id,
+                                                    name = studio.name,
                                                 )
-                                            }
-                                        }
-                                    },
-                                    onViewAllClick = {
-                                        onNavigateToFilteredMedia(
-                                            FilterParams(
-                                                type = FilterType.UPCOMING_MOVIES,
-                                                id = 0,
-                                                name = upcomingMoviesTitle,
                                             )
-                                        )
-                                    },
-                                    widthSizeClass = widthSizeClass,
-                                )
-                            }
-                        }
-                        if (!uiState.isLoadingDiscover && uiState.studios.isNotEmpty()) {
-                            item {
-                                StudiosSection(
-                                    studios = uiState.studios,
-                                    onStudioClick = { studio ->
-                                        onNavigateToFilteredMedia(
-                                            FilterParams(
-                                                type = FilterType.STUDIO,
-                                                id = studio.id,
-                                                name = studio.name,
-                                            )
-                                        )
-                                    },
-                                    widthSizeClass = widthSizeClass,
-                                )
-                            }
-                        }
-
-                        if (uiState.popularTv.isNotEmpty()) {
-                            item {
-                                val popTvTitle = stringResource(R.string.section_popular_tv)
-                                DiscoverSection(
-                                    title = popTvTitle,
-                                    items = uiState.popularTv.take(15),
-                                    onItemClick = { item ->
-                                        if (item.mediaInfo?.isFullyAvailable() == true) {
-                                            item.mediaInfo?.getJellyfinItemId()?.let { jellyfinId ->
-                                                val mappedType =
-                                                    when (item.mediaType.lowercase()) {
-                                                        "tv" -> "Series"
-                                                        "movie" -> "Movie"
-                                                        else -> null
-                                                    }
-                                                onItemClick(jellyfinId, mappedType)
-                                            }
-                                        } else {
-                                            item.getMediaType()?.let { mediaType ->
-                                                viewModel.showRequestDialog(
-                                                    tmdbId = item.id,
-                                                    mediaType = mediaType,
-                                                    title = item.getDisplayTitle(),
-                                                    posterUrl = item.getPosterUrl(),
-                                                    availableSeasons = 0,
-                                                    existingStatus = item.getDisplayStatus(),
+                                        },
+                                        widthSizeClass = widthSizeClass,
+                                    )
+                                is DiscoverSectionContent.Networks ->
+                                    NetworksSection(
+                                        networks = section.networks,
+                                        onNetworkClick = { network ->
+                                            onNavigateToFilteredMedia(
+                                                FilterParams(
+                                                    type = FilterType.NETWORK,
+                                                    id = network.id,
+                                                    name = network.name,
                                                 )
-                                            }
-                                        }
-                                    },
-                                    onViewAllClick = {
-                                        onNavigateToFilteredMedia(
-                                            FilterParams(
-                                                type = FilterType.POPULAR_TV,
-                                                id = 0,
-                                                name = popTvTitle,
                                             )
-                                        )
-                                    },
-                                    widthSizeClass = widthSizeClass,
-                                )
-                            }
-                        }
-
-                        if (uiState.tvGenres.isNotEmpty()) {
-                            item {
-                                TvGenresSection(
-                                    genres = uiState.tvGenres,
-                                    onGenreClick = { genre ->
-                                        onNavigateToFilteredMedia(
-                                            FilterParams(
-                                                type = FilterType.GENRE_TV,
-                                                id = genre.id,
-                                                name = genre.name,
-                                            )
-                                        )
-                                    },
-                                    genreBackdrops = uiState.tvGenreBackdrops,
-                                    widthSizeClass = widthSizeClass,
-                                )
-                            }
-                        }
-
-                        if (uiState.upcomingTv.isNotEmpty()) {
-                            item {
-                                val upcomingTvTitle = stringResource(R.string.section_upcoming_tv)
-                                DiscoverSection(
-                                    title = upcomingTvTitle,
-                                    items = uiState.upcomingTv.take(15),
-                                    onItemClick = { item ->
-                                        if (item.mediaInfo?.isFullyAvailable() == true) {
-                                            item.mediaInfo?.getJellyfinItemId()?.let { jellyfinId ->
-                                                val mappedType =
-                                                    when (item.mediaType.lowercase()) {
-                                                        "tv" -> "Series"
-                                                        "movie" -> "Movie"
-                                                        else -> null
-                                                    }
-                                                onItemClick(jellyfinId, mappedType)
-                                            }
-                                        } else {
-                                            item.getMediaType()?.let { mediaType ->
-                                                viewModel.showRequestDialog(
-                                                    tmdbId = item.id,
-                                                    mediaType = mediaType,
-                                                    title = item.getDisplayTitle(),
-                                                    posterUrl = item.getPosterUrl(),
-                                                    availableSeasons = 0,
-                                                    existingStatus = item.getDisplayStatus(),
-                                                )
-                                            }
-                                        }
-                                    },
-                                    onViewAllClick = {
-                                        onNavigateToFilteredMedia(
-                                            FilterParams(
-                                                type = FilterType.UPCOMING_TV,
-                                                id = 0,
-                                                name = upcomingTvTitle,
-                                            )
-                                        )
-                                    },
-                                    widthSizeClass = widthSizeClass,
-                                )
-                            }
-                        }
-                        if (!uiState.isLoadingDiscover && uiState.networks.isNotEmpty()) {
-                            item {
-                                NetworksSection(
-                                    networks = uiState.networks,
-                                    onNetworkClick = { network ->
-                                        onNavigateToFilteredMedia(
-                                            FilterParams(
-                                                type = FilterType.NETWORK,
-                                                id = network.id,
-                                                name = network.name,
-                                            )
-                                        )
-                                    },
-                                    widthSizeClass = widthSizeClass,
-                                )
+                                        },
+                                        widthSizeClass = widthSizeClass,
+                                    )
                             }
                         }
 
                         if (
                             uiState.requests.isEmpty() &&
-                                uiState.trendingItems.isEmpty() &&
-                                uiState.popularMovies.isEmpty() &&
-                                uiState.popularTv.isEmpty() &&
-                                uiState.upcomingMovies.isEmpty() &&
-                                uiState.upcomingTv.isEmpty() &&
+                                uiState.discoverSections.isEmpty() &&
                                 !uiState.isLoading &&
                                 !uiState.isLoadingDiscover
                         ) {
@@ -483,13 +304,18 @@ fun RequestsScreen(
 
             val type = req.getMediaType()
 
+            val fourKEnabledOnServer =
+                uiState.publicSettings?.let {
+                    if (type == MediaType.MOVIE) it.movie4kEnabled else it.series4kEnabled
+                } ?: true
             val canToggle4k =
-                currentUser?.let { user ->
-                    user.hasPermission(Permissions.REQUEST_4K) ||
-                        (type == MediaType.MOVIE &&
-                            user.hasPermission(Permissions.REQUEST_4K_MOVIE)) ||
-                        (type == MediaType.TV && user.hasPermission(Permissions.REQUEST_4K_TV))
-                } ?: false
+                fourKEnabledOnServer &&
+                    (currentUser?.let { user ->
+                        user.hasPermission(Permissions.REQUEST_4K) ||
+                            (type == MediaType.MOVIE &&
+                                user.hasPermission(Permissions.REQUEST_4K_MOVIE)) ||
+                            (type == MediaType.TV && user.hasPermission(Permissions.REQUEST_4K_TV))
+                    } ?: false)
 
             RequestConfirmationDialog(
                 isManagementMode = true,
@@ -542,14 +368,20 @@ fun RequestsScreen(
         if (uiState.showRequestDialog && uiState.pendingRequest != null) {
             val pending = uiState.pendingRequest!!
 
+            val fourKEnabledOnServer =
+                uiState.publicSettings?.let {
+                    if (pending.mediaType == MediaType.MOVIE) it.movie4kEnabled
+                    else it.series4kEnabled
+                } ?: true
             val canRequest4k =
-                currentUser?.let { user ->
-                    user.hasPermission(Permissions.REQUEST_4K) ||
-                        (pending.mediaType == MediaType.MOVIE &&
-                            user.hasPermission(Permissions.REQUEST_4K_MOVIE)) ||
-                        (pending.mediaType == MediaType.TV &&
-                            user.hasPermission(Permissions.REQUEST_4K_TV))
-                } ?: false
+                fourKEnabledOnServer &&
+                    (currentUser?.let { user ->
+                        user.hasPermission(Permissions.REQUEST_4K) ||
+                            (pending.mediaType == MediaType.MOVIE &&
+                                user.hasPermission(Permissions.REQUEST_4K_MOVIE)) ||
+                            (pending.mediaType == MediaType.TV &&
+                                user.hasPermission(Permissions.REQUEST_4K_TV))
+                    } ?: false)
 
             RequestConfirmationDialog(
                 isManagementMode = false,
@@ -560,6 +392,11 @@ fun RequestsScreen(
                 selectedSeasons = uiState.selectedSeasons,
                 onSeasonsChange = { viewModel.setSelectedSeasons(it) },
                 disabledSeasons = uiState.disabledSeasons,
+                canSelectSeasons = uiState.publicSettings?.partialRequestsEnabled ?: true,
+                quota =
+                    uiState.userQuota?.let {
+                        if (pending.mediaType == MediaType.TV) it.tv else it.movie
+                    },
                 existingStatus = pending.existingStatus,
                 isLoading = uiState.isCreatingRequest,
                 onConfirm = { viewModel.confirmRequest() },
@@ -601,6 +438,16 @@ fun RequestsScreen(
         }
     }
 }
+
+private fun builtInSectionTitleRes(sliderType: Int): Int? =
+    when (sliderType) {
+        DiscoverSlider.Type.TRENDING -> R.string.section_trending
+        DiscoverSlider.Type.POPULAR_MOVIES -> R.string.section_popular_movies
+        DiscoverSlider.Type.UPCOMING_MOVIES -> R.string.section_upcoming_movies
+        DiscoverSlider.Type.POPULAR_TV -> R.string.section_popular_tv
+        DiscoverSlider.Type.UPCOMING_TV -> R.string.section_upcoming_tv
+        else -> null
+    }
 
 @Composable
 private fun NotLoggedInView(onLoginClick: () -> Unit, modifier: Modifier = Modifier) {

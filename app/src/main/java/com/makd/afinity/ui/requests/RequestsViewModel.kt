@@ -4,18 +4,22 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
+import com.makd.afinity.data.models.jellyseerr.DiscoverSlider
 import com.makd.afinity.data.models.jellyseerr.GenreSliderItem
 import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
+import com.makd.afinity.data.models.jellyseerr.JellyseerrSearchResult
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.Network
+import com.makd.afinity.data.models.jellyseerr.PublicSettings
 import com.makd.afinity.data.models.jellyseerr.QualityProfile
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
 import com.makd.afinity.data.models.jellyseerr.Studio
+import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.util.GenreDuotoneColorGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,6 +34,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withPermit
 import timber.log.Timber
@@ -59,6 +64,14 @@ constructor(
     private val jellyfinIdCache = mutableMapOf<Int, String>()
     private val fetchingIds = mutableSetOf<Int>()
     private val prefetchSemaphore = kotlinx.coroutines.sync.Semaphore(4)
+
+    private var discoverJob: Job? = null
+    private val sectionResults = LinkedHashMap<String, DiscoverSectionContent>()
+    private var sectionOrder: List<String> = emptyList()
+
+    private companion object {
+        const val SLIDER_ITEM_LIMIT = 15
+    }
 
     fun resolveAndNavigate(request: JellyseerrRequest) {
         val tmdbId = request.media.tmdbId ?: return
@@ -114,24 +127,24 @@ constructor(
                         val serverUrl = jellyseerrRepository.getServerUrl()
                         _uiState.update { it.copy(jellyseerrUrl = serverUrl) }
                         loadCurrentUser()
+                        loadPublicSettings()
                         observeRequests()
                         loadRequests()
                         loadDiscoverContent()
                     } else {
                         _currentUser.value = null
                         requestsJob?.cancel()
+                        discoverJob?.cancel()
+                        sectionResults.clear()
+                        sectionOrder = emptyList()
                         _uiState.update {
                             it.copy(
                                 jellyseerrUrl = null,
                                 requests = emptyList(),
-                                trendingItems = emptyList(),
-                                popularMovies = emptyList(),
-                                popularTv = emptyList(),
-                                upcomingMovies = emptyList(),
-                                upcomingTv = emptyList(),
-                                movieGenres = emptyList(),
-                                tvGenres = emptyList(),
+                                discoverSections = emptyList(),
                                 isLoadingDiscover = false,
+                                publicSettings = null,
+                                userQuota = null,
                             )
                         }
                     }
@@ -153,6 +166,23 @@ constructor(
 
     private suspend fun refreshCurrentUser() {
         jellyseerrRepository.getCurrentUser().onSuccess { user -> _currentUser.value = user }
+    }
+
+    private fun loadPublicSettings() {
+        viewModelScope.launch {
+            jellyseerrRepository.getPublicSettings().onSuccess { settings ->
+                _uiState.update { it.copy(publicSettings = settings) }
+            }
+        }
+    }
+
+    private fun refreshUserQuota() {
+        val userId = _currentUser.value?.id ?: return
+        viewModelScope.launch {
+            jellyseerrRepository.getUserQuota(userId).onSuccess { quota ->
+                _uiState.update { it.copy(userQuota = quota) }
+            }
+        }
     }
 
     private fun observeRequests() {
@@ -184,14 +214,19 @@ constructor(
                     }
                 }
 
+                val updateSection: (DiscoverSectionContent) -> DiscoverSectionContent = { section ->
+                    if (section is DiscoverSectionContent.MediaRow) {
+                        section.copy(items = section.items.map(updateItemStatus))
+                    } else {
+                        section
+                    }
+                }
+
+                sectionResults.keys.toList().forEach { key ->
+                    sectionResults[key]?.let { sectionResults[key] = updateSection(it) }
+                }
                 _uiState.update {
-                    it.copy(
-                        trendingItems = it.trendingItems.map(updateItemStatus),
-                        popularMovies = it.popularMovies.map(updateItemStatus),
-                        popularTv = it.popularTv.map(updateItemStatus),
-                        upcomingMovies = it.upcomingMovies.map(updateItemStatus),
-                        upcomingTv = it.upcomingTv.map(updateItemStatus),
-                    )
+                    it.copy(discoverSections = it.discoverSections.map(updateSection))
                 }
             }
         }
@@ -738,51 +773,222 @@ constructor(
     }
 
     fun loadDiscoverContent() {
-        _uiState.update { it.copy(isLoadingDiscover = true) }
-        viewModelScope.launch {
-            jellyseerrRepository
-                .getTrending(10)
-                .fold(
-                    onSuccess = { res ->
-                        _uiState.update {
-                            it.copy(trendingItems = res.results, isLoadingDiscover = false)
-                        }
-                    },
-                    onFailure = { _uiState.update { it.copy(isLoadingDiscover = false) } },
+        discoverJob?.cancel()
+        sectionResults.clear()
+        sectionOrder = emptyList()
+        _uiState.update { it.copy(isLoadingDiscover = true, discoverSections = emptyList()) }
+        discoverJob = viewModelScope.launch {
+            val sliders =
+                jellyseerrRepository
+                    .getDiscoverSliders()
+                    .getOrNull()
+                    ?.filter { it.enabled && isSupportedSlider(it) }
+                    ?.sortedBy { it.order }
+                    ?.takeIf { it.isNotEmpty() } ?: defaultSliders
+            sectionOrder = sliders.map { sliderKey(it) }
+            val isStatic = { slider: DiscoverSlider ->
+                slider.type == DiscoverSlider.Type.STUDIOS ||
+                    slider.type == DiscoverSlider.Type.NETWORKS
+            }
+            sliders
+                .filterNot(isStatic)
+                .map { slider -> launch { loadSliderContent(slider) } }
+                .joinAll()
+            sliders.filter(isStatic).forEach { loadSliderContent(it) }
+            _uiState.update { it.copy(isLoadingDiscover = false) }
+        }
+    }
+
+    private fun sliderKey(slider: DiscoverSlider) = "slider_${slider.id}_${slider.type}"
+
+    private val defaultSliders =
+        listOf(
+            DiscoverSlider(id = -1, type = DiscoverSlider.Type.TRENDING),
+            DiscoverSlider(id = -2, type = DiscoverSlider.Type.POPULAR_MOVIES),
+            DiscoverSlider(id = -3, type = DiscoverSlider.Type.MOVIE_GENRES),
+            DiscoverSlider(id = -4, type = DiscoverSlider.Type.UPCOMING_MOVIES),
+            DiscoverSlider(id = -5, type = DiscoverSlider.Type.STUDIOS),
+            DiscoverSlider(id = -6, type = DiscoverSlider.Type.POPULAR_TV),
+            DiscoverSlider(id = -7, type = DiscoverSlider.Type.TV_GENRES),
+            DiscoverSlider(id = -8, type = DiscoverSlider.Type.UPCOMING_TV),
+            DiscoverSlider(id = -9, type = DiscoverSlider.Type.NETWORKS),
+        )
+
+    private fun isSupportedSlider(slider: DiscoverSlider): Boolean =
+        when (slider.type) {
+            DiscoverSlider.Type.TRENDING,
+            DiscoverSlider.Type.POPULAR_MOVIES,
+            DiscoverSlider.Type.MOVIE_GENRES,
+            DiscoverSlider.Type.UPCOMING_MOVIES,
+            DiscoverSlider.Type.STUDIOS,
+            DiscoverSlider.Type.POPULAR_TV,
+            DiscoverSlider.Type.TV_GENRES,
+            DiscoverSlider.Type.UPCOMING_TV,
+            DiscoverSlider.Type.NETWORKS -> true
+            DiscoverSlider.Type.TMDB_MOVIE_KEYWORD,
+            DiscoverSlider.Type.TMDB_TV_KEYWORD,
+            DiscoverSlider.Type.TMDB_SEARCH -> !slider.data.isNullOrBlank()
+            DiscoverSlider.Type.TMDB_MOVIE_GENRE,
+            DiscoverSlider.Type.TMDB_TV_GENRE,
+            DiscoverSlider.Type.TMDB_STUDIO,
+            DiscoverSlider.Type.TMDB_NETWORK -> slider.data?.toIntOrNull() != null
+            DiscoverSlider.Type.TMDB_MOVIE_STREAMING_SERVICES,
+            DiscoverSlider.Type.TMDB_TV_STREAMING_SERVICES ->
+                parseStreamingData(slider.data) != null
+            else -> false
+        }
+
+    private fun parseStreamingData(data: String?): Pair<String, String>? {
+        val parts = data?.split(",", limit = 2) ?: return null
+        if (parts.size < 2 || parts[0].isBlank() || parts[1].isBlank()) return null
+        return parts[0] to parts[1]
+    }
+
+    private suspend fun loadSliderContent(slider: DiscoverSlider) {
+        val key = sliderKey(slider)
+        when (slider.type) {
+            DiscoverSlider.Type.TRENDING ->
+                publishMediaRow(key, slider, FilterType.TRENDING) {
+                    jellyseerrRepository.getTrending(limit = SLIDER_ITEM_LIMIT)
+                }
+            DiscoverSlider.Type.POPULAR_MOVIES ->
+                publishMediaRow(key, slider, FilterType.POPULAR_MOVIES) {
+                    jellyseerrRepository.getDiscoverMovies(limit = SLIDER_ITEM_LIMIT)
+                }
+            DiscoverSlider.Type.UPCOMING_MOVIES ->
+                publishMediaRow(key, slider, FilterType.UPCOMING_MOVIES) {
+                    jellyseerrRepository.getUpcomingMovies(limit = SLIDER_ITEM_LIMIT)
+                }
+            DiscoverSlider.Type.POPULAR_TV ->
+                publishMediaRow(key, slider, FilterType.POPULAR_TV) {
+                    jellyseerrRepository.getDiscoverTv(limit = SLIDER_ITEM_LIMIT)
+                }
+            DiscoverSlider.Type.UPCOMING_TV ->
+                publishMediaRow(key, slider, FilterType.UPCOMING_TV) {
+                    jellyseerrRepository.getUpcomingTv(limit = SLIDER_ITEM_LIMIT)
+                }
+            DiscoverSlider.Type.MOVIE_GENRES ->
+                jellyseerrRepository.getMovieGenreSlider().onSuccess { genres ->
+                    if (genres.isNotEmpty()) {
+                        publishSection(
+                            DiscoverSectionContent.MovieGenres(
+                                key,
+                                genres,
+                                buildGenreBackdrops(genres),
+                            )
+                        )
+                    }
+                }
+            DiscoverSlider.Type.TV_GENRES ->
+                jellyseerrRepository.getTvGenreSlider().onSuccess { genres ->
+                    if (genres.isNotEmpty()) {
+                        publishSection(
+                            DiscoverSectionContent.TvGenres(
+                                key,
+                                genres,
+                                buildGenreBackdrops(genres),
+                            )
+                        )
+                    }
+                }
+            DiscoverSlider.Type.STUDIOS ->
+                publishSection(DiscoverSectionContent.Studios(key, Studio.getPopularStudios()))
+            DiscoverSlider.Type.NETWORKS ->
+                publishSection(DiscoverSectionContent.Networks(key, Network.getPopularNetworks()))
+            DiscoverSlider.Type.TMDB_MOVIE_KEYWORD ->
+                publishMediaRow(key, slider, null) {
+                    jellyseerrRepository.getDiscoverMovies(
+                        limit = SLIDER_ITEM_LIMIT,
+                        keywords = slider.data,
+                    )
+                }
+            DiscoverSlider.Type.TMDB_TV_KEYWORD ->
+                publishMediaRow(key, slider, null) {
+                    jellyseerrRepository.getDiscoverTv(
+                        limit = SLIDER_ITEM_LIMIT,
+                        keywords = slider.data,
+                    )
+                }
+            DiscoverSlider.Type.TMDB_MOVIE_GENRE -> {
+                val genreId = slider.data?.toIntOrNull() ?: return
+                publishMediaRow(key, slider, FilterType.GENRE_MOVIE, genreId) {
+                    jellyseerrRepository.getMoviesByGenre(genreId)
+                }
+            }
+            DiscoverSlider.Type.TMDB_TV_GENRE -> {
+                val genreId = slider.data?.toIntOrNull() ?: return
+                publishMediaRow(key, slider, FilterType.GENRE_TV, genreId) {
+                    jellyseerrRepository.getTvByGenre(genreId)
+                }
+            }
+            DiscoverSlider.Type.TMDB_STUDIO -> {
+                val studioId = slider.data?.toIntOrNull() ?: return
+                publishMediaRow(key, slider, FilterType.STUDIO, studioId) {
+                    jellyseerrRepository.getMoviesByStudio(studioId)
+                }
+            }
+            DiscoverSlider.Type.TMDB_NETWORK -> {
+                val networkId = slider.data?.toIntOrNull() ?: return
+                publishMediaRow(key, slider, FilterType.NETWORK, networkId) {
+                    jellyseerrRepository.getTvByNetwork(networkId)
+                }
+            }
+            DiscoverSlider.Type.TMDB_SEARCH ->
+                publishMediaRow(key, slider, null) {
+                    jellyseerrRepository.searchMedia(slider.data.orEmpty())
+                }
+            DiscoverSlider.Type.TMDB_MOVIE_STREAMING_SERVICES -> {
+                val (region, providers) = parseStreamingData(slider.data) ?: return
+                publishMediaRow(key, slider, null) {
+                    jellyseerrRepository.getDiscoverMovies(
+                        limit = SLIDER_ITEM_LIMIT,
+                        watchRegion = region,
+                        watchProviders = providers,
+                    )
+                }
+            }
+            DiscoverSlider.Type.TMDB_TV_STREAMING_SERVICES -> {
+                val (region, providers) = parseStreamingData(slider.data) ?: return
+                publishMediaRow(key, slider, null) {
+                    jellyseerrRepository.getDiscoverTv(
+                        limit = SLIDER_ITEM_LIMIT,
+                        watchRegion = region,
+                        watchProviders = providers,
+                    )
+                }
+            }
+        }
+    }
+
+    private suspend fun publishMediaRow(
+        key: String,
+        slider: DiscoverSlider,
+        viewAllType: FilterType?,
+        viewAllId: Int = 0,
+        fetch: suspend () -> Result<JellyseerrSearchResult>,
+    ) {
+        fetch().onSuccess { result ->
+            val items =
+                result.results.filter { it.getMediaType() != null }.take(SLIDER_ITEM_LIMIT)
+            if (items.isNotEmpty()) {
+                publishSection(
+                    DiscoverSectionContent.MediaRow(
+                        key = key,
+                        sliderType = slider.type,
+                        customTitle = slider.title?.takeIf { it.isNotBlank() },
+                        items = items,
+                        viewAllType = viewAllType,
+                        viewAllId = viewAllId,
+                    )
                 )
-        }
-        viewModelScope.launch {
-            jellyseerrRepository.getDiscoverMovies().onSuccess { res ->
-                _uiState.update { it.copy(popularMovies = res.results) }
             }
         }
-        viewModelScope.launch {
-            jellyseerrRepository.getDiscoverTv().onSuccess { res ->
-                _uiState.update { it.copy(popularTv = res.results) }
-            }
-        }
-        viewModelScope.launch {
-            jellyseerrRepository.getUpcomingMovies().onSuccess { res ->
-                _uiState.update { it.copy(upcomingMovies = res.results) }
-            }
-        }
-        viewModelScope.launch {
-            jellyseerrRepository.getUpcomingTv().onSuccess { res ->
-                _uiState.update { it.copy(upcomingTv = res.results) }
-            }
-        }
-        viewModelScope.launch {
-            jellyseerrRepository.getMovieGenreSlider().onSuccess { genres ->
-                val backdrops = buildGenreBackdrops(genres)
-                _uiState.update { it.copy(movieGenres = genres, movieGenreBackdrops = backdrops) }
-            }
-        }
-        viewModelScope.launch {
-            jellyseerrRepository.getTvGenreSlider().onSuccess { genres ->
-                val backdrops = buildGenreBackdrops(genres)
-                _uiState.update { it.copy(tvGenres = genres, tvGenreBackdrops = backdrops) }
-            }
-        }
+    }
+
+    private fun publishSection(section: DiscoverSectionContent) {
+        sectionResults[section.key] = section
+        val ordered = sectionOrder.mapNotNull { sectionResults[it] }
+        _uiState.update { it.copy(discoverSections = ordered) }
     }
 
     fun showRequestDialog(
@@ -801,6 +1007,7 @@ constructor(
                 else jellyseerrRepository.getMovieDetails(tmdbId)
             }
             authJob.await()
+            refreshUserQuota()
             val detailsResult = detailsJob.await()
 
             detailsResult.fold(
@@ -885,7 +1092,20 @@ constructor(
         val seasons =
             if (pending.mediaType == MediaType.TV) state.selectedSeasons.takeIf { it.isNotEmpty() }
             else null
+        if (isOverQuota(pending.mediaType, seasons?.size ?: 0, state.userQuota)) return
         createRequest(pending.tmdbId, pending.mediaType, seasons)
+    }
+
+    private fun isOverQuota(
+        mediaType: MediaType,
+        seasonCount: Int,
+        quota: UserQuotaResponse?,
+    ): Boolean {
+        quota ?: return false
+        return when (mediaType) {
+            MediaType.MOVIE -> quota.movie.hasLimit() && (quota.movie.remaining ?: 0) <= 0
+            MediaType.TV -> quota.tv.hasLimit() && seasonCount > (quota.tv.remaining ?: 0)
+        }
     }
 
     fun dismissRequestDialog() {
@@ -902,12 +1122,22 @@ constructor(
                 selectedRootFolder = null,
                 isLoadingServers = false,
                 isLoadingProfiles = false,
+                userQuota = null,
             )
         }
     }
 
     fun setSelectedSeasons(seasons: List<Int>) {
-        _uiState.update { it.copy(selectedSeasons = seasons) }
+        _uiState.update { state ->
+            val tvQuota = state.userQuota?.tv
+            val expanding = seasons.size > state.selectedSeasons.size
+            val blocked =
+                tvQuota != null &&
+                    tvQuota.hasLimit() &&
+                    expanding &&
+                    seasons.size > (tvQuota.remaining ?: 0)
+            if (blocked) state else state.copy(selectedSeasons = seasons)
+        }
     }
 
     private fun buildGenreBackdrops(genres: List<GenreSliderItem>): Map<Int, String> {
@@ -943,17 +1173,7 @@ data class RequestsUiState(
     val searchQuery: String = "",
     val searchError: String? = null,
     val showSearchDialog: Boolean = false,
-    val trendingItems: List<SearchResultItem> = emptyList(),
-    val popularMovies: List<SearchResultItem> = emptyList(),
-    val popularTv: List<SearchResultItem> = emptyList(),
-    val upcomingMovies: List<SearchResultItem> = emptyList(),
-    val upcomingTv: List<SearchResultItem> = emptyList(),
-    val studios: List<Studio> = Studio.getPopularStudios(),
-    val networks: List<Network> = Network.getPopularNetworks(),
-    val movieGenres: List<GenreSliderItem> = emptyList(),
-    val movieGenreBackdrops: Map<Int, String> = emptyMap(),
-    val tvGenres: List<GenreSliderItem> = emptyList(),
-    val tvGenreBackdrops: Map<Int, String> = emptyMap(),
+    val discoverSections: List<DiscoverSectionContent> = emptyList(),
     val isLoadingDiscover: Boolean = false,
     val showRequestDialog: Boolean = false,
     val pendingRequest: PendingRequest? = null,
@@ -973,6 +1193,8 @@ data class RequestsUiState(
     val isLoadingDetails: Boolean = false,
     val selectedRequestServerName: String? = null,
     val selectedRequestProfileName: String? = null,
+    val publicSettings: PublicSettings? = null,
+    val userQuota: UserQuotaResponse? = null,
 )
 
 data class PendingRequest(
@@ -994,3 +1216,34 @@ data class PendingRequest(
     val genres: List<String> = emptyList(),
     val ratingsCombined: RatingsCombined? = null,
 )
+
+sealed class DiscoverSectionContent {
+    abstract val key: String
+
+    data class MediaRow(
+        override val key: String,
+        val sliderType: Int,
+        val customTitle: String?,
+        val items: List<SearchResultItem>,
+        val viewAllType: FilterType?,
+        val viewAllId: Int = 0,
+    ) : DiscoverSectionContent()
+
+    data class MovieGenres(
+        override val key: String,
+        val genres: List<GenreSliderItem>,
+        val backdrops: Map<Int, String>,
+    ) : DiscoverSectionContent()
+
+    data class TvGenres(
+        override val key: String,
+        val genres: List<GenreSliderItem>,
+        val backdrops: Map<Int, String>,
+    ) : DiscoverSectionContent()
+
+    data class Studios(override val key: String, val studios: List<Studio>) :
+        DiscoverSectionContent()
+
+    data class Networks(override val key: String, val networks: List<Network>) :
+        DiscoverSectionContent()
+}

@@ -13,10 +13,12 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.Permissions
+import com.makd.afinity.data.models.jellyseerr.PublicSettings
 import com.makd.afinity.data.models.jellyseerr.QualityProfile
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
+import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import com.makd.afinity.data.models.jellyseerr.hasPermission
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityCollection
@@ -560,6 +562,28 @@ constructor(
         }
     }
 
+    private fun loadPublicSettings() {
+        viewModelScope.launch {
+            jellyseerrRepository.getPublicSettings().onSuccess { settings ->
+                _uiState.update { it.copy(publicSettings = settings) }
+            }
+        }
+    }
+
+    private fun refreshUserQuota() {
+        viewModelScope.launch {
+            val userId =
+                _currentUser.value?.id
+                    ?: jellyseerrRepository.getCurrentUser().getOrNull()?.also {
+                        _currentUser.value = it
+                    }?.id
+                    ?: return@launch
+            jellyseerrRepository.getUserQuota(userId).onSuccess { quota ->
+                _uiState.update { it.copy(userQuota = quota) }
+            }
+        }
+    }
+
     fun selectJellyfinSearchMode() {
         cancelAllSearchJobs()
         _uiState.update {
@@ -721,6 +745,9 @@ constructor(
             try {
                 _uiState.update { it.copy(isFetchingTvDetails = true) }
 
+                loadPublicSettings()
+                refreshUserQuota()
+
                 val detailsResult =
                     if (mediaType == MediaType.TV) {
                         jellyseerrRepository.getTvDetails(tmdbId)
@@ -830,6 +857,7 @@ constructor(
             if (pending.mediaType == MediaType.TV) {
                 state.selectedSeasons.takeIf { it.isNotEmpty() }
             } else null
+        if (isOverQuota(pending.mediaType, seasons?.size ?: 0, state.userQuota)) return
 
         viewModelScope.launch {
             try {
@@ -873,6 +901,7 @@ constructor(
                                     selectedProfile = null,
                                     selectedRootFolder = null,
                                     jellyseerrSearchResults = updatedResults,
+                                    userQuota = null,
                                 )
                             }
                             Timber.d("Request created successfully: ${newRequest.id}")
@@ -903,12 +932,34 @@ constructor(
                 selectedRootFolder = null,
                 isLoadingServers = false,
                 isLoadingProfiles = false,
+                userQuota = null,
             )
         }
     }
 
     fun setSelectedSeasons(seasons: List<Int>) {
-        _uiState.update { it.copy(selectedSeasons = seasons) }
+        _uiState.update { state ->
+            val tvQuota = state.userQuota?.tv
+            val expanding = seasons.size > state.selectedSeasons.size
+            val blocked =
+                tvQuota != null &&
+                    tvQuota.hasLimit() &&
+                    expanding &&
+                    seasons.size > (tvQuota.remaining ?: 0)
+            if (blocked) state else state.copy(selectedSeasons = seasons)
+        }
+    }
+
+    private fun isOverQuota(
+        mediaType: MediaType,
+        seasonCount: Int,
+        quota: UserQuotaResponse?,
+    ): Boolean {
+        quota ?: return false
+        return when (mediaType) {
+            MediaType.MOVIE -> quota.movie.hasLimit() && (quota.movie.remaining ?: 0) <= 0
+            MediaType.TV -> quota.tv.hasLimit() && seasonCount > (quota.tv.remaining ?: 0)
+        }
     }
 
     fun setIs4kRequested(is4k: Boolean) {
@@ -1061,6 +1112,8 @@ data class SearchUiState(
     val isLoadingProfiles: Boolean = false,
     val musicSearchResults: MusicSearchResults? = null,
     val isMusicSearching: Boolean = false,
+    val publicSettings: PublicSettings? = null,
+    val userQuota: UserQuotaResponse? = null,
 )
 
 data class PendingRequestSearch(
