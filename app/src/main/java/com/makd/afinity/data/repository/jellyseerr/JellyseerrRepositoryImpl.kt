@@ -4,6 +4,7 @@ import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.database.entities.JellyseerrAddressEntity
 import com.makd.afinity.data.database.entities.JellyseerrConfigEntity
 import com.makd.afinity.data.database.entities.JellyseerrRequestEntity
+import com.makd.afinity.data.models.jellyseerr.CollectionDetails
 import com.makd.afinity.data.models.jellyseerr.CreateRequestBody
 import com.makd.afinity.data.models.jellyseerr.DiscoverSlider
 import com.makd.afinity.data.models.jellyseerr.GenreSliderItem
@@ -16,6 +17,7 @@ import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import com.makd.afinity.data.models.jellyseerr.MediaInfo
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
+import com.makd.afinity.data.models.jellyseerr.PersonCombinedCreditsResponse
 import com.makd.afinity.data.models.jellyseerr.PublicSettings
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.RequestStatus
@@ -23,6 +25,7 @@ import com.makd.afinity.data.models.jellyseerr.RequestUser
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.ServiceDetailsResponse
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
+import com.makd.afinity.data.models.jellyseerr.SonarrSeries
 import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import com.makd.afinity.data.network.JellyseerrApiService
 import com.makd.afinity.data.repository.JellyseerrRepository
@@ -414,6 +417,134 @@ constructor(
         }
     }
 
+    override suspend fun getUsers(take: Int): Result<List<JellyseerrUser>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+                val response = apiService.get().getUsers(take)
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!.results)
+                } else {
+                    Result.failure(Exception("Failed to get users: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get Jellyseerr users")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getPersonCombinedCredits(
+        personId: Int
+    ): Result<PersonCombinedCreditsResponse> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+                val response = apiService.get().getPersonCombinedCredits(personId)
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
+                } else {
+                    Result.failure(Exception("Failed to get person credits: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get person credits for $personId")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getCollection(collectionId: Int): Result<CollectionDetails> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+                val response = apiService.get().getCollection(collectionId)
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
+                } else {
+                    Result.failure(Exception("Failed to get collection: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get collection $collectionId")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getRecommendations(
+        mediaType: MediaType,
+        tmdbId: Int,
+        page: Int,
+    ): Result<JellyseerrSearchResult> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response =
+                    when (mediaType) {
+                        MediaType.MOVIE -> apiService.get().getMovieRecommendations(tmdbId, page)
+                        MediaType.TV -> apiService.get().getTvRecommendations(tmdbId, page)
+                    }
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
+                } else {
+                    Result.failure(
+                        Exception("Failed to get recommendations: ${response.message()}")
+                    )
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get recommendations for $tmdbId")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getSimilar(
+        mediaType: MediaType,
+        tmdbId: Int,
+        page: Int,
+    ): Result<JellyseerrSearchResult> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response =
+                    when (mediaType) {
+                        MediaType.MOVIE -> apiService.get().getMovieSimilar(tmdbId, page)
+                        MediaType.TV -> apiService.get().getTvSimilar(tmdbId, page)
+                    }
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
+                } else {
+                    Result.failure(Exception("Failed to get similar: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get similar titles for $tmdbId")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun sonarrLookup(tmdbId: Int): Result<List<SonarrSeries>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+                val response = apiService.get().sonarrLookup(tmdbId)
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
+                } else {
+                    Result.failure(Exception("Sonarr lookup failed: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Sonarr lookup failed for tmdbId $tmdbId")
+                Result.failure(e)
+            }
+        }
+    }
+
     override suspend fun setServerUrl(url: String) {
         withContext(Dispatchers.IO) {
             securePreferencesRepository.saveJellyseerrServerUrl(url)
@@ -452,6 +583,10 @@ constructor(
         serverId: Int?,
         profileId: Int?,
         rootFolder: String?,
+        tvdbId: Int?,
+        languageProfileId: Int?,
+        tags: List<Int>?,
+        userId: Int?,
     ): Result<JellyseerrRequest> {
         return withContext(Dispatchers.IO) {
             try {
@@ -468,6 +603,10 @@ constructor(
                         serverId = serverId,
                         profileId = profileId,
                         rootFolder = rootFolder,
+                        tvdbId = tvdbId,
+                        languageProfileId = languageProfileId,
+                        tags = tags,
+                        userId = userId,
                     )
                 val response = apiService.get().createRequest(requestBody)
 
@@ -899,25 +1038,11 @@ constructor(
                 val response = apiService.get().getMovieDetails(movieId)
 
                 if (response.isSuccessful && response.body() != null) {
-                    val details = response.body()!!
-
-                    val ratingsResponse =
-                        try {
-                            apiService.get().getMovieRatingsCombined(movieId)
-                        } catch (e: Exception) {
-                            Timber.w(e, "Failed to fetch ratings for movie $movieId")
-                            null
-                        }
-
-                    val ratings =
-                        if (ratingsResponse?.isSuccessful == true) {
-                            ratingsResponse.body()
-                        } else null
-
-                    val enrichedDetails = details.copy(ratingsCombined = ratings)
-                    Result.success(enrichedDetails)
+                    Result.success(response.body()!!)
                 } else {
-                    Result.failure(Exception("Failed to get movie details: ${response.message()}"))
+                    Result.failure(
+                        Exception("Failed to get movie details: ${response.message()}")
+                    )
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get movie details for ID: $movieId")
@@ -936,34 +1061,44 @@ constructor(
                 val response = apiService.get().getTvDetails(tvId)
 
                 if (response.isSuccessful && response.body() != null) {
-                    val details = response.body()!!
-
-                    val ratingsResponse =
-                        try {
-                            apiService.get().getTvRatings(tvId)
-                        } catch (e: Exception) {
-                            Timber.w(e, "Failed to fetch ratings for TV show $tvId")
-                            null
-                        }
-
-                    val ratings =
-                        if (
-                            ratingsResponse?.isSuccessful == true && ratingsResponse.body() != null
-                        ) {
-                            val rtRating = ratingsResponse.body()!!
-                            RatingsCombined(rt = rtRating, imdb = null)
-                        } else {
-                            Timber.w("TV ratings response unsuccessful or null for tvId $tvId")
-                            null
-                        }
-
-                    val enrichedDetails = details.copy(ratingsCombined = ratings)
-                    Result.success(enrichedDetails)
+                    Result.success(response.body()!!)
                 } else {
                     Result.failure(Exception("Failed to get TV details: ${response.message()}"))
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get TV show details for ID: $tvId")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getRatings(mediaType: MediaType, tmdbId: Int): Result<RatingsCombined> {
+        return withContext(Dispatchers.IO) {
+            try {
+                when (mediaType) {
+                    MediaType.MOVIE -> {
+                        val response = apiService.get().getMovieRatingsCombined(tmdbId)
+                        if (response.isSuccessful && response.body() != null) {
+                            Result.success(response.body()!!)
+                        } else {
+                            Result.failure(
+                                Exception("Failed to get ratings: ${response.message()}")
+                            )
+                        }
+                    }
+                    MediaType.TV -> {
+                        val response = apiService.get().getTvRatings(tmdbId)
+                        if (response.isSuccessful && response.body() != null) {
+                            Result.success(RatingsCombined(rt = response.body()!!, imdb = null))
+                        } else {
+                            Result.failure(
+                                Exception("Failed to get ratings: ${response.message()}")
+                            )
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to fetch ratings for $mediaType $tmdbId")
                 Result.failure(e)
             }
         }

@@ -1,5 +1,6 @@
 package com.makd.afinity.data.repository
 
+import com.makd.afinity.data.models.jellyseerr.CollectionDetails
 import com.makd.afinity.data.models.jellyseerr.DiscoverSlider
 import com.makd.afinity.data.models.jellyseerr.GenreSliderItem
 import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
@@ -7,10 +8,13 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrSearchResult
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import com.makd.afinity.data.models.jellyseerr.MediaType
+import com.makd.afinity.data.models.jellyseerr.PersonCombinedCreditsResponse
 import com.makd.afinity.data.models.jellyseerr.PublicSettings
+import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.ServiceDetailsResponse
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
+import com.makd.afinity.data.models.jellyseerr.SonarrSeries
 import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
@@ -43,6 +47,26 @@ interface JellyseerrRepository {
 
     suspend fun getUserQuota(userId: Int): Result<UserQuotaResponse>
 
+    suspend fun getUsers(take: Int = 1000): Result<List<JellyseerrUser>>
+
+    suspend fun sonarrLookup(tmdbId: Int): Result<List<SonarrSeries>>
+
+    suspend fun getPersonCombinedCredits(personId: Int): Result<PersonCombinedCreditsResponse>
+
+    suspend fun getCollection(collectionId: Int): Result<CollectionDetails>
+
+    suspend fun getRecommendations(
+        mediaType: MediaType,
+        tmdbId: Int,
+        page: Int = 1,
+    ): Result<JellyseerrSearchResult>
+
+    suspend fun getSimilar(
+        mediaType: MediaType,
+        tmdbId: Int,
+        page: Int = 1,
+    ): Result<JellyseerrSearchResult>
+
     suspend fun isLoggedIn(): Boolean
 
     val isAuthenticated: StateFlow<Boolean>
@@ -64,6 +88,10 @@ interface JellyseerrRepository {
         serverId: Int? = null,
         profileId: Int? = null,
         rootFolder: String? = null,
+        tvdbId: Int? = null,
+        languageProfileId: Int? = null,
+        tags: List<Int>? = null,
+        userId: Int? = null,
     ): Result<JellyseerrRequest>
 
     suspend fun getServiceSettings(mediaType: MediaType): Result<List<ServiceSettings>>
@@ -110,6 +138,8 @@ interface JellyseerrRepository {
     suspend fun getMovieDetails(movieId: Int): Result<MediaDetails>
 
     suspend fun getTvDetails(tvId: Int): Result<MediaDetails>
+
+    suspend fun getRatings(mediaType: MediaType, tmdbId: Int): Result<RatingsCombined>
 
     suspend fun findMediaByName(
         name: String,

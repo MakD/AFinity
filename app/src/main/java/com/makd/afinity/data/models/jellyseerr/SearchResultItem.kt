@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class SearchResultItem(
     @SerialName("id") val id: Int,
-    @SerialName("mediaType") val mediaType: String,
+    @SerialName("mediaType") val mediaType: String = "movie",
     @SerialName("title") val title: String? = null,
     @SerialName("name") val name: String? = null,
     @SerialName("originalTitle") val originalTitle: String? = null,

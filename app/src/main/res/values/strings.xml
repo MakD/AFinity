@@ -963,8 +963,24 @@
     <string name="request_quota_movie_label">Movie request limit</string>
     <string name="request_quota_tv_label">Season request limit</string>
     <string name="request_quota_remaining_fmt">%1$d of %2$d remaining</string>
+    <string name="request_quota_movie_remaining_fmt">%1$d of %2$d requests remaining</string>
+    <string name="request_quota_tv_remaining_fmt">%1$d of %2$d season requests remaining</string>
     <string name="request_quota_period_fmt">per %1$d days</string>
     <string name="request_quota_exceeded">Limit Reached</string>
+    <string name="request_language_profile">Language Profile</string>
+    <string name="request_tags">Tags</string>
+    <string name="request_tags_none">None</string>
+    <string name="request_as_label">Request As</string>
+    <string name="request_series_match">Series Match</string>
+    <string name="request_select_placeholder">Select…</string>
+    <string name="seerr_detail_request">Request</string>
+    <string name="seerr_detail_request_4k">Request in 4K</string>
+    <string name="seerr_detail_open_library">Open in Library</string>
+    <string name="seerr_detail_status_fmt">%1$s</string>
+    <string name="seerr_collection_fallback">Collection</string>
+    <string name="season_count_fmt">%1$d Seasons</string>
+    <string name="seerr_recommendations_title">Recommendations</string>
+    <string name="seerr_details_title">Details</string>
     <string name="request_quota_exceeded_message">You don\'t have enough requests remaining. Your quota resets automatically.</string>
 
     <!--Season Selector-->

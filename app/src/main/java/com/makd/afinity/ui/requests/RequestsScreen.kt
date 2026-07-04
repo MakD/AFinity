@@ -55,6 +55,8 @@ fun RequestsScreen(
     viewModel: RequestsViewModel = hiltViewModel(),
     onNavigateToFilteredMedia: (FilterParams) -> Unit = {},
     onItemClick: (jellyfinItemId: String, itemType: String?) -> Unit = { _, _ -> },
+    onNavigateToSeerrMedia: (item: com.makd.afinity.data.models.jellyseerr.SearchResultItem) -> Unit =
+        {},
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -193,18 +195,9 @@ fun RequestsScreen(
                                                             else -> null
                                                         }
                                                     onItemClick(jellyfinId, mappedType)
-                                                }
+                                                } ?: onNavigateToSeerrMedia(item)
                                             } else {
-                                                item.getMediaType()?.let { mediaType ->
-                                                    viewModel.showRequestDialog(
-                                                        tmdbId = item.id,
-                                                        mediaType = mediaType,
-                                                        title = item.getDisplayTitle(),
-                                                        posterUrl = item.getPosterUrl(),
-                                                        availableSeasons = 0,
-                                                        existingStatus = item.getDisplayStatus(),
-                                                    )
-                                                }
+                                                onNavigateToSeerrMedia(item)
                                             }
                                         },
                                         onViewAllClick =
@@ -399,6 +392,7 @@ fun RequestsScreen(
                     },
                 existingStatus = pending.existingStatus,
                 isLoading = uiState.isCreatingRequest,
+                detailsLoading = uiState.isFetchingTvDetails,
                 onConfirm = { viewModel.confirmRequest() },
                 onDismiss = { viewModel.dismissRequestDialog() },
                 mediaBackdropUrl = pending.backdropUrl,
@@ -427,6 +421,18 @@ fun RequestsScreen(
                 selectedRootFolder = uiState.selectedRootFolder,
                 isLoadingServers = uiState.isLoadingServers,
                 isLoadingProfiles = uiState.isLoadingProfiles,
+                tvdbCandidates = uiState.tvdbCandidates,
+                selectedTvdbId = uiState.selectedTvdbId,
+                onTvdbSelected = { viewModel.selectTvdbCandidate(it) },
+                availableLanguageProfiles = uiState.availableLanguageProfiles,
+                selectedLanguageProfile = uiState.selectedLanguageProfile,
+                onLanguageProfileSelected = { viewModel.selectLanguageProfile(it) },
+                availableTags = uiState.availableTags,
+                selectedTagIds = uiState.selectedTagIds,
+                onTagToggle = { viewModel.toggleTag(it) },
+                availableUsers = uiState.availableUsers,
+                selectedRequestUser = uiState.selectedRequestUser,
+                onRequestUserSelected = { viewModel.selectRequestUser(it) },
             )
         }
 

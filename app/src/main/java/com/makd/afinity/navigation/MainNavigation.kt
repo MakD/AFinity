@@ -172,6 +172,7 @@ fun MainNavigation(
                 route != "search" &&
                 !route.startsWith("genre_results/") &&
                 !route.startsWith("filtered_media/") &&
+                !route.startsWith("seerr_media/") &&
                 route != "settings" &&
                 route != "download_settings" &&
                 route != "player_options" &&
@@ -720,6 +721,20 @@ fun MainNavigation(
                                                 )
                                             navController.navigate(route)
                                         },
+                                        onNavigateToSeerrMedia = { seerrItem ->
+                                            navController.navigate(
+                                                Destination.createSeerrMediaRoute(
+                                                    mediaType = seerrItem.mediaType,
+                                                    tmdbId = seerrItem.id,
+                                                    title = seerrItem.getDisplayTitle(),
+                                                    backdropUrl =
+                                                        seerrItem.backdropPath?.let {
+                                                            "https://image.tmdb.org/t/p/w1280$it"
+                                                        },
+                                                    posterUrl = seerrItem.getPosterUrl(),
+                                                )
+                                            )
+                                        },
                                         modifier = Modifier.fillMaxSize(),
                                         widthSizeClass = widthSizeClass,
                                     )
@@ -775,6 +790,87 @@ fun MainNavigation(
                                                 )
                                             navController.navigate(route)
                                         },
+                                        onNavigateToSeerrMedia = { seerrItem ->
+                                            navController.navigate(
+                                                Destination.createSeerrMediaRoute(
+                                                    mediaType = seerrItem.mediaType,
+                                                    tmdbId = seerrItem.id,
+                                                    title = seerrItem.getDisplayTitle(),
+                                                    backdropUrl =
+                                                        seerrItem.backdropPath?.let {
+                                                            "https://image.tmdb.org/t/p/w1280$it"
+                                                        },
+                                                    posterUrl = seerrItem.getPosterUrl(),
+                                                )
+                                            )
+                                        },
+                                        modifier = Modifier.fillMaxSize(),
+                                        widthSizeClass = widthSizeClass,
+                                    )
+                                }
+
+                                composable(
+                                    route = Destination.SEERR_MEDIA_ROUTE,
+                                    arguments =
+                                        listOf(
+                                            navArgument("seerrMediaType") {
+                                                type = NavType.StringType
+                                            },
+                                            navArgument("seerrTmdbId") { type = NavType.IntType },
+                                            navArgument("seerrTitle") {
+                                                type = NavType.StringType
+                                                defaultValue = ""
+                                            },
+                                            navArgument("seerrBackdrop") {
+                                                type = NavType.StringType
+                                                defaultValue = ""
+                                            },
+                                            navArgument("seerrPoster") {
+                                                type = NavType.StringType
+                                                defaultValue = ""
+                                            },
+                                        ),
+                                ) {
+                                    com.makd.afinity.ui.requests.SeerrMediaDetailScreen(
+                                        onItemClick = { jellyfinItemId, itemType ->
+                                            val route =
+                                                Destination.createItemDetailRoute(
+                                                    itemId = jellyfinItemId,
+                                                    itemType = itemType,
+                                                )
+                                            navController.navigate(route)
+                                        },
+                                        onNavigateToFilteredMedia = { filterParams ->
+                                            val route =
+                                                Destination.createFilteredMediaRoute(
+                                                    filterType = filterParams.type.name,
+                                                    filterId = filterParams.id,
+                                                    filterName = filterParams.name,
+                                                )
+                                            navController.navigate(route)
+                                        },
+                                        onNavigateToSeerrMedia = { seerrItem ->
+                                            navController.navigate(
+                                                Destination.createSeerrMediaRoute(
+                                                    mediaType = seerrItem.mediaType,
+                                                    tmdbId = seerrItem.id,
+                                                    title = seerrItem.getDisplayTitle(),
+                                                    backdropUrl =
+                                                        seerrItem.backdropPath?.let {
+                                                            "https://image.tmdb.org/t/p/w1280$it"
+                                                        },
+                                                    posterUrl = seerrItem.getPosterUrl(),
+                                                )
+                                            )
+                                        },
+                                        onNavigateHome = {
+                                            navController.navigate(Destination.HOME.route) {
+                                                popUpTo(Destination.HOME.route) {
+                                                    inclusive = false
+                                                }
+                                                launchSingleTop = true
+                                            }
+                                        },
                                         modifier = Modifier.fillMaxSize(),
                                         widthSizeClass = widthSizeClass,
                                     )
@@ -821,6 +917,20 @@ fun MainNavigation(
                                             navController.navigate(
                                                 Destination.createAudiobookshelfGenreResultsRoute(
                                                     genre
+                                                )
+                                            )
+                                        },
+                                        onNavigateToSeerrMedia = { seerrItem ->
+                                            navController.navigate(
+                                                Destination.createSeerrMediaRoute(
+                                                    mediaType = seerrItem.mediaType,
+                                                    tmdbId = seerrItem.id,
+                                                    title = seerrItem.getDisplayTitle(),
+                                                    backdropUrl =
+                                                        seerrItem.backdropPath?.let {
+                                                            "https://image.tmdb.org/t/p/w1280$it"
+                                                        },
+                                                    posterUrl = seerrItem.getPosterUrl(),
                                                 )
                                             )
                                         },

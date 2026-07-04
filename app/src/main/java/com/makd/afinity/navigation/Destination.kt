@@ -66,6 +66,8 @@ enum class Destination(
         const val APPEARANCE_OPTIONS_ROUTE = "appearance_options"
         const val LICENSES_ROUTE = "licenses"
         const val FILTERED_MEDIA_ROUTE = "filtered_media/{filterType}/{filterId}/{filterName}"
+        const val SEERR_MEDIA_ROUTE =
+            "seerr_media/{seerrMediaType}/{seerrTmdbId}?seerrTitle={seerrTitle}&seerrBackdrop={seerrBackdrop}&seerrPoster={seerrPoster}"
         const val SERVER_MANAGEMENT_ROUTE = "server_management"
         const val ADD_EDIT_SERVER_ROUTE = "add_edit_server?serverId={serverId}"
 
@@ -264,6 +266,28 @@ enum class Destination(
             filterName: String,
         ): String {
             return "filtered_media/$filterType/$filterId/${filterName.replace("/", "%2F")}"
+        }
+
+        fun createSeerrMediaRoute(
+            mediaType: String,
+            tmdbId: Int,
+            title: String? = null,
+            backdropUrl: String? = null,
+            posterUrl: String? = null,
+        ): String {
+            val base = "seerr_media/${mediaType.lowercase()}/$tmdbId"
+            val params = buildList {
+                title?.takeIf { it.isNotBlank() }?.let {
+                    add("seerrTitle=${android.net.Uri.encode(it)}")
+                }
+                backdropUrl?.takeIf { it.isNotBlank() }?.let {
+                    add("seerrBackdrop=${android.net.Uri.encode(it)}")
+                }
+                posterUrl?.takeIf { it.isNotBlank() }?.let {
+                    add("seerrPoster=${android.net.Uri.encode(it)}")
+                }
+            }
+            return if (params.isEmpty()) base else "$base?${params.joinToString("&")}"
         }
 
         fun createServerManagementRoute(): String {

@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.components
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,7 +24,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -60,6 +60,8 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.svg.SvgDecoder
 import com.makd.afinity.R
+import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
+import com.makd.afinity.data.models.jellyseerr.LanguageProfile
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.QualityProfile
@@ -67,6 +69,8 @@ import com.makd.afinity.data.models.jellyseerr.QuotaStatus
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.RequestStatus
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
+import com.makd.afinity.data.models.jellyseerr.ServiceTag
+import com.makd.afinity.data.models.jellyseerr.SonarrSeries
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
@@ -87,6 +91,7 @@ fun RequestConfirmationDialog(
     quota: QuotaStatus? = null,
     existingStatus: MediaStatus? = null,
     isLoading: Boolean,
+    detailsLoading: Boolean = false,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     isManagementMode: Boolean = false,
@@ -122,6 +127,18 @@ fun RequestConfirmationDialog(
     selectedRootFolder: String? = null,
     isLoadingServers: Boolean = false,
     isLoadingProfiles: Boolean = false,
+    tvdbCandidates: List<SonarrSeries> = emptyList(),
+    selectedTvdbId: Int? = null,
+    onTvdbSelected: (SonarrSeries) -> Unit = {},
+    availableLanguageProfiles: List<LanguageProfile> = emptyList(),
+    selectedLanguageProfile: LanguageProfile? = null,
+    onLanguageProfileSelected: (LanguageProfile) -> Unit = {},
+    availableTags: List<ServiceTag> = emptyList(),
+    selectedTagIds: List<Int> = emptyList(),
+    onTagToggle: (Int) -> Unit = {},
+    availableUsers: List<JellyseerrUser> = emptyList(),
+    selectedRequestUser: JellyseerrUser? = null,
+    onRequestUserSelected: (JellyseerrUser) -> Unit = {},
 ) {
     val alreadyRequested =
         !isManagementMode &&
@@ -159,7 +176,7 @@ fun RequestConfirmationDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.fillMaxWidth().verticalScroll(scrollState),
             ) {
-                if (!headerImageUrl.isNullOrBlank()) {
+                if (isManagementMode && !headerImageUrl.isNullOrBlank()) {
                     Box(
                         modifier =
                             Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(12.dp))
@@ -228,209 +245,221 @@ fun RequestConfirmationDialog(
                     }
                 }
 
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    data class MetaItem(
-                        val icon: Int = 0,
-                        val text: String,
-                        val contentDesc: String? = null,
-                        val tint: Color = Color.Unspecified,
-                        val flagUrl: String? = null,
-                    )
-                    val rtCriticLabel = stringResource(R.string.request_rt_critic)
-                    val rtAudienceLabel = stringResource(R.string.request_rt_audience)
-                    val metadataItems =
-                        remember(ratingsCombined, voteAverage, originalLanguage, certification) {
-                            buildList {
-                                ratingsCombined?.imdb?.criticsScore?.let {
-                                    add(
-                                        MetaItem(
-                                            R.drawable.ic_imdb_logo,
-                                            String.format(Locale.US, "%.1f", it),
-                                            "IMDb",
-                                        )
-                                    )
-                                }
-                                ratingsCombined?.rt?.criticsScore?.let {
-                                    add(
-                                        MetaItem(
-                                            if (it >= 60) R.drawable.ic_rotten_tomato_fresh
-                                            else R.drawable.ic_rotten_tomato_rotten,
-                                            "$it%",
-                                            rtCriticLabel,
-                                        )
-                                    )
-                                }
-                                ratingsCombined?.rt?.audienceScore?.let {
-                                    add(
-                                        MetaItem(
-                                            if (it >= 60) R.drawable.ic_rt_fresh_popcorn
-                                            else R.drawable.ic_rt_stale_popcorn,
-                                            "$it%",
-                                            rtAudienceLabel,
-                                        )
-                                    )
-                                }
-                                voteAverage?.let {
-                                    if (it > 0)
+                if (isManagementMode) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        data class MetaItem(
+                            val icon: Int = 0,
+                            val text: String,
+                            val contentDesc: String? = null,
+                            val tint: Color = Color.Unspecified,
+                            val flagUrl: String? = null,
+                        )
+                        val rtCriticLabel = stringResource(R.string.request_rt_critic)
+                        val rtAudienceLabel = stringResource(R.string.request_rt_audience)
+                        val metadataItems =
+                            remember(
+                                ratingsCombined,
+                                voteAverage,
+                                originalLanguage,
+                                certification,
+                            ) {
+                                buildList {
+                                    ratingsCombined?.imdb?.criticsScore?.let {
                                         add(
                                             MetaItem(
-                                                R.drawable.ic_tmdb,
-                                                "${(it * 10).toInt()}%",
-                                                "TMDB",
-                                            )
-                                        )
-                                }
-                                originalLanguage
-                                    ?.takeIf { it.isNotBlank() }
-                                    ?.let {
-                                        add(
-                                            MetaItem(
-                                                R.drawable.ic_language,
-                                                it.uppercase(),
-                                                "Language",
-                                                flagUrl = getAutoFlagUrl(it),
+                                                R.drawable.ic_imdb_logo,
+                                                String.format(Locale.US, "%.1f", it),
+                                                "IMDb",
                                             )
                                         )
                                     }
-                                certification
-                                    ?.takeIf { it.isNotBlank() }
-                                    ?.let { add(MetaItem(text = it)) }
-                            }
-                        }
-
-                    if (metadataItems.isNotEmpty()) {
-                        SeparatedFlowRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            separator = { MetadataDot() },
-                        ) {
-                            metadataItems.forEach { item ->
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                ) {
-                                    if (item.icon != 0)
-                                        Icon(
-                                            painter = painterResource(id = item.icon),
-                                            contentDescription = null,
-                                            tint =
-                                                if (item.contentDesc == "Language")
-                                                    MaterialTheme.colorScheme.onSurface
-                                                else item.tint,
-                                            modifier = Modifier.size(14.dp),
+                                    ratingsCombined?.rt?.criticsScore?.let {
+                                        add(
+                                            MetaItem(
+                                                if (it >= 60) R.drawable.ic_rotten_tomato_fresh
+                                                else R.drawable.ic_rotten_tomato_rotten,
+                                                "$it%",
+                                                rtCriticLabel,
+                                            )
                                         )
-                                    if (item.flagUrl != null) CircleFlagIcon(url = item.flagUrl)
-                                    else if (item.icon == 0) {
-                                        androidx.compose.material3.Surface(
-                                            shape = RoundedCornerShape(4.dp),
-                                            border =
-                                                androidx.compose.foundation.BorderStroke(
-                                                    1.dp,
-                                                    MaterialTheme.colorScheme.onSurface.copy(0.5f),
-                                                ),
-                                            color = Color.Transparent,
-                                        ) {
+                                    }
+                                    ratingsCombined?.rt?.audienceScore?.let {
+                                        add(
+                                            MetaItem(
+                                                if (it >= 60) R.drawable.ic_rt_fresh_popcorn
+                                                else R.drawable.ic_rt_stale_popcorn,
+                                                "$it%",
+                                                rtAudienceLabel,
+                                            )
+                                        )
+                                    }
+                                    voteAverage?.let {
+                                        if (it > 0)
+                                            add(
+                                                MetaItem(
+                                                    R.drawable.ic_tmdb,
+                                                    "${(it * 10).toInt()}%",
+                                                    "TMDB",
+                                                )
+                                            )
+                                    }
+                                    originalLanguage
+                                        ?.takeIf { it.isNotBlank() }
+                                        ?.let {
+                                            add(
+                                                MetaItem(
+                                                    R.drawable.ic_language,
+                                                    it.uppercase(),
+                                                    "Language",
+                                                    flagUrl = getAutoFlagUrl(it),
+                                                )
+                                            )
+                                        }
+                                    certification
+                                        ?.takeIf { it.isNotBlank() }
+                                        ?.let { add(MetaItem(text = it)) }
+                                }
+                            }
+
+                        if (metadataItems.isNotEmpty()) {
+                            SeparatedFlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                separator = { MetadataDot() },
+                            ) {
+                                metadataItems.forEach { item ->
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    ) {
+                                        if (item.icon != 0)
+                                            Icon(
+                                                painter = painterResource(id = item.icon),
+                                                contentDescription = null,
+                                                tint =
+                                                    if (item.contentDesc == "Language")
+                                                        MaterialTheme.colorScheme.onSurface
+                                                    else item.tint,
+                                                modifier = Modifier.size(14.dp),
+                                            )
+                                        if (item.flagUrl != null) CircleFlagIcon(url = item.flagUrl)
+                                        else if (item.icon == 0) {
+                                            androidx.compose.material3.Surface(
+                                                shape = RoundedCornerShape(4.dp),
+                                                border =
+                                                    androidx.compose.foundation.BorderStroke(
+                                                        1.dp,
+                                                        MaterialTheme.colorScheme.onSurface.copy(
+                                                            0.5f
+                                                        ),
+                                                    ),
+                                                color = Color.Transparent,
+                                            ) {
+                                                Text(
+                                                    item.text,
+                                                    style =
+                                                        MaterialTheme.typography.labelSmall.copy(
+                                                            fontWeight = FontWeight.Bold
+                                                        ),
+                                                    color =
+                                                        MaterialTheme.colorScheme.onSurface.copy(
+                                                            0.9f
+                                                        ),
+                                                    modifier =
+                                                        Modifier.padding(
+                                                            horizontal = 6.dp,
+                                                            vertical = 2.dp,
+                                                        ),
+                                                )
+                                            }
+                                        } else
                                             Text(
                                                 item.text,
                                                 style =
-                                                    MaterialTheme.typography.labelSmall.copy(
-                                                        fontWeight = FontWeight.Bold
+                                                    MaterialTheme.typography.bodyMedium.copy(
+                                                        fontWeight = FontWeight.SemiBold
                                                     ),
                                                 color =
                                                     MaterialTheme.colorScheme.onSurface.copy(0.9f),
-                                                modifier =
-                                                    Modifier.padding(
-                                                        horizontal = 6.dp,
-                                                        vertical = 2.dp,
-                                                    ),
                                             )
-                                        }
-                                    } else
-                                        Text(
-                                            item.text,
-                                            style =
-                                                MaterialTheme.typography.bodyMedium.copy(
-                                                    fontWeight = FontWeight.SemiBold
-                                                ),
-                                            color = MaterialTheme.colorScheme.onSurface.copy(0.9f),
-                                        )
+                                    }
                                 }
                             }
                         }
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
 
-                    if (!mediaOverview.isNullOrBlank()) {
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                "Overview",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                            )
-                            Text(
-                                mediaOverview,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                        if (!mediaOverview.isNullOrBlank()) {
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(
+                                    "Overview",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Text(
+                                    mediaOverview,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
-                    }
-                    director
-                        ?.takeIf { it.isNotBlank() }
-                        ?.let {
-                            Text(
-                                buildAnnotatedString {
-                                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                        append("Director: ")
-                                    }
-                                    append(it)
-                                },
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(0.9f),
-                            )
-                        }
-                    releaseDate?.let {
-                        formatReleaseDate(it)
-                            .takeIf { d -> d.isNotBlank() }
-                            ?.let { d ->
+                        director
+                            ?.takeIf { it.isNotBlank() }
+                            ?.let {
                                 Text(
                                     buildAnnotatedString {
                                         withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                            append("Release Date: ")
+                                            append("Director: ")
                                         }
-                                        append(d)
+                                        append(it)
                                     },
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurface.copy(0.9f),
                                 )
                             }
-                    }
-                    runtime
-                        ?.takeIf { it > 0 }
-                        ?.let {
+                        releaseDate?.let {
+                            formatReleaseDate(it)
+                                .takeIf { d -> d.isNotBlank() }
+                                ?.let { d ->
+                                    Text(
+                                        buildAnnotatedString {
+                                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                                                append("Release Date: ")
+                                            }
+                                            append(d)
+                                        },
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(0.9f),
+                                    )
+                                }
+                        }
+                        runtime
+                            ?.takeIf { it > 0 }
+                            ?.let {
+                                Text(
+                                    buildAnnotatedString {
+                                        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                                            append("Runtime: ")
+                                        }
+                                        append(formatRuntime(it))
+                                    },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(0.9f),
+                                )
+                            }
+                        if (genres.isNotEmpty())
                             Text(
                                 buildAnnotatedString {
                                     withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                        append("Runtime: ")
+                                        append("Genre: ")
                                     }
-                                    append(formatRuntime(it))
+                                    append(genres.joinToString(", "))
                                 },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(0.9f),
                             )
-                        }
-                    if (genres.isNotEmpty())
-                        Text(
-                            buildAnnotatedString {
-                                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                    append("Genre: ")
-                                }
-                                append(genres.joinToString(", "))
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(0.9f),
-                        )
+                    }
                 }
 
                 if (isManagementMode) {
@@ -602,7 +631,7 @@ fun RequestConfirmationDialog(
                         )
 
                         if (quotaActive) {
-                            QuotaBanner(
+                            QuotaIndicator(
                                 mediaType = mediaType,
                                 quota = quota!!,
                                 selectedSeasonCount = selectedSeasons.size,
@@ -611,7 +640,18 @@ fun RequestConfirmationDialog(
                         }
 
                         if (mediaType == MediaType.TV) {
-                            if (canSelectSeasons) {
+                            if (detailsLoading) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            } else if (canSelectSeasons) {
                                 SeasonSelector(
                                     availableSeasons,
                                     selectedSeasons,
@@ -625,6 +665,26 @@ fun RequestConfirmationDialog(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
+                        }
+
+                        if (mediaType == MediaType.TV && tvdbCandidates.isNotEmpty()) {
+                            MinimalSelectionTile(
+                                label = stringResource(R.string.request_series_match),
+                                selectedText =
+                                    tvdbCandidates
+                                        .firstOrNull { it.tvdbId == selectedTvdbId }
+                                        ?.let { candidate ->
+                                            candidate.year?.let {
+                                                "${candidate.title} ($it)"
+                                            } ?: candidate.title
+                                        } ?: stringResource(R.string.request_select_placeholder),
+                                items = tvdbCandidates,
+                                itemText = { candidate ->
+                                    candidate.year?.let { "${candidate.title} ($it)" }
+                                        ?: candidate.title
+                                },
+                                onItemSelected = onTvdbSelected,
+                            )
                         }
 
                         if (can4k) {
@@ -697,6 +757,45 @@ fun RequestConfirmationDialog(
                                             }
                                         }
                                     }
+                                    if (
+                                        mediaType == MediaType.TV &&
+                                            availableLanguageProfiles.isNotEmpty()
+                                    ) {
+                                        MinimalSelectionTile(
+                                            stringResource(R.string.request_language_profile),
+                                            selectedLanguageProfile?.name ?: "Default",
+                                            availableLanguageProfiles,
+                                            { it.name },
+                                            onLanguageProfileSelected,
+                                            isLoadingProfiles,
+                                        )
+                                    }
+                                    if (availableTags.isNotEmpty()) {
+                                        MinimalMultiSelectTile(
+                                            label = stringResource(R.string.request_tags),
+                                            selectedText =
+                                                availableTags
+                                                    .filter { it.id in selectedTagIds }
+                                                    .joinToString(", ") { it.label }
+                                                    .ifEmpty {
+                                                        stringResource(R.string.request_tags_none)
+                                                    },
+                                            items = availableTags,
+                                            itemText = { it.label },
+                                            isSelected = { it.id in selectedTagIds },
+                                            onItemToggle = { onTagToggle(it.id) },
+                                        )
+                                    }
+                                }
+                                if (availableUsers.isNotEmpty()) {
+                                    MinimalSelectionTile(
+                                        stringResource(R.string.request_as_label),
+                                        selectedRequestUser?.displayLabel()
+                                            ?: stringResource(R.string.request_select_placeholder),
+                                        availableUsers,
+                                        { it.displayLabel() },
+                                        onRequestUserSelected,
+                                    )
                                 }
                             }
                         }
@@ -750,6 +849,7 @@ fun RequestConfirmationDialog(
                         !alreadyRequested &&
                             !isLoading &&
                             !overQuota &&
+                            !(mediaType == MediaType.TV && detailsLoading) &&
                             (mediaType == MediaType.MOVIE ||
                                 selectedSeasons.isNotEmpty() ||
                                 availableSeasons == 0),
@@ -806,7 +906,7 @@ fun RequestConfirmationDialog(
 }
 
 @Composable
-private fun QuotaBanner(
+private fun QuotaIndicator(
     mediaType: MediaType,
     quota: QuotaStatus,
     selectedSeasonCount: Int,
@@ -817,52 +917,48 @@ private fun QuotaBanner(
         if (mediaType == MediaType.TV)
             ((quota.remaining ?: 0) - selectedSeasonCount).coerceAtLeast(0)
         else (quota.remaining ?: 0)
+    val fraction = if (limit > 0) remaining.toFloat() / limit else 0f
+    val animatedFraction by animateFloatAsState(targetValue = fraction, label = "quotaFraction")
     val accentColor =
-        if (overQuota || remaining <= 0) MaterialTheme.colorScheme.error
-        else MaterialTheme.colorScheme.primary
+        when {
+            overQuota || remaining <= 0 -> MaterialTheme.colorScheme.error
+            fraction <= 0.25f -> Color(0xFFFFC107)
+            else -> MaterialTheme.colorScheme.primary
+        }
 
-    Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                .padding(12.dp),
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            CircularProgressIndicator(
+                progress = { animatedFraction },
+                modifier = Modifier.size(18.dp),
+                color = accentColor,
+                strokeWidth = 2.dp,
+                trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+            )
             Text(
                 text =
                     stringResource(
-                        if (mediaType == MediaType.TV) R.string.request_quota_tv_label
-                        else R.string.request_quota_movie_label
+                        if (mediaType == MediaType.TV) R.string.request_quota_tv_remaining_fmt
+                        else R.string.request_quota_movie_remaining_fmt,
+                        remaining,
+                        limit,
                     ),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface.copy(0.9f),
             )
-            Text(
-                text =
-                    buildString {
-                        append(stringResource(R.string.request_quota_remaining_fmt, remaining, limit))
-                        quota.days?.takeIf { it > 0 }?.let {
-                            append(" ")
-                            append(stringResource(R.string.request_quota_period_fmt, it))
-                        }
-                    },
-                style =
-                    MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = accentColor,
-            )
+            quota.days
+                ?.takeIf { it > 0 }
+                ?.let {
+                    Text(
+                        text = stringResource(R.string.request_quota_period_fmt, it),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
         }
-        LinearProgressIndicator(
-            progress = { if (limit > 0) remaining.toFloat() / limit else 0f },
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp)),
-            color = accentColor,
-            trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-        )
         if (overQuota) {
             Text(
                 text = stringResource(R.string.request_quota_exceeded_message),
@@ -991,6 +1087,85 @@ fun <T> MinimalSelectionTile(
 }
 
 @Composable
+fun <T> MinimalMultiSelectTile(
+    label: String,
+    selectedText: String,
+    items: List<T>,
+    itemText: (T) -> String,
+    isSelected: (T) -> Boolean,
+    onItemToggle: (T) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier =
+                Modifier.fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    .clickable(enabled = items.isNotEmpty()) { expanded = true }
+                    .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = selectedText,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            Icon(
+                painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                contentDescription = "Select",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        ) {
+            items.forEach { item ->
+                val selected = isSelected(item)
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = itemText(item),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                        )
+                    },
+                    onClick = { onItemToggle(item) },
+                    trailingIcon =
+                        if (selected) {
+                            {
+                                Icon(
+                                    painterResource(id = R.drawable.ic_check),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else null,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun MinimalSwitchTile(
     title: String,
     checked: Boolean,
@@ -1044,6 +1219,7 @@ fun MinimalSwitchTile(
 fun SeparatedFlowRow(
     modifier: Modifier = Modifier,
     itemSpacing: Dp = 4.dp,
+    centerLines: Boolean = true,
     separator: @Composable () -> Unit,
     content: @Composable () -> Unit,
 ) {
@@ -1104,7 +1280,7 @@ fun SeparatedFlowRow(
 
                 val lineWidth =
                     line.sumOf { it.width } + ((line.size - 1) * (separatorWidth + spacingPx * 2))
-                xOffset = (constraints.maxWidth - lineWidth) / 2
+                xOffset = if (centerLines) (constraints.maxWidth - lineWidth) / 2 else 0
 
                 line.forEachIndexed { index, placeable ->
                     placeable.placeRelative(xOffset, yOffset + (lineHeight - placeable.height) / 2)

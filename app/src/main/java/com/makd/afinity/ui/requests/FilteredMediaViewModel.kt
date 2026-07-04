@@ -109,6 +109,20 @@ constructor(
                             jellyseerrRepository.getTvByNetwork(params.id, currentPage)
 
                         FilterType.TRENDING -> jellyseerrRepository.getTrending(currentPage)
+                        FilterType.PERSON ->
+                            jellyseerrRepository.getPersonCombinedCredits(params.id).map { credits
+                                ->
+                                val combined =
+                                    if (currentPage == 1) {
+                                        (credits.cast + credits.crew)
+                                            .filter { it.getMediaType() != null }
+                                            .distinctBy { it.id }
+                                            .sortedByDescending { it.popularity ?: 0.0 }
+                                    } else emptyList()
+                                com.makd.afinity.data.models.jellyseerr.JellyseerrSearchResult(
+                                    results = combined
+                                )
+                            }
                         FilterType.POPULAR_MOVIES ->
                             jellyseerrRepository.getDiscoverMovies(currentPage)
                         FilterType.UPCOMING_MOVIES ->

@@ -9,17 +9,22 @@ import com.makd.afinity.data.models.jellyseerr.GenreSliderItem
 import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
 import com.makd.afinity.data.models.jellyseerr.JellyseerrSearchResult
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
+import com.makd.afinity.data.models.jellyseerr.LanguageProfile
 import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.Network
+import com.makd.afinity.data.models.jellyseerr.Permissions
 import com.makd.afinity.data.models.jellyseerr.PublicSettings
 import com.makd.afinity.data.models.jellyseerr.QualityProfile
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
+import com.makd.afinity.data.models.jellyseerr.ServiceTag
+import com.makd.afinity.data.models.jellyseerr.SonarrSeries
 import com.makd.afinity.data.models.jellyseerr.Studio
 import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
+import com.makd.afinity.data.models.jellyseerr.hasPermission
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.util.GenreDuotoneColorGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -183,6 +188,50 @@ constructor(
                 _uiState.update { it.copy(userQuota = quota) }
             }
         }
+    }
+
+    private fun loadRequestableUsers() {
+        val current = _currentUser.value ?: return
+        if (
+            !current.hasPermission(Permissions.MANAGE_REQUESTS) &&
+                !current.hasPermission(Permissions.MANAGE_USERS)
+        )
+            return
+        viewModelScope.launch {
+            jellyseerrRepository.getUsers().onSuccess { users ->
+                _uiState.update {
+                    it.copy(
+                        availableUsers = users,
+                        selectedRequestUser =
+                            it.selectedRequestUser
+                                ?: users.firstOrNull { user -> user.id == current.id }
+                                ?: current,
+                    )
+                }
+            }
+        }
+    }
+
+    fun selectLanguageProfile(profile: LanguageProfile) {
+        _uiState.update { it.copy(selectedLanguageProfile = profile) }
+    }
+
+    fun toggleTag(tagId: Int) {
+        _uiState.update {
+            it.copy(
+                selectedTagIds =
+                    if (tagId in it.selectedTagIds) it.selectedTagIds - tagId
+                    else it.selectedTagIds + tagId
+            )
+        }
+    }
+
+    fun selectRequestUser(user: JellyseerrUser) {
+        _uiState.update { it.copy(selectedRequestUser = user) }
+    }
+
+    fun selectTvdbCandidate(candidate: SonarrSeries) {
+        _uiState.update { it.copy(selectedTvdbId = candidate.tvdbId) }
     }
 
     private fun observeRequests() {
@@ -468,6 +517,19 @@ constructor(
             }
             val settingsJob = async { jellyseerrRepository.getServiceSettings(mediaType) }
 
+            launch {
+                jellyseerrRepository.getRatings(mediaType, tmdbId).onSuccess { ratings ->
+                    _uiState.update { state ->
+                        val current = state.selectedRequestDetails
+                        if (state.selectedRequest?.id != request.id || current == null) state
+                        else
+                            state.copy(
+                                selectedRequestDetails = current.copy(ratingsCombined = ratings)
+                            )
+                    }
+                }
+            }
+
             val detailsResult = detailsJob.await()
             val settingsResult = settingsJob.await()
 
@@ -567,6 +629,11 @@ constructor(
                         serviceDetails.server?.activeDirectory
                             ?: serviceDetails.rootFolders.firstOrNull()?.path
 
+                    val languageProfile =
+                        serviceDetails.languageProfiles.find {
+                            it.id == serviceDetails.server?.activeLanguageProfileId
+                        }
+
                     _uiState.update {
                         it.copy(
                             availableProfiles = serviceDetails.profiles,
@@ -574,6 +641,13 @@ constructor(
                             selectedRequestProfileName =
                                 profile?.name ?: it.selectedRequestProfileName,
                             selectedRootFolder = it.selectedRootFolder ?: rootFolder,
+                            availableLanguageProfiles = serviceDetails.languageProfiles,
+                            selectedLanguageProfile = languageProfile,
+                            availableTags = serviceDetails.tags,
+                            selectedTagIds =
+                                serviceDetails.server?.activeTags?.filter { tagId ->
+                                    serviceDetails.tags.any { tag -> tag.id == tagId }
+                                } ?: emptyList(),
                             isLoadingProfiles = false,
                         )
                     }
@@ -590,6 +664,10 @@ constructor(
                 availableProfiles = emptyList(),
                 selectedProfile = null,
                 selectedRootFolder = null,
+                availableLanguageProfiles = emptyList(),
+                selectedLanguageProfile = null,
+                availableTags = emptyList(),
+                selectedTagIds = emptyList(),
             )
         }
         val mediaType =
@@ -632,6 +710,10 @@ constructor(
                 selectedRootFolder = null,
                 selectedProfile = null,
                 availableProfiles = emptyList(),
+                availableLanguageProfiles = emptyList(),
+                selectedLanguageProfile = null,
+                availableTags = emptyList(),
+                selectedTagIds = emptyList(),
                 isLoadingProfiles = true,
             )
         }
@@ -700,6 +782,12 @@ constructor(
                     serverId = state.selectedServer?.id,
                     profileId = state.selectedProfile?.id,
                     rootFolder = state.selectedRootFolder,
+                    tvdbId = state.selectedTvdbId.takeIf { mediaType == MediaType.TV },
+                    languageProfileId =
+                        state.selectedLanguageProfile?.id.takeIf { mediaType == MediaType.TV },
+                    tags = state.selectedTagIds.takeIf { state.availableTags.isNotEmpty() },
+                    userId =
+                        state.selectedRequestUser?.id?.takeIf { it != _currentUser.value?.id },
                 )
                 .fold(
                     onSuccess = {
@@ -999,20 +1087,46 @@ constructor(
         availableSeasons: Int = 0,
         existingStatus: MediaStatus? = null,
     ) {
+        _uiState.update {
+            it.copy(
+                showRequestDialog = true,
+                isFetchingTvDetails = true,
+                pendingRequest =
+                    PendingRequest(
+                        tmdbId,
+                        mediaType,
+                        title,
+                        posterUrl,
+                        availableSeasons,
+                        existingStatus,
+                    ),
+                selectedSeasons = emptyList(),
+                disabledSeasons = emptyList(),
+                tvdbCandidates = emptyList(),
+                selectedTvdbId = null,
+                availableUsers = emptyList(),
+                selectedRequestUser = null,
+            )
+        }
+        setIs4kRequested(false)
+
         viewModelScope.launch {
             val authJob = async { refreshCurrentUser() }
-            _uiState.update { it.copy(isFetchingTvDetails = true) }
             val detailsJob = async {
                 if (mediaType == MediaType.TV) jellyseerrRepository.getTvDetails(tmdbId)
                 else jellyseerrRepository.getMovieDetails(tmdbId)
             }
             authJob.await()
             refreshUserQuota()
+            loadRequestableUsers()
             val detailsResult = detailsJob.await()
+
+            val isStillCurrent = { state: RequestsUiState ->
+                state.showRequestDialog && state.pendingRequest?.tmdbId == tmdbId
+            }
 
             detailsResult.fold(
                 onSuccess = { details ->
-                    _uiState.update { it.copy(isFetchingTvDetails = false) }
                     val seasonCount = if (mediaType == MediaType.TV) details.getSeasonCount() else 0
                     val physicallyAvailable =
                         details.mediaInfo?.getAvailableSeasons() ?: emptyList()
@@ -1029,58 +1143,65 @@ constructor(
                             emptyList()
                         }
 
-                    _uiState.update {
-                        it.copy(
-                            showRequestDialog = true,
-                            pendingRequest =
-                                PendingRequest(
-                                    tmdbId,
-                                    mediaType,
-                                    details.title ?: details.name ?: title,
-                                    details.getPosterUrl(),
-                                    seasonCount,
-                                    existingStatus,
-                                    details.getBackdropUrl(),
-                                    details.tagline,
-                                    details.overview,
-                                    details.releaseDate ?: details.firstAirDate,
-                                    details.runtime,
-                                    details.voteAverage,
-                                    details.getCertification(),
-                                    details.originalLanguage,
-                                    details.getDirector(),
-                                    details.getGenreNames(),
-                                    details.ratingsCombined,
-                                ),
-                            selectedSeasons = selectableSeasons,
-                            disabledSeasons = allDisabledSeasons,
-                        )
+                    _uiState.update { state ->
+                        if (!isStillCurrent(state)) state
+                        else
+                            state.copy(
+                                isFetchingTvDetails = false,
+                                pendingRequest =
+                                    PendingRequest(
+                                        tmdbId,
+                                        mediaType,
+                                        details.title ?: details.name ?: title,
+                                        details.getPosterUrl(),
+                                        seasonCount,
+                                        existingStatus,
+                                        details.getBackdropUrl(),
+                                        details.tagline,
+                                        details.overview,
+                                        details.releaseDate ?: details.firstAirDate,
+                                        details.runtime,
+                                        details.voteAverage,
+                                        details.getCertification(),
+                                        details.originalLanguage,
+                                        details.getDirector(),
+                                        details.getGenreNames(),
+                                        details.ratingsCombined,
+                                    ),
+                                selectedSeasons = selectableSeasons,
+                                disabledSeasons = allDisabledSeasons,
+                            )
                     }
-                    setIs4kRequested(false)
+                    if (mediaType == MediaType.TV && details.externalIds?.tvdbId == null) {
+                        launch {
+                            jellyseerrRepository.sonarrLookup(tmdbId).onSuccess { results ->
+                                val candidates = results.filter { it.tvdbId > 0 }.take(6)
+                                _uiState.update { state ->
+                                    if (!isStillCurrent(state)) state
+                                    else
+                                        state.copy(
+                                            tvdbCandidates = candidates,
+                                            selectedTvdbId = candidates.firstOrNull()?.tvdbId,
+                                        )
+                                }
+                            }
+                        }
+                    }
                 },
                 onFailure = { error ->
-                    _uiState.update { it.copy(isFetchingTvDetails = false) }
                     Timber.w(error, "Failed to fetch details")
-                    _uiState.update {
-                        it.copy(
-                            showRequestDialog = true,
-                            pendingRequest =
-                                PendingRequest(
-                                    tmdbId,
-                                    mediaType,
-                                    title,
-                                    posterUrl,
-                                    availableSeasons,
-                                    existingStatus,
-                                ),
-                            selectedSeasons =
-                                if (mediaType == MediaType.TV && availableSeasons > 0)
-                                    (1..availableSeasons).toList()
-                                else emptyList(),
-                            disabledSeasons = emptyList(),
-                        )
+                    _uiState.update { state ->
+                        if (!isStillCurrent(state)) state
+                        else
+                            state.copy(
+                                isFetchingTvDetails = false,
+                                selectedSeasons =
+                                    if (mediaType == MediaType.TV && availableSeasons > 0)
+                                        (1..availableSeasons).toList()
+                                    else emptyList(),
+                                disabledSeasons = emptyList(),
+                            )
                     }
-                    setIs4kRequested(false)
                 },
             )
         }
@@ -1089,6 +1210,7 @@ constructor(
     fun confirmRequest() {
         val pending = _uiState.value.pendingRequest ?: return
         val state = _uiState.value
+        if (pending.mediaType == MediaType.TV && state.isFetchingTvDetails) return
         val seasons =
             if (pending.mediaType == MediaType.TV) state.selectedSeasons.takeIf { it.isNotEmpty() }
             else null
@@ -1113,6 +1235,7 @@ constructor(
             it.copy(
                 showRequestDialog = false,
                 pendingRequest = null,
+                isFetchingTvDetails = false,
                 selectedSeasons = emptyList(),
                 is4kRequested = false,
                 availableServers = emptyList(),
@@ -1123,6 +1246,14 @@ constructor(
                 isLoadingServers = false,
                 isLoadingProfiles = false,
                 userQuota = null,
+                availableLanguageProfiles = emptyList(),
+                selectedLanguageProfile = null,
+                availableTags = emptyList(),
+                selectedTagIds = emptyList(),
+                availableUsers = emptyList(),
+                selectedRequestUser = null,
+                tvdbCandidates = emptyList(),
+                selectedTvdbId = null,
             )
         }
     }
@@ -1195,6 +1326,14 @@ data class RequestsUiState(
     val selectedRequestProfileName: String? = null,
     val publicSettings: PublicSettings? = null,
     val userQuota: UserQuotaResponse? = null,
+    val availableLanguageProfiles: List<LanguageProfile> = emptyList(),
+    val selectedLanguageProfile: LanguageProfile? = null,
+    val availableTags: List<ServiceTag> = emptyList(),
+    val selectedTagIds: List<Int> = emptyList(),
+    val availableUsers: List<JellyseerrUser> = emptyList(),
+    val selectedRequestUser: JellyseerrUser? = null,
+    val tvdbCandidates: List<SonarrSeries> = emptyList(),
+    val selectedTvdbId: Int? = null,
 )
 
 data class PendingRequest(

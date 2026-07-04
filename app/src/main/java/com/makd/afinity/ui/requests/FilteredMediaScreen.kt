@@ -49,6 +49,7 @@ enum class FilterType {
     UPCOMING_MOVIES,
     POPULAR_TV,
     UPCOMING_TV,
+    PERSON,
 }
 
 data class FilterParams(val type: FilterType, val id: Int, val name: String)
@@ -60,6 +61,8 @@ fun FilteredMediaScreen(
     onProfileClick: () -> Unit,
     mainUiState: MainUiState,
     onItemClick: (jellyfinItemId: String, itemType: String?) -> Unit,
+    onNavigateToSeerrMedia: (item: com.makd.afinity.data.models.jellyseerr.SearchResultItem) -> Unit =
+        {},
     modifier: Modifier = Modifier,
     viewModel: FilteredMediaViewModel = hiltViewModel(),
     requestsViewModel: RequestsViewModel = hiltViewModel(),
@@ -153,18 +156,9 @@ fun FilteredMediaScreen(
                                                 else -> null
                                             }
                                         onItemClick(jellyfinId, mappedType)
-                                    }
+                                    } ?: onNavigateToSeerrMedia(item)
                                 } else {
-                                    item.getMediaType()?.let { mediaType ->
-                                        requestsViewModel.showRequestDialog(
-                                            tmdbId = item.id,
-                                            mediaType = mediaType,
-                                            title = item.getDisplayTitle(),
-                                            posterUrl = item.getPosterUrl(),
-                                            availableSeasons = 0,
-                                            existingStatus = item.getDisplayStatus(),
-                                        )
-                                    }
+                                    onNavigateToSeerrMedia(item)
                                 }
                             },
                             cardWidth = cardWidth,
@@ -203,6 +197,7 @@ fun FilteredMediaScreen(
                 },
             existingStatus = requestsUiState.pendingRequest!!.existingStatus,
             isLoading = requestsUiState.isCreatingRequest,
+            detailsLoading = requestsUiState.isFetchingTvDetails,
             onConfirm = { requestsViewModel.confirmRequest() },
             onDismiss = { requestsViewModel.dismissRequestDialog() },
             mediaBackdropUrl = requestsUiState.pendingRequest!!.backdropUrl,
@@ -236,6 +231,18 @@ fun FilteredMediaScreen(
             selectedRootFolder = requestsUiState.selectedRootFolder,
             isLoadingServers = requestsUiState.isLoadingServers,
             isLoadingProfiles = requestsUiState.isLoadingProfiles,
+            tvdbCandidates = requestsUiState.tvdbCandidates,
+            selectedTvdbId = requestsUiState.selectedTvdbId,
+            onTvdbSelected = { requestsViewModel.selectTvdbCandidate(it) },
+            availableLanguageProfiles = requestsUiState.availableLanguageProfiles,
+            selectedLanguageProfile = requestsUiState.selectedLanguageProfile,
+            onLanguageProfileSelected = { requestsViewModel.selectLanguageProfile(it) },
+            availableTags = requestsUiState.availableTags,
+            selectedTagIds = requestsUiState.selectedTagIds,
+            onTagToggle = { requestsViewModel.toggleTag(it) },
+            availableUsers = requestsUiState.availableUsers,
+            selectedRequestUser = requestsUiState.selectedRequestUser,
+            onRequestUserSelected = { requestsViewModel.selectRequestUser(it) },
         )
     }
 }

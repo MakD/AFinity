@@ -123,6 +123,7 @@ fun SearchScreen(
     onMusicAlbumClick: (String) -> Unit = {},
     onMusicArtistClick: (String) -> Unit = {},
     onMusicPlaylistClick: (String) -> Unit = {},
+    onNavigateToSeerrMedia: (item: SearchResultItem) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel(),
     musicPlayerViewModel: MusicPlayerViewModel = hiltViewModel(),
@@ -255,18 +256,7 @@ fun SearchScreen(
                 uiState.isJellyseerrSearchMode && uiState.jellyseerrSearchResults.isNotEmpty() -> {
                     JellyseerrSearchResultsContent(
                         results = uiState.jellyseerrSearchResults,
-                        onRequestClick = { item ->
-                            item.getMediaType()?.let { mediaType ->
-                                viewModel.showRequestDialog(
-                                    tmdbId = item.id,
-                                    mediaType = mediaType,
-                                    title = item.getDisplayTitle(),
-                                    posterUrl = item.getPosterUrl(),
-                                    availableSeasons = 0,
-                                    existingStatus = item.getDisplayStatus(),
-                                )
-                            }
-                        },
+                        onRequestClick = { item -> onNavigateToSeerrMedia(item) },
                     )
                 }
 
@@ -333,18 +323,7 @@ fun SearchScreen(
                         onMusicTrackFavorite = { trackId ->
                             viewModel.toggleTrackFavorite(trackId)
                         },
-                        onRequestClick = { item ->
-                            item.getMediaType()?.let { mediaType ->
-                                viewModel.showRequestDialog(
-                                    tmdbId = item.id,
-                                    mediaType = mediaType,
-                                    title = item.getDisplayTitle(),
-                                    posterUrl = item.getPosterUrl(),
-                                    availableSeasons = 0,
-                                    existingStatus = item.getDisplayStatus(),
-                                )
-                            }
-                        },
+                        onRequestClick = { item -> onNavigateToSeerrMedia(item) },
                     )
                 }
 
@@ -396,6 +375,7 @@ fun SearchScreen(
                     },
                 existingStatus = uiState.pendingRequest!!.existingStatus,
                 isLoading = uiState.isCreatingRequest,
+                detailsLoading = uiState.isFetchingTvDetails,
                 onConfirm = { viewModel.confirmRequest() },
                 onDismiss = { viewModel.dismissRequestDialog() },
                 mediaBackdropUrl = uiState.pendingRequest!!.backdropUrl,
@@ -428,6 +408,18 @@ fun SearchScreen(
                 selectedRootFolder = uiState.selectedRootFolder,
                 isLoadingServers = uiState.isLoadingServers,
                 isLoadingProfiles = uiState.isLoadingProfiles,
+                tvdbCandidates = uiState.tvdbCandidates,
+                selectedTvdbId = uiState.selectedTvdbId,
+                onTvdbSelected = { viewModel.selectTvdbCandidate(it) },
+                availableLanguageProfiles = uiState.availableLanguageProfiles,
+                selectedLanguageProfile = uiState.selectedLanguageProfile,
+                onLanguageProfileSelected = { viewModel.selectLanguageProfile(it) },
+                availableTags = uiState.availableTags,
+                selectedTagIds = uiState.selectedTagIds,
+                onTagToggle = { viewModel.toggleTag(it) },
+                availableUsers = uiState.availableUsers,
+                selectedRequestUser = uiState.selectedRequestUser,
+                onRequestUserSelected = { viewModel.selectRequestUser(it) },
             )
         }
 

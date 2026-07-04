@@ -1,5 +1,6 @@
 package com.makd.afinity.data.network
 
+import com.makd.afinity.data.models.jellyseerr.CollectionDetails
 import com.makd.afinity.data.models.jellyseerr.CreateRequestBody
 import com.makd.afinity.data.models.jellyseerr.DiscoverSlider
 import com.makd.afinity.data.models.jellyseerr.JellyfinLoginRequest
@@ -9,13 +10,16 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.LoginRequest
 import com.makd.afinity.data.models.jellyseerr.LoginResponse
 import com.makd.afinity.data.models.jellyseerr.MediaDetails
+import com.makd.afinity.data.models.jellyseerr.PersonCombinedCreditsResponse
 import com.makd.afinity.data.models.jellyseerr.PublicSettings
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.RequestsResponse
 import com.makd.afinity.data.models.jellyseerr.RottenTomatoesRating
 import com.makd.afinity.data.models.jellyseerr.ServiceDetailsResponse
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
+import com.makd.afinity.data.models.jellyseerr.SonarrSeries
 import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
+import com.makd.afinity.data.models.jellyseerr.UserResultsResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -38,6 +42,25 @@ interface JellyseerrApiService {
 
     @GET("api/v1/user/{userId}/quota")
     suspend fun getUserQuota(@Path("userId") userId: Int): Response<UserQuotaResponse>
+
+    @GET("api/v1/user")
+    suspend fun getUsers(
+        @Query("take") take: Int = 1000,
+        @Query("sort") sort: String = "displayname",
+    ): Response<UserResultsResponse>
+
+    @GET("api/v1/service/sonarr/lookup/{tmdbId}")
+    suspend fun sonarrLookup(@Path("tmdbId") tmdbId: Int): Response<List<SonarrSeries>>
+
+    @GET("api/v1/person/{personId}/combined_credits")
+    suspend fun getPersonCombinedCredits(
+        @Path("personId") personId: Int
+    ): Response<PersonCombinedCreditsResponse>
+
+    @GET("api/v1/collection/{collectionId}")
+    suspend fun getCollection(
+        @Path("collectionId") collectionId: Int
+    ): Response<CollectionDetails>
 
     @POST("api/v1/auth/logout") suspend fun logout(): Response<Unit>
 
@@ -92,6 +115,30 @@ interface JellyseerrApiService {
 
     @GET("api/v1/tv/{tvId}")
     suspend fun getTvDetails(@Path("tvId") tvId: Int): Response<MediaDetails>
+
+    @GET("api/v1/movie/{movieId}/recommendations")
+    suspend fun getMovieRecommendations(
+        @Path("movieId") movieId: Int,
+        @Query("page") page: Int = 1,
+    ): Response<JellyseerrSearchResult>
+
+    @GET("api/v1/movie/{movieId}/similar")
+    suspend fun getMovieSimilar(
+        @Path("movieId") movieId: Int,
+        @Query("page") page: Int = 1,
+    ): Response<JellyseerrSearchResult>
+
+    @GET("api/v1/tv/{tvId}/recommendations")
+    suspend fun getTvRecommendations(
+        @Path("tvId") tvId: Int,
+        @Query("page") page: Int = 1,
+    ): Response<JellyseerrSearchResult>
+
+    @GET("api/v1/tv/{tvId}/similar")
+    suspend fun getTvSimilar(
+        @Path("tvId") tvId: Int,
+        @Query("page") page: Int = 1,
+    ): Response<JellyseerrSearchResult>
 
     @GET("api/v1/movie/{movieId}/ratingscombined")
     suspend fun getMovieRatingsCombined(@Path("movieId") movieId: Int): Response<RatingsCombined>

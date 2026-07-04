@@ -30,6 +30,18 @@ data class MediaDetails(
     @SerialName("credits") val credits: Credits? = null,
     @SerialName("releases") val releases: Releases? = null,
     @SerialName("ratingsCombined") val ratingsCombined: RatingsCombined? = null,
+    @SerialName("externalIds") val externalIds: ExternalIds? = null,
+    @SerialName("collection") val collection: MediaCollectionInfo? = null,
+    @SerialName("originalTitle") val originalTitle: String? = null,
+    @SerialName("originalName") val originalName: String? = null,
+    @SerialName("budget") val budget: Long? = null,
+    @SerialName("revenue") val revenue: Long? = null,
+    @SerialName("type") val seriesType: String? = null,
+    @SerialName("episodeRunTime") val episodeRunTime: List<Int>? = null,
+    @SerialName("nextEpisodeToAir") val nextEpisodeToAir: EpisodeAirInfo? = null,
+    @SerialName("networks") val networks: List<TvNetwork>? = null,
+    @SerialName("productionCountries") val productionCountries: List<ProductionCountry>? = null,
+    @SerialName("spokenLanguages") val spokenLanguages: List<SpokenLanguage>? = null,
 ) {
     fun getSeasonCount(): Int {
         return seasons?.filter { (it.seasonNumber ?: 0) > 0 }?.size ?: numberOfSeason ?: 0
@@ -113,4 +125,45 @@ data class ReleaseDate(
     @SerialName("certification") val certification: String? = null,
     @SerialName("release_date") val release_date: String? = null,
     @SerialName("type") val type: Int? = null,
+)
+
+@Serializable
+data class ExternalIds(
+    @SerialName("tvdbId") val tvdbId: Int? = null,
+    @SerialName("imdbId") val imdbId: String? = null,
+)
+
+@Serializable
+data class MediaCollectionInfo(
+    @SerialName("id") val id: Int,
+    @SerialName("name") val name: String,
+    @SerialName("posterPath") val posterPath: String? = null,
+    @SerialName("backdropPath") val backdropPath: String? = null,
+)
+
+@Serializable
+data class EpisodeAirInfo(
+    @SerialName("airDate") val airDate: String? = null,
+    @SerialName("seasonNumber") val seasonNumber: Int? = null,
+    @SerialName("episodeNumber") val episodeNumber: Int? = null,
+)
+
+@Serializable
+data class TvNetwork(
+    @SerialName("id") val id: Int,
+    @SerialName("name") val name: String,
+    @SerialName("logoPath") val logoPath: String? = null,
+)
+
+@Serializable
+data class ProductionCountry(
+    @SerialName("iso_3166_1") val iso_3166_1: String? = null,
+    @SerialName("name") val name: String? = null,
+)
+
+@Serializable
+data class SpokenLanguage(
+    @SerialName("iso_639_1") val iso_639_1: String? = null,
+    @SerialName("englishName") val englishName: String? = null,
+    @SerialName("name") val name: String? = null,
 )

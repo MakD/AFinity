@@ -124,13 +124,14 @@ fun DiscoverSection(
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
     onViewAllClick: (() -> Unit)? = null,
+    horizontalPadding: androidx.compose.ui.unit.Dp = 14.dp,
 ) {
     val cardWidth = widthSizeClass.portraitWidth
     val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
     val headerBottomPadding = if (onViewAllClick != null) 4.dp else 16.dp
 
-    Column(modifier = modifier.padding(horizontal = 14.dp)) {
+    Column(modifier = modifier.padding(horizontal = horizontalPadding)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = headerBottomPadding),
             horizontalArrangement = Arrangement.SpaceBetween,

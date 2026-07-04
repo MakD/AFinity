@@ -16,4 +16,11 @@ data class JellyseerrUser(
     @SerialName("movieQuotaDays") val movieQuotaDays: Int? = null,
     @SerialName("tvQuotaLimit") val tvQuotaLimit: Int? = null,
     @SerialName("tvQuotaDays") val tvQuotaDays: Int? = null,
+) {
+    fun displayLabel(): String = displayName ?: username ?: email ?: "User $id"
+}
+
+@Serializable
+data class UserResultsResponse(
+    @SerialName("results") val results: List<JellyseerrUser> = emptyList()
 )
