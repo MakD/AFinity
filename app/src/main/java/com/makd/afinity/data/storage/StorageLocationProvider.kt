@@ -32,6 +32,8 @@ constructor(@param:ApplicationContext private val context: Context) {
         context.getSystemService(Context.STORAGE_SERVICE) as StorageManager
     }
 
+    @Volatile private var lastLoggedVolumeSummary: String? = null
+
     /**
      * Returns the currently mounted volumes the app can use, each with its `AFinity/Downloads` base
      * directory. Volumes that are unmounted (a `null` entry in [Context.getExternalFilesDirs]) are
@@ -79,6 +81,16 @@ constructor(@param:ApplicationContext private val context: Context) {
             } catch (e: Exception) {
                 Timber.w(e, "Failed to resolve storage volume for dir: ${dir.absolutePath}")
             }
+        }
+
+        val summary =
+            "${dirs.size} dir(s) reported, ${result.size} usable: " +
+                result.joinToString {
+                    "${it.id} [primary=${it.isPrimary}, removable=${it.isRemovable}, path=${it.baseDir.absolutePath}]"
+                }
+        if (summary != lastLoggedVolumeSummary) {
+            lastLoggedVolumeSummary = summary
+            Timber.i("Storage volumes: $summary")
         }
 
         return result
