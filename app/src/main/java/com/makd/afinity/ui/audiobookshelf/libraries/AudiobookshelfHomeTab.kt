@@ -30,7 +30,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -125,16 +124,12 @@ fun AudiobookshelfHomeTab(
                 }
                 items(items = sections, key = { it.id }) { section ->
                     val rowListState = rememberLazyListState()
-                    var prevFirstItemId by remember { mutableStateOf<String?>(null) }
                     val currentFirstItemId = section.items.firstOrNull()?.id
+                    var prevFirstItemId by remember { mutableStateOf(currentFirstItemId) }
 
-                    LaunchedEffect(currentFirstItemId) {
-                        if (
-                            prevFirstItemId != null &&
-                                prevFirstItemId != currentFirstItemId &&
-                                currentFirstItemId != null
-                        ) {
-                            rowListState.animateScrollToItem(0)
+                    if (prevFirstItemId != currentFirstItemId) {
+                        if (prevFirstItemId != null && currentFirstItemId != null) {
+                            rowListState.requestScrollToItem(0)
                         }
                         prevFirstItemId = currentFirstItemId
                     }
