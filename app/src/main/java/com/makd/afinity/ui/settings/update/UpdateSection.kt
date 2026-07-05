@@ -38,6 +38,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.BuildConfig
 import com.makd.afinity.R
+import com.makd.afinity.data.updater.models.ApkVerification
 import com.makd.afinity.data.updater.models.GitHubRelease
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import com.makd.afinity.data.updater.models.UpdateState
@@ -75,7 +76,13 @@ fun UpdateSection(
                     (updateState as UpdateState.Downloaded).file
                 else null,
             isDownloading = updateState is UpdateState.Downloading,
+            verification =
+                (updateState as? UpdateState.Downloaded)?.verification
+                    ?: ApkVerification.UNVERIFIED,
+            expectedSha256 = (updateState as? UpdateState.Downloaded)?.expectedSha256,
+            computedSha256 = (updateState as? UpdateState.Downloaded)?.computedSha256,
             onDownload = { viewModel.downloadUpdate(pendingRelease!!) },
+            onVerify = { viewModel.verifyDownload() },
             onInstall = { file ->
                 viewModel.installUpdate(file)
                 showUpdateDialog = false

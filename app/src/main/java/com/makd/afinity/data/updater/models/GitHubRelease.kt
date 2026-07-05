@@ -21,7 +21,16 @@ data class GitHubAsset(
     @SerialName("browser_download_url") val downloadUrl: String,
     @SerialName("size") val size: Long,
     @SerialName("content_type") val contentType: String,
+    @SerialName("digest") val digest: String? = null,
 )
+
+enum class ApkVerification {
+    UNVERIFIED,
+    VERIFYING,
+    VERIFIED,
+    FAILED,
+    UNAVAILABLE,
+}
 
 sealed class UpdateState {
     object Idle : UpdateState()
@@ -34,7 +43,13 @@ sealed class UpdateState {
 
     data class Downloading(val progress: Int) : UpdateState()
 
-    data class Downloaded(val file: java.io.File, val release: GitHubRelease) : UpdateState()
+    data class Downloaded(
+        val file: java.io.File,
+        val release: GitHubRelease,
+        val verification: ApkVerification = ApkVerification.UNVERIFIED,
+        val expectedSha256: String? = null,
+        val computedSha256: String? = null,
+    ) : UpdateState()
 
     data class Error(val message: String) : UpdateState()
 }

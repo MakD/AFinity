@@ -11,11 +11,14 @@ import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import com.makd.afinity.BuildConfig
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.updater.models.ApkVerification
+import com.makd.afinity.data.updater.models.GitHubAsset
 import com.makd.afinity.data.updater.models.GitHubRelease
 import com.makd.afinity.data.updater.models.UpdateState
 import com.makd.afinity.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +28,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.io.File
+import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -37,6 +41,10 @@ constructor(
     private val preferencesRepository: PreferencesRepository,
     @ApplicationScope private val coroutineScope: CoroutineScope,
 ) {
+    private companion object {
+        const val MIN_VERIFY_DURATION_MS = 1600L
+    }
+
     private val _updateState = MutableStateFlow<UpdateState>(UpdateState.Idle)
     val updateState: StateFlow<UpdateState> = _updateState.asStateFlow()
 
@@ -100,7 +108,12 @@ constructor(
                     val existingFile = getDownloadedApkFile(release)
                     if (existingFile != null) {
                         Timber.d("Update already downloaded: ${existingFile.absolutePath}")
-                        _updateState.value = UpdateState.Downloaded(existingFile, release)
+                        _updateState.value =
+                            UpdateState.Downloaded(
+                                existingFile,
+                                release,
+                                initialVerification(release),
+                            )
                     } else {
                         _updateState.value = UpdateState.Available(release)
                     }
@@ -132,24 +145,19 @@ constructor(
         val existingFile = getDownloadedApkFile(release)
         if (existingFile != null) {
             Timber.d("Found existing file, skipping download: ${existingFile.absolutePath}")
-            _updateState.value = UpdateState.Downloaded(existingFile, release)
+            _updateState.value =
+                UpdateState.Downloaded(existingFile, release, initialVerification(release))
             return
         }
 
-        val currentAbi = getCurrentAbi()
-        val apkAsset =
-            release.assets.firstOrNull { asset ->
-                asset.name.endsWith(".apk") && asset.name.contains(currentAbi)
-            }
-                ?: release.assets.firstOrNull { asset ->
-                    asset.name.endsWith(".apk") && asset.name.contains("arm64-v8a")
-                }
-                ?: release.assets.firstOrNull { it.name.endsWith(".apk") }
+        val apkAsset = findApkAsset(release)
 
         if (apkAsset == null) {
             _updateState.value = UpdateState.Error("No compatible APK found")
             return
         }
+
+        deleteStaleApkFiles(apkAsset)
 
         try {
             val request =
@@ -159,7 +167,8 @@ constructor(
                     .setNotificationVisibility(
                         DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
                     )
-                    .setDestinationInExternalPublicDir(
+                    .setDestinationInExternalFilesDir(
+                        context,
                         Environment.DIRECTORY_DOWNLOADS,
                         apkAsset.name,
                     )
@@ -304,40 +313,32 @@ constructor(
 
             when (status) {
                 DownloadManager.STATUS_SUCCESSFUL -> {
-                    val uriIndex = cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI)
-                    val uriString = cursor.getString(uriIndex)
+                    val release = currentRelease
 
-                    Timber.d("Download URI: $uriString")
-
-                    if (uriString != null) {
+                    if (release != null) {
+                        val uriIndex = cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI)
+                        val localUri = if (uriIndex >= 0) cursor.getString(uriIndex) else null
                         val file =
-                            if (uriString.startsWith("file://")) {
-                                File(uriString.toUri().path ?: "")
-                            } else {
-                                val localFileIndex =
-                                    cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_FILENAME)
-                                if (localFileIndex >= 0) {
-                                    val localFile = cursor.getString(localFileIndex)
-                                    if (localFile != null) File(localFile) else null
-                                } else {
-                                    null
-                                }
-                            }
+                            localUri
+                                ?.toUri()
+                                ?.takeIf { it.scheme == "file" }
+                                ?.path
+                                ?.let { File(it) }
+                                ?.takeIf { it.exists() }
+                                ?: getDownloadedApkFile(release)
 
-                        val release = currentRelease
-                        if (file?.exists() == true && release != null) {
-                            _updateState.value = UpdateState.Downloaded(file, release)
-                            Timber.d("Download completed: ${file.absolutePath}")
-                        } else if (release == null) {
-                            Timber.e("currentRelease is null after download completed")
+                        if (file != null && file.exists()) {
                             _updateState.value =
-                                UpdateState.Error("Download completed but release info missing")
+                                UpdateState.Downloaded(file, release, initialVerification(release))
+                            Timber.d("Download completed: ${file.absolutePath}")
                         } else {
-                            Timber.e("File not found at: ${file?.absolutePath}")
+                            Timber.e("Downloaded file not found on disk")
                             _updateState.value = UpdateState.Error("Downloaded file not found")
                         }
                     } else {
-                        _updateState.value = UpdateState.Error("Download URI is null")
+                        Timber.e("currentRelease is null after download completed")
+                        _updateState.value =
+                            UpdateState.Error("Download completed but release info missing")
                     }
                 }
 
@@ -357,34 +358,127 @@ constructor(
         unregisterDownloadReceiver()
     }
 
-    private fun getDownloadedApkFile(release: GitHubRelease): File? {
-        val currentAbi = getCurrentAbi()
-        val apkAsset =
-            release.assets.firstOrNull { asset ->
-                asset.name.endsWith(".apk") && asset.name.contains(currentAbi)
+    fun verifyDownload() {
+        val state = _updateState.value as? UpdateState.Downloaded ?: return
+        if (state.verification == ApkVerification.VERIFYING) return
+
+        val expected = findApkAsset(state.release)?.digest?.removePrefix("sha256:")
+        if (expected == null) {
+            _updateState.value = state.copy(verification = ApkVerification.UNAVAILABLE)
+            return
+        }
+
+        _updateState.value =
+            state.copy(
+                verification = ApkVerification.VERIFYING,
+                expectedSha256 = expected,
+                computedSha256 = null,
+            )
+
+        coroutineScope.launch(Dispatchers.IO) {
+            val startTime = System.currentTimeMillis()
+            val actual =
+                try {
+                    computeSha256(state.file)
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to compute SHA-256 for ${state.file.name}")
+                    null
+                }
+
+            val elapsed = System.currentTimeMillis() - startTime
+            if (elapsed < MIN_VERIFY_DURATION_MS) {
+                delay(MIN_VERIFY_DURATION_MS - elapsed)
             }
-                ?: release.assets.firstOrNull { asset ->
-                    asset.name.endsWith(".apk") && asset.name.contains("arm64-v8a")
+
+            val verification =
+                when {
+                    actual == null -> ApkVerification.FAILED
+                    actual.equals(expected, ignoreCase = true) -> {
+                        Timber.d("SHA-256 verified for ${state.file.name}")
+                        ApkVerification.VERIFIED
+                    }
+                    else -> {
+                        Timber.e(
+                            "SHA-256 mismatch for ${state.file.name}: expected $expected, got $actual"
+                        )
+                        ApkVerification.FAILED
+                    }
                 }
-                ?: release.assets.firstOrNull { it.name.endsWith(".apk") }
 
-        if (apkAsset == null) return null
-
-        val downloadDir =
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val baseFileName = apkAsset.name.removeSuffix(".apk")
-
-        val allFiles = downloadDir.listFiles() ?: return null
-
-        val matchingFiles =
-            allFiles
-                .filter { file ->
-                    file.name == apkAsset.name ||
-                        file.name.matches(Regex("$baseFileName(-\\d+)?\\.apk"))
+            if (verification == ApkVerification.FAILED) {
+                if (state.file.delete()) {
+                    Timber.d("Deleted APK that failed verification: ${state.file.name}")
                 }
-                .sortedByDescending { it.lastModified() }
+            }
 
-        return matchingFiles.firstOrNull()?.also { Timber.d("Found existing download: ${it.name}") }
+            val current = _updateState.value
+            if (current is UpdateState.Downloaded && current.file.path == state.file.path) {
+                _updateState.value =
+                    current.copy(
+                        verification = verification,
+                        expectedSha256 = expected,
+                        computedSha256 = actual,
+                    )
+            }
+        }
+    }
+
+    private fun computeSha256(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(65536)
+            var read = input.read(buffer)
+            while (read >= 0) {
+                digest.update(buffer, 0, read)
+                read = input.read(buffer)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
+
+    private fun initialVerification(release: GitHubRelease): ApkVerification =
+        if (findApkAsset(release)?.digest == null) ApkVerification.UNAVAILABLE
+        else ApkVerification.UNVERIFIED
+
+    private fun findApkAsset(release: GitHubRelease): GitHubAsset? {
+        val currentAbi = getCurrentAbi()
+        return release.assets.firstOrNull { asset ->
+            asset.name.endsWith(".apk") && asset.name.contains(currentAbi)
+        }
+            ?: release.assets.firstOrNull { asset ->
+                asset.name.endsWith(".apk") && asset.name.contains("arm64-v8a")
+            }
+            ?: release.assets.firstOrNull { it.name.endsWith(".apk") }
+    }
+
+    private fun apkFilePattern(apkAsset: GitHubAsset): Regex {
+        val baseFileName = Regex.escape(apkAsset.name.removeSuffix(".apk"))
+        return Regex("$baseFileName(-\\d+)?\\.apk")
+    }
+
+    private fun deleteStaleApkFiles(apkAsset: GitHubAsset) {
+        val downloadDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: return
+        val pattern = apkFilePattern(apkAsset)
+        downloadDir
+            .listFiles()
+            ?.filter { it.name.matches(pattern) }
+            ?.forEach { stale ->
+                if (stale.delete()) {
+                    Timber.d("Deleted stale APK before download: ${stale.name}")
+                }
+            }
+    }
+
+    private fun getDownloadedApkFile(release: GitHubRelease): File? {
+        val apkAsset = findApkAsset(release) ?: return null
+        val downloadDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: return null
+        val pattern = apkFilePattern(apkAsset)
+
+        return downloadDir
+            .listFiles()
+            ?.filter { it.name.matches(pattern) && it.length() == apkAsset.size }
+            ?.maxByOrNull { it.lastModified() }
+            ?.also { Timber.d("Found existing download: ${it.name}") }
     }
 
     private fun isNewerNightly(publishedAt: String): Boolean {

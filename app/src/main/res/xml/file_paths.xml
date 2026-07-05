@@ -4,6 +4,10 @@
         name="public_downloads"
         path="Download/" />
 
+    <external-files-path
+        name="app_downloads"
+        path="Download/" />
+
     <cache-path
         name="logs"
         path="logs/" />

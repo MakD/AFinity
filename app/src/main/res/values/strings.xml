@@ -644,6 +644,11 @@
     <string name="btn_download_update">Download Update</string>
     <string name="btn_downloading">Downloading...</string>
     <string name="btn_install_restart">Install &amp; Restart</string>
+    <string name="btn_validate">Validate</string>
+    <string name="update_console_status_hashing">hashing downloaded file…</string>
+    <string name="update_console_status_match">MATCH — authentic build, safe to install</string>
+    <string name="update_console_status_mismatch">MISMATCH — file deleted, download again</string>
+    <string name="update_console_status_error">ERROR — could not read file, download again</string>
     <string name="action_not_now">Not Now</string>
 
     <string name="pref_group_updates">Updates</string>

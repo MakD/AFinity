@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -46,6 +47,7 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.item.components.shared.BaseMediaDetailContent
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
+import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import java.util.Locale
 import java.util.UUID
@@ -129,6 +131,9 @@ private fun PartsSection(
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
+    val cardHeight =
+        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val fixedRowHeight = cardHeight + 8.dp + 40.dp
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
@@ -138,6 +143,7 @@ private fun PartsSection(
         )
 
         LazyRow(
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
@@ -224,6 +230,7 @@ private fun PartCard(
             text = part.name,
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
             color = MaterialTheme.colorScheme.onSurface,
+            minLines = 2,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
@@ -239,6 +246,9 @@ internal fun ChaptersSection(
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
+    val cardHeight =
+        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val fixedRowHeight = cardHeight + 8.dp + 40.dp
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
@@ -248,6 +258,7 @@ internal fun ChaptersSection(
         )
 
         LazyRow(
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
@@ -317,6 +328,7 @@ internal fun ChapterCard(
             text = chapter.name ?: "Chapter ${index + 1}",
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
             color = MaterialTheme.colorScheme.onSurface,
+            minLines = 2,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )

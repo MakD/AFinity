@@ -86,6 +86,10 @@ constructor(
         updateManager.downloadUpdate(release)
     }
 
+    fun verifyDownload() {
+        updateManager.verifyDownload()
+    }
+
     fun installUpdate(file: java.io.File) {
         updateManager.installUpdate(file)
     }

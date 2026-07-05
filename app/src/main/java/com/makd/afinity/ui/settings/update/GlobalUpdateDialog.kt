@@ -8,6 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.BuildConfig
 import com.makd.afinity.data.updater.UpdateManager
+import com.makd.afinity.data.updater.models.ApkVerification
 import com.makd.afinity.data.updater.models.UpdateState
 
 @Composable
@@ -62,7 +63,13 @@ fun GlobalUpdateDialog(updateManager: UpdateManager) {
                 release = release,
                 downloadedFile = downloadedFile,
                 isDownloading = updateState is UpdateState.Downloading,
+                verification =
+                    (updateState as? UpdateState.Downloaded)?.verification
+                        ?: ApkVerification.UNVERIFIED,
+                expectedSha256 = (updateState as? UpdateState.Downloaded)?.expectedSha256,
+                computedSha256 = (updateState as? UpdateState.Downloaded)?.computedSha256,
                 onDownload = { updateManager.downloadUpdate(release) },
+                onVerify = { updateManager.verifyDownload() },
                 onInstall = { file ->
                     updateManager.installUpdate(file)
                     showDialog = false
