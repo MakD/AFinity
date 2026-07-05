@@ -36,6 +36,11 @@ cd AFinity
 ./gradlew assembleRelease
 ```
 
+> **Note:** Without a `key.properties` file in the project root, release builds are signed with the
+> debug key. They install fine, but can't update an official release — uninstall the official APK
+> first. To sign with your own key, create `key.properties` with `storeFile`, `storePassword`,
+> `keyAlias`, and `keyPassword` entries.
+
 ## Initial Setup
 
 1. **Launch AFinity** on your Android device

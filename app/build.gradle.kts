@@ -34,10 +34,12 @@ configure<ApplicationExtension> {
     namespace = "com.makd.afinity"
     compileSdk = 37
 
+    val keyPropertiesFile = rootProject.file("key.properties")
+    val hasReleaseKeystore = keyPropertiesFile.exists()
+
     signingConfigs {
         create("release") {
-            val keyPropertiesFile = rootProject.file("key.properties")
-            if (keyPropertiesFile.exists()) {
+            if (hasReleaseKeystore) {
                 val keyProperties = Properties().apply {
                     load(keyPropertiesFile.inputStream())
                 }
@@ -76,7 +78,9 @@ configure<ApplicationExtension> {
             buildConfigField("boolean", "DEBUG", "false")
             buildConfigField("boolean", "IS_NIGHTLY", "false")
             buildConfigField("String", "BUILD_TIME", "\"\"")
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig =
+                if (hasReleaseKeystore) signingConfigs.getByName("release")
+                else signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
