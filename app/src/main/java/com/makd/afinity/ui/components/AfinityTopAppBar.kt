@@ -46,39 +46,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
-import com.makd.afinity.data.manager.SessionManager
-import com.makd.afinity.util.isLocalAddress
-import com.makd.afinity.util.isTailscaleAddress
+import com.makd.afinity.data.models.server.ConnectionType
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import javax.inject.Inject
-
-enum class ConnectionType {
-    LOCAL,
-    TAILSCALE,
-    REMOTE,
-    OFFLINE,
-}
 
 @HiltViewModel
 class AfinityTopAppBarViewModel
 @Inject
-constructor(offlineModeManager: OfflineModeManager, sessionManager: SessionManager) : ViewModel() {
-    val isOffline = offlineModeManager.isOffline
-
-    val connectionType =
-        combine(
-            offlineModeManager.isOffline,
-            sessionManager.currentSession.map { it?.serverUrl },
-        ) { offline, serverUrl ->
-            when {
-                offline -> ConnectionType.OFFLINE
-                serverUrl != null && isLocalAddress(serverUrl) -> ConnectionType.LOCAL
-                serverUrl != null && isTailscaleAddress(serverUrl) -> ConnectionType.TAILSCALE
-                else -> ConnectionType.REMOTE
-            }
-        }
+constructor(offlineModeManager: OfflineModeManager) : ViewModel() {
+    val connectionType = offlineModeManager.connectionType
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -94,8 +70,7 @@ fun AfinityTopAppBar(
     actions: @Composable (RowScope.() -> Unit) = {},
     viewModel: AfinityTopAppBarViewModel = hiltViewModel(),
 ) {
-    val connectionType by
-        viewModel.connectionType.collectAsStateWithLifecycle(initialValue = ConnectionType.REMOTE)
+    val connectionType by viewModel.connectionType.collectAsStateWithLifecycle()
 
     val surfaceColor = MaterialTheme.colorScheme.surface
 

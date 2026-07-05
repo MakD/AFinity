@@ -92,6 +92,8 @@ constructor(
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val connectionType = offlineModeManager.connectionType
+
     val isJellyseerrAuthenticated: StateFlow<Boolean> =
         jellyseerrRepository.isAuthenticated.stateIn(
             viewModelScope,

@@ -31,6 +31,7 @@ import org.jellyfin.sdk.api.operations.UserApi
 import timber.log.Timber
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -82,12 +83,14 @@ constructor(
         serverId: String,
         userId: UUID,
         accessToken: String,
+        urlPreValidated: Boolean = false,
     ): Result<Unit> = sessionMutex.withLock {
         withContext(Dispatchers.IO) {
             try {
                 val user = databaseRepository.getUser(userId)
                 val server = databaseRepository.getServer(serverId)
 
+                val sawUnauthorized = AtomicBoolean(false)
                 val validator: suspend (String) -> Boolean = { address ->
                     try {
                         val tempClient =
@@ -98,16 +101,18 @@ constructor(
                             withTimeoutOrNull(3000L) { UserApi(tempClient).getCurrentUser() }
                         response?.content != null
                     } catch (e: InvalidStatusException) {
-                        if (e.status == 401) throw e
+                        if (e.status == 401) sawUnauthorized.set(true)
                         false
                     } catch (_: Exception) {
                         false
                     }
                 }
 
-                var authRejected = false
                 val resolvedUrl =
-                    try {
+                    if (urlPreValidated) {
+                        _isServerReachable.value = true
+                        serverUrl
+                    } else try {
                         val result = serverAddressResolver.resolveAddress(serverId, validator)
                         if (result is AddressResolutionResult.Success) {
                             Timber.d(
@@ -115,6 +120,9 @@ constructor(
                             )
                             _isServerReachable.value = true
                             result.address
+                        } else if (sawUnauthorized.get()) {
+                            Timber.e("Token rejected by server during address resolution (401)")
+                            return@withContext Result.failure(InvalidStatusException(401, null))
                         } else {
                             Timber.w(
                                 "Address resolution failed, starting in offline mode. Saved URL: $serverUrl"
@@ -122,10 +130,6 @@ constructor(
                             _isServerReachable.value = false
                             serverUrl
                         }
-                    } catch (e: InvalidStatusException) {
-                        Timber.e("Token rejected by server during address resolution (401)")
-                        authRejected = true
-                        serverUrl
                     } catch (e: Exception) {
                         Timber.w(
                             e,
@@ -134,9 +138,6 @@ constructor(
                         _isServerReachable.value = false
                         serverUrl
                     }
-
-                if (authRejected)
-                    return@withContext Result.failure(InvalidStatusException(401, null))
 
                 serverRepository.setBaseUrl(resolvedUrl)
 
@@ -243,8 +244,13 @@ constructor(
         val tokenInfo = tokens.find { it.serverId == serverId } ?: return null
 
         Timber.d("Restoring ApiClient for background work: Server $serverId")
-        val client = getOrCreateApiClient(serverId, tokenInfo.serverUrl)
-        client.update(baseUrl = tokenInfo.serverUrl, accessToken = tokenInfo.accessToken)
+        val address =
+            when (val result = serverAddressResolver.resolveAddress(serverId)) {
+                is AddressResolutionResult.Success -> result.address
+                is AddressResolutionResult.AllFailed -> tokenInfo.serverUrl
+            }
+        val client = getOrCreateApiClient(serverId, address)
+        client.update(baseUrl = address, accessToken = tokenInfo.accessToken)
         return client
     }
 

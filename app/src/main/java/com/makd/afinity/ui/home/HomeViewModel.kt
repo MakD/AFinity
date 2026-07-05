@@ -262,7 +262,7 @@ constructor(
 
         viewModelScope.launch {
             var previousIsOffline: Boolean? = null
-            offlineModeManager.isOffline.distinctUntilChanged().collect { isOffline ->
+            offlineModeManager.isOffline.collect { isOffline ->
                 Timber.d("Offline mode changed: $isOffline")
                 _uiState.update { it.copy(isOffline = isOffline) }
 

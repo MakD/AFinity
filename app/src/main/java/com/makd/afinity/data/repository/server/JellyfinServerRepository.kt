@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -86,20 +87,32 @@ constructor(
             }
         }
         scope.launch {
-            networkConnectivityMonitor.networkSwitchEvents.debounce(500).collect {
+            merge(
+                    networkConnectivityMonitor.networkSwitchEvents,
+                    networkConnectivityMonitor.networkDropEvents,
+                )
+                .debounce(500)
+                .collect {
                 val session = sessionManager.currentSession.value ?: return@collect
                 if (_currentBaseUrl.value.isBlank()) return@collect
                 if (!networkConnectivityMonitor.isCurrentlyConnected()) return@collect
                 try {
-                    val result = serverAddressResolver.resolveAddress(session.serverId)
-                    if (result is AddressResolutionResult.Success) {
-                        sessionManager.setServerReachable(true)
-                        if (result.address != _currentBaseUrl.value) {
-                            Timber.d(
-                                "Network switched, updating URL from ${_currentBaseUrl.value} to ${result.address}"
+                    when (val result = serverAddressResolver.resolveAddress(session.serverId)) {
+                        is AddressResolutionResult.Success -> {
+                            sessionManager.setServerReachable(true)
+                            if (result.address != _currentBaseUrl.value) {
+                                Timber.d(
+                                    "Network switched, updating URL from ${_currentBaseUrl.value} to ${result.address}"
+                                )
+                                setBaseUrl(result.address)
+                                sessionManager.updateSessionUrl(result.address)
+                            }
+                        }
+                        is AddressResolutionResult.AllFailed -> {
+                            Timber.w(
+                                "Re-resolution failed for all addresses, marking server unreachable"
                             )
-                            setBaseUrl(result.address)
-                            sessionManager.updateSessionUrl(result.address)
+                            sessionManager.setServerReachable(false)
                         }
                     }
                 } catch (e: Exception) {

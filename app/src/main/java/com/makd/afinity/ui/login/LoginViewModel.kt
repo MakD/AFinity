@@ -321,31 +321,15 @@ constructor(
                         return@launch
                     }
 
-                    val serverUrl =
-                        when (val result = serverAddressResolver.resolveAddress(user.serverId)) {
-                            is AddressResolutionResult.Success -> result.address
-                            is AddressResolutionResult.AllFailed -> server.address
-                        }
-                    Timber.d("Resolved server URL: $serverUrl")
-
                     val result =
                         sessionManager.startSession(
-                            serverUrl = serverUrl,
+                            serverUrl = server.address,
                             serverId = user.serverId,
                             userId = user.id,
                             accessToken = token,
                         )
 
                     if (result.isSuccess) {
-                        securePreferencesRepository.saveAuthenticationData(
-                            accessToken = token,
-                            userId = user.id,
-                            serverId = user.serverId,
-                            serverUrl = serverUrl,
-                            username = user.name,
-                        )
-                        Timber.d("Updated active session persistence for: ${user.name}")
-
                         discoveryJob?.cancel()
                         _uiState.value = _uiState.value.copy(isLoggingIn = false, isLoggedIn = true)
                         Timber.d("Successfully logged in with saved user: ${user.name}")
@@ -423,10 +407,11 @@ constructor(
                         if (token != null && userId != null) {
                             val sessionResult =
                                 sessionManager.startSession(
-                                    serverUrl = _serverUrl.value,
+                                    serverUrl = _connectedServerUrl.value,
                                     serverId = serverId,
                                     userId = userId,
                                     accessToken = token,
+                                    urlPreValidated = true,
                                 )
 
                             if (sessionResult.isSuccess) {
@@ -538,10 +523,11 @@ constructor(
                             if (token != null && userId != null) {
                                 val sessionResult =
                                     sessionManager.startSession(
-                                        serverUrl = _serverUrl.value,
+                                        serverUrl = _connectedServerUrl.value,
                                         serverId = serverId,
                                         userId = userId,
                                         accessToken = token,
+                                        urlPreValidated = true,
                                     )
 
                                 if (sessionResult.isSuccess) {

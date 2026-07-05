@@ -113,10 +113,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.makd.afinity.R
 import com.makd.afinity.core.AppConstants
+import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AsyncImage
-import com.makd.afinity.ui.components.ConnectionType
 import com.makd.afinity.ui.settings.appearance.AppearanceOptionsScreen
 import com.makd.afinity.ui.settings.downloads.DownloadSettingsScreen
 import com.makd.afinity.ui.settings.player.PlayerOptionsScreen
@@ -124,8 +124,6 @@ import com.makd.afinity.ui.settings.servers.ControlPanelView
 import com.makd.afinity.ui.settings.servers.ControlPanelViewModel
 import com.makd.afinity.ui.settings.servers.ServerManagementScreen
 import com.makd.afinity.ui.settings.update.UpdateSection
-import com.makd.afinity.util.isLocalAddress
-import com.makd.afinity.util.isTailscaleAddress
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -140,17 +138,7 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val effectiveOfflineMode by viewModel.effectiveOfflineMode.collectAsStateWithLifecycle()
-    val connectionType =
-        remember(effectiveOfflineMode, uiState.serverUrl) {
-            when {
-                effectiveOfflineMode -> ConnectionType.OFFLINE
-                uiState.serverUrl != null && isLocalAddress(uiState.serverUrl!!) ->
-                    ConnectionType.LOCAL
-                uiState.serverUrl != null && isTailscaleAddress(uiState.serverUrl!!) ->
-                    ConnectionType.TAILSCALE
-                else -> ConnectionType.REMOTE
-            }
-        }
+    val connectionType by viewModel.connectionType.collectAsStateWithLifecycle()
     val manualOfflineMode by viewModel.manualOfflineMode.collectAsStateWithLifecycle()
     val isNetworkAvailable by viewModel.isNetworkAvailable.collectAsStateWithLifecycle()
     val isJellyseerrAuthenticated by

@@ -2,18 +2,14 @@ package com.makd.afinity.data.repository.jellyseerr
 
 import com.makd.afinity.data.database.dao.JellyseerrDao
 import com.makd.afinity.util.NetworkConnectivityMonitor
-import com.makd.afinity.util.isLocalAddress
-import kotlinx.coroutines.CompletableDeferred
+import com.makd.afinity.util.probeAddresses
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -46,55 +42,18 @@ constructor(
 
         val addressesToTry = listOf(primaryUrl) + alternateAddresses
 
-        val onWifi = networkConnectivityMonitor.isOnWifi()
-        val (localAddresses, externalAddresses) = addressesToTry.partition { isLocalAddress(it) }
-        val orderedAddresses = if (onWifi) {
-            localAddresses + externalAddresses
+        val bestAddress =
+            probeAddresses(
+                addresses = addressesToTry,
+                preferLocal = networkConnectivityMonitor.isOnLocalNetwork(),
+                logTag = "Jellyseerr",
+                validator = { address -> pingService(address) },
+            )
+
+        return if (bestAddress != null) {
+            JellyseerrAddressResult.Success(bestAddress)
         } else {
-            externalAddresses + localAddresses
-        }
-
-        Timber.d(
-            "Jellyseerr: Resolving address, onWifi=$onWifi, " +
-                "addresses=${orderedAddresses.map { "${it}[${if (isLocalAddress(it)) "local" else "ext"}]" }}"
-        )
-
-        val startTime = System.currentTimeMillis()
-
-        return coroutineScope {
-            val winningAddress = CompletableDeferred<String?>()
-            val failureCount = AtomicInteger(0)
-            val totalAddresses = orderedAddresses.size
-
-            val jobs = orderedAddresses.map { address ->
-                val tag = if (isLocalAddress(address)) "local" else "ext"
-                launch {
-                    val pingStart = System.currentTimeMillis()
-                    val success = pingService(address)
-                    val elapsed = System.currentTimeMillis() - pingStart
-                    Timber.d("Jellyseerr: Ping $address [$tag] → ${if (success) "OK" else "FAIL"} (${elapsed}ms)")
-                    if (success) {
-                        winningAddress.complete(address)
-                    } else {
-                        if (failureCount.incrementAndGet() == totalAddresses) {
-                            winningAddress.complete(null)
-                        }
-                    }
-                }
-            }
-
-            val bestAddress = winningAddress.await()
-            val totalElapsed = System.currentTimeMillis() - startTime
-            jobs.forEach { it.cancel() }
-
-            if (bestAddress != null) {
-                val tag = if (isLocalAddress(bestAddress)) "local" else "ext"
-                Timber.d("Jellyseerr: Resolved → $bestAddress [$tag] (${totalElapsed}ms)")
-                JellyseerrAddressResult.Success(bestAddress)
-            } else {
-                Timber.w("Jellyseerr: All $totalAddresses addresses failed (${totalElapsed}ms)")
-                JellyseerrAddressResult.AllFailed(orderedAddresses)
-            }
+            JellyseerrAddressResult.AllFailed(addressesToTry)
         }
     }
 

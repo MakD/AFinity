@@ -6,21 +6,13 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.asStateFlow
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -31,8 +23,6 @@ class NetworkConnectivityMonitor
 constructor(@param:ApplicationContext private val context: Context) {
     private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private val _networkSwitchEvents =
         MutableSharedFlow<Unit>(
@@ -50,76 +40,54 @@ constructor(@param:ApplicationContext private val context: Context) {
 
     val networkDropEvents: SharedFlow<Unit> = _networkDropEvents.asSharedFlow()
 
-    val isNetworkAvailable: StateFlow<Boolean> =
-        callbackFlow {
-                val callback =
-                    object : ConnectivityManager.NetworkCallback() {
-                        private val networks = mutableSetOf<Network>()
+    private val _isNetworkAvailable = MutableStateFlow(isCurrentlyConnected())
+    val isNetworkAvailable: StateFlow<Boolean> = _isNetworkAvailable.asStateFlow()
 
-                        override fun onAvailable(network: Network) {
-                            networks.add(network)
-                            trySend(true)
-                            scope.launch { _networkSwitchEvents.emit(Unit) }
-                            Timber.d(
-                                "Network available: $network, Total networks: ${networks.size}"
-                            )
-                        }
+    private val _isOnWifi = MutableStateFlow(isOnWifi())
+    val isOnWifiFlow: StateFlow<Boolean> = _isOnWifi.asStateFlow()
 
-                        override fun onLost(network: Network) {
-                            networks.remove(network)
-                            trySend(networks.isNotEmpty())
-                            scope.launch { _networkDropEvents.emit(Unit) }
-                            Timber.d("Network lost: $network, Remaining networks: ${networks.size}")
-                        }
+    private val networks = mutableSetOf<Network>()
 
-                        private var lastInternetState: Boolean? = null
-                        private var lastValidatedState: Boolean? = null
+    init {
+        val networkRequest =
+            NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+                .build()
 
-                        override fun onCapabilitiesChanged(
-                            network: Network,
-                            networkCapabilities: NetworkCapabilities,
-                        ) {
-                            val hasInternet =
-                                networkCapabilities.hasCapability(
-                                    NetworkCapabilities.NET_CAPABILITY_INTERNET
-                                )
-                            val isValidated =
-                                networkCapabilities.hasCapability(
-                                    NetworkCapabilities.NET_CAPABILITY_VALIDATED
-                                )
-                            if (
-                                hasInternet != lastInternetState ||
-                                    isValidated != lastValidatedState
-                            ) {
-                                Timber.d(
-                                    "Network capabilities changed: hasInternet=$hasInternet, isValidated=$isValidated"
-                                )
-                                lastInternetState = hasInternet
-                                lastValidatedState = isValidated
-                            }
-                        }
-                    }
-
-                val networkRequest =
-                    NetworkRequest.Builder()
-                        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                        .addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-                        .build()
-
-                connectivityManager.registerNetworkCallback(networkRequest, callback)
-                trySend(isCurrentlyConnected())
-
-                awaitClose {
-                    Timber.d("Unregistering network callback")
-                    connectivityManager.unregisterNetworkCallback(callback)
+        connectivityManager.registerNetworkCallback(
+            networkRequest,
+            object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: Network) {
+                    val total = synchronized(networks) { networks.add(network); networks.size }
+                    _isNetworkAvailable.value = true
+                    refreshTransportState()
+                    _networkSwitchEvents.tryEmit(Unit)
+                    Timber.d("Network available: $network, Total networks: $total")
                 }
-            }
-            .distinctUntilChanged()
-            .stateIn(
-                scope = scope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = isCurrentlyConnected(),
-            )
+
+                override fun onLost(network: Network) {
+                    val remaining =
+                        synchronized(networks) { networks.remove(network); networks.size }
+                    _isNetworkAvailable.value = remaining > 0
+                    refreshTransportState()
+                    _networkDropEvents.tryEmit(Unit)
+                    Timber.d("Network lost: $network, Remaining networks: $remaining")
+                }
+
+                override fun onCapabilitiesChanged(
+                    network: Network,
+                    networkCapabilities: NetworkCapabilities,
+                ) {
+                    refreshTransportState()
+                }
+            },
+        )
+    }
+
+    private fun refreshTransportState() {
+        _isOnWifi.value = isOnWifi()
+    }
 
     fun isCurrentlyConnected(): Boolean {
         val network = connectivityManager.activeNetwork ?: return false
@@ -131,15 +99,15 @@ constructor(@param:ApplicationContext private val context: Context) {
     fun isOnWifi(): Boolean {
         val network = connectivityManager.activeNetwork ?: return false
         val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-        return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+        return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
     }
 
-    val isOnWifiFlow: StateFlow<Boolean> =
-        isNetworkAvailable
-            .map { isOnWifi() }
-            .stateIn(
-                scope = scope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = isOnWifi(),
-            )
+    fun isOnLocalNetwork(): Boolean {
+        val network = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) ||
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+    }
 }
