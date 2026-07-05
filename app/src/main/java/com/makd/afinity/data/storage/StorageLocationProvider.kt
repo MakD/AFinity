@@ -83,6 +83,26 @@ constructor(@param:ApplicationContext private val context: Context) {
             }
         }
 
+        if (result.none { it.isPrimary }) {
+            val external =
+                try {
+                    context.getExternalFilesDir(null)
+                } catch (e: Exception) {
+                    Timber.w(e, "getExternalFilesDir failed while synthesizing primary volume")
+                    null
+                }
+            result.add(
+                0,
+                StorageVolumeInfo(
+                    id = PRIMARY_VOLUME_ID,
+                    displayName = "Internal storage",
+                    isRemovable = false,
+                    isPrimary = true,
+                    baseDir = File(external ?: context.filesDir, DOWNLOADS_SUBPATH),
+                ),
+            )
+        }
+
         val summary =
             "${dirs.size} dir(s) reported, ${result.size} usable: " +
                 result.joinToString {
