@@ -25,11 +25,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
-import com.makd.afinity.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,11 +37,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.makd.afinity.R
 import com.makd.afinity.player.audiobookshelf.EQ_BAND_LABELS
 import com.makd.afinity.player.audiobookshelf.EQ_MAX_DB
 import com.makd.afinity.player.audiobookshelf.EQ_MIN_DB
@@ -71,10 +72,10 @@ fun EqualizerBottomSheet(
         dragHandle = null,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 48.dp),
+            modifier =
+                Modifier.fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 48.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -86,11 +87,19 @@ fun EqualizerBottomSheet(
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 2.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
                 Switch(
                     checked = state.isEnabled,
                     onCheckedChange = onEnabled,
+                    colors =
+                        SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primary,
+                            uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            uncheckedBorderColor = MaterialTheme.colorScheme.outline,
+                        ),
                     modifier = Modifier.scale(0.8f),
                 )
             }
@@ -100,7 +109,7 @@ fun EqualizerBottomSheet(
             val presetsToShow =
                 if (state.currentPreset == EqualizerPreset.CUSTOM) {
                     listOf(EqualizerPreset.CUSTOM) +
-                            EqualizerPreset.entries.filter { it != EqualizerPreset.CUSTOM }
+                        EqualizerPreset.entries.filter { it != EqualizerPreset.CUSTOM }
                 } else {
                     EqualizerPreset.entries.filter { it != EqualizerPreset.CUSTOM }
                 }
@@ -114,9 +123,10 @@ fun EqualizerBottomSheet(
                     PresetChip(
                         preset = preset,
                         isSelected = preset == state.currentPreset,
-                        onClick = if (preset != EqualizerPreset.CUSTOM) {
-                            { onPresetSelected(preset) }
-                        } else null,
+                        onClick =
+                            if (preset != EqualizerPreset.CUSTOM) {
+                                { onPresetSelected(preset) }
+                            } else null,
                     )
                 }
             }
@@ -124,9 +134,7 @@ fun EqualizerBottomSheet(
             Spacer(modifier = Modifier.height(32.dp))
 
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(220.dp),
+                modifier = Modifier.fillMaxWidth().height(220.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 state.bandGains.forEachIndexed { index, gain ->
@@ -156,7 +164,7 @@ fun EqualizerBottomSheet(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         letterSpacing = 2.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -168,6 +176,14 @@ fun EqualizerBottomSheet(
                 Switch(
                     checked = skipSilenceEnabled,
                     onCheckedChange = onSkipSilenceToggle,
+                    colors =
+                        SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primary,
+                            uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            uncheckedBorderColor = MaterialTheme.colorScheme.outline,
+                        ),
                     modifier = Modifier.scale(0.8f),
                 )
             }
@@ -187,13 +203,14 @@ fun EqualizerBottomSheet(
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 2.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
                 Text(
                     text = if (state.volumeBoostDb > 0) "+${state.volumeBoostDb} dB" else "Off",
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                    color = if (state.volumeBoostDb > 0) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color =
+                        if (state.volumeBoostDb > 0) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -234,28 +251,29 @@ private fun PresetChip(
 ) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(
-                if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                else Color.Transparent
-            )
-            .border(
-                BorderStroke(
-                    1.dp,
-                    if (isSelected) Color.Transparent
-                    else MaterialTheme.colorScheme.outlineVariant,
-                ),
-                RoundedCornerShape(50),
-            )
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier =
+            Modifier.clip(RoundedCornerShape(50))
+                .background(
+                    if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                    else Color.Transparent
+                )
+                .border(
+                    BorderStroke(
+                        1.dp,
+                        if (isSelected) Color.Transparent
+                        else MaterialTheme.colorScheme.outlineVariant,
+                    ),
+                    RoundedCornerShape(50),
+                )
+                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         Text(
             text = preset.displayName,
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-            color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
-            else MaterialTheme.colorScheme.onSurface,
+            color =
+                if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                else MaterialTheme.colorScheme.onSurface,
         )
     }
 }
@@ -276,8 +294,9 @@ private fun BandColumn(
         Text(
             text = gainText,
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = if (isEnabled) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.onSurfaceVariant,
+            color =
+                if (isEnabled) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
 
@@ -286,29 +305,30 @@ private fun BandColumn(
             onValueChange = { onGainChanged(it.roundToInt()) },
             valueRange = EQ_MIN_DB.toFloat()..EQ_MAX_DB.toFloat(),
             enabled = isEnabled,
-            modifier = Modifier
-                .weight(1f)
-                .padding(vertical = 12.dp)
-                .layout { measurable, constraints ->
-                    val placeable = measurable.measure(
-                        Constraints(
-                            minWidth = constraints.minHeight,
-                            maxWidth = constraints.maxHeight,
-                            minHeight = constraints.minWidth,
-                            maxHeight = constraints.maxWidth,
-                        )
-                    )
-                    layout(placeable.height, placeable.width) {
-                        placeable.place(
-                            x = -(placeable.width / 2 - placeable.height / 2),
-                            y = -(placeable.height / 2 - placeable.width / 2)
-                        )
+            modifier =
+                Modifier.weight(1f)
+                    .padding(vertical = 12.dp)
+                    .layout { measurable, constraints ->
+                        val placeable =
+                            measurable.measure(
+                                Constraints(
+                                    minWidth = constraints.minHeight,
+                                    maxWidth = constraints.maxHeight,
+                                    minHeight = constraints.minWidth,
+                                    maxHeight = constraints.maxWidth,
+                                )
+                            )
+                        layout(placeable.height, placeable.width) {
+                            placeable.place(
+                                x = -(placeable.width / 2 - placeable.height / 2),
+                                y = -(placeable.height / 2 - placeable.width / 2),
+                            )
+                        }
                     }
-                }
-                .graphicsLayer {
-                    rotationZ = -90f
-                    transformOrigin = TransformOrigin.Center
-                },
+                    .graphicsLayer {
+                        rotationZ = -90f
+                        transformOrigin = TransformOrigin.Center
+                    },
         )
 
         Text(
