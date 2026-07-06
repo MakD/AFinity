@@ -420,4 +420,13 @@
     <string name="pref_autoplay_title">Riproduzione automatica</string>
     <string name="pref_autoplay_summary">Riproduci automaticamente l\'episodio successivo</string>
     <string name="pref_group_pip">Picture-in-Picture</string>
+    <string name="music_tab_albums">Albums</string>
+    <string name="play_error_missing_source">Nessun elemento riproducibile trovato sul server</string>
+    <string name="music_playback_channel_name">AFinity Riproduttore Musicale</string>
+    <string name="media_type_media">Media</string>
+    <string name="media_type_unknown">SCONOSCIUTO</string>
+    <string name="cd_request_add">Richiesta</string>
+    <string name="appearance_title">Aspetto</string>
+    <string name="pref_theme_mode_title">Modalità tema</string>
+    <string name="pref_dynamic_colors_title">Colori dinamici</string>
 </resources>
