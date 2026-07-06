@@ -859,12 +859,21 @@ fun RequestConfirmationDialog(
                             color = MaterialTheme.colorScheme.onPrimary,
                             strokeWidth = 2.dp,
                         )
+                    else if (alreadyRequested)
+                        Text(stringResource(R.string.request_already_requested))
+                    else if (overQuota) Text(stringResource(R.string.request_quota_exceeded))
                     else
-                        Text(
-                            if (alreadyRequested) stringResource(R.string.request_already_requested)
-                            else if (overQuota) stringResource(R.string.request_quota_exceeded)
-                            else stringResource(R.string.request_on_seerr_title)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_download_arrow),
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                            Text(stringResource(R.string.request_on_seerr_title))
+                        }
                 }
             }
         },

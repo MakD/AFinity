@@ -249,7 +249,17 @@ private fun SeerrRequestActionButton(
                 },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
             ) {
-                Text(stringResource(R.string.seerr_detail_request))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_download_arrow),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Text(stringResource(R.string.seerr_detail_request))
+                }
             }
         }
     }

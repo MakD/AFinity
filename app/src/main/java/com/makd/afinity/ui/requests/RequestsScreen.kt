@@ -37,6 +37,7 @@ import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.Permissions
 import com.makd.afinity.data.models.jellyseerr.RequestStatus
+import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.hasPermission
 import com.makd.afinity.data.models.jellyseerr.isAdmin
 import com.makd.afinity.navigation.LocalPlayerOffset
@@ -56,8 +57,7 @@ fun RequestsScreen(
     viewModel: RequestsViewModel = hiltViewModel(),
     onNavigateToFilteredMedia: (FilterParams) -> Unit = {},
     onItemClick: (jellyfinItemId: String, itemType: String?) -> Unit = { _, _ -> },
-    onNavigateToSeerrMedia: (item: com.makd.afinity.data.models.jellyseerr.SearchResultItem) -> Unit =
-        {},
+    onNavigateToSeerrMedia: (item: SearchResultItem) -> Unit = {},
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
