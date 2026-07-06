@@ -377,6 +377,8 @@ constructor(
 
         coroutineScope.launch(Dispatchers.IO) {
             val startTime = System.currentTimeMillis()
+            val fileLength = state.file.length()
+            val fileLastModified = state.file.lastModified()
             val actual =
                 try {
                     computeSha256(state.file)
@@ -418,8 +420,41 @@ constructor(
                         verification = verification,
                         expectedSha256 = expected,
                         computedSha256 = actual,
+                        verifiedLength =
+                            if (verification == ApkVerification.VERIFIED) fileLength else null,
+                        verifiedLastModified =
+                            if (verification == ApkVerification.VERIFIED) fileLastModified
+                            else null,
                     )
             }
+        }
+    }
+
+    fun revalidateDownloadedFile() {
+        val state = _updateState.value as? UpdateState.Downloaded ?: return
+        if (state.verification == ApkVerification.VERIFYING) return
+
+        if (!state.file.exists()) {
+            Timber.w("Downloaded APK no longer on disk: ${state.file.name}")
+            _updateState.value = UpdateState.Available(state.release)
+            return
+        }
+
+        if (state.verification != ApkVerification.VERIFIED) return
+
+        val unchanged =
+            state.verifiedLength == state.file.length() &&
+                state.verifiedLastModified == state.file.lastModified()
+
+        if (!unchanged) {
+            Timber.w("Downloaded APK changed since verification: ${state.file.name}")
+            _updateState.value =
+                state.copy(
+                    verification = ApkVerification.UNVERIFIED,
+                    computedSha256 = null,
+                    verifiedLength = null,
+                    verifiedLastModified = null,
+                )
         }
     }
 

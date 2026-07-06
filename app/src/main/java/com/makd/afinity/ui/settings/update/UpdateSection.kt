@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.BuildConfig
 import com.makd.afinity.R
@@ -68,6 +69,11 @@ fun UpdateSection(
     }
 
     if (showUpdateDialog && pendingRelease != null) {
+        LifecycleResumeEffect(Unit) {
+            viewModel.revalidateDownloadedFile()
+            onPauseOrDispose {}
+        }
+
         UpdateAvailableDialog(
             currentVersionName = BuildConfig.VERSION_NAME,
             release = pendingRelease!!,

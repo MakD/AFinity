@@ -49,6 +49,8 @@ sealed class UpdateState {
         val verification: ApkVerification = ApkVerification.UNVERIFIED,
         val expectedSha256: String? = null,
         val computedSha256: String? = null,
+        val verifiedLength: Long? = null,
+        val verifiedLastModified: Long? = null,
     ) : UpdateState()
 
     data class Error(val message: String) : UpdateState()

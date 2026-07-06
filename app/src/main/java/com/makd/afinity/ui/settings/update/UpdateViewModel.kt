@@ -90,6 +90,10 @@ constructor(
         updateManager.verifyDownload()
     }
 
+    fun revalidateDownloadedFile() {
+        updateManager.revalidateDownloadedFile()
+    }
+
     fun installUpdate(file: java.io.File) {
         updateManager.installUpdate(file)
     }

@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.BuildConfig
 import com.makd.afinity.data.updater.UpdateManager
@@ -44,6 +45,11 @@ fun GlobalUpdateDialog(updateManager: UpdateManager) {
     }
 
     if (showDialog) {
+        LifecycleResumeEffect(Unit) {
+            updateManager.revalidateDownloadedFile()
+            onPauseOrDispose {}
+        }
+
         val release =
             when (val state = updateState) {
                 is UpdateState.Available -> state.release
