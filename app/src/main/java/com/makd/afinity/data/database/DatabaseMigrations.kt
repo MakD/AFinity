@@ -1237,6 +1237,56 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_54_55 =
+        object : Migration(54, 55) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `audiobookshelf_episodes` (
+                        id TEXT NOT NULL,
+                        libraryItemId TEXT NOT NULL,
+                        jellyfinServerId TEXT NOT NULL,
+                        jellyfinUserId TEXT NOT NULL,
+                        oldEpisodeId TEXT,
+                        episodeIndex INTEGER,
+                        season TEXT,
+                        episode TEXT,
+                        episodeType TEXT,
+                        title TEXT NOT NULL,
+                        subtitle TEXT,
+                        description TEXT,
+                        enclosureUrl TEXT,
+                        enclosureType TEXT,
+                        enclosureLength TEXT,
+                        guid TEXT,
+                        pubDate TEXT,
+                        serializedChapters TEXT,
+                        serializedAudioFile TEXT,
+                        serializedAudioTrack TEXT,
+                        publishedAt INTEGER,
+                        addedAt INTEGER,
+                        updatedAt INTEGER,
+                        duration REAL,
+                        size INTEGER,
+                        PRIMARY KEY(id, libraryItemId, jellyfinServerId, jellyfinUserId),
+                        FOREIGN KEY(libraryItemId, jellyfinServerId, jellyfinUserId)
+                            REFERENCES audiobookshelf_items(id, jellyfinServerId, jellyfinUserId)
+                            ON DELETE CASCADE
+                    )
+                    """
+                        .trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE INDEX IF NOT EXISTS index_audiobookshelf_episodes_libraryItemId_jellyfinServerId_jellyfinUserId
+                    ON audiobookshelf_episodes (libraryItemId, jellyfinServerId, jellyfinUserId)
+                    """
+                        .trimIndent()
+                )
+                db.execSQL("ALTER TABLE audiobookshelf_items DROP COLUMN serializedEpisodes")
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1292,5 +1342,6 @@ object DatabaseMigrations {
             MIGRATION_51_52,
             MIGRATION_52_53,
             MIGRATION_53_54,
+            MIGRATION_54_55,
         )
 }

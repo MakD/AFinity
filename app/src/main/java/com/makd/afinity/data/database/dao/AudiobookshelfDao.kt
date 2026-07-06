@@ -4,8 +4,10 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.makd.afinity.data.database.entities.AudiobookshelfAddressEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfConfigEntity
+import com.makd.afinity.data.database.entities.AudiobookshelfEpisodeEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfItemEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfLibraryEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfProgressEntity
@@ -87,13 +89,49 @@ interface AudiobookshelfDao {
     suspend fun getItem(itemId: String, serverId: String, userId: String): AudiobookshelfItemEntity?
 
     @Query(
-        "SELECT * FROM audiobookshelf_items WHERE id = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+        "SELECT numEpisodesIncomplete FROM audiobookshelf_items WHERE id = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
     )
-    fun getItemFlow(
+    suspend fun getNumEpisodesIncomplete(itemId: String, serverId: String, userId: String): Int?
+
+    @Query(
+        "UPDATE audiobookshelf_items SET numEpisodesIncomplete = MAX(numEpisodesIncomplete + :delta, 0) WHERE id = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId AND numEpisodesIncomplete IS NOT NULL"
+    )
+    suspend fun adjustNumEpisodesIncomplete(
         itemId: String,
         serverId: String,
         userId: String,
-    ): Flow<AudiobookshelfItemEntity?>
+        delta: Int,
+    )
+
+    @Query(
+        "SELECT * FROM audiobookshelf_episodes WHERE libraryItemId = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId ORDER BY episodeIndex ASC, publishedAt DESC"
+    )
+    suspend fun getEpisodesForItem(
+        itemId: String,
+        serverId: String,
+        userId: String,
+    ): List<AudiobookshelfEpisodeEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertEpisodes(episodes: List<AudiobookshelfEpisodeEntity>)
+
+    @Query(
+        "DELETE FROM audiobookshelf_episodes WHERE libraryItemId = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    suspend fun deleteEpisodesForItem(itemId: String, serverId: String, userId: String)
+
+    @Transaction
+    suspend fun replaceEpisodesForItem(
+        itemId: String,
+        serverId: String,
+        userId: String,
+        episodes: List<AudiobookshelfEpisodeEntity>,
+    ) {
+        deleteEpisodesForItem(itemId, serverId, userId)
+        if (episodes.isNotEmpty()) {
+            insertEpisodes(episodes)
+        }
+    }
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertItems(items: List<AudiobookshelfItemEntity>)

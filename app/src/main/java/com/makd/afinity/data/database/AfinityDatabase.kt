@@ -44,6 +44,7 @@ import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
 import com.makd.afinity.data.database.entities.AudibleRatingEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfAddressEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfConfigEntity
+import com.makd.afinity.data.database.entities.AudiobookshelfEpisodeEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfItemEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfLibraryEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfProgressEntity
@@ -106,6 +107,7 @@ import com.makd.afinity.data.models.user.User
             AudiobookshelfConfigEntity::class,
             AudiobookshelfLibraryEntity::class,
             AudiobookshelfItemEntity::class,
+            AudiobookshelfEpisodeEntity::class,
             AudiobookshelfProgressEntity::class,
             ItemMetadataCacheEntity::class,
             JellyseerrAddressEntity::class,
@@ -119,7 +121,7 @@ import com.makd.afinity.data.models.user.User
             MusicLyricsEntity::class,
             HomeCacheEntity::class,
         ],
-    version = 54,
+    version = 55,
     exportSchema = false,
 )
 @TypeConverters(AfinityTypeConverters::class)

@@ -23,6 +23,7 @@ import com.makd.afinity.data.network.AudiobookshelfApiService
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsDownloadRepositoryImpl
+import com.makd.afinity.data.repository.audiobookshelf.toEntity
 import com.makd.afinity.di.DownloadClient
 import dagger.Lazy
 import dagger.assisted.Assisted
@@ -176,10 +177,23 @@ constructor(
                                     addedAt = item.addedAt,
                                     updatedAt = item.updatedAt,
                                     cachedAt = System.currentTimeMillis(),
-                                    serializedEpisodes =
-                                        item.media.episodes?.let { json.encodeToString(it) },
                                 )
                             )
+                            item.media.episodes?.let { episodes ->
+                                audiobookshelfDao.replaceEpisodesForItem(
+                                    item.id ?: libraryItemId,
+                                    entity.jellyfinServerId,
+                                    entity.jellyfinUserId,
+                                    episodes.map {
+                                        it.toEntity(
+                                            item.id ?: libraryItemId,
+                                            entity.jellyfinServerId,
+                                            entity.jellyfinUserId,
+                                            json,
+                                        )
+                                    },
+                                )
+                            }
                             Timber.d(
                                 "AbsDownload: cached item $libraryItemId for offline browsing (${item.media.episodes?.size ?: 0} episodes)"
                             )

@@ -608,6 +608,9 @@ constructor(
                         audiobookshelfDao.insertItems(entities)
                         items.forEach { item ->
                             item.userMediaProgress?.let { progress -> cacheProgress(progress) }
+                            if (item.media.episodes != null) {
+                                cacheEpisodes(item, currentServerId, currentUserId.toString())
+                            }
                         }
 
                         allItems.addAll(items)
@@ -661,11 +664,23 @@ constructor(
                 if (!networkConnectivityMonitor.isCurrentlyConnected()) {
                     val cached =
                         audiobookshelfDao.getItem(itemId, currentServerId, currentUserId.toString())
+                    val cachedEpisodes =
+                        if (cached?.mediaType == "podcast") {
+                            audiobookshelfDao
+                                .getEpisodesForItem(
+                                    itemId,
+                                    currentServerId,
+                                    currentUserId.toString(),
+                                )
+                                .map { it.toPodcastEpisode(json) }
+                        } else {
+                            emptyList()
+                        }
                     Timber.d(
-                        "getItemDetails offline: itemId=$itemId serverId=$currentServerId userId=$currentUserId cached=${cached != null} hasEpisodes=${cached?.serializedEpisodes != null}"
+                        "getItemDetails offline: itemId=$itemId serverId=$currentServerId userId=$currentUserId cached=${cached != null} hasEpisodes=${cachedEpisodes.isNotEmpty()}"
                     )
                     if (cached != null) {
-                        var item = cached.toLibraryItem()
+                        var item = cached.toLibraryItem(episodes = cachedEpisodes.ifEmpty { null })
                         if (item.media.episodes == null && cached.mediaType == "podcast") {
                             val downloadedEpisodes =
                                 database
@@ -1564,7 +1579,6 @@ constructor(
                         continue
                     }
 
-
                     val rowId = "${remote.libraryItemId}_${remote.episodeId ?: ""}"
                     audiobookshelfDao.insertProgress(
                         AudiobookshelfProgressEntity(
@@ -1642,8 +1656,11 @@ constructor(
         val entity = item.toEntity(serverId, userId)
         val preservedCount =
             entity.numEpisodesIncomplete
-                ?: audiobookshelfDao.getItem(item.id, serverId, userId)?.numEpisodesIncomplete
+                ?: audiobookshelfDao.getNumEpisodesIncomplete(item.id, serverId, userId)
         audiobookshelfDao.insertItem(entity.copy(numEpisodesIncomplete = preservedCount))
+        if (item.media.episodes != null) {
+            cacheEpisodes(item, serverId, userId)
+        }
     }
 
     private suspend fun adjustEpisodesIncomplete(
@@ -1652,13 +1669,7 @@ constructor(
         userId: String,
         delta: Int,
     ) {
-        audiobookshelfDao.getItem(itemId, serverId, userId)?.let { entity ->
-            entity.numEpisodesIncomplete?.let { count ->
-                audiobookshelfDao.insertItem(
-                    entity.copy(numEpisodesIncomplete = (count + delta).coerceAtLeast(0))
-                )
-            }
-        }
+        audiobookshelfDao.adjustNumEpisodesIncomplete(itemId, serverId, userId, delta)
     }
 
     private suspend fun cacheProgress(progress: MediaProgress) {
@@ -1684,7 +1695,13 @@ constructor(
             )
 
         audiobookshelfDao.insertProgress(entity)
-        pruneDuplicateProgress(currentServerId, userId, progress.libraryItemId, progress.episodeId, rowId)
+        pruneDuplicateProgress(
+            currentServerId,
+            userId,
+            progress.libraryItemId,
+            progress.episodeId,
+            rowId,
+        )
     }
 
     private suspend fun pruneDuplicateProgress(
@@ -1743,22 +1760,26 @@ constructor(
             addedAt = addedAt,
             updatedAt = updatedAt,
             cachedAt = System.currentTimeMillis(),
-            serializedEpisodes = media.episodes?.let { json.encodeToString(it) },
             numEpisodesIncomplete = numEpisodesIncomplete,
         )
     }
 
-    private fun AudiobookshelfItemEntity.toLibraryItem(): LibraryItem {
+    private suspend fun cacheEpisodes(item: LibraryItem, serverId: String, userId: String) {
+        val episodes = item.media.episodes ?: return
+        audiobookshelfDao.replaceEpisodesForItem(
+            item.id,
+            serverId,
+            userId,
+            episodes.map { it.toEntity(item.id, serverId, userId, json) },
+        )
+    }
+
+    private fun AudiobookshelfItemEntity.toLibraryItem(
+        episodes: List<PodcastEpisode>? = null
+    ): LibraryItem {
         val genres = genres?.let {
             try {
                 json.decodeFromString<List<String>>(it)
-            } catch (e: Exception) {
-                null
-            }
-        }
-        val episodes = serializedEpisodes?.let {
-            try {
-                json.decodeFromString<List<PodcastEpisode>>(it)
             } catch (e: Exception) {
                 null
             }
