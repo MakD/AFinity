@@ -429,4 +429,23 @@
     <string name="appearance_title">Aspetto</string>
     <string name="pref_theme_mode_title">Modalità tema</string>
     <string name="pref_dynamic_colors_title">Colori dinamici</string>
+    <string name="pref_dynamic_colors_summary">Usa i colori del tuo sfondo</string>
+    <string name="settings_group_home_screen">Schermata Iniziale</string>
+    <string name="pref_combine_library_title">Unisci sezioni della libreria</string>
+    <string name="pref_sort_date_added_title">Ordina per data di aggiunta</string>
+    <string name="pref_sort_date_added_summary">Mostra prima i contenuti più recenti nella schermata iniziale</string>
+    <string name="settings_group_content_layout">Layout dei contenuti</string>
+    <string name="pref_episode_layout_title">Struttura dell\'episodio</string>
+    <string name="pref_show_ratings_summary">Visualizza le valutazioni di IMDb e Rotten Tomatoes sulle schede</string>
+    <string name="theme_system">Predefinito di sistema</string>
+    <string name="theme_light">Leggero</string>
+    <string name="theme_dark">Buio</string>
+    <string name="pref_downloads_and_storage_summary">Gestisci i contenuti multimediali offline e la cache delle immagini</string>
+    <string name="storage_all_servers_fmt">%1$s in totale su tutti i server</string>
+    <string name="section_storage_locations">LUOGHI DI STOCCAGGIO</string>
+    <string name="storage_used_on_volume_fmt">%1$s utilizzato su questo server</string>
+    <string name="storage_free_of_total_fmt">%1$s senza %2$s</string>
+    <string name="storage_usage_combined_fmt">%1$s utilizzato qui • %2$s privo di %3$s</string>
+    <string name="storage_default_badge">Default</string>
+    <string name="storage_set_as_default">Imposta come predefinito</string>
 </resources>
