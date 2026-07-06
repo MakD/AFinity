@@ -1040,4 +1040,20 @@
     <string name="music_action_remove_from_playlist">Удалить из плейлиста</string>
     <string name="music_action_instant_mix">Автомикс</string>
     <string name="music_action_start_radio">Запустить радио</string>
+    <string name="music_action_browse">Обзор</string>
+    <string name="music_action_start_radio_header">ЗАПУСТИТЬ РАДИО</string>
+    <string name="music_filter_status">Статус</string>
+    <string name="music_filter_unplayed">Невоспроизведенные</string>
+    <string name="music_filter_played">Воспроизведенные</string>
+    <string name="music_filter_clear">Очистить</string>
+    <string name="music_section_made_for_you">Подготовлено для вас</string>
+    <string name="music_section_jump_back_in">Слушайте дальше</string>
+    <string name="music_section_recently_played_albums">Недавно воспроизведенные альбомы</string>
+    <string name="music_section_recently_added">Недавно добавленные</string>
+    <string name="music_section_favorite_artists">Любимые исполнители</string>
+    <string name="music_section_top_artists">Ваш топ исполнителей</string>
+    <string name="music_section_top_rated">Лучший рейтинг</string>
+    <string name="music_section_artists_to_explore">Откройте для себя других исполнителей</string>
+    <string name="music_section_popular">Популярные</string>
+    <string name="music_section_albums">Альбомы</string>
 </resources>
