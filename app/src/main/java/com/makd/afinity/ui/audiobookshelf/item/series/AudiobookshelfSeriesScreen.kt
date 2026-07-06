@@ -28,7 +28,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -57,6 +56,8 @@ import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeroBackground
 import com.makd.afinity.ui.audiobookshelf.item.components.SeriesCoverGrid
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.FullScreenError
+import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 
 @Composable
@@ -80,7 +81,7 @@ fun AudiobookshelfSeriesScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         when {
             uiState.isLoading -> {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                FullScreenLoading()
             }
 
             uiState.books.isNotEmpty() -> {
@@ -215,11 +216,7 @@ fun AudiobookshelfSeriesScreen(
             }
 
             uiState.error != null -> {
-                Text(
-                    text = stringResource(R.string.abs_error_load_series),
-                    modifier = Modifier.align(Alignment.Center),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
+                FullScreenError(message = stringResource(R.string.abs_error_load_series))
             }
         }
 

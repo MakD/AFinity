@@ -42,7 +42,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
@@ -50,6 +49,7 @@ import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.settings.servers.components.DeleteServerConfirmationDialog
 import com.makd.afinity.ui.settings.servers.components.EmptyServersState
+import com.makd.afinity.ui.settings.servers.components.SectionHeader
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -179,7 +179,9 @@ private fun ServerListPane(
                 )
             }
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) }) },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) })
+        },
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
     ) { paddingValues ->
@@ -217,7 +219,7 @@ private fun ServerListPane(
             ) {
                 if (activeServer != null) {
                     item(key = "header_active") {
-                        ServerSectionHeader(text = stringResource(R.string.server_section_active))
+                        SectionHeader(title = stringResource(R.string.server_section_active))
                     }
                     item(key = activeServer.server.id) {
                         ServerCard(
@@ -232,8 +234,8 @@ private fun ServerListPane(
 
                 if (savedServers.isNotEmpty()) {
                     item(key = "header_saved") {
-                        ServerSectionHeader(
-                            text = stringResource(R.string.server_section_saved),
+                        SectionHeader(
+                            title = stringResource(R.string.server_section_saved),
                             modifier =
                                 if (activeServer != null) Modifier.padding(top = 8.dp)
                                 else Modifier,
@@ -281,16 +283,4 @@ private fun ServerListPane(
             }
         }
     }
-}
-
-@Composable
-private fun ServerSectionHeader(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text = text.uppercase(),
-        style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.primary,
-        fontWeight = FontWeight.Bold,
-        letterSpacing = 0.5.sp,
-        modifier = modifier.padding(start = 4.dp, bottom = 4.dp),
-    )
 }

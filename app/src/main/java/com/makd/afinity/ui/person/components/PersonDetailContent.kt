@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -36,8 +35,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
@@ -78,6 +75,7 @@ import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.FavoriteToggleButton
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import com.makd.afinity.ui.utils.htmlToAnnotatedString
@@ -562,17 +560,7 @@ private fun PersonExternalLinksSection(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onToggleFavorite) {
-            Icon(
-                painter =
-                    if (person.favorite) painterResource(id = R.drawable.ic_favorite_filled)
-                    else painterResource(id = R.drawable.ic_favorite),
-                contentDescription = stringResource(R.string.cd_favorite),
-                tint =
-                    if (person.favorite) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(28.dp),
-            )
-        }
+        FavoriteToggleButton(isFavorite = person.favorite, onClick = onToggleFavorite)
         VerticalDivider(
             modifier = Modifier.height(24.dp).padding(horizontal = 4.dp),
             color = MaterialTheme.colorScheme.outlineVariant,

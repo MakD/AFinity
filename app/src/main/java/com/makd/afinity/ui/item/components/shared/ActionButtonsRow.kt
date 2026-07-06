@@ -18,7 +18,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -27,6 +26,9 @@ import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.ui.components.FavoriteToggleButton
+import com.makd.afinity.ui.components.WatchedToggleButton
+import com.makd.afinity.ui.components.WatchlistToggleButton
 import com.makd.afinity.ui.item.components.DownloadProgressIndicator
 
 @Composable
@@ -71,20 +73,7 @@ fun ActionButtonsRow(
             )
         }
 
-        IconButton(onClick = onToggleWatchlist) {
-            Icon(
-                painter =
-                    if (isInWatchlist) painterResource(id = R.drawable.ic_bookmark_filled)
-                    else painterResource(id = R.drawable.ic_bookmark),
-                contentDescription =
-                    if (isInWatchlist) stringResource(R.string.cd_watchlist_remove)
-                    else stringResource(R.string.cd_watchlist_add),
-                tint =
-                    if (isInWatchlist) Color(0xFFFF9800)
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(28.dp),
-            )
-        }
+        WatchlistToggleButton(isInWatchlist = isInWatchlist, onClick = onToggleWatchlist)
 
         if (item is AfinityShow || item is AfinitySeason) {
             IconButton(onClick = onShufflePlay, enabled = hasPlayableItems) {
@@ -99,38 +88,15 @@ fun ActionButtonsRow(
             }
         }
 
-        IconButton(onClick = onToggleFavorite) {
-            Icon(
-                painter =
-                    if (item.favorite) painterResource(id = R.drawable.ic_favorite_filled)
-                    else painterResource(id = R.drawable.ic_favorite),
-                contentDescription =
-                    if (item.favorite) stringResource(R.string.cd_favorite_remove)
-                    else stringResource(R.string.cd_favorite_add),
-                tint = if (item.favorite) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(28.dp),
-            )
-        }
+        FavoriteToggleButton(isFavorite = item.favorite, onClick = onToggleFavorite)
 
         val visuallyPlayed = item.played && hasPlayableItems
 
-        IconButton(onClick = onToggleWatched, enabled = hasPlayableItems) {
-            Icon(
-                painter =
-                    if (visuallyPlayed) painterResource(id = R.drawable.ic_circle_check)
-                    else painterResource(id = R.drawable.ic_circle_check_outline),
-                contentDescription =
-                    if (visuallyPlayed) stringResource(R.string.cd_watched_unmark)
-                    else stringResource(R.string.cd_watched_mark),
-                tint =
-                    when {
-                        visuallyPlayed -> Color.Green
-                        hasPlayableItems -> MaterialTheme.colorScheme.onSurfaceVariant
-                        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                    },
-                modifier = Modifier.size(28.dp),
-            )
-        }
+        WatchedToggleButton(
+            isPlayed = visuallyPlayed,
+            onClick = onToggleWatched,
+            enabled = hasPlayableItems,
+        )
 
         DownloadProgressIndicator(
             downloadInfo = downloadInfo,

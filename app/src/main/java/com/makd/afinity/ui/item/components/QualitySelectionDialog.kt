@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -51,7 +50,7 @@ fun QualitySelectionDialog(
     val showVolumePicker = volumes.size > 1
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+        Card(modifier = modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Text(
                     text = stringResource(R.string.quality_dialog_title),
@@ -139,7 +138,7 @@ fun StorageLocationDialog(
     modifier: Modifier = Modifier,
 ) {
     Dialog(onDismissRequest = onDismiss) {
-        Card(modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+        Card(modifier = modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Text(
                     text = stringResource(R.string.download_location_section),
@@ -193,7 +192,7 @@ private fun VolumeOption(
 ) {    Surface(
         onClick = onSelect,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.small,
         color =
             if (isSelected) MaterialTheme.colorScheme.primaryContainer
             else MaterialTheme.colorScheme.surfaceVariant,
@@ -228,7 +227,7 @@ private fun QualityOption(
     Surface(
         onClick = onSelect,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.small,
         color =
             if (isSelected) MaterialTheme.colorScheme.primaryContainer
             else MaterialTheme.colorScheme.surfaceVariant,

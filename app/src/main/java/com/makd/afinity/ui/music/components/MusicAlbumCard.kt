@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -65,7 +64,7 @@ fun MusicAlbumCard(
     ) {
         Card(
             modifier = Modifier.fillMaxWidth().aspectRatio(1f),
-            shape = RoundedCornerShape(8.dp),
+            shape = MaterialTheme.shapes.medium,
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
             AsyncImage(
@@ -169,7 +168,7 @@ fun MusicGenreCard(
     ) {
         Card(
             modifier = Modifier.fillMaxWidth().aspectRatio(1f),
-            shape = RoundedCornerShape(8.dp),
+            shape = MaterialTheme.shapes.medium,
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
             if (genre.imageUrl != null) {

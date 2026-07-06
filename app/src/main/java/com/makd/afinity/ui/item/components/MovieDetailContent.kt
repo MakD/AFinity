@@ -3,6 +3,7 @@ package com.makd.afinity.ui.item.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
@@ -168,6 +169,55 @@ private fun PartCard(
     onClick: () -> Unit,
     cardWidth: Dp,
 ) {
+    MediaThumbnailCard(
+        imageUrl = part.images?.thumbImageUrl ?: part.images?.primaryImageUrl,
+        contentDescription = part.name,
+        title = part.name,
+        onClick = onClick,
+        cardWidth = cardWidth,
+        blurHash = part.images?.thumbBlurHash ?: part.images?.primaryBlurHash,
+    ) {
+        Surface(
+            modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),
+            color = Color.Black.copy(alpha = 0.75f),
+            shape = RoundedCornerShape(4.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.meta_part_of_fmt, partNumber, totalParts),
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                color = Color.White,
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+            )
+        }
+
+        if (part.runtimeTicks > 0) {
+            Surface(
+                modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
+                color = Color.Black.copy(alpha = 0.75f),
+                shape = RoundedCornerShape(4.dp),
+            ) {
+                Text(
+                    text = formatTime(part.runtimeTicks / 10000),
+                    style =
+                        MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MediaThumbnailCard(
+    imageUrl: String?,
+    contentDescription: String?,
+    title: String,
+    onClick: () -> Unit,
+    cardWidth: Dp,
+    blurHash: String? = null,
+    badges: @Composable BoxScope.() -> Unit = {},
+) {
     Column(modifier = Modifier.width(cardWidth), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Card(
             onClick = onClick,
@@ -179,55 +229,21 @@ private fun PartCard(
                 modifier =
                     Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                val imageUrl = part.images?.thumbImageUrl ?: part.images?.primaryImageUrl
                 AsyncImage(
                     imageUrl = imageUrl,
-                    contentDescription = part.name,
+                    contentDescription = contentDescription,
                     targetWidth = cardWidth,
                     targetHeight = cardWidth * 9f / 16f,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
-                    blurHash = part.images?.thumbBlurHash ?: part.images?.primaryBlurHash,
+                    blurHash = blurHash,
                 )
-
-                Surface(
-                    modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),
-                    color = Color.Black.copy(alpha = 0.75f),
-                    shape = RoundedCornerShape(4.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.meta_part_of_fmt, partNumber, totalParts),
-                        style =
-                            MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Medium
-                            ),
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                    )
-                }
-
-                if (part.runtimeTicks > 0) {
-                    Surface(
-                        modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
-                        color = Color.Black.copy(alpha = 0.75f),
-                        shape = RoundedCornerShape(4.dp),
-                    ) {
-                        Text(
-                            text = formatTime(part.runtimeTicks / 10000),
-                            style =
-                                MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
-                            color = Color.White,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                        )
-                    }
-                }
+                badges()
             }
         }
 
         Text(
-            text = part.name,
+            text = title,
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
             color = MaterialTheme.colorScheme.onSurface,
             minLines = 2,
@@ -286,52 +302,26 @@ internal fun ChapterCard(
     onClick: () -> Unit,
     cardWidth: Dp,
 ) {
-    Column(modifier = Modifier.width(cardWidth), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Card(
-            onClick = onClick,
-            modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f),
-            shape = RoundedCornerShape(8.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    val title = chapter.name ?: stringResource(R.string.chapter_number_fmt, index + 1)
+    MediaThumbnailCard(
+        imageUrl = chapter.getChapterImageUrl(baseUrl, itemId),
+        contentDescription = title,
+        title = title,
+        onClick = onClick,
+        cardWidth = cardWidth,
+    ) {
+        Surface(
+            modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),
+            color = Color.Black.copy(alpha = 0.75f),
+            shape = RoundedCornerShape(4.dp),
         ) {
-            Box(
-                modifier =
-                    Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                AsyncImage(
-                    imageUrl = chapter.getChapterImageUrl(baseUrl, itemId),
-                    contentDescription = chapter.name ?: "Chapter ${index + 1}",
-                    targetWidth = cardWidth,
-                    targetHeight = cardWidth * 9f / 16f,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-
-                Surface(
-                    modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),
-                    color = Color.Black.copy(alpha = 0.75f),
-                    shape = RoundedCornerShape(4.dp),
-                ) {
-                    Text(
-                        text = formatTime(chapter.startPosition),
-                        style =
-                            MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Medium
-                            ),
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                    )
-                }
-            }
+            Text(
+                text = formatTime(chapter.startPosition),
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                color = Color.White,
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+            )
         }
-
-        Text(
-            text = chapter.name ?: "Chapter ${index + 1}",
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-            color = MaterialTheme.colorScheme.onSurface,
-            minLines = 2,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
     }
 }
 

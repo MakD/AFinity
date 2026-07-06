@@ -59,6 +59,9 @@ import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.FavoriteToggleButton
+import com.makd.afinity.ui.components.WatchedToggleButton
+import com.makd.afinity.ui.components.WatchlistToggleButton
 import com.makd.afinity.ui.item.components.shared.AdminAction
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelectionButton
@@ -469,48 +472,12 @@ fun EpisodeDetailOverlay(
                         }
                     }
 
-                    IconButton(onClick = onToggleWatchlist) {
-                        Icon(
-                            painter =
-                                if (isInWatchlist)
-                                    painterResource(id = R.drawable.ic_bookmark_filled)
-                                else painterResource(id = R.drawable.ic_bookmark),
-                            contentDescription = stringResource(R.string.cd_watchlist),
-                            tint =
-                                if (isInWatchlist) Color(0xFFFF9800)
-                                else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(28.dp),
-                        )
-                    }
+                    WatchlistToggleButton(isInWatchlist = isInWatchlist, onClick = onToggleWatchlist)
 
-                    IconButton(onClick = onToggleFavorite) {
-                        Icon(
-                            painter =
-                                if (episode.favorite)
-                                    painterResource(id = R.drawable.ic_favorite_filled)
-                                else painterResource(id = R.drawable.ic_favorite),
-                            contentDescription = stringResource(R.string.cd_favorite),
-                            tint =
-                                if (episode.favorite) Color.Red
-                                else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(28.dp),
-                        )
-                    }
+                    FavoriteToggleButton(isFavorite = episode.favorite, onClick = onToggleFavorite)
 
                     if (!episode.missing) {
-                        IconButton(onClick = onToggleWatched) {
-                            Icon(
-                                painter =
-                                    if (episode.played)
-                                        painterResource(id = R.drawable.ic_circle_check)
-                                    else painterResource(id = R.drawable.ic_circle_check_outline),
-                                contentDescription = stringResource(R.string.cd_toggle_watched),
-                                tint =
-                                    if (episode.played) Color.Green
-                                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(28.dp),
-                            )
-                        }
+                        WatchedToggleButton(isPlayed = episode.played, onClick = onToggleWatched)
                     }
 
                     if (!episode.missing) {

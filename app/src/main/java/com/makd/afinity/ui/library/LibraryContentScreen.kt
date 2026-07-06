@@ -5,7 +5,6 @@ package com.makd.afinity.ui.library
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,14 +24,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -44,7 +40,6 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
@@ -84,11 +79,15 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AlphabetScroller
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.MediaCountBadge
 import com.makd.afinity.ui.components.PaginatedMediaGrid
+import com.makd.afinity.ui.components.PlayedBadge
+import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import java.util.Locale
 
 @Composable
@@ -199,9 +198,15 @@ fun LibraryContentScreen(
                                             Modifier.weight(1f).fillMaxSize().padding(top = 16.dp),
                                         contentAlignment = Alignment.Center,
                                     ) {
-                                        EmptyLetterFilterMessage(
-                                            letter = selectedLetter,
-                                            onClearFilter = { viewModel.clearLetterFilter() },
+                                        FullScreenEmpty(
+                                            title = stringResource(R.string.library_empty_title),
+                                            message =
+                                                stringResource(
+                                                    R.string.library_empty_letter_fmt,
+                                                    selectedLetter,
+                                                ),
+                                            actionText = stringResource(R.string.action_show_all),
+                                            onActionClick = { viewModel.clearLetterFilter() },
                                         )
                                     }
                                     Box(
@@ -225,9 +230,24 @@ fun LibraryContentScreen(
                                     modifier = Modifier.fillMaxSize(),
                                     contentAlignment = Alignment.Center,
                                 ) {
-                                    EmptyFilterMessage(
-                                        filterType = uiState.currentFilter,
-                                        onClearFilter = { viewModel.updateFilter(FilterType.ALL) },
+                                    val filterMessage =
+                                        when (uiState.currentFilter) {
+                                            FilterType.WATCHED ->
+                                                stringResource(R.string.filter_empty_watched)
+                                            FilterType.UNWATCHED ->
+                                                stringResource(R.string.filter_empty_unwatched)
+                                            FilterType.WATCHLIST ->
+                                                stringResource(R.string.filter_empty_watchlist)
+                                            FilterType.FAVORITES ->
+                                                stringResource(R.string.filter_empty_favorites)
+                                            FilterType.ALL ->
+                                                stringResource(R.string.filter_empty_all)
+                                        }
+                                    FullScreenEmpty(
+                                        title = stringResource(R.string.library_empty_title),
+                                        message = filterMessage,
+                                        actionText = stringResource(R.string.action_clear_filter),
+                                        onActionClick = { viewModel.updateFilter(FilterType.ALL) },
                                     )
                                 }
                             } else {
@@ -319,6 +339,8 @@ private fun MediaItemGridCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val ratingScale = rememberRatingMetadataScale()
+
     Column(modifier = modifier.fillMaxWidth()) {
         Card(
             onClick = onClick,
@@ -339,21 +361,7 @@ private fun MediaItemGridCard(
 
                 when {
                     item.played -> {
-                        Box(
-                            modifier =
-                                Modifier.align(Alignment.TopEnd)
-                                    .padding(8.dp)
-                                    .size(24.dp)
-                                    .background(MaterialTheme.colorScheme.primary, CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_check),
-                                contentDescription = stringResource(R.string.cd_watched_status),
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(16.dp),
-                            )
-                        }
+                        PlayedBadge(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp))
                     }
 
                     item is AfinityShow -> {
@@ -369,28 +377,17 @@ private fun MediaItemGridCard(
                             }
 
                         episodeText?.let { text ->
-                            Surface(
-                                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-                                shape = RoundedCornerShape(4.dp),
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
-                            ) {
-                                Text(
-                                    text =
-                                        if (text.toIntOrNull() != null && text.toInt() > 99)
-                                            stringResource(R.string.home_episode_count_plus)
-                                        else
-                                            stringResource(
-                                                R.string.home_episode_count_fmt,
-                                                text.toIntOrNull() ?: 0,
-                                            ),
-                                    style =
-                                        MaterialTheme.typography.labelSmall.copy(
-                                            fontWeight = FontWeight.Bold
+                            MediaCountBadge(
+                                text =
+                                    if (text.toIntOrNull() != null && text.toInt() > 99)
+                                        stringResource(R.string.home_episode_count_plus)
+                                    else
+                                        stringResource(
+                                            R.string.home_episode_count_fmt,
+                                            text.toIntOrNull() ?: 0,
                                         ),
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                )
-                            }
+                                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                            )
                         }
                     }
 
@@ -398,22 +395,10 @@ private fun MediaItemGridCard(
                         val displayCount = item.unplayedItemCount ?: item.itemCount
                         displayCount?.let { count ->
                             if (count > 0) {
-                                Surface(
+                                MediaCountBadge(
+                                    text = "$count",
                                     modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
-                                ) {
-                                    Text(
-                                        text = "$count",
-                                        style =
-                                            MaterialTheme.typography.labelSmall.copy(
-                                                fontWeight = FontWeight.Bold
-                                            ),
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                        modifier =
-                                            Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                    )
-                                }
+                                )
                             }
                         }
                     }
@@ -443,7 +428,12 @@ private fun MediaItemGridCard(
                     item.productionYear?.let { year ->
                         Text(
                             text = year.toString(),
-                            style = MaterialTheme.typography.bodySmall,
+                            style =
+                                MaterialTheme.typography.bodySmall.copy(
+                                    fontSize =
+                                        MaterialTheme.typography.bodySmall.fontSize *
+                                            ratingScale.textScale
+                                ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -458,11 +448,16 @@ private fun MediaItemGridCard(
                                     painter = painterResource(id = R.drawable.ic_imdb_logo),
                                     contentDescription = stringResource(R.string.cd_imdb),
                                     tint = Color.Unspecified,
-                                    modifier = Modifier.size(18.dp),
+                                    modifier = Modifier.size(ratingScale.imdbIconSize),
                                 )
                                 Text(
                                     text = String.format(Locale.US, "%.1f", rating),
-                                    style = MaterialTheme.typography.bodySmall,
+                                    style =
+                                        MaterialTheme.typography.bodySmall.copy(
+                                            fontSize =
+                                                MaterialTheme.typography.bodySmall.fontSize *
+                                                    ratingScale.textScale
+                                        ),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
@@ -483,13 +478,19 @@ private fun MediaItemGridCard(
                                                     R.drawable.ic_rotten_tomato_rotten
                                                 }
                                         ),
-                                    contentDescription = stringResource(R.string.cd_rotten_tomatoes),
+                                    contentDescription =
+                                        stringResource(R.string.cd_rotten_tomatoes),
                                     tint = Color.Unspecified,
-                                    modifier = Modifier.size(12.dp),
+                                    modifier = Modifier.size(ratingScale.rtIconSize),
                                 )
                                 Text(
                                     text = "${rtRating.toInt()}%",
-                                    style = MaterialTheme.typography.bodySmall,
+                                    style =
+                                        MaterialTheme.typography.bodySmall.copy(
+                                            fontSize =
+                                                MaterialTheme.typography.bodySmall.fontSize *
+                                                    ratingScale.textScale
+                                        ),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
@@ -506,7 +507,12 @@ private fun MediaItemGridCard(
                     item.productionYear?.let { year ->
                         Text(
                             text = year.toString(),
-                            style = MaterialTheme.typography.bodySmall,
+                            style =
+                                MaterialTheme.typography.bodySmall.copy(
+                                    fontSize =
+                                        MaterialTheme.typography.bodySmall.fontSize *
+                                            ratingScale.textScale
+                                ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -521,11 +527,16 @@ private fun MediaItemGridCard(
                                     painter = painterResource(id = R.drawable.ic_imdb_logo),
                                     contentDescription = stringResource(R.string.cd_imdb),
                                     tint = Color.Unspecified,
-                                    modifier = Modifier.size(18.dp),
+                                    modifier = Modifier.size(ratingScale.imdbIconSize),
                                 )
                                 Text(
                                     text = String.format(Locale.US, "%.1f", rating),
-                                    style = MaterialTheme.typography.bodySmall,
+                                    style =
+                                        MaterialTheme.typography.bodySmall.copy(
+                                            fontSize =
+                                                MaterialTheme.typography.bodySmall.fontSize *
+                                                    ratingScale.textScale
+                                        ),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
@@ -534,73 +545,6 @@ private fun MediaItemGridCard(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun EmptyLetterFilterMessage(
-    letter: String,
-    onClearFilter: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.library_empty_title),
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
-        )
-
-        Text(
-            text = stringResource(R.string.library_empty_letter_fmt, letter),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-
-        Button(onClick = onClearFilter) { Text(stringResource(R.string.action_show_all)) }
-    }
-}
-
-@Composable
-private fun EmptyFilterMessage(
-    filterType: FilterType,
-    onClearFilter: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val filterMessage =
-        when (filterType) {
-            FilterType.WATCHED -> stringResource(R.string.filter_empty_watched)
-            FilterType.UNWATCHED -> stringResource(R.string.filter_empty_unwatched)
-            FilterType.WATCHLIST -> stringResource(R.string.filter_empty_watchlist)
-            FilterType.FAVORITES -> stringResource(R.string.filter_empty_favorites)
-            FilterType.ALL -> stringResource(R.string.filter_empty_all)
-        }
-
-    Column(
-        modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.library_empty_title),
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
-        )
-
-        Text(
-            text = filterMessage,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-
-        Button(onClick = onClearFilter) { Text(stringResource(R.string.action_clear_filter)) }
     }
 }
 
@@ -802,40 +746,6 @@ private fun FilterRow(
                         }
                     } else null,
                 shape = RoundedCornerShape(50),
-            )
-        }
-    }
-}
-
-@Composable
-private fun AlphabetScroller(
-    selectedLetter: String?,
-    onLetterSelected: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val letters = listOf("#") + ('A'..'Z').map { it.toString() }
-
-    LazyColumn(
-        modifier = modifier.width(32.dp).padding(vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        items(items = letters, key = { letter -> letter }) { letter ->
-            val isSelected = selectedLetter == letter
-            Text(
-                text = letter,
-                style =
-                    MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                    ),
-                color =
-                    if (isSelected) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier =
-                    Modifier.clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) { onLetterSelected(letter) }
-                        .padding(horizontal = 4.dp, vertical = 2.dp)
-                        .fillMaxWidth(),
             )
         }
     }

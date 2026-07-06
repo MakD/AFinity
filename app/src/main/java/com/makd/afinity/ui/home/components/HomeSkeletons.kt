@@ -30,7 +30,7 @@ import com.makd.afinity.ui.utils.shimmerEffect
 fun ContinueWatchingSkeleton(widthSizeClass: WindowWidthSizeClass) {
     val cardWidth = widthSizeClass.portraitWidth
 
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
         Box(
             modifier =
                 Modifier.width(200.dp)
@@ -82,7 +82,7 @@ fun ContinueWatchingSkeleton(widthSizeClass: WindowWidthSizeClass) {
 fun MoviesSectionSkeleton(widthSizeClass: WindowWidthSizeClass) {
     val cardWidth = widthSizeClass.portraitWidth
 
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
         Box(
             modifier =
                 Modifier.width(150.dp)
@@ -152,7 +152,7 @@ fun MoviesSectionSkeleton(widthSizeClass: WindowWidthSizeClass) {
 fun TvSeriesSectionSkeleton(widthSizeClass: WindowWidthSizeClass) {
     val cardWidth = widthSizeClass.portraitWidth
 
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
         Box(
             modifier =
                 Modifier.width(180.dp)

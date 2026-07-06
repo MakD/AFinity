@@ -43,8 +43,8 @@ import com.makd.afinity.data.updater.models.ApkVerification
 import com.makd.afinity.data.updater.models.GitHubRelease
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import com.makd.afinity.data.updater.models.UpdateState
-import com.makd.afinity.ui.settings.SettingsDivider
-import com.makd.afinity.ui.settings.SettingsGroup
+import com.makd.afinity.ui.components.SettingsDivider
+import com.makd.afinity.ui.components.SettingsGroup
 
 @Composable
 fun UpdateSection(

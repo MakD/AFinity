@@ -31,7 +31,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -95,7 +94,7 @@ fun UpdateAvailableDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(24.dp),
+        shape = MaterialTheme.shapes.extraLarge,
         icon = {
             Icon(
                 painter = painterResource(id = R.drawable.ic_system_update),
@@ -124,7 +123,7 @@ fun UpdateAvailableDialog(
                     modifier =
                         Modifier.background(
                                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                shape = RoundedCornerShape(16.dp),
+                                shape = MaterialTheme.shapes.large,
                             )
                             .padding(horizontal = 12.dp, vertical = 6.dp),
                 ) {
@@ -176,7 +175,7 @@ fun UpdateAvailableDialog(
                 ) {
                     Surface(
                         modifier = Modifier.fillMaxWidth().weight(1f),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = MaterialTheme.shapes.large,
                         color = MaterialTheme.colorScheme.surfaceContainerLow,
                     ) {
                         Box(
@@ -439,7 +438,7 @@ private fun VerificationConsole(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         color = ConsoleBackground,
     ) {
         Column(

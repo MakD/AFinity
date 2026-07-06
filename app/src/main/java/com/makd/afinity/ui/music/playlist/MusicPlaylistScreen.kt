@@ -30,7 +30,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -66,18 +65,18 @@ import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.music.RadioSeed
-import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 import com.makd.afinity.ui.components.AFinitySnackbar
-import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.item.components.DownloadProgressIndicator
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
+import com.makd.afinity.ui.music.components.MusicDetailActionRow
 import com.makd.afinity.ui.music.components.MusicHeroBackground
+import com.makd.afinity.ui.music.components.MusicHomeTopAppBar
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
 import com.makd.afinity.ui.music.library.startMusicService
@@ -165,7 +164,9 @@ fun MusicPlaylistScreen(
                     Spacer(Modifier.height(20.dp))
 
                     Text(
-                        text = uiState.playlist?.name ?: stringResource(R.string.music_fallback_playlist),
+                        text =
+                            uiState.playlist?.name
+                                ?: stringResource(R.string.music_fallback_playlist),
                         style =
                             MaterialTheme.typography.headlineSmall.copy(
                                 fontWeight = FontWeight.ExtraBold
@@ -206,105 +207,74 @@ fun MusicPlaylistScreen(
                     item { Spacer(modifier = Modifier.statusBarsPadding().height(64.dp)) }
 
                     item {
-                        Row(
+                        MusicDetailActionRow(
                             modifier =
                                 Modifier.fillMaxWidth()
                                     .padding(horizontal = 12.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
+                            onShuffle = {
+                                startMusicService(context)
+                                playerViewModel.playQueue(uiState.tracks.shuffled(), 0)
+                            },
+                            onPlay = {
+                                startMusicService(context)
+                                playerViewModel.playQueue(uiState.tracks, 0)
+                            },
                         ) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                IconButton(onClick = { showDeleteConfirm = true }) {
+                            IconButton(onClick = { showDeleteConfirm = true }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_delete),
+                                    contentDescription =
+                                        stringResource(R.string.cd_music_delete_playlist),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(26.dp),
+                                )
+                            }
+                            uiState.playlist?.let { playlist ->
+                                IconButton(
+                                    enabled = !isOffline,
+                                    onClick = {
+                                        startMusicService(context)
+                                        playerViewModel.playInstantMix(playlist.id)
+                                    },
+                                ) {
                                     Icon(
-                                        painter = painterResource(R.drawable.ic_delete),
-                                        contentDescription = stringResource(R.string.cd_music_delete_playlist),
+                                        painter = painterResource(R.drawable.ic_compass),
+                                        contentDescription =
+                                            stringResource(R.string.cd_music_instant_mix),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(26.dp),
                                     )
                                 }
-                                uiState.playlist?.let { playlist ->
-                                    IconButton(
-                                        enabled = !isOffline,
-                                        onClick = {
-                                            startMusicService(context)
-                                            playerViewModel.playInstantMix(playlist.id)
-                                        },
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.ic_compass),
-                                            contentDescription = stringResource(R.string.cd_music_instant_mix),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(26.dp),
-                                        )
-                                    }
-                                    IconButton(
-                                        enabled = !isOffline && uiState.tracks.isNotEmpty(),
-                                        onClick = {
-                                            val firstTrack =
-                                                uiState.tracks.firstOrNull() ?: return@IconButton
-                                            radioSeed =
-                                                RadioSeed(
-                                                    trackId = firstTrack.id,
-                                                    albumId = firstTrack.albumId,
-                                                    sourceTracks = uiState.tracks,
-                                                )
-                                        },
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.ic_radio),
-                                            contentDescription = stringResource(R.string.cd_music_start_radio),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(26.dp),
-                                        )
-                                    }
-                                }
-                                DownloadProgressIndicator(
-                                    downloadInfo = uiState.playlistDownloadInfo,
-                                    onDownloadClick = { viewModel.downloadPlaylist() },
-                                    onPauseClick = {},
-                                    onResumeClick = { viewModel.downloadPlaylist() },
-                                    onCancelClick = { viewModel.cancelPlaylistDownload() },
-                                    iconSize = 26.dp,
-                                )
-                            }
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(end = 8.dp),
-                            ) {
                                 IconButton(
+                                    enabled = !isOffline && uiState.tracks.isNotEmpty(),
                                     onClick = {
-                                        startMusicService(context)
-                                        playerViewModel.playQueue(uiState.tracks.shuffled(), 0)
-                                    }
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_arrows_shuffle),
-                                        contentDescription = stringResource(R.string.cd_music_shuffle),
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(28.dp),
-                                    )
-                                }
-                                FloatingActionButton(
-                                    onClick = {
-                                        startMusicService(context)
-                                        playerViewModel.playQueue(uiState.tracks, 0)
+                                        val firstTrack =
+                                            uiState.tracks.firstOrNull() ?: return@IconButton
+                                        radioSeed =
+                                            RadioSeed(
+                                                trackId = firstTrack.id,
+                                                albumId = firstTrack.albumId,
+                                                sourceTracks = uiState.tracks,
+                                            )
                                     },
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                                    shape = CircleShape,
-                                    modifier = Modifier.size(56.dp),
                                 ) {
                                     Icon(
-                                        painter = painterResource(R.drawable.ic_player_play_filled),
-                                        contentDescription = stringResource(R.string.cd_play),
+                                        painter = painterResource(R.drawable.ic_radio),
+                                        contentDescription =
+                                            stringResource(R.string.cd_music_start_radio),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(26.dp),
                                     )
                                 }
                             }
+                            DownloadProgressIndicator(
+                                downloadInfo = uiState.playlistDownloadInfo,
+                                onDownloadClick = { viewModel.downloadPlaylist() },
+                                onPauseClick = {},
+                                onResumeClick = { viewModel.downloadPlaylist() },
+                                onCancelClick = { viewModel.cancelPlaylistDownload() },
+                                iconSize = 26.dp,
+                            )
                         }
                     }
 
@@ -410,7 +380,9 @@ fun MusicPlaylistScreen(
                             )
                     ) {
                         Text(
-                            text = uiState.playlist?.name ?: stringResource(R.string.music_fallback_playlist),
+                            text =
+                                uiState.playlist?.name
+                                    ?: stringResource(R.string.music_fallback_playlist),
                             style =
                                 MaterialTheme.typography.headlineLarge.copy(
                                     fontWeight = FontWeight.ExtraBold
@@ -442,104 +414,73 @@ fun MusicPlaylistScreen(
                 }
 
                 item {
-                    Row(
+                    MusicDetailActionRow(
                         modifier =
                             Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
+                        onShuffle = {
+                            startMusicService(context)
+                            playerViewModel.playQueue(uiState.tracks.shuffled(), 0)
+                        },
+                        onPlay = {
+                            startMusicService(context)
+                            playerViewModel.playQueue(uiState.tracks, 0)
+                        },
                     ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            IconButton(onClick = { showDeleteConfirm = true }) {
+                        IconButton(onClick = { showDeleteConfirm = true }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_delete),
+                                contentDescription =
+                                    stringResource(R.string.cd_music_delete_playlist),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(26.dp),
+                            )
+                        }
+                        uiState.playlist?.let { playlist ->
+                            IconButton(
+                                enabled = !isOffline,
+                                onClick = {
+                                    startMusicService(context)
+                                    playerViewModel.playInstantMix(playlist.id)
+                                },
+                            ) {
                                 Icon(
-                                    painter = painterResource(R.drawable.ic_delete),
-                                    contentDescription = "Delete playlist",
+                                    painter = painterResource(R.drawable.ic_compass),
+                                    contentDescription =
+                                        stringResource(R.string.cd_music_instant_mix),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(26.dp),
                                 )
                             }
-                            uiState.playlist?.let { playlist ->
-                                IconButton(
-                                    onClick = {
-                                        startMusicService(context)
-                                        playerViewModel.playInstantMix(playlist.id)
-                                    }
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_compass),
-                                        contentDescription = "Instant Mix",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(26.dp),
-                                    )
-                                }
-                                IconButton(
-                                    enabled = !isOffline && uiState.tracks.isNotEmpty(),
-                                    onClick = {
-                                        val firstTrack =
-                                            uiState.tracks.firstOrNull() ?: return@IconButton
-                                        radioSeed =
-                                            RadioSeed(
-                                                trackId = firstTrack.id,
-                                                albumId = firstTrack.albumId,
-                                                sourceTracks = uiState.tracks,
-                                            )
-                                    },
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_radio),
-                                        contentDescription = "Start Radio",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(26.dp),
-                                    )
-                                }
-                            }
-                            DownloadProgressIndicator(
-                                downloadInfo = uiState.playlistDownloadInfo,
-                                onDownloadClick = { viewModel.downloadPlaylist() },
-                                onPauseClick = {},
-                                onResumeClick = { viewModel.downloadPlaylist() },
-                                onCancelClick = { viewModel.cancelPlaylistDownload() },
-                                iconSize = 26.dp,
-                            )
-                        }
-
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(end = 8.dp),
-                        ) {
                             IconButton(
+                                enabled = !isOffline && uiState.tracks.isNotEmpty(),
                                 onClick = {
-                                    startMusicService(context)
-                                    playerViewModel.playQueue(uiState.tracks.shuffled(), 0)
-                                }
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_arrows_shuffle),
-                                    contentDescription = "Shuffle",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(28.dp),
-                                )
-                            }
-                            FloatingActionButton(
-                                onClick = {
-                                    startMusicService(context)
-                                    playerViewModel.playQueue(uiState.tracks, 0)
+                                    val firstTrack =
+                                        uiState.tracks.firstOrNull() ?: return@IconButton
+                                    radioSeed =
+                                        RadioSeed(
+                                            trackId = firstTrack.id,
+                                            albumId = firstTrack.albumId,
+                                            sourceTracks = uiState.tracks,
+                                        )
                                 },
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                                shape = CircleShape,
-                                modifier = Modifier.size(56.dp),
                             ) {
                                 Icon(
-                                    painter = painterResource(R.drawable.ic_player_play_filled),
-                                    contentDescription = "Play",
+                                    painter = painterResource(R.drawable.ic_radio),
+                                    contentDescription =
+                                        stringResource(R.string.cd_music_start_radio),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(26.dp),
                                 )
                             }
                         }
+                        DownloadProgressIndicator(
+                            downloadInfo = uiState.playlistDownloadInfo,
+                            onDownloadClick = { viewModel.downloadPlaylist() },
+                            onPauseClick = {},
+                            onResumeClick = { viewModel.downloadPlaylist() },
+                            onCancelClick = { viewModel.cancelPlaylistDownload() },
+                            iconSize = 26.dp,
+                        )
                     }
                 }
 
@@ -585,35 +526,7 @@ fun MusicPlaylistScreen(
             }
         }
 
-        AfinityTopAppBar(
-            title = {
-                IconButton(
-                    onClick = {
-                        navController.navigate(Destination.HOME.route) {
-                            popUpTo(Destination.HOME.route) { inclusive = false }
-                            launchSingleTop = true
-                        }
-                    },
-                    modifier = Modifier.size(42.dp),
-                ) {
-                    Box(
-                        modifier =
-                            Modifier.fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.3f), CircleShape)
-                                .clip(CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_home),
-                            contentDescription = stringResource(R.string.cd_music_go_to_home),
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp),
-                        )
-                    }
-                }
-            },
-            backgroundOpacity = { if (isLandscape) 0f else topBarOpacity },
-        )
+        MusicHomeTopAppBar(navController, isLandscape, topBarOpacity)
 
         SnackbarHost(
             hostState = snackbarHostState,
@@ -635,6 +548,8 @@ fun MusicPlaylistScreen(
     }
 
     if (showAddToPlaylist) {
+        val addedToPlaylistFmt = stringResource(R.string.music_snackbar_added_to_playlist_fmt)
+        val createdPlaylistFmt = stringResource(R.string.music_snackbar_created_playlist_fmt)
         AddToPlaylistDialog(
             trackIds = addToPlaylistTrackIds,
             viewModel = addToPlaylistViewModel,
@@ -649,8 +564,10 @@ fun MusicPlaylistScreen(
                 }
                 val message =
                     when (result) {
-                        is AddToPlaylistResult.Added -> "Added to \"${result.playlistName}\""
-                        is AddToPlaylistResult.Created -> "Created \"${result.playlistName}\""
+                        is AddToPlaylistResult.Added ->
+                            addedToPlaylistFmt.format(result.playlistName)
+                        is AddToPlaylistResult.Created ->
+                            createdPlaylistFmt.format(result.playlistName)
                         is AddToPlaylistResult.Error -> result.message
                         else -> null
                     }

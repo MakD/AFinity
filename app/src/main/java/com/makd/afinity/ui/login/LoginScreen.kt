@@ -39,7 +39,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -92,6 +91,7 @@ import coil3.request.crossfade
 import com.makd.afinity.R
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
+import com.makd.afinity.ui.components.LoadingButton
 import com.makd.afinity.util.isInsecurePublicUrl
 
 enum class LoginMethod {
@@ -439,8 +439,7 @@ private fun InsecureConnectionBanner(serverUrl: String) {
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text =
-                        "Warning: Connecting over HTTP sends your password in plain text. HTTPS is highly recommended.",
+                    text = stringResource(R.string.warning_http_insecure),
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -864,7 +863,9 @@ private fun UserAvatarItem(
     onClick: () -> Unit,
 ) {
     val imageUrl =
-        user.primaryImageTag?.let { "$serverUrl/Users/${user.id}/Images/Primary?tag=$it&maxWidth=252" }
+        user.primaryImageTag?.let {
+            "$serverUrl/Users/${user.id}/Images/Primary?tag=$it&maxWidth=252"
+        }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -1001,30 +1002,12 @@ private fun PasswordForm(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Button(
+        LoadingButton(
+            loading = uiState.isLoggingIn,
+            text = stringResource(R.string.login_btn_sign_in),
             onClick = onLogin,
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            enabled = !uiState.isLoggingIn && uiState.username.isNotBlank(),
-            shape = RoundedCornerShape(16.dp),
-            colors =
-                ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-        ) {
-            if (uiState.isLoggingIn) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(24.dp),
-                    strokeWidth = 3.dp,
-                )
-            } else {
-                Text(
-                    stringResource(R.string.login_btn_sign_in),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-            }
-        }
+            enabled = uiState.username.isNotBlank(),
+        )
     }
 }
 

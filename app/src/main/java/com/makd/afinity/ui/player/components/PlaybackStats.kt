@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
@@ -63,7 +64,7 @@ fun PlaybackStatsOverlay(stats: PlaybackStats, onClose: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "Playback Statistics",
+                        text = stringResource(R.string.playback_stats_title),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.SemiBold,
@@ -71,7 +72,7 @@ fun PlaybackStatsOverlay(stats: PlaybackStats, onClose: () -> Unit) {
                     IconButton(onClick = onClose) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_close),
-                            contentDescription = "Close Stats",
+                            contentDescription = stringResource(R.string.cd_playback_stats_close),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -79,11 +80,14 @@ fun PlaybackStatsOverlay(stats: PlaybackStats, onClose: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                InfoSectionTitle("Playback Info")
-                InfoRow("Player", stats.playerType)
-                InfoRow("Play method", "Direct streaming")
+                InfoSectionTitle(stringResource(R.string.playback_stats_section_playback_info))
+                InfoRow(stringResource(R.string.playback_stats_label_player), stats.playerType)
+                InfoRow(
+                    stringResource(R.string.playback_stats_label_play_method),
+                    stringResource(R.string.playback_stats_value_direct_streaming),
+                )
                 if (stats.hasVideo) {
-                    InfoRow("Hardware Dec", stats.hwDec)
+                    InfoRow(stringResource(R.string.playback_stats_label_hardware_dec), stats.hwDec)
                 }
 
                 HorizontalDivider(
@@ -91,10 +95,10 @@ fun PlaybackStatsOverlay(stats: PlaybackStats, onClose: () -> Unit) {
                     color = MaterialTheme.colorScheme.surfaceVariant,
                 )
 
-                InfoSectionTitle("Network & Buffer")
-                InfoRow("Forward buffer", stats.bufferHealth)
+                InfoSectionTitle(stringResource(R.string.playback_stats_section_network_buffer))
+                InfoRow(stringResource(R.string.playback_stats_label_forward_buffer), stats.bufferHealth)
                 if (stats.videoBitrate != "Unknown") {
-                    InfoRow("Video bitrate", stats.videoBitrate)
+                    InfoRow(stringResource(R.string.playback_stats_label_video_bitrate), stats.videoBitrate)
                 }
 
                 if (stats.hasVideo) {
@@ -102,22 +106,31 @@ fun PlaybackStatsOverlay(stats: PlaybackStats, onClose: () -> Unit) {
                         modifier = Modifier.padding(vertical = 16.dp),
                         color = MaterialTheme.colorScheme.surfaceVariant,
                     )
-                    InfoSectionTitle("Video Info")
-                    InfoRow("Resolution", stats.videoResolution)
-                    InfoRow("Dropped frames", stats.droppedFrames.toString())
+                    InfoSectionTitle(stringResource(R.string.playback_stats_section_video_info))
+                    InfoRow(stringResource(R.string.playback_stats_label_resolution), stats.videoResolution)
+                    InfoRow(
+                        stringResource(R.string.playback_stats_label_dropped_frames),
+                        stats.droppedFrames.toString(),
+                    )
                 }
 
                 HorizontalDivider(
                     modifier = Modifier.padding(vertical = 16.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
                 )
-                InfoSectionTitle("Media Info")
+                InfoSectionTitle(stringResource(R.string.playback_stats_section_media_info))
                 if (stats.hasVideo) {
-                    InfoRow("Video codec", stats.videoCodec)
+                    InfoRow(stringResource(R.string.playback_stats_label_video_codec), stats.videoCodec)
                 }
-                InfoRow("Audio codec", stats.audioCodec)
-                InfoRow("Audio channels", stats.audioChannels.toString())
-                InfoRow("Sample rate", "${stats.audioSampleRate} Hz")
+                InfoRow(stringResource(R.string.playback_stats_label_audio_codec), stats.audioCodec)
+                InfoRow(
+                    stringResource(R.string.playback_stats_label_audio_channels),
+                    stats.audioChannels.toString(),
+                )
+                InfoRow(
+                    stringResource(R.string.playback_stats_label_sample_rate),
+                    stringResource(R.string.playback_stats_value_sample_rate_fmt, stats.audioSampleRate),
+                )
             }
         }
     }

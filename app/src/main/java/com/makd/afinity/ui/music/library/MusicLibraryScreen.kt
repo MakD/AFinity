@@ -7,7 +7,6 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,10 +34,8 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -82,7 +79,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -107,6 +103,7 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.player.AudioService
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AlphabetScroller
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.home.components.ArtistAlbumsCarousel
@@ -368,7 +365,7 @@ internal fun AlbumsGrid(
             }
         }
         Box(modifier = Modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
-            MusicAlphabetScroller(
+            AlphabetScroller(
                 selectedLetter = letterFilter,
                 onLetterSelected = onLetterSelected,
             )
@@ -438,7 +435,7 @@ internal fun ArtistsGrid(
             }
         }
         Box(modifier = Modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
-            MusicAlphabetScroller(
+            AlphabetScroller(
                 selectedLetter = letterFilter,
                 onLetterSelected = onLetterSelected,
             )
@@ -707,45 +704,6 @@ private fun TabControlsRow(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun MusicAlphabetScroller(
-    selectedLetter: String?,
-    onLetterSelected: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val letters = listOf("#") + ('A'..'Z').map { it.toString() }
-    Column(
-        modifier =
-            modifier.width(32.dp).padding(vertical = 8.dp).verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        letters.forEach { letter ->
-            val isSelected = selectedLetter == letter
-            Text(
-                text = letter,
-                style =
-                    MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                    ),
-                color =
-                    if (isSelected) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier =
-                    Modifier.clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() },
-                        ) {
-                            onLetterSelected(letter)
-                        }
-                        .padding(horizontal = 4.dp, vertical = 2.dp)
-                        .fillMaxWidth(),
-            )
         }
     }
 }

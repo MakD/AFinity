@@ -30,27 +30,13 @@ import com.makd.afinity.ui.theme.CardDimensions
 
 @Composable
 fun StudioCard(studio: Studio, onClick: () -> Unit, cardWidth: Dp, modifier: Modifier = Modifier) {
-
-    Column(modifier = modifier.width(cardWidth)) {
-        Card(
-            onClick = onClick,
-            modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF1C1C1C)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        ) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                AsyncImage(
-                    imageUrl = studio.getImageUrl(),
-                    contentDescription = studio.name,
-                    blurHash = null,
-                    targetWidth = cardWidth,
-                    targetHeight = cardWidth * 9f / 16f,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
-                )
-            }
-        }
-    }
+    MediaLogoCard(
+        imageUrl = studio.getImageUrl(),
+        contentDescription = studio.name,
+        onClick = onClick,
+        cardWidth = cardWidth,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -60,18 +46,35 @@ fun NetworkCard(
     cardWidth: Dp,
     modifier: Modifier = Modifier,
 ) {
+    MediaLogoCard(
+        imageUrl = network.getImageUrl(),
+        contentDescription = network.name,
+        onClick = onClick,
+        cardWidth = cardWidth,
+        modifier = modifier,
+    )
+}
 
+@Composable
+private fun MediaLogoCard(
+    imageUrl: String?,
+    contentDescription: String,
+    onClick: () -> Unit,
+    cardWidth: Dp,
+    modifier: Modifier = Modifier,
+) {
     Column(modifier = modifier.width(cardWidth)) {
         Card(
             onClick = onClick,
             modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF1C1C1C)),
+            colors =
+                CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 AsyncImage(
-                    imageUrl = network.getImageUrl(),
-                    contentDescription = network.name,
+                    imageUrl = imageUrl,
+                    contentDescription = contentDescription,
                     blurHash = null,
                     targetWidth = cardWidth,
                     targetHeight = cardWidth * 9f / 16f,

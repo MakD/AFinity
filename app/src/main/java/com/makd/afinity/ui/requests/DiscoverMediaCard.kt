@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -31,7 +30,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
-import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.theme.CardDimensions
@@ -67,53 +65,10 @@ fun DiscoverMediaCard(
 
                 if (item.hasExistingRequest()) {
                     item.getDisplayStatus()?.let { status ->
-                        val backgroundColor =
-                            when (status) {
-                                MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.surfaceVariant
-                                MediaStatus.PENDING -> MaterialTheme.colorScheme.tertiary
-                                MediaStatus.PROCESSING -> MaterialTheme.colorScheme.primary
-                                MediaStatus.PARTIALLY_AVAILABLE ->
-                                    MaterialTheme.colorScheme.secondary
-                                MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.secondary
-                                MediaStatus.DELETED -> MaterialTheme.colorScheme.error
-                            }
-
-                        val textColor =
-                            when (status) {
-                                MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant
-                                MediaStatus.PENDING -> MaterialTheme.colorScheme.onTertiary
-                                MediaStatus.PROCESSING -> MaterialTheme.colorScheme.onPrimary
-                                MediaStatus.PARTIALLY_AVAILABLE ->
-                                    MaterialTheme.colorScheme.onSecondary
-                                MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.onSecondary
-                                MediaStatus.DELETED -> MaterialTheme.colorScheme.onError
-                            }
-
-                        Card(
+                        StatusChip(
+                            attributes = mediaStatusAttributes(status),
                             modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-                            shape = RoundedCornerShape(4.dp),
-                            colors = CardDefaults.cardColors(containerColor = backgroundColor),
-                        ) {
-                            val statusText =
-                                when (status) {
-                                    MediaStatus.PENDING -> stringResource(R.string.status_pending)
-                                    MediaStatus.PROCESSING ->
-                                        stringResource(R.string.status_processing)
-                                    MediaStatus.PARTIALLY_AVAILABLE ->
-                                        stringResource(R.string.status_partially_available)
-                                    MediaStatus.AVAILABLE ->
-                                        stringResource(R.string.status_available)
-                                    MediaStatus.DELETED -> stringResource(R.string.status_deleted)
-                                    else -> stringResource(R.string.status_unknown)
-                                }
-                            Text(
-                                text = statusText,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = textColor,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
+                        )
                     }
                 }
             }

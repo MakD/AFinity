@@ -109,6 +109,7 @@
     <string name="meta_runtime_minutes">%1$dm</string>
     <string name="meta_parts_fmt">%1$d Parts</string>
     <string name="meta_part_of_fmt">Part %1$d/%2$d</string>
+    <string name="chapter_number_fmt">Chapter %1$d</string>
     <string name="meta_ends_at">Ends at %1$s</string>
     <string name="meta_episode_count">%1$d episodes</string>
     <string name="similar_items_title">More Like This</string>
@@ -280,6 +281,33 @@
 
     <string name="player_speed_title_fmt">Current Speed %1$.2fx</string>
     <string name="player_speed_value_fmt">%.2f</string>
+    <string name="player_fast_forward_speed_label">2x Speed</string>
+    <string name="syncplay_waiting_for_members">Waiting for other members…</string>
+    <string name="syncplay_synced_badge">SYNCED</string>
+    <string name="home_more_from_artist_fmt">More From %1$s</string>
+    <string name="music_snackbar_added_to_playlist_fmt">Added to \"%1$s\"</string>
+    <string name="music_snackbar_created_playlist_fmt">Created \"%1$s\"</string>
+
+    <!--Playback Stats Overlay-->
+    <string name="playback_stats_title">Playback Statistics</string>
+    <string name="cd_playback_stats_close">Close Stats</string>
+    <string name="playback_stats_section_playback_info">Playback Info</string>
+    <string name="playback_stats_label_player">Player</string>
+    <string name="playback_stats_label_play_method">Play method</string>
+    <string name="playback_stats_value_direct_streaming">Direct streaming</string>
+    <string name="playback_stats_label_hardware_dec">Hardware Dec</string>
+    <string name="playback_stats_section_network_buffer">Network &amp; Buffer</string>
+    <string name="playback_stats_label_forward_buffer">Forward buffer</string>
+    <string name="playback_stats_label_video_bitrate">Video bitrate</string>
+    <string name="playback_stats_section_video_info">Video Info</string>
+    <string name="playback_stats_label_resolution">Resolution</string>
+    <string name="playback_stats_label_dropped_frames">Dropped frames</string>
+    <string name="playback_stats_section_media_info">Media Info</string>
+    <string name="playback_stats_label_video_codec">Video codec</string>
+    <string name="playback_stats_label_audio_codec">Audio codec</string>
+    <string name="playback_stats_label_audio_channels">Audio channels</string>
+    <string name="playback_stats_label_sample_rate">Sample rate</string>
+    <string name="playback_stats_value_sample_rate_fmt">%1$s Hz</string>
     <string name="cd_speed_decrease">Decrease speed</string>
     <string name="cd_speed_increase">Increase speed</string>
 
@@ -798,6 +826,7 @@
     <string name="section_episodes">Episodes</string>
     <string name="section_tv_channels">Live TV Channels</string>
     <string name="section_people">People</string>
+    <string name="section_ratings">Ratings</string>
 
     <string name="warning_http_insecure">Warning: Connecting over HTTP sends your password in plain text. HTTPS is highly recommended.</string>
 

@@ -28,9 +28,9 @@ import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
-import com.makd.afinity.ui.audiobookshelf.libraries.components.AlphabetScroller
 import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AlphabetScroller
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.main.MainUiState
 
@@ -107,7 +107,10 @@ fun AudiobookshelfLibraryScreen(
                             }
                         }
 
-                        Box(modifier = Modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxHeight(),
+                            contentAlignment = Alignment.Center,
+                        ) {
                             AlphabetScroller(
                                 selectedLetter = selectedLetter,
                                 onLetterSelected = viewModel::onLetterSelected,

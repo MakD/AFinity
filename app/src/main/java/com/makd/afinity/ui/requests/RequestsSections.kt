@@ -32,6 +32,7 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
 import com.makd.afinity.data.models.jellyseerr.Network
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.Studio
+import com.makd.afinity.ui.home.components.HomeSectionHeader
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
@@ -53,12 +54,7 @@ fun MyRequestsSection(
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
-        Text(
-            text = stringResource(R.string.section_recent_requests),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
+        HomeSectionHeader(title = stringResource(R.string.section_recent_requests))
 
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
@@ -92,12 +88,7 @@ fun AvailableRequestsSection(
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
-        Text(
-            text = stringResource(R.string.section_available_requests),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
+        HomeSectionHeader(title = stringResource(R.string.section_available_requests))
 
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
@@ -194,12 +185,7 @@ fun StudiosSection(
     val fixedRowHeight = cardHeight + 10.dp
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
-        Text(
-            text = stringResource(R.string.section_studios),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
+        HomeSectionHeader(title = stringResource(R.string.section_studios))
 
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
@@ -229,12 +215,7 @@ fun NetworksSection(
         CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
-        Text(
-            text = stringResource(R.string.section_networks),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
+        HomeSectionHeader(title = stringResource(R.string.section_networks))
 
         LazyRow(
             modifier = Modifier.height(cardHeight),
@@ -266,12 +247,7 @@ fun MovieGenresSection(
     val fixedRowHeight = cardHeight + 10.dp
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
-        Text(
-            text = stringResource(R.string.section_movie_genres),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
+        HomeSectionHeader(title = stringResource(R.string.section_movie_genres))
 
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
@@ -304,12 +280,7 @@ fun TvGenresSection(
     val fixedRowHeight = cardHeight + 10.dp
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
-        Text(
-            text = stringResource(R.string.section_tv_genres),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
+        HomeSectionHeader(title = stringResource(R.string.section_tv_genres))
 
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),

@@ -31,8 +31,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
@@ -52,7 +50,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
@@ -64,7 +61,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
@@ -79,6 +75,8 @@ import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.DownloadListItemRow
+import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.downloads.DownloadsViewModel
 import java.util.UUID
 
@@ -147,7 +145,9 @@ fun DownloadSettingsScreen(
                     ),
             )
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) }) },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) })
+        },
         containerColor = MaterialTheme.colorScheme.surface,
         modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
@@ -837,99 +837,69 @@ fun CompletedDownloadRow(
         append(formatSize(download.totalBytes))
     }
 
-    ListItem(
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        leadingContent = {
-            AsyncImage(
-                imageUrl =
-                    if (isEpisode) download.seriesImageUrl ?: download.imageUrl
-                    else download.imageUrl,
-                contentDescription = null,
-                modifier =
-                    Modifier.width(56.dp)
-                        .aspectRatio(2f / 3f)
-                        .clip(RoundedCornerShape(6.dp))
-                        .alpha(if (isVolumeAvailable) 1f else 0.4f),
-                contentScale = ContentScale.Crop,
-                targetWidth = 56.dp,
-                targetHeight = 84.dp,
-            )
-        },
-        headlineContent = {
+    DownloadListItemRow(
+        imageUrl =
+            if (isEpisode) download.seriesImageUrl ?: download.imageUrl else download.imageUrl,
+        title = download.itemName,
+        aspectRatio = 2f / 3f,
+        imageAlpha = if (isVolumeAvailable) 1f else 0.4f,
+        onDelete = { onDelete(download.id) },
+    ) {
+        Column {
             Text(
-                text = download.itemName,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                text = subtitleText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-        },
-        supportingContent = {
-            Column {
-                Text(
-                    text = subtitleText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (!isVolumeAvailable) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 2.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_folder),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(14.dp),
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text =
-                                stringResource(
-                                    R.string.download_unavailable_label,
-                                    volumeLabel
-                                        ?: stringResource(R.string.storage_unavailable_volume),
-                                ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                } else if (volumeLabel != null) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 2.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_folder),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(14.dp),
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = volumeLabel,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
+            if (!isVolumeAvailable) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 2.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_folder),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.download_unavailable_label,
+                                volumeLabel ?: stringResource(R.string.storage_unavailable_volume),
+                            ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            } else if (volumeLabel != null) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 2.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_folder),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = volumeLabel,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
-        },
-        trailingContent = {
-            IconButton(onClick = { onDelete(download.id) }) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_delete),
-                    contentDescription = stringResource(R.string.cd_delete_download),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                )
-            }
-        },
-    )
+        }
+    }
 }
 
 @Composable
@@ -1124,39 +1094,13 @@ private fun aggregateDeviceStats(
 
 @Composable
 fun EmptyDownloadsState() {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(top = 64.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f),
-            modifier = Modifier.size(120.dp),
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_download),
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(24.dp))
-        Text(
-            text = stringResource(R.string.empty_downloads_title),
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = stringResource(R.string.empty_downloads_message),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-    }
+    EmptyState(
+        icon = painterResource(id = R.drawable.ic_download),
+        title = stringResource(R.string.empty_downloads_title),
+        message = stringResource(R.string.empty_downloads_message),
+        iconSize = 48.dp,
+        badgeAlpha = 0.5f,
+    )
 }
 
 @Composable
@@ -1290,46 +1234,20 @@ fun AbsCompletedDownloadRow(
         append(formatSize(download.bytesDownloaded))
     }
 
-    ListItem(
-        modifier = Modifier.clickable { onClick() },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        leadingContent = {
-            AsyncImage(
-                imageUrl = download.coverUrl,
-                contentDescription = null,
-                modifier = Modifier.width(56.dp).aspectRatio(1f).clip(RoundedCornerShape(6.dp)),
-                contentScale = ContentScale.Crop,
-                targetWidth = 56.dp,
-                targetHeight = 56.dp,
-            )
-        },
-        headlineContent = {
-            Text(
-                text = download.title,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        supportingContent = {
-            Text(
-                text = subtitleText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        trailingContent = {
-            IconButton(onClick = { onDelete(download.id) }) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_delete),
-                    contentDescription = stringResource(R.string.cd_delete_download),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                )
-            }
-        },
-    )
+    DownloadListItemRow(
+        imageUrl = download.coverUrl,
+        title = download.title,
+        onClick = onClick,
+        onDelete = { onDelete(download.id) },
+    ) {
+        Text(
+            text = subtitleText,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
 
 @Composable
@@ -1347,46 +1265,20 @@ fun AbsPodcastGroupRow(
     val subtitleText =
         "$count episode${if (count > 1) "s" else ""} \u00B7 ${formatSize(totalBytes)}"
 
-    ListItem(
-        modifier = Modifier.clickable { onClick() },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        leadingContent = {
-            AsyncImage(
-                imageUrl = first.coverUrl,
-                contentDescription = null,
-                modifier = Modifier.width(56.dp).aspectRatio(1f).clip(RoundedCornerShape(6.dp)),
-                contentScale = ContentScale.Crop,
-                targetWidth = 56.dp,
-                targetHeight = 56.dp,
-            )
-        },
-        headlineContent = {
-            Text(
-                text = podcastName,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        supportingContent = {
-            Text(
-                text = subtitleText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        trailingContent = {
-            IconButton(onClick = onDelete) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_delete),
-                    contentDescription = stringResource(R.string.cd_delete_download),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                )
-            }
-        },
-    )
+    DownloadListItemRow(
+        imageUrl = first.coverUrl,
+        title = podcastName,
+        onClick = onClick,
+        onDelete = onDelete,
+    ) {
+        Text(
+            text = subtitleText,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
 
 @Composable
@@ -1537,45 +1429,15 @@ fun MusicAlbumGroupRow(
     val count = tracks.size
     val subtitleText = "$count track${if (count > 1) "s" else ""} · ${formatSize(totalBytes)}"
 
-    ListItem(
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        leadingContent = {
-            AsyncImage(
-                imageUrl = first.imageUrl,
-                contentDescription = null,
-                modifier = Modifier.width(56.dp).aspectRatio(1f).clip(RoundedCornerShape(6.dp)),
-                contentScale = ContentScale.Crop,
-                targetWidth = 56.dp,
-                targetHeight = 56.dp,
-            )
-        },
-        headlineContent = {
-            Text(
-                text = albumName,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        supportingContent = {
-            Text(
-                text = subtitleText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        trailingContent = {
-            IconButton(onClick = onDelete) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_delete),
-                    contentDescription = stringResource(R.string.cd_delete_download),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                )
-            }
-        },
-    )
+    DownloadListItemRow(imageUrl = first.imageUrl, title = albumName, onDelete = onDelete) {
+        Text(
+            text = subtitleText,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
 
 @Composable
@@ -1589,43 +1451,17 @@ fun MusicTrackRow(
         append(formatSize(download.totalBytes))
     }
 
-    ListItem(
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        leadingContent = {
-            AsyncImage(
-                imageUrl = download.imageUrl,
-                contentDescription = null,
-                modifier = Modifier.width(56.dp).aspectRatio(1f).clip(RoundedCornerShape(6.dp)),
-                contentScale = ContentScale.Crop,
-                targetWidth = 56.dp,
-                targetHeight = 56.dp,
-            )
-        },
-        headlineContent = {
-            Text(
-                text = download.itemName,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        supportingContent = {
-            Text(
-                text = subtitleText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        trailingContent = {
-            IconButton(onClick = { onDelete(download.id) }) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_delete),
-                    contentDescription = stringResource(R.string.cd_delete_download),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                )
-            }
-        },
-    )
+    DownloadListItemRow(
+        imageUrl = download.imageUrl,
+        title = download.itemName,
+        onDelete = { onDelete(download.id) },
+    ) {
+        Text(
+            text = subtitleText,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }

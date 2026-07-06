@@ -28,10 +28,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -69,14 +67,15 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 import com.makd.afinity.ui.components.AFinitySnackbar
-import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.item.components.DownloadProgressIndicator
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
+import com.makd.afinity.ui.music.components.MusicDetailActionRow
 import com.makd.afinity.ui.music.components.MusicHeroBackground
+import com.makd.afinity.ui.music.components.MusicHomeTopAppBar
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
 import com.makd.afinity.ui.music.library.startMusicService
@@ -127,114 +126,79 @@ fun MusicAlbumScreen(
         )
 
     val actionButtonsContent: @Composable () -> Unit = {
-        Row(
+        MusicDetailActionRow(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+            onShuffle = {
+                startMusicService(context)
+                val shuffled = uiState.tracks.shuffled()
+                playerViewModel.playQueue(shuffled, 0)
+            },
+            onPlay = {
+                startMusicService(context)
+                playerViewModel.playQueue(uiState.tracks, 0)
+            },
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = { viewModel.toggleFavorite() }) {
-                    Icon(
-                        painter =
-                            if (uiState.album?.favorite == true)
-                                painterResource(R.drawable.ic_favorite_filled)
-                            else painterResource(R.drawable.ic_favorite),
-                        contentDescription =
-                            if (uiState.album?.favorite == true) stringResource(R.string.cd_favorite_remove)
-                            else stringResource(R.string.cd_favorite_add),
-                        tint =
-                            if (uiState.album?.favorite == true) Color.Red
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(26.dp),
-                    )
-                }
-                uiState.album?.let { album ->
-                    IconButton(
-                        enabled = !isOffline,
-                        onClick = {
-                            startMusicService(context)
-                            playerViewModel.playInstantMix(album.id)
-                        },
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_compass),
-                            contentDescription = stringResource(R.string.cd_music_instant_mix),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(26.dp),
-                        )
-                    }
-                    IconButton(
-                        enabled = !isOffline,
-                        onClick = {
-                            val firstTrack = uiState.tracks.firstOrNull()
-                            if (firstTrack != null) {
-                                radioSeed =
-                                    RadioSeed(
-                                        trackId = firstTrack.id,
-                                        albumId = album.id,
-                                        sourceTracks = uiState.tracks,
-                                    )
-                            }
-                        },
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_radio),
-                            contentDescription = stringResource(R.string.cd_music_start_radio),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(26.dp),
-                        )
-                    }
-                }
-                DownloadProgressIndicator(
-                    downloadInfo = uiState.albumDownloadInfo,
-                    onDownloadClick = { viewModel.downloadAlbum() },
-                    onPauseClick = {},
-                    onResumeClick = { viewModel.downloadAlbum() },
-                    onCancelClick = { viewModel.cancelAlbumDownload() },
-                    iconSize = 26.dp,
+            IconButton(onClick = { viewModel.toggleFavorite() }) {
+                Icon(
+                    painter =
+                        if (uiState.album?.favorite == true)
+                            painterResource(R.drawable.ic_favorite_filled)
+                        else painterResource(R.drawable.ic_favorite),
+                    contentDescription =
+                        if (uiState.album?.favorite == true)
+                            stringResource(R.string.cd_favorite_remove)
+                        else stringResource(R.string.cd_favorite_add),
+                    tint =
+                        if (uiState.album?.favorite == true) Color.Red
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(26.dp),
                 )
             }
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(end = 8.dp),
-            ) {
+            uiState.album?.let { album ->
                 IconButton(
+                    enabled = !isOffline,
                     onClick = {
                         startMusicService(context)
-                        val shuffled = uiState.tracks.shuffled()
-                        playerViewModel.playQueue(shuffled, 0)
-                    }
+                        playerViewModel.playInstantMix(album.id)
+                    },
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_arrows_shuffle),
-                        contentDescription = stringResource(R.string.cd_music_shuffle),
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(28.dp),
+                        painter = painterResource(R.drawable.ic_compass),
+                        contentDescription = stringResource(R.string.cd_music_instant_mix),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(26.dp),
                     )
                 }
-
-                FloatingActionButton(
+                IconButton(
+                    enabled = !isOffline,
                     onClick = {
-                        startMusicService(context)
-                        playerViewModel.playQueue(uiState.tracks, 0)
+                        val firstTrack = uiState.tracks.firstOrNull()
+                        if (firstTrack != null) {
+                            radioSeed =
+                                RadioSeed(
+                                    trackId = firstTrack.id,
+                                    albumId = album.id,
+                                    sourceTracks = uiState.tracks,
+                                )
+                        }
                     },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    shape = CircleShape,
-                    modifier = Modifier.size(56.dp),
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_player_play_filled),
-                        contentDescription = stringResource(R.string.cd_play),
+                        painter = painterResource(R.drawable.ic_radio),
+                        contentDescription = stringResource(R.string.cd_music_start_radio),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(26.dp),
                     )
                 }
             }
+            DownloadProgressIndicator(
+                downloadInfo = uiState.albumDownloadInfo,
+                onDownloadClick = { viewModel.downloadAlbum() },
+                onPauseClick = {},
+                onResumeClick = { viewModel.downloadAlbum() },
+                onCancelClick = { viewModel.cancelAlbumDownload() },
+                iconSize = 26.dp,
+            )
         }
     }
 
@@ -628,35 +592,7 @@ fun MusicAlbumScreen(
             }
         }
 
-        AfinityTopAppBar(
-            title = {
-                IconButton(
-                    onClick = {
-                        navController.navigate(Destination.HOME.route) {
-                            popUpTo(Destination.HOME.route) { inclusive = false }
-                            launchSingleTop = true
-                        }
-                    },
-                    modifier = Modifier.size(42.dp),
-                ) {
-                    Box(
-                        modifier =
-                            Modifier.fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.3f), CircleShape)
-                                .clip(CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_home),
-                            contentDescription = stringResource(R.string.cd_music_go_to_home),
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp),
-                        )
-                    }
-                }
-            },
-            backgroundOpacity = { if (isLandscape) 0f else topBarOpacity },
-        )
+        MusicHomeTopAppBar(navController, isLandscape, topBarOpacity)
 
         SnackbarHost(
             hostState = snackbarHostState,
@@ -678,6 +614,8 @@ fun MusicAlbumScreen(
     }
 
     if (showAddToPlaylist) {
+        val addedToPlaylistFmt = stringResource(R.string.music_snackbar_added_to_playlist_fmt)
+        val createdPlaylistFmt = stringResource(R.string.music_snackbar_created_playlist_fmt)
         AddToPlaylistDialog(
             trackIds = addToPlaylistTrackIds,
             viewModel = addToPlaylistViewModel,
@@ -686,8 +624,10 @@ fun MusicAlbumScreen(
                 showAddToPlaylist = false
                 val message =
                     when (result) {
-                        is AddToPlaylistResult.Added -> "Added to \"${result.playlistName}\""
-                        is AddToPlaylistResult.Created -> "Created \"${result.playlistName}\""
+                        is AddToPlaylistResult.Added ->
+                            addedToPlaylistFmt.format(result.playlistName)
+                        is AddToPlaylistResult.Created ->
+                            createdPlaylistFmt.format(result.playlistName)
                         is AddToPlaylistResult.Error -> result.message
                         else -> null
                     }

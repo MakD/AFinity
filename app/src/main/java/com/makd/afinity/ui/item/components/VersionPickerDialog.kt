@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -33,9 +32,10 @@ fun VersionPickerDialog(
     sources: List<AfinitySource>,
     onVersionSelected: (AfinitySource) -> Unit,
     onDismiss: () -> Unit,
+    selectedSourceId: String? = null,
 ) {
     Dialog(onDismissRequest = onDismiss) {
-        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+        Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Text(
                     text = stringResource(R.string.player_version_title),
@@ -60,7 +60,7 @@ fun VersionPickerDialog(
                     items(sources, key = { it.id }) { source ->
                         VersionOption(
                             source = source,
-                            isSelected = false,
+                            isSelected = source.id == selectedSourceId,
                             onSelect = { onVersionSelected(source) },
                         )
                     }
@@ -80,7 +80,7 @@ private fun VersionOption(
     Surface(
         onClick = onSelect,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.small,
         color =
             if (isSelected) MaterialTheme.colorScheme.primaryContainer
             else MaterialTheme.colorScheme.surfaceVariant,

@@ -43,7 +43,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -54,9 +53,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
-import coil3.request.crossfade
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
@@ -64,6 +60,7 @@ import com.makd.afinity.data.models.audiobookshelf.AudibleRating
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.coverUrl
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.CircleFlagIcon
 import com.makd.afinity.ui.components.getAutoFlagUrl
 import com.makd.afinity.ui.utils.htmlToAnnotatedString
@@ -124,11 +121,7 @@ fun ItemHeroBackground(coverUrl: String?, modifier: Modifier = Modifier) {
     if (coverUrl != null) {
         Box(modifier = modifier.fillMaxSize()) {
             AsyncImage(
-                model =
-                    ImageRequest.Builder(LocalContext.current)
-                        .data(coverUrl.withAbsWidth(600))
-                        .crossfade(true)
-                        .build(),
+                imageUrl = coverUrl.withAbsWidth(600),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize().blur(radius = 30.dp).background(Color.Black),
                 alpha = 0.6f,
@@ -180,7 +173,7 @@ fun ItemHeaderContent(
 
         if (coverUrl != null) {
             AsyncImage(
-                model = coverUrl.withAbsWidth(600),
+                imageUrl = coverUrl.withAbsWidth(600),
                 contentDescription = stringResource(R.string.cd_abs_cover),
                 modifier =
                     Modifier.width(200.dp)

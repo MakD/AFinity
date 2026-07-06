@@ -10,7 +10,6 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -45,6 +44,7 @@ import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.models.player.SubtitlePreferences
 import com.makd.afinity.player.mpv.MPVPlayer
 import com.makd.afinity.ui.player.cast.CastRemoteControllerScreen
+import com.makd.afinity.ui.player.components.BufferingIndicator
 import com.makd.afinity.ui.player.components.ErrorIndicator
 import com.makd.afinity.ui.player.components.GestureHandler
 import com.makd.afinity.ui.player.components.MpvSurface
@@ -220,10 +220,7 @@ fun PlayerScreen(
 
     Box(modifier = modifier.fillMaxSize().background(Color.Black)) {
         if (!uiState.isPlayerReady) {
-            CircularProgressIndicator(
-                color = Color.White,
-                modifier = Modifier.align(Alignment.Center),
-            )
+            BufferingIndicator(modifier = Modifier.align(Alignment.Center))
         } else if (castState.isConnected && castState.currentItem != null) {
             CastRemoteControllerScreen(
                 castState = castState,

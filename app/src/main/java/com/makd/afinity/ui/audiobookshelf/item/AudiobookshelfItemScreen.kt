@@ -35,7 +35,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -82,6 +81,8 @@ import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeroBackground
 import com.makd.afinity.ui.audiobookshelf.item.components.chapterListItems
 import com.makd.afinity.ui.audiobookshelf.item.components.episodeListItems
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.FullScreenError
+import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 
 private val naturalOrderComparator =
@@ -209,7 +210,11 @@ fun AudiobookshelfItemScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         when {
             uiState.isLoading -> {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                FullScreenLoading()
+            }
+
+            item == null -> {
+                FullScreenError(message = uiState.error)
             }
 
             item != null -> {

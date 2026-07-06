@@ -80,6 +80,7 @@ import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.models.syncplay.SyncPlayMemberInfo
+import com.makd.afinity.ui.components.AfinityBadge
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.livetv.components.LiveBadge
 import com.makd.afinity.ui.player.PlayerViewModel
@@ -762,24 +763,11 @@ fun PlayerControls(
                                 )
                             }
 
-                            Box(
-                                modifier =
-                                    Modifier.background(
-                                            color =
-                                                MaterialTheme.colorScheme.primary.copy(
-                                                    alpha = 0.15f
-                                                ),
-                                            shape = RoundedCornerShape(4.dp),
-                                        )
-                                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    text = "SYNCED",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                )
-                            }
+                            AfinityBadge(
+                                text = stringResource(R.string.syncplay_synced_badge),
+                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                contentColor = MaterialTheme.colorScheme.primary,
+                            )
                         }
 
                         HorizontalDivider(color = Color.White.copy(alpha = 0.08f))

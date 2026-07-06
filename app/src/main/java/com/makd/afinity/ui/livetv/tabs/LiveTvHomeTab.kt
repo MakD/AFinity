@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.livetv.LiveTvUiState
 import com.makd.afinity.ui.livetv.components.ProgramCategoryRow
 import com.makd.afinity.ui.livetv.models.LiveTvCategory
@@ -38,9 +38,7 @@ fun LiveTvHomeTab(
     val playerOffset = LocalPlayerOffset.current
 
     if (uiState.isCategoriesLoading && uiState.categorizedPrograms.isEmpty()) {
-        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
+        FullScreenLoading(modifier = modifier)
         return
     }
 

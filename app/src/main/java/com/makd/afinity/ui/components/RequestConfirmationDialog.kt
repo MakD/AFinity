@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -179,7 +178,7 @@ fun RequestConfirmationDialog(
                 if (isManagementMode && !headerImageUrl.isNullOrBlank()) {
                     Box(
                         modifier =
-                            Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(12.dp))
+                            Modifier.fillMaxWidth().height(200.dp).clip(MaterialTheme.shapes.medium)
                     ) {
                         AsyncImage(
                             imageUrl = headerImageUrl,
@@ -347,7 +346,7 @@ fun RequestConfirmationDialog(
                                         if (item.flagUrl != null) CircleFlagIcon(url = item.flagUrl)
                                         else if (item.icon == 0) {
                                             androidx.compose.material3.Surface(
-                                                shape = RoundedCornerShape(4.dp),
+                                                shape = MaterialTheme.shapes.extraSmall,
                                                 border =
                                                     androidx.compose.foundation.BorderStroke(
                                                         1.dp,
@@ -566,7 +565,7 @@ fun RequestConfirmationDialog(
                                         Row(
                                             modifier =
                                                 Modifier.fillMaxWidth()
-                                                    .clip(RoundedCornerShape(12.dp))
+                                                    .clip(MaterialTheme.shapes.medium)
                                                     .background(
                                                         MaterialTheme.colorScheme.surfaceVariant
                                                             .copy(0.5f)
@@ -733,7 +732,7 @@ fun RequestConfirmationDialog(
                                         Row(
                                             modifier =
                                                 Modifier.fillMaxWidth()
-                                                    .clip(RoundedCornerShape(12.dp))
+                                                    .clip(MaterialTheme.shapes.medium)
                                                     .background(
                                                         MaterialTheme.colorScheme.surfaceVariant
                                                             .copy(0.5f)
@@ -1011,7 +1010,7 @@ fun <T> MinimalSelectionTile(
         Row(
             modifier =
                 Modifier.fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(MaterialTheme.shapes.medium)
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                     .clickable(enabled = !isLoading && items.isNotEmpty()) { expanded = true }
                     .padding(16.dp),
@@ -1101,7 +1100,7 @@ fun <T> MinimalMultiSelectTile(
         Row(
             modifier =
                 Modifier.fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(MaterialTheme.shapes.medium)
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                     .clickable(enabled = items.isNotEmpty()) { expanded = true }
                     .padding(16.dp),
@@ -1176,7 +1175,7 @@ fun MinimalSwitchTile(
     Row(
         modifier =
             Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
+                .clip(MaterialTheme.shapes.medium)
                 .clickable { onCheckedChange(!checked) }
                 .padding(vertical = 8.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,

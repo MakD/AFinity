@@ -41,6 +41,7 @@ import com.makd.afinity.data.models.jellyseerr.hasPermission
 import com.makd.afinity.data.models.jellyseerr.isAdmin
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.main.MainUiState
@@ -516,27 +517,11 @@ private fun ErrorView(message: String, onRetry: () -> Unit, modifier: Modifier =
 
 @Composable
 private fun EmptyStateView(modifier: Modifier = Modifier) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_inbox),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.height(48.dp),
-            )
-            Text(
-                text = stringResource(R.string.error_no_content),
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = stringResource(R.string.empty_content_message),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
+    EmptyState(
+        icon = painterResource(id = R.drawable.ic_inbox),
+        title = stringResource(R.string.error_no_content),
+        message = stringResource(R.string.empty_content_message),
+        modifier = modifier,
+        iconSize = 48.dp,
+    )
 }

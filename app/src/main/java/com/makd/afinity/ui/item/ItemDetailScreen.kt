@@ -344,6 +344,7 @@ fun ItemDetailScreen(
                     }
                 VersionPickerDialog(
                     sources = remoteSources,
+                    selectedSourceId = pendingPlaySelection?.mediaSourceId,
                     onVersionSelected = { source ->
                         showVersionPickerForPlay = false
                         val finalSelection =

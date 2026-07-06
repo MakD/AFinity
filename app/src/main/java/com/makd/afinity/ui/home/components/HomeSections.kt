@@ -1,7 +1,5 @@
 package com.makd.afinity.ui.home.components
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,7 +17,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -40,12 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
-import com.makd.afinity.data.models.common.CollectionType
-import com.makd.afinity.data.models.extensions.backdropBlurHash
-import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.extensions.showBackdropBlurHash
@@ -63,7 +56,9 @@ import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.ContinueWatchingCard
+import com.makd.afinity.ui.components.LibraryCard
 import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
@@ -81,12 +76,7 @@ fun OptimizedContinueWatchingSection(
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
     Column(modifier = Modifier.padding(horizontal = 14.dp)) {
-        Text(
-            text = stringResource(R.string.home_continue_watching),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
+        HomeSectionHeader(title = stringResource(R.string.home_continue_watching))
 
         val uniqueItems = items.distinctBy { it.id }
 
@@ -120,12 +110,7 @@ fun OptimizedLatestMoviesSection(
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
     Column(modifier = Modifier.padding(horizontal = 14.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
+        HomeSectionHeader(title = title)
 
         val uniqueItems = items.distinctBy { it.id }
         val firstItemId = uniqueItems.firstOrNull()?.id
@@ -173,12 +158,7 @@ fun LibrariesSection(
     val fixedRowHeight = cardHeight + 8.dp + 24.dp
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
-        Text(
-            text = stringResource(R.string.libraries_title),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
+        HomeSectionHeader(title = stringResource(R.string.libraries_title))
 
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
@@ -186,90 +166,22 @@ fun LibrariesSection(
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(items = libraries, key = { library -> "lib_${library.id}" }) { library ->
-                LibraryHomeCard(
+                LibraryCard(
                     library = library,
-                    cardWidth = cardWidth,
-                    onClick = { onLibraryClick(library) },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun LibraryHomeCard(
-    library: AfinityCollection,
-    cardWidth: Dp,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier =
-            modifier
-                .width(cardWidth)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onClick,
-                ),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Box(modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE)) {
-            Card(
-                modifier = Modifier.fillMaxSize(),
-                shape = RoundedCornerShape(12.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-            ) {
-                AsyncImage(
-                    imageUrl = library.images.backdropImageUrl ?: library.images.primaryImageUrl,
-                    contentDescription = library.name,
-                    blurHash = library.images.backdropBlurHash ?: library.images.primaryBlurHash,
+                    modifier = Modifier.width(cardWidth),
                     targetWidth = cardWidth,
                     targetHeight =
                         CardDimensions.calculateHeight(
                             cardWidth,
                             CardDimensions.ASPECT_RATIO_LANDSCAPE,
                         ),
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
+                    titleMaxLines = 1,
+                    onClick = { onLibraryClick(library) },
                 )
             }
-
-            if (library.type != CollectionType.Unknown) {
-                Box(modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp)) {
-                    Icon(
-                        painter = painterResource(id = libraryIconRes(library.type)),
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = Color.White,
-                    )
-                }
-            }
         }
-
-        Text(
-            text = library.name,
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
     }
 }
-
-private fun libraryIconRes(type: CollectionType): Int =
-    when (type) {
-        CollectionType.Movies -> R.drawable.ic_movie
-        CollectionType.TvShows -> R.drawable.ic_tv
-        CollectionType.Music -> R.drawable.ic_music
-        CollectionType.Books -> R.drawable.ic_books
-        CollectionType.HomeVideos -> R.drawable.ic_music_video
-        CollectionType.Playlists -> R.drawable.ic_playlist
-        CollectionType.LiveTv -> R.drawable.ic_live_tv_nav
-        CollectionType.BoxSets -> R.drawable.ic_collection
-        CollectionType.Mixed -> R.drawable.ic_mixed
-        CollectionType.Unknown -> R.drawable.ic_folder
-    }
 
 @Composable
 fun OptimizedLatestTvSeriesSection(
@@ -284,12 +196,7 @@ fun OptimizedLatestTvSeriesSection(
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
     Column(modifier = Modifier.padding(horizontal = 14.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
+        HomeSectionHeader(title = title)
 
         val uniqueItems = items.distinctBy { it.id }
         val firstItemId = uniqueItems.firstOrNull()?.id
@@ -338,12 +245,7 @@ fun UpcomingEpisodesSection(
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
+        HomeSectionHeader(title = title)
 
         val uniqueItems = items.distinctBy { it.id }
 
@@ -370,6 +272,8 @@ fun UpcomingEpisodeCard(
     cardWidth: Dp,
     modifier: Modifier = Modifier,
 ) {
+    val ratingScale = rememberRatingMetadataScale()
+
     Column(modifier = modifier.width(cardWidth)) {
         Card(
             onClick = onClick,
@@ -442,13 +346,18 @@ fun UpcomingEpisodeCard(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_imdb_logo),
-                        contentDescription = "IMDB",
+                        contentDescription = stringResource(R.string.cd_imdb),
                         tint = Color.Unspecified,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(ratingScale.imdbIconSize),
                     )
                     Text(
                         text = String.format(java.util.Locale.US, "%.1f", imdbRating),
-                        style = MaterialTheme.typography.bodySmall,
+                        style =
+                            MaterialTheme.typography.bodySmall.copy(
+                                fontSize =
+                                    MaterialTheme.typography.bodySmall.fontSize *
+                                        ratingScale.textScale
+                            ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -465,49 +374,18 @@ fun DownloadedAudiobooksSection(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
+        HomeSectionHeader(title = title)
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(items = items, key = { "abs_${it.id}" }) { download ->
-                Column(modifier = Modifier.width(100.dp).clickable { onItemClick(download) }) {
-                    Card(
-                        modifier = Modifier.width(100.dp).aspectRatio(1f),
-                        shape = RoundedCornerShape(8.dp),
-                        colors =
-                            CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainer
-                            ),
-                    ) {
-                        AsyncImage(
-                            imageUrl = download.coverUrl,
-                            contentDescription = download.title,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                            targetWidth = 100.dp,
-                            targetHeight = 100.dp,
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = download.title,
-                        style =
-                            MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 11.sp,
-                            ),
-                        color = MaterialTheme.colorScheme.onBackground,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.width(100.dp),
-                    )
-                }
+                SquareMediaTile(
+                    imageUrl = download.coverUrl,
+                    contentDescription = download.title,
+                    title = download.title,
+                    onClick = { onItemClick(download) },
+                )
             }
         }
     }
@@ -521,56 +399,16 @@ fun DownloadedMusicAlbumsSection(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
+        HomeSectionHeader(title = title)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(items = albums, key = { "album_${it.id}" }) { album ->
-                Column(modifier = Modifier.width(100.dp).clickable { onAlbumClick(album) }) {
-                    Card(
-                        modifier = Modifier.width(100.dp).aspectRatio(1f),
-                        shape = RoundedCornerShape(8.dp),
-                        colors =
-                            CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainer
-                            ),
-                    ) {
-                        com.makd.afinity.ui.components.AsyncImage(
-                            imageUrl = album.images.primary?.toString(),
-                            contentDescription = album.name,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                            targetWidth = 100.dp,
-                            targetHeight = 100.dp,
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = album.name,
-                        style =
-                            MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 11.sp,
-                            ),
-                        color = MaterialTheme.colorScheme.onBackground,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.width(100.dp),
-                    )
-                    album.artist?.let { artist ->
-                        Text(
-                            text = artist,
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.width(100.dp),
-                        )
-                    }
-                }
+                SquareMediaTile(
+                    imageUrl = album.images.primary?.toString(),
+                    contentDescription = album.name,
+                    title = album.name,
+                    subtitle = album.artist,
+                    onClick = { onAlbumClick(album) },
+                )
             }
         }
     }
@@ -584,56 +422,16 @@ fun DownloadedMusicTracksSection(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
+        HomeSectionHeader(title = title)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(items = tracks, key = { "track_${it.id}" }) { track ->
-                Column(modifier = Modifier.width(100.dp).clickable { onTrackClick(track) }) {
-                    Card(
-                        modifier = Modifier.width(100.dp).aspectRatio(1f),
-                        shape = RoundedCornerShape(8.dp),
-                        colors =
-                            CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainer
-                            ),
-                    ) {
-                        com.makd.afinity.ui.components.AsyncImage(
-                            imageUrl = track.images.primary?.toString(),
-                            contentDescription = track.name,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                            targetWidth = 100.dp,
-                            targetHeight = 100.dp,
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = track.name,
-                        style =
-                            MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 11.sp,
-                            ),
-                        color = MaterialTheme.colorScheme.onBackground,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.width(100.dp),
-                    )
-                    track.artist?.let { artist ->
-                        Text(
-                            text = artist,
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.width(100.dp),
-                        )
-                    }
-                }
+                SquareMediaTile(
+                    imageUrl = track.images.primary?.toString(),
+                    contentDescription = track.name,
+                    title = track.name,
+                    subtitle = track.artist,
+                    onClick = { onTrackClick(track) },
+                )
             }
         }
     }

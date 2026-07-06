@@ -28,8 +28,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -66,6 +64,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
+import com.makd.afinity.ui.components.LoadingButton
 import com.makd.afinity.util.isInsecurePublicUrl
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -122,7 +121,9 @@ fun AddEditServerScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             )
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) }) },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) })
+        },
         modifier = modifier.fillMaxSize(),
     ) { paddingValues ->
         val layoutDirection = LocalLayoutDirection.current
@@ -269,31 +270,14 @@ fun AddEditServerScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            Button(
+            LoadingButton(
+                loading = state.isSaving,
+                text =
+                    if (state.serverId != null) stringResource(R.string.btn_save_changes)
+                    else stringResource(R.string.btn_save_server),
                 onClick = viewModel::saveServer,
-                enabled =
-                    !state.isSaving && state.connectionTestResult is ConnectionTestResult.Success,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                colors =
-                    ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-            ) {
-                if (state.isSaving) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                } else {
-                    Text(
-                        text =
-                            if (state.serverId != null) stringResource(R.string.btn_save_changes)
-                            else stringResource(R.string.btn_save_server),
-                        style =
-                            MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    )
-                }
-            }
+                enabled = state.connectionTestResult is ConnectionTestResult.Success,
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
         }

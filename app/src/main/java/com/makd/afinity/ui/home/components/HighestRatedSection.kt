@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.home.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,22 +16,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -50,6 +44,9 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.MediaCountBadge
+import com.makd.afinity.ui.components.PlayedBadge
+import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import java.util.Locale
@@ -64,13 +61,8 @@ fun HighestRatedSection(
     val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Text(
-            text = stringResource(R.string.home_critics_choice),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
+    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
+        HomeSectionHeader(title = stringResource(R.string.home_critics_choice))
 
         val uniqueItems = items.distinctBy { it.id }
 
@@ -93,24 +85,10 @@ fun HighestRatedSection(
 
 @Composable
 fun HighestRatedCard(item: AfinityItem, ranking: Int, onClick: () -> Unit, cardWidth: Dp) {
-    val density = LocalDensity.current
-    val fontScale = density.fontScale
-
-    val baseFontSize = MaterialTheme.typography.bodySmall.fontSize
-    val metadataFontSize =
-        remember(fontScale, baseFontSize) {
-            baseFontSize * if (fontScale > 1.3f) 0.8f else if (fontScale > 1.15f) 0.9f else 1f
-        }
-
-    val imdbIconSize =
-        remember(fontScale) {
-            if (fontScale > 1.3f) 14.dp else if (fontScale > 1.15f) 16.dp else 18.dp
-        }
-
-    val rtIconSize =
-        remember(fontScale) {
-            if (fontScale > 1.3f) 10.dp else if (fontScale > 1.15f) 11.dp else 12.dp
-        }
+    val ratingScale = rememberRatingMetadataScale()
+    val metadataFontSize = MaterialTheme.typography.bodySmall.fontSize * ratingScale.textScale
+    val imdbIconSize = ratingScale.imdbIconSize
+    val rtIconSize = ratingScale.rtIconSize
 
     Column(modifier = Modifier.width(cardWidth)) {
         Box(modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT)) {
@@ -136,54 +114,24 @@ fun HighestRatedCard(item: AfinityItem, ranking: Int, onClick: () -> Unit, cardW
 
                     when {
                         item.played -> {
-                            Box(
-                                modifier =
-                                    Modifier.align(Alignment.TopEnd)
-                                        .padding(8.dp)
-                                        .size(24.dp)
-                                        .background(MaterialTheme.colorScheme.primary, CircleShape),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_check),
-                                    contentDescription = stringResource(R.string.cd_watched_status),
-                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(16.dp),
-                                )
-                            }
+                            PlayedBadge(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp))
                         }
 
                         item is AfinityShow -> {
                             val displayCount = item.unplayedItemCount ?: item.episodeCount
                             displayCount?.let { count ->
                                 if (count > 0) {
-                                    Surface(
+                                    MediaCountBadge(
+                                        text =
+                                            if (count > 99)
+                                                stringResource(R.string.home_episode_count_plus)
+                                            else
+                                                stringResource(
+                                                    R.string.home_episode_count_fmt,
+                                                    count,
+                                                ),
                                         modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-                                        shape = RoundedCornerShape(4.dp),
-                                        color =
-                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
-                                    ) {
-                                        Text(
-                                            text =
-                                                if (count > 99)
-                                                    stringResource(R.string.home_episode_count_plus)
-                                                else
-                                                    stringResource(
-                                                        R.string.home_episode_count_fmt,
-                                                        count,
-                                                    ),
-                                            style =
-                                                MaterialTheme.typography.labelSmall.copy(
-                                                    fontWeight = FontWeight.Bold
-                                                ),
-                                            color = MaterialTheme.colorScheme.onPrimary,
-                                            modifier =
-                                                Modifier.padding(
-                                                    horizontal = 6.dp,
-                                                    vertical = 2.dp,
-                                                ),
-                                        )
-                                    }
+                                    )
                                 }
                             }
                         }

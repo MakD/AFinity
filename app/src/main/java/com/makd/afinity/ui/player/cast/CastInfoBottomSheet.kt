@@ -64,7 +64,7 @@ fun CastInfoBottomSheet(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 )
                 Text(
-                    text = castState.deviceName ?: "Unknown",
+                    text = castState.deviceName ?: stringResource(R.string.status_unknown),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
@@ -114,16 +114,16 @@ fun CastInfoBottomSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = "0%",
+                    text = stringResource(R.string.percent_fmt, 0),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 )
                 Text(
-                    text = "${(volumeSliderValue * 100).toInt()}%",
+                    text = stringResource(R.string.percent_fmt, (volumeSliderValue * 100).toInt()),
                     style = MaterialTheme.typography.bodySmall,
                 )
                 Text(
-                    text = "100%",
+                    text = stringResource(R.string.percent_fmt, 100),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 )

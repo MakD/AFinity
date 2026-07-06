@@ -50,25 +50,25 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.settings.servers.AudiobookshelfColor
 import com.makd.afinity.ui.settings.servers.JellyseerrColor
 import com.makd.afinity.ui.settings.servers.ServerWithUserCount
 import com.makd.afinity.ui.settings.servers.UserServiceInfo
 
 @Composable
-internal fun SectionHeader(title: String) {
+internal fun SectionHeader(title: String, modifier: Modifier = Modifier) {
     Text(
         text = title.uppercase(),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.primary,
         fontWeight = FontWeight.Bold,
         letterSpacing = 0.5.sp,
-        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp, start = 4.dp),
+        modifier = modifier.padding(top = 12.dp, bottom = 4.dp, start = 4.dp),
     )
 }
 
@@ -260,7 +260,10 @@ internal fun ManageAddressesView(
             IconButton(
                 onClick = onBack,
                 modifier =
-                    Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh, CircleShape),
+                    Modifier.background(
+                        MaterialTheme.colorScheme.surfaceContainerHigh,
+                        CircleShape,
+                    ),
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_chevron_left),
@@ -540,38 +543,12 @@ internal fun UserServiceRow(userInfo: UserServiceInfo) {
 
 @Composable
 internal fun EmptyServersState(modifier: Modifier = Modifier) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(32.dp),
-        ) {
-            Box(
-                modifier =
-                    Modifier.size(120.dp)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_server),
-                    contentDescription = null,
-                    modifier = Modifier.size(56.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                )
-            }
-            Text(
-                text = stringResource(R.string.empty_servers_title),
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = stringResource(R.string.empty_servers_message),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-        }
-    }
+    EmptyState(
+        icon = painterResource(id = R.drawable.ic_server),
+        title = stringResource(R.string.empty_servers_title),
+        message = stringResource(R.string.empty_servers_message),
+        modifier = modifier,
+    )
 }
 
 @Composable

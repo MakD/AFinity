@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,12 +39,14 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
 import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.player.components.BufferingIndicator
 import timber.log.Timber
 
 sealed class AudioMiniPlayerState {
@@ -205,8 +206,8 @@ fun SharedTransitionScope.AudioMiniPlayer(
 
                 IconButton(onClick = onPlayPauseClick) {
                     if (state.isBuffering) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(22.dp),
+                        BufferingIndicator(
+                            size = 22.dp,
                             strokeWidth = 2.dp,
                             color = MaterialTheme.colorScheme.primary,
                         )
@@ -217,7 +218,9 @@ fun SharedTransitionScope.AudioMiniPlayer(
                                 painter =
                                     if (playing) painterResource(R.drawable.ic_player_pause_filled)
                                     else painterResource(R.drawable.ic_player_play_filled),
-                                contentDescription = if (playing) "Pause" else "Play",
+                                contentDescription =
+                                    if (playing) stringResource(R.string.cd_pause)
+                                    else stringResource(R.string.cd_play),
                                 modifier = Modifier.size(32.dp),
                                 tint = MaterialTheme.colorScheme.onSurface,
                             )
@@ -229,7 +232,7 @@ fun SharedTransitionScope.AudioMiniPlayer(
                     IconButton(onClick = onSkipNext) {
                         Icon(
                             painter = painterResource(R.drawable.ic_player_skip_forward),
-                            contentDescription = "Next",
+                            contentDescription = stringResource(R.string.cd_next),
                             modifier = Modifier.size(24.dp),
                             tint = MaterialTheme.colorScheme.onSurface,
                         )

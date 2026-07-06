@@ -258,7 +258,7 @@ private fun SpeedIndicator(show: Boolean, modifier: Modifier = Modifier) {
                     modifier = Modifier.size(20.dp),
                 )
                 Text(
-                    text = "2x Speed",
+                    text = stringResource(R.string.player_fast_forward_speed_label),
                     color = Color.White,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,

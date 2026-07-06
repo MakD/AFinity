@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.livetv.LiveTvUiState
 import com.makd.afinity.ui.livetv.components.EpgChannelCell
 import com.makd.afinity.ui.livetv.components.EpgProgramRow
@@ -77,9 +77,7 @@ fun LiveTvGuideTab(
     val dateFormatter = remember(datePattern) { DateTimeFormatter.ofPattern(datePattern) }
 
     if (uiState.isEpgLoading && uiState.epgChannels.isEmpty()) {
-        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
+        FullScreenLoading(modifier = modifier)
         return
     }
 

@@ -70,12 +70,7 @@ private fun MusicCarouselSection(
     val state = rememberCarouselState { count }
 
     Column(modifier = modifier) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(start = 14.dp, bottom = 12.dp),
-        )
+        HomeSectionHeader(title = title, startPadding = 14.dp, bottomPadding = 12.dp)
         HorizontalMultiBrowseCarousel(
             state = state,
             preferredItemWidth = preferredItemWidth,
@@ -218,11 +213,10 @@ fun MostPlayedAlbumsSection(
     val rowHeight = cardWidth + 12.dp + 8.dp + 20.dp + 18.dp
 
     Column(modifier = modifier) {
-        Text(
-            text = stringResource(R.string.music_section_most_played),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(start = 14.dp, bottom = 12.dp),
+        HomeSectionHeader(
+            title = stringResource(R.string.music_section_most_played),
+            startPadding = 14.dp,
+            bottomPadding = 12.dp,
         )
         LazyRow(
             modifier = Modifier.height(rowHeight).padding(horizontal = 14.dp),
@@ -313,12 +307,7 @@ fun MusicAlbumRowSection(
             android.content.res.Configuration.ORIENTATION_LANDSCAPE
     val cardWidth = if (isLandscape) 175.dp else 140.dp
     Column(modifier = modifier) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(start = horizontalPadding, bottom = 12.dp),
-        )
+        HomeSectionHeader(title = title, startPadding = horizontalPadding, bottomPadding = 12.dp)
         LazyRow(
             modifier = Modifier.padding(horizontal = horizontalPadding),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -354,11 +343,10 @@ fun ArtistAlbumsCarousel(
     val state = rememberCarouselState { albums.size }
 
     Column(modifier = modifier) {
-        Text(
-            text = "More From ${artist.name}",
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(start = 14.dp, bottom = 12.dp),
+        HomeSectionHeader(
+            title = stringResource(R.string.home_more_from_artist_fmt, artist.name),
+            startPadding = 14.dp,
+            bottomPadding = 12.dp,
         )
         HorizontalMultiBrowseCarousel(
             state = state,
@@ -385,14 +373,14 @@ fun ArtistAlbumsCarousel(
                                     colors =
                                         listOf(
                                             Color.Transparent,
-                                            Color.Black.copy(alpha = 0.75f),
+                                            Color.Black.copy(alpha = 0.72f),
                                         ),
-                                    startY = size.height * 0.4f,
+                                    startY = size.height * 0.45f,
                                     endY = size.height,
                                 )
                             onDrawWithContent {
                                 drawContent()
-                                drawRect(Color.Black.copy(alpha = 0.35f))
+                                drawRect(Color.Black.copy(alpha = 0.4f))
                                 drawRect(gradient)
                             }
                         },

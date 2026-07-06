@@ -7,13 +7,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.MovieSection
@@ -48,12 +45,7 @@ fun PersonSection(
                 PersonSectionType.WRITTEN_BY ->
                     stringResource(R.string.home_person_written_by, section.person.name)
             }
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
+        HomeSectionHeader(title = title)
 
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
@@ -95,12 +87,7 @@ fun MovieRecommendationSection(
                         section.referenceMovie.name,
                     )
             }
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
+        HomeSectionHeader(title = title)
 
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
@@ -131,16 +118,13 @@ fun PersonFromMovieSection(
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
-        Text(
-            text =
+        HomeSectionHeader(
+            title =
                 stringResource(
                     R.string.home_starring_from_watched,
                     section.person.name,
                     section.referenceMovie.name,
-                ),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
+                )
         )
 
         LazyRow(

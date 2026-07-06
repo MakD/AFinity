@@ -64,12 +64,7 @@ fun SpotlightCarousel(
     val state = rememberCarouselState { items.size }
 
     Column(modifier = modifier) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(start = 14.dp, bottom = 12.dp),
-        )
+        HomeSectionHeader(title = title, startPadding = 14.dp, bottomPadding = 12.dp)
         HorizontalMultiBrowseCarousel(
             state = state,
             preferredItemWidth = preferredItemWidth,

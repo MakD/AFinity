@@ -14,12 +14,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -56,8 +53,7 @@ fun MediaItemCard(
     modifier: Modifier = Modifier,
     isUnavailable: Boolean = false,
 ) {
-    val density = LocalDensity.current
-    val fontScale = density.fontScale
+    val ratingScale = rememberRatingMetadataScale()
 
     Column(modifier = modifier.width(cardWidth)) {
         Card(
@@ -104,21 +100,7 @@ fun MediaItemCard(
 
                 when {
                     visuallyPlayed -> {
-                        Box(
-                            modifier =
-                                Modifier.align(Alignment.TopEnd)
-                                    .padding(8.dp)
-                                    .size(24.dp)
-                                    .background(MaterialTheme.colorScheme.primary, CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_check),
-                                contentDescription = stringResource(R.string.cd_watched),
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(16.dp),
-                            )
-                        }
+                        PlayedBadge(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp))
                     }
 
                     item is AfinityShow || item is AfinitySeason -> {
@@ -131,22 +113,10 @@ fun MediaItemCard(
 
                         displayCount?.let { count ->
                             if (count > 0) {
-                                Surface(
+                                MediaCountBadge(
+                                    text = if (count > 99) "99+ EP" else "$count EP",
                                     modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
-                                ) {
-                                    Text(
-                                        text = if (count > 99) "99+ EP" else "$count EP",
-                                        style =
-                                            MaterialTheme.typography.labelSmall.copy(
-                                                fontWeight = FontWeight.Bold
-                                            ),
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                        modifier =
-                                            Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                    )
-                                }
+                                )
                             }
                         }
                     }
@@ -155,22 +125,10 @@ fun MediaItemCard(
                         val displayCount = item.unplayedItemCount ?: item.itemCount
                         displayCount?.let { count ->
                             if (count > 0) {
-                                Surface(
+                                MediaCountBadge(
+                                    text = "$count",
                                     modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
-                                ) {
-                                    Text(
-                                        text = "$count",
-                                        style =
-                                            MaterialTheme.typography.labelSmall.copy(
-                                                fontWeight = FontWeight.Bold
-                                            ),
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                        modifier =
-                                            Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                    )
-                                }
+                                )
                             }
                         }
                     }
@@ -207,8 +165,7 @@ fun MediaItemCard(
                             MaterialTheme.typography.bodySmall.copy(
                                 fontSize =
                                     MaterialTheme.typography.bodySmall.fontSize *
-                                        if (fontScale > 1.3f) 0.8f
-                                        else if (fontScale > 1.15f) 0.9f else 1f
+                                        ratingScale.textScale
                             ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -230,11 +187,7 @@ fun MediaItemCard(
                                 painter = painterResource(id = R.drawable.ic_imdb_logo),
                                 contentDescription = stringResource(R.string.cd_imdb),
                                 tint = Color.Unspecified,
-                                modifier =
-                                    Modifier.size(
-                                        if (fontScale > 1.3f) 14.dp
-                                        else if (fontScale > 1.15f) 16.dp else 18.dp
-                                    ),
+                                modifier = Modifier.size(ratingScale.imdbIconSize),
                             )
                             Text(
                                 text = String.format(Locale.US, "%.1f", rating),
@@ -242,8 +195,7 @@ fun MediaItemCard(
                                     MaterialTheme.typography.bodySmall.copy(
                                         fontSize =
                                             MaterialTheme.typography.bodySmall.fontSize *
-                                                if (fontScale > 1.3f) 0.8f
-                                                else if (fontScale > 1.15f) 0.9f else 1f
+                                                ratingScale.textScale
                                     ),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -268,13 +220,10 @@ fun MediaItemCard(
                                                     R.drawable.ic_rotten_tomato_rotten
                                                 }
                                         ),
-                                    contentDescription = stringResource(R.string.cd_rotten_tomatoes),
+                                    contentDescription =
+                                        stringResource(R.string.cd_rotten_tomatoes),
                                     tint = Color.Unspecified,
-                                    modifier =
-                                        Modifier.size(
-                                            if (fontScale > 1.3f) 10.dp
-                                            else if (fontScale > 1.15f) 11.dp else 12.dp
-                                        ),
+                                    modifier = Modifier.size(ratingScale.rtIconSize),
                                 )
                                 Text(
                                     text = "${rtRating.toInt()}%",
@@ -282,8 +231,7 @@ fun MediaItemCard(
                                         MaterialTheme.typography.bodySmall.copy(
                                             fontSize =
                                                 MaterialTheme.typography.bodySmall.fontSize *
-                                                    if (fontScale > 1.3f) 0.8f
-                                                    else if (fontScale > 1.15f) 0.9f else 1f
+                                                    ratingScale.textScale
                                         ),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )

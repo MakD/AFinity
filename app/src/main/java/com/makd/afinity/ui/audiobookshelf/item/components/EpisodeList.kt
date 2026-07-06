@@ -7,12 +7,10 @@ import android.view.MotionEvent
 import android.widget.TextView
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,7 +24,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -40,13 +37,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.window.Dialog
 import androidx.core.text.HtmlCompat
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
+import com.makd.afinity.ui.components.ListPickerDialog
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -366,63 +363,37 @@ fun EpisodeListDialog(
     onEpisodeToggleFinished: ((PodcastEpisode) -> Unit)? = null,
     nowPlayingEpisodeId: String? = null,
 ) {
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            modifier = Modifier.fillMaxWidth().height(600.dp),
-            shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            tonalElevation = 6.dp,
-        ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Row(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .padding(start = 24.dp, end = 12.dp, top = 20.dp, bottom = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "Episodes",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-
-                    Row {
-                        IconButton(onClick = onSortClick) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_arrows_sort),
-                                contentDescription = stringResource(R.string.cd_abs_sort),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        IconButton(onClick = onDismiss) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_close),
-                                contentDescription = stringResource(R.string.cd_close),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-                LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                    episodeListItems(
-                        episodes = episodes,
-                        onEpisodePlay = { episode ->
-                            onEpisodePlay(episode)
-                            onDismiss()
-                        },
-                        expandedEpisodeId = expandedEpisodeId,
-                        onExpandEpisode = onExpandEpisode,
-                        episodeProgressMap = episodeProgressMap,
-                        episodeDownloadMap = episodeDownloadMap,
-                        onEpisodeDownload = onEpisodeDownload,
-                        onEpisodeCancelDownload = onEpisodeCancelDownload,
-                        onEpisodeDeleteDownload = onEpisodeDeleteDownload,
-                        onEpisodeToggleFinished = onEpisodeToggleFinished,
-                        nowPlayingEpisodeId = nowPlayingEpisodeId,
-                    )
-                }
+    ListPickerDialog(
+        title = stringResource(R.string.section_episodes),
+        onDismiss = onDismiss,
+        height = 600.dp,
+        actions = {
+            IconButton(onClick = onSortClick) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_arrows_sort),
+                    contentDescription = stringResource(R.string.cd_abs_sort),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
+        },
+    ) {
+        LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            episodeListItems(
+                episodes = episodes,
+                onEpisodePlay = { episode ->
+                    onEpisodePlay(episode)
+                    onDismiss()
+                },
+                expandedEpisodeId = expandedEpisodeId,
+                onExpandEpisode = onExpandEpisode,
+                episodeProgressMap = episodeProgressMap,
+                episodeDownloadMap = episodeDownloadMap,
+                onEpisodeDownload = onEpisodeDownload,
+                onEpisodeCancelDownload = onEpisodeCancelDownload,
+                onEpisodeDeleteDownload = onEpisodeDeleteDownload,
+                onEpisodeToggleFinished = onEpisodeToggleFinished,
+                nowPlayingEpisodeId = nowPlayingEpisodeId,
+            )
         }
     }
 }

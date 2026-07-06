@@ -3,7 +3,6 @@
 package com.makd.afinity.ui.livetv
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,7 +26,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -46,6 +44,7 @@ import com.makd.afinity.R
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.livetv.tabs.LiveTvChannelsTab
 import com.makd.afinity.ui.livetv.tabs.LiveTvGuideTab
@@ -126,32 +125,12 @@ fun LiveTvScreen(
             }
 
             !uiState.hasLiveTvAccess -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_live_tv_nav),
-                            contentDescription = null,
-                            modifier = Modifier.padding(16.dp),
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                        )
-                        Text(
-                            text = stringResource(R.string.livetv_error_not_available_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        )
-                        Text(
-                            text = stringResource(R.string.livetv_error_not_available_message),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                        )
-                    }
-                }
+                FullScreenEmpty(
+                    modifier = Modifier.padding(paddingValues),
+                    icon = painterResource(id = R.drawable.ic_live_tv_nav),
+                    title = stringResource(R.string.livetv_error_not_available_title),
+                    message = stringResource(R.string.livetv_error_not_available_message),
+                )
             }
 
             else -> {

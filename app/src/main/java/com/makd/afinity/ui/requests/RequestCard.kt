@@ -96,20 +96,10 @@ fun RequestCard(
                 }
 
                 val statusAttributes = getRequestStatusAttributes(request)
-                Card(
+                StatusChip(
+                    attributes = statusAttributes,
                     modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-                    shape = RoundedCornerShape(4.dp),
-                    colors =
-                        CardDefaults.cardColors(containerColor = statusAttributes.containerColor),
-                ) {
-                    Text(
-                        text = stringResource(statusAttributes.textRes),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = statusAttributes.contentColor,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+                )
                 Row(
                     modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -285,12 +275,6 @@ fun AvailableRequestCard(
     }
 }
 
-private data class StatusAttributes(
-    val textRes: Int,
-    val containerColor: Color,
-    val contentColor: Color,
-)
-
 @Composable
 private fun getRequestStatusAttributes(request: JellyseerrRequest): StatusAttributes {
     val requestStatus = RequestStatus.fromValue(request.status)
@@ -315,47 +299,6 @@ private fun getRequestStatusAttributes(request: JellyseerrRequest): StatusAttrib
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
             )
-        else -> {
-            val (textRes, containerColor, contentColor) =
-                when (mediaStatus) {
-                    MediaStatus.PENDING ->
-                        Triple(
-                            R.string.status_pending,
-                            MaterialTheme.colorScheme.tertiary,
-                            MaterialTheme.colorScheme.onTertiary,
-                        )
-                    MediaStatus.PROCESSING ->
-                        Triple(
-                            R.string.status_processing,
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.onPrimary,
-                        )
-                    MediaStatus.PARTIALLY_AVAILABLE ->
-                        Triple(
-                            R.string.status_partially_available,
-                            MaterialTheme.colorScheme.secondary,
-                            MaterialTheme.colorScheme.onSecondary,
-                        )
-                    MediaStatus.AVAILABLE ->
-                        Triple(
-                            R.string.status_available,
-                            MaterialTheme.colorScheme.secondary,
-                            MaterialTheme.colorScheme.onSecondary,
-                        )
-                    MediaStatus.DELETED ->
-                        Triple(
-                            R.string.status_deleted,
-                            MaterialTheme.colorScheme.error,
-                            MaterialTheme.colorScheme.onError,
-                        )
-                    else ->
-                        Triple(
-                            R.string.status_unknown,
-                            MaterialTheme.colorScheme.surfaceVariant,
-                            MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                }
-            StatusAttributes(textRes, containerColor, contentColor)
-        }
+        else -> mediaStatusAttributes(mediaStatus)
     }
 }

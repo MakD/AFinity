@@ -20,9 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -57,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.LoadingButton
 import com.makd.afinity.ui.jellyseerr.JellyseerrLoginViewModel
 import com.makd.afinity.util.isInsecurePublicUrl
 
@@ -91,8 +89,7 @@ internal fun JellyseerrLoginContent(
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
                 text = stringResource(R.string.jellyseerr_connect_title),
-                style =
-                    MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             )
             Text(
                 text = stringResource(R.string.jellyseerr_connect_subtitle),
@@ -178,8 +175,7 @@ internal fun JellyseerrLoginContent(
                 },
                 placeholder = {
                     Text(
-                        if (uiState.useJellyfinAuth)
-                            stringResource(R.string.placeholder_username)
+                        if (uiState.useJellyfinAuth) stringResource(R.string.placeholder_username)
                         else stringResource(R.string.placeholder_email_example)
                     )
                 },
@@ -195,8 +191,7 @@ internal fun JellyseerrLoginContent(
                 keyboardOptions =
                     KeyboardOptions(
                         keyboardType =
-                            if (uiState.useJellyfinAuth) KeyboardType.Text
-                            else KeyboardType.Email,
+                            if (uiState.useJellyfinAuth) KeyboardType.Text else KeyboardType.Email,
                         imeAction = ImeAction.Next,
                     ),
                 keyboardActions =
@@ -303,35 +298,18 @@ internal fun JellyseerrLoginContent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Button(
+        LoadingButton(
+            loading = uiState.isLoading,
+            text = stringResource(R.string.btn_login),
             onClick = {
                 focusManager.clearFocus()
                 viewModel.login()
             },
             enabled =
-                !uiState.isLoading &&
-                    uiState.serverUrl.isNotBlank() &&
+                uiState.serverUrl.isNotBlank() &&
                     uiState.email.isNotBlank() &&
                     uiState.password.isNotBlank(),
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors =
-                ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-        ) {
-            if (uiState.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                )
-            } else {
-                Text(
-                    text = stringResource(R.string.btn_login),
-                    style =
-                        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                )
-            }
-        }
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
     }
@@ -352,6 +330,7 @@ fun JellyseerrBottomSheet(
         containerColor = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        tonalElevation = 0.dp,
     ) {
         JellyseerrLoginContent(onDismiss = onDismiss, viewModel = viewModel)
     }

@@ -6,14 +6,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.ui.home.components.HomeSectionHeader
 import com.makd.afinity.ui.livetv.models.LiveTvCategory
 import com.makd.afinity.ui.livetv.models.ProgramWithChannel
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
@@ -30,12 +28,7 @@ fun ProgramCategoryRow(
     val cardWidth = widthSizeClass.landscapeWidth
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
-        Text(
-            text = stringResource(category.displayNameRes),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
+        HomeSectionHeader(title = stringResource(category.displayNameRes))
 
         LazyRow(
             modifier = Modifier,

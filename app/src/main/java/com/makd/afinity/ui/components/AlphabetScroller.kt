@@ -1,4 +1,4 @@
-package com.makd.afinity.ui.audiobookshelf.libraries.components
+package com.makd.afinity.ui.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource

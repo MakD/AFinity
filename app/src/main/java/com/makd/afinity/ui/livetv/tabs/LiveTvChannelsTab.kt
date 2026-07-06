@@ -1,7 +1,6 @@
 package com.makd.afinity.ui.livetv.tabs
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,20 +13,15 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,12 +30,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import com.makd.afinity.R
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AlphabetScroller
+import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.livetv.LiveTvUiState
 import com.makd.afinity.ui.livetv.components.ChannelCard
 
@@ -56,9 +51,7 @@ fun LiveTvChannelsTab(
     modifier: Modifier = Modifier,
 ) {
     if (uiState.isLoading) {
-        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
+        FullScreenLoading(modifier = modifier)
         return
     }
 
@@ -171,40 +164,6 @@ fun LiveTvChannelsTab(
                         ),
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun AlphabetScroller(
-    selectedLetter: String?,
-    onLetterSelected: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val letters = listOf("#") + ('A'..'Z').map { it.toString() }
-
-    LazyColumn(
-        modifier = modifier.width(32.dp).padding(vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        items(letters, key = { it }) { letter ->
-            val isSelected = selectedLetter == letter
-            Text(
-                text = letter,
-                style =
-                    MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                    ),
-                color =
-                    if (isSelected) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier =
-                    Modifier.clickable { onLetterSelected(letter) }
-                        .padding(horizontal = 4.dp, vertical = 2.dp)
-                        .fillMaxWidth(),
-            )
         }
     }
 }

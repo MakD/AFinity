@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -60,6 +59,7 @@ fun ContinueWatchingCard(
     cardWidth: Dp,
     modifier: Modifier = Modifier,
 ) {
+    val ratingScale = rememberRatingMetadataScale()
 
     Column(modifier = modifier.width(cardWidth)) {
         Card(
@@ -170,21 +170,7 @@ fun ContinueWatchingCard(
                         )
                     }
                 } else if (item.played) {
-                    Box(
-                        modifier =
-                            Modifier.align(Alignment.TopEnd)
-                                .padding(8.dp)
-                                .size(24.dp)
-                                .background(MaterialTheme.colorScheme.primary, CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_check),
-                            contentDescription = stringResource(R.string.cd_watched),
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(16.dp),
-                        )
-                    }
+                    PlayedBadge(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp))
                 }
             }
         }
@@ -230,7 +216,12 @@ fun ContinueWatchingCard(
                         metadataItems.add {
                             Text(
                                 text = year.toString(),
-                                style = MaterialTheme.typography.bodySmall,
+                                style =
+                                    MaterialTheme.typography.bodySmall.copy(
+                                        fontSize =
+                                            MaterialTheme.typography.bodySmall.fontSize *
+                                                ratingScale.textScale
+                                    ),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -247,11 +238,16 @@ fun ContinueWatchingCard(
                                         painter = painterResource(id = R.drawable.ic_imdb_logo),
                                         contentDescription = stringResource(R.string.cd_imdb),
                                         tint = Color.Unspecified,
-                                        modifier = Modifier.size(18.dp),
+                                        modifier = Modifier.size(ratingScale.imdbIconSize),
                                     )
                                     Text(
                                         text = String.format(Locale.US, "%.1f", imdbRating),
-                                        style = MaterialTheme.typography.bodySmall,
+                                        style =
+                                            MaterialTheme.typography.bodySmall.copy(
+                                                fontSize =
+                                                    MaterialTheme.typography.bodySmall.fontSize *
+                                                        ratingScale.textScale
+                                            ),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
@@ -273,13 +269,18 @@ fun ContinueWatchingCard(
                                             ),
                                         contentDescription =
                                             stringResource(R.string.cd_rotten_tomatoes_rating),
-                                        modifier = Modifier.size(12.dp),
+                                        modifier = Modifier.size(ratingScale.rtIconSize),
                                         tint = Color.Unspecified,
                                     )
                                     Spacer(modifier = Modifier.width(2.dp))
                                     Text(
                                         text = "${rtRating.toInt()}%",
-                                        style = MaterialTheme.typography.bodySmall,
+                                        style =
+                                            MaterialTheme.typography.bodySmall.copy(
+                                                fontSize =
+                                                    MaterialTheme.typography.bodySmall.fontSize *
+                                                        ratingScale.textScale
+                                            ),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
@@ -339,11 +340,16 @@ fun ContinueWatchingCard(
                                     painter = painterResource(id = R.drawable.ic_imdb_logo),
                                     contentDescription = stringResource(R.string.cd_imdb),
                                     tint = Color.Unspecified,
-                                    modifier = Modifier.size(18.dp),
+                                    modifier = Modifier.size(ratingScale.imdbIconSize),
                                 )
                                 Text(
                                     text = String.format(Locale.US, "%.1f", imdbRating),
-                                    style = MaterialTheme.typography.bodySmall,
+                                    style =
+                                        MaterialTheme.typography.bodySmall.copy(
+                                            fontSize =
+                                                MaterialTheme.typography.bodySmall.fontSize *
+                                                    ratingScale.textScale
+                                        ),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
@@ -363,11 +369,16 @@ fun ContinueWatchingCard(
                                 painter = painterResource(id = R.drawable.ic_imdb_logo),
                                 contentDescription = stringResource(R.string.cd_imdb),
                                 tint = Color.Unspecified,
-                                modifier = Modifier.size(18.dp),
+                                modifier = Modifier.size(ratingScale.imdbIconSize),
                             )
                             Text(
                                 text = String.format(Locale.US, "%.1f", rating),
-                                style = MaterialTheme.typography.bodySmall,
+                                style =
+                                    MaterialTheme.typography.bodySmall.copy(
+                                        fontSize =
+                                            MaterialTheme.typography.bodySmall.fontSize *
+                                                ratingScale.textScale
+                                    ),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
