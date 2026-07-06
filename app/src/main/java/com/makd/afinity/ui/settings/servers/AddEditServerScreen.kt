@@ -65,6 +65,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.util.isInsecurePublicUrl
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -121,7 +122,7 @@ fun AddEditServerScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             )
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) }) },
         modifier = modifier.fillMaxSize(),
     ) { paddingValues ->
         val layoutDirection = LocalLayoutDirection.current

@@ -69,6 +69,7 @@ import com.makd.afinity.ui.audiobookshelf.player.components.PlaybackSpeedSelecto
 import com.makd.afinity.ui.audiobookshelf.player.components.PlayerControls
 import com.makd.afinity.ui.audiobookshelf.player.components.SleepTimerDialog
 import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
+import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.player.components.PlaybackStatsOverlay
 
 private fun String.withAbsWidth(px: Int): String {
@@ -126,7 +127,9 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) })
+        },
         containerColor = Color.Transparent,
     ) { paddingValues ->
         Box(

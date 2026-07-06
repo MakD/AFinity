@@ -78,6 +78,7 @@ import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
@@ -1090,6 +1091,7 @@ fun MusicArtistScreen(
 
         SnackbarHost(
             hostState = snackbarHostState,
+            snackbar = { AFinitySnackbar(it) },
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
         )
     }

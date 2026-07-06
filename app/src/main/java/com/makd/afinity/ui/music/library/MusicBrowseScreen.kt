@@ -28,6 +28,7 @@ import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.Destination.Companion.createSearchRoute
 import com.makd.afinity.navigation.Destination.Companion.createSettingsRoute
+import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
@@ -78,7 +79,7 @@ fun MusicBrowseScreen(
     val genresGridState = rememberLazyGridState()
 
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) }) },
         topBar = {
             AfinityTopAppBar(
                 title = {

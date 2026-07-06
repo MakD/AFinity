@@ -69,6 +69,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.data.models.music.RepeatMode
 import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
+import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
@@ -129,7 +130,7 @@ fun SharedTransitionScope.MusicPlayerScreen(
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) }) },
         containerColor = Color.Transparent,
     ) { paddingValues ->
         Box(

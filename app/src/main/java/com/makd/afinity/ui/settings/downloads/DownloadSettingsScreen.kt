@@ -77,6 +77,7 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.downloads.DownloadsViewModel
 import java.util.UUID
@@ -146,7 +147,7 @@ fun DownloadSettingsScreen(
                     ),
             )
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) }) },
         containerColor = MaterialTheme.colorScheme.surface,
         modifier = modifier.fillMaxSize(),
     ) { innerPadding ->

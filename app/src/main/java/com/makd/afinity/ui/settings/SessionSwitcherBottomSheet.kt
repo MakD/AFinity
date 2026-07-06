@@ -46,6 +46,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.server.Server
+import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AsyncImage
 import kotlinx.coroutines.launch
 
@@ -127,7 +128,7 @@ internal fun SessionSwitcherContent(
             }
         }
 
-        SnackbarHost(hostState = snackbarHostState)
+        SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) })
     }
 }
 

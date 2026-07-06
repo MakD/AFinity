@@ -66,6 +66,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.makd.afinity.R
 import com.makd.afinity.data.models.admin.ItemImage
+import com.makd.afinity.ui.components.AFinitySnackbar
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -158,7 +159,7 @@ fun EditImagesScreen(
                 text = { Text(stringResource(R.string.admin_upload_image)) },
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState, snackbar = { AFinitySnackbar(it) }) },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             Column(

@@ -47,6 +47,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.settings.servers.components.DeleteServerConfirmationDialog
 import com.makd.afinity.ui.settings.servers.components.EmptyServersState
 
@@ -178,7 +179,7 @@ private fun ServerListPane(
                 )
             }
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) }) },
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
     ) { paddingValues ->
