@@ -270,9 +270,17 @@ constructor(
             .cachedIn(viewModelScope)
 
     init {
-        viewModelScope.launch { loadPlaylists() }
+        observePlaylists()
         viewModelScope.launch { loadMusicHomeSections() }
         observeDownloads()
+    }
+
+    private fun observePlaylists() {
+        viewModelScope.launch {
+            musicRepository.getPlaylistsFlow().collect { playlists ->
+                _uiState.update { it.copy(playlists = playlists) }
+            }
+        }
     }
 
     private fun observeDownloads() {
@@ -339,19 +347,6 @@ constructor(
                 Timber.e(it, "Failed to download track $trackId")
             }
         }
-    }
-
-    private suspend fun loadPlaylists() {
-        try {
-            val result = musicRepository.getPlaylists()
-            _uiState.update { it.copy(playlists = result) }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to load playlists")
-        }
-    }
-
-    fun refreshPlaylists() {
-        viewModelScope.launch { loadPlaylists() }
     }
 
     private fun updateMadeForYouSnapshot() {

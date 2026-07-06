@@ -21,8 +21,11 @@ import com.makd.afinity.data.repository.FieldSets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
@@ -51,6 +54,15 @@ constructor(
     private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
 ) : MusicRepository {
+
+    private val playlistsRefreshTrigger = MutableStateFlow(0)
+
+    override fun invalidatePlaylistsCache() {
+        playlistsRefreshTrigger.update { it + 1 }
+    }
+
+    override fun getPlaylistsFlow(libraryId: UUID?): Flow<List<AfinityPlaylist>> =
+        playlistsRefreshTrigger.map { getPlaylists(libraryId) }
 
     private fun getBaseUrlInternal(): String =
         sessionManager.currentSession.value?.serverUrl?.trimEnd('/') ?: ""
@@ -600,6 +612,8 @@ constructor(
                         .onFailure { Timber.e(it, "createPlaylist: addItemToPlaylist failed") }
                 }
 
+                invalidatePlaylistsCache()
+
                 AfinityPlaylist(
                     id = playlistId,
                     name = name,
@@ -654,6 +668,7 @@ constructor(
                 org.jellyfin.sdk.api.operations
                     .LibraryApi(apiClient)
                     .deleteItem(itemId = playlistId)
+                invalidatePlaylistsCache()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to delete playlist $playlistId")
                 throw e

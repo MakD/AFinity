@@ -63,6 +63,10 @@ interface MusicRepository {
 
     suspend fun getPlaylists(libraryId: UUID? = null): List<AfinityPlaylist>
 
+    fun getPlaylistsFlow(libraryId: UUID? = null): Flow<List<AfinityPlaylist>>
+
+    fun invalidatePlaylistsCache()
+
     suspend fun getPlaylistById(playlistId: UUID): AfinityPlaylist?
 
     suspend fun getPlaylistTracks(playlistId: UUID): List<AfinityTrack>
