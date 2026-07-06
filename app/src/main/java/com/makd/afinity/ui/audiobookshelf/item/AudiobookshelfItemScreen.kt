@@ -745,6 +745,7 @@ private fun NarratedByRow(narrator: String, modifier: Modifier = Modifier) {
                         )
                 ) {
                     append(stringResource(R.string.abs_narrated_by))
+                    append(" ")
                 }
 
                 withStyle(
