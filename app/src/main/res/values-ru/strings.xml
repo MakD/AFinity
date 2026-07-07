@@ -1154,4 +1154,20 @@
     <string name="request_quota_remaining_fmt">Осталось: %1$d из %2$d</string>
     <string name="request_quota_movie_remaining_fmt">Запросов осталось: %1$d из %2$d</string>
     <string name="request_quota_tv_remaining_fmt">Запросов сезонов осталось: %1$d из %2$d</string>
+    <string name="request_quota_period_fmt">на %1$d дней</string>
+    <string name="request_quota_exceeded">Достигнут лимит</string>
+    <string name="request_language_profile">Профиль языка</string>
+    <string name="request_tags">Тэги</string>
+    <string name="request_tags_none">Нет</string>
+    <string name="request_as_label">Запросить как</string>
+    <string name="request_select_placeholder">Выбрать…</string>
+    <string name="request_quota_exceeded_message">У вас осталось недостаточно запросов. Ваша квота сбрасывается автоматически.</string>
+    <string name="season_count_fmt">%1$d сезонов</string>
+    <string name="seerr_recommendations_title">Рекомендации</string>
+    <string name="seerr_detail_request">Запрос</string>
+    <string name="seerr_detail_request_4k">Запрос в 4K</string>
+    <string name="seerr_detail_open_library">Открыть в Библиотеке</string>
+    <string name="seerr_detail_status_fmt">%1$s</string>
+    <string name="seerr_collection_fallback">Коллекция</string>
+    <string name="seerr_details_title">Подробности</string>
 </resources>
