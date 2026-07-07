@@ -72,7 +72,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -93,6 +94,7 @@ import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.ConnectionIndicatorBadge
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
@@ -864,7 +866,12 @@ fun ProfileHeader(
         modifier = modifier.fillMaxWidth().padding(top = 24.dp, bottom = 0.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(modifier = Modifier.size(96.dp)) {
+        Box(
+            modifier =
+                Modifier.size(96.dp).graphicsLayer {
+                    compositingStrategy = CompositingStrategy.Offscreen
+                }
+        ) {
             Box(
                 modifier =
                     Modifier.fillMaxSize()
@@ -890,44 +897,13 @@ fun ProfileHeader(
                 }
             }
 
-            val indicatorColor =
-                when (connectionType) {
-                    ConnectionType.LOCAL -> Color(0xFF4CAF50)
-                    ConnectionType.TAILSCALE -> Color(0xFF2196F3)
-                    ConnectionType.REMOTE -> Color(0xFFFF9800)
-                    ConnectionType.OFFLINE -> MaterialTheme.colorScheme.error
-                }
-            val indicatorIcon =
-                when (connectionType) {
-                    ConnectionType.LOCAL -> R.drawable.ic_wifi
-                    ConnectionType.TAILSCALE -> R.drawable.ic_security
-                    ConnectionType.REMOTE -> R.drawable.ic_link
-                    ConnectionType.OFFLINE -> R.drawable.ic_cloud_off
-                }
-            val indicatorContentDescription =
-                when (connectionType) {
-                    ConnectionType.LOCAL -> stringResource(R.string.cd_local_connection)
-                    ConnectionType.TAILSCALE -> stringResource(R.string.cd_tailscale_connection)
-                    ConnectionType.REMOTE -> stringResource(R.string.cd_remote_connection)
-                    ConnectionType.OFFLINE -> stringResource(R.string.cd_offline_mode)
-                }
-
-            Box(
-                modifier =
-                    Modifier.align(Alignment.BottomEnd)
-                        .size(28.dp)
-                        .background(color = MaterialTheme.colorScheme.surface, shape = CircleShape)
-                        .padding(3.dp)
-                        .background(color = indicatorColor, shape = CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(id = indicatorIcon),
-                    contentDescription = indicatorContentDescription,
-                    tint = Color.White,
-                    modifier = Modifier.size(14.dp),
-                )
-            }
+            ConnectionIndicatorBadge(
+                connectionType = connectionType,
+                modifier = Modifier.align(Alignment.BottomEnd),
+                size = 28.dp,
+                iconSize = 14.dp,
+                ringPadding = 3.dp,
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))

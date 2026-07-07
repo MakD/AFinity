@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -30,7 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
@@ -46,14 +44,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
-import com.makd.afinity.data.models.server.ConnectionType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 @HiltViewModel
-class AfinityTopAppBarViewModel
-@Inject
-constructor(offlineModeManager: OfflineModeManager) : ViewModel() {
+class AfinityTopAppBarViewModel @Inject constructor(offlineModeManager: OfflineModeManager) :
+    ViewModel() {
     val connectionType = offlineModeManager.connectionType
 }
 
@@ -154,47 +150,10 @@ fun AfinityTopAppBar(
                         }
                     }
 
-                    val indicatorColor =
-                        when (connectionType) {
-                            ConnectionType.LOCAL -> Color(0xFF4CAF50)
-                            ConnectionType.TAILSCALE -> Color(0xFF2196F3)
-                            ConnectionType.REMOTE -> Color(0xFFFF9800)
-                            ConnectionType.OFFLINE -> Color(0xFFF44336)
-                        }
-                    val indicatorIcon =
-                        when (connectionType) {
-                            ConnectionType.LOCAL -> R.drawable.ic_wifi
-                            ConnectionType.TAILSCALE -> R.drawable.ic_security
-                            ConnectionType.REMOTE -> R.drawable.ic_link
-                            ConnectionType.OFFLINE -> R.drawable.ic_cloud_off
-                        }
-                    val indicatorContentDescription =
-                        when (connectionType) {
-                            ConnectionType.LOCAL -> stringResource(R.string.cd_local_connection)
-                            ConnectionType.TAILSCALE ->
-                                stringResource(R.string.cd_tailscale_connection)
-                            ConnectionType.REMOTE -> stringResource(R.string.cd_remote_connection)
-                            ConnectionType.OFFLINE -> stringResource(R.string.cd_offline_mode)
-                        }
-
-                    Box(
-                        modifier =
-                            Modifier.align(Alignment.BottomEnd)
-                                .size(18.dp)
-                                .drawBehind {
-                                    drawCircle(color = Color.Black, blendMode = BlendMode.Clear)
-                                }
-                                .padding(1.5.dp)
-                                .background(color = indicatorColor, shape = CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painter = painterResource(id = indicatorIcon),
-                            contentDescription = indicatorContentDescription,
-                            tint = Color.White,
-                            modifier = Modifier.size(10.dp),
-                        )
-                    }
+                    ConnectionIndicatorBadge(
+                        connectionType = connectionType,
+                        modifier = Modifier.align(Alignment.BottomEnd),
+                    )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
             }
@@ -202,6 +161,8 @@ fun AfinityTopAppBar(
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
         modifier =
-            modifier.drawBehind { drawRect(color = surfaceColor.copy(alpha = backgroundOpacity())) },
+            modifier.drawBehind {
+                drawRect(color = surfaceColor.copy(alpha = backgroundOpacity()))
+            },
     )
 }
