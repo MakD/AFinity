@@ -86,14 +86,22 @@ fun FilteredMediaScreen(
     LaunchedEffect(filterParams) { viewModel.loadContent(filterParams) }
 
     val cardWidth = widthSizeClass.portraitWidth
-    val isTv = filterParams.type == FilterType.GENRE_TV || filterParams.type == FilterType.POPULAR_TV
+    val isTv =
+        filterParams.type == FilterType.GENRE_TV ||
+            filterParams.type == FilterType.POPULAR_TV ||
+            filterParams.type == FilterType.UPCOMING_TV
     val showSortAndFilterControls =
         filterParams.type == FilterType.GENRE_MOVIE ||
             filterParams.type == FilterType.GENRE_TV ||
             filterParams.type == FilterType.POPULAR_MOVIES ||
-            filterParams.type == FilterType.POPULAR_TV
+            filterParams.type == FilterType.POPULAR_TV ||
+            filterParams.type == FilterType.UPCOMING_MOVIES ||
+            filterParams.type == FilterType.UPCOMING_TV
     val showGenrePicker =
-        filterParams.type == FilterType.POPULAR_MOVIES || filterParams.type == FilterType.POPULAR_TV
+        filterParams.type == FilterType.POPULAR_MOVIES ||
+            filterParams.type == FilterType.POPULAR_TV ||
+            filterParams.type == FilterType.UPCOMING_MOVIES ||
+            filterParams.type == FilterType.UPCOMING_TV
 
     Scaffold(
         topBar = {
@@ -295,7 +303,8 @@ fun FilteredMediaScreen(
     if (showSortDialog) {
         when (filterParams.type) {
             FilterType.GENRE_MOVIE,
-            FilterType.POPULAR_MOVIES ->
+            FilterType.POPULAR_MOVIES,
+            FilterType.UPCOMING_MOVIES ->
                 MovieDiscoverSortDialog(
                     currentField = uiState.movieSortField,
                     currentDescending = uiState.movieSortDescending,
@@ -305,7 +314,8 @@ fun FilteredMediaScreen(
                     },
                 )
             FilterType.GENRE_TV,
-            FilterType.POPULAR_TV ->
+            FilterType.POPULAR_TV,
+            FilterType.UPCOMING_TV ->
                 TvDiscoverSortDialog(
                     currentField = uiState.tvSortField,
                     currentDescending = uiState.tvSortDescending,

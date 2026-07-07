@@ -77,4 +77,8 @@ data class SearchResultItem(
     fun getBackdropUrl(baseUrl: String = "https://image.tmdb.org/t/p/w1280"): String? {
         return backdropPath?.let { "$baseUrl$it" }
     }
+
+    fun isAvailableOrPartial(): Boolean =
+        mediaInfo?.status == MediaStatus.AVAILABLE.value ||
+            mediaInfo?.status == MediaStatus.PARTIALLY_AVAILABLE.value
 }

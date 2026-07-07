@@ -1,8 +1,15 @@
 package com.makd.afinity.ui.requests
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,10 +21,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -57,7 +66,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
@@ -65,6 +76,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -97,6 +109,14 @@ private fun tvStatusLabel(status: TvStatus): String =
 private enum class KeywordField {
     INCLUDE,
     EXCLUDE,
+}
+
+private fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier = composed {
+    clickable(
+        interactionSource = remember { MutableInteractionSource() },
+        indication = null,
+        onClick = onClick,
+    )
 }
 
 private val US_MOVIE_CERTIFICATIONS = listOf("NR", "G", "PG", "PG-13", "R", "NC-17")
@@ -156,6 +176,40 @@ fun DiscoverFilterBottomSheet(
     var showFromDatePicker by remember { mutableStateOf(false) }
     var showToDatePicker by remember { mutableStateOf(false) }
 
+    var expandedSections by remember {
+        mutableStateOf(
+            buildSet {
+                if (filterOptions.genreIds.isNotEmpty()) add("genres")
+                if (filterOptions.releaseDateGte != null || filterOptions.releaseDateLte != null) {
+                    add("release_date")
+                }
+                if (
+                    filterOptions.runtimeGte != null ||
+                        filterOptions.runtimeLte != null ||
+                        filterOptions.voteAverageGte != null ||
+                        filterOptions.voteAverageLte != null ||
+                        filterOptions.voteCountGte != null ||
+                        filterOptions.voteCountLte != null
+                ) {
+                    add("ratings")
+                }
+                if (filterOptions.tvStatus.isNotEmpty()) add("tv_status")
+                if (filterOptions.certification.isNotEmpty()) add("certification")
+                if (filterOptions.watchRegion != null) add("watch_providers")
+                if (
+                    filterOptions.keywordIds.isNotEmpty() ||
+                        filterOptions.excludeKeywordIds.isNotEmpty()
+                ) {
+                    add("keywords")
+                }
+            }
+        )
+    }
+    fun toggleSection(key: String) {
+        expandedSections =
+            if (expandedSections.contains(key)) expandedSections - key else expandedSections + key
+    }
+
     LaunchedEffect(Unit) { watchRegion?.let { onRegionSelected(it) } }
 
     Dialog(
@@ -163,15 +217,17 @@ fun DiscoverFilterBottomSheet(
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Surface(
-            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.9f).padding(16.dp),
+            modifier =
+                Modifier.fillMaxWidth().widthIn(max = 480.dp).fillMaxHeight(0.9f).padding(16.dp),
             shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surfaceContainer,
         ) {
+          Column(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier =
-                    Modifier.fillMaxWidth()
+                    Modifier.weight(1f)
                         .verticalScroll(rememberScrollState())
-                        .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 24.dp)
+                        .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -203,7 +259,9 @@ fun DiscoverFilterBottomSheet(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+
+                val anyLabel = stringResource(R.string.discover_filter_any)
 
                 if (showGenrePicker && genres.isNotEmpty()) {
                     val selectedGenres = genres.filter { selectedGenreIds.contains(it.id) }
@@ -213,263 +271,369 @@ fun DiscoverFilterBottomSheet(
                                 it.name.contains(genreQuery, ignoreCase = true))
                     }
 
-                    SearchableChipMultiSelect(
-                        label = stringResource(R.string.discover_filter_genres),
-                        placeholder = stringResource(R.string.discover_filter_genres_hint),
-                        query = genreQuery,
-                        onQueryChange = { genreQuery = it },
-                        suggestions = genreSuggestions,
-                        suggestionLabel = { it.name },
-                        onSuggestionSelected = { genre ->
-                            selectedGenreIds = selectedGenreIds + genre.id
-                            genreQuery = ""
-                        },
-                        selected = selectedGenres,
-                        selectedLabel = { it.name },
-                        onRemoveSelected = { genre ->
-                            selectedGenreIds = selectedGenreIds - genre.id
-                        },
-                    )
-
-                    SectionDivider()
+                    FilterAccordionSection(
+                        title = stringResource(R.string.discover_filter_genres),
+                        summary =
+                            if (selectedGenres.isEmpty()) anyLabel
+                            else selectedGenres.joinToString(", ") { it.name },
+                        expanded = expandedSections.contains("genres"),
+                        onToggle = { toggleSection("genres") },
+                    ) {
+                        SearchableChipMultiSelect(
+                            label = null,
+                            placeholder = stringResource(R.string.discover_filter_genres_hint),
+                            query = genreQuery,
+                            onQueryChange = { genreQuery = it },
+                            suggestions = genreSuggestions,
+                            suggestionLabel = { it.name },
+                            onSuggestionSelected = { genre ->
+                                selectedGenreIds = selectedGenreIds + genre.id
+                                genreQuery = ""
+                            },
+                            selected = selectedGenres,
+                            selectedLabel = { it.name },
+                            onRemoveSelected = { genre ->
+                                selectedGenreIds = selectedGenreIds - genre.id
+                            },
+                        )
+                    }
                 }
 
-                FilterSectionHeader(stringResource(R.string.discover_filter_release_date))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                FilterAccordionSection(
+                    title = stringResource(R.string.discover_filter_release_date),
+                    summary =
+                        if (releaseDateGte == null && releaseDateLte == null) anyLabel
+                        else "${releaseDateGte ?: anyLabel} – ${releaseDateLte ?: anyLabel}",
+                    expanded = expandedSections.contains("release_date"),
+                    onToggle = { toggleSection("release_date") },
                 ) {
-                    DateFieldButton(
-                        label = stringResource(R.string.discover_filter_release_date_from),
-                        value = releaseDateGte,
-                        onClick = { showFromDatePicker = true },
-                        modifier = Modifier.weight(1f),
-                    )
-                    DateFieldButton(
-                        label = stringResource(R.string.discover_filter_release_date_to),
-                        value = releaseDateLte,
-                        onClick = { showToDatePicker = true },
-                        modifier = Modifier.weight(1f),
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        DateFieldButton(
+                            label = stringResource(R.string.discover_filter_release_date_from),
+                            value = releaseDateGte,
+                            onClick = { showFromDatePicker = true },
+                            modifier = Modifier.weight(1f),
+                        )
+                        DateFieldButton(
+                            label = stringResource(R.string.discover_filter_release_date_to),
+                            value = releaseDateLte,
+                            onClick = { showToDatePicker = true },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
 
-                SectionDivider()
+                val ratingsSummary = buildList {
+                        if (runtimeRange != 0f..400f) {
+                            add(
+                                "${runtimeRange.start.roundToInt()}–${runtimeRange.endInclusive.roundToInt()} min"
+                            )
+                        }
+                        if (ratingRange != 0f..10f) {
+                            add(
+                                "${"%.1f".format(ratingRange.start)}–${"%.1f".format(ratingRange.endInclusive)}★"
+                            )
+                        }
+                        if (voteCountRange != 0f..1000f) {
+                            add(
+                                "${voteCountRange.start.roundToInt()}–${voteCountRange.endInclusive.roundToInt()} votes"
+                            )
+                        }
+                    }
+                    .let { if (it.isEmpty()) anyLabel else it.joinToString(" · ") }
 
-                FilterSectionHeader(
-                    "${stringResource(R.string.discover_filter_runtime)}  ${runtimeRange.start.roundToInt()}–${runtimeRange.endInclusive.roundToInt()} min"
-                )
-                RangeSlider(
-                    value = runtimeRange,
-                    onValueChange = { runtimeRange = it },
-                    valueRange = 0f..400f,
-                    colors = discoverSliderColors(),
-                    modifier = Modifier.fillMaxWidth().height(24.dp),
-                )
+                FilterAccordionSection(
+                    title = stringResource(R.string.discover_filter_ratings_runtime),
+                    summary = ratingsSummary,
+                    expanded = expandedSections.contains("ratings"),
+                    onToggle = { toggleSection("ratings") },
+                ) {
+                    FilterSectionHeader(
+                        "${stringResource(R.string.discover_filter_runtime)}  ${runtimeRange.start.roundToInt()}–${runtimeRange.endInclusive.roundToInt()} min"
+                    )
+                    RangeSlider(
+                        value = runtimeRange,
+                        onValueChange = { runtimeRange = it },
+                        valueRange = 0f..400f,
+                        colors = discoverSliderColors(),
+                        modifier = Modifier.fillMaxWidth().height(24.dp),
+                    )
 
-                SectionDivider()
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                FilterSectionHeader(
-                    "${stringResource(R.string.discover_filter_rating)}  ${"%.1f".format(ratingRange.start)}–${"%.1f".format(ratingRange.endInclusive)}"
-                )
-                RangeSlider(
-                    value = ratingRange,
-                    onValueChange = { ratingRange = it },
-                    valueRange = 0f..10f,
-                    colors = discoverSliderColors(),
-                    modifier = Modifier.fillMaxWidth().height(24.dp),
-                )
+                    FilterSectionHeader(
+                        "${stringResource(R.string.discover_filter_rating)}  ${"%.1f".format(ratingRange.start)}–${"%.1f".format(ratingRange.endInclusive)}"
+                    )
+                    RangeSlider(
+                        value = ratingRange,
+                        onValueChange = { ratingRange = it },
+                        valueRange = 0f..10f,
+                        colors = discoverSliderColors(),
+                        modifier = Modifier.fillMaxWidth().height(24.dp),
+                    )
 
-                SectionDivider()
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                FilterSectionHeader(
-                    "${stringResource(R.string.discover_filter_vote_count)}  ${voteCountRange.start.roundToInt()}–${voteCountRange.endInclusive.roundToInt()}"
-                )
-                RangeSlider(
-                    value = voteCountRange,
-                    onValueChange = { voteCountRange = it },
-                    valueRange = 0f..1000f,
-                    colors = discoverSliderColors(),
-                    modifier = Modifier.fillMaxWidth().height(24.dp),
-                )
+                    FilterSectionHeader(
+                        "${stringResource(R.string.discover_filter_vote_count)}  ${voteCountRange.start.roundToInt()}–${voteCountRange.endInclusive.roundToInt()}"
+                    )
+                    RangeSlider(
+                        value = voteCountRange,
+                        onValueChange = { voteCountRange = it },
+                        valueRange = 0f..1000f,
+                        colors = discoverSliderColors(),
+                        modifier = Modifier.fillMaxWidth().height(24.dp),
+                    )
+                }
 
                 if (isTv) {
-                    SectionDivider()
-                    FilterSectionHeader(stringResource(R.string.discover_filter_tv_status))
+                    val tvStatusSummary =
+                        if (tvStatus.isEmpty()) anyLabel
+                        else
+                            TvStatus.entries
+                                .filter { tvStatus.contains(it.value) }
+                                .map { tvStatusLabel(it) }
+                                .joinToString(", ")
+
+                    FilterAccordionSection(
+                        title = stringResource(R.string.discover_filter_tv_status),
+                        summary = tvStatusSummary,
+                        expanded = expandedSections.contains("tv_status"),
+                        onToggle = { toggleSection("tv_status") },
+                    ) {
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            TvStatus.entries.forEach { status ->
+                                FilterChip(
+                                    selected = tvStatus.contains(status.value),
+                                    onClick = {
+                                        tvStatus =
+                                            if (tvStatus.contains(status.value))
+                                                tvStatus - status.value
+                                            else tvStatus + status.value
+                                    },
+                                    label = { Text(tvStatusLabel(status)) },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                FilterAccordionSection(
+                    title = stringResource(R.string.discover_filter_certification),
+                    summary =
+                        if (selectedCertifications.isEmpty()) anyLabel
+                        else selectedCertifications.joinToString(", "),
+                    expanded = expandedSections.contains("certification"),
+                    onToggle = { toggleSection("certification") },
+                ) {
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        TvStatus.entries.forEach { status ->
+                        val certificationOptions =
+                            if (isTv) US_TV_CERTIFICATIONS else US_MOVIE_CERTIFICATIONS
+                        certificationOptions.forEach { cert ->
                             FilterChip(
-                                selected = tvStatus.contains(status.value),
+                                selected = selectedCertifications.contains(cert),
                                 onClick = {
-                                    tvStatus =
-                                        if (tvStatus.contains(status.value)) tvStatus - status.value
-                                        else tvStatus + status.value
+                                    selectedCertifications =
+                                        if (selectedCertifications.contains(cert))
+                                            selectedCertifications - cert
+                                        else selectedCertifications + cert
                                 },
-                                label = { Text(tvStatusLabel(status)) },
+                                label = { Text(cert) },
                             )
                         }
                     }
                 }
 
-                SectionDivider()
+                val currentWatchRegion = watchRegion
+                val watchProvidersSummary =
+                    if (currentWatchRegion == null) anyLabel
+                    else {
+                        val regionName =
+                            watchProviderRegions.find { it.isoCode == currentWatchRegion }
+                                ?.englishName ?: currentWatchRegion
+                        if (selectedProviderIds.isEmpty()) regionName
+                        else "$regionName · ${selectedProviderIds.size} selected"
+                    }
 
-                FilterSectionHeader(stringResource(R.string.discover_filter_certification))
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                FilterAccordionSection(
+                    title = stringResource(R.string.discover_filter_watch_providers),
+                    summary = watchProvidersSummary,
+                    expanded = expandedSections.contains("watch_providers"),
+                    onToggle = { toggleSection("watch_providers") },
                 ) {
-                    val certificationOptions =
-                        if (isTv) US_TV_CERTIFICATIONS else US_MOVIE_CERTIFICATIONS
-                    certificationOptions.forEach { cert ->
-                        FilterChip(
-                            selected = selectedCertifications.contains(cert),
-                            onClick = {
-                                selectedCertifications =
-                                    if (selectedCertifications.contains(cert))
-                                        selectedCertifications - cert
-                                    else selectedCertifications + cert
+                    Row(
+                        modifier =
+                            Modifier.fillMaxWidth().noRippleClickable {
+                                showRegionPicker = true
                             },
-                            label = { Text(cert) },
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.discover_filter_watch_region),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        Text(
+                            text =
+                                watchProviderRegions.find { it.isoCode == watchRegion }
+                                    ?.englishName ?: anyLabel,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     }
-                }
 
-                SectionDivider()
-
-                FilterSectionHeader(stringResource(R.string.discover_filter_watch_providers))
-                Row(
-                    modifier = Modifier.fillMaxWidth().clickable { showRegionPicker = true },
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = stringResource(R.string.discover_filter_watch_region),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    Text(
-                        text =
-                            watchProviderRegions.find { it.isoCode == watchRegion }?.englishName
-                                ?: stringResource(R.string.discover_filter_any),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-
-                if (watchProviders.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        watchProviders.forEach { provider ->
-                            WatchProviderTile(
-                                provider = provider,
-                                selected = selectedProviderIds.contains(provider.id),
-                                onClick = {
-                                    selectedProviderIds =
-                                        if (selectedProviderIds.contains(provider.id))
-                                            selectedProviderIds - provider.id
-                                        else selectedProviderIds + provider.id
-                                },
-                            )
+                    if (watchProviders.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            watchProviders.forEach { provider ->
+                                WatchProviderTile(
+                                    provider = provider,
+                                    selected = selectedProviderIds.contains(provider.id),
+                                    onClick = {
+                                        selectedProviderIds =
+                                            if (selectedProviderIds.contains(provider.id))
+                                                selectedProviderIds - provider.id
+                                            else selectedProviderIds + provider.id
+                                    },
+                                )
+                            }
                         }
                     }
                 }
 
-                SectionDivider()
+                val keywordsSummary = buildList {
+                        if (selectedKeywords.isNotEmpty()) {
+                            add(
+                                stringResource(
+                                    R.string.discover_filter_keywords_included_fmt,
+                                    selectedKeywords.size,
+                                )
+                            )
+                        }
+                        if (selectedExcludeKeywords.isNotEmpty()) {
+                            add(
+                                stringResource(
+                                    R.string.discover_filter_keywords_excluded_fmt,
+                                    selectedExcludeKeywords.size,
+                                )
+                            )
+                        }
+                    }
+                    .let { if (it.isEmpty()) anyLabel else it.joinToString(" · ") }
 
-                SearchableChipMultiSelect(
-                    label = stringResource(R.string.discover_filter_keywords),
-                    placeholder = stringResource(R.string.discover_filter_keyword_search_hint),
-                    query = keywordQuery,
-                    onQueryChange = {
-                        keywordQuery = it
-                        activeKeywordField = KeywordField.INCLUDE
-                        onKeywordQueryChange(it)
-                    },
-                    suggestions =
-                        if (activeKeywordField == KeywordField.INCLUDE) keywordSearchResults
-                        else emptyList(),
-                    suggestionLabel = { it.name },
-                    onSuggestionSelected = { keyword ->
-                        selectedKeywords = selectedKeywords + keyword
-                        keywordQuery = ""
-                        onKeywordQueryChange("")
-                    },
-                    selected = selectedKeywords,
-                    selectedLabel = { it.name },
-                    onRemoveSelected = { keyword -> selectedKeywords = selectedKeywords - keyword },
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                SearchableChipMultiSelect(
-                    label = stringResource(R.string.discover_filter_exclude_keywords),
-                    placeholder = stringResource(R.string.discover_filter_keyword_search_hint),
-                    query = excludeKeywordQuery,
-                    onQueryChange = {
-                        excludeKeywordQuery = it
-                        activeKeywordField = KeywordField.EXCLUDE
-                        onKeywordQueryChange(it)
-                    },
-                    suggestions =
-                        if (activeKeywordField == KeywordField.EXCLUDE) keywordSearchResults
-                        else emptyList(),
-                    suggestionLabel = { it.name },
-                    onSuggestionSelected = { keyword ->
-                        selectedExcludeKeywords = selectedExcludeKeywords + keyword
-                        excludeKeywordQuery = ""
-                        onKeywordQueryChange("")
-                    },
-                    selected = selectedExcludeKeywords,
-                    selectedLabel = { it.name },
-                    onRemoveSelected = { keyword ->
-                        selectedExcludeKeywords = selectedExcludeKeywords - keyword
-                    },
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                TextButton(
-                    onClick = {
-                        onApply(
-                            DiscoverFilterOptions(
-                                genreIds =
-                                    if (showGenrePicker) selectedGenreIds.toList()
-                                    else filterOptions.genreIds,
-                                releaseDateGte = releaseDateGte,
-                                releaseDateLte = releaseDateLte,
-                                runtimeGte = runtimeRange.start.roundToInt().takeIf { it > 0 },
-                                runtimeLte =
-                                    runtimeRange.endInclusive.roundToInt().takeIf { it < 400 },
-                                voteAverageGte = ratingRange.start.toDouble().takeIf { it > 0.0 },
-                                voteAverageLte =
-                                    ratingRange.endInclusive.toDouble().takeIf { it < 10.0 },
-                                voteCountGte = voteCountRange.start.roundToInt().takeIf { it > 0 },
-                                voteCountLte =
-                                    voteCountRange.endInclusive.roundToInt().takeIf { it < 1000 },
-                                tvStatus = tvStatus.toList(),
-                                certification = selectedCertifications.toList(),
-                                watchProviderIds = selectedProviderIds.toList(),
-                                watchRegion = watchRegion,
-                                keywordIds = selectedKeywords.map { it.id },
-                                excludeKeywordIds = selectedExcludeKeywords.map { it.id },
-                            ),
-                            selectedKeywords,
-                            selectedExcludeKeywords,
-                        )
-                        onDismiss()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
+                FilterAccordionSection(
+                    title = stringResource(R.string.discover_filter_keywords),
+                    summary = keywordsSummary,
+                    expanded = expandedSections.contains("keywords"),
+                    onToggle = { toggleSection("keywords") },
                 ) {
-                    Text(stringResource(R.string.action_apply))
+                    SearchableChipMultiSelect(
+                        label = stringResource(R.string.discover_filter_keyword_include),
+                        placeholder = stringResource(R.string.discover_filter_keyword_search_hint),
+                        query = keywordQuery,
+                        onQueryChange = {
+                            keywordQuery = it
+                            activeKeywordField = KeywordField.INCLUDE
+                            onKeywordQueryChange(it)
+                        },
+                        suggestions =
+                            if (activeKeywordField == KeywordField.INCLUDE) keywordSearchResults
+                            else emptyList(),
+                        suggestionLabel = { it.name },
+                        onSuggestionSelected = { keyword ->
+                            selectedKeywords = selectedKeywords + keyword
+                            keywordQuery = ""
+                            onKeywordQueryChange("")
+                        },
+                        selected = selectedKeywords,
+                        selectedLabel = { it.name },
+                        onRemoveSelected = { keyword ->
+                            selectedKeywords = selectedKeywords - keyword
+                        },
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    SearchableChipMultiSelect(
+                        label = stringResource(R.string.discover_filter_keyword_exclude),
+                        placeholder = stringResource(R.string.discover_filter_keyword_search_hint),
+                        query = excludeKeywordQuery,
+                        onQueryChange = {
+                            excludeKeywordQuery = it
+                            activeKeywordField = KeywordField.EXCLUDE
+                            onKeywordQueryChange(it)
+                        },
+                        suggestions =
+                            if (activeKeywordField == KeywordField.EXCLUDE) keywordSearchResults
+                            else emptyList(),
+                        suggestionLabel = { it.name },
+                        onSuggestionSelected = { keyword ->
+                            selectedExcludeKeywords = selectedExcludeKeywords + keyword
+                            excludeKeywordQuery = ""
+                            onKeywordQueryChange("")
+                        },
+                        selected = selectedExcludeKeywords,
+                        selectedLabel = { it.name },
+                        onRemoveSelected = { keyword ->
+                            selectedExcludeKeywords = selectedExcludeKeywords - keyword
+                        },
+                    )
                 }
             }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+            TextButton(
+                onClick = {
+                    onApply(
+                        DiscoverFilterOptions(
+                            genreIds =
+                                if (showGenrePicker) selectedGenreIds.toList()
+                                else filterOptions.genreIds,
+                            releaseDateGte = releaseDateGte,
+                            releaseDateLte = releaseDateLte,
+                            runtimeGte = runtimeRange.start.roundToInt().takeIf { it > 0 },
+                            runtimeLte = runtimeRange.endInclusive.roundToInt().takeIf { it < 400 },
+                            voteAverageGte = ratingRange.start.toDouble().takeIf { it > 0.0 },
+                            voteAverageLte = ratingRange.endInclusive.toDouble().takeIf { it < 10.0 },
+                            voteCountGte = voteCountRange.start.roundToInt().takeIf { it > 0 },
+                            voteCountLte =
+                                voteCountRange.endInclusive.roundToInt().takeIf { it < 1000 },
+                            tvStatus = tvStatus.toList(),
+                            certification = selectedCertifications.toList(),
+                            watchProviderIds = selectedProviderIds.toList(),
+                            watchRegion = watchRegion,
+                            keywordIds = selectedKeywords.map { it.id },
+                            excludeKeywordIds = selectedExcludeKeywords.map { it.id },
+                        ),
+                        selectedKeywords,
+                        selectedExcludeKeywords,
+                    )
+                    onDismiss()
+                },
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 24.dp, vertical = 12.dp),
+            ) {
+                Text(stringResource(R.string.action_apply))
+            }
+          }
         }
     }
 
@@ -533,11 +697,57 @@ private fun FilterSectionHeader(text: String) {
 }
 
 @Composable
-private fun SectionDivider() {
-    HorizontalDivider(
-        modifier = Modifier.padding(vertical = 20.dp),
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-    )
+private fun FilterAccordionSection(
+    title: String,
+    summary: String,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    val rotation by animateFloatAsState(if (expanded) 180f else 0f, label = "chevron")
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier =
+                Modifier.fillMaxWidth().noRippleClickable(onToggle).padding(vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    letterSpacing = 1.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Icon(
+                painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.rotate(rotation),
+            )
+        }
+
+        AnimatedVisibility(
+            visible = expanded,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically(),
+        ) {
+            Column(modifier = Modifier.padding(bottom = 16.dp)) { content() }
+        }
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -565,7 +775,7 @@ private fun WatchProviderTile(
                             else MaterialTheme.colorScheme.outlineVariant,
                         shape = RoundedCornerShape(12.dp),
                     )
-                    .clickable(onClick = onClick)
+                    .noRippleClickable(onClick)
         ) {
             provider.logoUrl()?.let { url ->
                 AsyncImage(
@@ -609,7 +819,7 @@ private fun DateFieldButton(
     Column(
         modifier =
             modifier
-                .clickable(onClick = onClick)
+                .noRippleClickable(onClick)
                 .background(
                     MaterialTheme.colorScheme.surfaceContainerHighest,
                     MaterialTheme.shapes.medium,
@@ -674,7 +884,7 @@ private fun DateFieldPickerDialog(
 @Composable
 private fun CountryRow(name: String, isSelected: Boolean, onClick: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().noRippleClickable(onClick).padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         RadioButton(selected = isSelected, onClick = onClick)
@@ -719,7 +929,7 @@ private fun RegionPickerDialog(
 
 @Composable
 private fun <T> SearchableChipMultiSelect(
-    label: String,
+    label: String?,
     placeholder: String,
     query: String,
     onQueryChange: (String) -> Unit,
@@ -733,7 +943,14 @@ private fun <T> SearchableChipMultiSelect(
     var isFocused by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
-    FilterSectionHeader(label)
+    if (label != null) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 4.dp),
+        )
+    }
 
     OutlinedTextField(
         value = query,
@@ -772,7 +989,7 @@ private fun <T> SearchableChipMultiSelect(
                         style = MaterialTheme.typography.bodyLarge,
                         modifier =
                             Modifier.fillMaxWidth()
-                                .clickable {
+                                .noRippleClickable {
                                     onSuggestionSelected(suggestion)
                                     focusManager.clearFocus()
                                 }

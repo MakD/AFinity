@@ -13,4 +13,5 @@ data class PublicSettings(
     @SerialName("hideAvailable") val hideAvailable: Boolean = false,
     @SerialName("applicationTitle") val applicationTitle: String? = null,
     @SerialName("applicationUrl") val applicationUrl: String? = null,
+    @SerialName("discoverRegion") val discoverRegion: String? = null,
 )

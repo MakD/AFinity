@@ -1056,8 +1056,14 @@ constructor(
         fetch: suspend () -> Result<JellyseerrSearchResult>,
     ) {
         fetch().onSuccess { result ->
+            val hideAvailable = _uiState.value.publicSettings?.hideAvailable == true
             val items =
-                result.results.filter { it.getMediaType() != null }.take(SLIDER_ITEM_LIMIT)
+                result.results
+                    .filter { it.getMediaType() != null }
+                    .let { list ->
+                        if (hideAvailable) list.filterNot { it.isAvailableOrPartial() } else list
+                    }
+                    .take(SLIDER_ITEM_LIMIT)
             if (items.isNotEmpty()) {
                 publishSection(
                     DiscoverSectionContent.MediaRow(

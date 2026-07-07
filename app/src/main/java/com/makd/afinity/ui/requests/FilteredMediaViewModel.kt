@@ -96,21 +96,52 @@ constructor(
         }
     }
 
+    private fun isTvType(type: FilterType): Boolean =
+        type == FilterType.GENRE_TV || type == FilterType.POPULAR_TV || type == FilterType.UPCOMING_TV
+
     private fun contextKeyFor(params: FilterParams): String? =
         when (params.type) {
             FilterType.GENRE_MOVIE,
             FilterType.GENRE_TV -> "${params.type.name}_${params.id}"
             FilterType.POPULAR_MOVIES,
-            FilterType.POPULAR_TV -> params.type.name
+            FilterType.POPULAR_TV,
+            FilterType.UPCOMING_MOVIES,
+            FilterType.UPCOMING_TV -> params.type.name
             else -> null
         }
 
     private suspend fun applyPersistedFilterState(params: FilterParams, contextKey: String) {
-        val (sortBy, options) = jellyseerrRepository.getDiscoverFilterState(contextKey) ?: return
+        val isTv = isTvType(params.type)
+        val persisted = jellyseerrRepository.getDiscoverFilterState(contextKey)
+
+        if (persisted == null) {
+            val releaseDateGte =
+                if (params.type == FilterType.UPCOMING_MOVIES || params.type == FilterType.UPCOMING_TV) {
+                    java.time.LocalDate.now().toString()
+                } else null
+            val defaultRegion =
+                jellyseerrRepository.getPublicSettings().getOrNull()?.discoverRegion?.takeIf {
+                    it.isNotBlank()
+                }
+
+            if (releaseDateGte != null || defaultRegion != null) {
+                _uiState.update {
+                    it.copy(
+                        filterOptions =
+                            DiscoverFilterOptions(
+                                releaseDateGte = releaseDateGte,
+                                watchRegion = defaultRegion,
+                            )
+                    )
+                }
+            }
+            return
+        }
+
+        val (sortBy, options) = persisted
         val separatorIndex = sortBy.lastIndexOf('.')
         val apiKey = if (separatorIndex < 0) sortBy else sortBy.substring(0, separatorIndex)
         val descending = separatorIndex < 0 || sortBy.substring(separatorIndex + 1) != "asc"
-        val isTv = params.type == FilterType.GENRE_TV || params.type == FilterType.POPULAR_TV
 
         _uiState.update { state ->
             if (isTv) {
@@ -135,7 +166,7 @@ constructor(
         val contextKey = currentContextKey ?: return
         val params = currentFilterParams ?: return
         val state = _uiState.value
-        val isTv = params.type == FilterType.GENRE_TV || params.type == FilterType.POPULAR_TV
+        val isTv = isTvType(params.type)
         val sortBy =
             if (isTv) {
                 "${state.tvSortField.apiKey}.${if (state.tvSortDescending) "desc" else "asc"}"
@@ -302,7 +333,8 @@ constructor(
                                     results = combined
                                 )
                             }
-                        FilterType.POPULAR_MOVIES -> {
+                        FilterType.POPULAR_MOVIES,
+                        FilterType.UPCOMING_MOVIES -> {
                             val state = _uiState.value
                             val direction = if (state.movieSortDescending) "desc" else "asc"
                             jellyseerrRepository.getDiscoverMovies(
@@ -311,9 +343,8 @@ constructor(
                                 filterOptions = state.filterOptions,
                             )
                         }
-                        FilterType.UPCOMING_MOVIES ->
-                            jellyseerrRepository.getUpcomingMovies(currentPage)
-                        FilterType.POPULAR_TV -> {
+                        FilterType.POPULAR_TV,
+                        FilterType.UPCOMING_TV -> {
                             val state = _uiState.value
                             val direction = if (state.tvSortDescending) "desc" else "asc"
                             jellyseerrRepository.getDiscoverTv(
@@ -322,13 +353,20 @@ constructor(
                                 filterOptions = state.filterOptions,
                             )
                         }
-                        FilterType.UPCOMING_TV -> jellyseerrRepository.getUpcomingTv(currentPage)
                     }
 
                 result.fold(
                     onSuccess = { searchResult ->
-                        val newItems = searchResult.results
-                        val hasReachedEnd = newItems.isEmpty() || newItems.size < 20
+                        val rawItems = searchResult.results
+                        val hasReachedEnd = rawItems.isEmpty() || rawItems.size < 20
+
+                        val hideAvailable =
+                            params.type != FilterType.PERSON &&
+                                jellyseerrRepository.getPublicSettings().getOrNull()?.hideAvailable ==
+                                    true
+                        val newItems =
+                            if (hideAvailable) rawItems.filterNot { it.isAvailableOrPartial() }
+                            else rawItems
 
                         _uiState.update { state ->
                             val combinedList =

@@ -232,6 +232,7 @@
     <string name="discover_filter_runtime_minutes_fmt">%1$d min</string>
     <string name="discover_filter_rating">Rating</string>
     <string name="discover_filter_vote_count">Vote Count</string>
+    <string name="discover_filter_ratings_runtime">Runtime &amp; Ratings</string>
     <string name="discover_filter_tv_status">Status</string>
     <string name="discover_filter_certification">Certification</string>
     <string name="discover_filter_any">Any</string>
@@ -241,7 +242,10 @@
     <string name="discover_filter_watch_providers">Watch Providers</string>
     <string name="discover_filter_watch_region">Region</string>
     <string name="discover_filter_keywords">Keywords</string>
-    <string name="discover_filter_exclude_keywords">Exclude Keywords</string>
+    <string name="discover_filter_keyword_include">Include</string>
+    <string name="discover_filter_keyword_exclude">Exclude</string>
+    <string name="discover_filter_keywords_included_fmt">%1$d included</string>
+    <string name="discover_filter_keywords_excluded_fmt">%1$d excluded</string>
     <string name="discover_filter_keyword_search_hint">Search keywords…</string>
     <string name="discover_filter_select_region">Select Region</string>
     <string name="tv_status_returning_series">Returning Series</string>
