@@ -1098,6 +1098,7 @@ fun EmptyDownloadsState() {
         icon = painterResource(id = R.drawable.ic_download),
         title = stringResource(R.string.empty_downloads_title),
         message = stringResource(R.string.empty_downloads_message),
+        modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
         iconSize = 48.dp,
         badgeAlpha = 0.5f,
     )
