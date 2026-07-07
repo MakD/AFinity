@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.makd.afinity.data.database.entities.JellyseerrAddressEntity
 import com.makd.afinity.data.database.entities.JellyseerrConfigEntity
+import com.makd.afinity.data.database.entities.JellyseerrDiscoverFilterEntity
 import com.makd.afinity.data.database.entities.JellyseerrRequestEntity
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
@@ -102,4 +103,21 @@ interface JellyseerrDao {
         "DELETE FROM jellyseerr_addresses WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
     )
     suspend fun deleteAllAddresses(serverId: String, userId: String)
+
+    @Query(
+        "SELECT * FROM jellyseerr_discover_filters WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND filterContextKey = :contextKey"
+    )
+    suspend fun getDiscoverFilterState(
+        serverId: String,
+        userId: String,
+        contextKey: String,
+    ): JellyseerrDiscoverFilterEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun saveDiscoverFilterState(entity: JellyseerrDiscoverFilterEntity)
+
+    @Query(
+        "DELETE FROM jellyseerr_discover_filters WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    suspend fun clearDiscoverFilterState(serverId: String, userId: String)
 }

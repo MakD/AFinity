@@ -1287,6 +1287,25 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_55_56 =
+        object : Migration(55, 56) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `jellyseerr_discover_filters` (
+                        jellyfinServerId TEXT NOT NULL,
+                        jellyfinUserId TEXT NOT NULL,
+                        filterContextKey TEXT NOT NULL,
+                        sortBy TEXT NOT NULL,
+                        filterOptionsJson TEXT NOT NULL,
+                        PRIMARY KEY(jellyfinServerId, jellyfinUserId, filterContextKey)
+                    )
+                    """
+                        .trimIndent()
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1343,5 +1362,6 @@ object DatabaseMigrations {
             MIGRATION_52_53,
             MIGRATION_53_54,
             MIGRATION_54_55,
+            MIGRATION_55_56,
         )
 }

@@ -13,6 +13,8 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -20,8 +22,12 @@ import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -74,10 +80,20 @@ fun FilteredMediaScreen(
     val requestsUiState by requestsViewModel.uiState.collectAsStateWithLifecycle()
     val currentUser by requestsViewModel.currentUser.collectAsStateWithLifecycle()
     val playerOffset = LocalPlayerOffset.current
+    var showSortDialog by remember { mutableStateOf(false) }
+    var showFilterSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(filterParams) { viewModel.loadContent(filterParams) }
 
     val cardWidth = widthSizeClass.portraitWidth
+    val isTv = filterParams.type == FilterType.GENRE_TV || filterParams.type == FilterType.POPULAR_TV
+    val showSortAndFilterControls =
+        filterParams.type == FilterType.GENRE_MOVIE ||
+            filterParams.type == FilterType.GENRE_TV ||
+            filterParams.type == FilterType.POPULAR_MOVIES ||
+            filterParams.type == FilterType.POPULAR_TV
+    val showGenrePicker =
+        filterParams.type == FilterType.POPULAR_MOVIES || filterParams.type == FilterType.POPULAR_TV
 
     Scaffold(
         topBar = {
@@ -97,6 +113,34 @@ fun FilteredMediaScreen(
                 userProfileImageUrl = mainUiState.userProfileImageUrl,
                 userName = mainUiState.userName,
             )
+        },
+        floatingActionButton = {
+            if (showSortAndFilterControls) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.End,
+                    modifier = Modifier.padding(bottom = playerOffset),
+                ) {
+                    FloatingActionButton(
+                        onClick = {
+                            viewModel.ensureWatchProviderRegionsLoaded()
+                            if (showGenrePicker) viewModel.ensureGenresLoaded(isTv)
+                            showFilterSheet = true
+                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_filter),
+                            contentDescription = stringResource(R.string.cd_filter_fab),
+                        )
+                    }
+                    FloatingActionButton(onClick = { showSortDialog = true }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_arrows_sort),
+                            contentDescription = stringResource(R.string.cd_sort_fab),
+                        )
+                    }
+                }
+            }
         },
         modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
@@ -245,6 +289,52 @@ fun FilteredMediaScreen(
             availableUsers = requestsUiState.availableUsers,
             selectedRequestUser = requestsUiState.selectedRequestUser,
             onRequestUserSelected = { requestsViewModel.selectRequestUser(it) },
+        )
+    }
+
+    if (showSortDialog) {
+        when (filterParams.type) {
+            FilterType.GENRE_MOVIE,
+            FilterType.POPULAR_MOVIES ->
+                MovieDiscoverSortDialog(
+                    currentField = uiState.movieSortField,
+                    currentDescending = uiState.movieSortDescending,
+                    onDismiss = { showSortDialog = false },
+                    onSortSelected = { field, descending ->
+                        viewModel.setMovieSort(field, descending)
+                    },
+                )
+            FilterType.GENRE_TV,
+            FilterType.POPULAR_TV ->
+                TvDiscoverSortDialog(
+                    currentField = uiState.tvSortField,
+                    currentDescending = uiState.tvSortDescending,
+                    onDismiss = { showSortDialog = false },
+                    onSortSelected = { field, descending -> viewModel.setTvSort(field, descending) },
+                )
+            else -> {}
+        }
+    }
+
+    if (showFilterSheet) {
+        val watchProviders = if (isTv) uiState.tvWatchProviders else uiState.movieWatchProviders
+        val genres = if (isTv) uiState.tvGenres else uiState.movieGenres
+        DiscoverFilterBottomSheet(
+            isTv = isTv,
+            showGenrePicker = showGenrePicker,
+            genres = genres,
+            filterOptions = uiState.filterOptions,
+            watchProviderRegions = uiState.watchProviderRegions,
+            watchProviders = watchProviders,
+            onRegionSelected = { region -> viewModel.loadWatchProviders(isTv, region) },
+            initialSelectedKeywords = uiState.selectedKeywords,
+            initialSelectedExcludeKeywords = uiState.selectedExcludeKeywords,
+            keywordSearchResults = uiState.keywordSearchResults,
+            onKeywordQueryChange = { query -> viewModel.searchKeywords(query) },
+            onApply = { options, keywords, excludeKeywords ->
+                viewModel.updateFilterOptions(options, keywords, excludeKeywords)
+            },
+            onDismiss = { showFilterSheet = false },
         )
     }
 }

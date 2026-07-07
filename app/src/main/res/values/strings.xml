@@ -220,6 +220,36 @@
     <string name="sort_option_date_played">Date Played</string>
     <string name="sort_option_release_date">Release Date</string>
     <string name="cd_sort_fab">Sort</string>
+    <string name="sort_option_popularity">Popularity</string>
+    <string name="sort_option_rating">Rating</string>
+
+    <string name="discover_filter_title">Filters</string>
+    <string name="cd_filter_fab">Filters</string>
+    <string name="discover_filter_release_date">Release Date</string>
+    <string name="discover_filter_release_date_from">From</string>
+    <string name="discover_filter_release_date_to">To</string>
+    <string name="discover_filter_runtime">Runtime</string>
+    <string name="discover_filter_runtime_minutes_fmt">%1$d min</string>
+    <string name="discover_filter_rating">Rating</string>
+    <string name="discover_filter_vote_count">Vote Count</string>
+    <string name="discover_filter_tv_status">Status</string>
+    <string name="discover_filter_certification">Certification</string>
+    <string name="discover_filter_any">Any</string>
+    <string name="discover_filter_clear_all">Clear All</string>
+    <string name="discover_filter_genres">Genres</string>
+    <string name="discover_filter_genres_hint">Select genres…</string>
+    <string name="discover_filter_watch_providers">Watch Providers</string>
+    <string name="discover_filter_watch_region">Region</string>
+    <string name="discover_filter_keywords">Keywords</string>
+    <string name="discover_filter_exclude_keywords">Exclude Keywords</string>
+    <string name="discover_filter_keyword_search_hint">Search keywords…</string>
+    <string name="discover_filter_select_region">Select Region</string>
+    <string name="tv_status_returning_series">Returning Series</string>
+    <string name="tv_status_planned">Planned</string>
+    <string name="tv_status_in_production">In Production</string>
+    <string name="tv_status_ended">Ended</string>
+    <string name="tv_status_cancelled">Cancelled</string>
+    <string name="tv_status_pilot">Pilot</string>
 
     <!--LiveTv-->
     <string name="livetv_unknown_program">Unknown Program</string>

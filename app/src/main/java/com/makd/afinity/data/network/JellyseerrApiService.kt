@@ -18,8 +18,11 @@ import com.makd.afinity.data.models.jellyseerr.RottenTomatoesRating
 import com.makd.afinity.data.models.jellyseerr.ServiceDetailsResponse
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
 import com.makd.afinity.data.models.jellyseerr.SonarrSeries
+import com.makd.afinity.data.models.jellyseerr.TmdbKeywordSearchResponse
 import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import com.makd.afinity.data.models.jellyseerr.UserResultsResponse
+import com.makd.afinity.data.models.jellyseerr.WatchProviderDetails
+import com.makd.afinity.data.models.jellyseerr.WatchProviderRegion
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -58,9 +61,7 @@ interface JellyseerrApiService {
     ): Response<PersonCombinedCreditsResponse>
 
     @GET("api/v1/collection/{collectionId}")
-    suspend fun getCollection(
-        @Path("collectionId") collectionId: Int
-    ): Response<CollectionDetails>
+    suspend fun getCollection(@Path("collectionId") collectionId: Int): Response<CollectionDetails>
 
     @POST("api/v1/auth/logout") suspend fun logout(): Response<Unit>
 
@@ -161,9 +162,21 @@ interface JellyseerrApiService {
         @Query("language") language: String = "en",
         @Query("sortBy") sortBy: String = "popularity.desc",
         @Query("studio") studio: Int? = null,
+        @Query("genre") genre: String? = null,
         @Query("keywords") keywords: String? = null,
+        @Query("excludeKeywords") excludeKeywords: String? = null,
         @Query("watchRegion") watchRegion: String? = null,
         @Query("watchProviders") watchProviders: String? = null,
+        @Query("primaryReleaseDateGte") primaryReleaseDateGte: String? = null,
+        @Query("primaryReleaseDateLte") primaryReleaseDateLte: String? = null,
+        @Query("withRuntimeGte") withRuntimeGte: Int? = null,
+        @Query("withRuntimeLte") withRuntimeLte: Int? = null,
+        @Query("voteAverageGte") voteAverageGte: Double? = null,
+        @Query("voteAverageLte") voteAverageLte: Double? = null,
+        @Query("voteCountGte") voteCountGte: Int? = null,
+        @Query("voteCountLte") voteCountLte: Int? = null,
+        @Query("certificationCountry") certificationCountry: String? = null,
+        @Query("certification") certification: String? = null,
     ): Response<JellyseerrSearchResult>
 
     @GET("api/v1/discover/tv")
@@ -172,9 +185,22 @@ interface JellyseerrApiService {
         @Query("language") language: String = "en",
         @Query("sortBy") sortBy: String = "popularity.desc",
         @Query("network") network: Int? = null,
+        @Query("genre") genre: String? = null,
         @Query("keywords") keywords: String? = null,
+        @Query("excludeKeywords") excludeKeywords: String? = null,
         @Query("watchRegion") watchRegion: String? = null,
         @Query("watchProviders") watchProviders: String? = null,
+        @Query("firstAirDateGte") firstAirDateGte: String? = null,
+        @Query("firstAirDateLte") firstAirDateLte: String? = null,
+        @Query("withRuntimeGte") withRuntimeGte: Int? = null,
+        @Query("withRuntimeLte") withRuntimeLte: Int? = null,
+        @Query("voteAverageGte") voteAverageGte: Double? = null,
+        @Query("voteAverageLte") voteAverageLte: Double? = null,
+        @Query("voteCountGte") voteCountGte: Int? = null,
+        @Query("voteCountLte") voteCountLte: Int? = null,
+        @Query("status") status: String? = null,
+        @Query("certificationCountry") certificationCountry: String? = null,
+        @Query("certification") certification: String? = null,
     ): Response<JellyseerrSearchResult>
 
     @GET("api/v1/discover/movies/upcoming")
@@ -209,19 +235,24 @@ interface JellyseerrApiService {
         @Query("language") language: String = "en"
     ): Response<List<com.makd.afinity.data.models.jellyseerr.GenreSliderItem>>
 
-    @GET("api/v1/discover/movies/genre/{genreId}")
-    suspend fun getMoviesByGenre(
-        @Path("genreId") genreId: Int,
-        @Query("page") page: Int = 1,
-        @Query("language") language: String = "en",
-    ): Response<JellyseerrSearchResult>
+    @GET("api/v1/watchproviders/regions")
+    suspend fun getWatchProviderRegions(): Response<List<WatchProviderRegion>>
 
-    @GET("api/v1/discover/tv/genre/{genreId}")
-    suspend fun getTvByGenre(
-        @Path("genreId") genreId: Int,
+    @GET("api/v1/watchproviders/movies")
+    suspend fun getMovieWatchProviders(
+        @Query("watchRegion") watchRegion: String
+    ): Response<List<WatchProviderDetails>>
+
+    @GET("api/v1/watchproviders/tv")
+    suspend fun getTvWatchProviders(
+        @Query("watchRegion") watchRegion: String
+    ): Response<List<WatchProviderDetails>>
+
+    @GET("api/v1/search/keyword")
+    suspend fun searchKeywords(
+        @Query("query") query: String,
         @Query("page") page: Int = 1,
-        @Query("language") language: String = "en",
-    ): Response<JellyseerrSearchResult>
+    ): Response<TmdbKeywordSearchResponse>
 
     @GET("api/v1/service/radarr") suspend fun getRadarrSettings(): Response<List<ServiceSettings>>
 

@@ -1,7 +1,9 @@
 package com.makd.afinity.data.repository
 
 import com.makd.afinity.data.models.jellyseerr.CollectionDetails
+import com.makd.afinity.data.models.jellyseerr.DiscoverFilterOptions
 import com.makd.afinity.data.models.jellyseerr.DiscoverSlider
+import com.makd.afinity.data.models.jellyseerr.Genre
 import com.makd.afinity.data.models.jellyseerr.GenreSliderItem
 import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
 import com.makd.afinity.data.models.jellyseerr.JellyseerrSearchResult
@@ -15,7 +17,10 @@ import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.ServiceDetailsResponse
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
 import com.makd.afinity.data.models.jellyseerr.SonarrSeries
+import com.makd.afinity.data.models.jellyseerr.TmdbKeywordSearchResponse
 import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
+import com.makd.afinity.data.models.jellyseerr.WatchProviderDetails
+import com.makd.afinity.data.models.jellyseerr.WatchProviderRegion
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -158,6 +163,7 @@ interface JellyseerrRepository {
         keywords: String? = null,
         watchRegion: String? = null,
         watchProviders: String? = null,
+        filterOptions: DiscoverFilterOptions = DiscoverFilterOptions(),
     ): Result<JellyseerrSearchResult>
 
     suspend fun getDiscoverTv(
@@ -168,6 +174,7 @@ interface JellyseerrRepository {
         keywords: String? = null,
         watchRegion: String? = null,
         watchProviders: String? = null,
+        filterOptions: DiscoverFilterOptions = DiscoverFilterOptions(),
     ): Result<JellyseerrSearchResult>
 
     suspend fun getUpcomingMovies(page: Int = 1, limit: Int? = null): Result<JellyseerrSearchResult>
@@ -182,7 +189,37 @@ interface JellyseerrRepository {
 
     suspend fun getTvGenreSlider(): Result<List<GenreSliderItem>>
 
-    suspend fun getMoviesByGenre(genreId: Int, page: Int = 1): Result<JellyseerrSearchResult>
+    suspend fun getMovieGenres(): Result<List<Genre>>
 
-    suspend fun getTvByGenre(genreId: Int, page: Int = 1): Result<JellyseerrSearchResult>
+    suspend fun getTvGenres(): Result<List<Genre>>
+
+    suspend fun getMoviesByGenre(
+        genreId: Int,
+        page: Int = 1,
+        sortBy: String = "popularity.desc",
+        filterOptions: DiscoverFilterOptions = DiscoverFilterOptions(),
+    ): Result<JellyseerrSearchResult>
+
+    suspend fun getTvByGenre(
+        genreId: Int,
+        page: Int = 1,
+        sortBy: String = "popularity.desc",
+        filterOptions: DiscoverFilterOptions = DiscoverFilterOptions(),
+    ): Result<JellyseerrSearchResult>
+
+    suspend fun getWatchProviderRegions(): Result<List<WatchProviderRegion>>
+
+    suspend fun getMovieWatchProviders(watchRegion: String): Result<List<WatchProviderDetails>>
+
+    suspend fun getTvWatchProviders(watchRegion: String): Result<List<WatchProviderDetails>>
+
+    suspend fun searchKeywords(query: String, page: Int = 1): Result<TmdbKeywordSearchResponse>
+
+    suspend fun getDiscoverFilterState(contextKey: String): Pair<String, DiscoverFilterOptions>?
+
+    suspend fun saveDiscoverFilterState(
+        contextKey: String,
+        sortBy: String,
+        filterOptions: DiscoverFilterOptions,
+    )
 }

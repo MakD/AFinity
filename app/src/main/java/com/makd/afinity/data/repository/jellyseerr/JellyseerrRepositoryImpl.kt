@@ -3,10 +3,13 @@ package com.makd.afinity.data.repository.jellyseerr
 import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.database.entities.JellyseerrAddressEntity
 import com.makd.afinity.data.database.entities.JellyseerrConfigEntity
+import com.makd.afinity.data.database.entities.JellyseerrDiscoverFilterEntity
 import com.makd.afinity.data.database.entities.JellyseerrRequestEntity
 import com.makd.afinity.data.models.jellyseerr.CollectionDetails
 import com.makd.afinity.data.models.jellyseerr.CreateRequestBody
+import com.makd.afinity.data.models.jellyseerr.DiscoverFilterOptions
 import com.makd.afinity.data.models.jellyseerr.DiscoverSlider
+import com.makd.afinity.data.models.jellyseerr.Genre
 import com.makd.afinity.data.models.jellyseerr.GenreSliderItem
 import com.makd.afinity.data.models.jellyseerr.JellyfinLoginRequest
 import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
@@ -26,7 +29,10 @@ import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.ServiceDetailsResponse
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
 import com.makd.afinity.data.models.jellyseerr.SonarrSeries
+import com.makd.afinity.data.models.jellyseerr.TmdbKeywordSearchResponse
 import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
+import com.makd.afinity.data.models.jellyseerr.WatchProviderDetails
+import com.makd.afinity.data.models.jellyseerr.WatchProviderRegion
 import com.makd.afinity.data.network.JellyseerrApiService
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.RequestEvent
@@ -338,6 +344,8 @@ constructor(
                 jellyseerrDao.clearConfig(currentServerId, currentUserId.toString())
 
                 jellyseerrDao.clearAllRequests(currentServerId, currentUserId.toString())
+
+                jellyseerrDao.clearDiscoverFilterState(currentServerId, currentUserId.toString())
 
                 securePreferencesRepository.clearActiveJellyseerrCache()
 
@@ -1159,6 +1167,7 @@ constructor(
         keywords: String?,
         watchRegion: String?,
         watchProviders: String?,
+        filterOptions: DiscoverFilterOptions,
     ): Result<JellyseerrSearchResult> {
         return withContext(Dispatchers.IO) {
             try {
@@ -1169,9 +1178,32 @@ constructor(
                             page = page,
                             sortBy = sortBy,
                             studio = studio,
-                            keywords = keywords,
-                            watchRegion = watchRegion,
-                            watchProviders = watchProviders,
+                            genre = filterOptions.genreIds.takeIf { it.isNotEmpty() }?.joinToString(","),
+                            keywords =
+                                keywords
+                                    ?: filterOptions.keywordIds.takeIf { it.isNotEmpty() }
+                                        ?.joinToString(","),
+                            excludeKeywords =
+                                filterOptions.excludeKeywordIds.takeIf { it.isNotEmpty() }
+                                    ?.joinToString(","),
+                            watchRegion = watchRegion ?: filterOptions.watchRegion,
+                            watchProviders =
+                                watchProviders
+                                    ?: filterOptions.watchProviderIds.takeIf { it.isNotEmpty() }
+                                        ?.joinToString(","),
+                            primaryReleaseDateGte = filterOptions.releaseDateGte,
+                            primaryReleaseDateLte = filterOptions.releaseDateLte,
+                            withRuntimeGte = filterOptions.runtimeGte,
+                            withRuntimeLte = filterOptions.runtimeLte,
+                            voteAverageGte = filterOptions.voteAverageGte,
+                            voteAverageLte = filterOptions.voteAverageLte,
+                            voteCountGte = filterOptions.voteCountGte,
+                            voteCountLte = filterOptions.voteCountLte,
+                            certificationCountry =
+                                if (filterOptions.certification.isNotEmpty()) "US" else null,
+                            certification =
+                                filterOptions.certification.takeIf { it.isNotEmpty() }
+                                    ?.joinToString("|"),
                         )
                 if (response.isSuccessful && response.body() != null) {
                     val body = response.body()!!
@@ -1193,6 +1225,7 @@ constructor(
         keywords: String?,
         watchRegion: String?,
         watchProviders: String?,
+        filterOptions: DiscoverFilterOptions,
     ): Result<JellyseerrSearchResult> {
         return withContext(Dispatchers.IO) {
             try {
@@ -1203,9 +1236,33 @@ constructor(
                             page = page,
                             sortBy = sortBy,
                             network = network,
-                            keywords = keywords,
-                            watchRegion = watchRegion,
-                            watchProviders = watchProviders,
+                            genre = filterOptions.genreIds.takeIf { it.isNotEmpty() }?.joinToString(","),
+                            keywords =
+                                keywords
+                                    ?: filterOptions.keywordIds.takeIf { it.isNotEmpty() }
+                                        ?.joinToString(","),
+                            excludeKeywords =
+                                filterOptions.excludeKeywordIds.takeIf { it.isNotEmpty() }
+                                    ?.joinToString(","),
+                            watchRegion = watchRegion ?: filterOptions.watchRegion,
+                            watchProviders =
+                                watchProviders
+                                    ?: filterOptions.watchProviderIds.takeIf { it.isNotEmpty() }
+                                        ?.joinToString(","),
+                            firstAirDateGte = filterOptions.releaseDateGte,
+                            firstAirDateLte = filterOptions.releaseDateLte,
+                            withRuntimeGte = filterOptions.runtimeGte,
+                            withRuntimeLte = filterOptions.runtimeLte,
+                            voteAverageGte = filterOptions.voteAverageGte,
+                            voteAverageLte = filterOptions.voteAverageLte,
+                            voteCountGte = filterOptions.voteCountGte,
+                            voteCountLte = filterOptions.voteCountLte,
+                            status = filterOptions.tvStatus.takeIf { it.isNotEmpty() }?.joinToString(","),
+                            certificationCountry =
+                                if (filterOptions.certification.isNotEmpty()) "US" else null,
+                            certification =
+                                filterOptions.certification.takeIf { it.isNotEmpty() }
+                                    ?.joinToString("|"),
                         )
                 if (response.isSuccessful && response.body() != null) {
                     val body = response.body()!!
@@ -1285,10 +1342,10 @@ constructor(
         }
     }
 
-    override suspend fun getMoviesByGenre(genreId: Int, page: Int): Result<JellyseerrSearchResult> {
+    override suspend fun getMovieGenres(): Result<List<Genre>> {
         return withContext(Dispatchers.IO) {
             try {
-                val response = apiService.get().getMoviesByGenre(genreId, page)
+                val response = apiService.get().getMovieGenres()
                 if (response.isSuccessful && response.body() != null)
                     Result.success(response.body()!!)
                 else Result.failure(Exception("Failed"))
@@ -1298,15 +1355,144 @@ constructor(
         }
     }
 
-    override suspend fun getTvByGenre(genreId: Int, page: Int): Result<JellyseerrSearchResult> {
+    override suspend fun getTvGenres(): Result<List<Genre>> {
         return withContext(Dispatchers.IO) {
             try {
-                val response = apiService.get().getTvByGenre(genreId, page)
+                val response = apiService.get().getTvGenres()
                 if (response.isSuccessful && response.body() != null)
                     Result.success(response.body()!!)
                 else Result.failure(Exception("Failed"))
             } catch (e: Exception) {
                 Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getMoviesByGenre(
+        genreId: Int,
+        page: Int,
+        sortBy: String,
+        filterOptions: DiscoverFilterOptions,
+    ): Result<JellyseerrSearchResult> =
+        getDiscoverMovies(
+            page = page,
+            sortBy = sortBy,
+            filterOptions = filterOptions.copy(genreIds = listOf(genreId)),
+        )
+
+    override suspend fun getTvByGenre(
+        genreId: Int,
+        page: Int,
+        sortBy: String,
+        filterOptions: DiscoverFilterOptions,
+    ): Result<JellyseerrSearchResult> =
+        getDiscoverTv(
+            page = page,
+            sortBy = sortBy,
+            filterOptions = filterOptions.copy(genreIds = listOf(genreId)),
+        )
+
+
+    override suspend fun getWatchProviderRegions(): Result<List<WatchProviderRegion>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiService.get().getWatchProviderRegions()
+                if (response.isSuccessful && response.body() != null)
+                    Result.success(response.body()!!)
+                else Result.failure(Exception("Failed"))
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getMovieWatchProviders(
+        watchRegion: String
+    ): Result<List<WatchProviderDetails>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiService.get().getMovieWatchProviders(watchRegion)
+                if (response.isSuccessful && response.body() != null)
+                    Result.success(response.body()!!.sortedBy { it.displayPriority ?: Int.MAX_VALUE })
+                else Result.failure(Exception("Failed"))
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getTvWatchProviders(
+        watchRegion: String
+    ): Result<List<WatchProviderDetails>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiService.get().getTvWatchProviders(watchRegion)
+                if (response.isSuccessful && response.body() != null)
+                    Result.success(response.body()!!.sortedBy { it.displayPriority ?: Int.MAX_VALUE })
+                else Result.failure(Exception("Failed"))
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun searchKeywords(
+        query: String,
+        page: Int,
+    ): Result<TmdbKeywordSearchResponse> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiService.get().searchKeywords(query, page)
+                if (response.isSuccessful && response.body() != null)
+                    Result.success(response.body()!!)
+                else Result.failure(Exception("Failed"))
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getDiscoverFilterState(
+        contextKey: String
+    ): Pair<String, DiscoverFilterOptions>? {
+        return withContext(Dispatchers.IO) {
+            val (serverId, userId) = activeContext ?: return@withContext null
+            try {
+                val entity =
+                    jellyseerrDao.getDiscoverFilterState(serverId, userId.toString(), contextKey)
+                        ?: return@withContext null
+                val options =
+                    kotlinx.serialization.json.Json.decodeFromString<DiscoverFilterOptions>(
+                        entity.filterOptionsJson
+                    )
+                entity.sortBy to options
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to load discover filter state for $contextKey")
+                null
+            }
+        }
+    }
+
+    override suspend fun saveDiscoverFilterState(
+        contextKey: String,
+        sortBy: String,
+        filterOptions: DiscoverFilterOptions,
+    ) {
+        withContext(Dispatchers.IO) {
+            val (serverId, userId) = activeContext ?: return@withContext
+            try {
+                jellyseerrDao.saveDiscoverFilterState(
+                    JellyseerrDiscoverFilterEntity(
+                        jellyfinServerId = serverId,
+                        jellyfinUserId = userId.toString(),
+                        filterContextKey = contextKey,
+                        sortBy = sortBy,
+                        filterOptionsJson =
+                            kotlinx.serialization.json.Json.encodeToString(filterOptions),
+                    )
+                )
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to save discover filter state for $contextKey")
             }
         }
     }

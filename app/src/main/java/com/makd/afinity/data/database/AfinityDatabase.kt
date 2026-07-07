@@ -59,6 +59,7 @@ import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
 import com.makd.afinity.data.database.entities.JellyfinStatsCacheEntity
 import com.makd.afinity.data.database.entities.JellyseerrAddressEntity
 import com.makd.afinity.data.database.entities.JellyseerrConfigEntity
+import com.makd.afinity.data.database.entities.JellyseerrDiscoverFilterEntity
 import com.makd.afinity.data.database.entities.JellyseerrRequestEntity
 import com.makd.afinity.data.database.entities.LibraryCacheEntity
 import com.makd.afinity.data.database.entities.MovieSectionCacheEntity
@@ -120,8 +121,9 @@ import com.makd.afinity.data.models.user.User
             MusicAlbumEntity::class,
             MusicLyricsEntity::class,
             HomeCacheEntity::class,
+            JellyseerrDiscoverFilterEntity::class,
         ],
-    version = 55,
+    version = 56,
     exportSchema = false,
 )
 @TypeConverters(AfinityTypeConverters::class)

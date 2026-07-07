@@ -1,0 +1,14 @@
+package com.makd.afinity.data.models.jellyseerr
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable data class TmdbKeyword(@SerialName("id") val id: Int, @SerialName("name") val name: String)
+
+@Serializable
+data class TmdbKeywordSearchResponse(
+    @SerialName("page") val page: Int = 1,
+    @SerialName("total_pages") val totalPages: Int = 1,
+    @SerialName("total_results") val totalResults: Int = 0,
+    @SerialName("results") val results: List<TmdbKeyword> = emptyList(),
+)
