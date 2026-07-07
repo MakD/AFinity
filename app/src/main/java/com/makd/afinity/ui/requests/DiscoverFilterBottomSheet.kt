@@ -29,8 +29,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -97,7 +95,6 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
-import androidx.compose.foundation.lazy.grid.items as gridItems
 
 @Composable
 private fun tvStatusLabel(status: TvStatus): String =
@@ -510,32 +507,45 @@ fun DiscoverFilterBottomSheet(
                                 val providerColumns =
                                     (((maxWidth + gap) / (targetTileSize + gap)).toInt())
                                         .coerceAtLeast(1)
-                                val cellSize =
-                                    (maxWidth - gap * (providerColumns - 1)) / providerColumns
-                                val providerRows =
-                                    (watchProviders.size + providerColumns - 1) / providerColumns
-                                val providerGridHeight =
-                                    cellSize * providerRows +
-                                        gap * (providerRows - 1).coerceAtLeast(0)
 
-                                LazyVerticalGrid(
-                                    columns = GridCells.Fixed(providerColumns),
-                                    userScrollEnabled = false,
-                                    horizontalArrangement = Arrangement.spacedBy(gap),
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
                                     verticalArrangement = Arrangement.spacedBy(gap),
-                                    modifier = Modifier.fillMaxWidth().height(providerGridHeight),
                                 ) {
-                                    gridItems(watchProviders, key = { it.id }) { provider ->
-                                        WatchProviderTile(
-                                            provider = provider,
-                                            selected = selectedProviderIds.contains(provider.id),
-                                            onClick = {
-                                                selectedProviderIds =
-                                                    if (selectedProviderIds.contains(provider.id))
-                                                        selectedProviderIds - provider.id
-                                                    else selectedProviderIds + provider.id
-                                            },
-                                        )
+                                    watchProviders.chunked(providerColumns).forEach { rowItems ->
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(gap),
+                                        ) {
+                                            rowItems.forEach { provider ->
+                                                Box(modifier = Modifier.weight(1f)) {
+                                                    WatchProviderTile(
+                                                        provider = provider,
+                                                        selected =
+                                                            selectedProviderIds.contains(
+                                                                provider.id
+                                                            ),
+                                                        onClick = {
+                                                            selectedProviderIds =
+                                                                if (
+                                                                    selectedProviderIds.contains(
+                                                                        provider.id
+                                                                    )
+                                                                )
+                                                                    selectedProviderIds -
+                                                                        provider.id
+                                                                else
+                                                                    selectedProviderIds +
+                                                                        provider.id
+                                                        },
+                                                    )
+                                                }
+                                            }
+
+                                            repeat(providerColumns - rowItems.size) {
+                                                Spacer(modifier = Modifier.weight(1f))
+                                            }
+                                        }
                                     }
                                 }
                             }
