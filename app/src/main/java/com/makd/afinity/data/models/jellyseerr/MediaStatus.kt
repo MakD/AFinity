@@ -6,7 +6,8 @@ enum class MediaStatus(val value: Int) {
     PROCESSING(3),
     PARTIALLY_AVAILABLE(4),
     AVAILABLE(5),
-    DELETED(6);
+    BLOCKLISTED(6),
+    DELETED(7);
 
     companion object {
         fun fromValue(value: Int): MediaStatus = values().find { it.value == value } ?: UNKNOWN
@@ -18,6 +19,7 @@ enum class MediaStatus(val value: Int) {
                 PROCESSING -> "Processing"
                 PARTIALLY_AVAILABLE -> "Partially Available"
                 AVAILABLE -> "Available"
+                BLOCKLISTED -> "Blocklisted"
                 DELETED -> "Deleted"
             }
     }

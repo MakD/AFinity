@@ -223,6 +223,15 @@ private fun SeerrRequestActionButton(
                 Text(stringResource(R.string.seerr_detail_open_library))
             }
         }
+        status == MediaStatus.BLOCKLISTED -> {
+            Button(
+                onClick = {},
+                enabled = false,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+            ) {
+                Text(MediaStatus.getDisplayName(status))
+            }
+        }
         mediaType == MediaType.MOVIE &&
             (status == MediaStatus.PENDING ||
                 status == MediaStatus.PROCESSING ||

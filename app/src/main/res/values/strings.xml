@@ -417,6 +417,7 @@
     <string name="status_partially_available">Partially Available</string>
     <string name="status_available">Available</string>
     <string name="status_deleted">Deleted</string>
+    <string name="status_blocklisted">Blocklisted</string>
     <string name="manage_request_title">Manage Request</string>
 
     <string name="cd_tmdb_rating">TMDB Rating</string>
@@ -427,6 +428,7 @@
     <string name="error_load_content_generic">Failed to load content</string>
 
     <string name="status_declined">Declined</string>
+    <string name="status_failed">Failed</string>
     <string name="cd_approve">Approve</string>
     <string name="cd_decline">Decline</string>
     <string name="requested_by_fmt">Requested by %1$s</string>

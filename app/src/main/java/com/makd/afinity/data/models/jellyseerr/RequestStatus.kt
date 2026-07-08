@@ -4,8 +4,8 @@ enum class RequestStatus(val value: Int) {
     PENDING(1),
     APPROVED(2),
     DECLINED(3),
-    AVAILABLE(4),
-    PARTIALLY_AVAILABLE(5);
+    FAILED(4),
+    COMPLETED(5);
 
     companion object {
         fun fromValue(value: Int): RequestStatus = values().find { it.value == value } ?: PENDING
@@ -15,8 +15,8 @@ enum class RequestStatus(val value: Int) {
                 PENDING -> "Pending"
                 APPROVED -> "Approved"
                 DECLINED -> "Declined"
-                AVAILABLE -> "Available"
-                PARTIALLY_AVAILABLE -> "Partially Available"
+                FAILED -> "Failed"
+                COMPLETED -> "Completed"
             }
     }
 }

@@ -33,7 +33,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.DiscoverSlider
-import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.Permissions
 import com.makd.afinity.data.models.jellyseerr.RequestStatus
@@ -122,19 +121,11 @@ fun RequestsScreen(
                 else -> {
                     val activeRequests =
                         uiState.requests.filter { req ->
-                            val statusValue =
-                                if (req.is4k) req.media.status4k ?: 1 else req.media.status ?: 1
-                            val mediaStatus = MediaStatus.fromValue(statusValue)
-                            mediaStatus != MediaStatus.AVAILABLE &&
-                                mediaStatus != MediaStatus.PARTIALLY_AVAILABLE
+                            RequestStatus.fromValue(req.status) != RequestStatus.COMPLETED
                         }
                     val availableRequests =
                         uiState.requests.filter { req ->
-                            val statusValue =
-                                if (req.is4k) req.media.status4k ?: 1 else req.media.status ?: 1
-                            val mediaStatus = MediaStatus.fromValue(statusValue)
-                            mediaStatus == MediaStatus.AVAILABLE ||
-                                mediaStatus == MediaStatus.PARTIALLY_AVAILABLE
+                            RequestStatus.fromValue(req.status) == RequestStatus.COMPLETED
                         }
 
                     LazyColumn(

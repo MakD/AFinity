@@ -293,6 +293,12 @@ private fun getRequestStatusAttributes(request: JellyseerrRequest): StatusAttrib
                 containerColor = MaterialTheme.colorScheme.error,
                 contentColor = MaterialTheme.colorScheme.onError,
             )
+        RequestStatus.FAILED ->
+            StatusAttributes(
+                textRes = R.string.status_failed,
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError,
+            )
         RequestStatus.APPROVED if mediaStatus == MediaStatus.PENDING ->
             StatusAttributes(
                 textRes = R.string.status_processing,

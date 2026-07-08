@@ -50,6 +50,12 @@ fun mediaStatusAttributes(mediaStatus: MediaStatus): StatusAttributes =
                 MaterialTheme.colorScheme.error,
                 MaterialTheme.colorScheme.onError,
             )
+        MediaStatus.BLOCKLISTED ->
+            StatusAttributes(
+                R.string.status_blocklisted,
+                MaterialTheme.colorScheme.error,
+                MaterialTheme.colorScheme.onError,
+            )
         MediaStatus.UNKNOWN ->
             StatusAttributes(
                 R.string.status_unknown,

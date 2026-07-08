@@ -1056,6 +1056,7 @@ private fun JellyseerrSearchResultItem(item: SearchResultItem, onRequestClick: (
                             MediaStatus.PROCESSING -> MaterialTheme.colorScheme.primary
                             MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.secondary
                             MediaStatus.DELETED -> MaterialTheme.colorScheme.error
+                            MediaStatus.BLOCKLISTED -> MaterialTheme.colorScheme.error
                         },
                 ) {
                     val statusText =
@@ -1064,6 +1065,7 @@ private fun JellyseerrSearchResultItem(item: SearchResultItem, onRequestClick: (
                             MediaStatus.PROCESSING -> stringResource(R.string.status_processing)
                             MediaStatus.AVAILABLE -> stringResource(R.string.status_available)
                             MediaStatus.DELETED -> stringResource(R.string.status_deleted)
+                            MediaStatus.BLOCKLISTED -> stringResource(R.string.status_blocklisted)
                             else -> stringResource(R.string.status_unknown)
                         }
 
@@ -1078,6 +1080,7 @@ private fun JellyseerrSearchResultItem(item: SearchResultItem, onRequestClick: (
                                 MediaStatus.PROCESSING -> MaterialTheme.colorScheme.onPrimary
                                 MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.onSecondary
                                 MediaStatus.DELETED -> MaterialTheme.colorScheme.onError
+                                MediaStatus.BLOCKLISTED -> MaterialTheme.colorScheme.onError
                             },
                     )
                 }
