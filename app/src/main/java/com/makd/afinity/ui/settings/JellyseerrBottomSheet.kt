@@ -308,7 +308,7 @@ internal fun JellyseerrLoginContent(
             enabled =
                 uiState.serverUrl.isNotBlank() &&
                     uiState.email.isNotBlank() &&
-                    uiState.password.isNotBlank(),
+                    (uiState.useJellyfinAuth || uiState.password.isNotBlank()),
         )
 
         Spacer(modifier = Modifier.height(16.dp))

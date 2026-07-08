@@ -194,7 +194,7 @@ constructor(
             isValid = false
         }
 
-        if (state.password.isBlank()) {
+        if (!state.useJellyfinAuth && state.password.isBlank()) {
             _uiState.update { it.copy(passwordError = "Password is required") }
             isValid = false
         }
