@@ -58,6 +58,7 @@ fun RequestsScreen(
     onItemClick: (jellyfinItemId: String, itemType: String?) -> Unit = { _, _ -> },
     onNavigateToSeerrMedia: (item: SearchResultItem) -> Unit = {},
     widthSizeClass: WindowWidthSizeClass,
+    onMenuClick: (() -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isAuthenticated by
@@ -86,6 +87,7 @@ fun RequestsScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 },
+                onMenuClick = onMenuClick,
                 onSearchClick = onSearchClick,
                 onProfileClick = onProfileClick,
                 userProfileImageUrl = mainUiState.userProfileImageUrl,

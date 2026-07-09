@@ -44,6 +44,7 @@ fun LibrariesScreen(
     navController: NavController,
     viewModel: LibrariesViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
+    onMenuClick: (() -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lazyGridState = rememberLazyGridState()
@@ -106,6 +107,7 @@ fun LibrariesScreen(
                 )
             },
             backgroundOpacity = { topBarOpacity },
+            onMenuClick = onMenuClick,
             onSearchClick = {
                 val route = Destination.createSearchRoute()
                 navController.navigate(route)

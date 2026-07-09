@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
@@ -100,6 +99,8 @@ fun HomeScreen(
     playerViewModel: MusicPlayerViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
     onAbsItemClick: (String) -> Unit = {},
+    onMenuClick: (() -> Unit)? = null,
+    hideLibrariesSection: Boolean = false,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -163,6 +164,7 @@ fun HomeScreen(
                         remember(
                             uiState.isOffline,
                             uiState.libraries.isNotEmpty(),
+                            hideLibrariesSection,
                             continueWatchingItems.isNotEmpty(),
                             uiState.isLoading,
                             uiState.latestMedia.isNotEmpty(),
@@ -173,8 +175,9 @@ fun HomeScreen(
                             uiState.nextUp.isNotEmpty(),
                         ) {
                             when {
-                                !uiState.isOffline && uiState.libraries.isNotEmpty() ->
-                                    "libraries_section"
+                                !uiState.isOffline &&
+                                    uiState.libraries.isNotEmpty() &&
+                                    !hideLibrariesSection -> "libraries_section"
                                 continueWatchingItems.isNotEmpty() -> "continue_watching"
                                 !uiState.isOffline &&
                                     uiState.isLoading &&
@@ -220,7 +223,11 @@ fun HomeScreen(
                             }
                         }
 
-                        if (!uiState.isOffline && uiState.libraries.isNotEmpty()) {
+                        if (
+                            !uiState.isOffline &&
+                                uiState.libraries.isNotEmpty() &&
+                                !hideLibrariesSection
+                        ) {
                             item(key = "libraries_section") {
                                 val itemMod =
                                     if (isLandscape && firstContentKey == "libraries_section")
@@ -367,7 +374,8 @@ fun HomeScreen(
                                         albums = uiState.downloadedMusicAlbums,
                                         onAlbumClick = { album ->
                                             navController.navigate(
-                                                com.makd.afinity.navigation.Destination.createMusicAlbumRoute(album.id.toString())
+                                                com.makd.afinity.navigation.Destination
+                                                    .createMusicAlbumRoute(album.id.toString())
                                             )
                                         },
                                     )
@@ -651,13 +659,10 @@ fun HomeScreen(
 
         AfinityTopAppBar(
             title = {
-                IconButton(
-                    onClick = { /* TODO: Handle app icon click if needed */ },
-                    modifier = Modifier.size(42.dp),
-                ) {
+                if (onMenuClick == null && widthSizeClass == WindowWidthSizeClass.Compact) {
                     Box(
                         modifier =
-                            Modifier.fillMaxSize()
+                            Modifier.size(42.dp)
                                 .background(Color.Black.copy(alpha = 0.3f), CircleShape)
                                 .clip(CircleShape),
                         contentAlignment = Alignment.Center,
@@ -672,6 +677,7 @@ fun HomeScreen(
                     }
                 }
             },
+            onMenuClick = onMenuClick,
             onSearchClick = {
                 val route = Destination.createSearchRoute()
                 navController.navigate(route)

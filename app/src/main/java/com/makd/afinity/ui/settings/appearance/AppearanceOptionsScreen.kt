@@ -68,6 +68,8 @@ fun AppearanceOptionsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val combineLibrarySections by viewModel.combineLibrarySections.collectAsState()
     val homeSortByDateAdded by viewModel.homeSortByDateAdded.collectAsState()
+    val navigationDrawerEnabled by viewModel.navigationDrawerEnabled.collectAsState()
+    val librariesInDrawer by viewModel.librariesInDrawer.collectAsState()
     val episodeLayout by viewModel.episodeLayout.collectAsState()
     val showRatings by viewModel.showRatings.collectAsState()
     val tmdbApiKey by viewModel.tmdbApiKey.collectAsState()
@@ -142,6 +144,27 @@ fun AppearanceOptionsScreen(
                         subtitle = stringResource(R.string.pref_dynamic_colors_summary),
                         checked = uiState.dynamicColors,
                         onCheckedChange = viewModel::toggleDynamicColors,
+                    )
+                }
+            }
+
+            item {
+                SettingsGroup(title = stringResource(R.string.settings_group_navigation)) {
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_menu),
+                        title = stringResource(R.string.pref_navigation_drawer_title),
+                        subtitle = stringResource(R.string.pref_navigation_drawer_summary),
+                        checked = navigationDrawerEnabled,
+                        onCheckedChange = viewModel::toggleNavigationDrawer,
+                    )
+                    SettingsDivider()
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_video_library),
+                        title = stringResource(R.string.pref_libraries_in_drawer_title),
+                        subtitle = stringResource(R.string.pref_libraries_in_drawer_summary),
+                        checked = librariesInDrawer,
+                        onCheckedChange = viewModel::toggleLibrariesInDrawer,
+                        enabled = navigationDrawerEnabled,
                     )
                 }
             }

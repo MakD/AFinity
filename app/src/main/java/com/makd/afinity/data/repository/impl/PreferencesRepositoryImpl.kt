@@ -63,6 +63,8 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val GRID_LAYOUT = booleanPreferencesKey("grid_layout")
         val COMBINE_LIBRARY_SECTIONS = booleanPreferencesKey("combine_library_sections")
         val HOME_SORT_BY_DATE_ADDED = booleanPreferencesKey("home_sort_by_date_added")
+        val NAVIGATION_DRAWER_ENABLED = booleanPreferencesKey("navigation_drawer_enabled")
+        val LIBRARIES_IN_DRAWER = booleanPreferencesKey("libraries_in_drawer")
 
         val DOWNLOAD_WIFI_ONLY = booleanPreferencesKey("download_wifi_only")
         val DOWNLOAD_QUALITY = stringPreferencesKey("download_quality")
@@ -239,6 +241,32 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         return dataStore.data.map { preferences ->
             preferences[Keys.HOME_SORT_BY_DATE_ADDED] ?: true
         }
+    }
+
+    override suspend fun setNavigationDrawerEnabled(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.NAVIGATION_DRAWER_ENABLED] = enabled }
+    }
+
+    override suspend fun getNavigationDrawerEnabled(): Boolean {
+        return dataStore.data.first()[Keys.NAVIGATION_DRAWER_ENABLED] ?: false
+    }
+
+    override fun getNavigationDrawerEnabledFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.NAVIGATION_DRAWER_ENABLED] ?: false
+        }
+    }
+
+    override suspend fun setLibrariesInDrawer(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.LIBRARIES_IN_DRAWER] = enabled }
+    }
+
+    override suspend fun getLibrariesInDrawer(): Boolean {
+        return dataStore.data.first()[Keys.LIBRARIES_IN_DRAWER] ?: false
+    }
+
+    override fun getLibrariesInDrawerFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences -> preferences[Keys.LIBRARIES_IN_DRAWER] ?: false }
     }
 
     override suspend fun setSkipIntroMode(mode: SkipMode) {

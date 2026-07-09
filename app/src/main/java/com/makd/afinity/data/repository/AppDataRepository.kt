@@ -168,7 +168,10 @@ constructor(
                     data.episodes.size +
                     data.boxSets.size +
                     data.people.size +
-                    data.channels.size
+                    data.channels.size +
+                    data.favoriteAlbums.size +
+                    data.favoriteArtists.size +
+                    data.favoriteTracks.size
             }
             .distinctUntilChanged()
 

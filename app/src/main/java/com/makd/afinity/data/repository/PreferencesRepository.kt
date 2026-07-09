@@ -144,6 +144,18 @@ interface PreferencesRepository {
 
     fun getCombineLibrarySectionsFlow(): Flow<Boolean>
 
+    suspend fun setNavigationDrawerEnabled(enabled: Boolean)
+
+    suspend fun getNavigationDrawerEnabled(): Boolean
+
+    fun getNavigationDrawerEnabledFlow(): Flow<Boolean>
+
+    suspend fun setLibrariesInDrawer(enabled: Boolean)
+
+    suspend fun getLibrariesInDrawer(): Boolean
+
+    fun getLibrariesInDrawerFlow(): Flow<Boolean>
+
     suspend fun setHomeSortByDateAdded(sortByDateAdded: Boolean)
 
     suspend fun getHomeSortByDateAdded(): Boolean

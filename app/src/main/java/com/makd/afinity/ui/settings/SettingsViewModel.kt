@@ -71,6 +71,24 @@ constructor(
     private val _homeSortByDateAdded = MutableStateFlow(true)
     val homeSortByDateAdded: StateFlow<Boolean> = _homeSortByDateAdded.asStateFlow()
 
+    val navigationDrawerEnabled: StateFlow<Boolean> =
+        preferencesRepository
+            .getNavigationDrawerEnabledFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = false,
+            )
+
+    val librariesInDrawer: StateFlow<Boolean> =
+        preferencesRepository
+            .getLibrariesInDrawerFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = false,
+            )
+
     val episodeLayout: StateFlow<EpisodeLayout> =
         preferencesRepository
             .getEpisodeLayoutFlow()
@@ -360,6 +378,14 @@ constructor(
 
     fun toggleHomeSortByDateAdded(sortByDateAdded: Boolean) {
         viewModelScope.launch { preferencesRepository.setHomeSortByDateAdded(sortByDateAdded) }
+    }
+
+    fun toggleNavigationDrawer(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setNavigationDrawerEnabled(enabled) }
+    }
+
+    fun toggleLibrariesInDrawer(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setLibrariesInDrawer(enabled) }
     }
 
     fun toggleAutoPlay(enabled: Boolean) {

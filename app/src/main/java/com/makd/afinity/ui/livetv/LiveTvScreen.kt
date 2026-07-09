@@ -61,6 +61,7 @@ fun LiveTvScreen(
     modifier: Modifier = Modifier,
     widthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact,
     viewModel: LiveTvViewModel = hiltViewModel(),
+    onMenuClick: (() -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedLetter by viewModel.selectedLetter.collectAsStateWithLifecycle()
@@ -110,6 +111,7 @@ fun LiveTvScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 },
+                onMenuClick = onMenuClick,
                 onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
                 onProfileClick = { navController.navigate(Destination.createSettingsRoute()) },
                 userName = mainUiState.userName,

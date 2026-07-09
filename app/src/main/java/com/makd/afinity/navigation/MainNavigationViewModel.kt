@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -56,6 +57,38 @@ constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = true,
         )
+
+    val navigationDrawerEnabled =
+        preferencesRepository.getNavigationDrawerEnabledFlow().stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false,
+        )
+
+    val librariesInDrawer =
+        preferencesRepository.getLibrariesInDrawerFlow().stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false,
+        )
+
+    val serverName =
+        sessionManager.currentSession
+            .map { it?.server?.name }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = null,
+            )
+
+    val isAdmin =
+        sessionManager.currentSession
+            .map { it?.isAdmin == true }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = false,
+            )
 
     val appLoadingState =
         combine(

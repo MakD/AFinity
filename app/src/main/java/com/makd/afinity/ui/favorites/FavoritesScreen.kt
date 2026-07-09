@@ -97,6 +97,7 @@ fun FavoritesScreen(
     viewModel: FavoritesViewModel = hiltViewModel(),
     playerViewModel: MusicPlayerViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
+    onMenuClick: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -138,6 +139,7 @@ fun FavoritesScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 },
+                onMenuClick = onMenuClick,
                 onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
                 onProfileClick = { navController.navigate(Destination.createSettingsRoute()) },
                 userProfileImageUrl = mainUiState.userProfileImageUrl,

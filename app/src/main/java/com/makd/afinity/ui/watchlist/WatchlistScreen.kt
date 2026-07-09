@@ -53,6 +53,7 @@ fun WatchlistScreen(
     navController: NavController,
     viewModel: WatchlistViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
+    onMenuClick: (() -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
@@ -92,6 +93,7 @@ fun WatchlistScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 },
+                onMenuClick = onMenuClick,
                 onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
                 onProfileClick = { navController.navigate(Destination.createSettingsRoute()) },
                 userProfileImageUrl = mainUiState.userProfileImageUrl,

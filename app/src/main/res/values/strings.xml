@@ -54,6 +54,13 @@
     <string name="home_episode_count_fmt">%1$d EP</string>
     <string name="home_episode_count_plus">99+ EP</string>
     <string name="cd_app_logo">App Logo</string>
+    <string name="cd_open_navigation_menu">Open navigation menu</string>
+    <string name="connection_label_local">Local</string>
+    <string name="connection_label_tailscale">Tailscale</string>
+    <string name="connection_label_remote">Remote</string>
+    <string name="connection_label_offline">Offline</string>
+    <string name="drawer_admin_badge">Admin</string>
+    <string name="drawer_app_version">AFinity v%1$s</string>
     <string name="cd_watched_status">Watched</string>
     <string name="cd_imdb">IMDB</string>
     <string name="cd_rotten_tomatoes">Rotten Tomatoes</string>
@@ -498,6 +505,12 @@
     <string name="pref_theme_mode_title">Theme Mode</string>
     <string name="pref_dynamic_colors_title">Dynamic Colors</string>
     <string name="pref_dynamic_colors_summary">Use colors from your wallpaper</string>
+
+    <string name="settings_group_navigation">Navigation</string>
+    <string name="pref_navigation_drawer_title">Navigation Drawer</string>
+    <string name="pref_navigation_drawer_summary">Use a side drawer for navigation instead of the bottom bar</string>
+    <string name="pref_libraries_in_drawer_title">Show Libraries in Drawer</string>
+    <string name="pref_libraries_in_drawer_summary">List your libraries in the drawer instead of on the home screen</string>
 
     <string name="settings_group_home_screen">Home Screen</string>
     <string name="pref_combine_library_title">Combine Library Sections</string>

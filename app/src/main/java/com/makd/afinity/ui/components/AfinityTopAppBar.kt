@@ -60,6 +60,7 @@ fun AfinityTopAppBar(
     modifier: Modifier = Modifier,
     onSearchClick: (() -> Unit)? = null,
     onProfileClick: (() -> Unit)? = null,
+    onMenuClick: (() -> Unit)? = null,
     userName: String? = null,
     userProfileImageUrl: String? = null,
     backgroundOpacity: () -> Float = { 0f },
@@ -72,6 +73,26 @@ fun AfinityTopAppBar(
 
     TopAppBar(
         title = title,
+        navigationIcon = {
+            if (onMenuClick != null) {
+                IconButton(onClick = onMenuClick, modifier = Modifier.size(42.dp)) {
+                    Box(
+                        modifier =
+                            Modifier.fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.3f), CircleShape)
+                                .clip(CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_menu),
+                            contentDescription = stringResource(R.string.cd_open_navigation_menu),
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                }
+            }
+        },
         actions = {
             if (onSearchClick != null) {
                 Button(
