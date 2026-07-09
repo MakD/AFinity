@@ -1571,6 +1571,13 @@ fun MainNavigation(
                                     coroutineScope.launch { drawerState.close() }
                                     navController.navigate(Destination.createSettingsRoute())
                                 },
+                                onAddAccountClick = { server ->
+                                    coroutineScope.launch { drawerState.close() }
+                                    navController.navigate(
+                                        Destination.createLoginRoute(serverUrl = server.address)
+                                    )
+                                },
+                                onCloseDrawer = { coroutineScope.launch { drawerState.close() } },
                             )
                         },
                         content = drawerBody,

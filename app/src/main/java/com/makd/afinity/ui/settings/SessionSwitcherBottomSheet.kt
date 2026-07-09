@@ -171,7 +171,7 @@ fun SessionSwitcherBottomSheet(
 }
 
 @Composable
-private fun ServerSessionGroupItem(
+internal fun ServerSessionGroupItem(
     sessionGroup: ServerSessionGroup,
     onSessionClick: (UserSession) -> Unit,
     onAddAccountClick: () -> Unit,

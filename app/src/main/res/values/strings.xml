@@ -56,6 +56,7 @@
     <string name="cd_app_logo">App Logo</string>
     <string name="cd_open_navigation_menu">Open navigation menu</string>
     <string name="cd_go_to_home">Go to Home</string>
+    <string name="cd_switch_account">Switch account</string>
     <string name="connection_label_local">Local</string>
     <string name="connection_label_tailscale">Tailscale</string>
     <string name="connection_label_remote">Remote</string>
