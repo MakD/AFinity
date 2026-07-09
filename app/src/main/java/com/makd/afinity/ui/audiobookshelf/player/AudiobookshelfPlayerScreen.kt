@@ -364,8 +364,7 @@ fun SharedTransitionScope.PortraitPlayerContent(
                     { viewModel.seekToChapter(playbackState.currentChapterIndex + 1) }
                 } else null,
             accentColor = animatedColor,
-            currentChapter =
-                if (!playbackState.isPodcastPlaylist) playbackState.currentChapter else null,
+            currentChapter = playbackState.currentChapter,
         )
 
         Spacer(modifier = Modifier.height(28.dp))
@@ -608,8 +607,7 @@ fun SharedTransitionScope.LandscapePlayerContent(
                         { viewModel.seekToChapter(playbackState.currentChapterIndex + 1) }
                     } else null,
                 accentColor = animatedColor,
-                currentChapter =
-                    if (!playbackState.isPodcastPlaylist) playbackState.currentChapter else null,
+                currentChapter = playbackState.currentChapter,
             )
 
             Spacer(modifier = Modifier.height(28.dp))
