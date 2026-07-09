@@ -34,7 +34,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -179,24 +178,8 @@ private fun SeerrDetailContent(
         }
 
         AfinityTopAppBar(
-            title = {
-                IconButton(onClick = onNavigateHome, modifier = Modifier.size(42.dp)) {
-                    Box(
-                        modifier =
-                            Modifier.fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.3f), CircleShape)
-                                .clip(CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_home),
-                            contentDescription = "Go to Home",
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp),
-                        )
-                    }
-                }
-            },
+            title = {},
+            onHomeClick = onNavigateHome,
             backgroundOpacity = { topBarOpacity },
         )
     }
@@ -342,6 +325,7 @@ private fun SeerrDetailSections(
         )
     }
 }
+
 @Composable
 private fun SeerrCastSection(
     cast: List<CastMember>,
@@ -371,8 +355,7 @@ private fun SeerrCastSection(
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     AsyncImage(
-                        imageUrl =
-                            member.profilePath?.let { "https://image.tmdb.org/t/p/w300$it" },
+                        imageUrl = member.profilePath?.let { "https://image.tmdb.org/t/p/w300$it" },
                         contentDescription = member.name,
                         blurHash = null,
                         targetWidth = cardWidth,
@@ -758,11 +741,13 @@ private fun SeerrMetadataRow(
 ) {
     val year = (details.releaseDate ?: details.firstAirDate)?.take(4)?.takeIf { it.isNotBlank() }
     val runtime =
-        details.runtime?.takeIf { it > 0 }?.let { minutes ->
-            val hours = minutes / 60
-            val mins = minutes % 60
-            if (hours > 0) "${hours}h ${mins}m" else "${mins}m"
-        }
+        details.runtime
+            ?.takeIf { it > 0 }
+            ?.let { minutes ->
+                val hours = minutes / 60
+                val mins = minutes % 60
+                if (hours > 0) "${hours}h ${mins}m" else "${mins}m"
+            }
     val seasonCount =
         if (mediaType == MediaType.TV) details.getSeasonCount().takeIf { it > 0 } else null
     val certification = details.getCertification()?.takeIf { it.isNotBlank() }
@@ -797,7 +782,6 @@ private fun MetaText(text: String) {
     )
 }
 
-
 private data class SeerrDetailRowData(
     val label: String,
     val value: String,
@@ -820,31 +804,43 @@ private fun buildSeerrDetailRows(
                 ?.takeIf { it.isNotBlank() }
                 ?.let { code -> Locale.forLanguageTag(code).displayLanguage.ifBlank { code } }
     val countries =
-        details.productionCountries?.mapNotNull { it.name ?: it.iso_3166_1 }?.takeIf {
-            it.isNotEmpty()
-        }
+        details.productionCountries
+            ?.mapNotNull { it.name ?: it.iso_3166_1 }
+            ?.takeIf {
+                it.isNotEmpty()
+            }
 
     originalTitle?.let { add(SeerrDetailRowData("Original Title", it)) }
-    details.status?.takeIf { it.isNotBlank() }?.let {
-        add(SeerrDetailRowData("Status", it, isStatus = true))
-    }
+    details.status
+        ?.takeIf { it.isNotBlank() }
+        ?.let {
+            add(SeerrDetailRowData("Status", it, isStatus = true))
+        }
 
     if (mediaType == MediaType.TV) {
-        details.seriesType?.takeIf { it.isNotBlank() }?.let {
-            add(SeerrDetailRowData("Series Type", it))
-        }
+        details.seriesType
+            ?.takeIf { it.isNotBlank() }
+            ?.let {
+                add(SeerrDetailRowData("Series Type", it))
+            }
         details.firstAirDate?.let { date ->
             formatSeerrDate(date)?.let { add(SeerrDetailRowData("First Air Date", it)) }
         }
         details.nextEpisodeToAir?.airDate?.let { date ->
             formatSeerrDate(date)?.let { add(SeerrDetailRowData("Next Air Date", it)) }
         }
-        details.episodeRunTime?.firstOrNull()?.takeIf { it > 0 }?.let {
-            add(SeerrDetailRowData("Episode Runtime", "$it min"))
-        }
-        details.networks?.mapNotNull { it.name }?.takeIf { it.isNotEmpty() }?.let {
-            add(SeerrDetailRowData("Networks", it.joinToString(", ")))
-        }
+        details.episodeRunTime
+            ?.firstOrNull()
+            ?.takeIf { it > 0 }
+            ?.let {
+                add(SeerrDetailRowData("Episode Runtime", "$it min"))
+            }
+        details.networks
+            ?.mapNotNull { it.name }
+            ?.takeIf { it.isNotEmpty() }
+            ?.let {
+                add(SeerrDetailRowData("Networks", it.joinToString(", ")))
+            }
     } else {
         val usReleases =
             details.releases?.results?.firstOrNull { it.iso_3166_1 == "US" }?.release_dates
@@ -869,32 +865,37 @@ private fun buildSeerrDetailRows(
                 formatSeerrDate(date)?.let { add(SeerrDetailRowData("Release Date", it)) }
             }
         }
-        details.budget?.takeIf { it > 0 }?.let {
-            add(SeerrDetailRowData("Budget", String.format(Locale.US, "$%,d", it)))
-        }
-        details.revenue?.takeIf { it > 0 }?.let {
-            add(SeerrDetailRowData("Revenue", String.format(Locale.US, "$%,d", it)))
-        }
+        details.budget
+            ?.takeIf { it > 0 }
+            ?.let {
+                add(SeerrDetailRowData("Budget", String.format(Locale.US, "$%,d", it)))
+            }
+        details.revenue
+            ?.takeIf { it > 0 }
+            ?.let {
+                add(SeerrDetailRowData("Revenue", String.format(Locale.US, "$%,d", it)))
+            }
     }
 
-    language?.takeIf { it.isNotBlank() }?.let {
-        add(
-            SeerrDetailRowData(
-                "Original Language",
-                it,
-                flagLanguageCode = details.originalLanguage,
+    language
+        ?.takeIf { it.isNotBlank() }
+        ?.let {
+            add(
+                SeerrDetailRowData(
+                    "Original Language",
+                    it,
+                    flagLanguageCode = details.originalLanguage,
+                )
             )
-        )
-    }
+        }
     countries?.let { add(SeerrDetailRowData("Production Country", it.joinToString(", "))) }
 }
+
 private fun formatSeerrDate(dateString: String): String? {
     if (dateString.isBlank()) return null
     return try {
         java.time.LocalDate.parse(dateString)
-            .format(
-                java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.US)
-            )
+            .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.US))
     } catch (e: Exception) {
         dateString
     }
@@ -1135,8 +1136,7 @@ private fun SeerrDetailLedgerRow(row: SeerrDetailRowData) {
         ) {
             when {
                 row.isStatus -> {
-                    val active =
-                        row.value.lowercase() !in listOf("ended", "canceled", "cancelled")
+                    val active = row.value.lowercase() !in listOf("ended", "canceled", "cancelled")
                     Surface(
                         shape = RoundedCornerShape(6.dp),
                         color =

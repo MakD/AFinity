@@ -578,30 +578,11 @@ fun MusicGenreScreen(
         }
 
         AfinityTopAppBar(
-            title = {
-                IconButton(
-                    onClick = {
-                        navController.navigate(Destination.HOME.route) {
-                            popUpTo(Destination.HOME.route) { inclusive = false }
-                            launchSingleTop = true
-                        }
-                    },
-                    modifier = Modifier.size(42.dp),
-                ) {
-                    Box(
-                        modifier =
-                            Modifier.fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.3f), CircleShape)
-                                .clip(CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_home),
-                            contentDescription = stringResource(R.string.cd_music_go_to_home),
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp),
-                        )
-                    }
+            title = {},
+            onHomeClick = {
+                navController.navigate(Destination.HOME.route) {
+                    popUpTo(Destination.HOME.route) { inclusive = false }
+                    launchSingleTop = true
                 }
             },
             backgroundOpacity = { if (isLandscape) 0f else topBarOpacity },
