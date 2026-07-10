@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,7 +27,6 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -89,13 +87,7 @@ fun AppNavigationDrawerContent(
             label = "chevron",
         )
 
-    ModalDrawerSheet(
-        modifier = modifier,
-        drawerContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        drawerShape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp),
-        windowInsets = WindowInsets(0.dp),
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerLow)) {
             Box(
                 modifier =
                     Modifier.fillMaxWidth()
@@ -370,7 +362,6 @@ fun AppNavigationDrawerContent(
                     modifier = Modifier.padding(start = 24.dp, top = 32.dp, bottom = 24.dp),
                 )
             }
-        }
     }
 }
 

@@ -13,21 +13,23 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.DrawerValue
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.ModalWideNavigationRail
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.WideNavigationRailDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
-import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.rememberWideNavigationRailState
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -38,10 +40,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -147,7 +151,7 @@ fun MainNavigation(
     val librariesInDrawer by viewModel.librariesInDrawer.collectAsStateWithLifecycle()
     val serverName by viewModel.serverName.collectAsStateWithLifecycle()
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val railState = rememberWideNavigationRailState()
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -207,10 +211,10 @@ fun MainNavigation(
         } ?: true
 
     val useNavRail = widthSizeClass != WindowWidthSizeClass.Compact
-    val useDrawer = navigationDrawerEnabled && !useNavRail
+    val useModalRail = navigationDrawerEnabled && !useNavRail
     val onMenuClick: (() -> Unit)? =
-        if (useDrawer) {
-            { coroutineScope.launch { drawerState.open() } }
+        if (useModalRail) {
+            { coroutineScope.launch { railState.expand() } }
         } else null
 
     LaunchedEffect(isOffline, currentDestination) {
@@ -242,7 +246,7 @@ fun MainNavigation(
                     when {
                         !shouldShowNavigation -> NavigationSuiteType.None
                         useNavRail -> NavigationSuiteType.NavigationRail
-                        useDrawer -> NavigationSuiteType.None
+                        useModalRail -> NavigationSuiteType.None
                         else -> NavigationSuiteType.NavigationBar
                     },
                 navigationSuiteItems = {
@@ -443,7 +447,8 @@ fun MainNavigation(
                                             modifier = Modifier.fillMaxSize(),
                                             widthSizeClass = widthSizeClass,
                                             onMenuClick = onMenuClick,
-                                            hideLibrariesSection = useDrawer && librariesInDrawer,
+                                            hideLibrariesSection =
+                                                useModalRail && librariesInDrawer,
                                         )
                                     }
 
@@ -931,7 +936,7 @@ fun MainNavigation(
 
                                     composable(Destination.SEARCH_ROUTE) {
                                         SearchScreen(
-                                            onBackClick = { navController.popBackStack() },
+                                            onBackClick = dropUnlessResumed { navController.popBackStack() },
                                             onItemClick = { item ->
                                                 val route =
                                                     Destination.createItemDetailRoute(
@@ -1020,7 +1025,7 @@ fun MainNavigation(
                                     ) {
                                         GenreResultsScreen(
                                             genre = it.arguments?.getString("genre") ?: "",
-                                            onBackClick = { navController.popBackStack() },
+                                            onBackClick = dropUnlessResumed { navController.popBackStack() },
                                             onItemClick = { item ->
                                                 val route =
                                                     Destination.createItemDetailRoute(
@@ -1052,7 +1057,7 @@ fun MainNavigation(
                                     ) {
                                         AudiobookshelfGenreResultsScreen(
                                             genre = it.arguments?.getString("genre") ?: "",
-                                            onBackClick = { navController.popBackStack() },
+                                            onBackClick = dropUnlessResumed { navController.popBackStack() },
                                             onItemClick = { itemId ->
                                                 navController.navigate(
                                                     Destination.createAudiobookshelfItemRoute(
@@ -1068,7 +1073,7 @@ fun MainNavigation(
                                     composable(Destination.SETTINGS_ROUTE) {
                                         SettingsScreen(
                                             navController = navController,
-                                            onBackClick = { navController.popBackStack() },
+                                            onBackClick = dropUnlessResumed { navController.popBackStack() },
                                             onLogoutComplete = {
                                                 // Logout handled by MainActivity observing auth
                                                 // state
@@ -1078,7 +1083,7 @@ fun MainNavigation(
 
                                     composable(Destination.DOWNLOAD_SETTINGS_ROUTE) {
                                         DownloadSettingsScreen(
-                                            onBackClick = { navController.popBackStack() },
+                                            onBackClick = dropUnlessResumed { navController.popBackStack() },
                                             onNavigateToAbsItem = { itemId ->
                                                 navController.navigate(
                                                     Destination.createAudiobookshelfItemRoute(
@@ -1092,26 +1097,26 @@ fun MainNavigation(
 
                                     composable(Destination.PLAYER_OPTIONS_ROUTE) {
                                         PlayerOptionsScreen(
-                                            onBackClick = { navController.popBackStack() },
+                                            onBackClick = dropUnlessResumed { navController.popBackStack() },
                                             modifier = Modifier.fillMaxSize(),
                                         )
                                     }
 
                                     composable(Destination.APPEARANCE_OPTIONS_ROUTE) {
                                         AppearanceOptionsScreen(
-                                            onBackClick = { navController.popBackStack() }
+                                            onBackClick = dropUnlessResumed { navController.popBackStack() }
                                         )
                                     }
 
                                     composable(Destination.LICENSES_ROUTE) {
                                         LicensesScreen(
-                                            onBackClick = { navController.popBackStack() }
+                                            onBackClick = dropUnlessResumed { navController.popBackStack() }
                                         )
                                     }
 
                                     composable(Destination.SERVER_MANAGEMENT_ROUTE) {
                                         ServerManagementScreen(
-                                            onBackClick = { navController.popBackStack() },
+                                            onBackClick = dropUnlessResumed { navController.popBackStack() },
                                             onAddServerClick = {
                                                 val route =
                                                     Destination.createAddEditServerRoute(
@@ -1141,7 +1146,7 @@ fun MainNavigation(
                                             ),
                                     ) {
                                         AddEditServerScreen(
-                                            onBackClick = { navController.popBackStack() }
+                                            onBackClick = dropUnlessResumed { navController.popBackStack() }
                                         )
                                     }
 
@@ -1421,14 +1426,14 @@ fun MainNavigation(
                                             ),
                                     ) {
                                         AudiobookshelfPlayerScreen(
-                                            onNavigateBack = { navController.popBackStack() },
+                                            onNavigateBack = dropUnlessResumed { navController.popBackStack() },
                                             animatedVisibilityScope = this@composable,
                                         )
                                     }
 
                                     composable(route = Destination.MUSIC_PLAYER_ROUTE) {
                                         MusicPlayerScreen(
-                                            onNavigateBack = { navController.popBackStack() },
+                                            onNavigateBack = dropUnlessResumed { navController.popBackStack() },
                                             animatedVisibilityScope = this@composable,
                                         )
                                     }
@@ -1538,11 +1543,26 @@ fun MainNavigation(
                     }
                 }
 
-                if (useDrawer) {
-                    ModalNavigationDrawer(
-                        drawerState = drawerState,
-                        gesturesEnabled = shouldShowNavigation,
-                        drawerContent = {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    drawerBody()
+
+                    if (useModalRail) {
+                        ModalWideNavigationRail(
+                            state = railState,
+                            hideOnCollapse = true,
+                            expandedShape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp),
+                            colors =
+                                WideNavigationRailDefaults.colors()
+                                    .copy(
+                                        modalContainerColor =
+                                            MaterialTheme.colorScheme.primary
+                                                .copy(alpha = 0.15f)
+                                                .compositeOver(
+                                                    MaterialTheme.colorScheme.surfaceContainerLow
+                                                )
+                                    ),
+                            windowInsets = WindowInsets(0.dp),
+                        ) {
                             AppNavigationDrawerContent(
                                 currentRoute = currentDestination?.route,
                                 userName = mainUiState.userName,
@@ -1558,7 +1578,7 @@ fun MainNavigation(
                                 hasLiveTvAccess = hasLiveTvAccess,
                                 librariesInDrawer = librariesInDrawer,
                                 onDestinationClick = { destination ->
-                                    coroutineScope.launch { drawerState.close() }
+                                    coroutineScope.launch { railState.collapse() }
                                     navController.navigate(destination.route) {
                                         popUpTo(navController.graph.findStartDestination().id) {
                                             saveState = true
@@ -1568,22 +1588,21 @@ fun MainNavigation(
                                     }
                                 },
                                 onSettingsClick = {
-                                    coroutineScope.launch { drawerState.close() }
+                                    coroutineScope.launch { railState.collapse() }
                                     navController.navigate(Destination.createSettingsRoute())
                                 },
                                 onAddAccountClick = { server ->
-                                    coroutineScope.launch { drawerState.close() }
+                                    coroutineScope.launch { railState.collapse() }
                                     navController.navigate(
                                         Destination.createLoginRoute(serverUrl = server.address)
                                     )
                                 },
-                                onCloseDrawer = { coroutineScope.launch { drawerState.close() } },
+                                onCloseDrawer = {
+                                    coroutineScope.launch { railState.collapse() }
+                                },
                             )
-                        },
-                        content = drawerBody,
-                    )
-                } else {
-                    drawerBody()
+                        }
+                    }
                 }
             }
         }

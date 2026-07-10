@@ -40,9 +40,7 @@ configure<ApplicationExtension> {
     signingConfigs {
         create("release") {
             if (hasReleaseKeystore) {
-                val keyProperties = Properties().apply {
-                    load(keyPropertiesFile.inputStream())
-                }
+                val keyProperties = Properties().apply { load(keyPropertiesFile.inputStream()) }
                 storeFile = file(keyProperties["storeFile"] as String)
                 storePassword = keyProperties["storePassword"] as String
                 keyAlias = keyProperties["keyAlias"] as String
