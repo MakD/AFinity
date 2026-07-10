@@ -509,10 +509,10 @@
     <string name="pref_dynamic_colors_summary">Use colors from your wallpaper</string>
 
     <string name="settings_group_navigation">Navigation</string>
-    <string name="pref_navigation_drawer_title">Navigation Drawer</string>
-    <string name="pref_navigation_drawer_summary">Use a side drawer for navigation instead of the bottom bar</string>
-    <string name="pref_libraries_in_drawer_title">Show Libraries in Drawer</string>
-    <string name="pref_libraries_in_drawer_summary">List your libraries in the drawer instead of on the home screen</string>
+    <string name="pref_navigation_drawer_title">Navigation Menu</string>
+    <string name="pref_navigation_drawer_summary">Use a side navigation menu instead of the bottom bar</string>
+    <string name="pref_libraries_in_drawer_title">Show Libraries in Menu</string>
+    <string name="pref_libraries_in_drawer_summary">List your libraries in the navigation menu instead of on the home screen</string>
 
     <string name="settings_group_home_screen">Home Screen</string>
     <string name="pref_combine_library_title">Combine Library Sections</string>

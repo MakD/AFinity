@@ -59,9 +59,6 @@ import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
-import com.makd.afinity.data.repository.AudiobookshelfRepository
-import com.makd.afinity.data.repository.JellyseerrRepository
-import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.data.updater.UpdateManager
 import com.makd.afinity.data.websocket.WebSocketState
 import com.makd.afinity.ui.admin.identify.IdentifyScreen
@@ -128,17 +125,11 @@ fun MainNavigation(
 ) {
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
     val favoritesCount by viewModel.favoritesCount.collectAsStateWithLifecycle()
-    val watchlistRepository: WatchlistRepository =
-        hiltViewModel<MainNavigationViewModel>().watchlistRepository
-    val watchlistCount by watchlistRepository.watchlistCountFlow.collectAsStateWithLifecycle()
-    val jellyseerrRepository: JellyseerrRepository =
-        hiltViewModel<MainNavigationViewModel>().jellyseerrRepository
+    val watchlistCount by viewModel.watchlistCount.collectAsStateWithLifecycle()
     val isJellyseerrAuthenticated by
-        jellyseerrRepository.isAuthenticated.collectAsStateWithLifecycle()
-    val audiobookshelfRepository: AudiobookshelfRepository =
-        hiltViewModel<MainNavigationViewModel>().audiobookshelfRepository
+        viewModel.isJellyseerrAuthenticated.collectAsStateWithLifecycle()
     val isAudiobookshelfAuthenticated by
-        audiobookshelfRepository.isAuthenticated.collectAsStateWithLifecycle()
+        viewModel.isAudiobookshelfAuthenticated.collectAsStateWithLifecycle()
     val hasLiveTvAccess by viewModel.hasLiveTvAccess.collectAsStateWithLifecycle()
     val appLoadingState by viewModel.appLoadingState.collectAsStateWithLifecycle()
     val isOffline by offlineModeManager.isOffline.collectAsStateWithLifecycle(initialValue = false)
@@ -176,39 +167,8 @@ fun MainNavigation(
     }
 
     val shouldShowNavigation =
-        currentDestination?.route?.let { route ->
-            !route.startsWith("library_content/") &&
-                !route.startsWith("studio_content/") &&
-                !route.startsWith("item_detail/") &&
-                !route.startsWith("episodes/") &&
-                !route.startsWith("player/") &&
-                !route.startsWith("person/") &&
-                route != "search" &&
-                !route.startsWith("genre_results/") &&
-                !route.startsWith("filtered_media/") &&
-                !route.startsWith("seerr_media/") &&
-                route != "settings" &&
-                route != "download_settings" &&
-                route != "player_options" &&
-                route != "appearance_options" &&
-                route != "licenses" &&
-                route != "server_management" &&
-                !route.startsWith("add_edit_server") &&
-                !route.startsWith("login") &&
-                !route.startsWith("audiobookshelf/library/") &&
-                route != Destination.AUDIOBOOKSHELF_SERIES_LIST_ROUTE &&
-                !route.startsWith("audiobookshelf/item/") &&
-                !route.startsWith("audiobookshelf/series/") &&
-                !route.startsWith("audiobookshelf/genre/") &&
-                !route.startsWith("audiobookshelf/player/") &&
-                !route.startsWith("admin/") &&
-                !route.startsWith("music/library/") &&
-                !route.startsWith("music/album/") &&
-                !route.startsWith("music/artist/") &&
-                !route.startsWith("music/genre/") &&
-                !route.startsWith("music/playlist/") &&
-                route != "music/player"
-        } ?: true
+        currentDestination?.route?.let { route -> Destination.entries.any { it.route == route } }
+            ?: true
 
     val useNavRail = widthSizeClass != WindowWidthSizeClass.Compact
     val onMenuClick: (() -> Unit)? =
@@ -1577,7 +1537,7 @@ fun MainNavigation(
                             windowInsets = WindowInsets(0.dp),
                         ) {
                             AppNavigationDrawerContent(
-                                currentRoute = currentDestination?.route,
+                                currentDestination = currentDestination,
                                 userName = mainUiState.userName,
                                 userProfileImageUrl = mainUiState.userProfileImageUrl,
                                 serverName = serverName,
@@ -1585,7 +1545,7 @@ fun MainNavigation(
                                 isAdmin = isAdmin,
                                 isOffline = isOffline,
                                 favoritesCount = favoritesCount,
-                                watchlistCount = watchlistCount ?: 0,
+                                watchlistCount = watchlistCount,
                                 isJellyseerrAuthenticated = isJellyseerrAuthenticated,
                                 isAudiobookshelfAuthenticated = isAudiobookshelfAuthenticated,
                                 hasLiveTvAccess = hasLiveTvAccess,

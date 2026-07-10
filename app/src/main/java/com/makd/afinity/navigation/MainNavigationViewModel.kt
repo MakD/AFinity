@@ -37,9 +37,9 @@ constructor(
     private val authRepository: AuthRepository,
     private val jellyfinRepository: JellyfinRepository,
     private val mediaRepository: MediaRepository,
-    val watchlistRepository: WatchlistRepository,
-    val jellyseerrRepository: JellyseerrRepository,
-    val audiobookshelfRepository: AudiobookshelfRepository,
+    private val watchlistRepository: WatchlistRepository,
+    private val jellyseerrRepository: JellyseerrRepository,
+    private val audiobookshelfRepository: AudiobookshelfRepository,
     val audiobookshelfPlayer: AudiobookshelfPlayer,
     val audiobookshelfPlaybackManager: AudiobookshelfPlaybackManager,
     val musicPlaybackManager: MusicPlaybackManager,
@@ -114,6 +114,19 @@ constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = 0,
         )
+
+    val watchlistCount =
+        watchlistRepository.watchlistCountFlow
+            .map { it ?: 0 }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = 0,
+            )
+
+    val isJellyseerrAuthenticated = jellyseerrRepository.isAuthenticated
+
+    val isAudiobookshelfAuthenticated = audiobookshelfRepository.isAuthenticated
 
     init {
         observeAuthAndLoadData()

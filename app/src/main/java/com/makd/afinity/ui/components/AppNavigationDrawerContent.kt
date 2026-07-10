@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,8 +28,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationDrawerItem
@@ -52,6 +51,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavDestination
+import androidx.navigation.NavDestination.Companion.hierarchy
 import com.makd.afinity.BuildConfig
 import com.makd.afinity.R
 import com.makd.afinity.R.drawable.ic_launcher_monochrome
@@ -63,7 +64,7 @@ import com.makd.afinity.ui.settings.SessionSwitcherViewModel
 
 @Composable
 fun AppNavigationDrawerContent(
-    currentRoute: String?,
+    currentDestination: NavDestination?,
     userName: String?,
     userProfileImageUrl: String?,
     serverName: String?,
@@ -94,7 +95,11 @@ fun AppNavigationDrawerContent(
     Box(
         modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
-        Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier =
+                    Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
+            ) {
             Column(
                 modifier =
                     Modifier.fillMaxWidth()
@@ -216,25 +221,15 @@ fun AppNavigationDrawerContent(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Row(modifier = Modifier.padding(horizontal = 24.dp)) {
-                    AssistChip(
-                        onClick = {},
-                        label = {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(
-                                    text = serverName ?: stringResource(R.string.app_name),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.alignByBaseline(),
-                                )
-                                Text(
-                                    text = connectionLabel(connectionType),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.alignByBaseline(),
-                                )
-                            }
-                        },
-                        leadingIcon = {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
                             Box(
                                 modifier =
                                     Modifier.size(10.dp)
@@ -243,15 +238,19 @@ fun AppNavigationDrawerContent(
                                             CircleShape,
                                         )
                             )
-                        },
-                        border = null,
-                        colors =
-                            AssistChipDefaults.assistChipColors(
-                                containerColor =
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                            ),
-                        shape = RoundedCornerShape(12.dp),
-                    )
+                            Text(
+                                text = serverName ?: stringResource(R.string.app_name),
+                                style = MaterialTheme.typography.labelLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = connectionLabel(connectionType),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
 
                 AnimatedVisibility(
@@ -301,7 +300,9 @@ fun AppNavigationDrawerContent(
                         }
                     if (!visible) return@forEach
 
-                    val selected = currentRoute == destination.route
+                    val selected =
+                        currentDestination?.hierarchy?.any { it.route == destination.route } ==
+                            true
                     val badgeCount =
                         when (destination) {
                             Destination.FAVORITES -> favoritesCount
@@ -362,16 +363,20 @@ fun AppNavigationDrawerContent(
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
                     shape = RoundedCornerShape(16.dp),
                 )
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Text(
-                    text = stringResource(R.string.drawer_app_version, BuildConfig.VERSION_NAME),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 24.dp, top = 32.dp, bottom = 24.dp),
-                )
             }
+            }
+
+            Text(
+                text = stringResource(R.string.drawer_app_version, BuildConfig.VERSION_NAME),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier =
+                    Modifier.windowInsetsPadding(
+                            WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                        )
+                        .navigationBarsPadding()
+                        .padding(start = 24.dp, top = 16.dp, bottom = 16.dp),
+            )
         }
     }
 }
