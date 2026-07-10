@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.only
@@ -27,7 +25,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -55,12 +52,8 @@ fun LiveTvChannelsTab(
         return
     }
 
-    val layoutDirection = LocalLayoutDirection.current
     val playerOffset = LocalPlayerOffset.current
-    val safeDrawing = WindowInsets.safeDrawing.asPaddingValues()
-    val safeStart = safeDrawing.calculateStartPadding(layoutDirection)
-    safeDrawing.calculateEndPadding(layoutDirection)
-    val safeBottom = safeDrawing.calculateBottomPadding()
+    val safeBottom = WindowInsets.safeDrawing.asPaddingValues().calculateBottomPadding()
 
     Box(modifier = modifier.fillMaxSize()) {
         Row(modifier = Modifier.fillMaxSize()) {
@@ -99,7 +92,7 @@ fun LiveTvChannelsTab(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding =
                             PaddingValues(
-                                start = 16.dp + safeStart,
+                                start = 14.dp,
                                 end = 16.dp,
                                 top = 16.dp,
                                 bottom = max(safeBottom, playerOffset) + 16.dp,
