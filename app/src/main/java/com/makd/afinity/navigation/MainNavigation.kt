@@ -211,9 +211,8 @@ fun MainNavigation(
         } ?: true
 
     val useNavRail = widthSizeClass != WindowWidthSizeClass.Compact
-    val useModalRail = navigationDrawerEnabled && !useNavRail
     val onMenuClick: (() -> Unit)? =
-        if (useModalRail) {
+        if (navigationDrawerEnabled) {
             { coroutineScope.launch { railState.expand() } }
         } else null
 
@@ -227,6 +226,20 @@ fun MainNavigation(
                     launchSingleTop = true
                     restoreState = true
                 }
+            }
+        }
+    }
+
+    LaunchedEffect(navigationDrawerEnabled, librariesInDrawer, currentDestination) {
+        if (
+            currentDestination?.route == Destination.LIBRARIES.route &&
+                !(navigationDrawerEnabled && librariesInDrawer)
+        ) {
+            Timber.d("Libraries menu entry removed, navigating to HOME")
+            navController.navigate(Destination.HOME.route) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
             }
         }
     }
@@ -245,8 +258,8 @@ fun MainNavigation(
                 layoutType =
                     when {
                         !shouldShowNavigation -> NavigationSuiteType.None
+                        navigationDrawerEnabled -> NavigationSuiteType.None
                         useNavRail -> NavigationSuiteType.NavigationRail
-                        useModalRail -> NavigationSuiteType.None
                         else -> NavigationSuiteType.NavigationBar
                     },
                 navigationSuiteItems = {
@@ -448,7 +461,7 @@ fun MainNavigation(
                                             widthSizeClass = widthSizeClass,
                                             onMenuClick = onMenuClick,
                                             hideLibrariesSection =
-                                                useModalRail && librariesInDrawer,
+                                                navigationDrawerEnabled && librariesInDrawer,
                                         )
                                     }
 
@@ -1546,7 +1559,7 @@ fun MainNavigation(
                 Box(modifier = Modifier.fillMaxSize()) {
                     drawerBody()
 
-                    if (useModalRail) {
+                    if (navigationDrawerEnabled) {
                         ModalWideNavigationRail(
                             state = railState,
                             hideOnCollapse = true,
