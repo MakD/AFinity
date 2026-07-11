@@ -22,8 +22,10 @@ import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.cache.CacheDataSource
+import androidx.media3.datasource.cache.CacheKeyFactory
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
@@ -488,7 +490,7 @@ constructor(
                     1500,
                 )
                 .setTargetBufferBytes(safeExoRamBufferMb * 1024 * 1024)
-                .setPrioritizeTimeOverSizeThresholds(true)
+                .setPrioritizeTimeOverSizeThresholds(false)
                 .build()
 
         val userAgent = "AFinity/${BuildConfig.VERSION_NAME} (Android; ExoPlayer)"
@@ -500,14 +502,35 @@ constructor(
                     mapOf("Authorization" to "MediaBrowser Token=\"${apiClient.accessToken}\"")
                 )
 
+        val cacheKeyFactory = CacheKeyFactory { dataSpec ->
+            val uri = dataSpec.uri
+            val mediaSourceId = uri.getQueryParameter("mediaSourceId")
+            if (mediaSourceId != null) {
+                buildString {
+                    append(uri.path)
+                    append('|')
+                    append(mediaSourceId)
+                    uri.getQueryParameter("tag")?.let {
+                        append('|')
+                        append(it)
+                    }
+                }
+            } else {
+                uri.toString()
+            }
+        }
+
         val cacheDataSourceFactory =
             CacheDataSource.Factory()
                 .setCache(exoCache)
                 .setUpstreamDataSourceFactory(upstreamFactory)
+                .setCacheKeyFactory(cacheKeyFactory)
                 .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
 
+        val dataSourceFactory = DefaultDataSource.Factory(context, cacheDataSourceFactory)
+
         val mediaSourceFactory =
-            DefaultMediaSourceFactory(context).setDataSourceFactory(cacheDataSourceFactory)
+            DefaultMediaSourceFactory(context).setDataSourceFactory(dataSourceFactory)
 
         val renderersFactory =
             DefaultRenderersFactory(context)

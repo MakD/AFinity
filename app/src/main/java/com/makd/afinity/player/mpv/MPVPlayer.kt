@@ -176,9 +176,7 @@ class MPVPlayer(
 
         mpv.setOptionString("tls-verify", "no")
 
-        mpv.setOptionString("cache", "yes")
-        mpv.setOptionString("cache-on-disk", "yes")
-        mpv.setOptionString("cache-dir", cacheDir.path)
+        mpv.setOptionString("cache", "auto")
         mpv.setOptionString("demuxer-max-bytes", "${bufferSizeMb}MiB")
         mpv.setOptionString("demuxer-max-back-bytes", "50MiB")
         mpv.setOptionString("cache-secs", "36000")
@@ -195,8 +193,6 @@ class MPVPlayer(
 
         mpv.init()
 
-        mpv.setPropertyString("demuxer-max-bytes", "${bufferSizeMb}MiB")
-        mpv.setPropertyString("cache-secs", "36000")
         mpv.setOptionString("sub-auto", "exact")
         mpv.setOptionString("sub-visibility", "yes")
 
