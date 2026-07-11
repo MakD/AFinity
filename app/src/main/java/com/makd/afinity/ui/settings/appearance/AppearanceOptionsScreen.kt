@@ -465,7 +465,7 @@ private fun ApiKeyDialog(
                         if (localError != null) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_exclamation_circle),
-                                contentDescription = "Invalid Key",
+                                contentDescription = stringResource(R.string.cd_invalid_key),
                                 tint = MaterialTheme.colorScheme.error,
                             )
                         } else if (isValidationLoading) {

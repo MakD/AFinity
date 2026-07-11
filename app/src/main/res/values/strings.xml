@@ -654,6 +654,28 @@
     <string name="color_picker_apply">Apply Custom Color</string>
     <string name="action_cancel">Cancel</string>
 
+    <string name="buffer_desc_minimal">Minimal</string>
+    <string name="buffer_desc_default">Default / Recommended</string>
+    <string name="buffer_desc_slow_networks">Good for slow networks</string>
+    <string name="buffer_desc_high">High</string>
+    <string name="buffer_desc_extreme">Extreme (May cause crashes)</string>
+
+    <string name="pref_image_caching_title">Image Caching</string>
+    <string name="pref_image_caching_summary">Save media images to disk for faster loading and reduced network usage</string>
+    <string name="pref_image_cache_restart_note">Takes effect on next app launch</string>
+    <string name="pref_image_cache_max_disk">Maximum Disk Space</string>
+
+    <string name="cd_invalid_key">Invalid Key</string>
+    <string name="cd_decrease_limit">Decrease limit</string>
+    <string name="cd_increase_limit">Increase limit</string>
+
+    <string name="task_last_ran">Last ran %1$s%2$s</string>
+    <string name="time_just_now">just now</string>
+    <string name="time_minutes_ago">about %1$dm ago</string>
+    <string name="time_hours_ago">about %1$dh ago</string>
+    <string name="time_days_ago">%1$dd ago</string>
+    <string name="task_duration_under_minute">, taking less than a minute</string>
+
     <string name="zoom_fit">Fit</string>
     <string name="zoom_zoom">Zoom</string>
     <string name="zoom_stretch">Stretch</string>

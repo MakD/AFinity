@@ -961,7 +961,7 @@ fun ProfileHeader(
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_admin_panel_settings),
-                            contentDescription = "Control Panel",
+                            contentDescription = stringResource(R.string.cd_control_panel),
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(16.dp),
                         )

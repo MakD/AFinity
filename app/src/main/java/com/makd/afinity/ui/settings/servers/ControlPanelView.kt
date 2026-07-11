@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -709,7 +710,12 @@ private fun ScheduledTaskRow(task: TaskInfo, onRun: () -> Unit, onStop: () -> Un
                     )
                     task.lastExecutionResult?.let { result ->
                         Text(
-                            text = formatLastRun(result.startTimeUtc, result.endTimeUtc),
+                            text =
+                                formatLastRun(
+                                    LocalContext.current,
+                                    result.startTimeUtc,
+                                    result.endTimeUtc,
+                                ),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             modifier = Modifier.padding(top = 2.dp),

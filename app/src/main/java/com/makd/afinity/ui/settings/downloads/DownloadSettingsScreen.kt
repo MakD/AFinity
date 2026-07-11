@@ -546,7 +546,7 @@ fun StatusHub(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_remove),
-                                contentDescription = "Decrease limit",
+                                contentDescription = stringResource(R.string.cd_decrease_limit),
                                 tint =
                                     if (maxConcurrentDownloads > 1)
                                         MaterialTheme.colorScheme.onSurface
@@ -588,7 +588,7 @@ fun StatusHub(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_add),
-                                contentDescription = "Increase limit",
+                                contentDescription = stringResource(R.string.cd_increase_limit),
                                 tint =
                                     if (maxConcurrentDownloads < 3)
                                         MaterialTheme.colorScheme.onSurface
@@ -1351,14 +1351,13 @@ fun ImageCacheSettingsCard(
             ) {
                 Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
                     Text(
-                        text = "Image Caching",
+                        text = stringResource(R.string.pref_image_caching_title),
                         style =
                             MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        text =
-                            "Save media images to disk for faster loading and reduced network usage",
+                        text = stringResource(R.string.pref_image_caching_summary),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp),
@@ -1380,7 +1379,7 @@ fun ImageCacheSettingsCard(
             }
 
             Text(
-                text = "Takes effect on next app launch",
+                text = stringResource(R.string.pref_image_cache_restart_note),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.padding(top = 8.dp),
@@ -1404,7 +1403,7 @@ fun ImageCacheSettingsCard(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "Maximum Disk Space",
+                            text = stringResource(R.string.pref_image_cache_max_disk),
                             style =
                                 MaterialTheme.typography.labelLarge.copy(
                                     fontWeight = FontWeight.Medium

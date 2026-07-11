@@ -288,7 +288,7 @@ private fun InsecureConnectionBannerAbs(serverUrl: String) {
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_info),
-                    contentDescription = "Security Warning",
+                    contentDescription = stringResource(R.string.cd_security_warning),
                     tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(20.dp),
                 )

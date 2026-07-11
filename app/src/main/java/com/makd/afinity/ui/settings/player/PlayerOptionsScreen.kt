@@ -434,11 +434,11 @@ private fun getSkipModeDisplayName(mode: SkipMode): String =
 private fun BufferSizeSelectorItem(selectedSizeMb: Int, onSizeSelected: (Int) -> Unit) {
     val options =
         listOf(
-            Triple(32, "32 MB", "Minimal"),
-            Triple(64, "64 MB", "Default / Recommended"),
-            Triple(128, "128 MB", "Good for slow networks"),
-            Triple(256, "256 MB", "High"),
-            Triple(512, "512 MB", "Extreme (May cause crashes)"),
+            Triple(32, "32 MB", stringResource(R.string.buffer_desc_minimal)),
+            Triple(64, "64 MB", stringResource(R.string.buffer_desc_default)),
+            Triple(128, "128 MB", stringResource(R.string.buffer_desc_slow_networks)),
+            Triple(256, "256 MB", stringResource(R.string.buffer_desc_high)),
+            Triple(512, "512 MB", stringResource(R.string.buffer_desc_extreme)),
         )
 
     val initialIndex = options.indexOfFirst { it.first == selectedSizeMb }.coerceAtLeast(0)
