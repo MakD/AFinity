@@ -351,6 +351,24 @@
     <string name="playback_stats_label_audio_channels">Audio channels</string>
     <string name="playback_stats_label_sample_rate">Sample rate</string>
     <string name="playback_stats_value_sample_rate_fmt">%1$s Hz</string>
+    <string name="playback_stats_label_video_output">Video output</string>
+    <string name="playback_stats_value_direct_play_local">Direct play (local file)</string>
+    <string name="playback_stats_value_live">Live</string>
+    <string name="playback_stats_value_seconds_fmt">%1$d seconds</string>
+    <string name="playback_stats_value_bitrate_container_fmt">%1$s Mbps (container)</string>
+    <string name="playback_stats_label_connection">Connection</string>
+    <string name="playback_stats_label_decoder">Decoder</string>
+    <string name="playback_stats_label_av_sync">A/V sync</string>
+    <string name="playback_stats_label_network_speed">Network speed</string>
+    <string name="playback_stats_label_cached">Cached</string>
+    <string name="playback_stats_label_video_range">Video range</string>
+    <string name="playback_stats_label_color">Color</string>
+    <string name="playback_stats_label_frame_rate">Frame rate</string>
+    <string name="playback_stats_label_container">Container</string>
+    <string name="playback_stats_label_subtitle_track">Subtitle track</string>
+    <string name="playback_stats_label_audio_bitrate">Audio bitrate</string>
+    <string name="playback_stats_value_hdr_output">playing as HDR</string>
+    <string name="playback_stats_value_hdr_tonemapped">tone-mapped to SDR</string>
     <string name="cd_speed_decrease">Decrease speed</string>
     <string name="cd_speed_increase">Increase speed</string>
 

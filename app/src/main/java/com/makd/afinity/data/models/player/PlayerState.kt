@@ -98,6 +98,19 @@ sealed class PlayerEvent {
 
 data class PlaybackStats(
     val playerType: String = "Unknown",
+    val playMethod: String = "Unknown",
+    val videoOutput: String = "",
+    val connection: String = "",
+    val decoderName: String = "",
+    val avSync: String = "",
+    val networkSpeed: String = "",
+    val cached: String = "",
+    val videoRange: String = "",
+    val colorInfo: String = "",
+    val frameRate: String = "",
+    val container: String = "",
+    val subtitleTrack: String = "",
+    val audioBitrate: String = "",
     val videoResolution: String = "Unknown",
     val videoCodec: String = "Unknown",
     val audioCodec: String = "Unknown",
@@ -109,7 +122,7 @@ data class PlaybackStats(
     val videoBitrate: String = "Unknown",
 ) {
     val hasVideo: Boolean
-        get() = videoResolution != "0x0" && videoResolution != "Unknown"
+        get() = !videoResolution.startsWith("0x0") && videoResolution != "Unknown"
 }
 
 data class GestureConfig(

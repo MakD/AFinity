@@ -107,6 +107,8 @@ fun PlayerScreen(
     var showVersionPicker by remember { mutableStateOf(false) }
     LocalLifecycleOwner.current
 
+    LaunchedEffect(Unit) { viewModel.closePlayerEvent.collect { onBackPressed() } }
+
     LaunchedEffect(item.id, mediaSourceId, isLiveChannel, liveStreamUrl, uiState.isPlayerReady) {
         if (!uiState.isPlayerReady) return@LaunchedEffect
 

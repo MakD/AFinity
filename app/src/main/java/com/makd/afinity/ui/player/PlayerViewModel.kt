@@ -5,8 +5,11 @@ import android.content.Context
 import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.hardware.display.DisplayManager
 import android.media.MediaCodecList
+import android.net.Uri
 import android.provider.Settings
+import android.view.Display
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.net.toUri
@@ -35,10 +38,12 @@ import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
 import com.makd.afinity.BuildConfig
 import com.makd.afinity.R
 import com.makd.afinity.cast.CastEvent
 import com.makd.afinity.cast.CastManager
+import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.ChannelType
@@ -61,6 +66,7 @@ import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.SubtitleOutlineStyle
 import com.makd.afinity.data.models.player.SubtitlePreferences
 import com.makd.afinity.data.models.player.VideoZoomMode
+import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
@@ -76,8 +82,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -109,6 +118,7 @@ constructor(
     private val apiClient: ApiClient,
     private val audiobookshelfPlayer: AudiobookshelfPlayer,
     private val musicPlaybackManager: com.makd.afinity.player.music.MusicPlaybackManager,
+    private val offlineModeManager: OfflineModeManager,
 ) : ViewModel(), Player.Listener {
 
     lateinit var player: Player
@@ -123,6 +133,9 @@ constructor(
     private var currentLivePlaybackInfo: LiveTvPlaybackInfo? = null
     private val volumeManager: VolumeManager by lazy { VolumeManager(context) }
 
+    private val _closePlayerEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val closePlayerEvent: SharedFlow<Unit> = _closePlayerEvent.asSharedFlow()
+
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
@@ -131,6 +144,9 @@ constructor(
     val gestureConfig = GestureConfig()
 
     private var exoVideoDecoder: String = "Unknown"
+    private var exoDecoderName: String = ""
+    private var exoDroppedFrames = 0
+    private var exoNetworkBitrate = 0L
 
     private var controlsHideJob: Job? = null
     private var statsPollingJob: Job? = null
@@ -494,31 +510,17 @@ constructor(
                 .build()
 
         val userAgent = "AFinity/${BuildConfig.VERSION_NAME} (Android; ExoPlayer)"
+        val bandwidthMeter = DefaultBandwidthMeter.getSingletonInstance(context)
         val upstreamFactory =
             DefaultHttpDataSource.Factory()
                 .setUserAgent(userAgent)
                 .setAllowCrossProtocolRedirects(true)
+                .setTransferListener(bandwidthMeter)
                 .setDefaultRequestProperties(
                     mapOf("Authorization" to "MediaBrowser Token=\"${apiClient.accessToken}\"")
                 )
 
-        val cacheKeyFactory = CacheKeyFactory { dataSpec ->
-            val uri = dataSpec.uri
-            val mediaSourceId = uri.getQueryParameter("mediaSourceId")
-            if (mediaSourceId != null) {
-                buildString {
-                    append(uri.path)
-                    append('|')
-                    append(mediaSourceId)
-                    uri.getQueryParameter("tag")?.let {
-                        append('|')
-                        append(it)
-                    }
-                }
-            } else {
-                uri.toString()
-            }
-        }
+        val cacheKeyFactory = CacheKeyFactory { dataSpec -> streamCacheKey(dataSpec.uri) }
 
         val cacheDataSourceFactory =
             CacheDataSource.Factory()
@@ -538,6 +540,7 @@ constructor(
 
         return ExoPlayer.Builder(context, renderersFactory)
             .setMediaSourceFactory(mediaSourceFactory)
+            .setBandwidthMeter(bandwidthMeter)
             .setAudioAttributes(audioAttributes, true)
             .setTrackSelector(trackSelector)
             .setLoadControl(loadControl)
@@ -560,6 +563,24 @@ constructor(
                             exoVideoDecoder =
                                 if (codecInfo?.isHardwareAccelerated == true) "H/W Dec"
                                 else "S/W Dec"
+                            exoDecoderName = decoderName
+                        }
+
+                        override fun onDroppedVideoFrames(
+                            eventTime: AnalyticsListener.EventTime,
+                            droppedFrames: Int,
+                            elapsedMs: Long,
+                        ) {
+                            exoDroppedFrames += droppedFrames
+                        }
+
+                        override fun onBandwidthEstimate(
+                            eventTime: AnalyticsListener.EventTime,
+                            totalLoadTimeMs: Int,
+                            totalBytesLoaded: Long,
+                            bitrateEstimate: Long,
+                        ) {
+                            exoNetworkBitrate = bitrateEstimate
                         }
                     }
                 )
@@ -681,12 +702,18 @@ constructor(
             reportCurrentItemStopped(isEnded = true)
             playlistManager.markCurrentItemAsPlayed()
             viewModelScope.launch {
-                val nextItem = playlistManager.next()
-                if (nextItem != null) {
-                    Timber.d("Episode ended, auto-advancing to: ${nextItem.name}")
-                    playQueueItem(nextItem)
-                } else {
-                    Timber.d("Episode ended, no next item in queue")
+                val isIntro = _uiState.value.isPlayingIntro
+                val autoPlay = preferencesRepository.getAutoPlay()
+                val nextItem = if (isIntro || autoPlay) playlistManager.next() else null
+                when {
+                    nextItem != null -> {
+                        Timber.d("Episode ended, auto-advancing to: ${nextItem.name}")
+                        playQueueItem(nextItem)
+                    }
+                    !_uiState.value.isLiveChannel -> {
+                        Timber.d("Playback ended with no next item, closing player")
+                        _closePlayerEvent.tryEmit(Unit)
+                    }
                 }
             }
         }
@@ -967,6 +994,25 @@ constructor(
     }
 
     private fun gatherPlaybackStats(): PlaybackStats {
+        val state = _uiState.value
+        val currentSource =
+            state.currentItem?.sources?.firstOrNull { it.id == state.currentMediaSourceId }
+        val isLocal = currentSource?.type == AfinitySourceType.LOCAL
+        val videoStream =
+            currentSource?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+        val videoRange =
+            videoStream?.videoDoViTitle
+                ?: videoStream?.videoRangeType?.name?.replace('_', ' ')
+                ?: ""
+        val container =
+            currentSource
+                ?.takeIf { it.size > 0 }
+                ?.let { "${it.container?.uppercase() ?: "?"} • ${formatSize(it.size)}" } ?: ""
+        val playMethod = currentPlayMethod()
+        val connection = connectionLabel()
+        val subtitleTrack = subtitleTrackLabel(currentSource)
+        val displayRefresh = displayRefreshLabel()
+
         return when (val currentPlayer = player) {
             is ExoPlayer -> {
                 val videoFormat = currentPlayer.videoFormat
@@ -976,29 +1022,104 @@ constructor(
                     ((currentPlayer.bufferedPosition - currentPlayer.currentPosition) / 1000L)
                         .coerceAtLeast(0)
                 val bitrateMbps = (videoFormat?.bitrate ?: 0) / 1_000_000f
-                val fpsString =
-                    if ((videoFormat?.frameRate ?: 0f) > 0f)
-                        String.format(Locale.US, "%.3f", videoFormat?.frameRate)
-                    else "Unknown"
+                val fps = videoFormat?.frameRate?.takeIf { it > 0f }
+                val frameRate =
+                    when {
+                        fps != null && displayRefresh.isNotBlank() ->
+                            String.format(Locale.US, "%.3f fps @ %s", fps, displayRefresh)
+                        fps != null -> String.format(Locale.US, "%.3f fps", fps)
+                        else -> ""
+                    }
+
+                val durationMs = currentPlayer.duration
+                val videoBitrate =
+                    when {
+                        bitrateMbps > 0 -> String.format(Locale.US, "%.1f Mbps", bitrateMbps)
+                        currentSource != null && currentSource.size > 0 && durationMs > 0 ->
+                            context.getString(
+                                R.string.playback_stats_value_bitrate_container_fmt,
+                                String.format(
+                                    Locale.US,
+                                    "%.1f",
+                                    currentSource.size * 8f / (durationMs / 1000f) / 1_000_000f,
+                                ),
+                            )
+                        else -> "Unknown"
+                    }
+
+                val networkSpeed =
+                    if (!isLocal && exoNetworkBitrate > 0)
+                        String.format(Locale.US, "%.1f Mbps", exoNetworkBitrate / 1_000_000f)
+                    else ""
+
+                val cached =
+                    if (!isLocal && currentSource != null && currentSource.size > 0) {
+                        val uri = currentPlayer.currentMediaItem?.localConfiguration?.uri
+                        val cachedBytes =
+                            if (uri != null)
+                                exoCache.getCachedBytes(streamCacheKey(uri), 0, currentSource.size)
+                            else 0L
+                        if (cachedBytes > 0)
+                            "${formatSize(cachedBytes)} / ${formatSize(currentSource.size)}"
+                        else ""
+                    } else ""
+
+                val colorInfo =
+                    videoFormat
+                        ?.colorInfo
+                        ?.let { ci ->
+                            listOfNotNull(
+                                    when (ci.colorSpace) {
+                                        C.COLOR_SPACE_BT709 -> "BT.709"
+                                        C.COLOR_SPACE_BT601 -> "BT.601"
+                                        C.COLOR_SPACE_BT2020 -> "BT.2020"
+                                        else -> null
+                                    },
+                                    when (ci.colorTransfer) {
+                                        C.COLOR_TRANSFER_SDR -> "SDR"
+                                        C.COLOR_TRANSFER_ST2084 -> "PQ"
+                                        C.COLOR_TRANSFER_HLG -> "HLG"
+                                        else -> null
+                                    },
+                                )
+                                .joinToString(" • ")
+                        }
+                        ?.takeIf { it.isNotBlank() } ?: ""
+
+                val transfer = videoFormat?.colorInfo?.colorTransfer
+                val isSourceHdr =
+                    transfer == C.COLOR_TRANSFER_ST2084 || transfer == C.COLOR_TRANSFER_HLG
+                val exoVideoRange =
+                    effectiveVideoRange(
+                        videoRange,
+                        isSourceHdr,
+                        if (isSourceHdr) isDisplayHdr() else null,
+                    )
 
                 PlaybackStats(
                     playerType = "ExoPlayer",
-                    videoResolution =
-                        "${videoFormat?.width ?: 0}x${videoFormat?.height ?: 0} @ $fpsString fps",
-                    videoCodec =
-                        videoFormat?.sampleMimeType?.substringAfterLast("/")?.uppercase()
-                            ?: "UNKNOWN",
-                    audioCodec =
-                        audioFormat?.sampleMimeType?.substringAfterLast("/")?.uppercase()
-                            ?: "UNKNOWN",
+                    playMethod = playMethod,
+                    connection = connection,
+                    decoderName = exoDecoderName,
+                    networkSpeed = networkSpeed,
+                    cached = cached,
+                    videoRange = exoVideoRange,
+                    colorInfo = colorInfo,
+                    frameRate = frameRate,
+                    container = container,
+                    subtitleTrack = subtitleTrack,
+                    audioBitrate =
+                        audioFormat?.bitrate?.takeIf { it > 0 }?.let { "${it / 1000} kbps" } ?: "",
+                    videoResolution = "${videoFormat?.width ?: 0}x${videoFormat?.height ?: 0}",
+                    videoCodec = friendlyCodecName(videoFormat?.sampleMimeType),
+                    audioCodec = friendlyCodecName(audioFormat?.sampleMimeType),
                     audioChannels = audioFormat?.channelCount ?: 0,
                     audioSampleRate = audioFormat?.sampleRate ?: 0,
-                    droppedFrames = 0,
+                    droppedFrames = exoDroppedFrames,
                     hwDec = exoVideoDecoder,
-                    bufferHealth = "$bufferSeconds seconds",
-                    videoBitrate =
-                        if (bitrateMbps > 0) String.format(Locale.US, "%.1f Mbps", bitrateMbps)
-                        else "Unknown",
+                    bufferHealth =
+                        context.getString(R.string.playback_stats_value_seconds_fmt, bufferSeconds),
+                    videoBitrate = videoBitrate,
                 )
             }
             is MPVPlayer -> {
@@ -1007,31 +1128,206 @@ constructor(
                 val bufferSeconds = mpv.getPropertyInt("demuxer-cache-duration") ?: 0
                 val bitrateBps = mpv.getPropertyInt("video-bitrate") ?: 0
                 val bitrateMbps = bitrateBps / 1_000_000f
-                val fps = mpv.getPropertyDouble("container-fps")
-                val fpsString =
-                    if (fps != null && fps > 0.0) String.format(Locale.US, "%.3f", fps)
-                    else "Unknown"
+                val fps =
+                    (mpv.getPropertyDouble("estimated-vf-fps")
+                            ?: mpv.getPropertyDouble("container-fps"))
+                        ?.takeIf { it > 0.0 }
+                val frameRate =
+                    when {
+                        fps != null && displayRefresh.isNotBlank() ->
+                            String.format(Locale.US, "%.3f fps @ %s", fps, displayRefresh)
+                        fps != null -> String.format(Locale.US, "%.3f fps", fps)
+                        else -> ""
+                    }
+
+                val hwdecCurrent = mpv.getPropertyString("hwdec-current")
+                val decoderName =
+                    if (
+                        hwdecCurrent.isNullOrBlank() ||
+                            hwdecCurrent == "no" ||
+                            hwdecCurrent == "none"
+                    )
+                        "ffmpeg (software)"
+                    else hwdecCurrent
+
+                val networkSpeed =
+                    if (!isLocal) {
+                        mpv.getPropertyInt("cache-speed")
+                            ?.takeIf { it > 0 }
+                            ?.let {
+                                String.format(Locale.US, "%.1f Mbps", it * 8f / 1_000_000f)
+                            } ?: ""
+                    } else ""
+
+                val colorInfo =
+                    listOfNotNull(
+                            mpv.getPropertyString("video-params/pixelformat"),
+                            mpv.getPropertyString("video-params/colormatrix"),
+                            mpv.getPropertyString("video-params/gamma"),
+                        )
+                        .joinToString(" • ")
+
+                val sourceGamma = mpv.getPropertyString("video-params/gamma")
+                val targetGamma = mpv.getPropertyString("video-target-params/gamma")
+                val isSourceHdr = sourceGamma == "pq" || sourceGamma == "hlg"
+                val mpvVideoRange =
+                    effectiveVideoRange(
+                        videoRange,
+                        isSourceHdr,
+                        targetGamma?.let { it == "pq" || it == "hlg" },
+                    )
 
                 PlaybackStats(
-                    playerType = "MPV (hwdec=${mpvVideoOutputValue})",
+                    playerType = "MPV",
+                    playMethod = playMethod,
+                    videoOutput = mpvVideoOutputValue,
+                    connection = connection,
+                    decoderName = decoderName,
+                    avSync =
+                        mpv.getPropertyDouble("avsync")?.let {
+                            String.format(Locale.US, "%+.3f s", it)
+                        } ?: "",
+                    networkSpeed = networkSpeed,
+                    videoRange = mpvVideoRange,
+                    colorInfo = colorInfo,
+                    frameRate = frameRate,
+                    container = container,
+                    subtitleTrack = subtitleTrack,
+                    audioBitrate =
+                        mpv.getPropertyInt("audio-bitrate")
+                            ?.takeIf { it > 0 }
+                            ?.let {
+                                "${it / 1000} kbps"
+                            } ?: "",
                     videoResolution =
-                        "${mpv.getPropertyInt("width") ?: 0}x${mpv.getPropertyInt("height") ?: 0} @ $fpsString fps",
+                        "${mpv.getPropertyInt("width") ?: 0}x${mpv.getPropertyInt("height") ?: 0}",
                     videoCodec = mpv.getPropertyString("video-codec")?.uppercase() ?: "UNKNOWN",
                     audioCodec = mpv.getPropertyString("audio-codec")?.uppercase() ?: "UNKNOWN",
                     audioChannels = mpv.getPropertyInt("audio-params/channel-count") ?: 0,
                     audioSampleRate = mpv.getPropertyInt("audio-params/samplerate") ?: 0,
                     droppedFrames = mpv.getPropertyInt("frame-drop-count") ?: 0,
                     hwDec =
-                        if ((mpv.getPropertyString("hwdec-current") ?: "no").contains("mediacodec"))
-                            "H/W Dec"
-                        else "S/W Dec",
-                    bufferHealth = "$bufferSeconds seconds",
+                        if ((hwdecCurrent ?: "no").contains("mediacodec")) "H/W Dec" else "S/W Dec",
+                    bufferHealth =
+                        context.getString(R.string.playback_stats_value_seconds_fmt, bufferSeconds),
                     videoBitrate =
                         if (bitrateMbps > 0) String.format(Locale.US, "%.1f Mbps", bitrateMbps)
                         else "Unknown",
                 )
             }
             else -> PlaybackStats()
+        }
+    }
+
+    private fun streamCacheKey(uri: Uri): String {
+        val mediaSourceId = uri.getQueryParameter("mediaSourceId")
+        return if (mediaSourceId != null) {
+            buildString {
+                append(uri.path)
+                append('|')
+                append(mediaSourceId)
+                uri.getQueryParameter("tag")?.let {
+                    append('|')
+                    append(it)
+                }
+            }
+        } else {
+            uri.toString()
+        }
+    }
+
+    private fun connectionLabel(): String =
+        when (offlineModeManager.connectionType.value) {
+            ConnectionType.LOCAL -> "LAN"
+            ConnectionType.TAILSCALE -> "Tailscale"
+            ConnectionType.REMOTE -> "WAN"
+            ConnectionType.OFFLINE -> "Offline"
+        }
+
+    private fun subtitleTrackLabel(currentSource: AfinitySource?): String {
+        val index = _uiState.value.subtitleStreamIndex
+        if (index == null || index < 0) return context.getString(R.string.track_none)
+        val stream =
+            currentSource
+                ?.mediaStreams
+                ?.filter { it.type == MediaStreamType.SUBTITLE }
+                ?.getOrNull(index) ?: return ""
+        return buildString {
+            append(stream.language.ifEmpty { stream.title }.uppercase())
+            if (stream.codec.isNotBlank()) append(" • ${stream.codec.uppercase()}")
+            if (stream.isExternal) append(" • EXT")
+        }
+    }
+
+    private fun hdrPlaybackSuffix(isSourceHdr: Boolean, isOutputHdr: Boolean?): String =
+        when {
+            !isSourceHdr || isOutputHdr == null -> ""
+            isOutputHdr -> context.getString(R.string.playback_stats_value_hdr_output)
+            else -> context.getString(R.string.playback_stats_value_hdr_tonemapped)
+        }
+
+    private fun effectiveVideoRange(
+        metadataRange: String,
+        isSourceHdr: Boolean,
+        isOutputHdr: Boolean?,
+    ): String {
+        val base = metadataRange.ifBlank { if (isSourceHdr) "HDR" else "" }
+        val suffix = hdrPlaybackSuffix(isSourceHdr, isOutputHdr)
+        return when {
+            base.isBlank() -> suffix
+            suffix.isBlank() -> base
+            else -> "$base • $suffix"
+        }
+    }
+
+    private fun isDisplayHdr(): Boolean? =
+        try {
+            val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+            displayManager.getDisplay(Display.DEFAULT_DISPLAY)?.isHdr
+        } catch (e: Exception) {
+            null
+        }
+
+    private fun displayRefreshLabel(): String =
+        try {
+            val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+            val rate = displayManager.getDisplay(Display.DEFAULT_DISPLAY)?.refreshRate ?: 0f
+            if (rate > 0f) String.format(Locale.US, "%.0f Hz", rate) else ""
+        } catch (e: Exception) {
+            ""
+        }
+
+    private fun formatSize(bytes: Long): String =
+        when {
+            bytes >= 1024L * 1024 * 1024 ->
+                String.format(Locale.US, "%.1f GB", bytes / (1024f * 1024f * 1024f))
+            bytes >= 1024 * 1024 -> String.format(Locale.US, "%.0f MB", bytes / (1024f * 1024f))
+            else -> "$bytes B"
+        }
+
+    private fun currentPlayMethod(): String {
+        val state = _uiState.value
+        val isLocal =
+            state.currentItem?.sources?.firstOrNull { it.id == state.currentMediaSourceId }?.type ==
+                AfinitySourceType.LOCAL
+        return when {
+            state.isLiveChannel -> context.getString(R.string.playback_stats_value_live)
+            isLocal -> context.getString(R.string.playback_stats_value_direct_play_local)
+            else -> context.getString(R.string.playback_stats_value_direct_streaming)
+        }
+    }
+
+    private fun friendlyCodecName(mimeType: String?): String {
+        val subtype =
+            mimeType?.substringAfterLast('/')?.takeIf { it.isNotBlank() } ?: return "UNKNOWN"
+        return when (subtype.lowercase()) {
+            "mp4a-latm" -> "AAC"
+            "avc" -> "H264"
+            "raw" -> "PCM"
+            "true-hd" -> "TRUEHD"
+            "vnd.dts" -> "DTS"
+            "vnd.dts.hd" -> "DTS-HD"
+            else -> subtype.uppercase()
         }
     }
 
@@ -1283,6 +1579,7 @@ constructor(
                 "Playback session ID: $currentSessionId (from server: ${playbackInfo?.playSessionId != null})"
             )
             hasStoppedPlayback = false
+            exoDroppedFrames = 0
             playbackStateManager.trackPlaybackSession(
                 sessionId = currentSessionId!!,
                 itemId = fullItem.id,
@@ -1588,6 +1885,7 @@ constructor(
 
             currentItem = channelItem
             hasStoppedPlayback = false
+            exoDroppedFrames = 0
             playbackStateManager.trackPlaybackSession(
                 sessionId = playbackInfo.playSessionId,
                 itemId = channelId,
