@@ -36,7 +36,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
@@ -329,30 +328,21 @@ private fun ThemeSelectorItem(currentThemeMode: String, onThemeModeChange: (Stri
         ) {
             ThemeMode.entries.forEach { mode ->
                 DropdownMenuItem(
-                    text = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                text = getThemeModeDisplayName(mode),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            if (mode.name == currentThemeMode) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_check),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            }
-                        }
-                    },
+                    text = { Text(getThemeModeDisplayName(mode)) },
                     onClick = {
                         onThemeModeChange(mode.name)
                         expanded = false
                     },
+                    leadingIcon =
+                        if (mode.name == currentThemeMode) {
+                            {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_check),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else null,
                 )
             }
         }
@@ -390,30 +380,21 @@ private fun EpisodeLayoutSelectorItem(
         ) {
             layouts.forEach { layout ->
                 DropdownMenuItem(
-                    text = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                text = getEpisodeLayoutDisplayName(layout),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            if (layout == selectedLayout) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_check),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            }
-                        }
-                    },
+                    text = { Text(getEpisodeLayoutDisplayName(layout)) },
                     onClick = {
                         onLayoutSelected(layout)
                         expanded = false
                     },
+                    leadingIcon =
+                        if (layout == selectedLayout) {
+                            {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_check),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else null,
                 )
             }
         }
@@ -463,7 +444,7 @@ private fun ApiKeyDialog(
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Enter your API key below.",
+                    text = stringResource(R.string.api_key_dialog_message),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 16.dp),
@@ -555,7 +536,7 @@ private fun FontSelectorItem(currentFont: String, onFontChange: (String) -> Unit
     Box {
         SettingsItem(
             icon = painterResource(id = R.drawable.ic_font),
-            title = "App Font",
+            title = stringResource(R.string.pref_app_font_title),
             subtitle = getFontDisplayName(currentAppFont),
             onClick = { expanded = true },
             trailing = {
@@ -575,30 +556,21 @@ private fun FontSelectorItem(currentFont: String, onFontChange: (String) -> Unit
         ) {
             AppFont.entries.forEach { font ->
                 DropdownMenuItem(
-                    text = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                text = getFontDisplayName(font),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            if (font.name == currentFont) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_check),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            }
-                        }
-                    },
+                    text = { Text(getFontDisplayName(font)) },
                     onClick = {
                         onFontChange(font.name)
                         expanded = false
                     },
+                    leadingIcon =
+                        if (font.name == currentFont) {
+                            {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_check),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else null,
                 )
             }
         }
@@ -608,7 +580,7 @@ private fun FontSelectorItem(currentFont: String, onFontChange: (String) -> Unit
 @Composable
 private fun getFontDisplayName(font: AppFont): String {
     return when (font) {
-        AppFont.DEFAULT -> "System Default"
+        AppFont.DEFAULT -> stringResource(R.string.font_system_default)
         AppFont.GOOGLE_SANS -> "Google Sans Flex"
         AppFont.QUICKSAND -> "Quicksand"
         AppFont.IBM_PLEX_SANS -> "IBM Plex Sans"

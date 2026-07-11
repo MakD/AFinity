@@ -505,8 +505,11 @@
     <string name="appearance_title">Appearance</string>
     <string name="settings_group_theme">Theme</string>
     <string name="pref_theme_mode_title">Theme Mode</string>
+    <string name="pref_app_font_title">App Font</string>
+    <string name="font_system_default">System Default</string>
     <string name="pref_dynamic_colors_title">Dynamic Colors</string>
     <string name="pref_dynamic_colors_summary">Use colors from your wallpaper</string>
+    <string name="api_key_dialog_message">Enter your API key below.</string>
 
     <string name="settings_group_navigation">Navigation</string>
     <string name="pref_navigation_drawer_title">Navigation Menu</string>

@@ -279,7 +279,7 @@ fun DownloadSettingsScreen(
                         onResume = viewModel::resumeDownload,
                         onCancel = viewModel::cancelDownload,
                         formatSize = viewModel::formatStorageSize,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp),
                     )
                 }
 
@@ -290,7 +290,7 @@ fun DownloadSettingsScreen(
                         speedBps = uiState.absDownloadSpeeds[download.id],
                         onCancel = viewModel::cancelAbsDownload,
                         formatSize = viewModel::formatStorageSize,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp),
                     )
                 }
             }

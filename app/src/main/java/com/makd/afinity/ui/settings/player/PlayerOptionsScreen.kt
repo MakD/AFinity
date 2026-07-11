@@ -170,66 +170,66 @@ fun PlayerOptionsScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             item {
-                SettingsGroup(title = stringResource(R.string.pref_group_engine)) {
-                    SettingsSwitchItem(
-                        icon = painterResource(id = R.drawable.ic_video_settings),
-                        title = stringResource(R.string.pref_use_exoplayer_title),
-                        subtitle = stringResource(R.string.pref_use_exoplayer_summary),
-                        checked = uiState.useExoPlayer,
-                        onCheckedChange = viewModel::toggleUseExoPlayer,
-                    )
-                    SettingsDivider()
-                    SettingsSwitchItem(
-                        icon = painterResource(id = R.drawable.ic_player_play_filled),
-                        title = stringResource(R.string.pref_autoplay_title),
-                        subtitle = stringResource(R.string.pref_autoplay_summary),
-                        checked = uiState.autoPlay,
-                        onCheckedChange = viewModel::toggleAutoPlay,
-                    )
-                    SettingsDivider()
-                    BufferSizeSelectorItem(
-                        selectedSizeMb = uiState.bufferSizeMb,
-                        onSizeSelected = viewModel::setBufferSizeMb,
-                    )
-                }
-            }
-
-            item {
-                AnimatedVisibility(
-                    visible = !uiState.useExoPlayer,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically(),
-                ) {
-                    SettingsGroup(
-                        title = stringResource(R.string.pref_group_mpv),
-                        modifier = Modifier.padding(bottom = 24.dp),
-                    ) {
-                        SubtitleDropdownItem(
-                            title = stringResource(R.string.pref_mpv_hwdec_title),
-                            selectedOption = uiState.mpvHwDec,
-                            options = MpvHwDec.entries.toList(),
-                            onValueChange = viewModel::setMpvHwDec,
-                            labelProvider = { it.getDisplayName() },
-                            icon = painterResource(id = R.drawable.ic_cpu),
-                        )
-                        SettingsDivider()
-                        SubtitleDropdownItem(
-                            title = stringResource(R.string.pref_mpv_video_output_title),
-                            selectedOption = uiState.mpvVideoOutput,
-                            options = MpvVideoOutput.entries.toList(),
-                            onValueChange = viewModel::setMpvVideoOutput,
-                            labelProvider = { it.getDisplayName() },
+                Column {
+                    SettingsGroup(title = stringResource(R.string.pref_group_engine)) {
+                        SettingsSwitchItem(
                             icon = painterResource(id = R.drawable.ic_video_settings),
+                            title = stringResource(R.string.pref_use_exoplayer_title),
+                            subtitle = stringResource(R.string.pref_use_exoplayer_summary),
+                            checked = uiState.useExoPlayer,
+                            onCheckedChange = viewModel::toggleUseExoPlayer,
                         )
                         SettingsDivider()
-                        SubtitleDropdownItem(
-                            title = stringResource(R.string.pref_mpv_audio_output_title),
-                            selectedOption = uiState.mpvAudioOutput,
-                            options = MpvAudioOutput.entries.toList(),
-                            onValueChange = viewModel::setMpvAudioOutput,
-                            labelProvider = { it.getDisplayName() },
-                            icon = painterResource(id = R.drawable.ic_audio),
+                        SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_player_play_filled),
+                            title = stringResource(R.string.pref_autoplay_title),
+                            subtitle = stringResource(R.string.pref_autoplay_summary),
+                            checked = uiState.autoPlay,
+                            onCheckedChange = viewModel::toggleAutoPlay,
                         )
+                        SettingsDivider()
+                        BufferSizeSelectorItem(
+                            selectedSizeMb = uiState.bufferSizeMb,
+                            onSizeSelected = viewModel::setBufferSizeMb,
+                        )
+                    }
+
+                    AnimatedVisibility(
+                        visible = !uiState.useExoPlayer,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically(),
+                    ) {
+                        Column {
+                            Spacer(modifier = Modifier.height(24.dp))
+                            SettingsGroup(title = stringResource(R.string.pref_group_mpv)) {
+                                SubtitleDropdownItem(
+                                    title = stringResource(R.string.pref_mpv_hwdec_title),
+                                    selectedOption = uiState.mpvHwDec,
+                                    options = MpvHwDec.entries.toList(),
+                                    onValueChange = viewModel::setMpvHwDec,
+                                    labelProvider = { it.getDisplayName() },
+                                    icon = painterResource(id = R.drawable.ic_cpu),
+                                )
+                                SettingsDivider()
+                                SubtitleDropdownItem(
+                                    title = stringResource(R.string.pref_mpv_video_output_title),
+                                    selectedOption = uiState.mpvVideoOutput,
+                                    options = MpvVideoOutput.entries.toList(),
+                                    onValueChange = viewModel::setMpvVideoOutput,
+                                    labelProvider = { it.getDisplayName() },
+                                    icon = painterResource(id = R.drawable.ic_video_settings),
+                                )
+                                SettingsDivider()
+                                SubtitleDropdownItem(
+                                    title = stringResource(R.string.pref_mpv_audio_output_title),
+                                    selectedOption = uiState.mpvAudioOutput,
+                                    options = MpvAudioOutput.entries.toList(),
+                                    onValueChange = viewModel::setMpvAudioOutput,
+                                    labelProvider = { it.getDisplayName() },
+                                    icon = painterResource(id = R.drawable.ic_audio),
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -343,7 +343,6 @@ fun PlayerOptionsScreen(
 
                     SettingsDivider()
 
-                    var showBitrateMenu by remember { mutableStateOf(false) }
                     val bitrateOptions =
                         listOf(
                             0 to stringResource(R.string.pref_cast_max_bitrate_auto),
@@ -353,52 +352,17 @@ fun PlayerOptionsScreen(
                             2_000_000 to "2 Mbps",
                             1_000_000 to "1 Mbps",
                         )
-                    val currentBitrateLabel =
-                        bitrateOptions.find { it.first == uiState.castMaxBitrate }?.second
-                            ?: "16 Mbps"
 
-                    Box {
-                        Row(
-                            modifier =
-                                Modifier.fillMaxWidth()
-                                    .clickable { showBitrateMenu = true }
-                                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_broadcast),
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(R.string.pref_cast_max_bitrate_title),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                )
-                                Text(
-                                    text = currentBitrateLabel,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                )
-                            }
-                        }
-                        DropdownMenu(
-                            expanded = showBitrateMenu,
-                            onDismissRequest = { showBitrateMenu = false },
-                        ) {
-                            bitrateOptions.forEach { (bitrate, label) ->
-                                DropdownMenuItem(
-                                    text = { Text(label) },
-                                    onClick = {
-                                        viewModel.setCastMaxBitrate(bitrate)
-                                        showBitrateMenu = false
-                                    },
-                                )
-                            }
-                        }
-                    }
+                    SubtitleDropdownItem(
+                        title = stringResource(R.string.pref_cast_max_bitrate_title),
+                        selectedOption = uiState.castMaxBitrate,
+                        options = bitrateOptions.map { it.first },
+                        onValueChange = viewModel::setCastMaxBitrate,
+                        labelProvider = { bitrate ->
+                            bitrateOptions.find { it.first == bitrate }?.second ?: "16 Mbps"
+                        },
+                        icon = painterResource(id = R.drawable.ic_broadcast),
+                    )
                 }
             }
         }
@@ -482,7 +446,7 @@ private fun BufferSizeSelectorItem(selectedSizeMb: Int, onSizeSelected: (Int) ->
 
     val currentOption = options[sliderIndex.roundToInt()]
 
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_speed),
@@ -823,7 +787,7 @@ private fun SubtitleSliderItem(
     valueRange: ClosedFloatingPointRange<Float>,
     onValueChange: (Float) -> Unit,
 ) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
