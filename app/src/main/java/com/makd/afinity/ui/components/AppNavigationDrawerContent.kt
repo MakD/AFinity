@@ -98,10 +98,6 @@ fun AppNavigationDrawerContent(
         Column(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier =
-                    Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
-            ) {
-            Column(
-                modifier =
                     Modifier.fillMaxWidth()
                         .background(
                             brush =
@@ -252,14 +248,26 @@ fun AppNavigationDrawerContent(
                         }
                     }
                 }
+            }
 
+            Column(
+                modifier =
+                    Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
+            ) {
                 AnimatedVisibility(
                     visible = accountSwitcherExpanded,
                     enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
                     exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
                 ) {
                     Column(
-                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .windowInsetsPadding(
+                                    WindowInsets.displayCutout.only(
+                                        WindowInsetsSides.Horizontal
+                                    )
+                                )
+                                .padding(bottom = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         sessionState.sessionGroups.forEach { sessionGroup ->
@@ -278,15 +286,15 @@ fun AppNavigationDrawerContent(
                         }
                     }
                 }
-            }
-            Column(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .windowInsetsPadding(
-                            WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
-                        )
-            ) {
-                Destination.entries.forEach { destination ->
+
+                Column(
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .windowInsetsPadding(
+                                WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                            )
+                ) {
+                    Destination.entries.forEach { destination ->
                     val visible =
                         when {
                             isOffline && destination != Destination.HOME -> false
