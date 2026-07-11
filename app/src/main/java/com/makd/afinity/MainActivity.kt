@@ -37,12 +37,14 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.makd.afinity.data.manager.OfflineModeManager
+import com.makd.afinity.data.manager.PendingNavigationManager
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.updater.UpdateManager
 import com.makd.afinity.data.updater.UpdateScheduler
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import com.makd.afinity.data.updater.notification.UpdateNotificationManager
 import com.makd.afinity.data.websocket.AudiobookshelfSocketManager
+import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.MainNavigation
 import com.makd.afinity.ui.components.AfinitySplashScreen
 import com.makd.afinity.ui.login.LoginScreen
@@ -64,6 +66,8 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var updateScheduler: UpdateScheduler
 
     @Inject lateinit var audiobookshelfSocketManager: AudiobookshelfSocketManager
+
+    @Inject lateinit var pendingNavigationManager: PendingNavigationManager
 
     private val mainViewModel: MainViewModel by viewModels()
 
@@ -198,12 +202,20 @@ class MainActivity : AppCompatActivity() {
         if (intent.getBooleanExtra(UpdateNotificationManager.EXTRA_AUTO_DOWNLOAD_UPDATE, false)) {
             lifecycleScope.launch { updateManager.triggerAutoDownload() }
         }
+        handleNavigationExtras(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (intent.getBooleanExtra(UpdateNotificationManager.EXTRA_AUTO_DOWNLOAD_UPDATE, false)) {
             lifecycleScope.launch { updateManager.triggerAutoDownload() }
+        }
+        handleNavigationExtras(intent)
+    }
+
+    private fun handleNavigationExtras(intent: Intent) {
+        if (intent.getBooleanExtra(PendingNavigationManager.EXTRA_OPEN_DOWNLOADS, false)) {
+            pendingNavigationManager.navigateTo(Destination.createDownloadSettingsRoute())
         }
     }
 }

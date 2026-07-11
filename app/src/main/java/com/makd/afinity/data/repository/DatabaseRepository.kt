@@ -247,6 +247,14 @@ interface DatabaseRepository {
 
     suspend fun deleteDownload(downloadId: UUID)
 
+    suspend fun updateDownloadProgress(
+        downloadId: UUID,
+        progress: Float,
+        bytesDownloaded: Long,
+        totalBytes: Long,
+        updatedAt: Long,
+    )
+
     suspend fun getSources(itemId: UUID): List<AfinitySourceDto>
 
     suspend fun getItemMetadata(

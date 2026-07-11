@@ -3,6 +3,7 @@ package com.makd.afinity.navigation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.OfflineModeManager
+import com.makd.afinity.data.manager.PendingNavigationManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityShow
@@ -47,9 +48,16 @@ constructor(
     private val offlineModeManager: OfflineModeManager,
     private val sessionManager: SessionManager,
     private val preferencesRepository: PreferencesRepository,
+    private val pendingNavigationManager: PendingNavigationManager,
 ) : ViewModel() {
     private val _hasLiveTvAccess = MutableStateFlow(true)
     val hasLiveTvAccess = _hasLiveTvAccess.asStateFlow()
+
+    val pendingNavigationRoute = pendingNavigationManager.pendingRoute
+
+    fun consumePendingNavigation() {
+        pendingNavigationManager.consume()
+    }
 
     val showRatings =
         preferencesRepository.getShowRatingsFlow().stateIn(

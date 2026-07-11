@@ -139,7 +139,7 @@ interface AbsDownloadDao {
                tracksDownloaded = :tracksDownloaded,
                serializedSession = COALESCE(:serializedSession, serializedSession),
                updatedAt = :updatedAt
-           WHERE id = :id"""
+           WHERE id = :id AND status != 'CANCELLED'"""
     )
     suspend fun updateProgress(
         id: UUID,

@@ -130,6 +130,17 @@ abstract class ServerDatabaseDao {
     @Query("DELETE FROM downloads WHERE id = :downloadId")
     abstract suspend fun deleteDownload(downloadId: UUID)
 
+    @Query(
+        "UPDATE downloads SET progress = :progress, bytesDownloaded = :bytesDownloaded, totalBytes = :totalBytes, updatedAt = :updatedAt WHERE id = :downloadId"
+    )
+    abstract suspend fun updateDownloadProgress(
+        downloadId: UUID,
+        progress: Float,
+        bytesDownloaded: Long,
+        totalBytes: Long,
+        updatedAt: Long,
+    )
+
     @Query("DELETE FROM downloads WHERE status = :status")
     abstract suspend fun deleteDownloadsByStatus(status: DownloadStatus)
 

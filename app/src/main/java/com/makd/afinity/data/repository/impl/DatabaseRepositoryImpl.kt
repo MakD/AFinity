@@ -751,6 +751,22 @@ constructor(
         return serverDatabaseDao.getDownload(downloadId)
     }
 
+    override suspend fun updateDownloadProgress(
+        downloadId: UUID,
+        progress: Float,
+        bytesDownloaded: Long,
+        totalBytes: Long,
+        updatedAt: Long,
+    ) {
+        serverDatabaseDao.updateDownloadProgress(
+            downloadId,
+            progress,
+            bytesDownloaded,
+            totalBytes,
+            updatedAt,
+        )
+    }
+
     override suspend fun getDownloadByItemId(itemId: UUID): DownloadDto? {
         return serverDatabaseDao.getDownloadByItemId(itemId)
     }

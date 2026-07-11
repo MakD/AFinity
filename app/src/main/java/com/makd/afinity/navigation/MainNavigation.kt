@@ -147,6 +147,14 @@ fun MainNavigation(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val coroutineScope = rememberCoroutineScope()
+    val pendingNavigationRoute by viewModel.pendingNavigationRoute.collectAsStateWithLifecycle()
+
+    LaunchedEffect(pendingNavigationRoute) {
+        pendingNavigationRoute?.let { route ->
+            navController.navigate(route) { launchSingleTop = true }
+            viewModel.consumePendingNavigation()
+        }
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     val webSocketState by mainViewModel.webSocketState.collectAsStateWithLifecycle()
 

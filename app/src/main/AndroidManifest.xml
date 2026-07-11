@@ -94,6 +94,10 @@
         <receiver
             android:name="androidx.mediarouter.media.MediaTransferReceiver"
             android:exported="true" />
+
+        <receiver
+            android:name=".data.workers.DownloadActionReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

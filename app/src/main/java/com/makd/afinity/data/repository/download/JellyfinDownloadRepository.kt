@@ -445,25 +445,29 @@ constructor(
 
                 val download = databaseRepository.getDownload(downloadId)
                 if (download != null) {
-                    val itemDir = getItemDownloadDirectory(download)
-                    val mediaDir = File(itemDir, "media")
-                    if (mediaDir.exists()) {
-                        mediaDir
-                            .listFiles { _, name -> name.startsWith(download.sourceId) }
-                            ?.forEach { file ->
-                                Timber.d("Deleting download file: ${file.name}")
-                                file.delete()
-                            }
-                    }
-                    if (itemDir.exists()) {
-                        val children = itemDir.listFiles() ?: emptyArray()
-                        val onlyEmptyMediaDir =
-                            children.size == 1 &&
-                                children[0].name == "media" &&
-                                children[0].listFiles()?.isEmpty() == true
-                        if (children.isEmpty() || onlyEmptyMediaDir) {
-                            itemDir.deleteRecursively()
+                    try {
+                        val itemDir = getItemDownloadDirectory(download)
+                        val mediaDir = File(itemDir, "media")
+                        if (mediaDir.exists()) {
+                            mediaDir
+                                .listFiles { _, name -> name.startsWith(download.sourceId) }
+                                ?.forEach { file ->
+                                    Timber.d("Deleting download file: ${file.name}")
+                                    file.delete()
+                                }
                         }
+                        if (itemDir.exists()) {
+                            val children = itemDir.listFiles() ?: emptyArray()
+                            val onlyEmptyMediaDir =
+                                children.size == 1 &&
+                                    children[0].name == "media" &&
+                                    children[0].listFiles()?.isEmpty() == true
+                            if (children.isEmpty() || onlyEmptyMediaDir) {
+                                itemDir.deleteRecursively()
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to delete files for cancelled download")
                     }
                     databaseRepository.deleteDownload(downloadId)
                 }

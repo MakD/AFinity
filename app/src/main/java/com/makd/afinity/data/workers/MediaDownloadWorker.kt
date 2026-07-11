@@ -4,6 +4,8 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.ServiceInfo
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.core.app.NotificationCompat
 import androidx.hilt.work.HiltWorker
@@ -14,6 +16,7 @@ import androidx.work.workDataOf
 import com.makd.afinity.R
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.DownloadDto
+import com.makd.afinity.data.manager.DownloadNotificationManager
 import com.makd.afinity.data.manager.DownloadSemaphoreManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.download.DownloadStatus
@@ -24,6 +27,7 @@ import com.makd.afinity.data.models.extensions.toAfinityShow
 import com.makd.afinity.data.models.extensions.toAfinityTrack
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityImages
+import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonImage
@@ -57,6 +61,7 @@ import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
+import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 
@@ -72,6 +77,7 @@ constructor(
     private val segmentsRepository: SegmentsRepository,
     private val preferencesRepository: PreferencesRepository,
     private val downloadSemaphoreManager: DownloadSemaphoreManager,
+    private val downloadNotificationManager: DownloadNotificationManager,
     @param:DownloadClient private val okHttpClient: OkHttpClient,
 ) : CoroutineWorker(appContext, workerParams) {
 
@@ -122,17 +128,33 @@ constructor(
 
             ensureNotificationChannel()
 
+            val downloadRecord = databaseRepository.getDownload(downloadId)
+            val notifTitle = notificationTitle(downloadRecord, itemName)
+            val notifSubText = notificationSubText(downloadRecord)
+
             try {
-                setForeground(createQueuedForegroundInfo(downloadId.hashCode(), itemName))
+                setForeground(createQueuedForegroundInfo(downloadId, notifTitle, notifSubText))
             } catch (e: Exception) {
                 Timber.e(e, "Failed to promote to foreground service")
             }
+
+            downloadNotificationManager.postActiveSummary()
 
             val maxDownloads = preferencesRepository.getMaxDownloads()
             downloadSemaphoreManager.updatePermits(maxDownloads)
             downloadSemaphoreManager.semaphore.withPermit {
                 try {
-                    setForeground(createForegroundInfo(downloadId.hashCode(), itemName, 0, 0))
+                    setForeground(
+                        createForegroundInfo(
+                            downloadId,
+                            notifTitle,
+                            notifSubText,
+                            null,
+                            null,
+                            0,
+                            0,
+                        )
+                    )
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to update foreground service to active")
                 }
@@ -162,6 +184,8 @@ constructor(
                     val userId = download.userId
 
                     val baseUrl = apiClient.baseUrl ?: ""
+
+                    val notificationIcon = loadNotificationIcon(download, apiClient.accessToken)
 
                     val itemsApi = ItemsApi(apiClient)
                     val baseItemDto =
@@ -219,6 +243,8 @@ constructor(
                             item!!.sources.find { it.id == sourceId }
                                 ?: throw Exception("Source not found")
                         } else null
+
+                    val bigPicture = loadBitmap(backdropUrl(item), apiClient.accessToken, 512)
 
                     val itemDir = downloadRepository.getItemDownloadDirectory(download)
                     val mediaDir = File(itemDir, "media")
@@ -318,21 +344,19 @@ constructor(
                                                             "totalBytes" to totalBytes,
                                                         )
                                                     )
-                                                    try {
-                                                        setForeground(
-                                                            createForegroundInfo(
-                                                                downloadId.hashCode(),
-                                                                itemName,
+                                                    downloadNotificationManager.notify(
+                                                        downloadId.hashCode(),
+                                                        createForegroundInfo(
+                                                                downloadId,
+                                                                notifTitle,
+                                                                notifSubText,
+                                                                notificationIcon,
+                                                                bigPicture,
                                                                 bytes,
                                                                 totalBytes,
                                                             )
-                                                        )
-                                                    } catch (e: Exception) {
-                                                        Timber.w(
-                                                            e,
-                                                            "Failed to update download notification",
-                                                        )
-                                                    }
+                                                            .notification,
+                                                    )
                                                 }
                                             }
                                         } else null
@@ -402,6 +426,14 @@ constructor(
                     val sourceStreams = if (isAudio) emptyList() else source!!.mediaStreams
                     createLocalSource(itemId, sourceId, sourceName, finalFile, sourceStreams)
 
+                    downloadNotificationManager.postCompleted(
+                        "done_$downloadId".hashCode(),
+                        notifTitle,
+                        notifSubText,
+                        notificationIcon,
+                        finalFile.length(),
+                    )
+
                     Timber.i("Media download completed successfully for: $itemName")
 
                     return@withContext Result.success(
@@ -415,22 +447,34 @@ constructor(
                 } catch (e: Exception) {
                     Timber.e(e, "Media download failed")
                     try {
-                        val download = databaseRepository.getDownload(downloadId)
-                        if (download != null) {
-                            databaseRepository.insertDownload(
-                                download.copy(
-                                    status = DownloadStatus.FAILED,
-                                    error = e.message ?: "Unknown error",
-                                    updatedAt = System.currentTimeMillis(),
+                        if (!isStopped) {
+                            val download = databaseRepository.getDownload(downloadId)
+                            if (download != null) {
+                                databaseRepository.insertDownload(
+                                    download.copy(
+                                        status = DownloadStatus.FAILED,
+                                        error = e.message ?: "Unknown error",
+                                        updatedAt = System.currentTimeMillis(),
+                                    )
                                 )
-                            )
+                            }
                         }
                     } catch (dbEx: Exception) {
                         Timber.e(dbEx, "Failed to update download status to FAILED")
                     }
+                    if (!isStopped) {
+                        downloadNotificationManager.postFailed(
+                            "done_$downloadId".hashCode(),
+                            notifTitle,
+                            notifSubText,
+                            e.message,
+                        )
+                    }
                     return@withContext Result.failure(
                         workDataOf("error" to (e.message ?: "Unknown error"))
                     )
+                } finally {
+                    downloadNotificationManager.cleanupActiveSummary(downloadId.hashCode())
                 }
             }
         }
@@ -442,17 +486,13 @@ constructor(
         totalBytes: Long,
     ) {
         try {
-            val download = databaseRepository.getDownload(downloadId)
-            if (download != null) {
-                databaseRepository.insertDownload(
-                    download.copy(
-                        progress = progress,
-                        bytesDownloaded = downloadedBytes,
-                        totalBytes = totalBytes,
-                        updatedAt = System.currentTimeMillis(),
-                    )
-                )
-            }
+            databaseRepository.updateDownloadProgress(
+                downloadId,
+                progress,
+                downloadedBytes,
+                totalBytes,
+                System.currentTimeMillis(),
+            )
         } catch (e: Exception) {
             Timber.w(e, "Failed to update download progress")
         }
@@ -880,37 +920,57 @@ constructor(
             .createNotificationChannel(channel)
     }
 
-    private fun createQueuedForegroundInfo(notificationId: Int, itemName: String): ForegroundInfo {
+    private fun createQueuedForegroundInfo(
+        downloadId: UUID,
+        title: String,
+        subText: String?,
+    ): ForegroundInfo {
         val channelId = "download_channel"
         val context: Context = applicationContext
         val notification =
             NotificationCompat.Builder(context, channelId)
-                .setContentTitle(itemName)
+                .setContentTitle(title)
                 .setContentText("Queued")
+                .apply { if (!subText.isNullOrBlank()) setSubText(subText) }
                 .setSmallIcon(R.drawable.ic_download)
                 .setOngoing(true)
+                .setGroup(DownloadNotificationManager.GROUP_ACTIVE)
+                .setContentIntent(downloadNotificationManager.downloadsContentIntent())
+                .addAction(
+                    R.drawable.ic_player_pause_filled,
+                    "Pause",
+                    downloadNotificationManager.pauseActionIntent(downloadId),
+                )
+                .addAction(
+                    R.drawable.ic_cancel,
+                    "Cancel",
+                    downloadNotificationManager.cancelActionIntent(downloadId),
+                )
                 .setProgress(0, 0, true)
                 .build()
         return ForegroundInfo(
-            notificationId,
+            downloadId.hashCode(),
             notification,
             ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
         )
     }
 
     private fun createForegroundInfo(
-        notificationId: Int,
-        itemName: String,
+        downloadId: UUID,
+        title: String,
+        subText: String?,
+        largeIcon: Bitmap?,
+        bigPicture: Bitmap?,
         downloadedBytes: Long,
         totalBytes: Long,
     ): ForegroundInfo {
         val context: Context = applicationContext
         val channelId = "download_channel"
-        val title = "Downloading $itemName"
 
         val progressText =
             if (totalBytes > 0) {
-                "${(downloadedBytes * 100 / totalBytes)}%"
+                "${downloadedBytes * 100 / totalBytes}% • " +
+                    "${formatBytes(downloadedBytes)} / ${formatBytes(totalBytes)}"
             } else {
                 "Starting..."
             }
@@ -919,8 +979,31 @@ constructor(
             NotificationCompat.Builder(context, channelId)
                 .setContentTitle(title)
                 .setContentText(progressText)
+                .apply {
+                    if (!subText.isNullOrBlank()) setSubText(subText)
+                    if (largeIcon != null) setLargeIcon(largeIcon)
+                    if (bigPicture != null) {
+                        setStyle(
+                            NotificationCompat.BigPictureStyle()
+                                .bigPicture(bigPicture)
+                                .bigLargeIcon(null as Bitmap?)
+                        )
+                    }
+                }
                 .setSmallIcon(R.drawable.ic_download)
                 .setOngoing(true)
+                .setGroup(DownloadNotificationManager.GROUP_ACTIVE)
+                .setContentIntent(downloadNotificationManager.downloadsContentIntent())
+                .addAction(
+                    R.drawable.ic_player_pause_filled,
+                    "Pause",
+                    downloadNotificationManager.pauseActionIntent(downloadId),
+                )
+                .addAction(
+                    R.drawable.ic_cancel,
+                    "Cancel",
+                    downloadNotificationManager.cancelActionIntent(downloadId),
+                )
                 .setProgress(
                     if (totalBytes > 0) 1000 else 0,
                     if (totalBytes > 0) (downloadedBytes * 1000 / totalBytes).toInt() else 0,
@@ -930,9 +1013,98 @@ constructor(
                 .build()
 
         return ForegroundInfo(
-            notificationId,
+            downloadId.hashCode(),
             notification,
             ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
         )
     }
+
+    private fun notificationTitle(download: DownloadDto?, fallback: String): String =
+        if (download?.itemType == "Episode" && !download.seriesName.isNullOrBlank()) {
+            download.seriesName
+        } else {
+            download?.itemName ?: fallback
+        }
+
+    private fun notificationSubText(download: DownloadDto?): String? {
+        download ?: return null
+        return when (download.itemType) {
+            "Episode" -> {
+                val seasonEpisode =
+                    listOfNotNull(
+                            download.seasonNumber?.let {
+                                String.format(Locale.ROOT, "S%02d", it)
+                            },
+                            download.episodeNumber?.let {
+                                String.format(Locale.ROOT, "E%02d", it)
+                            },
+                        )
+                        .joinToString("")
+                listOf(seasonEpisode, download.itemName)
+                    .filter { it.isNotBlank() }
+                    .joinToString(" • ")
+            }
+            "Audio" -> download.seriesName
+            else -> download.releaseYear
+        }?.takeIf { it.isNotBlank() }
+    }
+
+    private fun loadNotificationIcon(download: DownloadDto, accessToken: String?): Bitmap? {
+        val url =
+            if (download.itemType == "Episode") {
+                download.seriesImageUrl ?: download.imageUrl
+            } else {
+                download.imageUrl
+            }
+        return loadBitmap(url, accessToken, 256)
+    }
+
+    private fun backdropUrl(item: AfinityItem?): String? =
+        when (item) {
+            is AfinityMovie -> item.images.backdrop
+            is AfinityEpisode -> item.images.showBackdrop ?: item.images.backdrop
+            else -> null
+        }?.toString()
+
+    private fun loadBitmap(
+        url: String?,
+        accessToken: String?,
+        targetMinDimension: Int,
+    ): Bitmap? {
+        url ?: return null
+        return try {
+            val request =
+                Request.Builder().url(url).header("X-Emby-Token", accessToken ?: "").build()
+            okHttpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return null
+                val bytes = response.body?.bytes() ?: return null
+                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+                if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+                val options =
+                    BitmapFactory.Options().apply {
+                        inSampleSize =
+                            maxOf(
+                                1,
+                                minOf(bounds.outWidth, bounds.outHeight) / targetMinDimension,
+                            )
+                    }
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+            }
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to load notification image")
+            null
+        }
+    }
+
+    private fun formatBytes(bytes: Long): String =
+        when {
+            bytes < 1024 -> "$bytes B"
+            bytes < 1024 * 1024 ->
+                String.format(Locale.getDefault(), "%.1f KB", bytes / 1024.0)
+            bytes < 1024L * 1024 * 1024 ->
+                String.format(Locale.getDefault(), "%.1f MB", bytes / (1024.0 * 1024.0))
+            else ->
+                String.format(Locale.getDefault(), "%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0))
+        }
 }

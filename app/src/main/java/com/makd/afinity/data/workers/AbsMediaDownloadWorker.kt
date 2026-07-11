@@ -4,6 +4,8 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.ServiceInfo
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.core.app.NotificationCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
@@ -14,6 +16,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.database.dao.AbsDownloadDao
 import com.makd.afinity.data.database.dao.AudiobookshelfDao
 import com.makd.afinity.data.database.entities.AudiobookshelfItemEntity
+import com.makd.afinity.data.manager.DownloadNotificationManager
 import com.makd.afinity.data.manager.DownloadSemaphoreManager
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.audiobookshelf.AudioFile
@@ -37,6 +40,7 @@ import okhttp3.Request
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
+import java.util.Locale
 import java.util.UUID
 
 @HiltWorker
@@ -51,11 +55,12 @@ constructor(
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val preferencesRepository: PreferencesRepository,
     private val downloadSemaphoreManager: DownloadSemaphoreManager,
+    private val downloadNotificationManager: DownloadNotificationManager,
     @param:DownloadClient private val okHttpClient: OkHttpClient,
 ) : CoroutineWorker(appContext, workerParams) {
 
     companion object {
-        const val BUFFER_SIZE = 8192
+        const val BUFFER_SIZE = 256 * 1024
         private const val NOTIFICATION_CHANNEL_ID = "abs_downloads"
         private const val NOTIFICATION_CHANNEL_NAME = "Audiobook Downloads"
     }
@@ -100,14 +105,19 @@ constructor(
             try {
                 setForeground(
                     createForegroundInfo(
-                        downloadId.hashCode(),
+                        downloadId,
                         entity.title.ifEmpty { "Audiobook" },
+                        entity.authorName,
+                        null,
                         0f,
+                        "Queued",
                     )
                 )
             } catch (e: Exception) {
                 Timber.w(e, "AbsDownload: could not set foreground")
             }
+
+            downloadNotificationManager.postActiveSummary()
 
             val maxDownloads = preferencesRepository.getMaxDownloads()
             downloadSemaphoreManager.updatePermits(maxDownloads)
@@ -294,6 +304,22 @@ constructor(
                         )
                 )
 
+                val localCoverPath = downloadCover(libraryItemId, baseUrl, token, localDir)
+                val notificationIcon = decodeCover(localCoverPath)
+
+                downloadNotificationManager.notify(
+                    downloadId.hashCode(),
+                    createForegroundInfo(
+                            downloadId,
+                            displayTitle,
+                            displayAuthor,
+                            notificationIcon,
+                            0f,
+                            "Starting...",
+                        )
+                        .notification,
+                )
+
                 var downloadedBytesAllTracks = 0L
                 val localTrackPaths = mutableListOf<String>()
 
@@ -379,6 +405,23 @@ constructor(
                                                 serializedSession = null,
                                                 updatedAt = now,
                                             )
+                                            downloadNotificationManager.notify(
+                                                downloadId.hashCode(),
+                                                createForegroundInfo(
+                                                        downloadId,
+                                                        displayTitle,
+                                                        displayAuthor,
+                                                        notificationIcon,
+                                                        overallProgress,
+                                                        progressContentText(
+                                                            index,
+                                                            audioFilesToDownload.size,
+                                                            downloadedBytesAllTracks,
+                                                            totalBytesExpected,
+                                                        ),
+                                                    )
+                                                    .notification,
+                                            )
                                         }
                                     }
                                 }
@@ -412,8 +455,6 @@ constructor(
 
                     Timber.d("AbsDownload: track $index downloaded to ${finalFile.absolutePath}")
                 }
-
-                val localCoverPath = downloadCover(libraryItemId, baseUrl, token, localDir)
 
                 var cumulativeStart = 0.0
                 val audioTracks = audioFilesToDownload.mapIndexed { index, audioFile ->
@@ -474,6 +515,15 @@ constructor(
                     updatedAt = System.currentTimeMillis(),
                 )
 
+                downloadNotificationManager.postCompleted(
+                    "done_$downloadId".hashCode(),
+                    displayTitle,
+                    displayAuthor,
+                    notificationIcon,
+                    downloadedBytesAllTracks,
+                )
+                downloadNotificationManager.cleanupActiveSummary(downloadId.hashCode())
+
                 Timber.d(
                     "AbsDownload: completed $libraryItemId / $episodeId — ${audioFilesToDownload.size} tracks"
                 )
@@ -532,18 +582,33 @@ constructor(
 
     private suspend fun markFailed(downloadId: UUID, reason: String) {
         Timber.e("AbsDownload failed ($downloadId): $reason")
-        absDownloadDao.updateStatus(
-            id = downloadId,
-            status = AbsDownloadStatus.FAILED,
-            error = reason,
-            updatedAt = System.currentTimeMillis(),
-        )
+        if (reason != "Cancelled" && !isStopped) {
+            absDownloadDao.updateStatus(
+                id = downloadId,
+                status = AbsDownloadStatus.FAILED,
+                error = reason,
+                updatedAt = System.currentTimeMillis(),
+            )
+        }
+        if (reason != "Cancelled" && !isStopped) {
+            val entity = absDownloadDao.getById(downloadId)
+            downloadNotificationManager.postFailed(
+                "done_$downloadId".hashCode(),
+                entity?.title?.takeIf { it.isNotBlank() } ?: "Audiobook",
+                entity?.authorName,
+                reason,
+            )
+        }
+        downloadNotificationManager.cleanupActiveSummary(downloadId.hashCode())
     }
 
     private fun createForegroundInfo(
-        notificationId: Int,
+        downloadId: UUID,
         title: String,
+        subText: String?,
+        largeIcon: Bitmap?,
         progress: Float,
+        contentText: String?,
     ): ForegroundInfo {
         val notificationManager =
             appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -559,19 +624,76 @@ constructor(
         val notification =
             NotificationCompat.Builder(appContext, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_download)
-                .setContentTitle("Downloading: $title")
-                .setProgress(100, (progress * 100).toInt(), progress == 0f)
+                .setContentTitle(title)
+                .apply {
+                    if (!subText.isNullOrBlank()) setSubText(subText)
+                    if (largeIcon != null) setLargeIcon(largeIcon)
+                    if (contentText != null) setContentText(contentText)
+                }
+                .setProgress(1000, (progress * 1000).toInt(), progress <= 0f)
                 .setOngoing(true)
                 .setSilent(true)
+                .setGroup(DownloadNotificationManager.GROUP_ACTIVE)
+                .setContentIntent(downloadNotificationManager.downloadsContentIntent())
+                .addAction(
+                    R.drawable.ic_cancel,
+                    "Cancel",
+                    downloadNotificationManager.absCancelActionIntent(downloadId),
+                )
                 .build()
         return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
             ForegroundInfo(
-                notificationId,
+                downloadId.hashCode(),
                 notification,
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
             )
         } else {
-            ForegroundInfo(notificationId, notification)
+            ForegroundInfo(downloadId.hashCode(), notification)
         }
     }
+
+    private fun progressContentText(
+        trackIndex: Int,
+        tracksTotal: Int,
+        downloadedBytes: Long,
+        totalBytes: Long,
+    ): String =
+        buildList {
+                if (tracksTotal > 1) add("Track ${trackIndex + 1}/$tracksTotal")
+                if (totalBytes > 0) {
+                    add("${downloadedBytes * 100 / totalBytes}%")
+                    add("${formatBytes(downloadedBytes)} / ${formatBytes(totalBytes)}")
+                } else {
+                    add(formatBytes(downloadedBytes))
+                }
+            }
+            .joinToString(" • ")
+
+    private fun decodeCover(coverPath: String?): Bitmap? {
+        val path = coverPath?.removePrefix("file://") ?: return null
+        return try {
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(path, bounds)
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+            val options =
+                BitmapFactory.Options().apply {
+                    inSampleSize = maxOf(1, minOf(bounds.outWidth, bounds.outHeight) / 256)
+                }
+            BitmapFactory.decodeFile(path, options)
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to decode cover for notification")
+            null
+        }
+    }
+
+    private fun formatBytes(bytes: Long): String =
+        when {
+            bytes < 1024 -> "$bytes B"
+            bytes < 1024 * 1024 ->
+                String.format(Locale.getDefault(), "%.1f KB", bytes / 1024.0)
+            bytes < 1024L * 1024 * 1024 ->
+                String.format(Locale.getDefault(), "%.1f MB", bytes / (1024.0 * 1024.0))
+            else ->
+                String.format(Locale.getDefault(), "%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0))
+        }
 }
