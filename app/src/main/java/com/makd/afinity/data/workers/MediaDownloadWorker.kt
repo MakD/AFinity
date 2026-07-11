@@ -39,7 +39,11 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -54,6 +58,7 @@ import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicLong
 
 @HiltWorker
 class MediaDownloadWorker
@@ -78,7 +83,8 @@ constructor(
         const val KEY_ITEM_TYPE = "item_type"
         const val KEY_FILE_PATH = "file_path"
         const val PROGRESS_KEY = "progress"
-        const val BUFFER_SIZE = 8192
+        const val BUFFER_SIZE = 256 * 1024
+        const val PROGRESS_UPDATE_INTERVAL_MS = 500L
     }
 
     override suspend fun doWork(): Result =
@@ -285,66 +291,73 @@ constructor(
                         val totalBytes =
                             if (remainingBytes != -1L) existingFileSize + remainingBytes else -1L
 
-                        var downloadedBytes = existingFileSize
-                        var lastUpdateTime = 0L
+                        val downloadedBytes = AtomicLong(existingFileSize)
+                        var stoppedByUser = false
 
                         response.body?.byteStream()?.use { input ->
                             FileOutputStream(outputFile, true).use { output ->
-                                val buffer = ByteArray(BUFFER_SIZE)
-                                var bytes: Int
+                                coroutineScope {
+                                    val progressJob =
+                                        if (totalBytes > 0) {
+                                            launch {
+                                                while (isActive) {
+                                                    delay(PROGRESS_UPDATE_INTERVAL_MS)
+                                                    val bytes = downloadedBytes.get()
+                                                    val progress =
+                                                        bytes.toFloat() / totalBytes.toFloat()
+                                                    updateProgress(
+                                                        downloadId,
+                                                        progress,
+                                                        bytes,
+                                                        totalBytes,
+                                                    )
+                                                    setProgressAsync(
+                                                        workDataOf(
+                                                            PROGRESS_KEY to progress,
+                                                            "downloadedBytes" to bytes,
+                                                            "totalBytes" to totalBytes,
+                                                        )
+                                                    )
+                                                    try {
+                                                        setForeground(
+                                                            createForegroundInfo(
+                                                                downloadId.hashCode(),
+                                                                itemName,
+                                                                bytes,
+                                                                totalBytes,
+                                                            )
+                                                        )
+                                                    } catch (e: Exception) {
+                                                        Timber.w(
+                                                            e,
+                                                            "Failed to update download notification",
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        } else null
 
-                                while (input.read(buffer).also { bytes = it } != -1) {
-                                    if (isStopped) {
-                                        Timber.d("Download paused/stopped by user")
-                                        try {
-                                            output.close()
-                                        } catch (_: Exception) {}
+                                    val buffer = ByteArray(BUFFER_SIZE)
+                                    var bytes: Int
 
-                                        return@withContext Result.failure(
-                                            workDataOf("error" to "Paused")
-                                        )
-                                    }
-
-                                    output.write(buffer, 0, bytes)
-                                    downloadedBytes += bytes
-
-                                    if (totalBytes > 0) {
-                                        val progress =
-                                            (downloadedBytes.toFloat() / totalBytes.toFloat())
-
-                                        val currentTime = System.currentTimeMillis()
-                                        if (
-                                            currentTime - lastUpdateTime > 500 ||
-                                                downloadedBytes == totalBytes
-                                        ) {
-                                            lastUpdateTime = currentTime
-                                            updateProgress(
-                                                downloadId,
-                                                progress,
-                                                downloadedBytes,
-                                                totalBytes,
-                                            )
-
-                                            setProgressAsync(
-                                                workDataOf(
-                                                    PROGRESS_KEY to progress,
-                                                    "downloadedBytes" to downloadedBytes,
-                                                    "totalBytes" to totalBytes,
-                                                )
-                                            )
-
-                                            setForeground(
-                                                createForegroundInfo(
-                                                    downloadId.hashCode(),
-                                                    itemName,
-                                                    downloadedBytes,
-                                                    totalBytes,
-                                                )
-                                            )
+                                    while (input.read(buffer).also { bytes = it } != -1) {
+                                        if (isStopped) {
+                                            Timber.d("Download paused/stopped by user")
+                                            stoppedByUser = true
+                                            break
                                         }
+
+                                        output.write(buffer, 0, bytes)
+                                        downloadedBytes.addAndGet(bytes.toLong())
                                     }
+
+                                    progressJob?.cancelAndJoin()
                                 }
                             }
+                        }
+
+                        if (stoppedByUser) {
+                            return@withContext Result.failure(workDataOf("error" to "Paused"))
                         }
                     }
 
@@ -909,8 +922,8 @@ constructor(
                 .setSmallIcon(R.drawable.ic_download)
                 .setOngoing(true)
                 .setProgress(
-                    if (totalBytes > 0) totalBytes.toInt() else 0,
-                    if (totalBytes > 0) downloadedBytes.toInt() else 0,
+                    if (totalBytes > 0) 1000 else 0,
+                    if (totalBytes > 0) (downloadedBytes * 1000 / totalBytes).toInt() else 0,
                     totalBytes <= 0,
                 )
                 .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)

@@ -274,6 +274,7 @@ fun DownloadSettingsScreen(
                     ->
                     ActiveDownloadCard(
                         download = download,
+                        speedBps = uiState.downloadSpeeds[download.id],
                         onPause = viewModel::pauseDownload,
                         onResume = viewModel::resumeDownload,
                         onCancel = viewModel::cancelDownload,
@@ -286,6 +287,7 @@ fun DownloadSettingsScreen(
                     download ->
                     AbsActiveDownloadCard(
                         download = download,
+                        speedBps = uiState.absDownloadSpeeds[download.id],
                         onCancel = viewModel::cancelAbsDownload,
                         formatSize = viewModel::formatStorageSize,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
@@ -636,6 +638,7 @@ fun StatusHub(
 @Composable
 fun ActiveDownloadCard(
     download: DownloadInfo,
+    speedBps: Long?,
     onPause: (UUID) -> Unit,
     onResume: (UUID) -> Unit,
     onCancel: (UUID) -> Unit,
@@ -670,89 +673,36 @@ fun ActiveDownloadCard(
             )
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = download.itemName,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
-                val subtitle =
-                    if (isEpisode && !download.seriesName.isNullOrBlank()) {
-                        download.seriesName
-                    } else if (!isEpisode && !download.releaseYear.isNullOrBlank()) {
-                        download.releaseYear
-                    } else {
-                        download.sourceName
-                    }
-
-                Text(
-                    text = subtitle ?: download.sourceName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                LinearProgressIndicator(
-                    progress = { download.progress },
-                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
-                    color =
-                        if (download.status == DownloadStatus.FAILED)
-                            MaterialTheme.colorScheme.error
-                        else MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    strokeCap = StrokeCap.Round,
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column {
-                        val statusText =
-                            when (download.status) {
-                                DownloadStatus.QUEUED ->
-                                    stringResource(R.string.download_status_queued).uppercase()
-                                DownloadStatus.DOWNLOADING ->
-                                    stringResource(R.string.download_status_downloading).uppercase()
-                                DownloadStatus.PAUSED ->
-                                    stringResource(R.string.download_status_paused).uppercase()
-                                DownloadStatus.FAILED ->
-                                    stringResource(
-                                            R.string.download_status_failed_fmt,
-                                            download.error ?: "",
-                                        )
-                                        .uppercase()
-                                else -> ""
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = download.itemName,
+                            style =
+                                MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+
+                        val subtitle =
+                            if (isEpisode && !download.seriesName.isNullOrBlank()) {
+                                download.seriesName
+                            } else if (!isEpisode && !download.releaseYear.isNullOrBlank()) {
+                                download.releaseYear
+                            } else {
+                                download.sourceName
                             }
 
                         Text(
-                            text = statusText,
-                            style =
-                                MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                            color =
-                                if (download.status == DownloadStatus.FAILED)
-                                    MaterialTheme.colorScheme.error
-                                else MaterialTheme.colorScheme.primary,
-                        )
-
-                        Text(
-                            text =
-                                "${formatSize(download.bytesDownloaded)} / ${formatSize(download.totalBytes)}",
-                            style =
-                                MaterialTheme.typography.labelSmall.copy(
-                                    fontFamily = FontFamily.Monospace,
-                                    fontWeight = FontWeight.Medium,
-                                ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            text = subtitle ?: download.sourceName,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
 
@@ -803,6 +753,81 @@ fun ActiveDownloadCard(
                             )
                         }
                     }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                LinearProgressIndicator(
+                    progress = { download.progress },
+                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                    color =
+                        if (download.status == DownloadStatus.FAILED)
+                            MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    strokeCap = StrokeCap.Round,
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    val statusText =
+                        when (download.status) {
+                            DownloadStatus.QUEUED ->
+                                stringResource(R.string.download_status_queued).uppercase()
+                            DownloadStatus.DOWNLOADING ->
+                                stringResource(R.string.download_status_downloading).uppercase()
+                            DownloadStatus.PAUSED ->
+                                stringResource(R.string.download_status_paused).uppercase()
+                            DownloadStatus.FAILED ->
+                                stringResource(
+                                        R.string.download_status_failed_fmt,
+                                        download.error ?: "",
+                                    )
+                                    .uppercase()
+                            else -> ""
+                        }
+
+                    Text(
+                        text = statusText,
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color =
+                            if (download.status == DownloadStatus.FAILED)
+                                MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+
+                    val sizeText =
+                        "${formatSize(download.bytesDownloaded)} / ${formatSize(download.totalBytes)}"
+                    val speedText =
+                        if (
+                            download.status == DownloadStatus.DOWNLOADING &&
+                                speedBps != null &&
+                                speedBps > 0
+                        ) {
+                            " • ${formatSize(speedBps)}/s"
+                        } else {
+                            ""
+                        }
+
+                    Text(
+                        text = sizeText + speedText,
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Medium,
+                            ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
                 }
             }
         }
@@ -1107,6 +1132,7 @@ fun EmptyDownloadsState() {
 @Composable
 fun AbsActiveDownloadCard(
     download: AbsDownloadInfo,
+    speedBps: Long?,
     onCancel: (UUID) -> Unit,
     formatSize: (Long) -> String,
     modifier: Modifier = Modifier,
@@ -1132,20 +1158,41 @@ fun AbsActiveDownloadCard(
             )
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = download.title,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (!download.authorName.isNullOrBlank()) {
-                    Text(
-                        text = download.authorName,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = download.title,
+                            style =
+                                MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (!download.authorName.isNullOrBlank()) {
+                            Text(
+                                text = download.authorName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = { onCancel(download.id) },
+                        modifier = Modifier.size(36.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_cancel),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -1165,50 +1212,51 @@ fun AbsActiveDownloadCard(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column {
-                        val statusText =
-                            when (download.status) {
-                                AbsDownloadStatus.QUEUED -> "QUEUED"
-                                AbsDownloadStatus.DOWNLOADING ->
-                                    "TRACK ${download.tracksDownloaded}/${download.tracksTotal}"
-                                AbsDownloadStatus.FAILED -> "FAILED"
-                                else -> ""
-                            }
-                        Text(
-                            text = statusText,
-                            style =
-                                MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                            color =
-                                if (download.status == AbsDownloadStatus.FAILED)
-                                    MaterialTheme.colorScheme.error
-                                else MaterialTheme.colorScheme.primary,
-                        )
-                        Text(
-                            text = formatSize(download.bytesDownloaded),
-                            style =
-                                MaterialTheme.typography.labelSmall.copy(
-                                    fontFamily = FontFamily.Monospace,
-                                    fontWeight = FontWeight.Medium,
-                                ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    val statusText =
+                        when (download.status) {
+                            AbsDownloadStatus.QUEUED -> "QUEUED"
+                            AbsDownloadStatus.DOWNLOADING ->
+                                "TRACK ${download.tracksDownloaded}/${download.tracksTotal}"
+                            AbsDownloadStatus.FAILED -> "FAILED"
+                            else -> ""
+                        }
+                    Text(
+                        text = statusText,
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color =
+                            if (download.status == AbsDownloadStatus.FAILED)
+                                MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
 
-                    IconButton(
-                        onClick = { onCancel(download.id) },
-                        modifier = Modifier.size(36.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_cancel),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    val speedText =
+                        if (
+                            download.status == AbsDownloadStatus.DOWNLOADING &&
+                                speedBps != null &&
+                                speedBps > 0
+                        ) {
+                            " • ${formatSize(speedBps)}/s"
+                        } else {
+                            ""
+                        }
+
+                    Text(
+                        text = formatSize(download.bytesDownloaded) + speedText,
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Medium,
+                            ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
                 }
             }
         }

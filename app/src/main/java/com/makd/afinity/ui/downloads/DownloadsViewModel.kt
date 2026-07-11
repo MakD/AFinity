@@ -7,7 +7,9 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
+import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsDownloadRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
@@ -40,6 +42,15 @@ constructor(
 
     private val _uiState = MutableStateFlow(DownloadsUiState())
     val uiState: StateFlow<DownloadsUiState> = _uiState.asStateFlow()
+
+    private data class SpeedSample(val bytes: Long, val timestampMs: Long, val speedBps: Long)
+
+    private val speedSamples = mutableMapOf<UUID, SpeedSample>()
+    private val absSpeedSamples = mutableMapOf<UUID, SpeedSample>()
+
+    private companion object {
+        const val STALL_THRESHOLD_MS = 3_000L
+    }
 
     init {
         observeDownloads()
@@ -147,7 +158,19 @@ constructor(
                     .getActiveDownloadsFlow()
                     .catch { e -> Timber.e(e, "Error observing active downloads") }
                     .collect { activeDownloads ->
-                        _uiState.value = _uiState.value.copy(activeDownloads = activeDownloads)
+                        _uiState.value =
+                            _uiState.value.copy(
+                                activeDownloads = activeDownloads,
+                                downloadSpeeds =
+                                    computeSpeeds(
+                                        speedSamples,
+                                        activeDownloads
+                                            .filter {
+                                                it.status == DownloadStatus.DOWNLOADING
+                                            }
+                                            .map { it.id to it.bytesDownloaded },
+                                    ),
+                            )
                     }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to observe active downloads")
@@ -174,7 +197,19 @@ constructor(
                     .getActiveDownloadsFlow()
                     .catch { e -> Timber.e(e, "Error observing ABS active downloads") }
                     .collect { absActive ->
-                        _uiState.value = _uiState.value.copy(absActiveDownloads = absActive)
+                        _uiState.value =
+                            _uiState.value.copy(
+                                absActiveDownloads = absActive,
+                                absDownloadSpeeds =
+                                    computeSpeeds(
+                                        absSpeedSamples,
+                                        absActive
+                                            .filter {
+                                                it.status == AbsDownloadStatus.DOWNLOADING
+                                            }
+                                            .map { it.id to it.bytesDownloaded },
+                                    ),
+                            )
                     }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to observe ABS active downloads")
@@ -193,6 +228,40 @@ constructor(
                 Timber.e(e, "Failed to observe ABS completed downloads")
             }
         }
+    }
+
+    private fun computeSpeeds(
+        samples: MutableMap<UUID, SpeedSample>,
+        downloading: List<Pair<UUID, Long>>,
+    ): Map<UUID, Long> {
+        val now = System.currentTimeMillis()
+        val speeds = mutableMapOf<UUID, Long>()
+        samples.keys.retainAll(downloading.map { it.first }.toSet())
+        downloading.forEach { (id, bytesDownloaded) ->
+            val prev = samples[id]
+            if (prev == null) {
+                samples[id] = SpeedSample(bytesDownloaded, now, 0L)
+                return@forEach
+            }
+
+            val deltaBytes = bytesDownloaded - prev.bytes
+            val deltaMs = now - prev.timestampMs
+            when {
+                deltaBytes > 0 && deltaMs > 0 -> {
+                    val instant = deltaBytes * 1000 / deltaMs
+                    val smoothed =
+                        if (prev.speedBps == 0L) instant
+                        else (prev.speedBps * 7 + instant * 3) / 10
+                    samples[id] = SpeedSample(bytesDownloaded, now, smoothed)
+                    speeds[id] = smoothed
+                }
+                deltaMs > STALL_THRESHOLD_MS -> {
+                    samples[id] = SpeedSample(bytesDownloaded, now, 0L)
+                }
+                prev.speedBps > 0 -> speeds[id] = prev.speedBps
+            }
+        }
+        return speeds
     }
 
     private fun loadStorageInfo() {
@@ -539,4 +608,6 @@ data class DownloadsUiState(
     val defaultStorageVolumeId: String = StorageLocationProvider.PRIMARY_VOLUME_ID,
     val pendingUnavailableDelete: UUID? = null,
     val error: String? = null,
+    val downloadSpeeds: Map<UUID, Long> = emptyMap(),
+    val absDownloadSpeeds: Map<UUID, Long> = emptyMap(),
 )
