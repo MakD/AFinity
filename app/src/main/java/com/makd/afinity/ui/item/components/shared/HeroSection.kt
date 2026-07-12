@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.primaryBlurHash
@@ -37,6 +38,8 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.AsyncImage
 
+private val HeroDetailMaxHeight = 560.dp
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HeroSection(item: AfinityItem) {
@@ -47,6 +50,7 @@ fun HeroSection(item: AfinityItem) {
     val screenHeight = with(density) { containerSize.height.toDp() }
     val isLandscape = containerSize.width > containerSize.height
     val heightMultiplier = if (isLandscape) 0.9f else 0.5f
+    val heroHeight = (screenHeight * heightMultiplier).coerceAtMost(HeroDetailMaxHeight)
 
     val fallbackChain =
         remember(item.id) {
@@ -81,13 +85,13 @@ fun HeroSection(item: AfinityItem) {
     var urlIndex by remember(item.id) { mutableIntStateOf(0) }
     val current = fallbackChain.getOrNull(urlIndex)
 
-    Box(modifier = Modifier.fillMaxWidth().height(screenHeight * heightMultiplier)) {
+    Box(modifier = Modifier.fillMaxWidth().height(heroHeight)) {
         AsyncImage(
             imageUrl = current?.first,
             contentDescription = null,
             blurHash = current?.second,
             targetWidth = screenWidth,
-            targetHeight = screenHeight * heightMultiplier,
+            targetHeight = heroHeight,
             onError = {
                 if (urlIndex < fallbackChain.lastIndex) {
                     urlIndex++
