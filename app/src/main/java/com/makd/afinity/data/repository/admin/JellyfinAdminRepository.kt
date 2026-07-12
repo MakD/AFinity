@@ -1,5 +1,6 @@
 package com.makd.afinity.data.repository.admin
 
+import android.util.Base64
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.admin.EditableItem
@@ -380,10 +381,17 @@ constructor(
                         ?: return@withContext Result.failure(
                             IllegalArgumentException("Unknown image type: $imageType")
                         )
+                val base64Data =
+                    Base64.encodeToString(imageData, Base64.NO_WRAP).toByteArray(Charsets.US_ASCII)
+                val normalizedMime =
+                    when (val cleaned = mimeType.substringBefore(';').trim().lowercase()) {
+                        "image/jpg" -> "image/jpeg"
+                        else -> cleaned
+                    }
                 api.setItemImage(
                     itemId = UUID.fromString(itemId),
                     imageType = type,
-                    data = FileInfo(content = imageData, mediaType = mimeType),
+                    data = FileInfo(content = base64Data, mediaType = normalizedMime),
                 )
                 adminChangeBroadcaster.notifyItemChanged(itemId)
                 Result.success(Unit)
