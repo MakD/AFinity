@@ -8,12 +8,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
@@ -164,16 +169,17 @@ private fun HeroCarouselAutoScrollAndPrefetch(
             val item = items[index]
             val rawUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl
             if (rawUrl != null) {
-                val url = if (
-                    rawUrl.contains("/Items/") &&
-                    rawUrl.contains("/Images/") &&
-                    !rawUrl.contains("fillWidth")
-                ) {
-                    val sep = if ('?' in rawUrl) "&" else "?"
-                    "${rawUrl}${sep}fillWidth=${fillWidthPx.coerceAtLeast(50)}&quality=90"
-                } else {
-                    rawUrl
-                }
+                val url =
+                    if (
+                        rawUrl.contains("/Items/") &&
+                            rawUrl.contains("/Images/") &&
+                            !rawUrl.contains("fillWidth")
+                    ) {
+                        val sep = if ('?' in rawUrl) "&" else "?"
+                        "${rawUrl}${sep}fillWidth=${fillWidthPx.coerceAtLeast(50)}&quality=90"
+                    } else {
+                        rawUrl
+                    }
                 val request = ImageRequest.Builder(context).data(url).build()
                 context.imageLoader.enqueue(request)
             }
@@ -502,6 +508,9 @@ private fun HeroCarouselLandscape(
         Box(
             modifier =
                 Modifier.fillMaxSize()
+                    .windowInsetsPadding(
+                        WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                    )
                     .padding(start = 48.dp, bottom = 48.dp, top = 48.dp, end = 48.dp)
         ) {
             Column(

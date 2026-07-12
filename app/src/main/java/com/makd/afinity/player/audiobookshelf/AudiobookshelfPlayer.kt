@@ -16,6 +16,7 @@ import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
+import com.makd.afinity.R
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.audiobookshelf.AudioTrack
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
@@ -447,17 +448,22 @@ constructor(
             ((controller.bufferedPosition - controller.currentPosition) / 1000L).coerceAtLeast(0)
         val bitrateKbps = (audioFormat?.bitrate ?: 0) / 1000f
 
+        val isLocal = playbackManager.currentSession.value?.id?.startsWith("local_") == true
+        val playMethod =
+            if (isLocal) context.getString(R.string.playback_stats_value_direct_play_local)
+            else context.getString(R.string.playback_stats_value_direct_streaming)
+
         return PlaybackStats(
             playerType = "ExoPlayer (ABS Service)",
+            playMethod = playMethod,
             videoResolution = "0x0",
-            audioCodec =
-                audioFormat?.sampleMimeType?.substringAfterLast("/")?.uppercase() ?: "UNKNOWN",
+            audioCodec = PlaybackStats.friendlyCodecName(audioFormat?.sampleMimeType),
             audioChannels = audioFormat?.channelCount ?: 0,
             audioSampleRate = audioFormat?.sampleRate ?: 0,
-            bufferHealth = "$bufferSeconds seconds",
-            videoBitrate =
-                if (bitrateKbps > 0) String.format(Locale.US, "%.1f kbps", bitrateKbps)
-                else "Unknown",
+            bufferHealth =
+                context.getString(R.string.playback_stats_value_seconds_fmt, bufferSeconds),
+            audioBitrate =
+                if (bitrateKbps > 0) String.format(Locale.US, "%.0f kbps", bitrateKbps) else "",
             hwDec = playbackManager.currentAudioDecoder.value,
         )
     }

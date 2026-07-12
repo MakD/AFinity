@@ -228,6 +228,47 @@ fun PlayerOptionsScreen(
                                     labelProvider = { it.getDisplayName() },
                                     icon = painterResource(id = R.drawable.ic_audio),
                                 )
+                                // Temporarily hidden; backend prefs retained.
+                                /*
+                                SettingsDivider()
+                                SubtitleDropdownItem(
+                                    title = stringResource(R.string.pref_mpv_gpu_api_title),
+                                    selectedOption = uiState.mpvGpuApi,
+                                    options = MpvGpuApi.entries.toList(),
+                                    onValueChange = viewModel::setMpvGpuApi,
+                                    labelProvider = { it.getDisplayName() },
+                                    icon = painterResource(id = R.drawable.ic_cpu),
+                                )
+                                SettingsDivider()
+                                SubtitleDropdownItem(
+                                    title = stringResource(R.string.pref_mpv_hdr_output_title),
+                                    selectedOption = uiState.mpvHdrOutput,
+                                    options = MpvHdrOutput.entries.toList(),
+                                    onValueChange = viewModel::setMpvHdrOutput,
+                                    labelProvider = { it.getDisplayName() },
+                                    icon = painterResource(id = R.drawable.ic_colorize),
+                                    hint = stringResource(R.string.pref_mpv_hdr_output_hint),
+                                )
+                                SettingsDivider()
+                                SubtitleDropdownItem(
+                                    title = stringResource(R.string.pref_mpv_tone_mapping_title),
+                                    selectedOption = uiState.mpvToneMapping,
+                                    options = MpvToneMapping.entries.toList(),
+                                    onValueChange = viewModel::setMpvToneMapping,
+                                    labelProvider = { it.getDisplayName() },
+                                    icon = painterResource(id = R.drawable.ic_texture),
+                                    hint = stringResource(R.string.pref_mpv_tone_mapping_hint),
+                                )
+                                SettingsDivider()
+                                SettingsSwitchItem(
+                                    icon = painterResource(id = R.drawable.ic_visibility),
+                                    title = stringResource(R.string.pref_mpv_hdr_peak_title),
+                                    subtitle =
+                                        stringResource(R.string.pref_mpv_hdr_peak_summary),
+                                    checked = uiState.mpvHdrPeakDetection,
+                                    onCheckedChange = viewModel::setMpvHdrPeakDetection,
+                                )
+                                */
                             }
                         }
                     }
@@ -842,23 +883,34 @@ private fun <T> SubtitleDropdownItem(
     onValueChange: (T) -> Unit,
     labelProvider: @Composable (T) -> String,
     icon: Painter,
+    hint: String? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
     Box {
-        SettingsItem(
-            icon = icon,
-            title = title,
-            subtitle = labelProvider(selectedOption),
-            onClick = { expanded = true },
-            trailing = {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        Column {
+            SettingsItem(
+                icon = icon,
+                title = title,
+                subtitle = labelProvider(selectedOption),
+                onClick = { expanded = true },
+                trailing = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                },
+            )
+            if (hint != null) {
+                Text(
+                    text = hint,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(start = 56.dp, end = 16.dp, bottom = 12.dp),
                 )
-            },
-        )
+            }
+        }
 
         DropdownMenu(
             expanded = expanded,

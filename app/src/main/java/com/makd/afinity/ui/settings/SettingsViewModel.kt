@@ -7,7 +7,10 @@ import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.player.MpvAudioOutput
+import com.makd.afinity.data.models.player.MpvGpuApi
+import com.makd.afinity.data.models.player.MpvHdrOutput
 import com.makd.afinity.data.models.player.MpvHwDec
+import com.makd.afinity.data.models.player.MpvToneMapping
 import com.makd.afinity.data.models.player.MpvVideoOutput
 import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.VideoZoomMode
@@ -320,6 +323,30 @@ constructor(
         }
 
         viewModelScope.launch {
+            preferencesRepository.getMpvGpuApiFlow().collect { gpuApi ->
+                _uiState.value = _uiState.value.copy(mpvGpuApi = gpuApi)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getMpvHdrOutputFlow().collect { hdrOutput ->
+                _uiState.value = _uiState.value.copy(mpvHdrOutput = hdrOutput)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getMpvToneMappingFlow().collect { toneMapping ->
+                _uiState.value = _uiState.value.copy(mpvToneMapping = toneMapping)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getMpvHdrPeakDetectionFlow().collect { enabled ->
+                _uiState.value = _uiState.value.copy(mpvHdrPeakDetection = enabled)
+            }
+        }
+
+        viewModelScope.launch {
             preferencesRepository.getPreferredAudioLanguageFlow().collect { lang ->
                 _uiState.value = _uiState.value.copy(preferredAudioLanguage = lang)
             }
@@ -519,6 +546,50 @@ constructor(
                 Timber.d("Default video zoom mode set to: ${mode.getDisplayName()}")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set default video zoom mode")
+            }
+        }
+    }
+
+    fun setMpvGpuApi(gpuApi: MpvGpuApi) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setMpvGpuApi(gpuApi)
+                Timber.d("MPV GPU API set to: ${gpuApi.getDisplayName()}")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set MPV GPU API")
+            }
+        }
+    }
+
+    fun setMpvHdrOutput(hdrOutput: MpvHdrOutput) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setMpvHdrOutput(hdrOutput)
+                Timber.d("MPV HDR output set to: ${hdrOutput.getDisplayName()}")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set MPV HDR output")
+            }
+        }
+    }
+
+    fun setMpvToneMapping(toneMapping: MpvToneMapping) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setMpvToneMapping(toneMapping)
+                Timber.d("MPV tone mapping set to: ${toneMapping.getDisplayName()}")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set MPV tone mapping")
+            }
+        }
+    }
+
+    fun setMpvHdrPeakDetection(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setMpvHdrPeakDetection(enabled)
+                Timber.d("MPV HDR peak detection set to: $enabled")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set MPV HDR peak detection")
             }
         }
     }
@@ -983,6 +1054,10 @@ data class SettingsUiState(
     val mpvHwDec: MpvHwDec = MpvHwDec.default,
     val mpvVideoOutput: MpvVideoOutput = MpvVideoOutput.default,
     val mpvAudioOutput: MpvAudioOutput = MpvAudioOutput.default,
+    val mpvGpuApi: MpvGpuApi = MpvGpuApi.default,
+    val mpvHdrOutput: MpvHdrOutput = MpvHdrOutput.default,
+    val mpvToneMapping: MpvToneMapping = MpvToneMapping.default,
+    val mpvHdrPeakDetection: Boolean = true,
     val preferredAudioLanguage: String = "",
     val preferredSubtitleLanguage: String = "",
     val castHevcEnabled: Boolean = false,

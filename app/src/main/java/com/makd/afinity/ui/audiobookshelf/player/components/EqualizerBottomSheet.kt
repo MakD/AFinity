@@ -44,24 +44,25 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
-import com.makd.afinity.player.audiobookshelf.EQ_BAND_LABELS
-import com.makd.afinity.player.audiobookshelf.EQ_MAX_DB
-import com.makd.afinity.player.audiobookshelf.EQ_MIN_DB
-import com.makd.afinity.player.audiobookshelf.EqualizerPreset
-import com.makd.afinity.player.audiobookshelf.EqualizerState
+import com.makd.afinity.player.common.EQ_BAND_LABELS
+import com.makd.afinity.player.common.EQ_MAX_DB
+import com.makd.afinity.player.common.EQ_MIN_DB
+import com.makd.afinity.player.common.EqualizerPreset
+import com.makd.afinity.player.common.EqualizerState
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EqualizerBottomSheet(
     state: EqualizerState,
-    skipSilenceEnabled: Boolean,
     onEnabled: (Boolean) -> Unit,
     onPresetSelected: (EqualizerPreset) -> Unit,
     onBandChanged: (bandIndex: Int, gainDb: Int) -> Unit,
-    onSkipSilenceToggle: (Boolean) -> Unit,
     onVolumeBoostChanged: (Int) -> Unit,
     onDismiss: () -> Unit,
+    skipSilenceEnabled: Boolean = false,
+    onSkipSilenceToggle: ((Boolean) -> Unit)? = null,
+    presets: List<EqualizerPreset> = EqualizerPreset.SPOKEN_WORD,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -108,10 +109,9 @@ fun EqualizerBottomSheet(
 
             val presetsToShow =
                 if (state.currentPreset == EqualizerPreset.CUSTOM) {
-                    listOf(EqualizerPreset.CUSTOM) +
-                        EqualizerPreset.entries.filter { it != EqualizerPreset.CUSTOM }
+                    listOf(EqualizerPreset.CUSTOM) + presets
                 } else {
-                    EqualizerPreset.entries.filter { it != EqualizerPreset.CUSTOM }
+                    presets
                 }
 
             LazyRow(
@@ -148,44 +148,47 @@ fun EqualizerBottomSheet(
                 }
             }
 
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 24.dp),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-            )
+            if (onSkipSilenceToggle != null) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 24.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column {
-                    Text(
-                        text = stringResource(R.string.abs_skip_silence),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        letterSpacing = 2.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Auto-skip quiet sections",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column {
+                        Text(
+                            text = stringResource(R.string.abs_skip_silence),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            letterSpacing = 2.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Auto-skip quiet sections",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = skipSilenceEnabled,
+                        onCheckedChange = onSkipSilenceToggle,
+                        colors =
+                            SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                                uncheckedTrackColor =
+                                    MaterialTheme.colorScheme.surfaceContainerHighest,
+                                uncheckedBorderColor = MaterialTheme.colorScheme.outline,
+                            ),
+                        modifier = Modifier.scale(0.8f),
                     )
                 }
-                Switch(
-                    checked = skipSilenceEnabled,
-                    onCheckedChange = onSkipSilenceToggle,
-                    colors =
-                        SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                            checkedTrackColor = MaterialTheme.colorScheme.primary,
-                            uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            uncheckedBorderColor = MaterialTheme.colorScheme.outline,
-                        ),
-                    modifier = Modifier.scale(0.8f),
-                )
             }
 
             HorizontalDivider(

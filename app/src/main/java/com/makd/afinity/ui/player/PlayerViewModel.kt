@@ -60,6 +60,7 @@ import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinitySources
 import com.makd.afinity.data.models.media.AfinityTrickplayInfo
 import com.makd.afinity.data.models.player.GestureConfig
+import com.makd.afinity.data.models.player.MpvHdrOutput
 import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.models.player.SkipMode
@@ -608,6 +609,10 @@ constructor(
         mpvVideoOutputValue = mpvVideoOutput
 
         val bufferSizeMb = preferencesRepository.getBufferSizeMb()
+        val gpuApi = preferencesRepository.getMpvGpuApi()
+        val hdrOutput = preferencesRepository.getMpvHdrOutput()
+        val toneMapping = preferencesRepository.getMpvToneMapping()
+        val hdrPeakDetection = preferencesRepository.getMpvHdrPeakDetection()
 
         val mpvPlayer =
             MPVPlayer.Builder(application)
@@ -619,6 +624,10 @@ constructor(
                 .setAudioOutput(mpvAudioOutput)
                 .setHwDec(mpvHwDec)
                 .setBufferSizeMb(bufferSizeMb)
+                .setGpuApi(gpuApi.value)
+                .setHdrPassthrough(hdrOutput == MpvHdrOutput.AUTO)
+                .setToneMapping(toneMapping.value)
+                .setHdrPeakDetection(hdrPeakDetection)
                 .build()
 
         mpvPlayer.setOption("sub-ass-override", "no")
@@ -1111,8 +1120,8 @@ constructor(
                     audioBitrate =
                         audioFormat?.bitrate?.takeIf { it > 0 }?.let { "${it / 1000} kbps" } ?: "",
                     videoResolution = "${videoFormat?.width ?: 0}x${videoFormat?.height ?: 0}",
-                    videoCodec = friendlyCodecName(videoFormat?.sampleMimeType),
-                    audioCodec = friendlyCodecName(audioFormat?.sampleMimeType),
+                    videoCodec = PlaybackStats.friendlyCodecName(videoFormat?.sampleMimeType),
+                    audioCodec = PlaybackStats.friendlyCodecName(audioFormat?.sampleMimeType),
                     audioChannels = audioFormat?.channelCount ?: 0,
                     audioSampleRate = audioFormat?.sampleRate ?: 0,
                     droppedFrames = exoDroppedFrames,
@@ -1314,20 +1323,6 @@ constructor(
             state.isLiveChannel -> context.getString(R.string.playback_stats_value_live)
             isLocal -> context.getString(R.string.playback_stats_value_direct_play_local)
             else -> context.getString(R.string.playback_stats_value_direct_streaming)
-        }
-    }
-
-    private fun friendlyCodecName(mimeType: String?): String {
-        val subtype =
-            mimeType?.substringAfterLast('/')?.takeIf { it.isNotBlank() } ?: return "UNKNOWN"
-        return when (subtype.lowercase()) {
-            "mp4a-latm" -> "AAC"
-            "avc" -> "H264"
-            "raw" -> "PCM"
-            "true-hd" -> "TRUEHD"
-            "vnd.dts" -> "DTS"
-            "vnd.dts.hd" -> "DTS-HD"
-            else -> subtype.uppercase()
         }
     }
 

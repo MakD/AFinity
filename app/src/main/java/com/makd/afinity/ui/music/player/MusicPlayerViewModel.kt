@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import com.makd.afinity.R
 import com.makd.afinity.cast.CastEvent
 import com.makd.afinity.cast.CastManager
 import com.makd.afinity.data.manager.OfflineModeManager
@@ -18,13 +19,18 @@ import com.makd.afinity.data.models.music.RadioMode
 import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.data.models.music.RadioState
 import com.makd.afinity.data.models.music.RepeatMode
+import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.player.AudioService
+import com.makd.afinity.player.common.EqualizerPreset
+import com.makd.afinity.player.music.MusicEqualizerManager
 import com.makd.afinity.player.music.MusicPlaybackManager
 import com.makd.afinity.player.music.MusicQueueManager
 import com.makd.afinity.player.music.RadioManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -34,6 +40,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 
@@ -48,6 +55,7 @@ constructor(
     private val sessionManager: SessionManager,
     private val offlineModeManager: OfflineModeManager,
     private val radioManager: RadioManager,
+    private val equalizerManager: MusicEqualizerManager,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -55,6 +63,76 @@ constructor(
     val queue: StateFlow<List<AfinityTrack>> = queueManager.queue
     val currentIndex: StateFlow<Int> = queueManager.currentIndex
     val radioState: StateFlow<RadioState> = radioManager.radioState
+    val equalizerState = equalizerManager.state
+    val equalizerPresets = equalizerManager.availablePresets
+
+    private val _showPlaybackStats = MutableStateFlow(false)
+    val showPlaybackStats: StateFlow<Boolean> = _showPlaybackStats.asStateFlow()
+
+    private val _playbackStats = MutableStateFlow(PlaybackStats())
+    val playbackStats: StateFlow<PlaybackStats> = _playbackStats.asStateFlow()
+
+    private var statsPollingJob: Job? = null
+
+    fun togglePlaybackStats() {
+        val willShow = !_showPlaybackStats.value
+        _showPlaybackStats.value = willShow
+        if (willShow) {
+            startStatsPolling()
+        } else {
+            statsPollingJob?.cancel()
+        }
+    }
+
+    private fun startStatsPolling() {
+        statsPollingJob?.cancel()
+        statsPollingJob = viewModelScope.launch {
+            while (true) {
+                if (_showPlaybackStats.value) {
+                    _playbackStats.value = gatherPlaybackStats()
+                }
+                delay(1000L)
+            }
+        }
+    }
+
+    @OptIn(UnstableApi::class)
+    private fun gatherPlaybackStats(): PlaybackStats {
+        val player =
+            playbackManager.getPlayer()
+                ?: return PlaybackStats(playerType = "Music Service (Initializing)")
+
+        val audioFormat = player.audioFormat
+        val bufferSeconds =
+            ((player.bufferedPosition - player.currentPosition) / 1000L).coerceAtLeast(0)
+        val bitrateKbps = (audioFormat?.bitrate ?: 0) / 1000f
+        val isLocal = player.currentMediaItem?.localConfiguration?.uri?.scheme == "file"
+        val playMethod =
+            if (isLocal) context.getString(R.string.playback_stats_value_direct_play_local)
+            else context.getString(R.string.playback_stats_value_direct_streaming)
+
+        return PlaybackStats(
+            playerType = "ExoPlayer (Music Service)",
+            playMethod = playMethod,
+            videoResolution = "0x0",
+            audioCodec = PlaybackStats.friendlyCodecName(audioFormat?.sampleMimeType),
+            audioChannels = audioFormat?.channelCount ?: 0,
+            audioSampleRate = audioFormat?.sampleRate ?: 0,
+            bufferHealth =
+                context.getString(R.string.playback_stats_value_seconds_fmt, bufferSeconds),
+            audioBitrate =
+                if (bitrateKbps > 0) String.format(Locale.US, "%.0f kbps", bitrateKbps) else "",
+            hwDec = playbackManager.currentAudioDecoder.value,
+        )
+    }
+
+    fun setEqEnabled(enabled: Boolean) = equalizerManager.setEnabled(enabled)
+
+    fun applyEqPreset(preset: EqualizerPreset) = equalizerManager.applyPreset(preset)
+
+    fun setEqBandGain(index: Int, gainDb: Int) = equalizerManager.setBandGain(index, gainDb)
+
+    fun setVolumeBoost(db: Int) = equalizerManager.setVolumeBoost(db)
 
     val isOffline: StateFlow<Boolean> =
         offlineModeManager.isOffline.stateIn(viewModelScope, SharingStarted.Eagerly, false)

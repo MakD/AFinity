@@ -369,6 +369,13 @@
     <string name="playback_stats_label_audio_bitrate">Audio bitrate</string>
     <string name="playback_stats_value_hdr_output">playing as HDR</string>
     <string name="playback_stats_value_hdr_tonemapped">tone-mapped to SDR</string>
+    <string name="pref_mpv_gpu_api_title">GPU API</string>
+    <string name="pref_mpv_hdr_output_title">HDR output</string>
+    <string name="pref_mpv_hdr_output_hint">Passthrough needs Vulkan on most devices; otherwise HDR is tone-mapped</string>
+    <string name="pref_mpv_tone_mapping_title">Tone mapping</string>
+    <string name="pref_mpv_tone_mapping_hint">Applies when HDR is converted to SDR</string>
+    <string name="pref_mpv_hdr_peak_title">HDR peak detection</string>
+    <string name="pref_mpv_hdr_peak_summary">Measures scene brightness when HDR is tone-mapped to SDR (uses more GPU)</string>
     <string name="cd_speed_decrease">Decrease speed</string>
     <string name="cd_speed_increase">Increase speed</string>
 
@@ -1444,6 +1451,7 @@
     <!-- Accessibility -->
     <string name="cd_music_minimize">Minimize</string>
     <string name="cd_music_sleep_timer">Sleep timer</string>
+    <string name="cd_equalizer">Equalizer</string>
     <string name="cd_music_queue">Queue</string>
     <string name="cd_music_add_to_playlist">Add to playlist</string>
     <string name="cd_music_instant_mix">Instant Mix</string>

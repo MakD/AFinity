@@ -24,6 +24,13 @@ constructor(@ApplicationScope private val scope: CoroutineScope) {
     private val _state = MutableStateFlow(MusicPlaybackState())
     val state: StateFlow<MusicPlaybackState> = _state.asStateFlow()
 
+    private val _currentAudioDecoder = MutableStateFlow("Unknown")
+    val currentAudioDecoder: StateFlow<String> = _currentAudioDecoder.asStateFlow()
+
+    fun updateAudioDecoder(decoderName: String, isHardwareAccelerated: Boolean) {
+        _currentAudioDecoder.value = if (isHardwareAccelerated) "H/W Dec" else "S/W Dec"
+    }
+
     @Volatile private var exoPlayer: ExoPlayer? = null
 
     private var sleepTimerJob: Job? = null

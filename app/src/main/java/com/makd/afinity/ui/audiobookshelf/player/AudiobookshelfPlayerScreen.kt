@@ -206,13 +206,13 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
         if (uiState.showEqualizer) {
             EqualizerBottomSheet(
                 state = equalizerState,
-                skipSilenceEnabled = skipSilenceEnabled,
                 onEnabled = viewModel::setEqEnabled,
                 onPresetSelected = viewModel::applyEqPreset,
                 onBandChanged = viewModel::setEqBandGain,
-                onSkipSilenceToggle = viewModel::setSkipSilence,
                 onVolumeBoostChanged = viewModel::setVolumeBoost,
                 onDismiss = viewModel::dismissEqualizer,
+                skipSilenceEnabled = skipSilenceEnabled,
+                onSkipSilenceToggle = viewModel::setSkipSilence,
             )
         }
     }
@@ -233,12 +233,11 @@ fun SharedTransitionScope.PortraitPlayerContent(
         modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onNavigateBack) {
+        Box(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
+            IconButton(
+                onClick = onNavigateBack,
+                modifier = Modifier.align(Alignment.CenterStart),
+            ) {
                 Icon(
                     painterResource(id = R.drawable.ic_keyboard_arrow_down),
                     contentDescription = stringResource(R.string.cd_abs_minimize),
@@ -252,12 +251,16 @@ fun SharedTransitionScope.PortraitPlayerContent(
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.7f),
                 letterSpacing = 2.sp,
+                modifier = Modifier.align(Alignment.Center),
             )
 
-            IconButton(onClick = viewModel::showEqualizer) {
+            IconButton(
+                onClick = viewModel::togglePlaybackStats,
+                modifier = Modifier.align(Alignment.CenterEnd),
+            ) {
                 Icon(
-                    painterResource(id = R.drawable.ic_options),
-                    contentDescription = stringResource(R.string.cd_abs_options),
+                    painterResource(id = R.drawable.ic_info),
+                    contentDescription = stringResource(R.string.cd_playback_info),
                     tint = Color.White,
                 )
             }
@@ -374,10 +377,10 @@ fun SharedTransitionScope.PortraitPlayerContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                IconButton(onClick = viewModel::togglePlaybackStats) {
+                IconButton(onClick = viewModel::showEqualizer) {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_info),
-                        contentDescription = stringResource(R.string.cd_playback_info),
+                        painter = painterResource(id = R.drawable.ic_equalizer),
+                        contentDescription = stringResource(R.string.cd_equalizer),
                         tint = Color.White.copy(alpha = 0.8f),
                     )
                 }
@@ -520,12 +523,11 @@ fun SharedTransitionScope.LandscapePlayerContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onNavigateBack) {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                IconButton(
+                    onClick = onNavigateBack,
+                    modifier = Modifier.align(Alignment.CenterStart),
+                ) {
                     Icon(
                         painterResource(id = R.drawable.ic_keyboard_arrow_down),
                         stringResource(R.string.cd_abs_minimize),
@@ -537,12 +539,16 @@ fun SharedTransitionScope.LandscapePlayerContent(
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.7f),
                     letterSpacing = 2.sp,
+                    modifier = Modifier.align(Alignment.Center),
                 )
 
-                IconButton(onClick = viewModel::showEqualizer) {
+                IconButton(
+                    onClick = viewModel::togglePlaybackStats,
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                ) {
                     Icon(
-                        painterResource(id = R.drawable.ic_options),
-                        stringResource(R.string.cd_abs_options),
+                        painterResource(id = R.drawable.ic_info),
+                        stringResource(R.string.cd_playback_info),
                         tint = Color.White,
                     )
                 }
@@ -617,14 +623,14 @@ fun SharedTransitionScope.LandscapePlayerContent(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                    IconButton(onClick = viewModel::togglePlaybackStats) {
+                    IconButton(onClick = viewModel::showEqualizer) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center,
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_info),
-                                contentDescription = stringResource(R.string.cd_playback_info),
+                                painter = painterResource(id = R.drawable.ic_equalizer),
+                                contentDescription = stringResource(R.string.cd_equalizer),
                                 tint = Color.White.copy(alpha = 0.8f),
                             )
                             Spacer(modifier = Modifier.height(3.dp))

@@ -52,6 +52,7 @@ import com.makd.afinity.player.audiobookshelf.AudiobookshelfEqualizerManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfProgressSyncer
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfSkipSilenceManager
+import com.makd.afinity.player.music.MusicEqualizerManager
 import com.makd.afinity.player.music.MusicPlaybackManager
 import com.makd.afinity.player.music.MusicProgressReporter
 import com.makd.afinity.player.music.MusicQueueManager
@@ -96,6 +97,7 @@ class AudioService : MediaSessionService() {
     @Inject lateinit var absEqualizerManager: AudiobookshelfEqualizerManager
     @Inject lateinit var absSkipSilenceManager: AudiobookshelfSkipSilenceManager
     @Inject lateinit var musicPlaybackManager: MusicPlaybackManager
+    @Inject lateinit var musicEqualizerManager: MusicEqualizerManager
     @Inject lateinit var musicQueueManager: MusicQueueManager
     @Inject lateinit var musicProgressReporter: MusicProgressReporter
     @Inject lateinit var radioManager: RadioManager
@@ -282,6 +284,13 @@ class AudioService : MediaSessionService() {
             "AudioService: switchToAbs() from engine=$activeEngine — musicTrack=${musicPlaybackManager.state.value.currentTrack?.name}"
         )
         activeEngine = ActiveEngine.ABS
+        musicEqualizerManager.releaseEqualizer()
+        exoPlayer
+            ?.audioSessionId
+            ?.takeIf { it != C.AUDIO_SESSION_ID_UNSET }
+            ?.let {
+                absEqualizerManager.attachToSession(it)
+            }
         val posMs = exoPlayer?.currentPosition ?: 0L
         musicProgressReporter.onPlaybackStopped(posMs)
         musicPlaybackManager.clearPlayer()
@@ -297,6 +306,13 @@ class AudioService : MediaSessionService() {
         if (activeEngine == ActiveEngine.MUSIC) return
         Timber.d("AudioService: switching to Music engine")
         activeEngine = ActiveEngine.MUSIC
+        absEqualizerManager.releaseEqualizer()
+        exoPlayer
+            ?.audioSessionId
+            ?.takeIf { it != C.AUDIO_SESSION_ID_UNSET }
+            ?.let {
+                musicEqualizerManager.attachToSession(it)
+            }
         absProgressSyncer.stopSyncing()
         absPlaybackManager.clearSession()
         stopPositionUpdates()
@@ -361,8 +377,16 @@ class AudioService : MediaSessionService() {
     private val playerListener =
         object : Player.Listener {
             override fun onAudioSessionIdChanged(audioSessionId: Int) {
-                if (activeEngine == ActiveEngine.ABS) {
-                    absEqualizerManager.attachToSession(audioSessionId)
+                when (activeEngine) {
+                    ActiveEngine.ABS -> {
+                        musicEqualizerManager.releaseEqualizer()
+                        absEqualizerManager.attachToSession(audioSessionId)
+                    }
+                    ActiveEngine.MUSIC -> {
+                        absEqualizerManager.releaseEqualizer()
+                        musicEqualizerManager.attachToSession(audioSessionId)
+                    }
+                    else -> {}
                 }
             }
 
@@ -485,15 +509,18 @@ class AudioService : MediaSessionService() {
                 initializedTimestampMs: Long,
                 initializationDurationMs: Long,
             ) {
-                if (activeEngine != ActiveEngine.ABS) return
                 val codecInfo =
                     MediaCodecList(MediaCodecList.ALL_CODECS).codecInfos.find {
                         it.name == decoderName
                     }
-                absPlaybackManager.updateAudioDecoder(
-                    decoderName = decoderName,
-                    isHardwareAccelerated = codecInfo?.isHardwareAccelerated == true,
-                )
+                val isHardwareAccelerated = codecInfo?.isHardwareAccelerated == true
+                when (activeEngine) {
+                    ActiveEngine.ABS ->
+                        absPlaybackManager.updateAudioDecoder(decoderName, isHardwareAccelerated)
+                    ActiveEngine.MUSIC ->
+                        musicPlaybackManager.updateAudioDecoder(decoderName, isHardwareAccelerated)
+                    else -> {}
+                }
             }
         }
 
@@ -708,6 +735,7 @@ class AudioService : MediaSessionService() {
 
     override fun onDestroy() {
         absEqualizerManager.releaseEqualizer()
+        musicEqualizerManager.releaseEqualizer()
         if (activeEngine == ActiveEngine.MUSIC) {
             musicProgressReporter.onPlaybackStopped(exoPlayer?.currentPosition ?: 0L)
         }

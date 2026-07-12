@@ -123,6 +123,22 @@ data class PlaybackStats(
 ) {
     val hasVideo: Boolean
         get() = !videoResolution.startsWith("0x0") && videoResolution != "Unknown"
+
+    companion object {
+        fun friendlyCodecName(mimeType: String?): String {
+            val subtype =
+                mimeType?.substringAfterLast('/')?.takeIf { it.isNotBlank() } ?: return "UNKNOWN"
+            return when (subtype.lowercase()) {
+                "mp4a-latm" -> "AAC"
+                "avc" -> "H264"
+                "raw" -> "PCM"
+                "true-hd" -> "TRUEHD"
+                "vnd.dts" -> "DTS"
+                "vnd.dts.hd" -> "DTS-HD"
+                else -> subtype.uppercase()
+            }
+        }
+    }
 }
 
 data class GestureConfig(

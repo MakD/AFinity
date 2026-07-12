@@ -88,17 +88,19 @@ fun PlaybackStatsOverlay(stats: PlaybackStats, onClose: () -> Unit) {
                         stats.videoOutput,
                     )
                 }
-                InfoRow(
-                    stringResource(R.string.playback_stats_label_play_method),
-                    stats.playMethod,
-                )
+                if (stats.playMethod != "Unknown") {
+                    InfoRow(
+                        stringResource(R.string.playback_stats_label_play_method),
+                        stats.playMethod,
+                    )
+                }
                 if (stats.connection.isNotBlank()) {
                     InfoRow(
                         stringResource(R.string.playback_stats_label_connection),
                         stats.connection,
                     )
                 }
-                if (stats.hasVideo) {
+                if (stats.hwDec != "Unknown") {
                     InfoRow(stringResource(R.string.playback_stats_label_hardware_dec), stats.hwDec)
                 }
                 if (stats.decoderName.isNotBlank()) {

@@ -1,13 +1,14 @@
-package com.makd.afinity.player.audiobookshelf
+package com.makd.afinity.player.music
 
 import android.content.Context
 import com.makd.afinity.player.common.AudioEqualizerManager
+import com.makd.afinity.player.common.EqualizerPreset
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AudiobookshelfEqualizerManager
+class MusicEqualizerManager
 @Inject
 constructor(@ApplicationContext context: Context) :
-    AudioEqualizerManager(context, "audiobookshelf_equalizer")
+    AudioEqualizerManager(context, "music_equalizer", EqualizerPreset.MUSIC)

@@ -42,6 +42,74 @@ enum class MpvVideoOutput(val value: String) {
     }
 }
 
+enum class MpvGpuApi(val value: String) {
+    OPENGL("opengl"),
+    VULKAN("vulkan");
+
+    companion object {
+        val default = OPENGL
+
+        fun fromValue(value: String): MpvGpuApi {
+            return entries.find { it.value == value } ?: default
+        }
+    }
+
+    fun getDisplayName(): String {
+        return when (this) {
+            OPENGL -> "OpenGL (default)"
+            VULKAN -> "Vulkan (experimental)"
+        }
+    }
+}
+
+enum class MpvHdrOutput(val value: String) {
+    AUTO("auto"),
+    TONE_MAP("tone-map");
+
+    companion object {
+        val default = AUTO
+
+        fun fromValue(value: String): MpvHdrOutput {
+            return entries.find { it.value == value } ?: default
+        }
+    }
+
+    fun getDisplayName(): String {
+        return when (this) {
+            AUTO -> "Auto (HDR passthrough)"
+            TONE_MAP -> "Always tone-map to SDR"
+        }
+    }
+}
+
+enum class MpvToneMapping(val value: String) {
+    AUTO("auto"),
+    BT2446A("bt.2446a"),
+    SPLINE("spline"),
+    HABLE("hable"),
+    MOBIUS("mobius"),
+    CLIP("clip");
+
+    companion object {
+        val default = AUTO
+
+        fun fromValue(value: String): MpvToneMapping {
+            return entries.find { it.value == value } ?: default
+        }
+    }
+
+    fun getDisplayName(): String {
+        return when (this) {
+            AUTO -> "Auto"
+            BT2446A -> "BT.2446a"
+            SPLINE -> "Spline"
+            HABLE -> "Hable"
+            MOBIUS -> "Mobius"
+            CLIP -> "Clip"
+        }
+    }
+}
+
 enum class MpvAudioOutput(val value: String) {
     AUDIOTRACK("audiotrack"),
     OPENSLES("opensles"),

@@ -12,7 +12,10 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.player.MpvAudioOutput
+import com.makd.afinity.data.models.player.MpvGpuApi
+import com.makd.afinity.data.models.player.MpvHdrOutput
 import com.makd.afinity.data.models.player.MpvHwDec
+import com.makd.afinity.data.models.player.MpvToneMapping
 import com.makd.afinity.data.models.player.MpvVideoOutput
 import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.SubtitleHorizontalAlignment
@@ -102,6 +105,10 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val LOGO_AUTO_HIDE = booleanPreferencesKey("logo_auto_hide")
 
         val MPV_HW_DEC = stringPreferencesKey("mpv_hw_dec")
+        val MPV_GPU_API = stringPreferencesKey("mpv_gpu_api")
+        val MPV_HDR_OUTPUT = stringPreferencesKey("mpv_hdr_output")
+        val MPV_TONE_MAPPING = stringPreferencesKey("mpv_tone_mapping")
+        val MPV_HDR_PEAK_DETECTION = booleanPreferencesKey("mpv_hdr_peak_detection")
         val MPV_VIDEO_OUTPUT = stringPreferencesKey("mpv_video_output")
         val MPV_AUDIO_OUTPUT = stringPreferencesKey("mpv_audio_output")
 
@@ -561,6 +568,67 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         return dataStore.data.map { preferences ->
             preferences[Keys.MPV_AUDIO_OUTPUT]?.let { MpvAudioOutput.fromValue(it) }
                 ?: MpvAudioOutput.default
+        }
+    }
+
+    override suspend fun setMpvGpuApi(gpuApi: MpvGpuApi) {
+        dataStore.edit { preferences -> preferences[Keys.MPV_GPU_API] = gpuApi.value }
+    }
+
+    override suspend fun getMpvGpuApi(): MpvGpuApi {
+        return dataStore.data.first()[Keys.MPV_GPU_API]?.let { MpvGpuApi.fromValue(it) }
+            ?: MpvGpuApi.default
+    }
+
+    override fun getMpvGpuApiFlow(): Flow<MpvGpuApi> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.MPV_GPU_API]?.let { MpvGpuApi.fromValue(it) } ?: MpvGpuApi.default
+        }
+    }
+
+    override suspend fun setMpvHdrOutput(hdrOutput: MpvHdrOutput) {
+        dataStore.edit { preferences -> preferences[Keys.MPV_HDR_OUTPUT] = hdrOutput.value }
+    }
+
+    override suspend fun getMpvHdrOutput(): MpvHdrOutput {
+        return dataStore.data.first()[Keys.MPV_HDR_OUTPUT]?.let { MpvHdrOutput.fromValue(it) }
+            ?: MpvHdrOutput.default
+    }
+
+    override fun getMpvHdrOutputFlow(): Flow<MpvHdrOutput> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.MPV_HDR_OUTPUT]?.let { MpvHdrOutput.fromValue(it) }
+                ?: MpvHdrOutput.default
+        }
+    }
+
+    override suspend fun setMpvToneMapping(toneMapping: MpvToneMapping) {
+        dataStore.edit { preferences -> preferences[Keys.MPV_TONE_MAPPING] = toneMapping.value }
+    }
+
+    override suspend fun getMpvToneMapping(): MpvToneMapping {
+        return dataStore.data.first()[Keys.MPV_TONE_MAPPING]?.let { MpvToneMapping.fromValue(it) }
+            ?: MpvToneMapping.default
+    }
+
+    override fun getMpvToneMappingFlow(): Flow<MpvToneMapping> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.MPV_TONE_MAPPING]?.let { MpvToneMapping.fromValue(it) }
+                ?: MpvToneMapping.default
+        }
+    }
+
+    override suspend fun setMpvHdrPeakDetection(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.MPV_HDR_PEAK_DETECTION] = enabled }
+    }
+
+    override suspend fun getMpvHdrPeakDetection(): Boolean {
+        return dataStore.data.first()[Keys.MPV_HDR_PEAK_DETECTION] ?: true
+    }
+
+    override fun getMpvHdrPeakDetectionFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.MPV_HDR_PEAK_DETECTION] ?: true
         }
     }
 

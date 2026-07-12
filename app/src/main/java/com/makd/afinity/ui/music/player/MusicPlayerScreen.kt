@@ -68,6 +68,7 @@ import com.google.android.gms.cast.framework.CastButtonFactory
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.data.models.music.RepeatMode
+import com.makd.afinity.ui.audiobookshelf.player.components.EqualizerBottomSheet
 import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
@@ -75,6 +76,7 @@ import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
 import com.makd.afinity.ui.music.player.components.MusicPlayerControls
+import com.makd.afinity.ui.player.components.PlaybackStatsOverlay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
@@ -86,6 +88,7 @@ fun SharedTransitionScope.MusicPlayerScreen(
     addToPlaylistViewModel: AddToPlaylistViewModel = hiltViewModel(),
 ) {
     val playbackState by viewModel.playbackState.collectAsStateWithLifecycle()
+    val equalizerState by viewModel.equalizerState.collectAsStateWithLifecycle()
     val lyrics by viewModel.lyrics.collectAsStateWithLifecycle()
     val showLyrics by viewModel.showLyrics.collectAsStateWithLifecycle()
     val lyricsLoading by viewModel.lyricsLoading.collectAsStateWithLifecycle()
@@ -93,10 +96,13 @@ fun SharedTransitionScope.MusicPlayerScreen(
     val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
     val radioState by viewModel.radioState.collectAsStateWithLifecycle()
     val queue by viewModel.queue.collectAsStateWithLifecycle()
+    val showPlaybackStats by viewModel.showPlaybackStats.collectAsStateWithLifecycle()
+    val playbackStats by viewModel.playbackStats.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var showQueue by remember { mutableStateOf(false) }
     var showSleepTimer by remember { mutableStateOf(false) }
+    var showEqualizer by remember { mutableStateOf(false) }
     var showAddToPlaylist by remember { mutableStateOf(false) }
     var showCastChooser by remember { mutableStateOf(false) }
     var radioSeed by remember { mutableStateOf<RadioSeed?>(null) }
@@ -185,6 +191,7 @@ fun SharedTransitionScope.MusicPlayerScreen(
                                 }
                             }),
                     isRadioActive = radioState.isActive,
+                    onOpenEqualizer = { showEqualizer = true },
                     onCastClick = { showCastChooser = true },
                     isMusicCasting = isMusicCasting,
                     paddingValues = paddingValues,
@@ -228,6 +235,7 @@ fun SharedTransitionScope.MusicPlayerScreen(
                                 }
                             }),
                     isRadioActive = radioState.isActive,
+                    onOpenEqualizer = { showEqualizer = true },
                     onCastClick = { showCastChooser = true },
                     isMusicCasting = isMusicCasting,
                     paddingValues = paddingValues,
@@ -238,6 +246,25 @@ fun SharedTransitionScope.MusicPlayerScreen(
 
         if (showQueue) {
             MusicQueueSheet(onDismiss = { showQueue = false }, viewModel = viewModel)
+        }
+
+        if (showPlaybackStats) {
+            PlaybackStatsOverlay(
+                stats = playbackStats,
+                onClose = viewModel::togglePlaybackStats,
+            )
+        }
+
+        if (showEqualizer) {
+            EqualizerBottomSheet(
+                state = equalizerState,
+                onEnabled = viewModel::setEqEnabled,
+                onPresetSelected = viewModel::applyEqPreset,
+                onBandChanged = viewModel::setEqBandGain,
+                onVolumeBoostChanged = viewModel::setVolumeBoost,
+                onDismiss = { showEqualizer = false },
+                presets = viewModel.equalizerPresets,
+            )
         }
 
         if (showSleepTimer) {
@@ -303,23 +330,24 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
     onInstantMix: (() -> Unit)? = null,
     onStartRadio: (() -> Unit)? = null,
     isRadioActive: Boolean = false,
+    onOpenEqualizer: () -> Unit = {},
     onCastClick: () -> Unit = {},
     isMusicCasting: Boolean = false,
     paddingValues: PaddingValues,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
     val playbackState by viewModel.playbackState.collectAsStateWithLifecycle()
+    val equalizerState by viewModel.equalizerState.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onNavigateBack) {
+        Box(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
+            IconButton(
+                onClick = onNavigateBack,
+                modifier = Modifier.align(Alignment.CenterStart),
+            ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_keyboard_arrow_down),
                     contentDescription = stringResource(R.string.cd_music_minimize),
@@ -332,8 +360,12 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.7f),
                 letterSpacing = 2.sp,
+                modifier = Modifier.align(Alignment.Center),
             )
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.align(Alignment.CenterEnd),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 IconButton(onClick = onOpenSleepTimer) {
                     Icon(
                         painter =
@@ -347,10 +379,10 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                             else Color.White,
                     )
                 }
-                IconButton(onClick = onOpenQueue) {
+                IconButton(onClick = viewModel::togglePlaybackStats) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_playlist_alt),
-                        contentDescription = stringResource(R.string.cd_music_queue),
+                        painter = painterResource(R.drawable.ic_info),
+                        contentDescription = stringResource(R.string.cd_playback_info),
                         tint = Color.White,
                     )
                 }
@@ -536,19 +568,30 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                IconButton(onClick = viewModel::toggleCurrentTrackFavorite) {
-                    Icon(
-                        painter =
-                            painterResource(
-                                if (playbackState.currentTrack?.favorite == true)
-                                    R.drawable.ic_favorite_filled
-                                else R.drawable.ic_favorite
-                            ),
-                        contentDescription = stringResource(R.string.cd_favorite),
-                        tint =
-                            if (playbackState.currentTrack?.favorite == true) Color.Red
-                            else Color.White.copy(alpha = 0.8f),
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onOpenEqualizer) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_equalizer),
+                            contentDescription = stringResource(R.string.cd_equalizer),
+                            tint =
+                                if (equalizerState.isEnabled) animatedColor
+                                else Color.White.copy(alpha = 0.8f),
+                        )
+                    }
+                    IconButton(onClick = viewModel::toggleCurrentTrackFavorite) {
+                        Icon(
+                            painter =
+                                painterResource(
+                                    if (playbackState.currentTrack?.favorite == true)
+                                        R.drawable.ic_favorite_filled
+                                    else R.drawable.ic_favorite
+                                ),
+                            contentDescription = stringResource(R.string.cd_favorite),
+                            tint =
+                                if (playbackState.currentTrack?.favorite == true) Color.Red
+                                else Color.White.copy(alpha = 0.8f),
+                        )
+                    }
                 }
             }
 
@@ -622,22 +665,34 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
             }
 
             Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-                IconButton(onClick = onCastClick) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onOpenQueue) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_cast_devices),
-                            contentDescription = "Cast",
-                            tint =
-                                if (isMusicCasting) animatedColor
-                                else Color.White.copy(alpha = 0.8f),
+                            painter = painterResource(R.drawable.ic_playlist_alt),
+                            contentDescription = stringResource(R.string.cd_music_queue),
+                            tint = Color.White.copy(alpha = 0.8f),
                         )
+                    }
+                    IconButton(onClick = onCastClick) {
                         Box(
-                            modifier =
-                                Modifier.size(4.dp)
-                                    .align(Alignment.BottomCenter)
-                                    .alpha(if (isMusicCasting) 1f else 0f)
-                                    .background(animatedColor, CircleShape)
-                        )
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_cast_devices),
+                                contentDescription = "Cast",
+                                tint =
+                                    if (isMusicCasting) animatedColor
+                                    else Color.White.copy(alpha = 0.8f),
+                            )
+                            Box(
+                                modifier =
+                                    Modifier.size(4.dp)
+                                        .align(Alignment.BottomCenter)
+                                        .alpha(if (isMusicCasting) 1f else 0f)
+                                        .background(animatedColor, CircleShape)
+                            )
+                        }
                     }
                 }
             }
@@ -662,12 +717,14 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
     onInstantMix: (() -> Unit)? = null,
     onStartRadio: (() -> Unit)? = null,
     isRadioActive: Boolean = false,
+    onOpenEqualizer: () -> Unit = {},
     onCastClick: () -> Unit = {},
     isMusicCasting: Boolean = false,
     paddingValues: PaddingValues,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
     val playbackState by viewModel.playbackState.collectAsStateWithLifecycle()
+    val equalizerState by viewModel.equalizerState.collectAsStateWithLifecycle()
 
     Row(
         modifier =
@@ -753,12 +810,11 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onNavigateBack) {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                IconButton(
+                    onClick = onNavigateBack,
+                    modifier = Modifier.align(Alignment.CenterStart),
+                ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_keyboard_arrow_down),
                         contentDescription = stringResource(R.string.cd_music_minimize),
@@ -770,8 +826,12 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.7f),
                     letterSpacing = 2.sp,
+                    modifier = Modifier.align(Alignment.Center),
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     IconButton(onClick = onOpenSleepTimer) {
                         Icon(
                             painter =
@@ -786,10 +846,10 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                                 else Color.White,
                         )
                     }
-                    IconButton(onClick = onOpenQueue) {
+                    IconButton(onClick = viewModel::togglePlaybackStats) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_playlist_alt),
-                            contentDescription = stringResource(R.string.cd_music_queue),
+                            painter = painterResource(R.drawable.ic_info),
+                            contentDescription = stringResource(R.string.cd_playback_info),
                             tint = Color.White,
                         )
                     }
@@ -906,19 +966,30 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                    IconButton(onClick = viewModel::toggleCurrentTrackFavorite) {
-                        Icon(
-                            painter =
-                                painterResource(
-                                    if (playbackState.currentTrack?.favorite == true)
-                                        R.drawable.ic_favorite_filled
-                                    else R.drawable.ic_favorite
-                                ),
-                            contentDescription = stringResource(R.string.cd_favorite),
-                            tint =
-                                if (playbackState.currentTrack?.favorite == true) Color.Red
-                                else Color.White.copy(alpha = 0.8f),
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onOpenEqualizer) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_equalizer),
+                                contentDescription = stringResource(R.string.cd_equalizer),
+                                tint =
+                                    if (equalizerState.isEnabled) animatedColor
+                                    else Color.White.copy(alpha = 0.8f),
+                            )
+                        }
+                        IconButton(onClick = viewModel::toggleCurrentTrackFavorite) {
+                            Icon(
+                                painter =
+                                    painterResource(
+                                        if (playbackState.currentTrack?.favorite == true)
+                                            R.drawable.ic_favorite_filled
+                                        else R.drawable.ic_favorite
+                                    ),
+                                contentDescription = stringResource(R.string.cd_favorite),
+                                tint =
+                                    if (playbackState.currentTrack?.favorite == true) Color.Red
+                                    else Color.White.copy(alpha = 0.8f),
+                            )
+                        }
                     }
                 }
 
@@ -1003,25 +1074,34 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                 }
 
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-                    IconButton(onClick = onCastClick) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxSize(),
-                        ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onOpenQueue) {
                             Icon(
-                                painter = painterResource(R.drawable.ic_cast_devices),
-                                contentDescription = stringResource(R.string.cd_cast),
-                                tint =
-                                    if (isMusicCasting) animatedColor
-                                    else Color.White.copy(alpha = 0.8f),
+                                painter = painterResource(R.drawable.ic_playlist_alt),
+                                contentDescription = stringResource(R.string.cd_music_queue),
+                                tint = Color.White.copy(alpha = 0.8f),
                             )
+                        }
+                        IconButton(onClick = onCastClick) {
                             Box(
-                                modifier =
-                                    Modifier.size(4.dp)
-                                        .align(Alignment.BottomCenter)
-                                        .alpha(if (isMusicCasting) 1f else 0f)
-                                        .background(animatedColor, CircleShape)
-                            )
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize(),
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_cast_devices),
+                                    contentDescription = stringResource(R.string.cd_cast),
+                                    tint =
+                                        if (isMusicCasting) animatedColor
+                                        else Color.White.copy(alpha = 0.8f),
+                                )
+                                Box(
+                                    modifier =
+                                        Modifier.size(4.dp)
+                                            .align(Alignment.BottomCenter)
+                                            .alpha(if (isMusicCasting) 1f else 0f)
+                                            .background(animatedColor, CircleShape)
+                                )
+                            }
                         }
                     }
                 }

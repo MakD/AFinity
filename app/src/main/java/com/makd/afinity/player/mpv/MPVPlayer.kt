@@ -57,6 +57,10 @@ class MPVPlayer(
     private val audioOutput: String = "aaudio",
     private val hwDec: String = "mediacodec",
     private val bufferSizeMb: Int = 64,
+    private val gpuApi: String = "opengl",
+    private val hdrPassthrough: Boolean = true,
+    private val toneMapping: String = "auto",
+    private val hdrPeakDetection: Boolean = true,
 ) : BasePlayer(), MPVLib.EventObserver, AudioManager.OnAudioFocusChangeListener {
 
     val mpv: MPVLib
@@ -79,6 +83,10 @@ class MPVPlayer(
         audioOutput = builder.audioOutput,
         hwDec = builder.hwDec,
         bufferSizeMb = builder.bufferSizeMb,
+        gpuApi = builder.gpuApi,
+        hdrPassthrough = builder.hdrPassthrough,
+        toneMapping = builder.toneMapping,
+        hdrPeakDetection = builder.hdrPeakDetection,
     )
 
     class Builder(val context: Context) {
@@ -112,6 +120,18 @@ class MPVPlayer(
         var bufferSizeMb: Int = 64
             private set
 
+        var gpuApi: String = "opengl"
+            private set
+
+        var hdrPassthrough: Boolean = true
+            private set
+
+        var toneMapping: String = "auto"
+            private set
+
+        var hdrPeakDetection: Boolean = true
+            private set
+
         fun setAudioAttributes(audioAttributes: AudioAttributes, handleAudioFocus: Boolean) =
             apply {
                 this.audioAttributes = audioAttributes
@@ -143,6 +163,18 @@ class MPVPlayer(
 
         fun setBufferSizeMb(sizeMb: Int) = apply { this.bufferSizeMb = sizeMb }
 
+        fun setGpuApi(gpuApi: String) = apply { this.gpuApi = gpuApi }
+
+        fun setHdrPassthrough(hdrPassthrough: Boolean) = apply {
+            this.hdrPassthrough = hdrPassthrough
+        }
+
+        fun setToneMapping(toneMapping: String) = apply { this.toneMapping = toneMapping }
+
+        fun setHdrPeakDetection(hdrPeakDetection: Boolean) = apply {
+            this.hdrPeakDetection = hdrPeakDetection
+        }
+
         fun build() = MPVPlayer(this)
     }
 
@@ -165,11 +197,14 @@ class MPVPlayer(
         mpv.setOptionString("profile", "fast")
         mpv.setOptionString("vo", videoOutput)
         mpv.setOptionString("ao", audioOutput)
+        mpv.setOptionString("gpu-api", gpuApi)
         mpv.setOptionString("gpu-context", "android")
-        mpv.setOptionString("opengl-es", "yes")
+        if (gpuApi == "opengl") mpv.setOptionString("opengl-es", "yes")
         mpv.setOptionString("vid", "no")
 
-        mpv.setOptionString("target-colorspace-hint", "yes")
+        mpv.setOptionString("target-colorspace-hint", if (hdrPassthrough) "yes" else "no")
+        if (toneMapping != "auto") mpv.setOptionString("tone-mapping", toneMapping)
+        mpv.setOptionString("hdr-compute-peak", if (hdrPeakDetection) "auto" else "no")
 
         mpv.setOptionString("hwdec", hwDec)
         mpv.setOptionString("hwdec-codecs", "h264,hevc,mpeg4,mpeg2video,vp8,vp9,av1")

@@ -16,7 +16,7 @@ import com.makd.afinity.player.audiobookshelf.AudiobookshelfEqualizerManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfSkipSilenceManager
-import com.makd.afinity.player.audiobookshelf.EqualizerPreset
+import com.makd.afinity.player.common.EqualizerPreset
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
