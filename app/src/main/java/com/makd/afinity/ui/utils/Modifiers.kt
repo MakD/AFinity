@@ -59,3 +59,13 @@ fun Modifier.verticalLayoutOffset(yOffset: Dp) =
             placeable.placeRelative(0, yOffsetPx)
         }
     }
+
+fun Modifier.bottomOverlap(overlap: Dp) =
+    this.layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        val overlapPx = overlap.roundToPx()
+
+        layout(placeable.width, (placeable.height - overlapPx).coerceAtLeast(0)) {
+            placeable.place(0, 0)
+        }
+    }

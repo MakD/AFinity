@@ -5,21 +5,22 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
@@ -31,11 +32,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
@@ -69,11 +69,16 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.LocalShowRatings
+import com.makd.afinity.ui.utils.bottomOverlap
 import kotlinx.coroutines.delay
 import mx.platacard.pagerindicator.PagerIndicatorOrientation
 import mx.platacard.pagerindicator.PagerWormIndicator
 import timber.log.Timber
 import java.util.Locale
+
+private val HeroMaxHeight = 560.dp
+private val HeroBottomOverlap = 40.dp
+private val HeroFadeHeight = 340.dp
 
 @Composable
 fun HeroCarousel(
@@ -90,36 +95,66 @@ fun HeroCarousel(
     val configuration = LocalConfiguration.current
     val isLandscape =
         configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
+    val density = LocalDensity.current
+    val windowInfo = LocalWindowInfo.current
+    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+    val screenWidthPx = windowInfo.containerSize.width
+    val screenHeightDp = with(density) { windowInfo.containerSize.height.toDp() }
+
+    val heroHeight =
+        if (isLandscape) (screenHeightDp * 0.95f).coerceAtMost(HeroMaxHeight)
+        else height.coerceAtMost(HeroMaxHeight)
+
     val infinitePageCount = Int.MAX_VALUE
     val middleStart = infinitePageCount / 2
+    val adjustedStart = middleStart - (middleStart % items.size)
 
-    val adjustedStart = if (items.isNotEmpty()) middleStart - (middleStart % items.size) else 0
+    val pagerState =
+        rememberPagerState(initialPage = adjustedStart, pageCount = { infinitePageCount })
 
-    val currentPageIndex = rememberSaveable(items.size) { mutableIntStateOf(adjustedStart) }
+    HeroCarouselAutoScrollAndPrefetch(pagerState, items, isScrolling, fillWidthPx = screenWidthPx)
 
-    if (isLandscape) {
-        HeroCarouselLandscape(
+    val currentItem by remember { derivedStateOf { items[pagerState.currentPage % items.size] } }
+    val contentAlpha by remember {
+        derivedStateOf {
+            1f - (kotlin.math.abs(pagerState.currentPageOffsetFraction) * 2f).coerceIn(0f, 1f)
+        }
+    }
+
+    val overlap = if (isLandscape) HeroBottomOverlap else 0.dp
+
+    Box(modifier = modifier.bottomOverlap(overlap).fillMaxWidth().height(heroHeight)) {
+        HeroBackdrop(
+            pagerState = pagerState,
             items = items,
-            onWatchNowClick = onWatchNowClick,
-            onPlayTrailerClick = onPlayTrailerClick,
-            onMoreInformationClick = onMoreInformationClick,
-            modifier = modifier,
-            isScrolling = isScrolling,
-            initialPageIndex = currentPageIndex.intValue,
-            onPageChanged = { currentPageIndex.intValue = it },
+            screenWidthDp = screenWidthDp,
+            height = heroHeight,
         )
-    } else {
-        HeroCarouselPortrait(
-            items = items,
-            height = height,
-            onWatchNowClick = onWatchNowClick,
-            onPlayTrailerClick = onPlayTrailerClick,
-            onMoreInformationClick = onMoreInformationClick,
-            modifier = modifier,
-            isScrolling = isScrolling,
-            initialPageIndex = currentPageIndex.intValue,
-            onPageChanged = { currentPageIndex.intValue = it },
-        )
+
+        if (isLandscape) {
+            HeroContentRich(
+                currentItem = currentItem,
+                items = items,
+                pagerState = pagerState,
+                contentAlpha = contentAlpha,
+                screenWidthDp = screenWidthDp,
+                onWatchNowClick = onWatchNowClick,
+                onPlayTrailerClick = onPlayTrailerClick,
+                onMoreInformationClick = onMoreInformationClick,
+            )
+        } else {
+            HeroContentCentered(
+                currentItem = currentItem,
+                items = items,
+                pagerState = pagerState,
+                contentAlpha = contentAlpha,
+                screenWidthDp = screenWidthDp,
+                onWatchNowClick = onWatchNowClick,
+                onPlayTrailerClick = onPlayTrailerClick,
+                onMoreInformationClick = onMoreInformationClick,
+            )
+        }
     }
 }
 
@@ -188,133 +223,295 @@ private fun HeroCarouselAutoScrollAndPrefetch(
 }
 
 @Composable
-fun HeroCarouselPortrait(
+private fun HeroBackdrop(
+    pagerState: PagerState,
     items: List<AfinityItem>,
+    screenWidthDp: Dp,
     height: Dp,
+) {
+    HorizontalPager(
+        state = pagerState,
+        modifier = Modifier.fillMaxSize(),
+        beyondViewportPageCount = 1,
+        key = { page -> "hero_page_$page" },
+    ) { page ->
+        val actualIndex = page % items.size
+        val item = items[actualIndex]
+        AsyncImage(
+            imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl,
+            contentDescription = item.name,
+            blurHash = item.images.backdropBlurHash ?: item.images.primaryBlurHash,
+            targetWidth = screenWidthDp,
+            targetHeight = height,
+            contentScale = ContentScale.Crop,
+            modifier =
+                Modifier.fillMaxSize()
+                    .graphicsLayer { alpha = 0.99f }
+                    .drawWithCache {
+                        val fadeStart =
+                            (size.height - HeroFadeHeight.toPx()).coerceAtLeast(size.height * 0.35f)
+                        val gradient =
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        Color.Black,
+                                        Color.Black.copy(alpha = 0.98f),
+                                        Color.Black.copy(alpha = 0.92f),
+                                        Color.Black.copy(alpha = 0.78f),
+                                        Color.Black.copy(alpha = 0.55f),
+                                        Color.Black.copy(alpha = 0.25f),
+                                        Color.Transparent,
+                                    ),
+                                startY = fadeStart,
+                                endY = size.height,
+                            )
+                        onDrawWithContent {
+                            drawContent()
+                            drawRect(Color.Black.copy(alpha = 0.25f))
+                            drawRect(gradient, blendMode = BlendMode.DstIn)
+                        }
+                    },
+        )
+    }
+}
+
+@Composable
+private fun rememberHeroPageFraction(pagerState: PagerState, size: Int): State<Float> = remember {
+    derivedStateOf {
+        val currentPage = pagerState.currentPage % size
+        val pageOffset = pagerState.currentPageOffsetFraction
+        when {
+            pageOffset > 0.5f && currentPage == size - 1 -> 0f
+            pageOffset < -0.5f && currentPage == 0 -> (size - 1).toFloat()
+            else -> (currentPage + pageOffset).coerceIn(0f, (size - 1).toFloat())
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.HeroContentCentered(
+    currentItem: AfinityItem,
+    items: List<AfinityItem>,
+    pagerState: PagerState,
+    contentAlpha: Float,
+    screenWidthDp: Dp,
     onWatchNowClick: (AfinityItem) -> Unit,
     onPlayTrailerClick: (AfinityItem) -> Unit,
     onMoreInformationClick: (AfinityItem) -> Unit,
-    modifier: Modifier = Modifier,
-    isScrolling: Boolean = false,
-    initialPageIndex: Int,
-    onPageChanged: (Int) -> Unit,
 ) {
-    if (items.isEmpty()) return
+    Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+        Column(
+            modifier =
+                Modifier.align(Alignment.BottomCenter)
+                    .padding(bottom = 80.dp)
+                    .fillMaxWidth()
+                    .graphicsLayer { alpha = contentAlpha },
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier = Modifier.fillMaxWidth(0.8f).height(140.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                currentItem.images.logo?.let { _ ->
+                    AsyncImage(
+                        imageUrl = currentItem.images.logoImageUrlWithTransparency,
+                        contentDescription = "${currentItem.name} logo",
+                        blurHash = null,
+                        targetWidth = screenWidthDp * 0.8f,
+                        targetHeight = 140.dp,
+                        modifier =
+                            Modifier.fillMaxHeight().wrapContentWidth(Alignment.CenterHorizontally),
+                        contentScale = ContentScale.Fit,
+                    )
+                }
+                    ?: run {
+                        Text(
+                            text = currentItem.name,
+                            style =
+                                MaterialTheme.typography.displaySmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 36.sp,
+                                ),
+                            color = Color.White,
+                            textAlign = TextAlign.Center,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+            }
 
-    val density = LocalDensity.current
-    val windowInfo = LocalWindowInfo.current
-    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
-    val screenWidthPx = windowInfo.containerSize.width
-    val infinitePageCount = Int.MAX_VALUE
-    val pagerState =
-        rememberPagerState(initialPage = initialPageIndex, pageCount = { infinitePageCount })
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Spacer(modifier = Modifier.weight(1f))
+                HeroMetadata(currentItem)
+                Spacer(modifier = Modifier.weight(1f))
+            }
 
-    LaunchedEffect(pagerState.currentPage) { onPageChanged(pagerState.currentPage) }
-
-    HeroCarouselAutoScrollAndPrefetch(pagerState, items, isScrolling, fillWidthPx = screenWidthPx)
-
-    val currentItem by remember { derivedStateOf { items[pagerState.currentPage % items.size] } }
-
-    val contentAlpha by remember {
-        derivedStateOf {
-            1f - (kotlin.math.abs(pagerState.currentPageOffsetFraction) * 2f).coerceIn(0f, 1f)
+            val genres =
+                when (currentItem) {
+                    is AfinityMovie -> (currentItem as AfinityMovie).genres
+                    is AfinityShow -> (currentItem as AfinityShow).genres
+                    else -> emptyList()
+                }
+            if (genres.isNotEmpty()) {
+                Text(
+                    text = genres.take(3).joinToString(" • "),
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 
-    Box(modifier = modifier.fillMaxWidth().height(height)) {
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize(),
-            beyondViewportPageCount = 1,
-            key = { page -> "hero_page_$page" },
-        ) { page ->
-            val actualIndex = page % items.size
-            val item = items[actualIndex]
-            AsyncImage(
-                imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl,
-                contentDescription = item.name,
-                blurHash = item.images.backdropBlurHash ?: item.images.primaryBlurHash,
-                targetWidth = screenWidthDp,
-                targetHeight = height,
-                contentScale = ContentScale.Crop,
-                modifier =
-                    Modifier.fillMaxSize()
-                        .graphicsLayer { alpha = 0.99f }
-                        .drawWithCache {
-                            val gradient =
-                                Brush.verticalGradient(
-                                    colors =
-                                        listOf(
-                                            Color.Black,
-                                            Color.Black.copy(alpha = 0.98f),
-                                            Color.Black.copy(alpha = 0.92f),
-                                            Color.Black.copy(alpha = 0.78f),
-                                            Color.Black.copy(alpha = 0.55f),
-                                            Color.Black.copy(alpha = 0.25f),
-                                            Color.Transparent,
-                                        ),
-                                    startY = size.height * 0.55f,
-                                    endY = size.height,
-                                )
-                            onDrawWithContent {
-                                drawContent()
-                                drawRect(Color.Black.copy(alpha = 0.25f))
-                                drawRect(gradient, blendMode = BlendMode.DstIn)
-                            }
-                        },
+    Box(
+        modifier =
+            Modifier.align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+    ) {
+        IconButton(
+            onClick = { onMoreInformationClick(currentItem) },
+            modifier =
+                Modifier.align(Alignment.CenterStart)
+                    .size(56.dp)
+                    .background(
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                        CircleShape,
+                    ),
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_info),
+                contentDescription = stringResource(R.string.hero_btn_more_info),
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(24.dp),
             )
         }
-
-        Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-            Column(
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.align(Alignment.CenterEnd),
+        ) {
+            IconButton(
+                onClick = { onPlayTrailerClick(currentItem) },
                 modifier =
-                    Modifier.align(Alignment.BottomCenter)
-                        .padding(bottom = 80.dp)
-                        .fillMaxWidth()
-                        .graphicsLayer { alpha = contentAlpha },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                    Modifier.size(56.dp)
+                        .background(
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                            CircleShape,
+                        ),
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_video),
+                    contentDescription = stringResource(R.string.hero_btn_play_trailer),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+            IconButton(
+                onClick = { onWatchNowClick(currentItem) },
+                modifier =
+                    Modifier.size(56.dp).background(MaterialTheme.colorScheme.primary, CircleShape),
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_player_play_filled),
+                    contentDescription = stringResource(R.string.hero_btn_play_media),
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(28.dp),
+                )
+            }
+        }
+    }
+
+    if (items.size > 1) {
+        val currentPageFractionState = rememberHeroPageFraction(pagerState, items.size)
+
+        PagerWormIndicator(
+            pageCount = items.size,
+            currentPageFraction = currentPageFractionState,
+            activeDotColor = MaterialTheme.colorScheme.primary,
+            dotColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+            modifier = Modifier.align(Alignment.BottomCenter).padding(40.dp),
+            dotCount = 5,
+            activeDotSize = 8.dp,
+            minDotSize = 4.dp,
+            space = 5.dp,
+            orientation = PagerIndicatorOrientation.Horizontal,
+        )
+    }
+}
+
+@Composable
+private fun BoxScope.HeroContentRich(
+    currentItem: AfinityItem,
+    items: List<AfinityItem>,
+    pagerState: PagerState,
+    contentAlpha: Float,
+    screenWidthDp: Dp,
+    onWatchNowClick: (AfinityItem) -> Unit,
+    onPlayTrailerClick: (AfinityItem) -> Unit,
+    onMoreInformationClick: (AfinityItem) -> Unit,
+) {
+    Box(
+        modifier =
+            Modifier.fillMaxSize()
+                .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))
+                .padding(start = 14.dp, bottom = 48.dp, top = 48.dp, end = 48.dp)
+    ) {
+        Column(
+            modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(0.75f).graphicsLayer { alpha = contentAlpha },
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Box(
-                    modifier = Modifier.fillMaxWidth(0.8f).sizeIn(maxHeight = 120.dp),
-                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxWidth(0.5f).height(140.dp),
+                    contentAlignment = Alignment.CenterStart,
                 ) {
-                    currentItem.images.logo?.let { _ ->
-                        AsyncImage(
-                            imageUrl = currentItem.images.logoImageUrlWithTransparency,
-                            contentDescription = "${currentItem.name} logo",
-                            blurHash = null,
-                            targetWidth = screenWidthDp * 0.8f,
-                            targetHeight = 120.dp,
-                            modifier = Modifier.fillMaxWidth().wrapContentHeight(),
-                            contentScale = ContentScale.Fit,
-                        )
-                    }
-                        ?: run {
-                            Text(
-                                text = currentItem.name,
-                                style =
-                                    MaterialTheme.typography.displaySmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 36.sp,
-                                    ),
-                                color = Color.White,
-                                textAlign = TextAlign.Center,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.fillMaxWidth(),
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.CenterStart,
+                    ) {
+                        currentItem.images.logo?.let { _ ->
+                            AsyncImage(
+                                imageUrl = currentItem.images.logoImageUrlWithTransparency,
+                                contentDescription = "${currentItem.name} logo",
+                                blurHash = null,
+                                targetWidth = screenWidthDp * 0.4f,
+                                targetHeight = 140.dp,
+                                modifier =
+                                    Modifier.fillMaxHeight().wrapContentWidth(Alignment.Start),
+                                contentScale = ContentScale.Fit,
+                                alignment = Alignment.CenterStart,
                             )
                         }
+                            ?: run {
+                                Text(
+                                    text = currentItem.name,
+                                    style =
+                                        MaterialTheme.typography.displayMedium.copy(
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                    }
                 }
 
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Spacer(modifier = Modifier.weight(1f))
                     HeroMetadata(currentItem)
-                    Spacer(modifier = Modifier.weight(1f))
                 }
 
                 val genres =
@@ -329,353 +526,87 @@ fun HeroCarouselPortrait(
                         style =
                             MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+
+                currentItem.overview?.let { overview ->
+                    Text(
+                        text = overview,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
-        }
 
-        Box(
-            modifier =
-                Modifier.align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
-        ) {
-            IconButton(
-                onClick = { onMoreInformationClick(currentItem) },
-                modifier =
-                    Modifier.align(Alignment.CenterStart)
-                        .size(56.dp)
-                        .background(
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                            CircleShape,
-                        ),
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_info),
-                    contentDescription = stringResource(R.string.hero_btn_more_info),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
             Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.align(Alignment.CenterEnd),
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                IconButton(
-                    onClick = { onPlayTrailerClick(currentItem) },
-                    modifier =
-                        Modifier.size(56.dp)
-                            .background(
-                                MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                                CircleShape,
-                            ),
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_video),
-                        contentDescription = stringResource(R.string.hero_btn_play_trailer),
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(24.dp),
-                    )
-                }
-                IconButton(
-                    onClick = { onWatchNowClick(currentItem) },
-                    modifier =
-                        Modifier.size(56.dp)
-                            .background(MaterialTheme.colorScheme.primary, CircleShape),
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_player_play_filled),
-                        contentDescription = stringResource(R.string.hero_btn_play_media),
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(28.dp),
-                    )
-                }
-            }
-        }
-
-        if (items.size > 1) {
-            val currentPageFractionState = remember {
-                derivedStateOf {
-                    val currentPage = pagerState.currentPage % items.size
-                    val pageOffset = pagerState.currentPageOffsetFraction
-                    when {
-                        pageOffset > 0.5f && currentPage == items.size - 1 -> 0f
-                        pageOffset < -0.5f && currentPage == 0 -> (items.size - 1).toFloat()
-                        else -> (currentPage + pageOffset).coerceIn(0f, (items.size - 1).toFloat())
-                    }
-                }
-            }
-
-            PagerWormIndicator(
-                pageCount = items.size,
-                currentPageFraction = currentPageFractionState,
-                activeDotColor = MaterialTheme.colorScheme.primary,
-                dotColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                modifier = Modifier.align(Alignment.BottomCenter).padding(40.dp),
-                dotCount = 5,
-                activeDotSize = 8.dp,
-                minDotSize = 4.dp,
-                space = 5.dp,
-                orientation = PagerIndicatorOrientation.Horizontal,
-            )
-        }
-    }
-}
-
-@Composable
-private fun HeroCarouselLandscape(
-    items: List<AfinityItem>,
-    onWatchNowClick: (AfinityItem) -> Unit,
-    onPlayTrailerClick: (AfinityItem) -> Unit,
-    onMoreInformationClick: (AfinityItem) -> Unit,
-    modifier: Modifier = Modifier,
-    isScrolling: Boolean = false,
-    initialPageIndex: Int,
-    onPageChanged: (Int) -> Unit,
-) {
-    if (items.isEmpty()) return
-
-    val density = LocalDensity.current
-    val windowInfo = LocalWindowInfo.current
-    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
-    val screenWidthPx = windowInfo.containerSize.width
-    val screenHeightDp = with(density) { windowInfo.containerSize.height.toDp() }
-    val infinitePageCount = Int.MAX_VALUE
-    val pagerState =
-        rememberPagerState(initialPage = initialPageIndex, pageCount = { infinitePageCount })
-
-    LaunchedEffect(pagerState.currentPage) { onPageChanged(pagerState.currentPage) }
-
-    val landscapeHeight = screenHeightDp * 0.95f
-
-    HeroCarouselAutoScrollAndPrefetch(pagerState, items, isScrolling, fillWidthPx = screenWidthPx)
-
-    val currentItem by remember { derivedStateOf { items[pagerState.currentPage % items.size] } }
-
-    val contentAlpha by remember {
-        derivedStateOf {
-            1f - (kotlin.math.abs(pagerState.currentPageOffsetFraction) * 2f).coerceIn(0f, 1f)
-        }
-    }
-
-    Box(modifier = modifier.fillMaxWidth().height(landscapeHeight)) {
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize(),
-            beyondViewportPageCount = 1,
-            key = { page -> "hero_page_$page" },
-        ) { page ->
-            val actualIndex = page % items.size
-            val item = items[actualIndex]
-            AsyncImage(
-                imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl,
-                contentDescription = item.name,
-                blurHash = item.images.backdropBlurHash ?: item.images.primaryBlurHash,
-                targetWidth = screenWidthDp,
-                targetHeight = landscapeHeight,
-                contentScale = ContentScale.Crop,
-                modifier =
-                    Modifier.fillMaxSize()
-                        .graphicsLayer { alpha = 0.99f }
-                        .drawWithCache {
-                            val gradient =
-                                Brush.verticalGradient(
-                                    colors =
-                                        listOf(
-                                            Color.Black,
-                                            Color.Black.copy(alpha = 0.98f),
-                                            Color.Black.copy(alpha = 0.92f),
-                                            Color.Black.copy(alpha = 0.78f),
-                                            Color.Black.copy(alpha = 0.55f),
-                                            Color.Black.copy(alpha = 0.25f),
-                                            Color.Transparent,
-                                        ),
-                                    startY = size.height * 0.55f,
-                                    endY = size.height,
-                                )
-
-                            onDrawWithContent {
-                                drawContent()
-                                drawRect(Color.Black.copy(alpha = 0.25f))
-                                drawRect(gradient, blendMode = BlendMode.DstIn)
-                            }
-                        },
-            )
-        }
-
-        Box(
-            modifier =
-                Modifier.fillMaxSize()
-                    .windowInsetsPadding(
-                        WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
-                    )
-                    .padding(start = 48.dp, bottom = 48.dp, top = 48.dp, end = 48.dp)
-        ) {
-            Column(
-                modifier = Modifier.align(Alignment.CenterStart).fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(0.75f).graphicsLayer { alpha = contentAlpha },
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(0.5f).height(100.dp),
-                        contentAlignment = Alignment.CenterStart,
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.CenterStart,
-                        ) {
-                            currentItem.images.logo?.let { _ ->
-                                AsyncImage(
-                                    imageUrl = currentItem.images.logoImageUrlWithTransparency,
-                                    contentDescription = "${currentItem.name} logo",
-                                    blurHash = null,
-                                    targetWidth = screenWidthDp * 0.4f,
-                                    targetHeight = 100.dp,
-                                    modifier = Modifier.fillMaxWidth().wrapContentHeight(),
-                                    contentScale = ContentScale.Fit,
-                                    alignment = Alignment.CenterStart,
-                                )
-                            }
-                                ?: run {
-                                    Text(
-                                        text = currentItem.name,
-                                        style =
-                                            MaterialTheme.typography.displayMedium.copy(
-                                                fontWeight = FontWeight.Bold
-                                            ),
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                        }
-                    }
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        HeroMetadata(currentItem)
-                    }
-
-                    val genres =
-                        when (currentItem) {
-                            is AfinityMovie -> (currentItem as AfinityMovie).genres
-                            is AfinityShow -> (currentItem as AfinityShow).genres
-                            else -> emptyList()
-                        }
-                    if (genres.isNotEmpty()) {
-                        Text(
-                            text = genres.take(3).joinToString(" • "),
-                            style =
-                                MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Medium
+                Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                    IconButton(
+                        onClick = { onMoreInformationClick(currentItem) },
+                        modifier =
+                            Modifier.size(36.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                    CircleShape,
                                 ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_info),
+                            contentDescription = stringResource(R.string.hero_btn_more_info),
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(24.dp),
                         )
                     }
-
-                    currentItem.overview?.let { overview ->
-                        Text(
-                            text = overview,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
+                    IconButton(
+                        onClick = { onPlayTrailerClick(currentItem) },
+                        modifier =
+                            Modifier.size(36.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                    CircleShape,
+                                ),
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_video),
+                            contentDescription = stringResource(R.string.hero_btn_play_trailer),
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                    IconButton(
+                        onClick = { onWatchNowClick(currentItem) },
+                        modifier =
+                            Modifier.size(36.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape),
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_player_play_filled),
+                            contentDescription = stringResource(R.string.hero_btn_watch_now),
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(24.dp),
                         )
                     }
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                        IconButton(
-                            onClick = { onMoreInformationClick(currentItem) },
-                            modifier =
-                                Modifier.size(36.dp)
-                                    .background(
-                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                                        CircleShape,
-                                    ),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_info),
-                                contentDescription = stringResource(R.string.hero_btn_more_info),
-                                tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(24.dp),
-                            )
-                        }
-                        IconButton(
-                            onClick = { onPlayTrailerClick(currentItem) },
-                            modifier =
-                                Modifier.size(36.dp)
-                                    .background(
-                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                                        CircleShape,
-                                    ),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_video),
-                                contentDescription = stringResource(R.string.hero_btn_play_trailer),
-                                tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(24.dp),
-                            )
-                        }
-                        IconButton(
-                            onClick = { onWatchNowClick(currentItem) },
-                            modifier =
-                                Modifier.size(36.dp)
-                                    .background(MaterialTheme.colorScheme.primary, CircleShape),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_player_play_filled),
-                                contentDescription = stringResource(R.string.hero_btn_watch_now),
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(24.dp),
-                            )
-                        }
-                    }
+                if (items.size > 1) {
+                    val currentPageFractionState = rememberHeroPageFraction(pagerState, items.size)
 
-                    if (items.size > 1) {
-                        val currentPageFractionState = remember {
-                            derivedStateOf {
-                                val currentPage = pagerState.currentPage % items.size
-                                val pageOffset = pagerState.currentPageOffsetFraction
-                                when {
-                                    pageOffset > 0.5f && currentPage == items.size - 1 -> 0f
-                                    pageOffset < -0.5f && currentPage == 0 ->
-                                        (items.size - 1).toFloat()
-
-                                    else ->
-                                        (currentPage + pageOffset).coerceIn(
-                                            0f,
-                                            (items.size - 1).toFloat(),
-                                        )
-                                }
-                            }
-                        }
-
-                        PagerWormIndicator(
-                            pageCount = items.size,
-                            currentPageFraction = currentPageFractionState,
-                            activeDotColor = MaterialTheme.colorScheme.primary,
-                            dotColor =
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                            dotCount = 5,
-                            activeDotSize = 8.dp,
-                            minDotSize = 4.dp,
-                            space = 5.dp,
-                            orientation = PagerIndicatorOrientation.Horizontal,
-                        )
-                    }
+                    PagerWormIndicator(
+                        pageCount = items.size,
+                        currentPageFraction = currentPageFractionState,
+                        activeDotColor = MaterialTheme.colorScheme.primary,
+                        dotColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                        dotCount = 5,
+                        activeDotSize = 8.dp,
+                        minDotSize = 4.dp,
+                        space = 5.dp,
+                        orientation = PagerIndicatorOrientation.Horizontal,
+                    )
                 }
             }
         }

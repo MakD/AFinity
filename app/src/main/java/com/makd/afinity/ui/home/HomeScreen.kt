@@ -88,7 +88,6 @@ import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
-import com.makd.afinity.ui.utils.verticalLayoutOffset
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -152,10 +151,6 @@ fun HomeScreen(
             )
         }
             ?: run {
-                val isLandscape =
-                    configuration.orientation ==
-                        android.content.res.Configuration.ORIENTATION_LANDSCAPE
-
                 Box(modifier = Modifier.fillMaxSize()) {
                     LocalDensity.current
                     val statusBarHeight =
@@ -164,48 +159,11 @@ fun HomeScreen(
                         WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                     val showCarousel = !uiState.isOffline && uiState.heroCarouselItems.isNotEmpty()
 
-                    val firstContentKey =
-                        remember(
-                            uiState.isOffline,
-                            uiState.libraries.isNotEmpty(),
-                            hideLibrariesSection,
-                            continueWatchingItems.isNotEmpty(),
-                            uiState.isLoading,
-                            uiState.latestMedia.isNotEmpty(),
-                            uiState.downloadedMovies.isNotEmpty(),
-                            uiState.downloadedShows.isNotEmpty(),
-                            uiState.downloadedAudiobooks.isNotEmpty(),
-                            uiState.downloadedPodcastEpisodes.isNotEmpty(),
-                            uiState.nextUp.isNotEmpty(),
-                        ) {
-                            when {
-                                !uiState.isOffline &&
-                                    uiState.libraries.isNotEmpty() &&
-                                    !hideLibrariesSection -> "libraries_section"
-                                continueWatchingItems.isNotEmpty() -> "continue_watching"
-                                !uiState.isOffline &&
-                                    uiState.isLoading &&
-                                    uiState.latestMedia.isNotEmpty() -> "cw_skeleton"
-                                uiState.isOffline && uiState.downloadedMovies.isNotEmpty() ->
-                                    "downloaded_movies"
-                                uiState.isOffline && uiState.downloadedShows.isNotEmpty() ->
-                                    "downloaded_shows"
-                                uiState.isOffline && uiState.downloadedAudiobooks.isNotEmpty() ->
-                                    "downloaded_audiobooks"
-                                uiState.isOffline &&
-                                    uiState.downloadedPodcastEpisodes.isNotEmpty() ->
-                                    "downloaded_podcasts"
-                                !uiState.isOffline && uiState.nextUp.isNotEmpty() -> "next_up"
-                                else -> null
-                            }
-                        }
-
                     val baseModifier =
                         Modifier.fillMaxWidth()
                             .windowInsetsPadding(
                                 WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
                             )
-                    val landscapeOffsetModifier = baseModifier.verticalLayoutOffset((-70).dp)
 
                     LazyColumn(
                         state = lazyListState,
@@ -237,11 +195,7 @@ fun HomeScreen(
                                 !hideLibrariesSection
                         ) {
                             item(key = "libraries_section") {
-                                val itemMod =
-                                    if (isLandscape && firstContentKey == "libraries_section")
-                                        landscapeOffsetModifier
-                                    else baseModifier
-                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     LibrariesSection(
                                         libraries = uiState.libraries,
                                         onLibraryClick = { library ->
@@ -267,11 +221,7 @@ fun HomeScreen(
 
                         if (continueWatchingItems.isNotEmpty()) {
                             item(key = "continue_watching") {
-                                val itemMod =
-                                    if (isLandscape && firstContentKey == "continue_watching")
-                                        landscapeOffsetModifier
-                                    else baseModifier
-                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     OptimizedContinueWatchingSection(
                                         items = continueWatchingItems,
                                         onItemClick = { item ->
@@ -292,11 +242,7 @@ fun HomeScreen(
                                 uiState.latestMedia.isNotEmpty()
                         ) {
                             item(key = "cw_skeleton") {
-                                val itemMod =
-                                    if (isLandscape && firstContentKey == "cw_skeleton")
-                                        landscapeOffsetModifier
-                                    else baseModifier
-                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     ContinueWatchingSkeleton(widthSizeClass)
                                 }
                             }
@@ -304,11 +250,7 @@ fun HomeScreen(
 
                         if (uiState.isOffline && uiState.downloadedMovies.isNotEmpty()) {
                             item(key = "downloaded_movies") {
-                                val itemMod =
-                                    if (isLandscape && firstContentKey == "downloaded_movies")
-                                        landscapeOffsetModifier
-                                    else baseModifier
-                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     OptimizedLatestTvSeriesSection(
                                         title = stringResource(R.string.home_downloaded_movies),
                                         items = uiState.downloadedMovies,
@@ -322,11 +264,7 @@ fun HomeScreen(
 
                         if (uiState.isOffline && uiState.downloadedShows.isNotEmpty()) {
                             item(key = "downloaded_shows") {
-                                val itemMod =
-                                    if (isLandscape && firstContentKey == "downloaded_shows")
-                                        landscapeOffsetModifier
-                                    else baseModifier
-                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     OptimizedLatestTvSeriesSection(
                                         title = stringResource(R.string.home_downloaded_shows),
                                         items = uiState.downloadedShows,
@@ -340,11 +278,7 @@ fun HomeScreen(
 
                         if (uiState.isOffline && uiState.downloadedAudiobooks.isNotEmpty()) {
                             item(key = "downloaded_audiobooks") {
-                                val itemMod =
-                                    if (isLandscape && firstContentKey == "downloaded_audiobooks")
-                                        landscapeOffsetModifier
-                                    else baseModifier
-                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     DownloadedAudiobooksSection(
                                         title = stringResource(R.string.home_downloaded_audiobooks),
                                         items = uiState.downloadedAudiobooks,
@@ -356,11 +290,7 @@ fun HomeScreen(
 
                         if (uiState.isOffline && uiState.downloadedPodcastEpisodes.isNotEmpty()) {
                             item(key = "downloaded_podcasts") {
-                                val itemMod =
-                                    if (isLandscape && firstContentKey == "downloaded_podcasts")
-                                        landscapeOffsetModifier
-                                    else baseModifier
-                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     DownloadedAudiobooksSection(
                                         title = stringResource(R.string.home_downloaded_episodes),
                                         items = uiState.downloadedPodcastEpisodes,
@@ -372,11 +302,7 @@ fun HomeScreen(
 
                         if (uiState.isOffline && uiState.downloadedMusicAlbums.isNotEmpty()) {
                             item(key = "downloaded_music_albums") {
-                                val itemMod =
-                                    if (isLandscape && firstContentKey == "downloaded_music_albums")
-                                        landscapeOffsetModifier
-                                    else baseModifier
-                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     DownloadedMusicAlbumsSection(
                                         title = "Downloaded Albums",
                                         albums = uiState.downloadedMusicAlbums,
@@ -393,11 +319,7 @@ fun HomeScreen(
 
                         if (uiState.isOffline && uiState.downloadedMusicTracks.isNotEmpty()) {
                             item(key = "downloaded_music_tracks") {
-                                val itemMod =
-                                    if (isLandscape && firstContentKey == "downloaded_music_tracks")
-                                        landscapeOffsetModifier
-                                    else baseModifier
-                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     DownloadedMusicTracksSection(
                                         title = "Downloaded Tracks",
                                         tracks = uiState.downloadedMusicTracks,
@@ -415,11 +337,7 @@ fun HomeScreen(
 
                         if (!uiState.isOffline && uiState.nextUp.isNotEmpty()) {
                             item(key = "next_up") {
-                                val itemMod =
-                                    if (isLandscape && firstContentKey == "next_up")
-                                        landscapeOffsetModifier
-                                    else baseModifier
-                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     NextUpSection(
                                         episodes = uiState.nextUp,
                                         onEpisodeClick = { episode ->
@@ -507,11 +425,7 @@ fun HomeScreen(
 
                         if (!uiState.isOffline && uiState.upcomingEpisodes.isNotEmpty()) {
                             item(key = "upcoming_episodes") {
-                                val itemMod =
-                                    if (isLandscape && firstContentKey == "upcoming_episodes")
-                                        landscapeOffsetModifier
-                                    else baseModifier
-                                Box(modifier = itemMod.padding(top = 24.dp)) {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     UpcomingEpisodesSection(
                                         items = uiState.upcomingEpisodes,
                                         onItemClick = { episode ->
