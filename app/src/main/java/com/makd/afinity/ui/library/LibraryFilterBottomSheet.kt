@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -151,22 +152,11 @@ fun LibraryFilterBottomSheet(
                             .verticalScroll(rememberScrollState())
                             .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 16.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.discover_filter_title),
-                            style =
-                                MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                        )
-                        TextButton(onClick = { working = LibraryFilters() }) {
-                            Text(stringResource(R.string.discover_filter_clear_all))
-                        }
-                    }
+                    Text(
+                        text = stringResource(R.string.discover_filter_title),
+                        style =
+                            MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    )
 
                     Spacer(modifier = Modifier.height(8.dp))
 
@@ -518,17 +508,28 @@ fun LibraryFilterBottomSheet(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                 )
 
-                TextButton(
-                    onClick = {
-                        onApply(working)
-                        onDismiss()
-                    },
+                Row(
                     modifier =
                         Modifier.fillMaxWidth()
                             .navigationBarsPadding()
                             .padding(horizontal = 24.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(stringResource(R.string.action_apply))
+                    TextButton(
+                        onClick = { working = LibraryFilters() },
+                        enabled = !working.isEmpty,
+                    ) {
+                        Text(stringResource(R.string.discover_filter_clear_all))
+                    }
+                    Button(
+                        onClick = {
+                            onApply(working)
+                            onDismiss()
+                        }
+                    ) {
+                        Text(stringResource(R.string.action_apply))
+                    }
                 }
             }
         }

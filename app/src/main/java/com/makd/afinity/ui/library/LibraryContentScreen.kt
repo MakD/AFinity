@@ -30,6 +30,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -41,7 +42,6 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -452,17 +452,21 @@ private fun SortDialog(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                 )
 
-                TextButton(
-                    onClick = {
-                        onSortSelected(selectedSort, !isAscending)
-                        onDismiss()
-                    },
+                Row(
                     modifier =
                         Modifier.fillMaxWidth()
                             .navigationBarsPadding()
                             .padding(horizontal = 24.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.End,
                 ) {
-                    Text(stringResource(R.string.action_apply))
+                    Button(
+                        onClick = {
+                            onSortSelected(selectedSort, !isAscending)
+                            onDismiss()
+                        }
+                    ) {
+                        Text(stringResource(R.string.action_apply))
+                    }
                 }
             }
         }

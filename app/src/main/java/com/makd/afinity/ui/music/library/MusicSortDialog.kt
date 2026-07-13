@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -25,7 +26,6 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -132,17 +132,21 @@ fun MusicSortDialog(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                 )
 
-                TextButton(
-                    onClick = {
-                        onSortSelected(selectedField, !isAscending)
-                        onDismiss()
-                    },
+                Row(
                     modifier =
                         Modifier.fillMaxWidth()
                             .navigationBarsPadding()
                             .padding(horizontal = 24.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.End,
                 ) {
-                    Text(stringResource(R.string.action_apply))
+                    Button(
+                        onClick = {
+                            onSortSelected(selectedField, !isAscending)
+                            onDismiss()
+                        }
+                    ) {
+                        Text(stringResource(R.string.action_apply))
+                    }
                 }
             }
         }

@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -57,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -190,54 +191,33 @@ fun DiscoverFilterBottomSheet(
 
     LaunchedEffect(Unit) { watchRegion?.let { onRegionSelected(it) } }
 
+    val maxDialogHeight = (LocalConfiguration.current.screenHeightDp * 0.92f).dp
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Surface(
             modifier =
-                Modifier.fillMaxWidth().widthIn(max = 480.dp).fillMaxHeight(0.9f).padding(16.dp),
+                Modifier.fillMaxWidth()
+                    .widthIn(max = 480.dp)
+                    .heightIn(max = maxDialogHeight)
+                    .padding(16.dp),
             shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surfaceContainer,
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier =
-                        Modifier.weight(1f)
+                        Modifier.weight(1f, fill = false)
                             .verticalScroll(rememberScrollState())
                             .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.discover_filter_title),
-                            style =
-                                MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                        )
-                        TextButton(
-                            onClick = {
-                                releaseDateGte = null
-                                releaseDateLte = null
-                                runtimeRange = 0f..400f
-                                ratingRange = 0f..10f
-                                voteCountRange = 0f..1000f
-                                tvStatus = emptySet()
-                                selectedCertifications = emptySet()
-                                selectedGenreIds = emptySet()
-                                watchRegion = null
-                                selectedProviderIds = emptySet()
-                                selectedKeywords = emptyList()
-                                selectedExcludeKeywords = emptyList()
-                            }
-                        ) {
-                            Text(stringResource(R.string.discover_filter_clear_all))
-                        }
-                    }
+                    Text(
+                        text = stringResource(R.string.discover_filter_title),
+                        style =
+                            MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    )
 
                     Spacer(modifier = Modifier.height(8.dp))
 
@@ -618,42 +598,69 @@ fun DiscoverFilterBottomSheet(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                 )
 
-                TextButton(
-                    onClick = {
-                        onApply(
-                            DiscoverFilterOptions(
-                                genreIds =
-                                    if (showGenrePicker) selectedGenreIds.toList()
-                                    else filterOptions.genreIds,
-                                releaseDateGte = releaseDateGte,
-                                releaseDateLte = releaseDateLte,
-                                runtimeGte = runtimeRange.start.roundToInt().takeIf { it > 0 },
-                                runtimeLte =
-                                    runtimeRange.endInclusive.roundToInt().takeIf { it < 400 },
-                                voteAverageGte = ratingRange.start.toDouble().takeIf { it > 0.0 },
-                                voteAverageLte =
-                                    ratingRange.endInclusive.toDouble().takeIf { it < 10.0 },
-                                voteCountGte = voteCountRange.start.roundToInt().takeIf { it > 0 },
-                                voteCountLte =
-                                    voteCountRange.endInclusive.roundToInt().takeIf { it < 1000 },
-                                tvStatus = tvStatus.toList(),
-                                certification = selectedCertifications.toList(),
-                                watchProviderIds = selectedProviderIds.toList(),
-                                watchRegion = watchRegion,
-                                keywordIds = selectedKeywords.map { it.id },
-                                excludeKeywordIds = selectedExcludeKeywords.map { it.id },
-                            ),
-                            selectedKeywords,
-                            selectedExcludeKeywords,
-                        )
-                        onDismiss()
-                    },
+                Row(
                     modifier =
                         Modifier.fillMaxWidth()
                             .navigationBarsPadding()
                             .padding(horizontal = 24.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(stringResource(R.string.action_apply))
+                    TextButton(
+                        onClick = {
+                            releaseDateGte = null
+                            releaseDateLte = null
+                            runtimeRange = 0f..400f
+                            ratingRange = 0f..10f
+                            voteCountRange = 0f..1000f
+                            tvStatus = emptySet()
+                            selectedCertifications = emptySet()
+                            selectedGenreIds = emptySet()
+                            watchRegion = null
+                            selectedProviderIds = emptySet()
+                            selectedKeywords = emptyList()
+                            selectedExcludeKeywords = emptyList()
+                        }
+                    ) {
+                        Text(stringResource(R.string.discover_filter_clear_all))
+                    }
+                    Button(
+                        onClick = {
+                            onApply(
+                                DiscoverFilterOptions(
+                                    genreIds =
+                                        if (showGenrePicker) selectedGenreIds.toList()
+                                        else filterOptions.genreIds,
+                                    releaseDateGte = releaseDateGte,
+                                    releaseDateLte = releaseDateLte,
+                                    runtimeGte = runtimeRange.start.roundToInt().takeIf { it > 0 },
+                                    runtimeLte =
+                                        runtimeRange.endInclusive.roundToInt().takeIf { it < 400 },
+                                    voteAverageGte =
+                                        ratingRange.start.toDouble().takeIf { it > 0.0 },
+                                    voteAverageLte =
+                                        ratingRange.endInclusive.toDouble().takeIf { it < 10.0 },
+                                    voteCountGte =
+                                        voteCountRange.start.roundToInt().takeIf { it > 0 },
+                                    voteCountLte =
+                                        voteCountRange.endInclusive.roundToInt().takeIf {
+                                            it < 1000
+                                        },
+                                    tvStatus = tvStatus.toList(),
+                                    certification = selectedCertifications.toList(),
+                                    watchProviderIds = selectedProviderIds.toList(),
+                                    watchRegion = watchRegion,
+                                    keywordIds = selectedKeywords.map { it.id },
+                                    excludeKeywordIds = selectedExcludeKeywords.map { it.id },
+                                ),
+                                selectedKeywords,
+                                selectedExcludeKeywords,
+                            )
+                            onDismiss()
+                        }
+                    ) {
+                        Text(stringResource(R.string.action_apply))
+                    }
                 }
             }
         }
