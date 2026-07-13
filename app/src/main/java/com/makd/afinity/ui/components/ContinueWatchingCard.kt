@@ -58,10 +58,14 @@ fun ContinueWatchingCard(
     onClick: () -> Unit,
     cardWidth: Dp,
     modifier: Modifier = Modifier,
+    fillWidth: Boolean = false,
 ) {
     val ratingScale = rememberRatingMetadataScale()
 
-    Column(modifier = modifier.width(cardWidth)) {
+    Column(
+        modifier =
+            modifier.then(if (fillWidth) Modifier.fillMaxWidth() else Modifier.width(cardWidth))
+    ) {
         Card(
             onClick = onClick,
             modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),

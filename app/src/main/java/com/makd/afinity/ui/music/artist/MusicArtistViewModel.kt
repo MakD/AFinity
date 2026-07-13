@@ -8,6 +8,7 @@ import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityTrack
+import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -36,6 +37,7 @@ class MusicArtistViewModel @Inject constructor(
     private val musicRepository: MusicRepository,
     private val downloadRepository: DownloadRepository,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
+    private val appDataRepository: AppDataRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -91,6 +93,7 @@ class MusicArtistViewModel @Inject constructor(
         _uiState.update { it.copy(topTracks = tracks.map { t -> if (t.id == trackId) t.copy(favorite = newFavorite) else t }) }
         viewModelScope.launch {
             runCatching { musicRepository.setFavorite(trackId, newFavorite) }
+                .onSuccess { appDataRepository.updateTrackFavoriteStatus(track, newFavorite) }
                 .onFailure { _uiState.update { it.copy(topTracks = tracks) } }
         }
     }
@@ -101,7 +104,10 @@ class MusicArtistViewModel @Inject constructor(
         _uiState.update { it.copy(artist = artist.copy(favorite = newFavorite)) }
         viewModelScope.launch {
             runCatching { musicRepository.setFavorite(artist.id, newFavorite) }
-                .onSuccess { adminChangeBroadcaster.notifyItemChanged(artist.id.toString()) }
+                .onSuccess {
+                    appDataRepository.updateArtistFavoriteStatus(artist, newFavorite)
+                    adminChangeBroadcaster.notifyItemChanged(artist.id.toString())
+                }
                 .onFailure { _uiState.update { it.copy(artist = artist.copy(favorite = artist.favorite)) } }
         }
     }

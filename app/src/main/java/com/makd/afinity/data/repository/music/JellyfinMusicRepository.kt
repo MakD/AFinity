@@ -62,7 +62,9 @@ constructor(
     }
 
     override fun getPlaylistsFlow(libraryId: UUID?): Flow<List<AfinityPlaylist>> =
-        playlistsRefreshTrigger.map { getPlaylists(libraryId) }
+        playlistsRefreshTrigger.map {
+            getPlaylists(libraryId)
+        }
 
     private fun getBaseUrlInternal(): String =
         sessionManager.currentSession.value?.serverUrl?.trimEnd('/') ?: ""
@@ -514,6 +516,34 @@ constructor(
                 emptyList()
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error fetching playlists")
+                emptyList()
+            }
+        }
+
+    override suspend fun getFavoritePlaylists(): List<AfinityPlaylist> =
+        withContext(Dispatchers.IO) {
+            try {
+                val apiClient =
+                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
+                val userId = getCurrentUserId() ?: return@withContext emptyList()
+                val baseUrl = getBaseUrlInternal()
+                val response =
+                    ItemsApi(apiClient)
+                        .getItems(
+                            userId = userId,
+                            includeItemTypes = listOf(BaseItemKind.PLAYLIST),
+                            filters = listOf(ItemFilter.IS_FAVORITE),
+                            sortBy = listOf(ItemSortBy.SORT_NAME),
+                            sortOrder = listOf(SortOrder.ASCENDING),
+                            fields = FieldSets.MUSIC_PLAYLIST,
+                            enableUserData = true,
+                            recursive = true,
+                        )
+                response.content.items.mapNotNull { dto ->
+                    runCatching { dto.toAfinityPlaylist(baseUrl) }.getOrNull()
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to fetch favorite playlists")
                 emptyList()
             }
         }
@@ -984,7 +1014,11 @@ constructor(
             }
         }
 
-    override suspend fun getAllMusicGenres(libraryId: UUID?, startIndex: Int, limit: Int): List<AfinityMusicGenre> =
+    override suspend fun getAllMusicGenres(
+        libraryId: UUID?,
+        startIndex: Int,
+        limit: Int,
+    ): List<AfinityMusicGenre> =
         withContext(Dispatchers.IO) {
             try {
                 val apiClient =

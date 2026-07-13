@@ -66,6 +66,8 @@ enum class Destination(
         const val APPEARANCE_OPTIONS_ROUTE = "appearance_options"
         const val LICENSES_ROUTE = "licenses"
         const val FILTERED_MEDIA_ROUTE = "filtered_media/{filterType}/{filterId}/{filterName}"
+        const val FAVORITES_CATEGORY_ROUTE = "favorites_category/{category}"
+        const val WATCHLIST_CATEGORY_ROUTE = "watchlist_category/{category}"
         const val SEERR_MEDIA_ROUTE =
             "seerr_media/{seerrMediaType}/{seerrTmdbId}?seerrTitle={seerrTitle}&seerrBackdrop={seerrBackdrop}&seerrPoster={seerrPoster}"
         const val SERVER_MANAGEMENT_ROUTE = "server_management"
@@ -266,6 +268,14 @@ enum class Destination(
             filterName: String,
         ): String {
             return "filtered_media/$filterType/$filterId/${filterName.replace("/", "%2F")}"
+        }
+
+        fun createFavoritesCategoryRoute(category: String): String {
+            return "favorites_category/$category"
+        }
+
+        fun createWatchlistCategoryRoute(category: String): String {
+            return "watchlist_category/$category"
         }
 
         fun createSeerrMediaRoute(

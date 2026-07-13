@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityMusicGenre
+import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.ui.components.AsyncImage
 
 private val GENRE_CARD_GRADIENTS =
@@ -44,6 +45,35 @@ private val GENRE_CARD_GRADIENTS =
         Color(0xFFAED1AE) to Color(0xFF4F7E70),
         Color(0xFFD4A5C9) to Color(0xFF7B4F8C),
     )
+
+@Composable
+fun MusicPlaylistCard(
+    playlist: AfinityPlaylist,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    MusicAlbumCard(
+        album =
+            AfinityAlbum(
+                id = playlist.id,
+                name = playlist.name,
+                artistId = null,
+                artist = null,
+                artists = emptyList(),
+                productionYear = null,
+                songCount = playlist.songCount,
+                runtimeTicks = playlist.runtimeTicks,
+                genres = emptyList(),
+                overview = playlist.overview,
+                favorite = playlist.favorite,
+                played = false,
+                playCount = null,
+                images = playlist.images,
+            ),
+        onClick = onClick,
+        modifier = modifier,
+    )
+}
 
 @Composable
 fun MusicAlbumCard(

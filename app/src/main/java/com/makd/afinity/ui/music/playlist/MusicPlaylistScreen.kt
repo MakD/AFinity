@@ -220,6 +220,22 @@ fun MusicPlaylistScreen(
                                 playerViewModel.playQueue(uiState.tracks, 0)
                             },
                         ) {
+                            IconButton(onClick = { viewModel.toggleFavorite() }) {
+                                Icon(
+                                    painter =
+                                        if (uiState.playlist?.favorite == true)
+                                            painterResource(R.drawable.ic_favorite_filled)
+                                        else painterResource(R.drawable.ic_favorite),
+                                    contentDescription =
+                                        if (uiState.playlist?.favorite == true)
+                                            stringResource(R.string.cd_favorite_remove)
+                                        else stringResource(R.string.cd_favorite_add),
+                                    tint =
+                                        if (uiState.playlist?.favorite == true) Color.Red
+                                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(26.dp),
+                                )
+                            }
                             IconButton(onClick = { showDeleteConfirm = true }) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_delete),
@@ -426,6 +442,22 @@ fun MusicPlaylistScreen(
                             playerViewModel.playQueue(uiState.tracks, 0)
                         },
                     ) {
+                        IconButton(onClick = { viewModel.toggleFavorite() }) {
+                            Icon(
+                                painter =
+                                    if (uiState.playlist?.favorite == true)
+                                        painterResource(R.drawable.ic_favorite_filled)
+                                    else painterResource(R.drawable.ic_favorite),
+                                contentDescription =
+                                    if (uiState.playlist?.favorite == true)
+                                        stringResource(R.string.cd_favorite_remove)
+                                    else stringResource(R.string.cd_favorite_add),
+                                tint =
+                                    if (uiState.playlist?.favorite == true) Color.Red
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(26.dp),
+                            )
+                        }
                         IconButton(onClick = { showDeleteConfirm = true }) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_delete),

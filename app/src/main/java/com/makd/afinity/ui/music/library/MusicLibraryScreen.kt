@@ -103,6 +103,7 @@ import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AlphabetScroller
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.SectionRowHeader
 import com.makd.afinity.ui.home.components.ArtistAlbumsCarousel
 import com.makd.afinity.ui.home.components.LatestAlbumsSection
 import com.makd.afinity.ui.home.components.MostPlayedAlbumsSection
@@ -1391,16 +1392,30 @@ internal fun MusicArtistsRow(
     onArtistClick: (AfinityArtist) -> Unit,
     modifier: Modifier = Modifier,
     horizontalPadding: Dp = 16.dp,
+    onViewAllClick: (() -> Unit)? = null,
 ) {
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val cardSize = if (isLandscape) 170.dp else 140.dp
     Column(modifier = modifier) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(start = horizontalPadding, bottom = 12.dp),
-        )
+        if (onViewAllClick != null) {
+            SectionRowHeader(
+                title = title,
+                modifier =
+                    Modifier.padding(
+                        start = horizontalPadding,
+                        end = horizontalPadding,
+                        bottom = 12.dp,
+                    ),
+                onViewAllClick = onViewAllClick,
+            )
+        } else {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(start = horizontalPadding, bottom = 12.dp),
+            )
+        }
         LazyRow(
             modifier = Modifier.padding(horizontal = horizontalPadding),
             horizontalArrangement = Arrangement.spacedBy(12.dp),

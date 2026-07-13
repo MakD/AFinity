@@ -20,6 +20,7 @@ import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.data.models.music.RadioState
 import com.makd.afinity.data.models.music.RepeatMode
 import com.makd.afinity.data.models.player.PlaybackStats
+import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.player.AudioService
 import com.makd.afinity.player.common.EqualizerPreset
@@ -56,6 +57,7 @@ constructor(
     private val offlineModeManager: OfflineModeManager,
     private val radioManager: RadioManager,
     private val equalizerManager: MusicEqualizerManager,
+    private val appDataRepository: AppDataRepository,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -374,6 +376,7 @@ constructor(
         queueManager.updateTrackInQueue(updated)
         viewModelScope.launch {
             runCatching { musicRepository.setFavorite(track.id, newFav) }
+                .onSuccess { appDataRepository.updateTrackFavoriteStatus(track, newFav) }
                 .onFailure {
                     playbackManager.updateTrack(track)
                     queueManager.updateTrackInQueue(track)

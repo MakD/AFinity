@@ -77,7 +77,9 @@ import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.MediaRowSection
+import com.makd.afinity.ui.components.SectionRowHeader
 import com.makd.afinity.ui.home.components.MusicAlbumRowSection
+import com.makd.afinity.ui.home.components.MusicPlaylistRowSection
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.music.library.MusicArtistsRow
 import com.makd.afinity.ui.music.library.startMusicService
@@ -93,6 +95,7 @@ fun FavoritesScreen(
     mainUiState: MainUiState,
     onItemClick: (AfinityItem) -> Unit = {},
     onPersonClick: (String) -> Unit = {},
+    onViewAllClick: (FavoritesCategory) -> Unit = {},
     navController: NavController,
     viewModel: FavoritesViewModel = hiltViewModel(),
     playerViewModel: MusicPlayerViewModel = hiltViewModel(),
@@ -165,7 +168,8 @@ fun FavoritesScreen(
                             uiState.channels.isNotEmpty() ||
                             uiState.favoriteAlbums.isNotEmpty() ||
                             uiState.favoriteArtists.isNotEmpty() ||
-                            uiState.favoriteTracks.isNotEmpty()
+                            uiState.favoriteTracks.isNotEmpty() ||
+                            uiState.favoritePlaylists.isNotEmpty()
 
                     if (!hasAnyFavorites) {
                         FullScreenEmpty(
@@ -201,6 +205,9 @@ fun FavoritesScreen(
                                         items = uiState.boxSets,
                                         onItemClick = onItemClick,
                                         cardWidth = portraitWidth,
+                                        onViewAllClick = {
+                                            onViewAllClick(FavoritesCategory.BOXSETS)
+                                        },
                                     )
                                 }
                             }
@@ -211,6 +218,9 @@ fun FavoritesScreen(
                                         items = uiState.movies,
                                         onItemClick = onItemClick,
                                         cardWidth = portraitWidth,
+                                        onViewAllClick = {
+                                            onViewAllClick(FavoritesCategory.MOVIES)
+                                        },
                                     )
                                 }
                             }
@@ -221,6 +231,9 @@ fun FavoritesScreen(
                                         items = uiState.shows,
                                         onItemClick = onItemClick,
                                         cardWidth = portraitWidth,
+                                        onViewAllClick = {
+                                            onViewAllClick(FavoritesCategory.SHOWS)
+                                        },
                                     )
                                 }
                             }
@@ -231,6 +244,9 @@ fun FavoritesScreen(
                                         items = uiState.seasons,
                                         onItemClick = onItemClick,
                                         cardWidth = portraitWidth,
+                                        onViewAllClick = {
+                                            onViewAllClick(FavoritesCategory.SEASONS)
+                                        },
                                     )
                                 }
                             }
@@ -243,6 +259,9 @@ fun FavoritesScreen(
                                             viewModel.selectEpisode(episode as AfinityEpisode)
                                         },
                                         cardWidth = landscapeWidth,
+                                        onViewAllClick = {
+                                            onViewAllClick(FavoritesCategory.EPISODES)
+                                        },
                                     )
                                 }
                             }
@@ -260,6 +279,9 @@ fun FavoritesScreen(
                                             )
                                         },
                                         cardWidth = landscapeWidth,
+                                        onViewAllClick = {
+                                            onViewAllClick(FavoritesCategory.CHANNELS)
+                                        },
                                     )
                                 }
                             }
@@ -270,6 +292,9 @@ fun FavoritesScreen(
                                         people = uiState.people,
                                         onPersonClick = onPersonClick,
                                         cardWidth = portraitWidth,
+                                        onViewAllClick = {
+                                            onViewAllClick(FavoritesCategory.PEOPLE)
+                                        },
                                     )
                                 }
                             }
@@ -285,6 +310,9 @@ fun FavoritesScreen(
                                                     album.id.toString()
                                                 )
                                             )
+                                        },
+                                        onViewAllClick = {
+                                            onViewAllClick(FavoritesCategory.ALBUMS)
                                         },
                                     )
                                 }
@@ -302,6 +330,9 @@ fun FavoritesScreen(
                                                 )
                                             )
                                         },
+                                        onViewAllClick = {
+                                            onViewAllClick(FavoritesCategory.ARTISTS)
+                                        },
                                     )
                                 }
                             }
@@ -310,6 +341,9 @@ fun FavoritesScreen(
                                     FavoriteTracksSection(
                                         tracks = uiState.favoriteTracks,
                                         currentTrackId = playbackState.currentTrack?.id,
+                                        onViewAllClick = {
+                                            onViewAllClick(FavoritesCategory.TRACKS)
+                                        },
                                         onTrackClick = { track ->
                                             startMusicService(context)
                                             playerViewModel.playQueue(
@@ -329,6 +363,28 @@ fun FavoritesScreen(
                                         },
                                         onFavorite = { track ->
                                             viewModel.toggleTrackFavorite(track)
+                                        },
+                                    )
+                                }
+                            }
+                            if (uiState.favoritePlaylists.isNotEmpty()) {
+                                item {
+                                    MusicPlaylistRowSection(
+                                        title =
+                                            stringResource(
+                                                R.string.section_favorite_playlists
+                                            ),
+                                        playlists = uiState.favoritePlaylists,
+                                        horizontalPadding = 0.dp,
+                                        onPlaylistClick = { playlist ->
+                                            navController.navigate(
+                                                Destination.createMusicPlaylistRoute(
+                                                    playlist.id.toString()
+                                                )
+                                            )
+                                        },
+                                        onViewAllClick = {
+                                            onViewAllClick(FavoritesCategory.PLAYLISTS)
                                         },
                                     )
                                 }
@@ -363,13 +419,10 @@ private fun FavoritePeopleSection(
     people: List<AfinityPersonDetail>,
     onPersonClick: (String) -> Unit,
     cardWidth: Dp,
+    onViewAllClick: (() -> Unit)? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        SectionRowHeader(title = title, onViewAllClick = onViewAllClick)
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
@@ -386,7 +439,7 @@ private fun FavoritePeopleSection(
 }
 
 @Composable
-private fun FavoritePersonCard(person: AfinityPersonDetail, onClick: () -> Unit, cardWidth: Dp) {
+internal fun FavoritePersonCard(person: AfinityPersonDetail, onClick: () -> Unit, cardWidth: Dp) {
     Column(
         modifier =
             Modifier.width(cardWidth)
@@ -428,13 +481,10 @@ private fun FavoriteChannelsSection(
     channels: List<AfinityChannel>,
     onChannelClick: (AfinityChannel) -> Unit,
     cardWidth: Dp,
+    onViewAllClick: (() -> Unit)? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        SectionRowHeader(title = title, onViewAllClick = onViewAllClick)
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
@@ -451,7 +501,7 @@ private fun FavoriteChannelsSection(
 }
 
 @Composable
-private fun FavoriteChannelCard(channel: AfinityChannel, onClick: () -> Unit, cardWidth: Dp) {
+internal fun FavoriteChannelCard(channel: AfinityChannel, onClick: () -> Unit, cardWidth: Dp) {
     Column(modifier = Modifier.width(cardWidth)) {
         Card(
             onClick = onClick,
@@ -513,13 +563,10 @@ private fun FavoriteTracksSection(
     onAddNext: (com.makd.afinity.data.models.music.AfinityTrack) -> Unit,
     onAddLast: (com.makd.afinity.data.models.music.AfinityTrack) -> Unit,
     onFavorite: (com.makd.afinity.data.models.music.AfinityTrack) -> Unit,
+    onViewAllClick: (() -> Unit)? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(
-            text = "Favorite Songs",
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        SectionRowHeader(title = "Favorite Songs", onViewAllClick = onViewAllClick)
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
@@ -540,7 +587,7 @@ private fun FavoriteTracksSection(
 }
 
 @Composable
-private fun FavoriteTrackCard(
+internal fun FavoriteTrackCard(
     track: com.makd.afinity.data.models.music.AfinityTrack,
     isPlaying: Boolean,
     onClick: () -> Unit,

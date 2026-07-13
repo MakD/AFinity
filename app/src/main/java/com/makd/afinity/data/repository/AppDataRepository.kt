@@ -23,6 +23,7 @@ import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
+import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.home.HomeCacheRepository
 import com.makd.afinity.data.repository.home.HomeSectionsRepository
@@ -171,7 +172,8 @@ constructor(
                     data.channels.size +
                     data.favoriteAlbums.size +
                     data.favoriteArtists.size +
-                    data.favoriteTracks.size
+                    data.favoriteTracks.size +
+                    data.favoritePlaylists.size
             }
             .distinctUntilChanged()
 
@@ -918,6 +920,13 @@ constructor(
                         emptyList()
                     }
                 }
+                val playlistsDeferred = async {
+                    try {
+                        musicRepository.getFavoritePlaylists()
+                    } catch (_: Exception) {
+                        emptyList()
+                    }
+                }
 
                 _favoritesData.value =
                     FavoritesData(
@@ -932,6 +941,7 @@ constructor(
                         favoriteAlbums = albumsDeferred.await().sortedBy { it.name },
                         favoriteArtists = artistsDeferred.await().sortedBy { it.name },
                         favoriteTracks = tracksDeferred.await().sortedBy { it.name },
+                        favoritePlaylists = playlistsDeferred.await().sortedBy { it.name },
                     )
             }
         } catch (e: Exception) {
@@ -1018,6 +1028,50 @@ constructor(
                     else -> current
                 }
             }
+        }
+    }
+
+    fun updateAlbumFavoriteStatus(album: AfinityAlbum, isFavorite: Boolean) {
+        _favoritesData.update { current ->
+            val without = current.favoriteAlbums.filterNot { it.id == album.id }
+            current.copy(
+                favoriteAlbums =
+                    if (isFavorite) (without + album.copy(favorite = true)).sortedBy { it.name }
+                    else without
+            )
+        }
+    }
+
+    fun updateArtistFavoriteStatus(artist: AfinityArtist, isFavorite: Boolean) {
+        _favoritesData.update { current ->
+            val without = current.favoriteArtists.filterNot { it.id == artist.id }
+            current.copy(
+                favoriteArtists =
+                    if (isFavorite) (without + artist.copy(favorite = true)).sortedBy { it.name }
+                    else without
+            )
+        }
+    }
+
+    fun updateTrackFavoriteStatus(track: AfinityTrack, isFavorite: Boolean) {
+        _favoritesData.update { current ->
+            val without = current.favoriteTracks.filterNot { it.id == track.id }
+            current.copy(
+                favoriteTracks =
+                    if (isFavorite) (without + track.copy(favorite = true)).sortedBy { it.name }
+                    else without
+            )
+        }
+    }
+
+    fun updatePlaylistFavoriteStatus(playlist: AfinityPlaylist, isFavorite: Boolean) {
+        _favoritesData.update { current ->
+            val without = current.favoritePlaylists.filterNot { it.id == playlist.id }
+            current.copy(
+                favoritePlaylists =
+                    if (isFavorite) (without + playlist.copy(favorite = true)).sortedBy { it.name }
+                    else without
+            )
         }
     }
 
@@ -1142,6 +1196,7 @@ data class FavoritesData(
     val favoriteAlbums: List<AfinityAlbum> = emptyList(),
     val favoriteArtists: List<AfinityArtist> = emptyList(),
     val favoriteTracks: List<AfinityTrack> = emptyList(),
+    val favoritePlaylists: List<AfinityPlaylist> = emptyList(),
 )
 
 data class WatchlistData(

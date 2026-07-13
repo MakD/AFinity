@@ -1184,6 +1184,7 @@ constructor(
         }
         viewModelScope.launch {
             runCatching { musicRepository.setFavorite(trackId, newFavorite) }
+                .onSuccess { appDataRepository.updateTrackFavoriteStatus(track, newFavorite) }
                 .onFailure { _uiState.update { it.copy(musicSearchResults = musicResults) } }
         }
     }

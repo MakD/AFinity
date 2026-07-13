@@ -326,16 +326,17 @@ constructor(
         _artistFilters.value = filters
     }
 
-    fun toggleTrackFavorite(trackId: UUID, currentFavorite: Boolean) {
+    fun toggleTrackFavorite(track: AfinityTrack, currentFavorite: Boolean) {
         val newFavorite = !currentFavorite
         _uiState.update {
-            it.copy(trackFavoriteOverrides = it.trackFavoriteOverrides + (trackId to newFavorite))
+            it.copy(trackFavoriteOverrides = it.trackFavoriteOverrides + (track.id to newFavorite))
         }
         viewModelScope.launch {
-            runCatching { musicRepository.setFavorite(trackId, newFavorite) }
+            runCatching { musicRepository.setFavorite(track.id, newFavorite) }
+                .onSuccess { appDataRepository.updateTrackFavoriteStatus(track, newFavorite) }
                 .onFailure {
                     _uiState.update {
-                        it.copy(trackFavoriteOverrides = it.trackFavoriteOverrides - trackId)
+                        it.copy(trackFavoriteOverrides = it.trackFavoriteOverrides - track.id)
                     }
                 }
         }

@@ -189,7 +189,7 @@ fun MusicBrowseScreen(
                     onAddNext = { track -> playerViewModel.addNext(listOf(track)) },
                     onAddLast = { track -> playerViewModel.addLast(listOf(track)) },
                     onFavorite = { track, isFavorite ->
-                        viewModel.toggleTrackFavorite(track.id, isFavorite)
+                        viewModel.toggleTrackFavorite(track, isFavorite)
                     },
                     onAddToPlaylist =
                         if (isOffline) null

@@ -8,6 +8,7 @@ import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityTrack
+import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -38,6 +39,7 @@ constructor(
     private val musicRepository: MusicRepository,
     private val downloadRepository: DownloadRepository,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
+    private val appDataRepository: AppDataRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -84,7 +86,10 @@ constructor(
         _uiState.update { it.copy(album = album.copy(favorite = newFavorite)) }
         viewModelScope.launch {
             runCatching { musicRepository.setFavorite(album.id, newFavorite) }
-                .onSuccess { adminChangeBroadcaster.notifyItemChanged(album.id.toString()) }
+                .onSuccess {
+                    appDataRepository.updateAlbumFavoriteStatus(album, newFavorite)
+                    adminChangeBroadcaster.notifyItemChanged(album.id.toString())
+                }
                 .onFailure {
                     _uiState.update { it.copy(album = album.copy(favorite = album.favorite)) }
                 }
@@ -103,6 +108,7 @@ constructor(
         }
         viewModelScope.launch {
             runCatching { musicRepository.setFavorite(trackId, newFavorite) }
+                .onSuccess { appDataRepository.updateTrackFavoriteStatus(track, newFavorite) }
                 .onFailure { _uiState.update { it.copy(tracks = tracks) } }
         }
     }

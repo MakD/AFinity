@@ -50,6 +50,7 @@ fun WatchlistScreen(
     modifier: Modifier = Modifier,
     mainUiState: MainUiState,
     onItemClick: (AfinityItem) -> Unit = {},
+    onViewAllClick: (WatchlistCategory) -> Unit = {},
     navController: NavController,
     viewModel: WatchlistViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
@@ -150,6 +151,7 @@ fun WatchlistScreen(
                                 items = uiState.boxSets,
                                 onItemClick = onItemClick,
                                 cardWidth = portraitWidth,
+                                onViewAllClick = { onViewAllClick(WatchlistCategory.BOXSETS) },
                             )
                         }
                     }
@@ -161,6 +163,7 @@ fun WatchlistScreen(
                                 items = uiState.movies,
                                 onItemClick = onItemClick,
                                 cardWidth = portraitWidth,
+                                onViewAllClick = { onViewAllClick(WatchlistCategory.MOVIES) },
                             )
                         }
                     }
@@ -172,6 +175,7 @@ fun WatchlistScreen(
                                 items = uiState.shows,
                                 onItemClick = onItemClick,
                                 cardWidth = portraitWidth,
+                                onViewAllClick = { onViewAllClick(WatchlistCategory.SHOWS) },
                             )
                         }
                     }
@@ -183,6 +187,7 @@ fun WatchlistScreen(
                                 items = uiState.seasons,
                                 onItemClick = onItemClick,
                                 cardWidth = portraitWidth,
+                                onViewAllClick = { onViewAllClick(WatchlistCategory.SEASONS) },
                             )
                         }
                     }
@@ -198,6 +203,7 @@ fun WatchlistScreen(
                                     )
                                 },
                                 cardWidth = landscapeWidth,
+                                onViewAllClick = { onViewAllClick(WatchlistCategory.EPISODES) },
                             )
                         }
                     }

@@ -73,6 +73,8 @@ import com.makd.afinity.ui.audiobookshelf.libraries.AudiobookshelfSeriesListScre
 import com.makd.afinity.ui.audiobookshelf.player.AudiobookshelfPlayerScreen
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AppNavigationDrawerContent
+import com.makd.afinity.ui.favorites.FavoritesCategory
+import com.makd.afinity.ui.favorites.FavoritesCategoryScreen
 import com.makd.afinity.ui.favorites.FavoritesScreen
 import com.makd.afinity.ui.home.HomeScreen
 import com.makd.afinity.ui.item.ItemDetailScreen
@@ -106,6 +108,8 @@ import com.makd.afinity.ui.settings.player.PlayerOptionsScreen
 import com.makd.afinity.ui.settings.servers.AddEditServerScreen
 import com.makd.afinity.ui.settings.servers.ServerManagementScreen
 import com.makd.afinity.ui.settings.update.GlobalUpdateDialog
+import com.makd.afinity.ui.watchlist.WatchlistCategory
+import com.makd.afinity.ui.watchlist.WatchlistCategoryScreen
 import com.makd.afinity.ui.watchlist.WatchlistScreen
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -691,6 +695,13 @@ fun MainNavigation(
                                                 val route = Destination.createPersonRoute(personId)
                                                 navController.navigate(route)
                                             },
+                                            onViewAllClick = { category ->
+                                                navController.navigate(
+                                                    Destination.createFavoritesCategoryRoute(
+                                                        category.name
+                                                    )
+                                                )
+                                            },
                                             modifier = Modifier.fillMaxSize(),
                                             mainUiState = mainUiState,
                                             navController = navController,
@@ -717,6 +728,13 @@ fun MainNavigation(
                                                                 ?.toString(),
                                                     )
                                                 navController.navigate(route)
+                                            },
+                                            onViewAllClick = { category ->
+                                                navController.navigate(
+                                                    Destination.createWatchlistCategoryRoute(
+                                                        category.name
+                                                    )
+                                                )
                                             },
                                             modifier = Modifier.fillMaxSize(),
                                             mainUiState = mainUiState,
@@ -843,6 +861,92 @@ fun MainNavigation(
                                             },
                                             modifier = Modifier.fillMaxSize(),
                                             widthSizeClass = widthSizeClass,
+                                        )
+                                    }
+
+                                    composable(
+                                        route = Destination.FAVORITES_CATEGORY_ROUTE,
+                                        arguments =
+                                            listOf(
+                                                navArgument("category") {
+                                                    type = NavType.StringType
+                                                }
+                                            ),
+                                    ) { backStackEntry ->
+                                        val categoryName =
+                                            backStackEntry.arguments?.getString("category")
+                                                ?: return@composable
+                                        val category =
+                                            FavoritesCategory.valueOf(categoryName)
+
+                                        FavoritesCategoryScreen(
+                                            category = category,
+                                            mainUiState = mainUiState,
+                                            onItemClick = { item ->
+                                                val route =
+                                                    Destination.createItemDetailRoute(
+                                                        itemId = item.id.toString(),
+                                                        itemType =
+                                                            when (item) {
+                                                                is AfinityShow -> "Series"
+                                                                is AfinitySeason -> "Season"
+                                                                else -> null
+                                                            },
+                                                        seriesId =
+                                                            (item as? AfinitySeason)
+                                                                ?.seriesId
+                                                                ?.toString(),
+                                                    )
+                                                navController.navigate(route)
+                                            },
+                                            onPersonClick = { personId ->
+                                                val route = Destination.createPersonRoute(personId)
+                                                navController.navigate(route)
+                                            },
+                                            navController = navController,
+                                            widthSizeClass = widthSizeClass,
+                                            modifier = Modifier.fillMaxSize(),
+                                        )
+                                    }
+
+                                    composable(
+                                        route = Destination.WATCHLIST_CATEGORY_ROUTE,
+                                        arguments =
+                                            listOf(
+                                                navArgument("category") {
+                                                    type = NavType.StringType
+                                                }
+                                            ),
+                                    ) { backStackEntry ->
+                                        val categoryName =
+                                            backStackEntry.arguments?.getString("category")
+                                                ?: return@composable
+                                        val category =
+                                            WatchlistCategory.valueOf(categoryName)
+
+                                        WatchlistCategoryScreen(
+                                            category = category,
+                                            mainUiState = mainUiState,
+                                            onItemClick = { item ->
+                                                val route =
+                                                    Destination.createItemDetailRoute(
+                                                        itemId = item.id.toString(),
+                                                        itemType =
+                                                            when (item) {
+                                                                is AfinityShow -> "Series"
+                                                                is AfinitySeason -> "Season"
+                                                                else -> null
+                                                            },
+                                                        seriesId =
+                                                            (item as? AfinitySeason)
+                                                                ?.seriesId
+                                                                ?.toString(),
+                                                    )
+                                                navController.navigate(route)
+                                            },
+                                            navController = navController,
+                                            widthSizeClass = widthSizeClass,
+                                            modifier = Modifier.fillMaxSize(),
                                         )
                                     }
 

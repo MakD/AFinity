@@ -93,6 +93,7 @@ constructor(
                         favoriteAlbums = data.favoriteAlbums,
                         favoriteArtists = data.favoriteArtists,
                         favoriteTracks = data.favoriteTracks,
+                        favoritePlaylists = data.favoritePlaylists,
                         isLoading = false,
                         error = null,
                     )
@@ -240,6 +241,7 @@ constructor(
         }
         viewModelScope.launch {
             runCatching { musicRepository.setFavorite(track.id, newFavorite) }
+                .onSuccess { appDataRepository.updateTrackFavoriteStatus(track, newFavorite) }
                 .onFailure { _uiState.update { it.copy(favoriteTracks = tracks) } }
         }
     }
@@ -296,6 +298,7 @@ data class FavoritesUiState(
     val favoriteAlbums: List<com.makd.afinity.data.models.music.AfinityAlbum> = emptyList(),
     val favoriteArtists: List<com.makd.afinity.data.models.music.AfinityArtist> = emptyList(),
     val favoriteTracks: List<com.makd.afinity.data.models.music.AfinityTrack> = emptyList(),
+    val favoritePlaylists: List<com.makd.afinity.data.models.music.AfinityPlaylist> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
 )

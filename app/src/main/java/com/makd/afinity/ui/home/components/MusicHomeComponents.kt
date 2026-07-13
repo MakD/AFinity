@@ -44,8 +44,11 @@ import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
+import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.SectionRowHeader
 import com.makd.afinity.ui.music.components.MusicAlbumCard
+import com.makd.afinity.ui.music.components.MusicPlaylistCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -300,6 +303,7 @@ fun MusicAlbumRowSection(
     onAlbumClick: (AfinityAlbum) -> Unit,
     modifier: Modifier = Modifier,
     horizontalPadding: Dp = 14.dp,
+    onViewAllClick: (() -> Unit)? = null,
 ) {
     if (albums.isEmpty()) return
     val isLandscape =
@@ -307,7 +311,20 @@ fun MusicAlbumRowSection(
             android.content.res.Configuration.ORIENTATION_LANDSCAPE
     val cardWidth = if (isLandscape) 175.dp else 140.dp
     Column(modifier = modifier) {
-        HomeSectionHeader(title = title, startPadding = horizontalPadding, bottomPadding = 12.dp)
+        if (onViewAllClick != null) {
+            SectionRowHeader(
+                title = title,
+                modifier =
+                    Modifier.padding(
+                        start = horizontalPadding,
+                        end = horizontalPadding,
+                        bottom = 12.dp,
+                    ),
+                onViewAllClick = onViewAllClick,
+            )
+        } else {
+            HomeSectionHeader(title = title, startPadding = horizontalPadding, bottomPadding = 12.dp)
+        }
         LazyRow(
             modifier = Modifier.padding(horizontal = horizontalPadding),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -316,6 +333,50 @@ fun MusicAlbumRowSection(
                 MusicAlbumCard(
                     album = album,
                     onClick = { onAlbumClick(album) },
+                    modifier = Modifier.width(cardWidth),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun MusicPlaylistRowSection(
+    title: String,
+    playlists: List<AfinityPlaylist>,
+    onPlaylistClick: (AfinityPlaylist) -> Unit,
+    modifier: Modifier = Modifier,
+    horizontalPadding: Dp = 14.dp,
+    onViewAllClick: (() -> Unit)? = null,
+) {
+    if (playlists.isEmpty()) return
+    val isLandscape =
+        LocalConfiguration.current.orientation ==
+            android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val cardWidth = if (isLandscape) 175.dp else 140.dp
+    Column(modifier = modifier) {
+        if (onViewAllClick != null) {
+            SectionRowHeader(
+                title = title,
+                modifier =
+                    Modifier.padding(
+                        start = horizontalPadding,
+                        end = horizontalPadding,
+                        bottom = 12.dp,
+                    ),
+                onViewAllClick = onViewAllClick,
+            )
+        } else {
+            HomeSectionHeader(title = title, startPadding = horizontalPadding, bottomPadding = 12.dp)
+        }
+        LazyRow(
+            modifier = Modifier.padding(horizontal = horizontalPadding),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(playlists, key = { it.id }) { playlist ->
+                MusicPlaylistCard(
+                    playlist = playlist,
+                    onClick = { onPlaylistClick(playlist) },
                     modifier = Modifier.width(cardWidth),
                 )
             }

@@ -5,11 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -22,15 +19,12 @@ fun MediaRowSection(
     onItemClick: (AfinityItem) -> Unit,
     cardWidth: Dp,
     modifier: Modifier = Modifier,
+    onViewAllClick: (() -> Unit)? = null,
 ) {
     if (items.isEmpty()) return
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        SectionRowHeader(title = title, onViewAllClick = onViewAllClick)
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),

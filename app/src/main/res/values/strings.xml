@@ -927,6 +927,10 @@
     <string name="section_episodes">Episodes</string>
     <string name="section_tv_channels">Live TV Channels</string>
     <string name="section_people">People</string>
+    <string name="section_favorite_albums">Favorite Albums</string>
+    <string name="section_favorite_artists">Favorite Artists</string>
+    <string name="section_favorite_songs">Favorite Songs</string>
+    <string name="section_favorite_playlists">Favorite Playlists</string>
     <string name="section_ratings">Ratings</string>
 
     <string name="warning_http_insecure">Warning: Connecting over HTTP sends your password in plain text. HTTPS is highly recommended.</string>
