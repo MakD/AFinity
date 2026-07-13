@@ -233,6 +233,9 @@
     <string name="library_filter_years">Years</string>
     <string name="library_filter_genres_hint">Search genres</string>
     <string name="library_filter_tags_hint">Search tags</string>
+    <string name="library_filter_ratings_hint">Search ratings</string>
+    <string name="library_filter_years_hint">Search years</string>
+    <string name="cd_toggle_keyboard">Toggle keyboard</string>
     <string name="filter_played">Played</string>
     <string name="filter_unplayed">Unplayed</string>
     <string name="filter_resumable">Resumable</string>

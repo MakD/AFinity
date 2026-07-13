@@ -8,7 +8,9 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import androidx.paging.filter
 import com.makd.afinity.R
+import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
@@ -38,7 +40,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -166,6 +170,7 @@ constructor(
     private val appDataRepository: AppDataRepository,
     private val downloadRepository: DownloadRepository,
     private val preferencesRepository: PreferencesRepository,
+    private val adminChangeBroadcaster: AdminChangeBroadcaster,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -177,6 +182,8 @@ constructor(
         encodeDefaults = true
     }
     private val browsePrefsKey = "music_browse_prefs_$libraryId"
+
+    private val _refreshTrigger = MutableStateFlow(0)
 
     val userProfileImageUrl: StateFlow<String?> = appDataRepository.userProfileImageUrl
 
@@ -228,10 +235,16 @@ constructor(
             .flow
             .cachedIn(viewModelScope)
 
+    private val trackFavoriteOverridesFlow: Flow<Map<UUID, Boolean>> =
+        uiState.map { it.trackFavoriteOverrides }.distinctUntilChanged()
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val tracksPagingFlow: Flow<PagingData<AfinityTrack>> =
-        combine(_trackSortField, _trackSortDescending, _trackFilters) { field, descending, filters
-                ->
+        combine(_trackSortField, _trackSortDescending, _trackFilters, _refreshTrigger) {
+                field,
+                descending,
+                filters,
+                _ ->
                 Triple(field, descending, filters)
             }
             .flatMapLatest { (field, descending, filters) ->
@@ -248,14 +261,20 @@ constructor(
                     .flow
             }
             .cachedIn(viewModelScope)
+            .combine(trackFavoriteOverridesFlow) { pagingData, overrides ->
+                if (!_trackFilters.value.favoritesOnly) pagingData
+                else pagingData.filter { track -> overrides[track.id] ?: track.favorite }
+            }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val albumsPagingFlow: Flow<PagingData<AfinityAlbum>> =
-        combine(_albumSortField, _albumSortDescending, _albumFilters, _albumLetterFilter) {
-                field,
-                descending,
-                filters,
-                letter ->
+        combine(
+                _albumSortField,
+                _albumSortDescending,
+                _albumFilters,
+                _albumLetterFilter,
+                _refreshTrigger,
+            ) { field, descending, filters, letter, _ ->
                 AlbumQuery(field, descending, filters, letter)
             }
             .flatMapLatest { query ->
@@ -276,7 +295,9 @@ constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val artistsPagingFlow: Flow<PagingData<AfinityArtist>> =
-        combine(_artistFilters, _artistLetterFilter) { filters, letter -> Pair(filters, letter) }
+        combine(_artistFilters, _artistLetterFilter, _refreshTrigger) { filters, letter, _ ->
+                Pair(filters, letter)
+            }
             .flatMapLatest { (filters, letter) ->
                 Pager(PagingConfig(pageSize = PAGE_SIZE, prefetchDistance = PREFETCH_DISTANCE)) {
                         MusicArtistsPagingSource(
@@ -298,6 +319,9 @@ constructor(
         viewModelScope.launch { loadMusicHomeSections() }
         observeDownloads()
         loadAlbumFilterOptions()
+        viewModelScope.launch {
+            adminChangeBroadcaster.itemChanged.collect { _refreshTrigger.value++ }
+        }
     }
 
     private fun loadAlbumFilterOptions() {
@@ -376,7 +400,8 @@ constructor(
 
     private fun parseSortField(name: String): MusicSortField = runCatching {
         MusicSortField.valueOf(name)
-    }.getOrDefault(MusicSortField.Name)
+    }
+        .getOrDefault(MusicSortField.Name)
 
     private fun loadPersistedPrefs() {
         viewModelScope.launch {

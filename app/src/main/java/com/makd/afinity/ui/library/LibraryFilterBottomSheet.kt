@@ -5,10 +5,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -27,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -103,6 +103,8 @@ fun LibraryFilterBottomSheet(
     var working by remember { mutableStateOf(filters) }
     var genreQuery by remember { mutableStateOf("") }
     var tagQuery by remember { mutableStateOf("") }
+    var ratingQuery by remember { mutableStateOf("") }
+    var yearQuery by remember { mutableStateOf("") }
 
     var expandedSections by remember {
         mutableStateOf(
@@ -124,6 +126,7 @@ fun LibraryFilterBottomSheet(
     }
 
     val anyLabel = stringResource(R.string.discover_filter_any)
+    val maxDialogHeight = (LocalConfiguration.current.screenHeightDp * 0.92f).dp
 
     Dialog(
         onDismissRequest = {
@@ -134,16 +137,19 @@ fun LibraryFilterBottomSheet(
     ) {
         Surface(
             modifier =
-                Modifier.fillMaxWidth().widthIn(max = 480.dp).fillMaxHeight(0.9f).padding(16.dp),
+                Modifier.fillMaxWidth()
+                    .widthIn(max = 480.dp)
+                    .heightIn(max = maxDialogHeight)
+                    .padding(16.dp),
             shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surfaceContainer,
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier =
-                        Modifier.weight(1f)
+                        Modifier.weight(1f, fill = false)
                             .verticalScroll(rememberScrollState())
-                            .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp)
+                            .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 16.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -336,38 +342,54 @@ fun LibraryFilterBottomSheet(
                                 onRemoveSelected = { genre ->
                                     working = working.copy(genres = working.genres - genre)
                                 },
+                                onClearAll = { working = working.copy(genres = emptySet()) },
                             )
                         }
                     }
 
                     if (capabilities.ratings && options.officialRatings.isNotEmpty()) {
+                        val selectedRatings = working.officialRatings.toList()
+                        val ratingSuggestions =
+                            options.officialRatings.filter {
+                                !working.officialRatings.contains(it) &&
+                                    (ratingQuery.isBlank() ||
+                                        it.contains(ratingQuery, ignoreCase = true))
+                            }
+
                         FilterAccordionSection(
                             title = stringResource(R.string.library_filter_ratings),
                             summary =
-                                if (working.officialRatings.isEmpty()) anyLabel
-                                else working.officialRatings.joinToString(", "),
+                                if (selectedRatings.isEmpty()) anyLabel
+                                else selectedRatings.joinToString(", "),
                             expanded = expandedSections.contains("ratings"),
                             onToggle = { toggleSection("ratings") },
                         ) {
-                            FlowRow(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                options.officialRatings.forEach { rating ->
-                                    ToggleChip(
-                                        rating,
-                                        working.officialRatings.contains(rating),
-                                    ) { selected ->
-                                        working =
-                                            working.copy(
-                                                officialRatings =
-                                                    if (selected) working.officialRatings + rating
-                                                    else working.officialRatings - rating
-                                            )
-                                    }
-                                }
-                            }
+                            SearchableChipMultiSelect(
+                                label = null,
+                                placeholder = stringResource(R.string.library_filter_ratings_hint),
+                                query = ratingQuery,
+                                onQueryChange = { ratingQuery = it },
+                                suggestions = ratingSuggestions,
+                                suggestionLabel = { it },
+                                onSuggestionSelected = { rating ->
+                                    working =
+                                        working.copy(
+                                            officialRatings = working.officialRatings + rating
+                                        )
+                                    ratingQuery = ""
+                                },
+                                selected = selectedRatings,
+                                selectedLabel = { it },
+                                onRemoveSelected = { rating ->
+                                    working =
+                                        working.copy(
+                                            officialRatings = working.officialRatings - rating
+                                        )
+                                },
+                                onClearAll = {
+                                    working = working.copy(officialRatings = emptySet())
+                                },
+                            )
                         }
                     }
 
@@ -404,6 +426,7 @@ fun LibraryFilterBottomSheet(
                                 onRemoveSelected = { tag ->
                                     working = working.copy(tags = working.tags - tag)
                                 },
+                                onClearAll = { working = working.copy(tags = emptySet()) },
                             )
                         }
                     }
@@ -454,33 +477,39 @@ fun LibraryFilterBottomSheet(
                     }
 
                     if (capabilities.years && options.years.isNotEmpty()) {
+                        val selectedYears = working.years.sortedDescending()
+                        val yearSuggestions =
+                            options.years.filter {
+                                !working.years.contains(it) &&
+                                    (yearQuery.isBlank() || it.toString().contains(yearQuery))
+                            }
+
                         FilterAccordionSection(
                             title = stringResource(R.string.library_filter_years),
                             summary =
-                                if (working.years.isEmpty()) anyLabel
-                                else working.years.sortedDescending().joinToString(", "),
+                                if (selectedYears.isEmpty()) anyLabel
+                                else selectedYears.joinToString(", "),
                             expanded = expandedSections.contains("years"),
                             onToggle = { toggleSection("years") },
                         ) {
-                            FlowRow(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                options.years.forEach { year ->
-                                    ToggleChip(
-                                        year.toString(),
-                                        working.years.contains(year),
-                                    ) { selected ->
-                                        working =
-                                            working.copy(
-                                                years =
-                                                    if (selected) working.years + year
-                                                    else working.years - year
-                                            )
-                                    }
-                                }
-                            }
+                            SearchableChipMultiSelect(
+                                label = null,
+                                placeholder = stringResource(R.string.library_filter_years_hint),
+                                query = yearQuery,
+                                onQueryChange = { yearQuery = it },
+                                suggestions = yearSuggestions,
+                                suggestionLabel = { it.toString() },
+                                onSuggestionSelected = { year ->
+                                    working = working.copy(years = working.years + year)
+                                    yearQuery = ""
+                                },
+                                selected = selectedYears,
+                                selectedLabel = { it.toString() },
+                                onRemoveSelected = { year ->
+                                    working = working.copy(years = working.years - year)
+                                },
+                                onClearAll = { working = working.copy(years = emptySet()) },
+                            )
                         }
                     }
                 }

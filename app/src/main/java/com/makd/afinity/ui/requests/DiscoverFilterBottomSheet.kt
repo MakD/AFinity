@@ -275,6 +275,7 @@ fun DiscoverFilterBottomSheet(
                                 onRemoveSelected = { genre ->
                                     selectedGenreIds = selectedGenreIds - genre.id
                                 },
+                                onClearAll = { selectedGenreIds = emptySet() },
                             )
                         }
                     }
@@ -579,6 +580,7 @@ fun DiscoverFilterBottomSheet(
                             onRemoveSelected = { keyword ->
                                 selectedKeywords = selectedKeywords - keyword
                             },
+                            onClearAll = { selectedKeywords = emptyList() },
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -607,6 +609,7 @@ fun DiscoverFilterBottomSheet(
                             onRemoveSelected = { keyword ->
                                 selectedExcludeKeywords = selectedExcludeKeywords - keyword
                             },
+                            onClearAll = { selectedExcludeKeywords = emptyList() },
                         )
                     }
                 }

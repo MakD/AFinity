@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import androidx.paging.filter
 import androidx.paging.map
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
@@ -80,8 +81,23 @@ constructor(
         baseFlow: Flow<PagingData<AfinityItem>>
     ): Flow<PagingData<AfinityItem>> {
         return baseFlow.cachedIn(viewModelScope).combine(_itemUpdates) { pagingData, updates ->
-            pagingData.map { item -> updates[item.id] ?: item }
+            pagingData
+                .map { item -> updates[item.id] ?: item }
+                .filter { item -> matchesStatusFilters(item, currentFilters) }
         }
+    }
+
+    private fun matchesStatusFilters(item: AfinityItem, filters: LibraryFilters): Boolean {
+        val requiredPlayed =
+            when {
+                filters.played && !filters.unplayed -> true
+                filters.unplayed && !filters.played -> false
+                else -> null
+            }
+        if (requiredPlayed != null && item.played != requiredPlayed) return false
+        if (filters.favorites && !item.favorite) return false
+        if (filters.watchlist && !item.liked) return false
+        return true
     }
 
     private val _pagingData = MutableStateFlow<Flow<PagingData<AfinityItem>>>(emptyFlow())
