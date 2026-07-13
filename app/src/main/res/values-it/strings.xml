@@ -448,4 +448,16 @@
     <string name="storage_usage_combined_fmt">%1$s utilizzato qui • %2$s privo di %3$s</string>
     <string name="storage_default_badge">Default</string>
     <string name="storage_set_as_default">Imposta come predefinito</string>
+    <string name="cd_open_navigation_menu">Apri il menu di navigazione</string>
+    <string name="cd_go_to_home">Vai alla home</string>
+    <string name="cd_switch_account">Cambia account</string>
+    <string name="connection_label_local">Locale</string>
+    <string name="connection_label_tailscale">Tailscale</string>
+    <string name="connection_label_remote">Remoto</string>
+    <string name="connection_label_offline">Offline</string>
+    <string name="drawer_admin_badge">Amministratore</string>
+    <string name="episode_missing">MANCANTE</string>
+    <string name="sort_option_popularity">Popolarità</string>
+    <string name="sort_option_rating">Valutazione</string>
+    <string name="discover_filter_title">Filtri</string>
 </resources>
