@@ -277,11 +277,20 @@ constructor(
                     isOffline to user?.id
                 }
                 .distinctUntilChanged()
-                .collect { (isOffline, userId) ->
+                .flatMapLatest { (isOffline, userId) ->
                     if (isOffline && userId != null) {
-                        loadDownloadedContent(userId)
+                        combine(
+                            downloadRepository.getCompletedDownloadsFlow(),
+                            absDownloadRepository.getCompletedDownloadsFlow(),
+                            databaseRepository.getAllMusicTracksFlowByUser(userId),
+                        ) { _, _, _ ->
+                            userId
+                        }
+                    } else {
+                        flowOf()
                     }
                 }
+                .collect { userId -> loadDownloadedContent(userId) }
         }
 
         viewModelScope.launch {
