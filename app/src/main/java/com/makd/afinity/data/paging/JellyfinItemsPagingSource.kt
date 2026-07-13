@@ -6,8 +6,10 @@ import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.LibraryFeature
+import com.makd.afinity.data.models.media.LibraryFilters
+import com.makd.afinity.data.models.media.VideoTypeFilter
 import com.makd.afinity.data.repository.media.MediaRepository
-import com.makd.afinity.ui.library.FilterType
 import timber.log.Timber
 import java.util.UUID
 
@@ -17,7 +19,7 @@ class JellyfinItemsPagingSource(
     private val libraryType: CollectionType,
     private val sortBy: SortBy,
     private val sortDescending: Boolean,
-    private val filter: FilterType,
+    private val filters: LibraryFilters,
     private val baseUrl: String,
     private val nameStartsWith: String? = null,
     private val studioName: String? = null,
@@ -36,143 +38,67 @@ class JellyfinItemsPagingSource(
                 "PagingSource load: page=$page, nameStartsWith='$nameStartsWith', libraryType=$libraryType"
             )
 
-            val filterIsPlayed =
-                when (filter) {
-                    FilterType.WATCHED -> true
-                    FilterType.UNWATCHED -> false
+            val includeTypes =
+                when (libraryType) {
+                    CollectionType.TvShows -> listOf("SERIES")
+                    CollectionType.Movies -> listOf("MOVIE")
+                    CollectionType.BoxSets -> listOf("BOXSET")
+                    else -> listOf("MOVIE", "SERIES", "BOXSET", "FOLDER")
+                }
+
+            val isPlayed =
+                when {
+                    filters.played && !filters.unplayed -> true
+                    filters.unplayed && !filters.played -> false
                     else -> null
                 }
 
-            val filterIsLiked =
-                when (filter) {
-                    FilterType.WATCHLIST -> true
+            val videoTypeNames = buildList {
+                if (VideoTypeFilter.BLU_RAY in filters.videoTypes) add("BluRay")
+                if (VideoTypeFilter.DVD in filters.videoTypes) add("Dvd")
+            }
+            val isHd =
+                when {
+                    VideoTypeFilter.HD in filters.videoTypes &&
+                        VideoTypeFilter.SD !in filters.videoTypes -> true
+                    VideoTypeFilter.SD in filters.videoTypes &&
+                        VideoTypeFilter.HD !in filters.videoTypes -> false
                     else -> null
                 }
 
-            val items =
-                if (nameStartsWith != null || studioName != null) {
-                    val includeTypes =
-                        when (libraryType) {
-                            CollectionType.TvShows -> listOf("SERIES")
-                            CollectionType.Movies -> listOf("MOVIE")
-                            CollectionType.BoxSets -> listOf("BOXSET")
-                            CollectionType.Mixed -> listOf("MOVIE", "SERIES", "BOXSET", "FOLDER")
-                            else -> listOf("MOVIE", "SERIES", "BOXSET", "FOLDER")
-                        }
+            val response =
+                mediaRepository.getItems(
+                    parentId = parentId,
+                    sortBy = sortBy,
+                    sortDescending = sortDescending,
+                    limit = PAGE_SIZE,
+                    startIndex = startIndex,
+                    includeItemTypes = includeTypes,
+                    genres = filters.genres.toList(),
+                    years = filters.years.toList(),
+                    isFavorite = if (filters.favorites) true else null,
+                    isPlayed = isPlayed,
+                    isLiked = if (filters.watchlist) true else null,
+                    isResumable = if (filters.resumable) true else null,
+                    nameStartsWith = nameStartsWith,
+                    studios = if (studioName != null) listOf(studioName) else emptyList(),
+                    officialRatings = filters.officialRatings.toList(),
+                    tags = filters.tags.toList(),
+                    videoTypes = videoTypeNames,
+                    seriesStatuses = filters.seriesStatuses.map { it.serialName },
+                    hasSubtitles = if (LibraryFeature.SUBTITLES in filters.features) true else null,
+                    hasTrailer = if (LibraryFeature.TRAILER in filters.features) true else null,
+                    hasSpecialFeature =
+                        if (LibraryFeature.SPECIAL_FEATURE in filters.features) true else null,
+                    hasThemeSong = if (LibraryFeature.THEME_SONG in filters.features) true else null,
+                    hasThemeVideo =
+                        if (LibraryFeature.THEME_VIDEO in filters.features) true else null,
+                    isHd = isHd,
+                    is4k = if (VideoTypeFilter.UHD_4K in filters.videoTypes) true else null,
+                    is3d = if (VideoTypeFilter.THREE_D in filters.videoTypes) true else null,
+                )
 
-                    val response =
-                        mediaRepository.getItems(
-                            parentId = parentId,
-                            sortBy = sortBy,
-                            sortDescending = sortDescending,
-                            limit = PAGE_SIZE,
-                            startIndex = startIndex,
-                            includeItemTypes = includeTypes,
-                            isFavorite =
-                                when (filter) {
-                                    FilterType.FAVORITES -> true
-                                    else -> null
-                                },
-                            isPlayed = filterIsPlayed,
-                            isLiked = filterIsLiked,
-                            nameStartsWith = nameStartsWith,
-                            studios = if (studioName != null) listOf(studioName) else emptyList(),
-                        )
-
-                    response.items.mapNotNull { it.toAfinityItem(baseUrl) }
-                } else {
-                    when (libraryType) {
-                        CollectionType.TvShows -> {
-                            if (filter == FilterType.FAVORITES || filter == FilterType.WATCHLIST) {
-                                val response =
-                                    mediaRepository.getItems(
-                                        parentId = parentId,
-                                        sortBy = sortBy,
-                                        sortDescending = sortDescending,
-                                        limit = PAGE_SIZE,
-                                        startIndex = startIndex,
-                                        includeItemTypes = listOf("SERIES"),
-                                        isFavorite =
-                                            when (filter) {
-                                                FilterType.FAVORITES -> true
-                                                else -> null
-                                            },
-                                        isPlayed = filterIsPlayed,
-                                        isLiked = filterIsLiked,
-                                    )
-                                response.items.mapNotNull { it.toAfinityItem(baseUrl) }
-                            } else {
-                                mediaRepository.getShows(
-                                    parentId = parentId,
-                                    sortBy = sortBy,
-                                    sortDescending = sortDescending,
-                                    limit = PAGE_SIZE,
-                                    startIndex = startIndex,
-                                    isPlayed = filterIsPlayed,
-                                )
-                            }
-                        }
-
-                        CollectionType.Movies -> {
-                            if (filter == FilterType.FAVORITES || filter == FilterType.WATCHLIST) {
-                                val response =
-                                    mediaRepository.getItems(
-                                        parentId = parentId,
-                                        sortBy = sortBy,
-                                        sortDescending = sortDescending,
-                                        limit = PAGE_SIZE,
-                                        startIndex = startIndex,
-                                        includeItemTypes = listOf("MOVIE"),
-                                        isFavorite =
-                                            when (filter) {
-                                                FilterType.FAVORITES -> true
-                                                else -> null
-                                            },
-                                        isPlayed = filterIsPlayed,
-                                        isLiked = filterIsLiked,
-                                    )
-                                response.items.mapNotNull { it.toAfinityItem(baseUrl) }
-                            } else {
-                                mediaRepository.getMovies(
-                                    parentId = parentId,
-                                    sortBy = sortBy,
-                                    sortDescending = sortDescending,
-                                    limit = PAGE_SIZE,
-                                    startIndex = startIndex,
-                                    isPlayed = filterIsPlayed,
-                                )
-                            }
-                        }
-
-                        else -> {
-                            val includeTypes =
-                                when (libraryType) {
-                                    CollectionType.BoxSets -> listOf("BOXSET")
-                                    CollectionType.Mixed ->
-                                        listOf("MOVIE", "SERIES", "BOXSET", "FOLDER")
-                                    else -> listOf("MOVIE", "SERIES", "BOXSET", "FOLDER")
-                                }
-
-                            val response =
-                                mediaRepository.getItems(
-                                    parentId = parentId,
-                                    sortBy = sortBy,
-                                    sortDescending = sortDescending,
-                                    limit = PAGE_SIZE,
-                                    startIndex = startIndex,
-                                    includeItemTypes = includeTypes,
-                                    isFavorite =
-                                        when (filter) {
-                                            FilterType.FAVORITES -> true
-                                            else -> null
-                                        },
-                                    isPlayed = filterIsPlayed,
-                                    isLiked = filterIsLiked,
-                                )
-                            response.items.mapNotNull { it.toAfinityItem(baseUrl) }
-                        }
-                    }
-                }
+            val items = response.items.mapNotNull { it.toAfinityItem(baseUrl) }
 
             Timber.d(
                 "PagingSource: Loaded ${items.size} items for nameStartsWith='$nameStartsWith'"

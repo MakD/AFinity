@@ -169,6 +169,17 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         return dataStore.data.first()[Keys.REMEMBER_LOGIN] ?: true
     }
 
+    override suspend fun setStringPreference(key: String, value: String?) {
+        val prefKey = stringPreferencesKey(key)
+        dataStore.edit { preferences ->
+            if (value == null) preferences.remove(prefKey) else preferences[prefKey] = value
+        }
+    }
+
+    override suspend fun getStringPreference(key: String): String? {
+        return dataStore.data.first()[stringPreferencesKey(key)]
+    }
+
     override suspend fun setDefaultSortBy(sortBy: SortBy) {
         dataStore.edit { preferences -> preferences[Keys.DEFAULT_SORT_BY] = sortBy.name }
     }

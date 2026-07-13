@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
-import androidx.paging.filter
 import androidx.paging.map
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
@@ -15,6 +14,8 @@ import com.makd.afinity.data.manager.resolveChangedItems
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.LibraryFilterOptions
+import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.media.MediaRepository
@@ -31,17 +32,10 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
-
-enum class FilterType {
-    ALL,
-    WATCHED,
-    UNWATCHED,
-    WATCHLIST,
-    FAVORITES,
-}
 
 @OptIn(FlowPreview::class)
 @HiltViewModel
@@ -61,6 +55,12 @@ constructor(
     private val libraryName: String? = savedStateHandle["libraryName"]
     private val studioName: String? = savedStateHandle["studioName"]
 
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
+    private val filtersKey = "library_filters_${libraryId ?: studioName ?: "content"}"
+
     private val _uiState =
         MutableStateFlow(
             LibraryContentUiState(
@@ -79,21 +79,9 @@ constructor(
     private fun applyUpdatesToPagingFlow(
         baseFlow: Flow<PagingData<AfinityItem>>
     ): Flow<PagingData<AfinityItem>> {
-        return baseFlow
-            .cachedIn(viewModelScope)
-            .combine(_itemUpdates) { pagingData, updates ->
-                pagingData
-                    .map { item -> updates[item.id] ?: item }
-                    .filter { item ->
-                        when (currentFilter) {
-                            FilterType.ALL -> true
-                            FilterType.WATCHED -> item.played
-                            FilterType.UNWATCHED -> !item.played
-                            FilterType.WATCHLIST -> item.liked
-                            FilterType.FAVORITES -> item.favorite
-                        }
-                    }
-            }
+        return baseFlow.cachedIn(viewModelScope).combine(_itemUpdates) { pagingData, updates ->
+            pagingData.map { item -> updates[item.id] ?: item }
+        }
     }
 
     private val _pagingData = MutableStateFlow<Flow<PagingData<AfinityItem>>>(emptyFlow())
@@ -108,7 +96,7 @@ constructor(
 
     private var libraryType: CollectionType? = null
 
-    private var currentFilter = FilterType.ALL
+    private var currentFilters = LibraryFilters()
 
     init {
         viewModelScope.launch {
@@ -188,7 +176,7 @@ constructor(
                 libraryType = type,
                 sortBy = currentSortBy,
                 sortDescending = currentSortDescending,
-                filter = currentFilter,
+                filters = currentFilters,
                 nameStartsWith = null,
                 studioName = studioName,
             )
@@ -205,17 +193,19 @@ constructor(
 
                 currentSortBy = preferencesRepository.getDefaultSortBy()
                 currentSortDescending = preferencesRepository.getSortDescending()
+                currentFilters = loadPersistedFilters()
 
                 _uiState.value =
                     _uiState.value.copy(
                         libraryType = type,
                         currentSortBy = currentSortBy,
                         currentSortDescending = currentSortDescending,
-                        currentFilter = currentFilter,
+                        currentFilters = currentFilters,
                         isLoading = false,
                     )
 
                 loadItems()
+                loadFilterOptions(type)
                 lastLoadedAt = System.currentTimeMillis()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load library content")
@@ -234,11 +224,42 @@ constructor(
         }
     }
 
-    fun updateFilter(filterType: FilterType) {
-        if (currentFilter != filterType) {
-            currentFilter = filterType
-            _uiState.value = _uiState.value.copy(currentFilter = currentFilter)
-            loadItems()
+    private suspend fun loadPersistedFilters(): LibraryFilters =
+        preferencesRepository.getStringPreference(filtersKey)?.let { stored ->
+            runCatching { json.decodeFromString(LibraryFilters.serializer(), stored) }.getOrNull()
+        } ?: LibraryFilters()
+
+    private fun loadFilterOptions(type: CollectionType) {
+        viewModelScope.launch {
+            try {
+                val options =
+                    mediaRepository.getFilterOptions(
+                        parentId = libraryId?.let { UUID.fromString(it) },
+                        libraryType = type,
+                    )
+                _uiState.value = _uiState.value.copy(filterOptions = options)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load filter options")
+            }
+        }
+    }
+
+    fun updateFilters(filters: LibraryFilters) {
+        if (currentFilters != filters) {
+            currentFilters = filters
+            _uiState.value = _uiState.value.copy(currentFilters = currentFilters)
+            viewModelScope.launch {
+                preferencesRepository.setStringPreference(
+                    filtersKey,
+                    if (filters.isEmpty) null
+                    else json.encodeToString(LibraryFilters.serializer(), filters),
+                )
+            }
+            if (_uiState.value.selectedLetter != null) {
+                scrollToLetterInternal(_uiState.value.selectedLetter!!)
+            } else {
+                loadItems()
+            }
         }
     }
 
@@ -273,7 +294,10 @@ constructor(
             clearLetterFilter()
             return
         }
+        scrollToLetterInternal(letter)
+    }
 
+    private fun scrollToLetterInternal(letter: String) {
         viewModelScope.launch {
             try {
                 val type = libraryType ?: return@launch
@@ -293,7 +317,7 @@ constructor(
                         libraryType = type,
                         sortBy = currentSortBy,
                         sortDescending = currentSortDescending,
-                        filter = currentFilter,
+                        filters = currentFilters,
                         nameStartsWith = letterFilter,
                         studioName = studioName,
                     )
@@ -321,7 +345,8 @@ data class LibraryContentUiState(
     val userProfileImageUrl: String? = null,
     val currentSortBy: SortBy = SortBy.NAME,
     val currentSortDescending: Boolean = false,
-    val currentFilter: FilterType = FilterType.ALL,
+    val currentFilters: LibraryFilters = LibraryFilters(),
+    val filterOptions: LibraryFilterOptions = LibraryFilterOptions(),
     val isStudioMode: Boolean = false,
     val selectedLetter: String? = null,
 )

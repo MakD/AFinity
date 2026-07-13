@@ -17,12 +17,15 @@ import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityMusicGenre
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
+import com.makd.afinity.data.models.music.MusicBrowsePrefs
+import com.makd.afinity.data.models.music.MusicFilterOptions
 import com.makd.afinity.data.models.music.MusicFilters
 import com.makd.afinity.data.paging.MusicAlbumsPagingSource
 import com.makd.afinity.data.paging.MusicArtistsPagingSource
 import com.makd.afinity.data.paging.MusicGenresPagingSource
 import com.makd.afinity.data.paging.MusicTracksPagingSource
 import com.makd.afinity.data.repository.AppDataRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -38,66 +41,53 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
 
-enum class MusicSortOption(
-    @StringRes val labelRes: Int,
-    val sortBy: ItemSortBy,
-    val sortOrder: SortOrder,
-) {
-    NameAZ(R.string.music_sort_name_az, ItemSortBy.SORT_NAME, SortOrder.ASCENDING),
-    NameZA(R.string.music_sort_name_za, ItemSortBy.SORT_NAME, SortOrder.DESCENDING),
-    RecentlyAdded(
-        R.string.music_sort_recently_added,
-        ItemSortBy.DATE_CREATED,
-        SortOrder.DESCENDING,
-    ),
-    RecentlyPlayed(
-        R.string.music_sort_recently_played,
-        ItemSortBy.DATE_PLAYED,
-        SortOrder.DESCENDING,
-    ),
-    MostPlayed(R.string.music_sort_most_played, ItemSortBy.PLAY_COUNT, SortOrder.DESCENDING),
-    Year(R.string.music_sort_by_year, ItemSortBy.PRODUCTION_YEAR, SortOrder.DESCENDING),
-    Duration(R.string.music_sort_duration, ItemSortBy.RUNTIME, SortOrder.ASCENDING),
-    ByAlbum(R.string.music_sort_by_album, ItemSortBy.ALBUM, SortOrder.ASCENDING),
-    ByArtist(R.string.music_sort_by_artist, ItemSortBy.ALBUM_ARTIST, SortOrder.ASCENDING),
-    TrackNumber(R.string.music_sort_track_number, ItemSortBy.INDEX_NUMBER, SortOrder.ASCENDING),
-    Random(R.string.music_sort_random, ItemSortBy.RANDOM, SortOrder.ASCENDING),
+enum class MusicSortField(@StringRes val labelRes: Int, val sortBy: ItemSortBy) {
+    Name(R.string.music_sort_field_name, ItemSortBy.SORT_NAME),
+    Album(R.string.music_sort_field_album, ItemSortBy.ALBUM),
+    AlbumArtist(R.string.music_sort_field_album_artist, ItemSortBy.ALBUM_ARTIST),
+    Artist(R.string.music_sort_field_artist, ItemSortBy.ARTIST),
+    CommunityRating(R.string.music_sort_field_community_rating, ItemSortBy.COMMUNITY_RATING),
+    CriticsRating(R.string.music_sort_field_critics_rating, ItemSortBy.CRITIC_RATING),
+    DateAdded(R.string.music_sort_field_date_added, ItemSortBy.DATE_CREATED),
+    DatePlayed(R.string.music_sort_field_date_played, ItemSortBy.DATE_PLAYED),
+    PlayCount(R.string.music_sort_field_play_count, ItemSortBy.PLAY_COUNT),
+    ReleaseDate(R.string.music_sort_field_release_date, ItemSortBy.PREMIERE_DATE),
+    Runtime(R.string.music_sort_field_runtime, ItemSortBy.RUNTIME),
+    Random(R.string.music_sort_field_random, ItemSortBy.RANDOM),
 }
 
-val TRACK_SORT_OPTIONS =
+val ALBUM_SORT_FIELDS =
     listOf(
-        MusicSortOption.NameAZ,
-        MusicSortOption.NameZA,
-        MusicSortOption.RecentlyPlayed,
-        MusicSortOption.MostPlayed,
-        MusicSortOption.Duration,
-        MusicSortOption.ByAlbum,
-        MusicSortOption.ByArtist,
-        MusicSortOption.TrackNumber,
-        MusicSortOption.Random,
+        MusicSortField.Name,
+        MusicSortField.Album,
+        MusicSortField.AlbumArtist,
+        MusicSortField.CommunityRating,
+        MusicSortField.CriticsRating,
+        MusicSortField.DateAdded,
+        MusicSortField.ReleaseDate,
+        MusicSortField.Random,
     )
-val ALBUM_SORT_OPTIONS =
+
+val TRACK_SORT_FIELDS =
     listOf(
-        MusicSortOption.NameAZ,
-        MusicSortOption.NameZA,
-        MusicSortOption.RecentlyAdded,
-        MusicSortOption.RecentlyPlayed,
-        MusicSortOption.MostPlayed,
-        MusicSortOption.Year,
-        MusicSortOption.Random,
-    )
-val ARTIST_SORT_OPTIONS =
-    listOf(
-        MusicSortOption.NameAZ,
-        MusicSortOption.NameZA,
-        MusicSortOption.RecentlyPlayed,
-        MusicSortOption.Random,
+        MusicSortField.Name,
+        MusicSortField.Album,
+        MusicSortField.AlbumArtist,
+        MusicSortField.Artist,
+        MusicSortField.DateAdded,
+        MusicSortField.DatePlayed,
+        MusicSortField.PlayCount,
+        MusicSortField.ReleaseDate,
+        MusicSortField.Runtime,
+        MusicSortField.Random,
     )
 
 data class MadeForYouSnapshot(
@@ -159,6 +149,14 @@ private fun generateHomeRowOrder(): List<Int> {
 
 private const val PAGE_SIZE = 50
 private const val PREFETCH_DISTANCE = 20
+private const val MAX_PLAY_ALL_TRACKS = 5000
+
+private data class AlbumQuery(
+    val field: MusicSortField,
+    val descending: Boolean,
+    val filters: MusicFilters,
+    val letter: String?,
+)
 
 @HiltViewModel
 class MusicLibraryViewModel
@@ -167,11 +165,18 @@ constructor(
     private val musicRepository: MusicRepository,
     private val appDataRepository: AppDataRepository,
     private val downloadRepository: DownloadRepository,
+    private val preferencesRepository: PreferencesRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     val libraryId: UUID = UUID.fromString(savedStateHandle.get<String>("libraryId")!!)
     val libraryName: String = savedStateHandle.get<String>("libraryName") ?: ""
+
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
+    private val browsePrefsKey = "music_browse_prefs_$libraryId"
 
     val userProfileImageUrl: StateFlow<String?> = appDataRepository.userProfileImageUrl
 
@@ -181,14 +186,20 @@ constructor(
     private val _trackDownloadInfos = MutableStateFlow<Map<UUID, DownloadInfo>>(emptyMap())
     val trackDownloadInfos: StateFlow<Map<UUID, DownloadInfo>> = _trackDownloadInfos.asStateFlow()
 
-    private val _trackSort = MutableStateFlow(MusicSortOption.NameAZ)
-    val trackSort: StateFlow<MusicSortOption> = _trackSort.asStateFlow()
+    private val _trackSortField = MutableStateFlow(MusicSortField.Name)
+    val trackSortField: StateFlow<MusicSortField> = _trackSortField.asStateFlow()
 
-    private val _albumSort = MutableStateFlow(MusicSortOption.NameAZ)
-    val albumSort: StateFlow<MusicSortOption> = _albumSort.asStateFlow()
+    private val _trackSortDescending = MutableStateFlow(false)
+    val trackSortDescending: StateFlow<Boolean> = _trackSortDescending.asStateFlow()
 
-    private val _artistSort = MutableStateFlow(MusicSortOption.NameAZ)
-    val artistSort: StateFlow<MusicSortOption> = _artistSort.asStateFlow()
+    private val _albumSortField = MutableStateFlow(MusicSortField.Name)
+    val albumSortField: StateFlow<MusicSortField> = _albumSortField.asStateFlow()
+
+    private val _albumSortDescending = MutableStateFlow(false)
+    val albumSortDescending: StateFlow<Boolean> = _albumSortDescending.asStateFlow()
+
+    private val _albumFilterOptions = MutableStateFlow(MusicFilterOptions())
+    val albumFilterOptions: StateFlow<MusicFilterOptions> = _albumFilterOptions.asStateFlow()
 
     private val _albumLetterFilter = MutableStateFlow<String?>(null)
     val albumLetterFilter: StateFlow<String?> = _albumLetterFilter.asStateFlow()
@@ -206,22 +217,31 @@ constructor(
     val artistFilters: StateFlow<MusicFilters> = _artistFilters.asStateFlow()
 
     val genresPagingFlow: Flow<PagingData<AfinityMusicGenre>> =
-        Pager(PagingConfig(pageSize = MusicGenresPagingSource.PAGE_SIZE, prefetchDistance = PREFETCH_DISTANCE)) {
-            MusicGenresPagingSource(musicRepository = musicRepository, libraryId = libraryId)
-        }
+        Pager(
+                PagingConfig(
+                    pageSize = MusicGenresPagingSource.PAGE_SIZE,
+                    prefetchDistance = PREFETCH_DISTANCE,
+                )
+            ) {
+                MusicGenresPagingSource(musicRepository = musicRepository, libraryId = libraryId)
+            }
             .flow
             .cachedIn(viewModelScope)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val tracksPagingFlow: Flow<PagingData<AfinityTrack>> =
-        combine(_trackSort, _trackFilters) { sort, filters -> Pair(sort, filters) }
-            .flatMapLatest { (sort, filters) ->
+        combine(_trackSortField, _trackSortDescending, _trackFilters) { field, descending, filters
+                ->
+                Triple(field, descending, filters)
+            }
+            .flatMapLatest { (field, descending, filters) ->
                 Pager(PagingConfig(pageSize = PAGE_SIZE, prefetchDistance = PREFETCH_DISTANCE)) {
                         MusicTracksPagingSource(
                             musicRepository = musicRepository,
                             libraryId = libraryId,
-                            sortBy = sort.sortBy,
-                            sortOrder = sort.sortOrder,
+                            sortBy = field.sortBy,
+                            sortOrder =
+                                if (descending) SortOrder.DESCENDING else SortOrder.ASCENDING,
                             filters = filters,
                         )
                     }
@@ -231,18 +251,23 @@ constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val albumsPagingFlow: Flow<PagingData<AfinityAlbum>> =
-        combine(_albumSort, _albumFilters, _albumLetterFilter) { sort, filters, letter ->
-                Triple(sort, filters, letter)
+        combine(_albumSortField, _albumSortDescending, _albumFilters, _albumLetterFilter) {
+                field,
+                descending,
+                filters,
+                letter ->
+                AlbumQuery(field, descending, filters, letter)
             }
-            .flatMapLatest { (sort, filters, letter) ->
+            .flatMapLatest { query ->
                 Pager(PagingConfig(pageSize = PAGE_SIZE, prefetchDistance = PREFETCH_DISTANCE)) {
                         MusicAlbumsPagingSource(
                             musicRepository = musicRepository,
                             libraryId = libraryId,
-                            sortBy = sort.sortBy,
-                            sortOrder = sort.sortOrder,
-                            filters = filters,
-                            nameStartsWith = letter?.let { if (it == "#") "0" else it },
+                            sortBy = query.field.sortBy,
+                            sortOrder =
+                                if (query.descending) SortOrder.DESCENDING else SortOrder.ASCENDING,
+                            filters = query.filters,
+                            nameStartsWith = query.letter?.let { if (it == "#") "0" else it },
                         )
                     }
                     .flow
@@ -251,16 +276,14 @@ constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val artistsPagingFlow: Flow<PagingData<AfinityArtist>> =
-        combine(_artistSort, _artistFilters, _artistLetterFilter) { sort, filters, letter ->
-                Triple(sort, filters, letter)
-            }
-            .flatMapLatest { (sort, filters, letter) ->
+        combine(_artistFilters, _artistLetterFilter) { filters, letter -> Pair(filters, letter) }
+            .flatMapLatest { (filters, letter) ->
                 Pager(PagingConfig(pageSize = PAGE_SIZE, prefetchDistance = PREFETCH_DISTANCE)) {
                         MusicArtistsPagingSource(
                             musicRepository = musicRepository,
                             libraryId = libraryId,
-                            sortBy = sort.sortBy,
-                            sortOrder = sort.sortOrder,
+                            sortBy = ItemSortBy.SORT_NAME,
+                            sortOrder = SortOrder.ASCENDING,
                             filters = filters,
                             nameStartsWith = letter?.let { if (it == "#") "0" else it },
                         )
@@ -270,9 +293,20 @@ constructor(
             .cachedIn(viewModelScope)
 
     init {
+        loadPersistedPrefs()
         observePlaylists()
         viewModelScope.launch { loadMusicHomeSections() }
         observeDownloads()
+        loadAlbumFilterOptions()
+    }
+
+    private fun loadAlbumFilterOptions() {
+        viewModelScope.launch {
+            runCatching {
+                musicRepository.getMusicFilterOptions(libraryId, BaseItemKind.MUSIC_ALBUM)
+            }
+                .onSuccess { options -> _albumFilterOptions.value = options }
+        }
     }
 
     private fun observePlaylists() {
@@ -294,16 +328,27 @@ constructor(
         }
     }
 
-    fun setTrackSort(option: MusicSortOption) {
-        _trackSort.value = option
+    fun setTrackSort(field: MusicSortField, descending: Boolean) {
+        _trackSortField.value = field
+        _trackSortDescending.value = descending
+        persistBrowsePrefs()
     }
 
-    fun setAlbumSort(option: MusicSortOption) {
-        _albumSort.value = option
-    }
+    suspend fun getAllFilteredTracks(): List<AfinityTrack> =
+        musicRepository.getTracks(
+            libraryId = libraryId,
+            sortBy = _trackSortField.value.sortBy,
+            sortOrder =
+                if (_trackSortDescending.value) SortOrder.DESCENDING else SortOrder.ASCENDING,
+            filters = _trackFilters.value,
+            startIndex = 0,
+            limit = MAX_PLAY_ALL_TRACKS,
+        )
 
-    fun setArtistSort(option: MusicSortOption) {
-        _artistSort.value = option
+    fun setAlbumSort(field: MusicSortField, descending: Boolean) {
+        _albumSortField.value = field
+        _albumSortDescending.value = descending
+        persistBrowsePrefs()
     }
 
     fun filterAlbumsByLetter(letter: String) {
@@ -316,14 +361,56 @@ constructor(
 
     fun setTrackFilters(filters: MusicFilters) {
         _trackFilters.value = filters
+        persistBrowsePrefs()
     }
 
     fun setAlbumFilters(filters: MusicFilters) {
         _albumFilters.value = filters
+        persistBrowsePrefs()
     }
 
     fun setArtistFilters(filters: MusicFilters) {
         _artistFilters.value = filters
+        persistBrowsePrefs()
+    }
+
+    private fun parseSortField(name: String): MusicSortField = runCatching {
+        MusicSortField.valueOf(name)
+    }.getOrDefault(MusicSortField.Name)
+
+    private fun loadPersistedPrefs() {
+        viewModelScope.launch {
+            val stored = preferencesRepository.getStringPreference(browsePrefsKey) ?: return@launch
+            val prefs =
+                runCatching { json.decodeFromString(MusicBrowsePrefs.serializer(), stored) }
+                    .getOrNull() ?: return@launch
+            _albumSortField.value = parseSortField(prefs.albumSortField)
+            _albumSortDescending.value = prefs.albumSortDescending
+            _albumFilters.value = prefs.albumFilters
+            _artistFilters.value = prefs.artistFilters
+            _trackSortField.value = parseSortField(prefs.trackSortField)
+            _trackSortDescending.value = prefs.trackSortDescending
+            _trackFilters.value = prefs.trackFilters
+        }
+    }
+
+    private fun persistBrowsePrefs() {
+        viewModelScope.launch {
+            val prefs =
+                MusicBrowsePrefs(
+                    albumSortField = _albumSortField.value.name,
+                    albumSortDescending = _albumSortDescending.value,
+                    albumFilters = _albumFilters.value,
+                    artistFilters = _artistFilters.value,
+                    trackSortField = _trackSortField.value.name,
+                    trackSortDescending = _trackSortDescending.value,
+                    trackFilters = _trackFilters.value,
+                )
+            preferencesRepository.setStringPreference(
+                browsePrefsKey,
+                json.encodeToString(MusicBrowsePrefs.serializer(), prefs),
+            )
+        }
     }
 
     fun toggleTrackFavorite(track: AfinityTrack, currentFavorite: Boolean) {
@@ -649,11 +736,14 @@ constructor(
                     seedGenres.take(2).forEach { genre ->
                         runCatching {
                             val genreAlbum =
-                                musicRepository.getAlbumsByGenre(genre.name, limit = 5).randomOrNull()
+                                musicRepository
+                                    .getAlbumsByGenre(genre.name, limit = 5)
+                                    .randomOrNull()
                             if (genreAlbum != null) {
                                 val tracks =
                                     musicRepository.getInstantMix(genreAlbum.id, limit = 25)
-                                if (tracks.isNotEmpty()) sections.add("${genre.name} Radio" to tracks)
+                                if (tracks.isNotEmpty())
+                                    sections.add("${genre.name} Radio" to tracks)
                             }
                         }
                     }

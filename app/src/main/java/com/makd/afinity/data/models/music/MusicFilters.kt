@@ -1,14 +1,25 @@
 package com.makd.afinity.data.models.music
 
-import java.util.UUID
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class MusicFilters(
     val favoritesOnly: Boolean = false,
     val unplayedOnly: Boolean = false,
     val playedOnly: Boolean = false,
-    val genreIds: List<UUID> = emptyList(),
-    val yearMin: Int? = null,
-    val yearMax: Int? = null,
+    val genres: Set<String> = emptySet(),
+    val years: Set<Int> = emptySet(),
 ) {
-    val isActive: Boolean get() = favoritesOnly || unplayedOnly || playedOnly || genreIds.isNotEmpty()
+    val isActive: Boolean
+        get() =
+            favoritesOnly ||
+                unplayedOnly ||
+                playedOnly ||
+                genres.isNotEmpty() ||
+                years.isNotEmpty()
 }
+
+data class MusicFilterOptions(
+    val genres: List<String> = emptyList(),
+    val years: List<Int> = emptyList(),
+)

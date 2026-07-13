@@ -17,25 +17,26 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
@@ -52,6 +53,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -63,6 +66,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import com.makd.afinity.R
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AlphabetScroller
@@ -88,6 +92,7 @@ fun LibraryContentScreen(
     val gridState = rememberLazyGridState()
     val scrollToIndex by viewModel.scrollToIndex.collectAsStateWithLifecycle()
     var showSortDialog by remember { mutableStateOf(false) }
+    var showFilterSheet by remember { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
@@ -146,11 +151,6 @@ fun LibraryContentScreen(
                         .background(MaterialTheme.colorScheme.background)
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    FilterRow(
-                        currentFilter = uiState.currentFilter,
-                        onFilterSelected = { viewModel.updateFilter(it) },
-                    )
-
                     when {
                         uiState.isLoading -> {
                             Box(
@@ -207,29 +207,19 @@ fun LibraryContentScreen(
                                         )
                                     }
                                 }
-                            } else if (uiState.currentFilter != FilterType.ALL) {
+                            } else if (!uiState.currentFilters.isEmpty) {
                                 Box(
                                     modifier = Modifier.fillMaxSize(),
                                     contentAlignment = Alignment.Center,
                                 ) {
-                                    val filterMessage =
-                                        when (uiState.currentFilter) {
-                                            FilterType.WATCHED ->
-                                                stringResource(R.string.filter_empty_watched)
-                                            FilterType.UNWATCHED ->
-                                                stringResource(R.string.filter_empty_unwatched)
-                                            FilterType.WATCHLIST ->
-                                                stringResource(R.string.filter_empty_watchlist)
-                                            FilterType.FAVORITES ->
-                                                stringResource(R.string.filter_empty_favorites)
-                                            FilterType.ALL ->
-                                                stringResource(R.string.filter_empty_all)
-                                        }
                                     FullScreenEmpty(
                                         title = stringResource(R.string.library_empty_title),
-                                        message = filterMessage,
+                                        message =
+                                            stringResource(R.string.filter_empty_filtered),
                                         actionText = stringResource(R.string.action_clear_filter),
-                                        onActionClick = { viewModel.updateFilter(FilterType.ALL) },
+                                        onActionClick = {
+                                            viewModel.updateFilters(LibraryFilters())
+                                        },
                                     )
                                 }
                             } else {
@@ -286,17 +276,37 @@ fun LibraryContentScreen(
                     }
                 }
 
-                FloatingActionButton(
-                    onClick = { showSortDialog = true },
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.End,
                     modifier =
                         Modifier.align(Alignment.BottomEnd)
                             .padding(end = 24.dp)
                             .padding(bottom = 16.dp + playerOffset),
                 ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_arrows_sort),
-                        contentDescription = stringResource(R.string.cd_sort_fab),
-                    )
+                    FloatingActionButton(onClick = { showFilterSheet = true }) {
+                        val activeCount = uiState.currentFilters.activeCount
+                        if (activeCount > 0) {
+                            BadgedBox(badge = { Badge { Text(activeCount.toString()) } }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_filter_active),
+                                    contentDescription = stringResource(R.string.cd_filter_fab),
+                                )
+                            }
+                        } else {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_filter),
+                                contentDescription = stringResource(R.string.cd_filter_fab),
+                            )
+                        }
+                    }
+
+                    FloatingActionButton(onClick = { showSortDialog = true }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_arrows_sort),
+                            contentDescription = stringResource(R.string.cd_sort_fab),
+                        )
+                    }
                 }
             }
         }
@@ -313,6 +323,16 @@ fun LibraryContentScreen(
             },
         )
     }
+
+    if (showFilterSheet) {
+        LibraryFilterBottomSheet(
+            filters = uiState.currentFilters,
+            options = uiState.filterOptions,
+            capabilities = libraryFilterCapabilities(uiState.libraryType),
+            onApply = { viewModel.updateFilters(it) },
+            onDismiss = { showFilterSheet = false },
+        )
+    }
 }
 
 @Composable
@@ -325,91 +345,119 @@ private fun SortDialog(
     var isAscending by remember { mutableStateOf(!currentSortDescending) }
     var selectedSort by remember { mutableStateOf(currentSortBy) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.sort_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    SegmentedButton(
-                        selected = isAscending,
-                        onClick = { isAscending = true },
-                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                    ) {
-                        Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.sort_ascending))
+    Dialog(
+        onDismissRequest = {
+            onSortSelected(selectedSort, !isAscending)
+            onDismiss()
+        },
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxWidth().widthIn(max = 480.dp).padding(16.dp),
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainer,
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.sort_title),
+                        style =
+                            MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        SegmentedButton(
+                            selected = isAscending,
+                            onClick = { isAscending = true },
+                            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                        ) {
+                            Spacer(Modifier.width(4.dp))
+                            Text(stringResource(R.string.sort_ascending))
+                        }
+
+                        SegmentedButton(
+                            selected = !isAscending,
+                            onClick = { isAscending = false },
+                            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                        ) {
+                            Spacer(Modifier.width(4.dp))
+                            Text(stringResource(R.string.sort_descending))
+                        }
                     }
 
-                    SegmentedButton(
-                        selected = !isAscending,
-                        onClick = { isAscending = false },
-                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                    ) {
-                        Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.sort_descending))
+                    Spacer(Modifier.height(16.dp))
+
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        SortOptionRow(
+                            stringResource(R.string.sort_option_title),
+                            SortBy.NAME,
+                            selectedSort,
+                        ) {
+                            selectedSort = it
+                        }
+                        SortOptionRow(
+                            stringResource(R.string.sort_option_imdb),
+                            SortBy.IMDB_RATING,
+                            selectedSort,
+                        ) {
+                            selectedSort = it
+                        }
+                        SortOptionRow(
+                            stringResource(R.string.sort_option_parental),
+                            SortBy.PARENTAL_RATING,
+                            selectedSort,
+                        ) {
+                            selectedSort = it
+                        }
+                        SortOptionRow(
+                            stringResource(R.string.sort_option_date_added),
+                            SortBy.DATE_ADDED,
+                            selectedSort,
+                        ) {
+                            selectedSort = it
+                        }
+                        SortOptionRow(
+                            stringResource(R.string.sort_option_date_played),
+                            SortBy.DATE_PLAYED,
+                            selectedSort,
+                        ) {
+                            selectedSort = it
+                        }
+                        SortOptionRow(
+                            stringResource(R.string.sort_option_release_date),
+                            SortBy.RELEASE_DATE,
+                            selectedSort,
+                        ) {
+                            selectedSort = it
+                        }
                     }
                 }
 
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    SortOptionRow(
-                        stringResource(R.string.sort_option_title),
-                        SortBy.NAME,
-                        selectedSort,
-                    ) {
-                        selectedSort = it
-                    }
-                    SortOptionRow(
-                        stringResource(R.string.sort_option_imdb),
-                        SortBy.IMDB_RATING,
-                        selectedSort,
-                    ) {
-                        selectedSort = it
-                    }
-                    SortOptionRow(
-                        stringResource(R.string.sort_option_parental),
-                        SortBy.PARENTAL_RATING,
-                        selectedSort,
-                    ) {
-                        selectedSort = it
-                    }
-                    SortOptionRow(
-                        stringResource(R.string.sort_option_date_added),
-                        SortBy.DATE_ADDED,
-                        selectedSort,
-                    ) {
-                        selectedSort = it
-                    }
-                    SortOptionRow(
-                        stringResource(R.string.sort_option_date_played),
-                        SortBy.DATE_PLAYED,
-                        selectedSort,
-                    ) {
-                        selectedSort = it
-                    }
-                    SortOptionRow(
-                        stringResource(R.string.sort_option_release_date),
-                        SortBy.RELEASE_DATE,
-                        selectedSort,
-                    ) {
-                        selectedSort = it
-                    }
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+
+                TextButton(
+                    onClick = {
+                        onSortSelected(selectedSort, !isAscending)
+                        onDismiss()
+                    },
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(horizontal = 24.dp, vertical = 12.dp),
+                ) {
+                    Text(stringResource(R.string.action_apply))
                 }
             }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    onSortSelected(selectedSort, !isAscending)
-                    onDismiss()
-                }
-            ) {
-                Text(stringResource(R.string.action_apply))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        },
-    )
+        }
+    }
 }
 
 @Composable
@@ -426,94 +474,5 @@ private fun SortOptionRow(
         RadioButton(selected = selectedSort == sortBy, onClick = { onSelect(sortBy) })
         Spacer(modifier = Modifier.width(12.dp))
         Text(text = label, style = MaterialTheme.typography.bodyLarge)
-    }
-}
-
-@Composable
-private fun FilterRow(
-    currentFilter: FilterType,
-    onFilterSelected: (FilterType) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val filters =
-        listOf(
-            FilterType.ALL to stringResource(R.string.filter_all),
-            FilterType.WATCHED to stringResource(R.string.filter_watched),
-            FilterType.UNWATCHED to stringResource(R.string.filter_unwatched),
-            FilterType.WATCHLIST to stringResource(R.string.filter_watchlist),
-            FilterType.FAVORITES to stringResource(R.string.filter_favorites),
-        )
-
-    LazyRow(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp),
-    ) {
-        items(filters, key = { it.first.name }) { (filterType, label) ->
-            FilterChip(
-                selected = currentFilter == filterType,
-                onClick = { onFilterSelected(filterType) },
-                label = { Text(label) },
-                leadingIcon =
-                    if (currentFilter == filterType) {
-                        when (filterType) {
-                            FilterType.FAVORITES -> {
-                                {
-                                    Icon(
-                                        painterResource(id = R.drawable.ic_favorite_filled),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp),
-                                    )
-                                }
-                            }
-
-                            FilterType.WATCHLIST -> {
-                                {
-                                    Icon(
-                                        painterResource(id = R.drawable.ic_bookmark_filled),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp),
-                                    )
-                                }
-                            }
-
-                            FilterType.UNWATCHED -> {
-                                {
-                                    Icon(
-                                        painterResource(id = R.drawable.ic_circle_check_outline),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp),
-                                    )
-                                }
-                            }
-
-                            FilterType.WATCHED -> {
-                                {
-                                    Icon(
-                                        painterResource(id = R.drawable.ic_circle_check),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp),
-                                    )
-                                }
-                            }
-
-                            else -> {
-                                {
-                                    Icon(
-                                        painterResource(id = R.drawable.ic_check),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp),
-                                    )
-                                }
-                            }
-                        }
-                    } else null,
-                shape = RoundedCornerShape(50),
-            )
-        }
     }
 }

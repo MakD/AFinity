@@ -218,6 +218,35 @@
     <string name="filter_empty_watchlist">No items in your watchlist</string>
     <string name="filter_empty_favorites">No favorite items found</string>
     <string name="filter_empty_all">No items found</string>
+    <string name="filter_empty_filtered">No items match your filters</string>
+
+    <string name="library_filter_status">Filters</string>
+    <string name="library_filter_series_status">Status</string>
+    <string name="series_status_continuing">Continuing</string>
+    <string name="series_status_ended">Ended</string>
+    <string name="series_status_unreleased">Not yet released</string>
+    <string name="library_filter_features">Features</string>
+    <string name="library_filter_genres">Genres</string>
+    <string name="library_filter_ratings">Parental ratings</string>
+    <string name="library_filter_tags">Tags</string>
+    <string name="library_filter_video_type">Video type</string>
+    <string name="library_filter_years">Years</string>
+    <string name="library_filter_genres_hint">Search genres</string>
+    <string name="library_filter_tags_hint">Search tags</string>
+    <string name="filter_played">Played</string>
+    <string name="filter_unplayed">Unplayed</string>
+    <string name="filter_resumable">Resumable</string>
+    <string name="feature_subtitles">Subtitles</string>
+    <string name="feature_trailer">Trailer</string>
+    <string name="feature_special">Special feature</string>
+    <string name="feature_theme_song">Theme song</string>
+    <string name="feature_theme_video">Theme video</string>
+    <string name="video_type_bluray">Blu-ray</string>
+    <string name="video_type_dvd">DVD</string>
+    <string name="video_type_hd">HD</string>
+    <string name="video_type_4k">4K</string>
+    <string name="video_type_sd">SD</string>
+    <string name="video_type_3d">3D</string>
 
     <string name="sort_title">Sort by</string>
     <string name="sort_ascending">Ascending</string>
@@ -1372,6 +1401,18 @@
     <string name="music_sort_by_artist">By Artist</string>
     <string name="music_sort_track_number">Track Number</string>
     <string name="music_sort_random">Random</string>
+    <string name="music_sort_field_name">Name</string>
+    <string name="music_sort_field_album">Album</string>
+    <string name="music_sort_field_album_artist">Album artist</string>
+    <string name="music_sort_field_artist">Artist</string>
+    <string name="music_sort_field_community_rating">Community rating</string>
+    <string name="music_sort_field_critics_rating">Critics rating</string>
+    <string name="music_sort_field_date_added">Date added</string>
+    <string name="music_sort_field_date_played">Date played</string>
+    <string name="music_sort_field_play_count">Play count</string>
+    <string name="music_sort_field_release_date">Release date</string>
+    <string name="music_sort_field_runtime">Runtime</string>
+    <string name="music_sort_field_random">Random</string>
     <!-- Library Tabs -->
     <string name="music_tab_home">Home</string>
     <string name="music_tab_playlists">Playlists</string>

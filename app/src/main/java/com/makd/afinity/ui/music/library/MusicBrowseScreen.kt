@@ -1,10 +1,14 @@
 package com.makd.afinity.ui.music.library
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -16,14 +20,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.makd.afinity.R
 import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.Destination.Companion.createSearchRoute
@@ -51,9 +59,11 @@ fun MusicBrowseScreen(
     val userProfileImageUrl by viewModel.userProfileImageUrl.collectAsStateWithLifecycle()
     val playbackState by playerViewModel.playbackState.collectAsStateWithLifecycle()
     val isOffline by playerViewModel.isOffline.collectAsStateWithLifecycle()
-    val trackSort by viewModel.trackSort.collectAsStateWithLifecycle()
-    val albumSort by viewModel.albumSort.collectAsStateWithLifecycle()
-    val artistSort by viewModel.artistSort.collectAsStateWithLifecycle()
+    val trackSortField by viewModel.trackSortField.collectAsStateWithLifecycle()
+    val trackSortDescending by viewModel.trackSortDescending.collectAsStateWithLifecycle()
+    val albumSortField by viewModel.albumSortField.collectAsStateWithLifecycle()
+    val albumSortDescending by viewModel.albumSortDescending.collectAsStateWithLifecycle()
+    val albumFilterOptions by viewModel.albumFilterOptions.collectAsStateWithLifecycle()
     val albumLetterFilter by viewModel.albumLetterFilter.collectAsStateWithLifecycle()
     val artistLetterFilter by viewModel.artistLetterFilter.collectAsStateWithLifecycle()
     val trackFilters by viewModel.trackFilters.collectAsStateWithLifecycle()
@@ -65,6 +75,11 @@ fun MusicBrowseScreen(
     var addToPlaylistTrackIds by remember { mutableStateOf<List<UUID>>(emptyList()) }
     var showAddToPlaylist by remember { mutableStateOf(false) }
     var radioSeed by remember { mutableStateOf<RadioSeed?>(null) }
+    var showAlbumSortDialog by remember { mutableStateOf(false) }
+    var showAlbumFilterSheet by remember { mutableStateOf(false) }
+    var showArtistFilterSheet by remember { mutableStateOf(false) }
+    var showTrackSortDialog by remember { mutableStateOf(false) }
+    var showTrackFilterSheet by remember { mutableStateOf(false) }
 
     val lazyGenres = viewModel.genresPagingFlow.collectAsLazyPagingItems()
 
@@ -79,7 +94,9 @@ fun MusicBrowseScreen(
     val genresGridState = rememberLazyGridState()
 
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) }) },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) })
+        },
         topBar = {
             AfinityTopAppBar(
                 title = {
@@ -98,6 +115,48 @@ fun MusicBrowseScreen(
                 onProfileClick = { navController.navigate(createSettingsRoute()) },
             )
         },
+        floatingActionButton = {
+            when (tab) {
+                LibraryFilter.Albums ->
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalAlignment = Alignment.End,
+                    ) {
+                        FilterFab(
+                            active = albumFilters.isActive,
+                            onClick = { showAlbumFilterSheet = true },
+                        )
+                        FloatingActionButton(onClick = { showAlbumSortDialog = true }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_arrows_sort),
+                                contentDescription = stringResource(R.string.cd_sort_fab),
+                            )
+                        }
+                    }
+                LibraryFilter.Artists ->
+                    FilterFab(
+                        active = artistFilters.isActive,
+                        onClick = { showArtistFilterSheet = true },
+                    )
+                LibraryFilter.Tracks ->
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalAlignment = Alignment.End,
+                    ) {
+                        FilterFab(
+                            active = trackFilters.isActive,
+                            onClick = { showTrackFilterSheet = true },
+                        )
+                        FloatingActionButton(onClick = { showTrackSortDialog = true }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_arrows_sort),
+                                contentDescription = stringResource(R.string.cd_sort_fab),
+                            )
+                        }
+                    }
+                else -> Unit
+            }
+        },
     ) { innerPadding ->
         when (tab) {
             LibraryFilter.Playlists ->
@@ -115,10 +174,6 @@ fun MusicBrowseScreen(
                 AlbumsGrid(
                     gridState = albumsGridState,
                     albums = lazyAlbums,
-                    sortOption = albumSort,
-                    onSortChange = viewModel::setAlbumSort,
-                    filters = albumFilters,
-                    onFiltersChange = viewModel::setAlbumFilters,
                     letterFilter = albumLetterFilter,
                     onLetterSelected = viewModel::filterAlbumsByLetter,
                     onAlbumClick = { album ->
@@ -132,10 +187,6 @@ fun MusicBrowseScreen(
                 ArtistsGrid(
                     gridState = artistsGridState,
                     artists = lazyArtists,
-                    sortOption = artistSort,
-                    onSortChange = viewModel::setArtistSort,
-                    filters = artistFilters,
-                    onFiltersChange = viewModel::setArtistFilters,
                     letterFilter = artistLetterFilter,
                     onLetterSelected = viewModel::filterArtistsByLetter,
                     onArtistClick = { artist ->
@@ -151,17 +202,23 @@ fun MusicBrowseScreen(
                     tracks = lazyTracks,
                     favoriteOverrides = uiState.trackFavoriteOverrides,
                     currentTrackId = playbackState.currentTrack?.id?.toString(),
-                    sortOption = trackSort,
-                    onSortChange = viewModel::setTrackSort,
-                    filters = trackFilters,
-                    onFiltersChange = viewModel::setTrackFilters,
-                    onPlayAll = { queue ->
-                        startMusicService(context)
-                        playerViewModel.playQueue(queue, 0)
+                    onPlayAll = {
+                        scope.launch {
+                            val queue = viewModel.getAllFilteredTracks()
+                            if (queue.isNotEmpty()) {
+                                startMusicService(context)
+                                playerViewModel.playQueue(queue, 0)
+                            }
+                        }
                     },
-                    onShuffleAll = { queue ->
-                        startMusicService(context)
-                        playerViewModel.playQueue(queue.shuffled(), 0)
+                    onShuffleAll = {
+                        scope.launch {
+                            val queue = viewModel.getAllFilteredTracks()
+                            if (queue.isNotEmpty()) {
+                                startMusicService(context)
+                                playerViewModel.playQueue(queue.shuffled(), 0)
+                            }
+                        }
                     },
                     onTrackClick = { track, queue, index ->
                         startMusicService(context)
@@ -219,6 +276,53 @@ fun MusicBrowseScreen(
         }
     }
 
+    if (showAlbumSortDialog) {
+        MusicSortDialog(
+            fields = ALBUM_SORT_FIELDS,
+            currentField = albumSortField,
+            currentDescending = albumSortDescending,
+            onDismiss = { showAlbumSortDialog = false },
+            onSortSelected = { field, descending -> viewModel.setAlbumSort(field, descending) },
+        )
+    }
+
+    if (showAlbumFilterSheet) {
+        MusicFilterBottomSheet(
+            filters = albumFilters,
+            options = albumFilterOptions,
+            onApply = { viewModel.setAlbumFilters(it) },
+            onDismiss = { showAlbumFilterSheet = false },
+        )
+    }
+
+    if (showArtistFilterSheet) {
+        MusicFilterBottomSheet(
+            filters = artistFilters,
+            options = albumFilterOptions,
+            onApply = { viewModel.setArtistFilters(it) },
+            onDismiss = { showArtistFilterSheet = false },
+        )
+    }
+
+    if (showTrackSortDialog) {
+        MusicSortDialog(
+            fields = TRACK_SORT_FIELDS,
+            currentField = trackSortField,
+            currentDescending = trackSortDescending,
+            onDismiss = { showTrackSortDialog = false },
+            onSortSelected = { field, descending -> viewModel.setTrackSort(field, descending) },
+        )
+    }
+
+    if (showTrackFilterSheet) {
+        MusicFilterBottomSheet(
+            filters = trackFilters,
+            options = albumFilterOptions,
+            onApply = { viewModel.setTrackFilters(it) },
+            onDismiss = { showTrackFilterSheet = false },
+        )
+    }
+
     radioSeed?.let { seed ->
         RadioModeBottomSheet(
             seed = seed,
@@ -247,6 +351,19 @@ fun MusicBrowseScreen(
                     }
                 message?.let { scope.launch { snackbarHostState.showSnackbar(it) } }
             },
+        )
+    }
+}
+
+@Composable
+private fun FilterFab(active: Boolean, onClick: () -> Unit) {
+    FloatingActionButton(onClick = onClick) {
+        Icon(
+            painter =
+                painterResource(
+                    id = if (active) R.drawable.ic_filter_active else R.drawable.ic_filter
+                ),
+            contentDescription = stringResource(R.string.cd_filter_fab),
         )
     }
 }

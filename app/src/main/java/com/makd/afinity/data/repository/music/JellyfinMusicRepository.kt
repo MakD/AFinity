@@ -14,6 +14,7 @@ import com.makd.afinity.data.models.music.AfinityLyricLine
 import com.makd.afinity.data.models.music.AfinityMusicGenre
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
+import com.makd.afinity.data.models.music.MusicFilterOptions
 import com.makd.afinity.data.models.music.MusicFilters
 import com.makd.afinity.data.models.music.MusicSearchResults
 import com.makd.afinity.data.repository.DatabaseRepository
@@ -32,6 +33,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.operations.ArtistsApi
+import org.jellyfin.sdk.api.operations.FilterApi
 import org.jellyfin.sdk.api.operations.GenresApi
 import org.jellyfin.sdk.api.operations.InstantMixApi
 import org.jellyfin.sdk.api.operations.ItemsApi
@@ -112,14 +114,8 @@ constructor(
                             sortBy = listOf(sortBy),
                             sortOrder = listOf(sortOrder),
                             filters = itemFilters.ifEmpty { null },
-                            genreIds = filters.genreIds.ifEmpty { null },
-                            years = buildList {
-                                    filters.yearMin?.let { min ->
-                                        val max = filters.yearMax ?: min
-                                        addAll((min..max).toList())
-                                    }
-                                }
-                                    .ifEmpty { null },
+                            genres = filters.genres.toList().ifEmpty { null },
+                            years = filters.years.toList().ifEmpty { null },
                             startIndex = startIndex,
                             limit = limit,
                             fields = FieldSets.MUSIC_TRACK,
@@ -170,13 +166,8 @@ constructor(
                             sortBy = listOf(sortBy),
                             sortOrder = listOf(sortOrder),
                             filters = itemFilters.ifEmpty { null },
-                            years = buildList {
-                                    filters.yearMin?.let { min ->
-                                        val max = filters.yearMax ?: min
-                                        addAll((min..max).toList())
-                                    }
-                                }
-                                    .ifEmpty { null },
+                            genres = filters.genres.toList().ifEmpty { null },
+                            years = filters.years.toList().ifEmpty { null },
                             startIndex = startIndex,
                             limit = limit,
                             fields = FieldSets.MUSIC_ALBUM,
@@ -224,6 +215,8 @@ constructor(
                             sortBy = listOf(sortBy),
                             sortOrder = listOf(sortOrder),
                             filters = itemFilters.ifEmpty { null },
+                            genres = filters.genres.toList().ifEmpty { null },
+                            years = filters.years.toList().ifEmpty { null },
                             startIndex = startIndex,
                             limit = limit,
                             fields = FieldSets.MUSIC_ARTIST,
@@ -239,6 +232,38 @@ constructor(
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error fetching artists for library: $libraryId")
                 emptyList()
+            }
+        }
+
+    override suspend fun getMusicFilterOptions(
+        libraryId: UUID,
+        itemType: BaseItemKind,
+    ): MusicFilterOptions =
+        withContext(Dispatchers.IO) {
+            try {
+                val apiClient =
+                    sessionManager.getCurrentApiClient()
+                        ?: return@withContext MusicFilterOptions()
+                val userId = getCurrentUserId() ?: return@withContext MusicFilterOptions()
+
+                val response =
+                    FilterApi(apiClient)
+                        .getQueryFiltersLegacy(
+                            userId = userId,
+                            parentId = libraryId,
+                            includeItemTypes = listOf(itemType),
+                        )
+                val content = response.content
+                MusicFilterOptions(
+                    genres = content.genres.orEmpty(),
+                    years = content.years.orEmpty().sortedDescending(),
+                )
+            } catch (e: ApiClientException) {
+                Timber.e(e, "Failed to fetch music filter options for library: $libraryId")
+                MusicFilterOptions()
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error fetching music filter options: $libraryId")
+                MusicFilterOptions()
             }
         }
 

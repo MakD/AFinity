@@ -14,8 +14,9 @@ import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
+import com.makd.afinity.data.models.media.LibraryFilterOptions
+import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.data.models.omdb.OmdbApiResult
-import com.makd.afinity.ui.library.FilterType
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
@@ -76,11 +77,24 @@ interface MediaRepository {
         isFavorite: Boolean? = null,
         isPlayed: Boolean? = null,
         isLiked: Boolean? = null,
+        isResumable: Boolean? = null,
         nameStartsWith: String? = null,
         fields: List<ItemFields>? = null,
         imageTypes: List<String> = emptyList(),
         hasOverview: Boolean? = null,
         studios: List<String> = emptyList(),
+        officialRatings: List<String> = emptyList(),
+        tags: List<String> = emptyList(),
+        videoTypes: List<String> = emptyList(),
+        seriesStatuses: List<String> = emptyList(),
+        hasSubtitles: Boolean? = null,
+        hasTrailer: Boolean? = null,
+        hasSpecialFeature: Boolean? = null,
+        hasThemeSong: Boolean? = null,
+        hasThemeVideo: Boolean? = null,
+        isHd: Boolean? = null,
+        is4k: Boolean? = null,
+        is3d: Boolean? = null,
     ): BaseItemDtoQueryResult
 
     suspend fun getItem(itemId: UUID, fields: List<ItemFields>? = null): BaseItemDto?
@@ -230,11 +244,16 @@ interface MediaRepository {
         libraryType: CollectionType,
         sortBy: SortBy,
         sortDescending: Boolean,
-        filter: FilterType,
+        filters: LibraryFilters,
         nameStartsWith: String? = null,
         fields: List<ItemFields>? = null,
         studioName: String? = null,
     ): Flow<PagingData<AfinityItem>>
+
+    suspend fun getFilterOptions(
+        parentId: UUID?,
+        libraryType: CollectionType,
+    ): LibraryFilterOptions
 
     fun getLibrariesFlow(): Flow<List<AfinityCollection>>
 

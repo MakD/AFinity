@@ -28,6 +28,8 @@ import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
+import com.makd.afinity.data.models.media.LibraryFilterOptions
+import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.data.models.media.toAfinityCollection
 import com.makd.afinity.data.models.omdb.OmdbApiResult
 import com.makd.afinity.data.network.MdbListApiService
@@ -37,7 +39,6 @@ import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
-import com.makd.afinity.ui.library.FilterType
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -53,6 +54,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.exception.ApiClientException
+import org.jellyfin.sdk.api.operations.FilterApi
 import org.jellyfin.sdk.api.operations.GenresApi
 import org.jellyfin.sdk.api.operations.ItemsApi
 import org.jellyfin.sdk.api.operations.LibraryApi
@@ -70,7 +72,9 @@ import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ItemSortBy
+import org.jellyfin.sdk.model.api.SeriesStatus
 import org.jellyfin.sdk.model.api.SortOrder
+import org.jellyfin.sdk.model.api.VideoType
 import timber.log.Timber
 import java.io.File
 import java.util.UUID
@@ -370,7 +374,7 @@ constructor(
         libraryType: CollectionType,
         sortBy: SortBy,
         sortDescending: Boolean,
-        filter: FilterType,
+        filters: LibraryFilters,
         nameStartsWith: String?,
         fields: List<ItemFields>?,
         studioName: String?,
@@ -385,13 +389,55 @@ constructor(
                     libraryType = libraryType,
                     sortBy = sortBy,
                     sortDescending = sortDescending,
-                    filter = filter,
+                    filters = filters,
                     baseUrl = getBaseUrl(),
                     nameStartsWith = nameStartsWith,
                     studioName = studioName,
                 )
             }
             .flow
+
+    override suspend fun getFilterOptions(
+        parentId: UUID?,
+        libraryType: CollectionType,
+    ): LibraryFilterOptions =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val apiClient =
+                    sessionManager.getCurrentApiClient()
+                        ?: return@withContext LibraryFilterOptions()
+                val userId = getCurrentUserId() ?: return@withContext LibraryFilterOptions()
+
+                val includeItemTypes =
+                    when (libraryType) {
+                        CollectionType.TvShows -> listOf(BaseItemKind.SERIES)
+                        CollectionType.Movies -> listOf(BaseItemKind.MOVIE)
+                        CollectionType.BoxSets -> listOf(BaseItemKind.BOX_SET)
+                        else -> emptyList()
+                    }
+
+                val filterApi = FilterApi(apiClient)
+                val response =
+                    filterApi.getQueryFiltersLegacy(
+                        userId = userId,
+                        parentId = parentId,
+                        includeItemTypes = includeItemTypes.ifEmpty { null },
+                    )
+                val content = response.content
+                LibraryFilterOptions(
+                    genres = content.genres.orEmpty(),
+                    tags = content.tags.orEmpty(),
+                    officialRatings = content.officialRatings.orEmpty(),
+                    years = content.years.orEmpty().sortedDescending(),
+                )
+            } catch (e: ApiClientException) {
+                Timber.e(e, "Failed to get filter options")
+                LibraryFilterOptions()
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error getting filter options")
+                LibraryFilterOptions()
+            }
+        }
 
     override suspend fun getLibraries(): List<AfinityCollection> =
         withContext(Dispatchers.IO) {
@@ -520,11 +566,24 @@ constructor(
         isFavorite: Boolean?,
         isPlayed: Boolean?,
         isLiked: Boolean?,
+        isResumable: Boolean?,
         nameStartsWith: String?,
         fields: List<ItemFields>?,
         imageTypes: List<String>,
         hasOverview: Boolean?,
         studios: List<String>,
+        officialRatings: List<String>,
+        tags: List<String>,
+        videoTypes: List<String>,
+        seriesStatuses: List<String>,
+        hasSubtitles: Boolean?,
+        hasTrailer: Boolean?,
+        hasSpecialFeature: Boolean?,
+        hasThemeSong: Boolean?,
+        hasThemeVideo: Boolean?,
+        isHd: Boolean?,
+        is4k: Boolean?,
+        is3d: Boolean?,
     ): BaseItemDtoQueryResult =
         withContext(Dispatchers.IO) {
             return@withContext try {
@@ -545,7 +604,10 @@ constructor(
 
                 val itemsApi = ItemsApi(apiClient)
 
-                val filters = buildList { if (isLiked == true) add(ItemFilter.LIKES) }
+                val filters = buildList {
+                    if (isLiked == true) add(ItemFilter.LIKES)
+                    if (isResumable == true) add(ItemFilter.IS_RESUMABLE)
+                }
 
                 val response =
                     itemsApi.getItems(
@@ -585,6 +647,24 @@ constructor(
                         filters = filters.ifEmpty { null },
                         nameStartsWith = nameStartsWith,
                         studios = studios.ifEmpty { null },
+                        officialRatings = officialRatings.ifEmpty { null },
+                        tags = tags.ifEmpty { null },
+                        videoTypes =
+                            videoTypes
+                                .mapNotNull { VideoType.fromNameOrNull(it) }
+                                .ifEmpty { null },
+                        seriesStatus =
+                            seriesStatuses
+                                .mapNotNull { SeriesStatus.fromNameOrNull(it) }
+                                .ifEmpty { null },
+                        hasSubtitles = hasSubtitles,
+                        hasTrailer = hasTrailer,
+                        hasSpecialFeature = hasSpecialFeature,
+                        hasThemeSong = hasThemeSong,
+                        hasThemeVideo = hasThemeVideo,
+                        isHd = isHd,
+                        is4k = is4k,
+                        is3d = is3d,
                         fields = fields ?: FieldSets.LIBRARY_GRID,
                         imageTypes =
                             if (imageTypes.isNotEmpty()) {

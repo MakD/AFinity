@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,7 +26,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -36,27 +34,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -95,7 +83,6 @@ import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityMusicGenre
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
-import com.makd.afinity.data.models.music.MusicFilters
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.player.AudioService
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
@@ -226,12 +213,8 @@ internal fun TracksList(
     tracks: LazyPagingItems<AfinityTrack>,
     favoriteOverrides: Map<UUID, Boolean>,
     currentTrackId: String?,
-    sortOption: MusicSortOption,
-    onSortChange: (MusicSortOption) -> Unit,
-    filters: MusicFilters,
-    onFiltersChange: (MusicFilters) -> Unit,
-    onPlayAll: (List<AfinityTrack>) -> Unit,
-    onShuffleAll: (List<AfinityTrack>) -> Unit,
+    onPlayAll: () -> Unit,
+    onShuffleAll: () -> Unit,
     onTrackClick: (AfinityTrack, List<AfinityTrack>, Int) -> Unit,
     onInstantMix: ((AfinityTrack) -> Unit)?,
     onStartRadio: (AfinityTrack) -> Unit,
@@ -251,21 +234,7 @@ internal fun TracksList(
 
     LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
         item(key = "tracks_controls") {
-            TabControlsRow(
-                sortOptions = TRACK_SORT_OPTIONS,
-                currentSort = sortOption,
-                onSortChange = onSortChange,
-                currentFilters = filters,
-                onFiltersChange = onFiltersChange,
-                onPlayAll = {
-                    val queue = tracks.itemSnapshotList.items
-                    if (queue.isNotEmpty()) onPlayAll(queue)
-                },
-                onShuffleAll = {
-                    val queue = tracks.itemSnapshotList.items
-                    if (queue.isNotEmpty()) onShuffleAll(queue)
-                },
-            )
+            TrackPlayShuffleRow(onPlayAll = onPlayAll, onShuffleAll = onShuffleAll)
         }
         items(count = tracks.itemCount, key = tracks.itemKey { it.id }) { index ->
             val track = tracks[index] ?: return@items
@@ -299,10 +268,6 @@ internal fun TracksList(
 internal fun AlbumsGrid(
     gridState: LazyGridState,
     albums: LazyPagingItems<AfinityAlbum>,
-    sortOption: MusicSortOption,
-    onSortChange: (MusicSortOption) -> Unit,
-    filters: MusicFilters,
-    onFiltersChange: (MusicFilters) -> Unit,
     letterFilter: String?,
     onLetterSelected: (String) -> Unit,
     onAlbumClick: (AfinityAlbum) -> Unit,
@@ -337,15 +302,6 @@ internal fun AlbumsGrid(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.weight(1f).fillMaxHeight(),
         ) {
-            item(span = { GridItemSpan(maxLineSpan) }, key = "albums_controls") {
-                TabControlsRow(
-                    sortOptions = ALBUM_SORT_OPTIONS,
-                    currentSort = sortOption,
-                    onSortChange = onSortChange,
-                    currentFilters = filters,
-                    onFiltersChange = onFiltersChange,
-                )
-            }
             items(count = albums.itemCount, key = albums.itemKey { it.id }) { index ->
                 val album = albums[index] ?: return@items
                 MusicAlbumCard(album = album, onClick = { onAlbumClick(album) })
@@ -364,10 +320,6 @@ internal fun AlbumsGrid(
 internal fun ArtistsGrid(
     gridState: LazyGridState,
     artists: LazyPagingItems<AfinityArtist>,
-    sortOption: MusicSortOption,
-    onSortChange: (MusicSortOption) -> Unit,
-    filters: MusicFilters,
-    onFiltersChange: (MusicFilters) -> Unit,
     letterFilter: String?,
     onLetterSelected: (String) -> Unit,
     onArtistClick: (AfinityArtist) -> Unit,
@@ -402,15 +354,6 @@ internal fun ArtistsGrid(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.weight(1f).fillMaxHeight(),
         ) {
-            item(span = { GridItemSpan(maxLineSpan) }, key = "artists_controls") {
-                TabControlsRow(
-                    sortOptions = ARTIST_SORT_OPTIONS,
-                    currentSort = sortOption,
-                    onSortChange = onSortChange,
-                    currentFilters = filters,
-                    onFiltersChange = onFiltersChange,
-                )
-            }
             items(count = artists.itemCount, key = artists.itemKey { it.id }) { index ->
                 val artist = artists[index] ?: return@items
                 MusicArtistCard(
@@ -504,193 +447,41 @@ internal fun GenresGrid(
 }
 
 @Composable
-private fun TabControlsRow(
-    sortOptions: List<MusicSortOption>,
-    currentSort: MusicSortOption,
-    onSortChange: (MusicSortOption) -> Unit,
-    currentFilters: MusicFilters,
-    onFiltersChange: (MusicFilters) -> Unit,
-    onPlayAll: (() -> Unit)? = null,
-    onShuffleAll: (() -> Unit)? = null,
-) {
-    var showSortMenu by remember { mutableStateOf(false) }
-    var showFilterSheet by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
+private fun TrackPlayShuffleRow(onPlayAll: () -> Unit, onShuffleAll: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box {
-                TextButton(onClick = { showSortMenu = true }) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_arrows_sort),
-                        contentDescription = stringResource(R.string.cd_sort_fab),
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = stringResource(currentSort.labelRes),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                DropdownMenu(expanded = showSortMenu, onDismissRequest = { showSortMenu = false }) {
-                    sortOptions.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text(stringResource(option.labelRes)) },
-                            onClick = {
-                                onSortChange(option)
-                                showSortMenu = false
-                            },
-                            leadingIcon =
-                                if (currentSort == option) {
-                                    {
-                                        Icon(
-                                            painter = painterResource(R.drawable.ic_check),
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp),
-                                            tint = MaterialTheme.colorScheme.primary,
-                                        )
-                                    }
-                                } else null,
-                        )
-                    }
-                }
-            }
-
-            BadgedBox(
-                badge = {
-                    if (currentFilters.isActive) Badge()
-                }
-            ) {
-                IconButton(onClick = { showFilterSheet = true }) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_filter),
-                        contentDescription = stringResource(R.string.cd_music_filter),
-                        modifier = Modifier.size(20.dp),
-                        tint =
-                            if (currentFilters.isActive) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        }
-
-        if (onPlayAll != null || onShuffleAll != null) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (onShuffleAll != null) {
-                    OutlinedButton(
-                        onClick = onShuffleAll,
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_arrows_shuffle),
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            stringResource(R.string.music_action_shuffle),
-                            style = MaterialTheme.typography.labelLarge,
-                        )
-                    }
-                }
-                if (onPlayAll != null) {
-                    Button(
-                        onClick = onPlayAll,
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_player_play_filled),
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            stringResource(R.string.music_action_play_all),
-                            style = MaterialTheme.typography.labelLarge,
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    if (showFilterSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showFilterSheet = false },
-            sheetState = sheetState,
+        OutlinedButton(
+            onClick = onShuffleAll,
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
         ) {
-            Column(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .padding(horizontal = 20.dp)
-                        .padding(bottom = 32.dp)
-                        .navigationBarsPadding(),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = stringResource(R.string.music_filter_status),
-                        style =
-                            MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    )
-                    if (currentFilters.isActive) {
-                        TextButton(onClick = { onFiltersChange(MusicFilters()) }) {
-                            Text(stringResource(R.string.music_filter_clear))
-                        }
-                    }
-                }
-                HorizontalDivider()
-                Text(
-                    text = stringResource(R.string.music_filter_status),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = currentFilters.favoritesOnly,
-                        onClick = {
-                            onFiltersChange(
-                                currentFilters.copy(favoritesOnly = !currentFilters.favoritesOnly)
-                            )
-                        },
-                        label = { Text(stringResource(R.string.filter_favorites)) },
-                    )
-                    FilterChip(
-                        selected = currentFilters.unplayedOnly,
-                        onClick = {
-                            onFiltersChange(
-                                currentFilters.copy(
-                                    unplayedOnly = !currentFilters.unplayedOnly,
-                                    playedOnly = false,
-                                )
-                            )
-                        },
-                        label = { Text(stringResource(R.string.music_filter_unplayed)) },
-                    )
-                    FilterChip(
-                        selected = currentFilters.playedOnly,
-                        onClick = {
-                            onFiltersChange(
-                                currentFilters.copy(
-                                    playedOnly = !currentFilters.playedOnly,
-                                    unplayedOnly = false,
-                                )
-                            )
-                        },
-                        label = { Text(stringResource(R.string.music_filter_played)) },
-                    )
-                }
-            }
+            Icon(
+                painter = painterResource(R.drawable.ic_arrows_shuffle),
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                stringResource(R.string.music_action_shuffle),
+                style = MaterialTheme.typography.labelLarge,
+            )
+        }
+        Button(
+            onClick = onPlayAll,
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_player_play_filled),
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                stringResource(R.string.music_action_play_all),
+                style = MaterialTheme.typography.labelLarge,
+            )
         }
     }
 }

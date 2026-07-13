@@ -31,6 +31,10 @@ interface PreferencesRepository {
 
     suspend fun getRememberLogin(): Boolean
 
+    suspend fun setStringPreference(key: String, value: String?)
+
+    suspend fun getStringPreference(key: String): String?
+
     suspend fun setDefaultSortBy(sortBy: SortBy)
 
     suspend fun getDefaultSortBy(): SortBy
