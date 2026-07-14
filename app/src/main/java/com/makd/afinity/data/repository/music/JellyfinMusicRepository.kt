@@ -269,9 +269,16 @@ constructor(
 
     override suspend fun getAlbumById(albumId: UUID): AfinityAlbum? =
         withContext(Dispatchers.IO) {
+            suspend fun fromDb(): AfinityAlbum? {
+                val userId = sessionManager.currentSession.value?.userId ?: return null
+                return databaseRepository.getAllMusicAlbumsByUser(userId).firstOrNull {
+                    it.id == albumId
+                }
+            }
             try {
-                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
-                val userId = getCurrentUserId() ?: return@withContext null
+                val apiClient =
+                    sessionManager.getCurrentApiClient() ?: return@withContext fromDb()
+                val userId = getCurrentUserId() ?: return@withContext fromDb()
                 val baseUrl = getBaseUrlInternal()
                 val response =
                     ItemsApi(apiClient)
@@ -283,10 +290,10 @@ constructor(
                         )
                 response.content.items.firstOrNull()?.let {
                     runCatching { it.toAfinityAlbum(baseUrl) }.getOrNull()
-                }
+                } ?: fromDb()
             } catch (e: Exception) {
-                Timber.e(e, "Failed to fetch album: $albumId")
-                null
+                Timber.e(e, "Failed to fetch album: $albumId — trying DB cache")
+                fromDb()
             }
         }
 
@@ -345,10 +352,18 @@ constructor(
                     }
             }
 
+            suspend fun dbFallback(): List<AfinityTrack> {
+                if (serverId == null || userId == null) return emptyList()
+                val dbTracks =
+                    databaseRepository.getMusicAlbumTracks(albumId, serverId, userId.toString())
+                val patched = patchLocalPaths(dbTracks)
+                return if (patched.isNotEmpty()) patched else tracksFromDownloads()
+            }
+
             try {
                 val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val apiUserId = getCurrentUserId() ?: return@withContext emptyList()
+                    sessionManager.getCurrentApiClient() ?: return@withContext dbFallback()
+                val apiUserId = getCurrentUserId() ?: return@withContext dbFallback()
                 val baseUrl = getBaseUrlInternal()
 
                 val response =
@@ -375,14 +390,7 @@ constructor(
                 patchLocalPaths(tracks)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to fetch tracks for album: $albumId — trying DB cache")
-                if (serverId != null && userId != null) {
-                    val dbTracks =
-                        databaseRepository.getMusicAlbumTracks(albumId, serverId, userId.toString())
-                    val patched = patchLocalPaths(dbTracks)
-                    if (patched.isNotEmpty()) patched else tracksFromDownloads()
-                } else {
-                    emptyList()
-                }
+                dbFallback()
             }
         }
 

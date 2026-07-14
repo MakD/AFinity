@@ -2,6 +2,11 @@
 
 package com.makd.afinity.ui.home
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -23,6 +28,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
@@ -31,6 +38,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -88,6 +96,7 @@ import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -113,6 +122,10 @@ fun HomeScreen(
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
     val lazyListState = rememberLazyListState()
+    val scrollToTopScope = rememberCoroutineScope()
+    val showScrollToTop by remember {
+        derivedStateOf { lazyListState.firstVisibleItemIndex > 3 }
+    }
     val continueWatchingScrollState = rememberLazyListState()
     val continueWatchingItems =
         if (uiState.isOffline) uiState.offlineContinueWatching else uiState.continueWatching
@@ -244,6 +257,20 @@ fun HomeScreen(
                             item(key = "cw_skeleton") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     ContinueWatchingSkeleton(widthSizeClass)
+                                }
+                            }
+                        }
+
+                        if (uiState.isOffline && uiState.offlineNextUp.isNotEmpty()) {
+                            item(key = "offline_next_up") {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                    NextUpSection(
+                                        episodes = uiState.offlineNextUp,
+                                        onEpisodeClick = { episode ->
+                                            viewModel.selectEpisode(episode)
+                                        },
+                                        widthSizeClass = widthSizeClass,
+                                    )
                                 }
                             }
                         }
@@ -574,6 +601,36 @@ fun HomeScreen(
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    AnimatedVisibility(
+                        visible = showScrollToTop,
+                        enter = fadeIn() + scaleIn(),
+                        exit = fadeOut() + scaleOut(),
+                        modifier =
+                            Modifier.align(Alignment.BottomEnd)
+                                .windowInsetsPadding(
+                                    WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                                )
+                                .padding(
+                                    end = 16.dp,
+                                    bottom = max(bottomPadding, playerOffset) + 16.dp,
+                                ),
+                    ) {
+                        FloatingActionButton(
+                            onClick = {
+                                scrollToTopScope.launch {
+                                    lazyListState.animateScrollToItem(0)
+                                }
+                            },
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_keyboard_arrow_up),
+                                contentDescription = stringResource(R.string.cd_scroll_to_top),
+                            )
                         }
                     }
                 }

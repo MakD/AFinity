@@ -63,6 +63,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
@@ -283,9 +284,11 @@ constructor(
                             downloadRepository.getCompletedDownloadsFlow(),
                             absDownloadRepository.getCompletedDownloadsFlow(),
                             databaseRepository.getAllMusicTracksFlowByUser(userId),
-                        ) { _, _, _ ->
+                            databaseRepository.getAllUserDataFlow(userId),
+                        ) { _, _, _, _ ->
                             userId
                         }
+                            .debounce(300L)
                     } else {
                         flowOf()
                     }
@@ -475,6 +478,24 @@ constructor(
                 "Found ${sortedOfflineContinueWatching.size} items to continue watching offline"
             )
 
+            val offlineNextUp = mutableListOf<AfinityEpisode>()
+            downloadedShows.forEach { show ->
+                val downloadedEpisodes =
+                    show.seasons
+                        .flatMap { season -> season.episodes }
+                        .filter { it.id in downloadedItemIds && !isItemUnavailable(it.id) }
+                        .sortedWith(compareBy({ it.parentIndexNumber }, { it.indexNumber }))
+                val hasInProgress =
+                    downloadedEpisodes.any { it.playbackPositionTicks > 0 && !it.played }
+                if (!hasInProgress) {
+                    downloadedEpisodes
+                        .firstOrNull { !it.played && it.playbackPositionTicks == 0L }
+                        ?.let { offlineNextUp.add(it) }
+                }
+            }
+
+            Timber.d("Found ${offlineNextUp.size} next up episodes offline")
+
             val absCompleted = absDownloadRepository.getCompletedDownloadsFlow().first()
             val downloadedAudiobooks = absCompleted.filter { it.mediaType == "book" }
             val downloadedPodcastEpisodes =
@@ -522,6 +543,7 @@ constructor(
                     downloadedMovies = downloadedMovies,
                     downloadedShows = downloadedShows,
                     offlineContinueWatching = sortedOfflineContinueWatching,
+                    offlineNextUp = offlineNextUp,
                     downloadedAudiobooks = downloadedAudiobooks,
                     downloadedPodcastEpisodes = downloadedPodcastEpisodes,
                     downloadedMusicAlbums = downloadedMusicAlbums,
@@ -562,14 +584,19 @@ constructor(
             try {
                 _isLoadingEpisode.value = true
 
+                if (offlineModeManager.isOffline.first()) {
+                    _selectedEpisode.value = episode
+                    _selectedEpisodeWatchlistStatus.value = false
+                    _isLoadingEpisode.value = false
+                    return@launch
+                }
+
                 val fullEpisode =
                     mediaRepository
                         .getItem(episode.id, fields = FieldSets.ITEM_DETAIL)
                         ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
 
-                if (fullEpisode != null) {
-                    _selectedEpisode.value = fullEpisode
-                }
+                _selectedEpisode.value = fullEpisode ?: episode
 
                 try {
                     val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
@@ -817,6 +844,7 @@ data class HomeUiState(
     val continueWatching: List<AfinityItem> = emptyList(),
     val offlineContinueWatching: List<AfinityItem> = emptyList(),
     val nextUp: List<AfinityEpisode> = emptyList(),
+    val offlineNextUp: List<AfinityEpisode> = emptyList(),
     val upcomingEpisodes: List<AfinityEpisode> = emptyList(),
     val latestMovies: List<AfinityMovie> = emptyList(),
     val latestTvSeries: List<AfinityShow> = emptyList(),

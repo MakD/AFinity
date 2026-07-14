@@ -468,6 +468,12 @@ constructor(
         return userDataDao.getUnsyncedUserData(userId, serverId)
     }
 
+    override fun getAllUserDataFlow(userId: UUID): Flow<List<AfinityUserDataDto>> {
+        return sessionManager.currentSession.filterNotNull().flatMapLatest { session ->
+            userDataDao.getAllUserDataFlow(userId, session.serverId)
+        }
+    }
+
     override suspend fun markUserDataSynced(userId: UUID, itemId: UUID) {
         val serverId = sessionManager.currentSession.value?.serverId ?: return
         userDataDao.markUserDataSynced(userId, itemId, serverId)

@@ -655,66 +655,66 @@ constructor(
         }
     }
 
+    private suspend fun cachedItemOrNull(
+        itemId: String,
+        serverId: String,
+        userId: String,
+    ): LibraryItem? {
+        val cached = audiobookshelfDao.getItem(itemId, serverId, userId) ?: return null
+        val cachedEpisodes =
+            if (cached.mediaType == "podcast") {
+                audiobookshelfDao
+                    .getEpisodesForItem(itemId, serverId, userId)
+                    .map { it.toPodcastEpisode(json) }
+            } else {
+                emptyList()
+            }
+        var item = cached.toLibraryItem(episodes = cachedEpisodes.ifEmpty { null })
+        if (item.media.episodes == null && cached.mediaType == "podcast") {
+            val downloadedEpisodes =
+                database.absDownloadDao().getCompletedEpisodesForItem(itemId, serverId, userId)
+            if (downloadedEpisodes.isNotEmpty()) {
+                val syntheticEpisodes = downloadedEpisodes.map { dl ->
+                    PodcastEpisode(
+                        id = dl.episodeId!!,
+                        title = dl.title,
+                        duration = dl.duration,
+                        description = dl.episodeDescription,
+                        publishedAt = dl.publishedAt,
+                        addedAt = dl.createdAt,
+                        updatedAt = dl.updatedAt,
+                    )
+                }
+                item = item.copy(media = item.media.copy(episodes = syntheticEpisodes))
+                Timber.d(
+                    "cachedItemOrNull: synthesized ${syntheticEpisodes.size} episodes from downloads"
+                )
+            }
+        }
+        return item
+    }
+
     override suspend fun getItemDetails(itemId: String): Result<LibraryItem> {
         return withContext(Dispatchers.IO) {
             val (currentServerId, currentUserId) =
                 activeContext ?: return@withContext Result.failure(Exception("No active session"))
 
+            suspend fun cachedResult(fallbackError: String): Result<LibraryItem> {
+                val cached =
+                    cachedItemOrNull(itemId, currentServerId, currentUserId.toString())
+                return if (cached != null) {
+                    Timber.d(
+                        "getItemDetails: returning cached item episodes=${cached.media.episodes?.size}"
+                    )
+                    Result.success(cached)
+                } else {
+                    Result.failure(Exception(fallbackError))
+                }
+            }
+
             try {
                 if (!networkConnectivityMonitor.isCurrentlyConnected()) {
-                    val cached =
-                        audiobookshelfDao.getItem(itemId, currentServerId, currentUserId.toString())
-                    val cachedEpisodes =
-                        if (cached?.mediaType == "podcast") {
-                            audiobookshelfDao
-                                .getEpisodesForItem(
-                                    itemId,
-                                    currentServerId,
-                                    currentUserId.toString(),
-                                )
-                                .map { it.toPodcastEpisode(json) }
-                        } else {
-                            emptyList()
-                        }
-                    Timber.d(
-                        "getItemDetails offline: itemId=$itemId serverId=$currentServerId userId=$currentUserId cached=${cached != null} hasEpisodes=${cachedEpisodes.isNotEmpty()}"
-                    )
-                    if (cached != null) {
-                        var item = cached.toLibraryItem(episodes = cachedEpisodes.ifEmpty { null })
-                        if (item.media.episodes == null && cached.mediaType == "podcast") {
-                            val downloadedEpisodes =
-                                database
-                                    .absDownloadDao()
-                                    .getCompletedEpisodesForItem(
-                                        itemId,
-                                        currentServerId,
-                                        currentUserId.toString(),
-                                    )
-                            if (downloadedEpisodes.isNotEmpty()) {
-                                val syntheticEpisodes = downloadedEpisodes.map { dl ->
-                                    PodcastEpisode(
-                                        id = dl.episodeId!!,
-                                        title = dl.title,
-                                        duration = dl.duration,
-                                        description = dl.episodeDescription,
-                                        publishedAt = dl.publishedAt,
-                                        addedAt = dl.createdAt,
-                                        updatedAt = dl.updatedAt,
-                                    )
-                                }
-                                item =
-                                    item.copy(media = item.media.copy(episodes = syntheticEpisodes))
-                                Timber.d(
-                                    "getItemDetails offline: synthesized ${syntheticEpisodes.size} episodes from downloads"
-                                )
-                            }
-                        }
-                        Timber.d(
-                            "getItemDetails offline: returning cached item episodes=${item.media.episodes?.size}"
-                        )
-                        return@withContext Result.success(item)
-                    }
-                    return@withContext Result.failure(Exception("No network connection"))
+                    return@withContext cachedResult("No network connection")
                 }
 
                 val response = apiService.get().getItem(itemId)
@@ -742,11 +742,14 @@ constructor(
 
                     Result.success(item)
                 } else {
-                    Result.failure(Exception("Failed to fetch item: ${response.message()}"))
+                    Timber.w(
+                        "getItemDetails: ABS returned ${response.message()} — trying DB cache"
+                    )
+                    cachedResult("Failed to fetch item: ${response.message()}")
                 }
             } catch (e: Exception) {
-                Timber.e(e, "Failed to get item details")
-                Result.failure(e)
+                Timber.e(e, "Failed to get item details — trying DB cache")
+                cachedResult(e.message ?: "Failed to get item details")
             }
         }
     }
