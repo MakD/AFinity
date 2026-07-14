@@ -62,9 +62,9 @@ fun AfinityTopAppBar(
     backgroundOpacity: () -> Float = { 0f },
     actions: @Composable (RowScope.() -> Unit) = {},
     viewModel: AfinityTopAppBarViewModel = hiltViewModel(),
+    isFetchingRandom: Boolean = false,
 ) {
     val connectionType by viewModel.connectionType.collectAsStateWithLifecycle()
-
     val surfaceColor = MaterialTheme.colorScheme.surface
 
     TopAppBar(
@@ -109,9 +109,13 @@ fun AfinityTopAppBar(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (onRandomClick != null && connectionType != ConnectionType.OFFLINE) {
-                        IconButton(onClick = onRandomClick, modifier = Modifier.size(42.dp)) {
+                        IconButton(
+                            onClick = onRandomClick,
+                            enabled = !isFetchingRandom,
+                            modifier = Modifier.size(42.dp),
+                        ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_dice),
+                                painter = painterResource(id = R.drawable.ic_dice5),
                                 contentDescription = stringResource(R.string.cd_random_item),
                                 tint = Color.White,
                                 modifier = Modifier.size(24.dp),

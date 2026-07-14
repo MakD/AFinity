@@ -46,9 +46,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -117,12 +117,18 @@ fun HomeScreen(
     hideLibrariesSection: Boolean = false,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isFetchingRandom by viewModel.isFetchingRandomItem.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val playerOffset = LocalPlayerOffset.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val randomNoneMessage = stringResource(R.string.random_item_none)
 
-    val configuration = LocalConfiguration.current
-    val screenHeight = configuration.screenHeightDp.dp
+    val density = LocalDensity.current
+    val windowInfo = LocalWindowInfo.current
+    val screenHeight =
+        remember(windowInfo.containerSize, density) {
+            with(density) { windowInfo.containerSize.height.toDp() }
+        }
     val lazyListState = rememberLazyListState()
     val scrollToTopScope = rememberCoroutineScope()
     val showScrollToTop by remember {
@@ -337,8 +343,9 @@ fun HomeScreen(
                                         albums = uiState.downloadedMusicAlbums,
                                         onAlbumClick = { album ->
                                             navController.navigate(
-                                                com.makd.afinity.navigation.Destination
-                                                    .createMusicAlbumRoute(album.id.toString())
+                                                Destination.createMusicAlbumRoute(
+                                                    album.id.toString()
+                                                )
                                             )
                                         },
                                     )
@@ -669,9 +676,7 @@ fun HomeScreen(
                     if (item != null) {
                         onItemClick(item)
                     } else {
-                        snackbarHostState.showSnackbar(
-                            context.getString(R.string.random_item_none)
-                        )
+                        snackbarHostState.showSnackbar(randomNoneMessage)
                     }
                 }
             },
@@ -679,6 +684,7 @@ fun HomeScreen(
             userName = mainUiState.userName,
             userProfileImageUrl = mainUiState.userProfileImageUrl,
             backgroundOpacity = { topBarOpacity },
+            isFetchingRandom = isFetchingRandom,
         )
 
         val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()

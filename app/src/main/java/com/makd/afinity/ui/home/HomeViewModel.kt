@@ -114,6 +114,8 @@ constructor(
             .combine(networkMonitor.isOnWifiFlow) { wifiOnly, onWifi -> !wifiOnly || onWifi }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+    private val _isFetchingRandomItem = MutableStateFlow(false)
+    val isFetchingRandomItem: StateFlow<Boolean> = _isFetchingRandomItem.asStateFlow()
 
     private var libraryContentReloadJob: Job? = null
 
@@ -625,7 +627,10 @@ constructor(
     }
 
     suspend fun getRandomUnwatchedItem(): AfinityItem? {
+        if (_isFetchingRandomItem.value) return null
+
         return try {
+            _isFetchingRandomItem.value = true
             mediaRepository
                 .getItems(
                     includeItemTypes = listOf("Movie", "Series"),
@@ -639,6 +644,8 @@ constructor(
         } catch (e: Exception) {
             Timber.e(e, "Failed to fetch random unwatched item")
             null
+        } finally {
+            _isFetchingRandomItem.value = false
         }
     }
 
