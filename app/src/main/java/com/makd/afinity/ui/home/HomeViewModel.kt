@@ -57,6 +57,7 @@ import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -80,7 +81,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 @HiltViewModel
 class HomeViewModel
 @Inject
@@ -283,13 +284,13 @@ constructor(
                 .flatMapLatest { (isOffline, userId) ->
                     if (isOffline && userId != null) {
                         combine(
-                            downloadRepository.getCompletedDownloadsFlow(),
-                            absDownloadRepository.getCompletedDownloadsFlow(),
-                            databaseRepository.getAllMusicTracksFlowByUser(userId),
-                            databaseRepository.getAllUserDataFlow(userId),
-                        ) { _, _, _, _ ->
-                            userId
-                        }
+                                downloadRepository.getCompletedDownloadsFlow(),
+                                absDownloadRepository.getCompletedDownloadsFlow(),
+                                databaseRepository.getAllMusicTracksFlowByUser(userId),
+                                databaseRepository.getAllUserDataFlow(userId),
+                            ) { _, _, _, _ ->
+                                userId
+                            }
                             .debounce(300L)
                     } else {
                         flowOf()
@@ -487,8 +488,9 @@ constructor(
                         .flatMap { season -> season.episodes }
                         .filter { it.id in downloadedItemIds && !isItemUnavailable(it.id) }
                         .sortedWith(compareBy({ it.parentIndexNumber }, { it.indexNumber }))
-                val hasInProgress =
-                    downloadedEpisodes.any { it.playbackPositionTicks > 0 && !it.played }
+                val hasInProgress = downloadedEpisodes.any {
+                    it.playbackPositionTicks > 0 && !it.played
+                }
                 if (!hasInProgress) {
                     downloadedEpisodes
                         .firstOrNull { !it.played && it.playbackPositionTicks == 0L }

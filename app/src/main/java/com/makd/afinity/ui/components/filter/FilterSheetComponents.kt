@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.components.filter
 
+import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
@@ -7,6 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -21,13 +23,15 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,6 +44,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -50,6 +55,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -60,6 +66,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier = composed {
     clickable(
@@ -134,7 +142,7 @@ fun FilterAccordionSection(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun <T> SearchableChipMultiSelect(
     label: String?,
@@ -154,11 +162,16 @@ fun <T> SearchableChipMultiSelect(
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+    val coroutineScope = rememberCoroutineScope()
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     LaunchedEffect(editing) {
         if (editing) {
             focusRequester.requestFocus()
             keyboardController?.show()
+            delay(150)
+            bringIntoViewRequester.bringIntoView()
         }
     }
 
@@ -182,7 +195,7 @@ fun <T> SearchableChipMultiSelect(
                         if (expanded || editing) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.outline,
                 ),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().bringIntoViewRequester(bringIntoViewRequester),
         ) {
             Row(
                 modifier =
@@ -236,7 +249,15 @@ fun <T> SearchableChipMultiSelect(
                                 .heightIn(min = 32.dp)
                                 .focusRequester(focusRequester)
                                 .onFocusChanged { state ->
-                                    if (state.isFocused) expanded = true else editing = false
+                                    if (state.isFocused) {
+                                        expanded = true
+                                        coroutineScope.launch {
+                                            delay(150)
+                                            bringIntoViewRequester.bringIntoView()
+                                        }
+                                    } else {
+                                        editing = false
+                                    }
                                 },
                         decorationBox = { innerTextField ->
                             Box(contentAlignment = Alignment.CenterStart) {
@@ -287,24 +308,33 @@ fun <T> SearchableChipMultiSelect(
             }
         }
 
-        if (expanded && suggestions.isNotEmpty()) {
+        AnimatedVisibility(
+            visible = expanded && suggestions.isNotEmpty(),
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically(),
+        ) {
             Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                tonalElevation = 4.dp,
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .padding(horizontal = 4.dp)
+                        .heightIn(max = if (isLandscape) 130.dp else 220.dp),
             ) {
-                LazyColumn(modifier = Modifier.heightIn(max = 240.dp)) {
-                    items(suggestions) { suggestion ->
-                        Text(
-                            text = suggestionLabel(suggestion),
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier =
-                                Modifier.fillMaxWidth()
-                                    .noRippleClickable {
-                                        onSuggestionSelected(suggestion)
-                                        onQueryChange("")
-                                    }
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+                    suggestions.forEach { suggestion ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = suggestionLabel(suggestion),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                            },
+                            onClick = {
+                                onSuggestionSelected(suggestion)
+                                onQueryChange("")
+                            },
                         )
                     }
                 }
