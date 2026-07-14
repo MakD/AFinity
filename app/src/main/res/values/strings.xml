@@ -38,6 +38,8 @@
     <!--TopAppBar-->
     <string name="top_bar_search_hint">Search</string>
     <string name="cd_search_icon">Search</string>
+    <string name="cd_random_item">Play something random</string>
+    <string name="random_item_none">Nothing new to watch</string>
     <string name="cd_profile_icon">Profile</string>
     <string name="cd_offline_mode">Offline Mode</string>
     <string name="cd_local_connection">Local Connection</string>

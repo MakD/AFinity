@@ -31,6 +31,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -107,6 +108,7 @@ fun HomeScreen(
     onProfileClick: () -> Unit,
     modifier: Modifier = Modifier,
     navController: NavController,
+    snackbarHostState: SnackbarHostState,
     viewModel: HomeViewModel = hiltViewModel(),
     playerViewModel: MusicPlayerViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
@@ -660,6 +662,18 @@ fun HomeScreen(
             onSearchClick = {
                 val route = Destination.createSearchRoute()
                 navController.navigate(route)
+            },
+            onRandomClick = {
+                scrollToTopScope.launch {
+                    val item = viewModel.getRandomUnwatchedItem()
+                    if (item != null) {
+                        onItemClick(item)
+                    } else {
+                        snackbarHostState.showSnackbar(
+                            context.getString(R.string.random_item_none)
+                        )
+                    }
+                }
             },
             onProfileClick = onProfileClick,
             userName = mainUiState.userName,

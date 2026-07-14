@@ -23,7 +23,9 @@ import com.makd.afinity.data.models.MovieSection
 import com.makd.afinity.data.models.PersonFromMovieSection
 import com.makd.afinity.data.models.PersonSection
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
+import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -618,6 +620,24 @@ constructor(
     fun clearSelectedEpisode() {
         _selectedEpisode.value = null
         _selectedEpisodeWatchlistStatus.value = false
+    }
+
+    suspend fun getRandomUnwatchedItem(): AfinityItem? {
+        return try {
+            mediaRepository
+                .getItems(
+                    includeItemTypes = listOf("Movie", "Series"),
+                    isPlayed = false,
+                    sortBy = SortBy.RANDOM,
+                    limit = 1,
+                )
+                .items
+                .firstOrNull()
+                ?.toAfinityItem(mediaRepository.getBaseUrl())
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to fetch random unwatched item")
+            null
+        }
     }
 
     fun toggleEpisodeFavorite(episode: AfinityEpisode) {

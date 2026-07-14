@@ -1,9 +1,7 @@
 package com.makd.afinity.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -11,11 +9,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,14 +31,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
+import com.makd.afinity.data.models.server.ConnectionType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -59,6 +53,7 @@ fun AfinityTopAppBar(
     title: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     onSearchClick: (() -> Unit)? = null,
+    onRandomClick: (() -> Unit)? = null,
     onProfileClick: (() -> Unit)? = null,
     onMenuClick: (() -> Unit)? = null,
     onHomeClick: (() -> Unit)? = null,
@@ -104,36 +99,42 @@ fun AfinityTopAppBar(
             }
         },
         actions = {
-            if (onSearchClick != null) {
-                Button(
-                    onClick = onSearchClick,
-                    modifier = Modifier.height(42.dp).widthIn(min = 120.dp),
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor = Color.Black.copy(alpha = 0.3f)
-                        ),
-                    shape = RoundedCornerShape(24.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
+            val showDice = onRandomClick != null && connectionType != ConnectionType.OFFLINE
+            if (onSearchClick != null || showDice) {
+                Row(
+                    modifier =
+                        Modifier.height(42.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(Color.Black.copy(alpha = 0.3f)),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_search),
-                            contentDescription = stringResource(R.string.cd_search_icon),
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp),
+                    if (onRandomClick != null && connectionType != ConnectionType.OFFLINE) {
+                        IconButton(onClick = onRandomClick, modifier = Modifier.size(42.dp)) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_dice),
+                                contentDescription = stringResource(R.string.cd_random_item),
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+                    }
+                    if (showDice && onSearchClick != null) {
+                        Box(
+                            modifier =
+                                Modifier.height(20.dp)
+                                    .width(1.dp)
+                                    .background(Color.White.copy(alpha = 0.2f))
                         )
-                        Text(
-                            text = stringResource(R.string.top_bar_search_hint),
-                            color = Color.White,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Medium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                    }
+                    if (onSearchClick != null) {
+                        IconButton(onClick = onSearchClick, modifier = Modifier.size(42.dp)) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_search),
+                                contentDescription = stringResource(R.string.cd_search_icon),
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.width(8.dp))
@@ -142,7 +143,7 @@ fun AfinityTopAppBar(
             if (onProfileClick != null) {
                 Box(
                     modifier =
-                        Modifier.graphicsLayer {
+                        Modifier.size(42.dp).graphicsLayer {
                             compositingStrategy = CompositingStrategy.Offscreen
                         }
                 ) {

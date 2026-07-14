@@ -428,6 +428,7 @@ fun MainNavigation(
                                                 )
                                             },
                                             navController = navController,
+                                            snackbarHostState = snackbarHostState,
                                             mainUiState = mainUiState,
                                             modifier = Modifier.fillMaxSize(),
                                             widthSizeClass = widthSizeClass,
