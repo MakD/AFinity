@@ -55,7 +55,6 @@ import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import com.makd.afinity.BuildConfig
 import com.makd.afinity.R
-import com.makd.afinity.R.drawable.ic_launcher_monochrome
 import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.navigation.Destination
@@ -117,9 +116,14 @@ fun AppNavigationDrawerContent(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top,
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable { accountSwitcherExpanded = !accountSwitcherExpanded }
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Box(
                         modifier =
@@ -154,25 +158,6 @@ fun AppNavigationDrawerContent(
                         }
                     }
 
-                    Icon(
-                        painter = painterResource(id = ic_launcher_monochrome),
-                        contentDescription = stringResource(R.string.cd_app_logo),
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(28.dp),
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { accountSwitcherExpanded = !accountSwitcherExpanded }
-                            .padding(horizontal = 8.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -204,6 +189,31 @@ fun AppNavigationDrawerContent(
                                 }
                             }
                         }
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Box(
+                                modifier =
+                                    Modifier.size(8.dp)
+                                        .background(
+                                            connectionIndicatorColor(connectionType),
+                                            CircleShape,
+                                        )
+                            )
+                            Text(
+                                text =
+                                    "${serverName ?: stringResource(R.string.app_name)} · " +
+                                        connectionLabel(connectionType),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
 
                     Icon(
@@ -212,41 +222,6 @@ fun AppNavigationDrawerContent(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp).rotate(chevronRotation),
                     )
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Row(modifier = Modifier.padding(horizontal = 24.dp)) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Box(
-                                modifier =
-                                    Modifier.size(10.dp)
-                                        .background(
-                                            connectionIndicatorColor(connectionType),
-                                            CircleShape,
-                                        )
-                            )
-                            Text(
-                                text = serverName ?: stringResource(R.string.app_name),
-                                style = MaterialTheme.typography.labelLarge,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Text(
-                                text = connectionLabel(connectionType),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
                 }
             }
 
