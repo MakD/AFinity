@@ -42,8 +42,8 @@ class JellyfinItemsPagingSource(
                 when (libraryType) {
                     CollectionType.TvShows -> listOf("SERIES")
                     CollectionType.Movies -> listOf("MOVIE")
-                    CollectionType.BoxSets -> listOf("BOXSET")
-                    else -> listOf("MOVIE", "SERIES", "BOXSET", "FOLDER")
+                    CollectionType.BoxSets -> listOf("BOX_SET")
+                    else -> listOf("MOVIE", "SERIES", "BOX_SET", "FOLDER")
                 }
 
             val isPlayed =

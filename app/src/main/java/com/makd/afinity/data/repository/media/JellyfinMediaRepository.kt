@@ -37,9 +37,12 @@ import com.makd.afinity.data.network.OmdbApiService
 import com.makd.afinity.data.paging.JellyfinItemsPagingSource
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
+import com.makd.afinity.data.repository.JellyfinApiInvoker
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
+import com.makd.afinity.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -53,7 +56,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.api.client.exception.ApiClientException
+import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.operations.FilterApi
 import org.jellyfin.sdk.api.operations.GenresApi
 import org.jellyfin.sdk.api.operations.ItemsApi
@@ -93,6 +96,8 @@ constructor(
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val databaseRepository: DatabaseRepository,
     private val storageLocationProvider: StorageLocationProvider,
+    private val apiInvoker: JellyfinApiInvoker,
+    @ApplicationScope private val applicationScope: CoroutineScope,
 ) : MediaRepository {
     override suspend fun refreshItemUserData(
         itemId: UUID,
@@ -116,7 +121,8 @@ constructor(
                     if (freshItem is AfinityEpisode) {
                         updateEpisodeInNextUpCache(freshItem)
                         freshItem.seriesId.let { seriesId ->
-                            launch {
+                            val sessionKeyAtStart = currentSessionKey()
+                            applicationScope.launch {
                                 try {
                                     delay(500)
                                     val seriesItem =
@@ -124,6 +130,12 @@ constructor(
                                             .getItem(userId = userId, itemId = seriesId)
                                             .content
                                             .toAfinityItem(getBaseUrl())
+                                    if (currentSessionKey() != sessionKeyAtStart) {
+                                        Timber.d(
+                                            "Session changed during parent series sync — discarding"
+                                        )
+                                        return@launch
+                                    }
                                     if (seriesItem != null) {
                                         updateItemInCache(_latestMedia, seriesItem)
                                     }
@@ -158,8 +170,9 @@ constructor(
                     }
                 }
 
-                (updatedItem.playbackPositionTicks.toFloat() / updatedItem.runtimeTicks * 100f) >
-                    0f && !updatedItem.played && cache == _continueWatching -> {
+                updatedItem.playbackPositionTicks > 0 &&
+                    !updatedItem.played &&
+                    cache == _continueWatching -> {
                     if (existingIndex != -1) {
                         newList.removeAt(existingIndex)
                     }
@@ -360,10 +373,13 @@ constructor(
     private val _nextUp = MutableStateFlow<List<AfinityEpisode>>(emptyList())
     override val nextUp: Flow<List<AfinityEpisode>> = _nextUp.asStateFlow()
 
-    private suspend fun getCurrentUserId(): UUID? =
-        withContext(Dispatchers.IO) {
-            return@withContext sessionManager.currentSession.value?.userId
-        }
+    private fun getCurrentUserId(): UUID? = sessionManager.currentSession.value?.userId
+
+    private suspend fun <T> apiCall(
+        default: T,
+        errorMessage: String,
+        block: suspend (apiClient: ApiClient, userId: UUID) -> T,
+    ): T = apiInvoker.apiCall(default, errorMessage, block)
 
     override fun getBaseUrl(): String {
         return sessionManager.currentSession.value?.serverUrl ?: ""
@@ -401,77 +417,53 @@ constructor(
         parentId: UUID?,
         libraryType: CollectionType,
     ): LibraryFilterOptions =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient()
-                        ?: return@withContext LibraryFilterOptions()
-                val userId = getCurrentUserId() ?: return@withContext LibraryFilterOptions()
+        apiCall(LibraryFilterOptions(), "Failed to get filter options") { apiClient, userId ->
+            val includeItemTypes =
+                when (libraryType) {
+                    CollectionType.TvShows -> listOf(BaseItemKind.SERIES)
+                    CollectionType.Movies -> listOf(BaseItemKind.MOVIE)
+                    CollectionType.BoxSets -> listOf(BaseItemKind.BOX_SET)
+                    else -> emptyList()
+                }
 
-                val includeItemTypes =
-                    when (libraryType) {
-                        CollectionType.TvShows -> listOf(BaseItemKind.SERIES)
-                        CollectionType.Movies -> listOf(BaseItemKind.MOVIE)
-                        CollectionType.BoxSets -> listOf(BaseItemKind.BOX_SET)
-                        else -> emptyList()
-                    }
-
-                val filterApi = FilterApi(apiClient)
-                val response =
-                    filterApi.getQueryFiltersLegacy(
+            val content =
+                FilterApi(apiClient)
+                    .getQueryFiltersLegacy(
                         userId = userId,
                         parentId = parentId,
                         includeItemTypes = includeItemTypes.ifEmpty { null },
                     )
-                val content = response.content
-                LibraryFilterOptions(
-                    genres = content.genres.orEmpty(),
-                    tags = content.tags.orEmpty(),
-                    officialRatings = content.officialRatings.orEmpty(),
-                    years = content.years.orEmpty().sortedDescending(),
-                )
-            } catch (e: ApiClientException) {
-                Timber.e(e, "Failed to get filter options")
-                LibraryFilterOptions()
-            } catch (e: Exception) {
-                Timber.e(e, "Unexpected error getting filter options")
-                LibraryFilterOptions()
-            }
+                    .content
+            LibraryFilterOptions(
+                genres = content.genres.orEmpty(),
+                tags = content.tags.orEmpty(),
+                officialRatings = content.officialRatings.orEmpty(),
+                years = content.years.orEmpty().sortedDescending(),
+            )
         }
 
     override suspend fun getLibraries(): List<AfinityCollection> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-                val userViewsApi = UserViewsApi(apiClient)
-                val response = userViewsApi.getUserViews(userId = userId)
-
-                val libraries =
-                    response.content.items
-                        .filter {
-                            it.collectionType != org.jellyfin.sdk.model.api.CollectionType.LIVETV
+        apiCall(emptyList(), "Failed to get libraries") { apiClient, userId ->
+            val libraries =
+                UserViewsApi(apiClient)
+                    .getUserViews(userId = userId)
+                    .content
+                    .items
+                    .filter {
+                        it.collectionType != org.jellyfin.sdk.model.api.CollectionType.LIVETV
+                    }
+                    .mapNotNull { baseItemDto ->
+                        try {
+                            baseItemDto.toAfinityCollection(getBaseUrl())
+                        } catch (e: Exception) {
+                            Timber.w(e, "Failed to convert item to collection: ${baseItemDto.name}")
+                            null
                         }
-                        .mapNotNull { baseItemDto ->
-                            try {
-                                baseItemDto.toAfinityCollection(getBaseUrl())
-                            } catch (e: Exception) {
-                                Timber.w(
-                                    e,
-                                    "Failed to convert item to collection: ${baseItemDto.name}",
-                                )
-                                null
-                            }
-                        }
+                    }
 
-                _libraries.value = libraries
-                Timber.d("Successfully retrieved ${libraries.size} libraries via UserViews API")
-                libraries
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get libraries")
-                emptyList()
-            }
+            _libraries.value = libraries
+            Timber.d("Successfully retrieved ${libraries.size} libraries via UserViews API")
+            libraries
         }
 
     override suspend fun getLatestMedia(
@@ -480,15 +472,11 @@ constructor(
         fields: List<ItemFields>?,
         groupItems: Boolean,
     ): List<AfinityItem> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-
-                val userLibraryApi = UserLibraryApi(apiClient)
-                val response =
-                    userLibraryApi.getLatestMedia(
+        apiCall(emptyList(), "Failed to get latest media") { apiClient, userId ->
+            val sessionKeyAtStart = currentSessionKey()
+            val latestItems =
+                UserLibraryApi(apiClient)
+                    .getLatestMedia(
                         userId = userId,
                         parentId = parentId,
                         limit = limit,
@@ -497,59 +485,38 @@ constructor(
                         enableUserData = true,
                         groupItems = groupItems,
                     )
+                    .content
+                    .mapNotNull { baseItemDto -> baseItemDto.toAfinityItem(getBaseUrl()) }
 
-                val latestItems =
-                    response.content.mapNotNull { baseItemDto ->
-                        baseItemDto.toAfinityItem(getBaseUrl())
-                    }
-
-                if (parentId == null) {
-                    _latestMedia.value = latestItems
-                }
-                latestItems
-            } catch (e: ApiClientException) {
-                Timber.e(e, "Failed to get latest media")
-                emptyList()
-            } catch (e: Exception) {
-                Timber.e(e, "Unexpected error getting latest media")
-                emptyList()
+            if (parentId == null && currentSessionKey() == sessionKeyAtStart) {
+                _latestMedia.value = latestItems
             }
+            latestItems
         }
 
     override suspend fun getContinueWatching(
         limit: Int,
         fields: List<ItemFields>?,
     ): List<AfinityItem> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-
-                val itemsApi = ItemsApi(apiClient)
-                val response =
-                    itemsApi.getResumeItems(
+        apiCall(emptyList(), "Failed to get continue watching") { apiClient, userId ->
+            val sessionKeyAtStart = currentSessionKey()
+            val continueWatchingItems =
+                ItemsApi(apiClient)
+                    .getResumeItems(
                         userId = userId,
                         limit = limit,
                         fields = fields ?: FieldSets.CONTINUE_WATCHING,
                         enableImages = true,
                         enableUserData = true,
                     )
+                    .content
+                    .items
+                    .mapNotNull { baseItemDto -> baseItemDto.toAfinityItem(getBaseUrl()) }
 
-                val continueWatchingItems =
-                    response.content.items.mapNotNull { baseItemDto ->
-                        baseItemDto.toAfinityItem(getBaseUrl())
-                    }
-
+            if (currentSessionKey() == sessionKeyAtStart) {
                 _continueWatching.value = continueWatchingItems
-                continueWatchingItems
-            } catch (e: ApiClientException) {
-                Timber.e(e, "Failed to get continue watching")
-                emptyList()
-            } catch (e: Exception) {
-                Timber.e(e, "Unexpected error getting continue watching")
-                emptyList()
             }
+            continueWatchingItems
         }
 
     override suspend fun getItems(
@@ -585,32 +552,17 @@ constructor(
         is4k: Boolean?,
         is3d: Boolean?,
     ): BaseItemDtoQueryResult =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient()
-                        ?: return@withContext BaseItemDtoQueryResult(
-                            items = emptyList(),
-                            totalRecordCount = 0,
-                            startIndex = 0,
-                        )
-                val userId =
-                    getCurrentUserId()
-                        ?: return@withContext BaseItemDtoQueryResult(
-                            items = emptyList(),
-                            totalRecordCount = 0,
-                            startIndex = 0,
-                        )
+        apiCall(
+            BaseItemDtoQueryResult(items = emptyList(), totalRecordCount = 0, startIndex = 0),
+            "Failed to get items",
+        ) { apiClient, userId ->
+            val filters = buildList {
+                if (isLiked == true) add(ItemFilter.LIKES)
+                if (isResumable == true) add(ItemFilter.IS_RESUMABLE)
+            }
 
-                val itemsApi = ItemsApi(apiClient)
-
-                val filters = buildList {
-                    if (isLiked == true) add(ItemFilter.LIKES)
-                    if (isResumable == true) add(ItemFilter.IS_RESUMABLE)
-                }
-
-                val response =
-                    itemsApi.getItems(
+            ItemsApi(apiClient)
+                .getItems(
                         userId = userId,
                         parentId = parentId,
                         limit = limit,
@@ -621,13 +573,16 @@ constructor(
                             if (sortDescending) listOf(SortOrder.DESCENDING)
                             else listOf(SortOrder.ASCENDING),
                         includeItemTypes =
-                            includeItemTypes.mapNotNull {
-                                try {
-                                    BaseItemKind.valueOf(it.uppercase())
-                                } catch (e: Exception) {
-                                    null
+                            includeItemTypes
+                                .mapNotNull {
+                                    try {
+                                        BaseItemKind.valueOf(it.uppercase())
+                                    } catch (e: Exception) {
+                                        Timber.w("Unknown item type dropped from filter: $it")
+                                        null
+                                    }
                                 }
-                            },
+                                .ifEmpty { null },
                         recursive =
                             if (parentId == null) true
                             else if (
@@ -682,32 +637,16 @@ constructor(
                         enableImages = true,
                         enableUserData = true,
                     )
-                response.content
-            } catch (e: ApiClientException) {
-                Timber.e(e, "Failed to get items")
-                BaseItemDtoQueryResult(items = emptyList(), totalRecordCount = 0, startIndex = 0)
-            } catch (e: Exception) {
-                Timber.e(e, "Unexpected error getting items")
-                BaseItemDtoQueryResult(items = emptyList(), totalRecordCount = 0, startIndex = 0)
-            }
+                .content
         }
 
     override suspend fun getItem(itemId: UUID, fields: List<ItemFields>?): BaseItemDto? =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
-                val userId = getCurrentUserId() ?: return@withContext null
-                val itemsApi = ItemsApi(apiClient)
-                val response =
-                    itemsApi.getItems(userId = userId, ids = listOf(itemId), fields = fields)
-                response.content.items.firstOrNull()
-            } catch (e: ApiClientException) {
-                Timber.e(e, "Failed to get item with id: $itemId")
-                null
-            } catch (e: Exception) {
-                Timber.e(e, "Unexpected error getting item with id: $itemId")
-                null
-            }
+        apiCall(null, "Failed to get item with id: $itemId") { apiClient, userId ->
+            ItemsApi(apiClient)
+                .getItems(userId = userId, ids = listOf(itemId), fields = fields)
+                .content
+                .items
+                .firstOrNull()
         }
 
     override suspend fun getItemById(itemId: UUID): AfinityItem? =
@@ -717,69 +656,39 @@ constructor(
         ids: List<UUID>,
         fields: List<ItemFields>?,
     ): List<AfinityItem> =
-        withContext(Dispatchers.IO) {
-            if (ids.isEmpty()) return@withContext emptyList()
-            try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-                val itemsApi = ItemsApi(apiClient)
-                val response =
-                    itemsApi.getItems(
-                        userId = userId,
-                        ids = ids,
-                        fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
-                        enableImages = true,
-                        enableUserData = true,
-                    )
-                response.content.items.mapNotNull { it.toAfinityItem(getBaseUrl()) }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to batch-fetch items by ids")
-                emptyList()
-            }
+        apiCall(emptyList(), "Failed to batch-fetch items by ids") { apiClient, userId ->
+            if (ids.isEmpty()) return@apiCall emptyList()
+            ItemsApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    ids = ids,
+                    fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                    enableImages = true,
+                    enableUserData = true,
+                )
+                .content
+                .items
+                .mapNotNull { it.toAfinityItem(getBaseUrl()) }
         }
 
     override suspend fun getIntros(itemId: UUID): List<AfinityItem> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-
-                val userLibraryApi = UserLibraryApi(apiClient)
-                val response = userLibraryApi.getIntros(itemId = itemId, userId = userId)
-
-                response.content.items.mapNotNull { baseItem ->
-                    baseItem.toAfinityItem(getBaseUrl())
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get intros for item: $itemId")
-                emptyList()
-            }
+        apiCall(emptyList(), "Failed to get intros for item: $itemId") { apiClient, userId ->
+            UserLibraryApi(apiClient)
+                .getIntros(itemId = itemId, userId = userId)
+                .content
+                .items
+                .mapNotNull { baseItem -> baseItem.toAfinityItem(getBaseUrl()) }
         }
 
     override suspend fun getAdditionalParts(itemId: UUID): List<AfinityItem> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-
-                val videosApi = VideosApi(apiClient)
-                val response = videosApi.getAdditionalPart(itemId = itemId, userId = userId)
-                val rawItems = response.content.items
-                Timber.d(
-                    "[MultiPart] getAdditionalPart itemId=$itemId → ${rawItems?.size ?: 0} raw item(s)"
-                )
-
-                val mapped =
-                    rawItems?.mapNotNull { baseItem -> baseItem.toAfinityItem(getBaseUrl()) }
-                        ?: emptyList()
-                mapped
-            } catch (e: Exception) {
-                Timber.e(e, "[MultiPart] Exception in getAdditionalParts for item: $itemId")
-                emptyList()
-            }
+        apiCall(emptyList(), "[MultiPart] Exception in getAdditionalParts for item: $itemId") {
+            apiClient,
+            userId ->
+            VideosApi(apiClient)
+                .getAdditionalPart(itemId = itemId, userId = userId)
+                .content
+                .items
+                ?.mapNotNull { baseItem -> baseItem.toAfinityItem(getBaseUrl()) } ?: emptyList()
         }
 
     override suspend fun getSimilarItems(
@@ -787,30 +696,17 @@ constructor(
         limit: Int,
         fields: List<ItemFields>?,
     ): List<AfinityItem> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-
-                val libraryApi = LibraryApi(apiClient)
-                val response =
-                    libraryApi.getSimilarItems(
-                        itemId = itemId,
-                        userId = userId,
-                        limit = limit,
-                        fields = fields ?: FieldSets.SIMILAR_ITEMS,
-                    )
-                response.content.items.mapNotNull { baseItem ->
-                    baseItem.toAfinityItem(getBaseUrl())
-                }
-            } catch (e: ApiClientException) {
-                Timber.e(e, "Failed to get similar items")
-                emptyList()
-            } catch (e: Exception) {
-                Timber.e(e, "Unexpected error getting similar items")
-                emptyList()
-            }
+        apiCall(emptyList(), "Failed to get similar items") { apiClient, userId ->
+            LibraryApi(apiClient)
+                .getSimilarItems(
+                    itemId = itemId,
+                    userId = userId,
+                    limit = limit,
+                    fields = fields ?: FieldSets.SIMILAR_ITEMS,
+                )
+                .content
+                .items
+                .mapNotNull { baseItem -> baseItem.toAfinityItem(getBaseUrl()) }
         }
 
     override suspend fun getMovies(
@@ -825,45 +721,31 @@ constructor(
         isLiked: Boolean?,
         fields: List<ItemFields>?,
     ): List<AfinityMovie> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-
-                val itemsApi = ItemsApi(apiClient)
-
-                val filters = buildList { if (isLiked == true) add(ItemFilter.LIKES) }
-
-                val response =
-                    itemsApi.getItems(
-                        userId = userId,
-                        parentId = parentId,
-                        includeItemTypes = listOf(BaseItemKind.MOVIE),
-                        recursive = true,
-                        limit = limit,
-                        startIndex = startIndex,
-                        searchTerm = searchTerm,
-                        sortBy = listOf(sortBy.toJellyfinSortBy()),
-                        sortOrder =
-                            if (sortDescending) listOf(SortOrder.DESCENDING)
-                            else listOf(SortOrder.ASCENDING),
-                        isPlayed = isPlayed,
-                        isFavorite = isFavorite,
-                        filters = filters.ifEmpty { null },
-                        fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
-                        enableImages = true,
-                        enableUserData = true,
-                    )
-
-                response.content.items.map { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
-            } catch (e: ApiClientException) {
-                Timber.e(e, "Failed to get movies")
-                emptyList()
-            } catch (e: Exception) {
-                Timber.e(e, "Unexpected error getting movies")
-                emptyList()
-            }
+        apiCall(emptyList(), "Failed to get movies") { apiClient, userId ->
+            val filters = buildList { if (isLiked == true) add(ItemFilter.LIKES) }
+            ItemsApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    parentId = parentId,
+                    includeItemTypes = listOf(BaseItemKind.MOVIE),
+                    recursive = true,
+                    limit = limit,
+                    startIndex = startIndex,
+                    searchTerm = searchTerm,
+                    sortBy = listOf(sortBy.toJellyfinSortBy()),
+                    sortOrder =
+                        if (sortDescending) listOf(SortOrder.DESCENDING)
+                        else listOf(SortOrder.ASCENDING),
+                    isPlayed = isPlayed,
+                    isFavorite = isFavorite,
+                    filters = filters.ifEmpty { null },
+                    fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                    enableImages = true,
+                    enableUserData = true,
+                )
+                .content
+                .items
+                .map { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
         }
 
     override suspend fun getMoviesByGenre(
@@ -873,38 +755,24 @@ constructor(
         shuffle: Boolean,
         fields: List<ItemFields>?,
     ): List<AfinityMovie> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-
-                val itemsApi = ItemsApi(apiClient)
-
-                val response =
-                    itemsApi.getItems(
-                        userId = userId,
-                        parentId = parentId,
-                        includeItemTypes = listOf(BaseItemKind.MOVIE),
-                        recursive = true,
-                        genres = listOf(genre),
-                        limit = limit,
-                        sortBy =
-                            if (shuffle) listOf(ItemSortBy.RANDOM)
-                            else listOf(ItemSortBy.SORT_NAME),
-                        fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
-                        enableImages = true,
-                        enableUserData = true,
-                    )
-
-                response.content.items.map { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
-            } catch (e: ApiClientException) {
-                Timber.e(e, "Failed to get movies for genre: $genre")
-                emptyList()
-            } catch (e: Exception) {
-                Timber.e(e, "Unexpected error getting movies for genre: $genre")
-                emptyList()
-            }
+        apiCall(emptyList(), "Failed to get movies for genre: $genre") { apiClient, userId ->
+            ItemsApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    parentId = parentId,
+                    includeItemTypes = listOf(BaseItemKind.MOVIE),
+                    recursive = true,
+                    genres = listOf(genre),
+                    limit = limit,
+                    sortBy =
+                        if (shuffle) listOf(ItemSortBy.RANDOM) else listOf(ItemSortBy.SORT_NAME),
+                    fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                    enableImages = true,
+                    enableUserData = true,
+                )
+                .content
+                .items
+                .map { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
         }
 
     override suspend fun getShowsByGenre(
@@ -914,38 +782,24 @@ constructor(
         shuffle: Boolean,
         fields: List<ItemFields>?,
     ): List<AfinityShow> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-
-                val itemsApi = ItemsApi(apiClient)
-
-                val response =
-                    itemsApi.getItems(
-                        userId = userId,
-                        parentId = parentId,
-                        includeItemTypes = listOf(BaseItemKind.SERIES),
-                        recursive = true,
-                        genres = listOf(genre),
-                        limit = limit,
-                        sortBy =
-                            if (shuffle) listOf(ItemSortBy.RANDOM)
-                            else listOf(ItemSortBy.SORT_NAME),
-                        fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
-                        enableImages = true,
-                        enableUserData = true,
-                    )
-
-                response.content.items.map { baseItem -> baseItem.toAfinityShow(getBaseUrl()) }
-            } catch (e: ApiClientException) {
-                Timber.e(e, "Failed to get shows for genre: $genre")
-                emptyList()
-            } catch (e: Exception) {
-                Timber.e(e, "Unexpected error getting shows for genre: $genre")
-                emptyList()
-            }
+        apiCall(emptyList(), "Failed to get shows for genre: $genre") { apiClient, userId ->
+            ItemsApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    parentId = parentId,
+                    includeItemTypes = listOf(BaseItemKind.SERIES),
+                    recursive = true,
+                    genres = listOf(genre),
+                    limit = limit,
+                    sortBy =
+                        if (shuffle) listOf(ItemSortBy.RANDOM) else listOf(ItemSortBy.SORT_NAME),
+                    fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                    enableImages = true,
+                    enableUserData = true,
+                )
+                .content
+                .items
+                .map { baseItem -> baseItem.toAfinityShow(getBaseUrl()) }
         }
 
     override suspend fun getTopRatedByGenre(
@@ -953,70 +807,53 @@ constructor(
         type: GenreType,
         limit: Int,
     ): List<AfinityItem> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-                val itemsApi = ItemsApi(apiClient)
-                val includeTypes =
-                    when (type) {
-                        GenreType.MOVIE -> listOf(BaseItemKind.MOVIE)
-                        GenreType.SHOW -> listOf(BaseItemKind.SERIES)
-                    }
-                val response =
-                    itemsApi.getItems(
-                        userId = userId,
-                        includeItemTypes = includeTypes,
-                        recursive = true,
-                        genres = listOf(genre),
-                        limit = limit,
-                        sortBy = listOf(ItemSortBy.COMMUNITY_RATING),
-                        sortOrder = listOf(SortOrder.DESCENDING),
-                        imageTypes = listOf(ImageType.BACKDROP),
-                        fields = FieldSets.MEDIA_ITEM_CARDS,
-                        enableImages = true,
-                        enableUserData = true,
-                    )
-                response.content.items.mapNotNull { it.toAfinityItem(getBaseUrl()) }
-            } catch (e: ApiClientException) {
-                Timber.e(e, "Failed to get top-rated items for genre: $genre")
-                emptyList()
-            } catch (e: Exception) {
-                Timber.e(e, "Unexpected error getting top-rated items for genre: $genre")
-                emptyList()
-            }
+        apiCall(emptyList(), "Failed to get top-rated items for genre: $genre") { apiClient, userId
+            ->
+            val includeTypes =
+                when (type) {
+                    GenreType.MOVIE -> listOf(BaseItemKind.MOVIE)
+                    GenreType.SHOW -> listOf(BaseItemKind.SERIES)
+                }
+            ItemsApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    includeItemTypes = includeTypes,
+                    recursive = true,
+                    genres = listOf(genre),
+                    limit = limit,
+                    sortBy = listOf(ItemSortBy.COMMUNITY_RATING),
+                    sortOrder = listOf(SortOrder.DESCENDING),
+                    imageTypes = listOf(ImageType.BACKDROP),
+                    fields = FieldSets.MEDIA_ITEM_CARDS,
+                    enableImages = true,
+                    enableUserData = true,
+                )
+                .content
+                .items
+                .mapNotNull { it.toAfinityItem(getBaseUrl()) }
         }
 
     override suspend fun getTopRatedByStudio(studioName: String, limit: Int): List<AfinityItem> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-                val itemsApi = ItemsApi(apiClient)
-                val response =
-                    itemsApi.getItems(
-                        userId = userId,
-                        includeItemTypes = listOf(BaseItemKind.MOVIE, BaseItemKind.SERIES),
-                        recursive = true,
-                        studios = listOf(studioName),
-                        limit = limit,
-                        sortBy = listOf(ItemSortBy.COMMUNITY_RATING),
-                        sortOrder = listOf(SortOrder.DESCENDING),
-                        imageTypes = listOf(ImageType.BACKDROP),
-                        fields = FieldSets.MEDIA_ITEM_CARDS,
-                        enableImages = true,
-                        enableUserData = true,
-                    )
-                response.content.items.mapNotNull { it.toAfinityItem(getBaseUrl()) }
-            } catch (e: ApiClientException) {
-                Timber.e(e, "Failed to get top-rated items for studio: $studioName")
-                emptyList()
-            } catch (e: Exception) {
-                Timber.e(e, "Unexpected error getting top-rated items for studio: $studioName")
-                emptyList()
-            }
+        apiCall(emptyList(), "Failed to get top-rated items for studio: $studioName") {
+            apiClient,
+            userId ->
+            ItemsApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    includeItemTypes = listOf(BaseItemKind.MOVIE, BaseItemKind.SERIES),
+                    recursive = true,
+                    studios = listOf(studioName),
+                    limit = limit,
+                    sortBy = listOf(ItemSortBy.COMMUNITY_RATING),
+                    sortOrder = listOf(SortOrder.DESCENDING),
+                    imageTypes = listOf(ImageType.BACKDROP),
+                    fields = FieldSets.MEDIA_ITEM_CARDS,
+                    enableImages = true,
+                    enableUserData = true,
+                )
+                .content
+                .items
+                .mapNotNull { it.toAfinityItem(getBaseUrl()) }
         }
 
     override suspend fun getShows(
@@ -1031,69 +868,50 @@ constructor(
         isLiked: Boolean?,
         fields: List<ItemFields>?,
     ): List<AfinityShow> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-
-                val itemsApi = ItemsApi(apiClient)
-
-                val filters = buildList { if (isLiked == true) add(ItemFilter.LIKES) }
-
-                val response =
-                    itemsApi.getItems(
-                        userId = userId,
-                        parentId = parentId,
-                        includeItemTypes = listOf(BaseItemKind.SERIES),
-                        recursive = true,
-                        collapseBoxSetItems = false,
-                        limit = limit,
-                        startIndex = startIndex,
-                        searchTerm = searchTerm,
-                        sortBy = listOf(sortBy.toJellyfinSortBy()),
-                        sortOrder =
-                            if (sortDescending) listOf(SortOrder.DESCENDING)
-                            else listOf(SortOrder.ASCENDING),
-                        isPlayed = isPlayed,
-                        isFavorite = isFavorite,
-                        filters = filters.ifEmpty { null },
-                        fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
-                        enableImages = true,
-                        enableUserData = true,
-                    )
-
-                response.content.items.map { baseItem -> baseItem.toAfinityShow(getBaseUrl()) }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get shows")
-                emptyList()
-            }
+        apiCall(emptyList(), "Failed to get shows") { apiClient, userId ->
+            val filters = buildList { if (isLiked == true) add(ItemFilter.LIKES) }
+            ItemsApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    parentId = parentId,
+                    includeItemTypes = listOf(BaseItemKind.SERIES),
+                    recursive = true,
+                    collapseBoxSetItems = false,
+                    limit = limit,
+                    startIndex = startIndex,
+                    searchTerm = searchTerm,
+                    sortBy = listOf(sortBy.toJellyfinSortBy()),
+                    sortOrder =
+                        if (sortDescending) listOf(SortOrder.DESCENDING)
+                        else listOf(SortOrder.ASCENDING),
+                    isPlayed = isPlayed,
+                    isFavorite = isFavorite,
+                    filters = filters.ifEmpty { null },
+                    fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                    enableImages = true,
+                    enableUserData = true,
+                )
+                .content
+                .items
+                .map { baseItem -> baseItem.toAfinityShow(getBaseUrl()) }
         }
 
     override suspend fun getSeasons(
         seriesId: UUID,
         fields: List<ItemFields>?,
     ): List<AfinitySeason> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-
-                val tvShowsApi = TvShowsApi(apiClient)
-                val response =
-                    tvShowsApi.getSeasons(
-                        seriesId = seriesId,
-                        userId = userId,
-                        fields = fields ?: FieldSets.SEASON_DETAIL,
-                        enableImages = true,
-                        enableUserData = true,
-                    )
-                response.content.items.map { baseItem -> baseItem.toAfinitySeason(getBaseUrl()) }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get seasons")
-                emptyList()
-            }
+        apiCall(emptyList(), "Failed to get seasons") { apiClient, userId ->
+            TvShowsApi(apiClient)
+                .getSeasons(
+                    seriesId = seriesId,
+                    userId = userId,
+                    fields = fields ?: FieldSets.SEASON_DETAIL,
+                    enableImages = true,
+                    enableUserData = true,
+                )
+                .content
+                .items
+                .map { baseItem -> baseItem.toAfinitySeason(getBaseUrl()) }
         }
 
     override suspend fun getEpisodes(
@@ -1103,201 +921,134 @@ constructor(
         startIndex: Int,
         limit: Int?,
     ): List<AfinityEpisode> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
+        apiCall(emptyList(), "Failed to get episodes") { apiClient, userId ->
+            val actualSeriesId =
+                seriesId
+                    ?: getItem(seasonId)?.seriesId
+                    ?: return@apiCall emptyList()
 
-                val actualSeriesId =
-                    seriesId
-                        ?: run {
-                            val seasonItem = getItem(seasonId)
-                            seasonItem?.seriesId ?: return@withContext emptyList()
-                        }
-
-                val tvShowsApi = TvShowsApi(apiClient)
-                val response =
-                    tvShowsApi.getEpisodes(
-                        seriesId = actualSeriesId,
-                        userId = userId,
-                        seasonId = seasonId,
-                        isMissing = null,
-                        fields = fields ?: FieldSets.EPISODE_LIST,
-                        enableImages = true,
-                        enableUserData = true,
-                        sortBy = ItemSortBy.SORT_NAME,
-                        startIndex = startIndex.takeIf { it > 0 },
-                        limit = limit,
-                    )
-                response.content.items
-                    .mapNotNull { baseItem -> baseItem.toAfinityEpisode(getBaseUrl()) }
-                    .distinctBy { it.id }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get episodes")
-                emptyList()
-            }
+            TvShowsApi(apiClient)
+                .getEpisodes(
+                    seriesId = actualSeriesId,
+                    userId = userId,
+                    seasonId = seasonId,
+                    isMissing = null,
+                    fields = fields ?: FieldSets.EPISODE_LIST,
+                    enableImages = true,
+                    enableUserData = true,
+                    sortBy = ItemSortBy.SORT_NAME,
+                    startIndex = startIndex.takeIf { it > 0 },
+                    limit = limit,
+                )
+                .content
+                .items
+                .mapNotNull { baseItem -> baseItem.toAfinityEpisode(getBaseUrl()) }
+                .distinctBy { it.id }
         }
 
     override suspend fun getFavoriteMovies(fields: List<ItemFields>?): List<AfinityMovie> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-                val itemsApi = ItemsApi(apiClient)
-
-                val response =
-                    itemsApi.getItems(
-                        userId = userId,
-                        includeItemTypes = listOf(BaseItemKind.MOVIE),
-                        isFavorite = true,
-                        recursive = true,
-                        fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
-                        enableImages = true,
-                        enableUserData = true,
-                        sortBy = listOf(ItemSortBy.SORT_NAME),
-                    )
-                response.content.items.map { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get favorite episodes")
-                emptyList()
-            }
+        apiCall(emptyList(), "Failed to get favorite movies") { apiClient, userId ->
+            ItemsApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    includeItemTypes = listOf(BaseItemKind.MOVIE),
+                    isFavorite = true,
+                    recursive = true,
+                    fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                    enableImages = true,
+                    enableUserData = true,
+                    sortBy = listOf(ItemSortBy.SORT_NAME),
+                )
+                .content
+                .items
+                .map { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
         }
 
     override suspend fun getFavoriteShows(fields: List<ItemFields>?): List<AfinityShow> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-                val itemsApi = ItemsApi(apiClient)
-
-                val response =
-                    itemsApi.getItems(
-                        userId = userId,
-                        includeItemTypes = listOf(BaseItemKind.SERIES),
-                        isFavorite = true,
-                        recursive = true,
-                        fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
-                        enableImages = true,
-                        enableUserData = true,
-                        sortBy = listOf(ItemSortBy.SORT_NAME),
-                    )
-
-                response.content.items.map { baseItem -> baseItem.toAfinityShow(getBaseUrl()) }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get favorite episodes")
-                emptyList()
-            }
+        apiCall(emptyList(), "Failed to get favorite shows") { apiClient, userId ->
+            ItemsApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    includeItemTypes = listOf(BaseItemKind.SERIES),
+                    isFavorite = true,
+                    recursive = true,
+                    fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                    enableImages = true,
+                    enableUserData = true,
+                    sortBy = listOf(ItemSortBy.SORT_NAME),
+                )
+                .content
+                .items
+                .map { baseItem -> baseItem.toAfinityShow(getBaseUrl()) }
         }
 
     override suspend fun getFavoriteEpisodes(fields: List<ItemFields>?): List<AfinityEpisode> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-                val itemsApi = ItemsApi(apiClient)
-
-                val response =
-                    itemsApi.getItems(
-                        userId = userId,
-                        includeItemTypes = listOf(BaseItemKind.EPISODE),
-                        isFavorite = true,
-                        recursive = true,
-                        fields = fields ?: FieldSets.EPISODE_LIST,
-                        enableImages = true,
-                        enableUserData = true,
-                        sortBy = listOf(ItemSortBy.SORT_NAME),
-                    )
-
-                response.content.items.mapNotNull { baseItem ->
-                    baseItem.toAfinityEpisode(getBaseUrl())
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get favorite episodes")
-                emptyList()
-            }
+        apiCall(emptyList(), "Failed to get favorite episodes") { apiClient, userId ->
+            ItemsApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    includeItemTypes = listOf(BaseItemKind.EPISODE),
+                    isFavorite = true,
+                    recursive = true,
+                    fields = fields ?: FieldSets.EPISODE_LIST,
+                    enableImages = true,
+                    enableUserData = true,
+                    sortBy = listOf(ItemSortBy.SORT_NAME),
+                )
+                .content
+                .items
+                .mapNotNull { baseItem -> baseItem.toAfinityEpisode(getBaseUrl()) }
         }
 
     override suspend fun getFavoriteSeasons(fields: List<ItemFields>?): List<AfinitySeason> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-                val itemsApi = ItemsApi(apiClient)
-
-                val response =
-                    itemsApi.getItems(
-                        userId = userId,
-                        includeItemTypes = listOf(BaseItemKind.SEASON),
-                        isFavorite = true,
-                        recursive = true,
-                        fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
-                        enableImages = true,
-                        enableUserData = true,
-                        sortBy = listOf(ItemSortBy.SORT_NAME),
-                    )
-                response.content.items.map { baseItem -> baseItem.toAfinitySeason(getBaseUrl()) }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get favorite seasons")
-                emptyList()
-            }
+        apiCall(emptyList(), "Failed to get favorite seasons") { apiClient, userId ->
+            ItemsApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    includeItemTypes = listOf(BaseItemKind.SEASON),
+                    isFavorite = true,
+                    recursive = true,
+                    fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                    enableImages = true,
+                    enableUserData = true,
+                    sortBy = listOf(ItemSortBy.SORT_NAME),
+                )
+                .content
+                .items
+                .map { baseItem -> baseItem.toAfinitySeason(getBaseUrl()) }
         }
 
     override suspend fun getFavoriteBoxSets(fields: List<ItemFields>?): List<AfinityBoxSet> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-                val itemsApi = ItemsApi(apiClient)
-
-                val response =
-                    itemsApi.getItems(
-                        userId = userId,
-                        includeItemTypes = listOf(BaseItemKind.BOX_SET),
-                        isFavorite = true,
-                        recursive = true,
-                        fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
-                        enableImages = true,
-                        enableUserData = true,
-                        sortBy = listOf(ItemSortBy.SORT_NAME),
-                    )
-                response.content.items.map { baseItem -> baseItem.toAfinityBoxSet(getBaseUrl()) }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get favorite box sets")
-                emptyList()
-            }
+        apiCall(emptyList(), "Failed to get favorite box sets") { apiClient, userId ->
+            ItemsApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    includeItemTypes = listOf(BaseItemKind.BOX_SET),
+                    isFavorite = true,
+                    recursive = true,
+                    fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                    enableImages = true,
+                    enableUserData = true,
+                    sortBy = listOf(ItemSortBy.SORT_NAME),
+                )
+                .content
+                .items
+                .map { baseItem -> baseItem.toAfinityBoxSet(getBaseUrl()) }
         }
 
     override suspend fun getFavoritePeople(fields: List<ItemFields>?): List<AfinityPersonDetail> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-
-                val personsApi = PersonsApi(apiClient)
-
-                val response =
-                    personsApi.getPersons(
-                        userId = userId,
-                        isFavorite = true,
-                        fields = fields ?: listOf(ItemFields.PRIMARY_IMAGE_ASPECT_RATIO),
-                        enableImages = true,
-                        enableUserData = true,
-                    )
-
-                response.content.items.map { baseItem ->
-                    baseItem.toAfinityPersonDetail(getBaseUrl())
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get favorite people")
-                emptyList()
-            }
+        apiCall(emptyList(), "Failed to get favorite people") { apiClient, userId ->
+            PersonsApi(apiClient)
+                .getPersons(
+                    userId = userId,
+                    isFavorite = true,
+                    fields = fields ?: listOf(ItemFields.PRIMARY_IMAGE_ASPECT_RATIO),
+                    enableImages = true,
+                    enableUserData = true,
+                )
+                .content
+                .items
+                .map { baseItem -> baseItem.toAfinityPersonDetail(getBaseUrl()) }
         }
 
     override suspend fun getNextUp(
@@ -1306,15 +1057,11 @@ constructor(
         fields: List<ItemFields>?,
         enableResumable: Boolean,
     ): List<AfinityEpisode> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-
-                val tvShowsApi = TvShowsApi(apiClient)
-                val response =
-                    tvShowsApi.getNextUp(
+        apiCall(emptyList(), "Failed to get next up") { apiClient, userId ->
+            val sessionKeyAtStart = currentSessionKey()
+            val nextUpItems =
+                TvShowsApi(apiClient)
+                    .getNextUp(
                         userId = userId,
                         seriesId = seriesId,
                         limit = limit,
@@ -1323,95 +1070,59 @@ constructor(
                         enableImages = true,
                         enableUserData = true,
                     )
-                val nextUpItems =
-                    response.content.items.mapNotNull { baseItem ->
-                        baseItem.toAfinityEpisode(getBaseUrl())
-                    }
+                    .content
+                    .items
+                    .mapNotNull { baseItem -> baseItem.toAfinityEpisode(getBaseUrl()) }
 
-                if (seriesId == null) {
-                    _nextUp.value = nextUpItems
-                }
-
-                nextUpItems
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get next up")
-                emptyList()
+            if (seriesId == null && currentSessionKey() == sessionKeyAtStart) {
+                _nextUp.value = nextUpItems
             }
+
+            nextUpItems
         }
 
     override suspend fun getUpcomingEpisodes(
         limit: Int,
         fields: List<ItemFields>?,
     ): List<AfinityEpisode> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-
-                val tvShowsApi = TvShowsApi(apiClient)
-                val response =
-                    tvShowsApi.getUpcomingEpisodes(
-                        userId = userId,
-                        limit = limit,
-                        fields = fields ?: (FieldSets.EPISODE_LIST + ItemFields.MEDIA_SOURCES),
-                        enableImages = true,
-                        enableUserData = true,
-                    )
-
-                val now = java.time.LocalDateTime.now()
-                response.content.items
-                    .mapNotNull { baseItem -> baseItem.toAfinityEpisode(getBaseUrl()) }
-                    .filter { episode ->
-                        episode.premiereDate?.isAfter(now) == true &&
-                            (episode.missing || episode.sources.isEmpty())
-                    }
-                    .distinctBy { episode ->
-                        "${episode.seriesName}_${episode.parentIndexNumber}_${episode.indexNumber}"
-                    }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get upcoming episodes")
-                emptyList()
-            }
+        apiCall(emptyList(), "Failed to get upcoming episodes") { apiClient, userId ->
+            val now = java.time.LocalDateTime.now()
+            TvShowsApi(apiClient)
+                .getUpcomingEpisodes(
+                    userId = userId,
+                    limit = limit,
+                    fields = fields ?: (FieldSets.EPISODE_LIST + ItemFields.MEDIA_SOURCES),
+                    enableImages = true,
+                    enableUserData = true,
+                )
+                .content
+                .items
+                .mapNotNull { baseItem -> baseItem.toAfinityEpisode(getBaseUrl()) }
+                .filter { episode ->
+                    episode.premiereDate?.isAfter(now) == true &&
+                        (episode.missing || episode.sources.isEmpty())
+                }
+                .distinctBy { episode ->
+                    "${episode.seriesName}_${episode.parentIndexNumber}_${episode.indexNumber}"
+                }
         }
 
     override suspend fun getSpecialFeatures(itemId: UUID, userId: UUID): List<AfinityItem> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userLibraryApi = UserLibraryApi(apiClient)
-                val response = userLibraryApi.getSpecialFeatures(itemId = itemId, userId = userId)
-
-                Timber.d("Special features API response: ${response.content.size} items")
-                response.content.forEach { item ->
-                    Timber.d(
-                        "Special feature: name=${item.name}, type=${item.type}, seriesId=${item.seriesId}, seasonId=${item.seasonId}"
-                    )
-                }
-
-                response.content.mapNotNull { baseItem ->
-                    val result =
-                        when (baseItem.type) {
-                            BaseItemKind.EPISODE -> baseItem.toAfinityEpisode(getBaseUrl())
-                            BaseItemKind.MOVIE -> baseItem.toAfinityMovie(getBaseUrl())
-                            BaseItemKind.VIDEO -> baseItem.toAfinityVideo(getBaseUrl())
-                            else -> {
-                                Timber.d("Unsupported special feature type: ${baseItem.type}")
-                                null
-                            }
+        apiCall(emptyList(), "Failed to get special features for item: $itemId") { apiClient, _ ->
+            UserLibraryApi(apiClient)
+                .getSpecialFeatures(itemId = itemId, userId = userId)
+                .content
+                .mapNotNull { baseItem ->
+                    when (baseItem.type) {
+                        BaseItemKind.EPISODE -> baseItem.toAfinityEpisode(getBaseUrl())
+                        BaseItemKind.MOVIE -> baseItem.toAfinityMovie(getBaseUrl())
+                        BaseItemKind.VIDEO -> baseItem.toAfinityVideo(getBaseUrl())
+                        else -> {
+                            Timber.d("Unsupported special feature type: ${baseItem.type}")
+                            null
                         }
-                    if (result == null) {
-                        Timber.d(
-                            "Failed to convert special feature: ${baseItem.name} (${baseItem.type})"
-                        )
                     }
-                    result
                 }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get special features for item: $itemId")
-                emptyList()
-            }
         }
 
     override suspend fun searchItems(
@@ -1420,52 +1131,37 @@ constructor(
         includeItemTypes: List<String>,
         fields: List<ItemFields>?,
     ): List<AfinityItem> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-
-                val itemsApi = ItemsApi(apiClient)
-                val response =
-                    itemsApi.getItems(
-                        userId = userId,
-                        searchTerm = query,
-                        limit = limit,
-                        includeItemTypes =
-                            includeItemTypes.mapNotNull {
+        apiCall(emptyList(), "Failed to search items") { apiClient, userId ->
+            ItemsApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    searchTerm = query,
+                    limit = limit,
+                    includeItemTypes =
+                        includeItemTypes
+                            .mapNotNull {
                                 try {
                                     BaseItemKind.valueOf(it.uppercase())
                                 } catch (e: Exception) {
                                     null
                                 }
-                            },
-                        fields = fields ?: FieldSets.SEARCH_RESULTS,
-                        enableImages = true,
-                        enableUserData = true,
-                    )
-                response.content.items.mapNotNull { baseItem ->
-                    baseItem.toAfinityItem(getBaseUrl())
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to search items")
-                emptyList()
-            }
+                            }
+                            .ifEmpty { null },
+                    fields = fields ?: FieldSets.SEARCH_RESULTS,
+                    enableImages = true,
+                    enableUserData = true,
+                )
+                .content
+                .items
+                .mapNotNull { baseItem -> baseItem.toAfinityItem(getBaseUrl()) }
         }
 
     override suspend fun getPerson(personId: UUID): AfinityPersonDetail? =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
-                val userId = getCurrentUserId() ?: return@withContext null
-
-                val userLibraryApi = UserLibraryApi(apiClient)
-                val response = userLibraryApi.getItem(itemId = personId, userId = userId)
-                response.content.toAfinityPersonDetail(getBaseUrl())
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get person details for ID: $personId")
-                null
-            }
+        apiCall(null, "Failed to get person details for ID: $personId") { apiClient, userId ->
+            UserLibraryApi(apiClient)
+                .getItem(itemId = personId, userId = userId)
+                .content
+                .toAfinityPersonDetail(getBaseUrl())
         }
 
     override suspend fun getPersonItems(
@@ -1474,41 +1170,33 @@ constructor(
         fields: List<ItemFields>?,
         personTypes: List<String>,
     ): List<AfinityItem> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-
-                val itemsApi = ItemsApi(apiClient)
-                val response =
-                    itemsApi.getItems(
-                        userId = userId,
-                        personIds = listOf(personId),
-                        personTypes = personTypes.ifEmpty { null },
-                        includeItemTypes =
-                            includeItemTypes.mapNotNull {
+        apiCall(emptyList(), "Failed to get person items for ID: $personId") { apiClient, userId ->
+            ItemsApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    personIds = listOf(personId),
+                    personTypes = personTypes.ifEmpty { null },
+                    includeItemTypes =
+                        includeItemTypes
+                            .mapNotNull {
                                 try {
                                     BaseItemKind.valueOf(it.uppercase())
                                 } catch (e: Exception) {
                                     null
                                 }
-                            },
-                        fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
-                        enableImages = true,
-                        imageTypeLimit = 1,
-                        enableImageTypes = listOf(ImageType.PRIMARY),
-                        enableUserData = true,
-                        recursive = true,
-                        limit = 150,
-                    )
-                response.content.items.mapNotNull { baseItem ->
-                    baseItem.toAfinityItem(getBaseUrl())
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get person items for ID: $personId")
-                emptyList()
-            }
+                            }
+                            .ifEmpty { null },
+                    fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                    enableImages = true,
+                    imageTypeLimit = 1,
+                    enableImageTypes = listOf(ImageType.PRIMARY),
+                    enableUserData = true,
+                    recursive = true,
+                    limit = 150,
+                )
+                .content
+                .items
+                .mapNotNull { baseItem -> baseItem.toAfinityItem(getBaseUrl()) }
         }
 
     override suspend fun getSimilarMovies(
@@ -1516,28 +1204,18 @@ constructor(
         limit: Int,
         fields: List<ItemFields>?,
     ): List<AfinityMovie> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-
-                val libraryApi = LibraryApi(apiClient)
-                val response =
-                    libraryApi.getSimilarItems(
-                        itemId = movieId,
-                        userId = userId,
-                        limit = limit,
-                        fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
-                    )
-
-                response.content.items
-                    .filter { it.id != movieId }
-                    .map { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get similar movies for ID: $movieId")
-                emptyList()
-            }
+        apiCall(emptyList(), "Failed to get similar movies for ID: $movieId") { apiClient, userId ->
+            LibraryApi(apiClient)
+                .getSimilarItems(
+                    itemId = movieId,
+                    userId = userId,
+                    limit = limit,
+                    fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                )
+                .content
+                .items
+                .filter { it.id != movieId }
+                .map { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
         }
 
     override suspend fun getTrickplayData(itemId: UUID, width: Int, index: Int): ByteArray? =
@@ -1589,42 +1267,30 @@ constructor(
         limit: Int?,
         includeItemTypes: List<String>,
     ): List<String> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-                val genresApi = GenresApi(apiClient)
-
-                val response =
-                    genresApi.getGenres(
-                        userId = userId,
-                        parentId = parentId,
-                        limit = limit,
-                        sortBy = listOf(ItemSortBy.SORT_NAME),
-                        sortOrder = listOf(SortOrder.ASCENDING),
-                        enableImages = false,
-                        enableTotalRecordCount = false,
-                        includeItemTypes =
-                            includeItemTypes.mapNotNull {
+        apiCall(emptyList(), "Failed to get genres") { apiClient, userId ->
+            GenresApi(apiClient)
+                .getGenres(
+                    userId = userId,
+                    parentId = parentId,
+                    limit = limit,
+                    sortBy = listOf(ItemSortBy.SORT_NAME),
+                    sortOrder = listOf(SortOrder.ASCENDING),
+                    enableImages = false,
+                    enableTotalRecordCount = false,
+                    includeItemTypes =
+                        includeItemTypes
+                            .mapNotNull {
                                 try {
                                     BaseItemKind.valueOf(it.uppercase())
                                 } catch (e: Exception) {
                                     null
                                 }
-                            },
-                    )
-
-                response.content.items.mapNotNull { genreDto ->
-                    genreDto.name?.takeIf { it.isNotBlank() }
-                }
-            } catch (e: ApiClientException) {
-                Timber.e(e, "API error getting genres: ${e.message}")
-                emptyList()
-            } catch (e: Exception) {
-                Timber.e(e, "Unexpected error getting genres")
-                emptyList()
-            }
+                            }
+                            .ifEmpty { null },
+                )
+                .content
+                .items
+                .mapNotNull { genreDto -> genreDto.name?.takeIf { it.isNotBlank() } }
         }
 
     override suspend fun getStudios(
@@ -1632,15 +1298,10 @@ constructor(
         limit: Int?,
         includeItemTypes: List<String>,
     ): List<AfinityStudio> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-
-                val studiosApi = StudiosApi(apiClient)
-                val response =
-                    studiosApi.getStudios(
+        apiCall(emptyList(), "Failed to get studios") { apiClient, userId ->
+            val response =
+                StudiosApi(apiClient)
+                    .getStudios(
                         userId = userId,
                         parentId = parentId,
                         includeItemTypes = listOf(BaseItemKind.SERIES),
@@ -1649,10 +1310,10 @@ constructor(
                         enableImageTypes = listOf(ImageType.THUMB),
                     )
 
-                Timber.d("Fetched ${response.content.items.size} studios server-wide")
+            Timber.d("Fetched ${response.content.items.size} studios server-wide")
 
-                response.content.items
-                    .mapNotNull { studioDto ->
+            response.content.items
+                .mapNotNull { studioDto ->
                         val id: UUID = studioDto.id
                         val name =
                             studioDto.name?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
@@ -1678,13 +1339,6 @@ constructor(
                     .sortedByDescending { it.itemCount }
                     .take(limit ?: 15)
                     .also { Timber.d("Returning ${it.size} studios after filtering") }
-            } catch (e: ApiClientException) {
-                Timber.e(e, "API error getting studios: ${e.message}")
-                emptyList()
-            } catch (e: Exception) {
-                Timber.e(e, "Unexpected error getting studios")
-                emptyList()
-            }
         }
 
     override suspend fun ensureBoxSetCacheBuilt() =
@@ -1712,13 +1366,9 @@ constructor(
         minChildCount: Int,
         maxBoxSets: Int,
     ): List<Pair<AfinityBoxSet, List<AfinityItem>>> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-                val itemsApi = ItemsApi(apiClient)
-                val baseUrl = getBaseUrl()
+        apiCall(emptyList(), "Failed to get boxsets for spotlight") { apiClient, userId ->
+            val itemsApi = ItemsApi(apiClient)
+            val baseUrl = getBaseUrl()
 
                 val boxSetsResponse =
                     itemsApi.getItems(
@@ -1779,10 +1429,6 @@ constructor(
                         .awaitAll()
                         .filterNotNull()
                 }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get boxsets for spotlight")
-                emptyList()
-            }
         }
 
     private suspend fun fetchAllBoxSetsWithChildren(): List<BoxSetWithChildren> {
@@ -1844,42 +1490,30 @@ constructor(
         itemId: UUID,
         fields: List<ItemFields>?,
     ): List<AfinityBoxSet> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                ensureBoxSetCacheBuilt()
+        apiCall(emptyList(), "Failed to get BoxSets containing item $itemId") { apiClient, userId ->
+            ensureBoxSetCacheBuilt()
 
-                val boxSetIds = boxSetCache.getBoxSetIdsForItem(itemId)
+            val boxSetIds = boxSetCache.getBoxSetIdsForItem(itemId)
+            if (boxSetIds.isEmpty()) {
+                Timber.d("Item $itemId is not in any BoxSets (cache lookup)")
+                return@apiCall emptyList()
+            }
 
-                if (boxSetIds.isEmpty()) {
-                    Timber.d("Item $itemId is not in any BoxSets (cache lookup)")
-                    return@withContext emptyList()
-                }
-
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val itemsApi = ItemsApi(apiClient)
-
-                val boxSetsResponse =
-                    itemsApi.getItems(
+            val boxSets =
+                ItemsApi(apiClient)
+                    .getItems(
                         userId = userId,
                         ids = boxSetIds,
                         fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                         enableImages = true,
                         enableUserData = true,
                     )
+                    .content
+                    .items
+                    .map { boxSetDto -> boxSetDto.toAfinityBoxSet(getBaseUrl()) }
 
-                val boxSets =
-                    boxSetsResponse.content.items.map { boxSetDto ->
-                        boxSetDto.toAfinityBoxSet(getBaseUrl())
-                    }
-
-                Timber.d("Item $itemId is in ${boxSets.size} BoxSets (cache lookup)")
-                boxSets
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get BoxSets containing item $itemId")
-                emptyList()
-            }
+            Timber.d("Item $itemId is in ${boxSets.size} BoxSets (cache lookup)")
+            boxSets
         }
 
     override fun getLibrariesFlow(): Flow<List<AfinityCollection>> = libraries

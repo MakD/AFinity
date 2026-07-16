@@ -26,6 +26,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okio.Path.Companion.toOkioPath
 import timber.log.Timber
@@ -48,20 +49,11 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
     var ringBufferTree: RingBufferTree? = null
         private set
 
-    @Volatile private var imageCacheEnabled: Boolean = true
-    @Volatile private var imageCacheSizeMb: Int = 512
+    private var imageCacheEnabled: Boolean = true
+    private var imageCacheSizeMb: Int = 512
 
     override fun onCreate() {
         super.onCreate()
-
-        applicationScope.launch(Dispatchers.IO) {
-            Timber.d("ImageLoader prefs: reading from DataStore")
-            imageCacheEnabled = preferencesRepository.getImageCacheEnabled()
-            imageCacheSizeMb = preferencesRepository.getImageCacheSizeMb()
-            Timber.d(
-                "ImageLoader prefs: cacheEnabled=$imageCacheEnabled, cacheSizeMb=$imageCacheSizeMb"
-            )
-        }
 
         val tree = RingBufferTree()
         ringBufferTree = tree
@@ -74,6 +66,18 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
         Thread.setDefaultUncaughtExceptionHandler(
             CrashFileExporter(this, ringBufferTree, Thread.getDefaultUncaughtExceptionHandler())
         )
+
+        try {
+            runBlocking {
+                imageCacheEnabled = preferencesRepository.getImageCacheEnabled()
+                imageCacheSizeMb = preferencesRepository.getImageCacheSizeMb()
+            }
+            Timber.d(
+                "ImageLoader prefs: cacheEnabled=$imageCacheEnabled, cacheSizeMb=$imageCacheSizeMb"
+            )
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to read ImageLoader prefs, using defaults")
+        }
 
         castManager.initialize(this)
 

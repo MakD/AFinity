@@ -371,14 +371,24 @@ constructor(
                             }
                             if (response.code == 416) return@runCatching
 
+                            val serverIgnoredRange = resumeFrom > 0 && response.code == 200
+                            if (serverIgnoredRange) {
+                                Timber.w(
+                                    "Server ignored Range header, restarting track from byte 0"
+                                )
+                                trackBytesDownloaded = 0L
+                                downloadedBytesAllTracks -= resumeFrom
+                            }
+                            val effectiveResume = if (serverIgnoredRange) 0L else resumeFrom
+
                             val contentLength = response.body?.contentLength() ?: -1L
                             trackTotalBytes =
-                                if (contentLength != -1L) resumeFrom + contentLength else -1L
+                                if (contentLength != -1L) effectiveResume + contentLength else -1L
 
                             var lastDbUpdate = 0L
 
                             response.body?.byteStream()?.use { input ->
-                                FileOutputStream(outputFile, resumeFrom > 0).use { output ->
+                                FileOutputStream(outputFile, effectiveResume > 0).use { output ->
                                     val buffer = ByteArray(BUFFER_SIZE)
                                     var bytes: Int
                                     while (input.read(buffer).also { bytes = it } != -1) {
@@ -439,7 +449,12 @@ constructor(
                         return@withContext Result.failure(workDataOf("error" to err))
                     }
 
-                    if (outputFile.exists()) outputFile.renameTo(finalFile)
+                    if (outputFile.exists() && !outputFile.renameTo(finalFile)) {
+                        markFailed(downloadId, "Failed to move track $index into place")
+                        return@withContext Result.failure(
+                            workDataOf("error" to "Failed to move track $index into place")
+                        )
+                    }
                     localTrackPaths.add(finalFile.absolutePath)
 
                     absDownloadDao.updateProgress(

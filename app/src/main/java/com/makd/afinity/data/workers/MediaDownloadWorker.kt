@@ -301,27 +301,31 @@ constructor(
                     val request = requestBuilder.build()
 
                     okHttpClient.newCall(request).execute().use { response ->
-                        if (!response.isSuccessful) {
-                            if (response.code == 416) {
-                                Timber.w(
-                                    "File already fully downloaded (416). Proceeding to completion."
-                                )
-                            } else {
-                                throw Exception(
-                                    "Download failed: ${response.code} ${response.message}"
-                                )
-                            }
+                        if (!response.isSuccessful && response.code != 416) {
+                            throw Exception(
+                                "Download failed: ${response.code} ${response.message}"
+                            )
                         }
+                        if (response.code == 416) {
+                            Timber.w("File already fully downloaded (416). Skipping body copy.")
+                            return@use
+                        }
+
+                        val serverIgnoredRange = existingFileSize > 0 && response.code == 200
+                        if (serverIgnoredRange) {
+                            Timber.w("Server ignored Range header, restarting from byte 0")
+                        }
+                        val resumeOffset = if (serverIgnoredRange) 0L else existingFileSize
 
                         val remainingBytes = response.body?.contentLength() ?: -1L
                         val totalBytes =
-                            if (remainingBytes != -1L) existingFileSize + remainingBytes else -1L
+                            if (remainingBytes != -1L) resumeOffset + remainingBytes else -1L
 
-                        val downloadedBytes = AtomicLong(existingFileSize)
+                        val downloadedBytes = AtomicLong(resumeOffset)
                         var stoppedByUser = false
 
                         response.body?.byteStream()?.use { input ->
-                            FileOutputStream(outputFile, true).use { output ->
+                            FileOutputStream(outputFile, !serverIgnoredRange).use { output ->
                                 coroutineScope {
                                     val progressJob =
                                         if (totalBytes > 0) {
@@ -385,10 +389,10 @@ constructor(
                         }
                     }
 
-                    if (outputFile.exists()) {
-                        outputFile.renameTo(finalFile)
-                        Timber.d("Download completed: ${finalFile.absolutePath}")
+                    if (outputFile.exists() && !outputFile.renameTo(finalFile)) {
+                        throw Exception("Failed to move completed download into place")
                     }
+                    Timber.d("Download completed: ${finalFile.absolutePath}")
 
                     val updatedDownload =
                         download.copy(

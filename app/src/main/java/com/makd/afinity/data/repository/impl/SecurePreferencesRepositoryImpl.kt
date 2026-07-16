@@ -657,6 +657,27 @@ constructor(@param:ApplicationContext private val context: Context) : SecurePref
         }
     }
 
+    override fun clearCachedAudiobookshelfTokens() {
+        cachedAudiobookshelfToken = null
+        cachedAudiobookshelfRefreshToken = null
+        val serverId = activeAbsServerId
+        val userId = activeAbsUserId
+        if (serverId == null || userId == null) {
+            Timber.w("Cannot clear persisted ABS tokens - no active context")
+            return
+        }
+        persistScope.launch {
+            try {
+                context.dataStore.edit { prefs ->
+                    prefs.remove(getAudiobookshelfKey("abs_token", serverId, userId))
+                    prefs.remove(getAudiobookshelfKey("abs_refresh_token", serverId, userId))
+                }
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to clear persisted ABS tokens")
+            }
+        }
+    }
+
     override suspend fun hasValidAudiobookshelfAuth(): Boolean {
         return !cachedAudiobookshelfToken.isNullOrBlank() &&
             !cachedAudiobookshelfUrl.isNullOrBlank()

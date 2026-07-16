@@ -7,10 +7,11 @@ import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.AfinityProgram
 import com.makd.afinity.data.models.livetv.ChannelType
 import com.makd.afinity.data.models.livetv.LiveTvPlaybackInfo
+import com.makd.afinity.data.repository.JellyfinApiInvoker
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.util.MediaCapabilities
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.operations.LiveTvApi
 import org.jellyfin.sdk.api.operations.MediaInfoApi
 import org.jellyfin.sdk.api.operations.UserViewsApi
@@ -42,14 +43,16 @@ class JellyfinLiveTvRepository
 constructor(
     private val sessionManager: SessionManager,
     private val userDataRepository: UserDataRepository,
+    private val apiInvoker: JellyfinApiInvoker,
 ) : LiveTvRepository {
 
     private fun getBaseUrl(): String = sessionManager.getCurrentApiClient()?.baseUrl ?: ""
 
-    private fun getLiveTvApi(): LiveTvApi? {
-        val apiClient = sessionManager.getCurrentApiClient() ?: return null
-        return LiveTvApi(apiClient)
-    }
+    private suspend fun <T> apiCall(
+        default: T,
+        errorMessage: String,
+        block: suspend (apiClient: ApiClient, userId: UUID) -> T,
+    ): T = apiInvoker.apiCall(default, errorMessage, block)
 
     private fun buildLiveTvDeviceProfile(maxBitrate: Int): DeviceProfile {
         val nativeVideoCodecs = MediaCapabilities.getSupportedVideoCodecs()
@@ -102,13 +105,12 @@ constructor(
         isSports: Boolean?,
         limit: Int?,
     ): List<AfinityChannel> =
-        withContext(Dispatchers.IO) {
-            try {
-                val liveTvApi = getLiveTvApi() ?: return@withContext emptyList()
-                val baseUrl = getBaseUrl()
+        apiCall(emptyList(), "Failed to get Live TV channels") { apiClient, _ ->
+            val baseUrl = getBaseUrl()
 
-                val response =
-                    liveTvApi.getLiveTvChannels(
+            val response =
+                LiveTvApi(apiClient)
+                    .getLiveTvChannels(
                         type =
                             type?.let {
                                 when (it) {
@@ -133,30 +135,18 @@ constructor(
                         addCurrentProgram = true,
                     )
 
-                response.content.items?.mapNotNull { channelDto ->
-                    val currentProgram = channelDto.currentProgram?.toAfinityProgram(baseUrl)
-                    channelDto.toAfinityChannel(baseUrl, currentProgram)
-                } ?: emptyList()
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get Live TV channels")
-                emptyList()
-            }
+            response.content.items?.mapNotNull { channelDto ->
+                val currentProgram = channelDto.currentProgram?.toAfinityProgram(baseUrl)
+                channelDto.toAfinityChannel(baseUrl, currentProgram)
+            } ?: emptyList()
         }
 
     override suspend fun getChannel(channelId: UUID): AfinityChannel? =
-        withContext(Dispatchers.IO) {
-            try {
-                val liveTvApi = getLiveTvApi() ?: return@withContext null
-                val baseUrl = getBaseUrl()
-
-                val response = liveTvApi.getChannel(channelId)
-                val channelDto = response.content
-                val currentProgram = channelDto.currentProgram?.toAfinityProgram(baseUrl)
-                channelDto.toAfinityChannel(baseUrl, currentProgram)
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get channel: $channelId")
-                null
-            }
+        apiCall(null, "Failed to get channel: $channelId") { apiClient, _ ->
+            val baseUrl = getBaseUrl()
+            val channelDto = LiveTvApi(apiClient).getChannel(channelId).content
+            val currentProgram = channelDto.currentProgram?.toAfinityProgram(baseUrl)
+            channelDto.toAfinityChannel(baseUrl, currentProgram)
         }
 
     override suspend fun getPrograms(
@@ -173,13 +163,12 @@ constructor(
         isSports: Boolean?,
         limit: Int?,
     ): List<AfinityProgram> =
-        withContext(Dispatchers.IO) {
-            try {
-                val liveTvApi = getLiveTvApi() ?: return@withContext emptyList()
-                val baseUrl = getBaseUrl()
+        apiCall(emptyList(), "Failed to get programs") { apiClient, _ ->
+            val baseUrl = getBaseUrl()
 
-                val response =
-                    liveTvApi.getLiveTvPrograms(
+            val response =
+                LiveTvApi(apiClient)
+                    .getLiveTvPrograms(
                         channelIds = channelIds,
                         minStartDate = minStartDate,
                         maxStartDate = maxStartDate,
@@ -202,75 +191,51 @@ constructor(
                             listOf(ItemFields.OVERVIEW, ItemFields.GENRES, ItemFields.CHANNEL_INFO),
                     )
 
-                response.content.items?.map { programDto -> programDto.toAfinityProgram(baseUrl) }
-                    ?: emptyList()
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get programs")
-                emptyList()
-            }
+            response.content.items?.map { programDto -> programDto.toAfinityProgram(baseUrl) }
+                ?: emptyList()
         }
 
-    override suspend fun getCurrentProgram(channelId: UUID): AfinityProgram? =
-        withContext(Dispatchers.IO) {
-            try {
-                val now = LocalDateTime.now()
-                val programs =
-                    getPrograms(
-                        channelIds = listOf(channelId),
-                        maxStartDate = now,
-                        minEndDate = now,
-                        limit = 1,
-                    )
-
-                programs.firstOrNull()
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get current program for channel: $channelId")
-                null
-            }
-        }
+    override suspend fun getCurrentProgram(channelId: UUID): AfinityProgram? {
+        val now = LocalDateTime.now()
+        return getPrograms(
+                channelIds = listOf(channelId),
+                maxStartDate = now,
+                minEndDate = now,
+                limit = 1,
+            )
+            .firstOrNull()
+    }
 
     override suspend fun getRecommendedPrograms(
         isAiring: Boolean,
         limit: Int,
     ): List<AfinityProgram> =
-        withContext(Dispatchers.IO) {
-            try {
-                val liveTvApi = getLiveTvApi() ?: return@withContext emptyList()
-                val baseUrl = getBaseUrl()
-
-                val response =
-                    liveTvApi.getRecommendedPrograms(
-                        isAiring = isAiring,
-                        limit = limit,
-                        enableImages = true,
-                        imageTypeLimit = 1,
-                        enableImageTypes =
-                            listOf(ImageType.PRIMARY, ImageType.THUMB, ImageType.BACKDROP),
-                        fields = listOf(ItemFields.OVERVIEW, ItemFields.GENRES),
-                    )
-
-                response.content.items?.map { programDto -> programDto.toAfinityProgram(baseUrl) }
-                    ?: emptyList()
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get recommended programs")
-                emptyList()
-            }
+        apiCall(emptyList(), "Failed to get recommended programs") { apiClient, _ ->
+            val baseUrl = getBaseUrl()
+            LiveTvApi(apiClient)
+                .getRecommendedPrograms(
+                    isAiring = isAiring,
+                    limit = limit,
+                    enableImages = true,
+                    imageTypeLimit = 1,
+                    enableImageTypes =
+                        listOf(ImageType.PRIMARY, ImageType.THUMB, ImageType.BACKDROP),
+                    fields = listOf(ItemFields.OVERVIEW, ItemFields.GENRES),
+                )
+                .content
+                .items
+                ?.map { programDto -> programDto.toAfinityProgram(baseUrl) } ?: emptyList()
         }
 
     override suspend fun getChannelPlaybackInfo(channelId: UUID): LiveTvPlaybackInfo? =
-        withContext(Dispatchers.IO) {
-            try {
-                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
-                val baseUrl = getBaseUrl()
+        apiCall(null, "Failed to get stream URL for channel: $channelId") { apiClient, userId ->
+            val baseUrl = getBaseUrl()
+            if (baseUrl.isBlank()) {
+                Timber.e("Missing baseUrl")
+                return@apiCall null
+            }
 
-                val userId = sessionManager.currentSession.value?.userId ?: return@withContext null
-
-                if (baseUrl.isBlank()) {
-                    Timber.e("Missing baseUrl")
-                    return@withContext null
-                }
-
-                val mediaInfoApi = MediaInfoApi(apiClient)
+            val mediaInfoApi = MediaInfoApi(apiClient)
                 val videosApi = VideosApi(apiClient)
                 val maxStreamingBitrate = 140_000_000
 
@@ -298,7 +263,7 @@ constructor(
                 val sources = playbackInfo.mediaSources
                 if (sources.isEmpty()) {
                     Timber.e("PlaybackInfo returned no media sources")
-                    return@withContext null
+                    return@apiCall null
                 }
 
                 val source =
@@ -320,16 +285,9 @@ constructor(
                 val streamUrl: String
                 val container: String = source.container ?: "ts"
 
-                val isClientRemote =
-                    !baseUrl.contains("192.168.") &&
-                        !baseUrl.contains("10.") &&
-                        !baseUrl.contains("172.") &&
-                        !baseUrl.contains("localhost")
+                val isClientRemote = !isPrivateHost(baseUrl)
 
-                val isStreamLocalIp =
-                    directStreamPath?.contains("192.168.") == true ||
-                        directStreamPath?.contains("10.") == true ||
-                        directStreamPath?.contains("172.") == true
+                val isStreamLocalIp = isPrivateHost(directStreamPath)
 
                 val mustProxyStream = isClientRemote && isStreamLocalIp
 
@@ -393,45 +351,48 @@ constructor(
                     playMethod = playMethod.serialName,
                     container = container,
                 )
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get stream URL for channel: $channelId")
-                null
-            }
         }
 
     private fun String.toAbsoluteUrl(baseUrl: String): String =
         if (startsWith("http", ignoreCase = true)) this else "$baseUrl$this"
 
+    private fun isPrivateHost(url: String?): Boolean {
+        val host = url?.toHttpUrlOrNull()?.host ?: return false
+        if (host.equals("localhost", ignoreCase = true)) return true
+        val octets = host.split(".")
+        if (octets.size != 4) return false
+        val values = octets.map { it.toIntOrNull() ?: return false }
+        if (values.any { it !in 0..255 }) return false
+        return when {
+            values[0] == 10 -> true
+            values[0] == 127 -> true
+            values[0] == 192 && values[1] == 168 -> true
+            values[0] == 172 && values[1] in 16..31 -> true
+            values[0] == 169 && values[1] == 254 -> true
+            else -> false
+        }
+    }
+
     override suspend fun getChannelStreamUrl(channelId: UUID): String? =
         getChannelPlaybackInfo(channelId)?.streamUrl
 
     override suspend fun toggleChannelFavorite(channelId: UUID): Boolean =
-        withContext(Dispatchers.IO) {
-            try {
-                val channel = getChannel(channelId) ?: return@withContext false
-                if (channel.favorite) {
-                    userDataRepository.removeFromFavorites(channelId)
-                } else {
-                    userDataRepository.addToFavorites(channelId)
-                }
-                true
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to toggle favorite for channel: $channelId")
-                false
+        apiCall(false, "Failed to toggle favorite for channel: $channelId") { _, _ ->
+            val channel = getChannel(channelId) ?: return@apiCall false
+            if (channel.favorite) {
+                userDataRepository.removeFromFavorites(channelId)
+            } else {
+                userDataRepository.addToFavorites(channelId)
             }
+            true
         }
 
     override suspend fun hasLiveTvAccess(): Boolean =
-        withContext(Dispatchers.IO) {
-            try {
-                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val userId = sessionManager.currentSession.value?.userId ?: return@withContext false
-                val userViewsApi = UserViewsApi(apiClient)
-                val response = userViewsApi.getUserViews(userId = userId)
-                response.content.items.any { it.collectionType == CollectionType.LIVETV }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to check access for user")
-                false
-            }
+        apiCall(false, "Failed to check access for user") { apiClient, userId ->
+            UserViewsApi(apiClient)
+                .getUserViews(userId = userId)
+                .content
+                .items
+                .any { it.collectionType == CollectionType.LIVETV }
         }
 }

@@ -583,7 +583,6 @@ class AudioService : MediaSessionService() {
                             bufferedPositionMs = player.bufferedPosition,
                             durationMs = player.duration.takeIf { it != C.TIME_UNSET } ?: 0L,
                         )
-                        musicQueueManager.onPositionChanged(player.currentPosition)
                     }
                     ActiveEngine.NONE -> break
                 }

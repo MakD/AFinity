@@ -137,6 +137,8 @@ interface SecurePreferencesRepository {
 
     fun updateCachedAudiobookshelfTokens(accessToken: String, refreshToken: String?)
 
+    fun clearCachedAudiobookshelfTokens()
+
     suspend fun hasValidAudiobookshelfAuth(): Boolean
 
     suspend fun saveTmdbApiKey(serverId: String, userId: String, apiKey: String)

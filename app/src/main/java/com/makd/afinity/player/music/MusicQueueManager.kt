@@ -7,7 +7,6 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
@@ -27,6 +26,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.UUID
@@ -46,7 +46,6 @@ data class RearrangeQueueEvent(
 )
 
 private val KEY_CURRENT_INDEX = intPreferencesKey("music_current_index")
-private val KEY_POSITION_MS = longPreferencesKey("music_position_ms")
 private val KEY_REPEAT_MODE = stringPreferencesKey("music_repeat_mode")
 private val KEY_SHUFFLED = booleanPreferencesKey("music_shuffled")
 
@@ -100,13 +99,14 @@ constructor(
 
         scope.launch {
             persistQueue(clamped)
-            saveState(startIndex, startPositionMs, RepeatMode.OFF.name, false)
+            saveState(startIndex, RepeatMode.OFF.name, false)
         }
 
         emitLoadEvent(clamped, startIndex, startPositionMs)
     }
 
     fun addNext(tracks: List<AfinityTrack>) {
+        val wasEmpty = _queue.value.isEmpty()
         val current = _queue.value.toMutableList()
         val insertAt = (_currentIndex.value + 1).coerceAtMost(current.size)
         current.addAll(insertAt, tracks)
@@ -116,13 +116,17 @@ constructor(
 
         val mediaItems = clamped.map { buildMediaItem(it) }
         scope.launch {
-            _loadQueueEvents.emit(
-                LoadQueueEvent(
-                    mediaItems = mediaItems,
-                    startIndex = _currentIndex.value,
-                    startPositionMs = 0L,
+            if (wasEmpty) {
+                _loadQueueEvents.emit(
+                    LoadQueueEvent(
+                        mediaItems = mediaItems,
+                        startIndex = _currentIndex.value,
+                        startPositionMs = 0L,
+                    )
                 )
-            )
+            } else {
+                _rearrangeQueueEvents.emit(RearrangeQueueEvent(mediaItems, _currentIndex.value))
+            }
         }
     }
 
@@ -157,12 +161,30 @@ constructor(
     fun removeAt(index: Int) {
         val current = _queue.value.toMutableList()
         if (index < 0 || index >= current.size) return
+        val removingCurrent = index == _currentIndex.value
         current.removeAt(index)
         _queue.value = current
         if (index < _currentIndex.value) {
             _currentIndex.value = (_currentIndex.value - 1).coerceAtLeast(0)
+        } else {
+            _currentIndex.value =
+                _currentIndex.value.coerceAtMost((current.size - 1).coerceAtLeast(0))
         }
-        scope.launch { persistQueue(current) }
+        val mediaItems = current.map { buildMediaItem(it) }
+        scope.launch {
+            persistQueue(current)
+            if (removingCurrent) {
+                _loadQueueEvents.emit(
+                    LoadQueueEvent(
+                        mediaItems = mediaItems,
+                        startIndex = _currentIndex.value,
+                        startPositionMs = 0L,
+                    )
+                )
+            } else {
+                _rearrangeQueueEvents.emit(RearrangeQueueEvent(mediaItems, _currentIndex.value))
+            }
+        }
     }
 
     fun moveTrack(from: Int, to: Int) {
@@ -180,7 +202,11 @@ constructor(
                 cur in to..<from -> cur + 1
                 else -> cur
             }
-        scope.launch { persistQueue(current) }
+        val mediaItems = current.map { buildMediaItem(it) }
+        scope.launch {
+            persistQueue(current)
+            _rearrangeQueueEvents.emit(RearrangeQueueEvent(mediaItems, _currentIndex.value))
+        }
     }
 
     fun updateTrackInQueue(track: AfinityTrack) {
@@ -196,16 +222,7 @@ constructor(
     fun onTrackChanged(newIndex: Int) {
         _currentIndex.value = newIndex.coerceIn(0, (_queue.value.size - 1).coerceAtLeast(0))
         scope.launch {
-            dataStore.edit { prefs ->
-                prefs[KEY_CURRENT_INDEX] = newIndex
-                prefs[KEY_POSITION_MS] = 0L
-            }
-        }
-    }
-
-    fun onPositionChanged(positionMs: Long) {
-        scope.launch {
-            dataStore.edit { prefs -> prefs[KEY_POSITION_MS] = positionMs }
+            dataStore.edit { prefs -> prefs[KEY_CURRENT_INDEX] = newIndex }
         }
     }
 
@@ -307,20 +324,16 @@ constructor(
             if (entities.isEmpty()) return@runCatching
             val tracks = entities.map { it.toAfinityTrack() }
             _queue.value = tracks
-            dataStore.edit {}
+            val prefs = dataStore.data.first()
+            _currentIndex.value =
+                (prefs[KEY_CURRENT_INDEX] ?: 0).coerceIn(0, (tracks.size - 1).coerceAtLeast(0))
         }
             .onFailure { Timber.w(it, "Failed to restore music queue") }
     }
 
-    private suspend fun saveState(
-        index: Int,
-        positionMs: Long,
-        repeatMode: String,
-        shuffled: Boolean,
-    ) {
+    private suspend fun saveState(index: Int, repeatMode: String, shuffled: Boolean) {
         dataStore.edit { prefs ->
             prefs[KEY_CURRENT_INDEX] = index
-            prefs[KEY_POSITION_MS] = positionMs
             prefs[KEY_REPEAT_MODE] = repeatMode
             prefs[KEY_SHUFFLED] = shuffled
         }

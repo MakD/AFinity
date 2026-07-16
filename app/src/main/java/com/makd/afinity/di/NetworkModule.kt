@@ -644,12 +644,8 @@ object NetworkModule {
                                         .build()
                                 return@addInterceptor chain.proceed(retryRequest)
                             } else {
-                                Timber.w("ABS token refresh failed, clearing invalid refresh token")
-                                securePreferencesRepository.updateCachedAudiobookshelfTokens(
-                                    token ?: "",
-                                    null,
-                                )
-                                securePreferencesRepository.onAbsAuthInvalidated?.invoke()
+                                Timber.w("ABS token refresh failed, clearing cached tokens")
+                                securePreferencesRepository.clearCachedAudiobookshelfTokens()
                             }
                         }
                     }
