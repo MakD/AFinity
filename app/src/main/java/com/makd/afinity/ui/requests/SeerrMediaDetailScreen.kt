@@ -9,6 +9,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -26,7 +27,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -501,18 +501,10 @@ private fun SeerrPortraitContent(
                         .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Text(
-                    text = details.title ?: details.name ?: "",
-                    style =
-                        MaterialTheme.typography.headlineLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 32.sp,
-                        ),
-                    color = MaterialTheme.colorScheme.onBackground,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
+                SeerrTitleHeader(
+                    title = details.title ?: details.name ?: "",
+                    logoUrl = uiState.logoUrl,
+                    isLandscape = false,
                 )
 
                 SeerrMetadataRow(details = details, mediaType = mediaType)
@@ -607,16 +599,10 @@ private fun SeerrLandscapeContent(
             ) {
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Text(
-                            text = details.title ?: details.name ?: "",
-                            style =
-                                MaterialTheme.typography.headlineLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 32.sp,
-                                ),
-                            color = MaterialTheme.colorScheme.onBackground,
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis,
+                        SeerrTitleHeader(
+                            title = details.title ?: details.name ?: "",
+                            logoUrl = uiState.logoUrl,
+                            isLandscape = true,
                         )
 
                         SeerrMetadataRow(
@@ -648,6 +634,42 @@ private fun SeerrLandscapeContent(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ColumnScope.SeerrTitleHeader(title: String, logoUrl: String?, isLandscape: Boolean) {
+    if (logoUrl != null) {
+        val density = LocalDensity.current
+        val windowInfo = LocalWindowInfo.current
+        val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+        AsyncImage(
+            imageUrl = logoUrl,
+            contentDescription = title,
+            blurHash = null,
+            targetWidth = if (isLandscape) 300.dp else screenWidthDp * 0.8f,
+            targetHeight = if (isLandscape) 150.dp else 120.dp,
+            modifier =
+                Modifier.fillMaxWidth(0.8f)
+                    .height(if (isLandscape) 150.dp else 120.dp)
+                    .align(if (isLandscape) Alignment.Start else Alignment.CenterHorizontally),
+            contentScale = ContentScale.Fit,
+            alignment = if (isLandscape) Alignment.CenterStart else Alignment.Center,
+        )
+    } else {
+        Text(
+            text = title,
+            style =
+                MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 32.sp,
+                ),
+            color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = if (!isLandscape) TextAlign.Center else TextAlign.Start,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 

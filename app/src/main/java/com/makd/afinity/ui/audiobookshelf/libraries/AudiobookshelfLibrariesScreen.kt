@@ -142,7 +142,31 @@ fun AudiobookshelfLibrariesScreen(
                     sections = personalizedSections,
                     libraries = libraries,
                     serverUrl = config?.serverUrl,
-                    onItemClick = { item -> onNavigateToItem(item.id) },
+                    onItemClick = { item ->
+                        val episodeId = item.recentEpisode?.id
+                        if (episodeId != null) {
+                            navController.navigate(
+                                Destination.createAudiobookshelfPlayerRoute(
+                                    itemId = item.id,
+                                    episodeId = episodeId,
+                                )
+                            )
+                        } else {
+                            onNavigateToItem(item.id)
+                        }
+                    },
+                    onSeriesClick = { series ->
+                        val libraryId = series.libraryId ?: series.books.firstOrNull()?.libraryId
+                        if (libraryId != null) {
+                            navController.navigate(
+                                Destination.createAudiobookshelfSeriesRoute(
+                                    series.id,
+                                    libraryId,
+                                    series.name,
+                                )
+                            )
+                        }
+                    },
                     onBrowseSeries = {
                         navController.navigate(Destination.createAudiobookshelfSeriesListRoute())
                     },

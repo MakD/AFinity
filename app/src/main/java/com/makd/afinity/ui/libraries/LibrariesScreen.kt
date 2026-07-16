@@ -31,6 +31,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.navigation.Destination
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
@@ -53,6 +54,7 @@ fun LibrariesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lazyGridState = rememberLazyGridState()
+    val playerOffset = LocalPlayerOffset.current
 
     val topBarOpacity by rememberTopBarOpacity(lazyGridState)
 
@@ -78,7 +80,12 @@ fun LibrariesScreen(
                     columns = GridCells.Adaptive(widthSizeClass.gridMinSize),
                     state = lazyGridState,
                     contentPadding =
-                        PaddingValues(start = 14.dp, end = 14.dp, top = 180.dp, bottom = 16.dp),
+                        PaddingValues(
+                            start = 14.dp,
+                            end = 14.dp,
+                            top = 180.dp,
+                            bottom = 16.dp + playerOffset,
+                        ),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     modifier =

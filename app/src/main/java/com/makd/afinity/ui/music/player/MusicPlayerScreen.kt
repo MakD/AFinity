@@ -121,6 +121,15 @@ fun SharedTransitionScope.MusicPlayerScreen(
     }
     AndroidView(factory = { mediaRouteButton }, modifier = Modifier)
 
+    var hadTrack by remember { mutableStateOf(false) }
+    LaunchedEffect(playbackState.currentTrack) {
+        if (playbackState.currentTrack != null) {
+            hadTrack = true
+        } else if (hadTrack) {
+            onNavigateBack()
+        }
+    }
+
     val coverUrl = playbackState.currentTrack?.images?.primary?.toString()
     val coverBlurHash = playbackState.currentTrack?.images?.primaryImageBlurHash
     val defaultColor = MaterialTheme.colorScheme.surface

@@ -36,6 +36,7 @@ data class LibraryItem(
     @SerialName("userMediaProgress") val userMediaProgress: MediaProgress? = null,
     @SerialName("rssFeedUrl") val rssFeedUrl: String? = null,
     @SerialName("numEpisodesIncomplete") val numEpisodesIncomplete: Int? = null,
+    @SerialName("recentEpisode") val recentEpisode: PodcastEpisode? = null,
 )
 
 fun LibraryItem.coverUrl(serverUrl: String, width: Int? = null): String {

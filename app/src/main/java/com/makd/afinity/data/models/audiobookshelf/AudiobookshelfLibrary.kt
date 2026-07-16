@@ -102,6 +102,7 @@ data class AudiobookshelfSeries(
     @SerialName("addedAt") val addedAt: Long? = null,
     @SerialName("updatedAt") val updatedAt: Long? = null,
     @SerialName("libraryId") val libraryId: String? = null,
+    @SerialName("numBooks") val numBooks: Int? = null,
     @SerialName("books") val books: List<LibraryItem> = emptyList(),
 )
 

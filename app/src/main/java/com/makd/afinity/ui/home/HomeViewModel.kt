@@ -239,6 +239,7 @@ constructor(
                         descriptor.toHomeSection(content[descriptor.key])
                     }
                 }
+                .distinctUntilChanged()
                 .collect { sections -> _uiState.update { it.copy(combinedSections = sections) } }
         }
 
@@ -381,37 +382,28 @@ constructor(
 
     private fun patchUiStateItem(updatedItem: AfinityItem) {
         _uiState.update { state ->
-            val patchItem = { list: List<AfinityItem> ->
-                list.map { if (it.id == updatedItem.id) updatedItem else it }
-            }
+            fun <T : AfinityItem> patchItem(list: List<T>, replacement: T?): List<T> =
+                if (replacement == null || list.none { it.id == updatedItem.id }) list
+                else list.map { if (it.id == updatedItem.id) replacement else it }
+
+            fun <T : AfinityItem> patchMap(
+                map: Map<String, List<T>>,
+                replacement: T?,
+            ): Map<String, List<T>> =
+                if (
+                    replacement == null ||
+                        map.values.none { list -> list.any { it.id == updatedItem.id } }
+                )
+                    map
+                else map.mapValues { (_, items) -> patchItem(items, replacement) }
 
             state.copy(
-                heroCarouselItems = patchItem(state.heroCarouselItems),
-                highestRated = patchItem(state.highestRated),
-                latestMovies =
-                    state.latestMovies.map {
-                        if (it.id == updatedItem.id && updatedItem is AfinityMovie) updatedItem
-                        else it
-                    },
-                latestTvSeries =
-                    state.latestTvSeries.map {
-                        if (it.id == updatedItem.id && updatedItem is AfinityShow) updatedItem
-                        else it
-                    },
-                genreMovies =
-                    state.genreMovies.mapValues { (_, movies) ->
-                        movies.map {
-                            if (it.id == updatedItem.id && updatedItem is AfinityMovie) updatedItem
-                            else it
-                        }
-                    },
-                genreShows =
-                    state.genreShows.mapValues { (_, shows) ->
-                        shows.map {
-                            if (it.id == updatedItem.id && updatedItem is AfinityShow) updatedItem
-                            else it
-                        }
-                    },
+                heroCarouselItems = patchItem(state.heroCarouselItems, updatedItem),
+                highestRated = patchItem(state.highestRated, updatedItem),
+                latestMovies = patchItem(state.latestMovies, updatedItem as? AfinityMovie),
+                latestTvSeries = patchItem(state.latestTvSeries, updatedItem as? AfinityShow),
+                genreMovies = patchMap(state.genreMovies, updatedItem as? AfinityMovie),
+                genreShows = patchMap(state.genreShows, updatedItem as? AfinityShow),
             )
         }
     }

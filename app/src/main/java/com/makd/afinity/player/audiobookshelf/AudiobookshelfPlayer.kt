@@ -563,12 +563,21 @@ constructor(
                         val currentTime: Double
                         val duration: Double
 
-                        if (state.isPodcastPlaylist && state.currentChapter != null) {
+                        val playlistChapter =
+                            if (state.isPodcastPlaylist) {
+                                state.currentChapter
+                                    ?: state.chapters.lastOrNull()?.takeIf {
+                                        state.currentTime >= it.end
+                                    }
+                            } else {
+                                null
+                            }
+
+                        if (playlistChapter != null) {
                             currentTime =
-                                (state.currentTime - state.currentChapter.start).coerceAtLeast(0.0)
+                                (state.currentTime - playlistChapter.start).coerceAtLeast(0.0)
                             duration =
-                                (state.currentChapter.end - state.currentChapter.start)
-                                    .coerceAtLeast(0.0)
+                                (playlistChapter.end - playlistChapter.start).coerceAtLeast(0.0)
                         } else {
                             currentTime = state.currentTime
                             duration = state.duration

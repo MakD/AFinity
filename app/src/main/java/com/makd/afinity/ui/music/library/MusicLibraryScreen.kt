@@ -29,8 +29,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -84,6 +82,7 @@ import com.makd.afinity.data.models.music.AfinityMusicGenre
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.navigation.Destination
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.player.AudioService
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.ui.components.AfinityTopAppBar
@@ -232,7 +231,12 @@ internal fun TracksList(
         return
     }
 
-    LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
+    val playerOffset = LocalPlayerOffset.current
+    LazyColumn(
+        state = listState,
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = playerOffset),
+    ) {
         item(key = "tracks_controls") {
             TrackPlayShuffleRow(onPlayAll = onPlayAll, onShuffleAll = onShuffleAll)
         }
@@ -287,6 +291,7 @@ internal fun AlbumsGrid(
         }
     }
 
+    val playerOffset = LocalPlayerOffset.current
     Row(modifier = modifier.fillMaxSize()) {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(150.dp),
@@ -296,7 +301,7 @@ internal fun AlbumsGrid(
                     start = 16.dp,
                     end = 16.dp,
                     top = 16.dp,
-                    bottom = 16.dp,
+                    bottom = 16.dp + playerOffset,
                 ),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -339,6 +344,7 @@ internal fun ArtistsGrid(
         }
     }
 
+    val playerOffset = LocalPlayerOffset.current
     Row(modifier = modifier.fillMaxSize()) {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(140.dp),
@@ -348,7 +354,7 @@ internal fun ArtistsGrid(
                     start = 16.dp,
                     end = 16.dp,
                     top = 16.dp,
-                    bottom = 16.dp,
+                    bottom = 16.dp + playerOffset,
                 ),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -380,10 +386,12 @@ internal fun PlaylistsGrid(
     onPlaylistClick: (AfinityPlaylist) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val playerOffset = LocalPlayerOffset.current
     LazyVerticalGrid(
         columns = GridCells.Adaptive(150.dp),
         state = gridState,
-        contentPadding = PaddingValues(16.dp),
+        contentPadding =
+            PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + playerOffset),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = modifier.fillMaxSize(),
@@ -427,10 +435,12 @@ internal fun GenresGrid(
         }
         return
     }
+    val playerOffset = LocalPlayerOffset.current
     LazyVerticalGrid(
         columns = GridCells.Adaptive(150.dp),
         state = gridState,
-        contentPadding = PaddingValues(16.dp),
+        contentPadding =
+            PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + playerOffset),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = modifier.fillMaxSize(),
@@ -606,10 +616,11 @@ private fun MusicHomeContent(
                 }
             }
 
+    val playerOffset = LocalPlayerOffset.current
     LazyColumn(
         state = listState,
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 16.dp),
+        contentPadding = PaddingValues(bottom = 16.dp + playerOffset),
     ) {
         item(key = "top_spacer") { Spacer(Modifier.height(16.dp)) }
 

@@ -123,6 +123,15 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
         }
     }
 
+    var hadSession by remember { mutableStateOf(false) }
+    LaunchedEffect(playbackState.sessionId) {
+        if (playbackState.sessionId != null) {
+            hadSession = true
+        } else if (hadSession) {
+            onNavigateBack()
+        }
+    }
+
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 

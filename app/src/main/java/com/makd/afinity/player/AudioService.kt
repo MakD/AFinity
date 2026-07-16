@@ -50,6 +50,7 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfEqualizerManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
+import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfProgressSyncer
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfSkipSilenceManager
 import com.makd.afinity.player.music.MusicEqualizerManager
@@ -93,6 +94,7 @@ class AudioService : MediaSessionService() {
     }
 
     @Inject lateinit var absPlaybackManager: AudiobookshelfPlaybackManager
+    @Inject lateinit var absPlayer: AudiobookshelfPlayer
     @Inject lateinit var absProgressSyncer: AudiobookshelfProgressSyncer
     @Inject lateinit var absEqualizerManager: AudiobookshelfEqualizerManager
     @Inject lateinit var absSkipSilenceManager: AudiobookshelfSkipSilenceManager
@@ -429,7 +431,11 @@ class AudioService : MediaSessionService() {
                             Player.STATE_ENDED -> {
                                 absPlaybackManager.updatePlayingState(false)
                                 stopPositionUpdates()
-                                serviceScope.launch { absProgressSyncer.syncNow() }
+                                val duration = absPlaybackManager.playbackState.value.duration
+                                if (duration > 0) {
+                                    absPlaybackManager.updatePosition(duration, duration)
+                                }
+                                absPlayer.closeSession()
                             }
                             Player.STATE_IDLE -> absPlaybackManager.updateBufferingState(false)
                         }
@@ -443,6 +449,11 @@ class AudioService : MediaSessionService() {
                                 stopPositionUpdates()
                                 musicProgressReporter.onPlaybackStopped(
                                     exoPlayer?.currentPosition ?: 0L
+                                )
+                                musicPlaybackManager.stop()
+                                startService(
+                                    Intent(this@AudioService, AudioService::class.java)
+                                        .setAction(ACTION_STOP)
                                 )
                             }
                             Player.STATE_IDLE -> musicPlaybackManager.updateBufferingState(false)

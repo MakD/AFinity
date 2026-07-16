@@ -3,11 +3,15 @@ package com.makd.afinity.ui.requests
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
+import com.makd.afinity.data.models.tmdb.TmdbImage
+import com.makd.afinity.data.network.TmdbApiService
 import com.makd.afinity.data.repository.JellyseerrRepository
+import com.makd.afinity.data.repository.SecurePreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +27,9 @@ class SeerrMediaDetailViewModel
 constructor(
     savedStateHandle: SavedStateHandle,
     private val jellyseerrRepository: JellyseerrRepository,
+    private val tmdbApiService: TmdbApiService,
+    private val securePreferencesRepository: SecurePreferencesRepository,
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
 
     val tmdbId: Int = checkNotNull(savedStateHandle["seerrTmdbId"])
@@ -46,6 +53,7 @@ constructor(
     fun load() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
+            launch { loadLogo() }
             val result =
                 if (mediaType == MediaType.TV) jellyseerrRepository.getTvDetails(tmdbId)
                 else jellyseerrRepository.getMovieDetails(tmdbId)
@@ -104,6 +112,35 @@ constructor(
         }
     }
 
+    private suspend fun loadLogo() {
+        if (_uiState.value.logoUrl != null) return
+        try {
+            val session = sessionManager.currentSession.value ?: return
+            val tmdbKey =
+                securePreferencesRepository.getTmdbApiKey(
+                    session.serverId,
+                    session.userId.toString(),
+                )
+            if (tmdbKey.isNullOrBlank()) return
+            val images =
+                if (mediaType == MediaType.TV)
+                    tmdbApiService.getSeriesImages(tmdbId.toString(), tmdbKey)
+                else tmdbApiService.getMovieImages(tmdbId.toString(), tmdbKey)
+            val logoPath =
+                images.logos
+                    .filter { it.file_path?.endsWith(".png") == true }
+                    .sortedWith(
+                        compareByDescending<TmdbImage> { it.iso_639_1 == "en" }
+                            .thenByDescending { it.vote_average ?: 0.0 }
+                    )
+                    .firstOrNull()
+                    ?.file_path ?: return
+            _uiState.update { it.copy(logoUrl = "https://image.tmdb.org/t/p/w342$logoPath") }
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to load TMDB logo for $tmdbId")
+        }
+    }
+
     private fun observeRequestEvents() {
         viewModelScope.launch {
             jellyseerrRepository.requestEvents.collect { event ->
@@ -122,6 +159,7 @@ data class SeerrMediaDetailUiState(
     val recommendations: List<SearchResultItem> = emptyList(),
     val similar: List<SearchResultItem> = emptyList(),
     val ratings: RatingsCombined? = null,
+    val logoUrl: String? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
 )

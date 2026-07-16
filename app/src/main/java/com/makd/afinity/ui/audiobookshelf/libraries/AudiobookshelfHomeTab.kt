@@ -32,7 +32,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -47,10 +46,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
+import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
+import com.makd.afinity.ui.audiobookshelf.libraries.components.SeriesShelfCard
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
@@ -61,6 +62,7 @@ fun AudiobookshelfHomeTab(
     libraries: List<Library>,
     serverUrl: String?,
     onItemClick: (LibraryItem) -> Unit,
+    onSeriesClick: (AudiobookshelfSeries) -> Unit,
     onBrowseSeries: () -> Unit,
     onBrowseLibrary: (Library) -> Unit,
     isLoading: Boolean,
@@ -120,9 +122,16 @@ fun AudiobookshelfHomeTab(
                         modifier = Modifier.padding(top = 16.dp),
                     )
                 }
-                items(items = sections, key = { it.id }) { section ->
+                items(
+                    items = sections,
+                    key = { it.id },
+                    contentType = { section ->
+                        if (section.series.isNotEmpty()) "series_section" else "item_section"
+                    },
+                ) { section ->
                     val rowListState = rememberLazyListState()
-                    val currentFirstItemId = section.items.firstOrNull()?.id
+                    val currentFirstItemId =
+                        section.items.firstOrNull()?.id ?: section.series.firstOrNull()?.id
                     var prevFirstItemId by remember { mutableStateOf(currentFirstItemId) }
 
                     if (prevFirstItemId != currentFirstItemId) {
@@ -136,7 +145,12 @@ fun AudiobookshelfHomeTab(
                         Spacer(modifier = Modifier.height(24.dp))
                         Column(modifier = Modifier.padding(horizontal = 14.dp)) {
                             Text(
-                                text = section.label,
+                                text =
+                                    if (section.id == "recent-series") {
+                                        stringResource(R.string.abs_recently_added_series)
+                                    } else {
+                                        section.label
+                                    },
                                 style =
                                     MaterialTheme.typography.headlineSmall.copy(
                                         fontWeight = FontWeight.Bold
@@ -151,16 +165,37 @@ fun AudiobookshelfHomeTab(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 contentPadding = PaddingValues(horizontal = 0.dp),
                             ) {
-                                items(
-                                    items = section.items,
-                                    key = { item -> "${section.id}_${item.id}" },
-                                ) { item ->
-                                    AudiobookCard(
-                                        item = item,
-                                        serverUrl = serverUrl,
-                                        onClick = { onItemClick(item) },
-                                        modifier = Modifier.width(cardWidth),
-                                    )
+                                if (section.series.isNotEmpty()) {
+                                    items(
+                                        items = section.series,
+                                        key = { series -> "${section.id}_${series.id}" },
+                                    ) { series ->
+                                        SeriesShelfCard(
+                                            series = series,
+                                            serverUrl = serverUrl,
+                                            onClick = { onSeriesClick(series) },
+                                            modifier = Modifier.width(cardWidth * 1.5f),
+                                        )
+                                    }
+                                } else {
+                                    items(
+                                        items = section.items,
+                                        key = { item ->
+                                            val episodeId = item.recentEpisode?.id
+                                            if (episodeId != null) {
+                                                "${section.id}_${item.id}_$episodeId"
+                                            } else {
+                                                "${section.id}_${item.id}"
+                                            }
+                                        },
+                                    ) { item ->
+                                        AudiobookCard(
+                                            item = item,
+                                            serverUrl = serverUrl,
+                                            onClick = { onItemClick(item) },
+                                            modifier = Modifier.width(cardWidth),
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -213,11 +248,10 @@ private fun LibraryShortcutsRow(
     val seriesLabel = stringResource(R.string.abs_tab_series)
     val shortcuts =
         remember(libraries, seriesLabel) {
-            val targets: List<ShortcutTarget> =
-                buildList {
-                    add(ShortcutTarget.Series)
-                    libraries.forEach { library -> add(ShortcutTarget.ForLibrary(library)) }
-                }
+            val targets: List<ShortcutTarget> = buildList {
+                add(ShortcutTarget.Series)
+                libraries.forEach { library -> add(ShortcutTarget.ForLibrary(library)) }
+            }
             targets.mapIndexed { index, target ->
                 val (start, end) =
                     LIBRARY_SHORTCUT_GRADIENTS[index % LIBRARY_SHORTCUT_GRADIENTS.size]

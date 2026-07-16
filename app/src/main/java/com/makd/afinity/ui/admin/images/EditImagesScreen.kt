@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -68,6 +67,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.makd.afinity.R
 import com.makd.afinity.data.models.admin.ItemImage
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -107,7 +107,12 @@ fun EditImagesScreen(
     if (imageToDelete != null) {
         AlertDialog(
             onDismissRequest = { imageToDelete = null },
-            title = { Text(stringResource(R.string.admin_delete_image_title), style = MaterialTheme.typography.titleLarge) },
+            title = {
+                Text(
+                    stringResource(R.string.admin_delete_image_title),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+            },
             text = {
                 Text(
                     stringResource(R.string.admin_delete_image_message),
@@ -130,7 +135,9 @@ fun EditImagesScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { imageToDelete = null }) { Text(stringResource(R.string.action_cancel)) }
+                TextButton(onClick = { imageToDelete = null }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
             },
         )
     }
@@ -138,10 +145,18 @@ fun EditImagesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.admin_edit_images_title), style = MaterialTheme.typography.titleLarge) },
+                title = {
+                    Text(
+                        stringResource(R.string.admin_edit_images_title),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
-                        Icon(painterResource(R.drawable.ic_close), contentDescription = stringResource(R.string.action_close))
+                        Icon(
+                            painterResource(R.drawable.ic_close),
+                            contentDescription = stringResource(R.string.action_close),
+                        )
                     }
                 },
                 colors =
@@ -159,6 +174,7 @@ fun EditImagesScreen(
                 shape = RoundedCornerShape(16.dp),
                 icon = { Icon(painterResource(R.drawable.ic_add), contentDescription = null) },
                 text = { Text(stringResource(R.string.admin_upload_image)) },
+                modifier = Modifier.padding(bottom = LocalPlayerOffset.current),
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState, snackbar = { AFinitySnackbar(it) }) },
@@ -172,11 +188,12 @@ fun EditImagesScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    val imageTypes = listOf(
-                        "Primary" to stringResource(R.string.admin_image_type_primary),
-                        "Backdrop" to stringResource(R.string.admin_image_type_backdrop),
-                        "Logo" to stringResource(R.string.admin_image_type_logo),
-                    )
+                    val imageTypes =
+                        listOf(
+                            "Primary" to stringResource(R.string.admin_image_type_primary),
+                            "Backdrop" to stringResource(R.string.admin_image_type_backdrop),
+                            "Logo" to stringResource(R.string.admin_image_type_logo),
+                        )
                     imageTypes.forEach { (type, label) ->
                         FilterChip(
                             selected = uiState.selectedType == type,
@@ -240,7 +257,12 @@ fun EditImagesScreen(
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = 140.dp),
                 contentPadding =
-                    PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp),
+                    PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 8.dp,
+                        bottom = 88.dp + LocalPlayerOffset.current,
+                    ),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxSize(),

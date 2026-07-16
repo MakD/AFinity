@@ -113,9 +113,10 @@ fun AudiobookCard(
             overflow = TextOverflow.Ellipsis,
         )
 
-        item.media.metadata.authorName?.let { author ->
+        val subtitle = item.recentEpisode?.title ?: item.media.metadata.authorName
+        subtitle?.let {
             Text(
-                text = author,
+                text = it,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,

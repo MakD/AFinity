@@ -1056,6 +1056,7 @@
     <string name="abs_no_items_in_library">No items in library</string>
     <string name="abs_no_personalized_content">No personalized content available</string>
     <string name="abs_no_series_found">No series found</string>
+    <string name="abs_recently_added_series">Recently Added Series</string>
     <string name="abs_error_load_item">Failed to load item</string>
     <string name="abs_error_load_series">Failed to load series</string>
     <string name="abs_included_in_series">Included in Series</string>

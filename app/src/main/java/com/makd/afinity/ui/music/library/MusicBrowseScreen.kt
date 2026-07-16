@@ -1,6 +1,7 @@
 package com.makd.afinity.ui.music.library
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -36,6 +37,7 @@ import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.Destination.Companion.createSearchRoute
 import com.makd.afinity.navigation.Destination.Companion.createSettingsRoute
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
@@ -81,6 +83,7 @@ fun MusicBrowseScreen(
     var showTrackSortDialog by remember { mutableStateOf(false) }
     var showTrackFilterSheet by remember { mutableStateOf(false) }
 
+    val playerOffset = LocalPlayerOffset.current
     val lazyGenres = viewModel.genresPagingFlow.collectAsLazyPagingItems()
 
     val lazyTracks = viewModel.tracksPagingFlow.collectAsLazyPagingItems()
@@ -116,45 +119,47 @@ fun MusicBrowseScreen(
             )
         },
         floatingActionButton = {
-            when (tab) {
-                LibraryFilter.Albums ->
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        horizontalAlignment = Alignment.End,
-                    ) {
-                        FilterFab(
-                            active = albumFilters.isActive,
-                            onClick = { showAlbumFilterSheet = true },
-                        )
-                        FloatingActionButton(onClick = { showAlbumSortDialog = true }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_arrows_sort),
-                                contentDescription = stringResource(R.string.cd_sort_fab),
+            Box(modifier = Modifier.padding(bottom = playerOffset)) {
+                when (tab) {
+                    LibraryFilter.Albums ->
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalAlignment = Alignment.End,
+                        ) {
+                            FilterFab(
+                                active = albumFilters.isActive,
+                                onClick = { showAlbumFilterSheet = true },
                             )
+                            FloatingActionButton(onClick = { showAlbumSortDialog = true }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_arrows_sort),
+                                    contentDescription = stringResource(R.string.cd_sort_fab),
+                                )
+                            }
                         }
-                    }
-                LibraryFilter.Artists ->
-                    FilterFab(
-                        active = artistFilters.isActive,
-                        onClick = { showArtistFilterSheet = true },
-                    )
-                LibraryFilter.Tracks ->
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        horizontalAlignment = Alignment.End,
-                    ) {
+                    LibraryFilter.Artists ->
                         FilterFab(
-                            active = trackFilters.isActive,
-                            onClick = { showTrackFilterSheet = true },
+                            active = artistFilters.isActive,
+                            onClick = { showArtistFilterSheet = true },
                         )
-                        FloatingActionButton(onClick = { showTrackSortDialog = true }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_arrows_sort),
-                                contentDescription = stringResource(R.string.cd_sort_fab),
+                    LibraryFilter.Tracks ->
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalAlignment = Alignment.End,
+                        ) {
+                            FilterFab(
+                                active = trackFilters.isActive,
+                                onClick = { showTrackFilterSheet = true },
                             )
+                            FloatingActionButton(onClick = { showTrackSortDialog = true }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_arrows_sort),
+                                    contentDescription = stringResource(R.string.cd_sort_fab),
+                                )
+                            }
                         }
-                    }
-                else -> Unit
+                    else -> Unit
+                }
             }
         },
     ) { innerPadding ->

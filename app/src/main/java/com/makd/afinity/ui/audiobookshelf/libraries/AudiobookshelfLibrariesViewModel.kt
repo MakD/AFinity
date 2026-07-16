@@ -2,6 +2,7 @@ package com.makd.afinity.ui.audiobookshelf.libraries
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
@@ -12,7 +13,6 @@ import com.makd.afinity.data.websocket.AbsSocketEvent
 import com.makd.afinity.data.websocket.AudiobookshelfSocketManager
 import com.makd.afinity.data.websocket.WebSocketState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -35,8 +35,14 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import timber.log.Timber
+import javax.inject.Inject
 
-data class PersonalizedSection(val id: String, val label: String, val items: List<LibraryItem>)
+data class PersonalizedSection(
+    val id: String,
+    val label: String,
+    val items: List<LibraryItem>,
+    val series: List<AudiobookshelfSeries> = emptyList(),
+)
 
 private data class LibraryViews(val views: List<PersonalizedView>, val isFull: Boolean)
 
@@ -314,6 +320,30 @@ constructor(
         for ((_, views) in viewsByLibrary) {
             for (view in views) {
                 if (view.type == "authors") continue
+                if (view.type == "series") {
+                    val series =
+                        view.entities.mapNotNull { element ->
+                            try {
+                                json.decodeFromJsonElement(
+                                    AudiobookshelfSeries.serializer(),
+                                    element,
+                                )
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+                    if (series.isEmpty()) continue
+                    val existing = allSections[view.id]
+                    allSections[view.id] =
+                        existing?.copy(series = (existing.series + series).distinctBy { it.id })
+                            ?: PersonalizedSection(
+                                id = view.id,
+                                label = view.label,
+                                items = emptyList(),
+                                series = series.distinctBy { it.id },
+                            )
+                    continue
+                }
                 val items =
                     view.entities.mapNotNull { element ->
                         try {
@@ -326,13 +356,18 @@ constructor(
                 val existing = allSections[view.id]
                 if (existing != null) {
                     allSections[view.id] =
-                        existing.copy(items = (existing.items + items).distinctBy { it.id })
+                        existing.copy(
+                            items =
+                                (existing.items + items).distinctBy {
+                                    it.id to it.recentEpisode?.id
+                                }
+                        )
                 } else {
                     allSections[view.id] =
                         PersonalizedSection(
                             id = view.id,
                             label = view.label,
-                            items = items.distinctBy { it.id },
+                            items = items.distinctBy { it.id to it.recentEpisode?.id },
                         )
                 }
             }

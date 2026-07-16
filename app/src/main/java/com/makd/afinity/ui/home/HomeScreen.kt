@@ -503,6 +503,7 @@ fun HomeScreen(
                             items(
                                 items = uiState.combinedSections,
                                 key = { section -> section.key },
+                                contentType = { section -> section::class },
                             ) { section ->
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     when (section) {
@@ -630,6 +631,9 @@ fun HomeScreen(
                         FloatingActionButton(
                             onClick = {
                                 scrollToTopScope.launch {
+                                    if (lazyListState.firstVisibleItemIndex > 3) {
+                                        lazyListState.scrollToItem(3)
+                                    }
                                     lazyListState.animateScrollToItem(0)
                                 }
                             },

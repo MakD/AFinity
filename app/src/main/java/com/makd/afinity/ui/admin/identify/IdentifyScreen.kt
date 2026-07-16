@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -67,6 +66,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.makd.afinity.R
 import com.makd.afinity.data.models.admin.IdentifyResult
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,10 +100,18 @@ fun IdentifyScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.admin_identify_title), style = MaterialTheme.typography.titleLarge) },
+                title = {
+                    Text(
+                        stringResource(R.string.admin_identify_title),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
-                        Icon(painterResource(R.drawable.ic_close), contentDescription = stringResource(R.string.action_close))
+                        Icon(
+                            painterResource(R.drawable.ic_close),
+                            contentDescription = stringResource(R.string.action_close),
+                        )
                     }
                 },
                 colors =
@@ -115,9 +123,16 @@ fun IdentifyScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState, snackbar = { AFinitySnackbar(it) }) },
     ) { padding ->
+        val playerOffset = LocalPlayerOffset.current
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).imePadding(),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding =
+                PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 16.dp,
+                    bottom = 16.dp + playerOffset,
+                ),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             item {
@@ -198,7 +213,10 @@ fun IdentifyScreen(
                                 color = MaterialTheme.colorScheme.onPrimary,
                             )
                         } else {
-                            Text(stringResource(R.string.admin_identify_search), style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                stringResource(R.string.admin_identify_search),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
                         }
                     }
                 }

@@ -189,6 +189,12 @@ constructor(
                 .drop(1)
                 .collect {
                     val item = _uiState.value.item ?: return@collect
+                    if (
+                        (item is AfinityShow || item is AfinitySeason) &&
+                            _uiState.value.nextEpisode == null
+                    ) {
+                        fetchNextEpisodeFor(item)
+                    }
                     if (item !is AfinityMovie && item !is AfinityShow) return@collect
                     val s = _uiState.value
                     if (
@@ -741,6 +747,18 @@ constructor(
 
                 _uiState.value = _uiState.value.copy(item = item, isLoading = false)
                 itemLastLoadedAt = System.currentTimeMillis()
+
+                if (!isOffline) {
+                    val nextEpisodeFetchCovered =
+                        when (item) {
+                            is AfinityShow -> itemType?.uppercase() == "SERIES"
+                            is AfinitySeason -> itemType?.uppercase() == "SEASON" && seriesId != null
+                            else -> true
+                        }
+                    if (!nextEpisodeFetchCovered) {
+                        fetchNextEpisodeFor(item)
+                    }
+                }
                 if (item is AfinityMovie || item is AfinityShow) {
                     if (hasInternet) {
                         launch { loadReviewsAndRatings(item) }
@@ -932,6 +950,25 @@ constructor(
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to fetch parallel next episode")
+            }
+        }
+    }
+
+    private fun fetchNextEpisodeFor(item: AfinityItem) {
+        viewModelScope.launch {
+            try {
+                val nextEp =
+                    when (item) {
+                        is AfinityShow -> mediaRepository.getEpisodeToPlay(item.id)
+                        is AfinitySeason ->
+                            mediaRepository.getEpisodeToPlayForSeason(item.id, item.seriesId)
+                        else -> null
+                    }
+                if (nextEp != null && nextEp != _uiState.value.nextEpisode) {
+                    _uiState.update { it.copy(nextEpisode = nextEp) }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to fetch next episode for item: ${item.id}")
             }
         }
     }

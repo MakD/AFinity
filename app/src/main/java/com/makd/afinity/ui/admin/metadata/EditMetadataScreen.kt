@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -78,6 +77,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.admin.EditablePerson
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -105,10 +105,18 @@ fun EditMetadataScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.admin_edit_metadata_title), style = MaterialTheme.typography.titleLarge) },
+                title = {
+                    Text(
+                        stringResource(R.string.admin_edit_metadata_title),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
-                        Icon(painterResource(R.drawable.ic_close), contentDescription = stringResource(R.string.action_close))
+                        Icon(
+                            painterResource(R.drawable.ic_close),
+                            contentDescription = stringResource(R.string.action_close),
+                        )
                     }
                 },
                 colors =
@@ -125,6 +133,7 @@ fun EditMetadataScreen(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.padding(bottom = LocalPlayerOffset.current),
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -137,7 +146,10 @@ fun EditMetadataScreen(
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                             )
                         }
-                        Text(if (uiState.saving) stringResource(R.string.admin_saving) else stringResource(R.string.admin_save_changes))
+                        Text(
+                            if (uiState.saving) stringResource(R.string.admin_saving)
+                            else stringResource(R.string.admin_save_changes)
+                        )
                     }
                 }
             }
@@ -177,26 +189,28 @@ fun EditMetadataScreen(
                         },
                     ) {
                         listOf(
-                            stringResource(R.string.admin_tab_general),
-                            stringResource(R.string.admin_tab_people),
-                            stringResource(R.string.admin_tab_advanced),
-                        ).forEachIndexed { index, title ->
-                            Tab(
-                                selected = selectedTab == index,
-                                onClick = { selectedTab = index },
-                                text = {
-                                    Text(
-                                        title,
-                                        style =
-                                            if (selectedTab == index)
-                                                MaterialTheme.typography.titleSmall
-                                            else MaterialTheme.typography.bodyMedium,
-                                    )
-                                },
-                                selectedContentColor = MaterialTheme.colorScheme.primary,
-                                unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                stringResource(R.string.admin_tab_general),
+                                stringResource(R.string.admin_tab_people),
+                                stringResource(R.string.admin_tab_advanced),
                             )
-                        }
+                            .forEachIndexed { index, title ->
+                                Tab(
+                                    selected = selectedTab == index,
+                                    onClick = { selectedTab = index },
+                                    text = {
+                                        Text(
+                                            title,
+                                            style =
+                                                if (selectedTab == index)
+                                                    MaterialTheme.typography.titleSmall
+                                                else MaterialTheme.typography.bodyMedium,
+                                        )
+                                    },
+                                    selectedContentColor = MaterialTheme.colorScheme.primary,
+                                    unselectedContentColor =
+                                        MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                     }
                     when (selectedTab) {
                         0 -> GeneralTab(item = item, viewModel = viewModel)
@@ -317,7 +331,7 @@ private fun GeneralTab(
             onRemove = { viewModel.removeStudio(it) },
         )
 
-        Spacer(modifier = Modifier.height(88.dp))
+        Spacer(modifier = Modifier.height(88.dp + LocalPlayerOffset.current))
     }
 }
 
@@ -358,7 +372,10 @@ private fun PeopleTab(
                     modifier = Modifier.size(16.dp),
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(if (showAddPerson) stringResource(R.string.admin_close_form) else stringResource(R.string.admin_add_person))
+                Text(
+                    if (showAddPerson) stringResource(R.string.admin_close_form)
+                    else stringResource(R.string.admin_add_person)
+                )
             }
         }
 
@@ -427,7 +444,7 @@ private fun PeopleTab(
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 88.dp),
+            contentPadding = PaddingValues(bottom = 88.dp + LocalPlayerOffset.current),
         ) {
             items(item.people.indices.toList()) { index ->
                 val person = item.people[index]
@@ -571,7 +588,7 @@ private fun AdvancedTab(
             }
         }
 
-        Spacer(modifier = Modifier.height(88.dp))
+        Spacer(modifier = Modifier.height(88.dp + LocalPlayerOffset.current))
     }
 }
 

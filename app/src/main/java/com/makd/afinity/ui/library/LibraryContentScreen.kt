@@ -2,7 +2,6 @@
 
 package com.makd.afinity.ui.library
 
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -72,6 +71,7 @@ import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.navigation.Destination
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AlphabetScroller
 import com.makd.afinity.ui.components.FullScreenEmpty
@@ -88,7 +88,6 @@ fun LibraryContentScreen(
     navController: NavController,
     viewModel: LibraryContentViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
-    isMiniPlayerVisible: Boolean = false,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val pagingDataFlow by viewModel.pagingData.collectAsStateWithLifecycle()
@@ -108,11 +107,7 @@ fun LibraryContentScreen(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
-    val playerOffset by
-        animateDpAsState(
-            targetValue = if (isMiniPlayerVisible) 112.dp else 0.dp,
-            label = "playerOffset",
-        )
+    val playerOffset = LocalPlayerOffset.current
 
     LaunchedEffect(scrollToIndex) {
         if (scrollToIndex >= 0) {

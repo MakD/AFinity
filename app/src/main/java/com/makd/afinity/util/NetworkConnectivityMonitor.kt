@@ -61,7 +61,9 @@ constructor(@param:ApplicationContext private val context: Context) {
                 override fun onAvailable(network: Network) {
                     val total = synchronized(networks) { networks.add(network); networks.size }
                     _isNetworkAvailable.value = true
-                    refreshTransportState()
+                    if (!_isOnWifi.value) {
+                        _isOnWifi.value = isOnWifi()
+                    }
                     _networkSwitchEvents.tryEmit(Unit)
                     Timber.d("Network available: $network, Total networks: $total")
                 }
@@ -70,23 +72,41 @@ constructor(@param:ApplicationContext private val context: Context) {
                     val remaining =
                         synchronized(networks) { networks.remove(network); networks.size }
                     _isNetworkAvailable.value = remaining > 0
-                    refreshTransportState()
                     _networkDropEvents.tryEmit(Unit)
                     Timber.d("Network lost: $network, Remaining networks: $remaining")
                 }
+            },
+        )
 
+        connectivityManager.registerDefaultNetworkCallback(
+            object : ConnectivityManager.NetworkCallback() {
                 override fun onCapabilitiesChanged(
                     network: Network,
                     networkCapabilities: NetworkCapabilities,
                 ) {
-                    refreshTransportState()
+                    _isOnWifi.value = networkCapabilities.isWifiLike()
                 }
-            },
+
+                override fun onLost(network: Network) {
+                    _isOnWifi.value = false
+                }
+            }
         )
     }
 
-    private fun refreshTransportState() {
-        _isOnWifi.value = isOnWifi()
+    private fun NetworkCapabilities.isWifiLike(): Boolean =
+        hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+            hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) ||
+            (hasTransport(NetworkCapabilities.TRANSPORT_VPN) && anyTrackedNetworkIsWifi())
+
+    private fun anyTrackedNetworkIsWifi(): Boolean {
+        val tracked = synchronized(networks) { networks.toList() }
+        return tracked.any { network ->
+            connectivityManager.getNetworkCapabilities(network)?.let {
+                it.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                    it.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+            } == true
+        }
     }
 
     fun isCurrentlyConnected(): Boolean {
@@ -99,8 +119,7 @@ constructor(@param:ApplicationContext private val context: Context) {
     fun isOnWifi(): Boolean {
         val network = connectivityManager.activeNetwork ?: return false
         val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-        return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+        return capabilities.isWifiLike()
     }
 
     fun isOnLocalNetwork(): Boolean {
