@@ -308,14 +308,9 @@ constructor(@param:ApplicationContext private val context: Context) : SecurePref
 
     override suspend fun saveJellyseerrServerUrl(url: String) {
         cachedJellyseerrUrl = url
-        context.dataStore.edit { it[KEY_JELLYSEERR_SERVER_URL] = encrypt(url) }
     }
 
-    override suspend fun getJellyseerrServerUrl(): String? {
-        if (cachedJellyseerrUrl != null) return cachedJellyseerrUrl
-
-        return getDecryptedString(KEY_JELLYSEERR_SERVER_URL)
-    }
+    override suspend fun getJellyseerrServerUrl(): String? = cachedJellyseerrUrl
 
     override suspend fun saveJellyseerrCookie(cookie: String) {
         cachedJellyseerrCookie = cookie
