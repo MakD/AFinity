@@ -42,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -55,6 +56,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.media.AfinitySeason
@@ -161,17 +163,19 @@ fun MainNavigation(
     }
     val snackbarHostState = remember { SnackbarHostState() }
     val webSocketState by mainViewModel.webSocketState.collectAsStateWithLifecycle()
+    val serverRestartingMessage = stringResource(R.string.websocket_server_restarting)
+    val serverShutdownMessage = stringResource(R.string.websocket_server_shutdown)
 
     LaunchedEffect(webSocketState) {
         when (webSocketState) {
             WebSocketState.SERVER_RESTARTING ->
                 snackbarHostState.showSnackbar(
-                    message = "Server is restarting, reconnecting automatically…",
+                    message = serverRestartingMessage,
                     duration = SnackbarDuration.Long,
                 )
             WebSocketState.SERVER_SHUTDOWN ->
                 snackbarHostState.showSnackbar(
-                    message = "Server has shut down",
+                    message = serverShutdownMessage,
                     duration = SnackbarDuration.Indefinite,
                 )
             else -> snackbarHostState.currentSnackbarData?.dismiss()
@@ -188,10 +192,10 @@ fun MainNavigation(
             { coroutineScope.launch { railState.expand() } }
         } else null
 
-    LaunchedEffect(isOffline, currentDestination) {
-        if (isOffline && currentDestination != null) {
-            val currentRoute = currentDestination?.route
-            if (currentRoute != Destination.HOME.route) {
+    LaunchedEffect(isOffline) {
+        if (isOffline) {
+            val currentRoute = navController.currentBackStackEntry?.destination?.route
+            if (currentRoute != null && currentRoute != Destination.HOME.route) {
                 Timber.d("Switching to offline mode, navigating to HOME")
                 navController.navigate(Destination.HOME.route) {
                     popUpTo(navController.graph.findStartDestination().id) { saveState = true }

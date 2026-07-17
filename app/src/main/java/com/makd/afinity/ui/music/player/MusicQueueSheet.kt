@@ -38,7 +38,9 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,6 +58,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityTrack
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import java.util.concurrent.atomic.AtomicInteger
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,11 +77,30 @@ fun MusicQueueSheet(
         else emptyList()
 
     val lazyListState = rememberLazyListState()
+
+    var dragStartIndex by remember { mutableStateOf<Int?>(null) }
+    var dragEndIndex by remember { mutableStateOf<Int?>(null) }
+    val uidCounter = remember { AtomicInteger(0) }
+    var localNextTracks by
+        remember {
+            mutableStateOf(
+                nextTracks.map { track -> QueueEntry(uidCounter.getAndIncrement(), track) }
+            )
+        }
+    LaunchedEffect(nextTracks) {
+        val pool = localNextTracks.groupByTo(HashMap()) { it.track.id }
+        localNextTracks =
+            nextTracks.map { track ->
+                val reused = pool[track.id]?.removeFirstOrNull()
+                QueueEntry(reused?.uid ?: uidCounter.getAndIncrement(), track)
+            }
+    }
     val reorderState =
         rememberReorderableLazyListState(lazyListState) { from, to ->
-            val absoluteFrom = currentIndex + 1 + from.index
-            val absoluteTo = currentIndex + 1 + to.index
-            viewModel.moveInQueue(absoluteFrom, absoluteTo)
+            if (dragStartIndex == null) dragStartIndex = from.index
+            dragEndIndex = to.index
+            localNextTracks =
+                localNextTracks.toMutableList().apply { add(to.index, removeAt(from.index)) }
         }
 
     ModalBottomSheet(
@@ -142,12 +164,12 @@ fun MusicQueueSheet(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     contentPadding = PaddingValues(bottom = 24.dp),
                 ) {
-                    itemsIndexed(nextTracks, key = { index, _ -> currentIndex + 1 + index }) {
+                    itemsIndexed(localNextTracks, key = { _, entry -> entry.uid }) {
                         localIndex,
-                        track ->
+                        entry ->
+                        val track = entry.track
                         val absoluteIndex = currentIndex + 1 + localIndex
-                        ReorderableItem(reorderState, key = currentIndex + 1 + localIndex) {
-                            isDragging ->
+                        ReorderableItem(reorderState, key = entry.uid) { isDragging ->
                             val elevation by
                                 animateDpAsState(
                                     if (isDragging) 8.dp else 0.dp,
@@ -214,7 +236,25 @@ fun MusicQueueSheet(
                                     track = track,
                                     isCurrentTrack = false,
                                     onClick = { viewModel.skipToIndex(absoluteIndex) },
-                                    dragHandleModifier = Modifier.draggableHandle(),
+                                    dragHandleModifier =
+                                        Modifier.draggableHandle(
+                                            onDragStopped = {
+                                                val fromLocal = dragStartIndex
+                                                val toLocal = dragEndIndex
+                                                dragStartIndex = null
+                                                dragEndIndex = null
+                                                if (
+                                                    fromLocal != null &&
+                                                        toLocal != null &&
+                                                        fromLocal != toLocal
+                                                ) {
+                                                    viewModel.moveInQueue(
+                                                        currentIndex + 1 + fromLocal,
+                                                        currentIndex + 1 + toLocal,
+                                                    )
+                                                }
+                                            }
+                                        ),
                                     elevation = elevation,
                                 )
                             }
@@ -225,6 +265,8 @@ fun MusicQueueSheet(
         }
     }
 }
+
+private data class QueueEntry(val uid: Int, val track: AfinityTrack)
 
 @Composable
 private fun QueueTrackRow(

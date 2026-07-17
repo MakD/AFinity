@@ -7,6 +7,7 @@ import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.PersonalizedView
+import com.makd.afinity.data.models.audiobookshelf.mediaProgressKey
 import com.makd.afinity.data.repository.AudiobookshelfConfig
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.websocket.AbsSocketEvent
@@ -79,11 +80,19 @@ constructor(
             .getAllProgressFlow()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
+    private val episodeProgressMap: StateFlow<Map<String, MediaProgress>> =
+        audiobookshelfRepository
+            .getEpisodeProgressFlow()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
     val personalizedSections: StateFlow<List<PersonalizedSection>> =
-        combine(_personalizedSections, _genreSections, progressMap) { personalized, genres, progress
-                ->
+        combine(_personalizedSections, _genreSections, progressMap, episodeProgressMap) {
+                personalized,
+                genres,
+                progress,
+                episodeProgress ->
                 (personalized + genres).map { section ->
-                    val enriched = enrichItems(section.items, progress)
+                    val enriched = enrichItems(section.items, progress, episodeProgress)
                     if (section.id == "continue-listening") {
                         section.copy(
                             items =
@@ -445,11 +454,22 @@ constructor(
     private fun enrichItems(
         items: List<LibraryItem>,
         progressMap: Map<String, MediaProgress>,
+        episodeProgressMap: Map<String, MediaProgress>,
     ): List<LibraryItem> {
-        if (progressMap.isEmpty()) return items
         return items.map { item ->
-            if (item.userMediaProgress != null) item
-            else progressMap[item.id]?.let { item.copy(userMediaProgress = it) } ?: item
+            val episodeId = item.recentEpisode?.id
+            if (episodeId != null) {
+                val episodeProgress = episodeProgressMap[mediaProgressKey(item.id, episodeId)]
+                if (item.userMediaProgress != episodeProgress) {
+                    item.copy(userMediaProgress = episodeProgress)
+                } else {
+                    item
+                }
+            } else if (item.userMediaProgress != null) {
+                item
+            } else {
+                progressMap[item.id]?.let { item.copy(userMediaProgress = it) } ?: item
+            }
         }
     }
 }

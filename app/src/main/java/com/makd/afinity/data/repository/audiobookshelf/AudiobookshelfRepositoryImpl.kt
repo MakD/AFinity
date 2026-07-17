@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package com.makd.afinity.data.repository.audiobookshelf
 
 import android.os.Build
@@ -31,6 +33,7 @@ import com.makd.afinity.data.models.audiobookshelf.PlaybackSessionRequest
 import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
 import com.makd.afinity.data.models.audiobookshelf.ProgressUpdateRequest
 import com.makd.afinity.data.models.audiobookshelf.SearchResponse
+import com.makd.afinity.data.models.audiobookshelf.mediaProgressKey
 import com.makd.afinity.data.network.AudiobookshelfApiService
 import com.makd.afinity.data.network.AudnexusApiService
 import com.makd.afinity.data.repository.AudiobookshelfConfig
@@ -81,6 +84,30 @@ constructor(
 
     private val audiobookshelfDao = database.audiobookshelfDao()
     private val json = Json { ignoreUnknownKeys = true }
+
+    private suspend fun <T> absResult(
+        errorMessage: String,
+        call: suspend (AudiobookshelfApiService) -> retrofit2.Response<T>,
+    ): Result<T> =
+        withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+                val response = call(apiService.get())
+                val body = response.body()
+                if (response.isSuccessful && body != null) {
+                    Result.success(body)
+                } else {
+                    Result.failure(Exception("$errorMessage: ${response.message()}"))
+                }
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, errorMessage)
+                Result.failure(e)
+            }
+        }
 
     private val _isAuthenticated = MutableStateFlow(false)
     override val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
@@ -663,9 +690,9 @@ constructor(
         val cached = audiobookshelfDao.getItem(itemId, serverId, userId) ?: return null
         val cachedEpisodes =
             if (cached.mediaType == "podcast") {
-                audiobookshelfDao
-                    .getEpisodesForItem(itemId, serverId, userId)
-                    .map { it.toPodcastEpisode(json) }
+                audiobookshelfDao.getEpisodesForItem(itemId, serverId, userId).map {
+                    it.toPodcastEpisode(json)
+                }
             } else {
                 emptyList()
             }
@@ -700,8 +727,7 @@ constructor(
                 activeContext ?: return@withContext Result.failure(Exception("No active session"))
 
             suspend fun cachedResult(fallbackError: String): Result<LibraryItem> {
-                val cached =
-                    cachedItemOrNull(itemId, currentServerId, currentUserId.toString())
+                val cached = cachedItemOrNull(itemId, currentServerId, currentUserId.toString())
                 return if (cached != null) {
                     Timber.d(
                         "getItemDetails: returning cached item episodes=${cached.media.episodes?.size}"
@@ -742,9 +768,7 @@ constructor(
 
                     Result.success(item)
                 } else {
-                    Timber.w(
-                        "getItemDetails: ABS returned ${response.message()} — trying DB cache"
-                    )
+                    Timber.w("getItemDetails: ABS returned ${response.message()} — trying DB cache")
                     cachedResult("Failed to fetch item: ${response.message()}")
                 }
             } catch (e: Exception) {
@@ -755,23 +779,8 @@ constructor(
     }
 
     override suspend fun searchLibrary(libraryId: String, query: String): Result<SearchResponse> {
-        return withContext(Dispatchers.IO) {
-            try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
-                    return@withContext Result.failure(Exception("No network connection"))
-                }
-
-                val response = apiService.get().search(libraryId, query, limit = 25)
-
-                if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!)
-                } else {
-                    Result.failure(Exception("Search failed: ${response.message()}"))
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to search library")
-                Result.failure(e)
-            }
+        return absResult("Search failed") { api ->
+            api.search(libraryId, query, limit = 25)
         }
     }
 
@@ -1100,6 +1109,20 @@ constructor(
                             episodes.maxBy { it.lastUpdate }.toMediaProgress()
                         }
                 podcastProgress + bookProgress
+            }
+        }
+    }
+
+    override fun getEpisodeProgressFlow(): Flow<Map<String, MediaProgress>> {
+        return _activeContextFlow.flatMapLatest { context ->
+            if (context == null) return@flatMapLatest flowOf(emptyMap())
+            val (serverId, userId) = context
+            audiobookshelfDao.getAllProgressFlow(serverId, userId.toString()).map { progressList ->
+                progressList
+                    .filter { !it.episodeId.isNullOrEmpty() }
+                    .associate {
+                        mediaProgressKey(it.libraryItemId, it.episodeId) to it.toMediaProgress()
+                    }
             }
         }
     }

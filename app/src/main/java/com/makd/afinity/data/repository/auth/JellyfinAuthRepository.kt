@@ -105,8 +105,7 @@ constructor(
                 val startFailure = startResult.exceptionOrNull()
                 if (startFailure != null) {
                     val is401 =
-                        startFailure is InvalidStatusException && startFailure.status == 401 ||
-                            startFailure.message?.contains("401") == true
+                        startFailure is InvalidStatusException && startFailure.status == 401
                     if (is401) {
                         Timber.e("Token rejected by server (401) - Logging out")
                         clearAllAuthData()
@@ -163,19 +162,22 @@ constructor(
                 val authResult = response.content
                 handleSuccessfulAuth(authResult, username, client)
                 AuthRepository.AuthResult.Success(authResult)
-            } catch (e: ApiClientException) {
-                Timber.e(e, "Authentication failed")
-                AuthRepository.AuthResult.Error(
-                    "Authentication failed: ${e.message ?: "Unknown error"}"
-                )
             } catch (e: Exception) {
-                Timber.e(e, "Unexpected error during authentication")
-                AuthRepository.AuthResult.Error(
-                    "Authentication failed: ${e.message ?: "Unknown error"}"
-                )
+                Timber.e(e, "Authentication failed")
+                AuthRepository.AuthResult.Error(friendlyAuthError(e))
             }
         }
     }
+
+    private fun friendlyAuthError(e: Exception): String =
+        when {
+            e is InvalidStatusException && e.status == 401 -> "Invalid username or password."
+            e is InvalidStatusException ->
+                "The server returned an error (${e.status}). Please try again."
+            e is ApiClientException ->
+                "Could not reach the server. Check the address and your connection."
+            else -> "Something went wrong. Please try again."
+        }
 
     override suspend fun authenticateWithQuickConnect(
         serverUrl: String,
@@ -193,16 +195,9 @@ constructor(
                 val username = authResult.user?.name ?: "QuickConnect User"
                 handleSuccessfulAuth(authResult, username, client)
                 AuthRepository.AuthResult.Success(authResult)
-            } catch (e: ApiClientException) {
-                Timber.e(e, "QuickConnect authentication failed")
-                AuthRepository.AuthResult.Error(
-                    "QuickConnect failed: ${e.message ?: "Unknown error"}"
-                )
             } catch (e: Exception) {
-                Timber.e(e, "Unexpected error during QuickConnect authentication")
-                AuthRepository.AuthResult.Error(
-                    "QuickConnect failed: ${e.message ?: "Unknown error"}"
-                )
+                Timber.e(e, "QuickConnect authentication failed")
+                AuthRepository.AuthResult.Error(friendlyAuthError(e))
             }
         }
     }

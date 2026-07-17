@@ -67,8 +67,9 @@ class JellyfinItemsPagingSource(
                 }
 
             val response =
-                mediaRepository.getItems(
-                    parentId = parentId,
+                mediaRepository
+                    .getItemsResult(
+                        parentId = parentId,
                     sortBy = sortBy,
                     sortDescending = sortDescending,
                     limit = PAGE_SIZE,
@@ -96,7 +97,8 @@ class JellyfinItemsPagingSource(
                     isHd = isHd,
                     is4k = if (VideoTypeFilter.UHD_4K in filters.videoTypes) true else null,
                     is3d = if (VideoTypeFilter.THREE_D in filters.videoTypes) true else null,
-                )
+                    )
+                    .getOrThrow()
 
             val items = response.items.mapNotNull { it.toAfinityItem(baseUrl) }
 

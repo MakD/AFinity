@@ -170,6 +170,20 @@ fun LibraryContentScreen(
                         }
 
                         lazyPagingItems.itemCount == 0 &&
+                            lazyPagingItems.loadState.refresh is LoadState.Error -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                FullScreenError(
+                                    message = stringResource(R.string.library_load_failed),
+                                    actionText = stringResource(R.string.action_retry),
+                                    onActionClick = { lazyPagingItems.retry() },
+                                )
+                            }
+                        }
+
+                        lazyPagingItems.itemCount == 0 &&
                             lazyPagingItems.loadState.refresh !is LoadState.Loading -> {
                             val selectedLetter = uiState.selectedLetter
                             if (selectedLetter != null) {

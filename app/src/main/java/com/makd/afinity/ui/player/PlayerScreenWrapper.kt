@@ -9,7 +9,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.ui.player.components.BufferingIndicator
 import java.util.UUID
@@ -39,11 +39,11 @@ fun PlayerScreenWrapper(
     modifier: Modifier = Modifier,
     viewModel: PlayerWrapperViewModel = hiltViewModel(),
 ) {
-    val item by viewModel.item.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val fetchedStreamUrl by viewModel.liveStreamUrl.collectAsState()
-    val livePlaybackInfo by viewModel.livePlaybackInfo.collectAsState()
-    val streamError by viewModel.streamError.collectAsState()
+    val item by viewModel.item.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val fetchedStreamUrl by viewModel.liveStreamUrl.collectAsStateWithLifecycle()
+    val livePlaybackInfo by viewModel.livePlaybackInfo.collectAsStateWithLifecycle()
+    val streamError by viewModel.streamError.collectAsStateWithLifecycle()
 
     val defaultChannelName = stringResource(R.string.channel_default_name)
     LaunchedEffect(itemId, isLiveChannel, defaultChannelName) {

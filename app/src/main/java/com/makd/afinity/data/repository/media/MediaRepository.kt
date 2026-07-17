@@ -50,6 +50,9 @@ interface MediaRepository {
 
     suspend fun getLibraries(): List<AfinityCollection>
 
+    suspend fun getLibrariesResult(): Result<List<AfinityCollection>> =
+        Result.success(getLibraries())
+
     suspend fun getLatestMedia(
         parentId: UUID? = null,
         limit: Int = 16,
@@ -96,6 +99,75 @@ interface MediaRepository {
         is4k: Boolean? = null,
         is3d: Boolean? = null,
     ): BaseItemDtoQueryResult
+
+    suspend fun getItemsResult(
+        parentId: UUID? = null,
+        collectionTypes: List<CollectionType> = emptyList(),
+        sortBy: SortBy = SortBy.NAME,
+        sortDescending: Boolean = false,
+        limit: Int? = null,
+        startIndex: Int = 0,
+        searchTerm: String? = null,
+        includeItemTypes: List<String> = emptyList(),
+        genres: List<String> = emptyList(),
+        years: List<Int> = emptyList(),
+        isFavorite: Boolean? = null,
+        isPlayed: Boolean? = null,
+        isLiked: Boolean? = null,
+        isResumable: Boolean? = null,
+        nameStartsWith: String? = null,
+        fields: List<ItemFields>? = null,
+        imageTypes: List<String> = emptyList(),
+        hasOverview: Boolean? = null,
+        studios: List<String> = emptyList(),
+        officialRatings: List<String> = emptyList(),
+        tags: List<String> = emptyList(),
+        videoTypes: List<String> = emptyList(),
+        seriesStatuses: List<String> = emptyList(),
+        hasSubtitles: Boolean? = null,
+        hasTrailer: Boolean? = null,
+        hasSpecialFeature: Boolean? = null,
+        hasThemeSong: Boolean? = null,
+        hasThemeVideo: Boolean? = null,
+        isHd: Boolean? = null,
+        is4k: Boolean? = null,
+        is3d: Boolean? = null,
+    ): Result<BaseItemDtoQueryResult> =
+        Result.success(
+            getItems(
+                parentId = parentId,
+                collectionTypes = collectionTypes,
+                searchTerm = searchTerm,
+                imageTypes = imageTypes,
+                hasOverview = hasOverview,
+                sortBy = sortBy,
+                sortDescending = sortDescending,
+                limit = limit,
+                startIndex = startIndex,
+                includeItemTypes = includeItemTypes,
+                genres = genres,
+                years = years,
+                isFavorite = isFavorite,
+                isPlayed = isPlayed,
+                isLiked = isLiked,
+                isResumable = isResumable,
+                nameStartsWith = nameStartsWith,
+                fields = fields,
+                studios = studios,
+                officialRatings = officialRatings,
+                tags = tags,
+                videoTypes = videoTypes,
+                seriesStatuses = seriesStatuses,
+                hasSubtitles = hasSubtitles,
+                hasTrailer = hasTrailer,
+                hasSpecialFeature = hasSpecialFeature,
+                hasThemeSong = hasThemeSong,
+                hasThemeVideo = hasThemeVideo,
+                isHd = isHd,
+                is4k = is4k,
+                is3d = is3d,
+            )
+        )
 
     suspend fun getItem(itemId: UUID, fields: List<ItemFields>? = null): BaseItemDto?
 

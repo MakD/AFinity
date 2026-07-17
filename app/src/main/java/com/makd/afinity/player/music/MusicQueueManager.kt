@@ -1,5 +1,7 @@
 package com.makd.afinity.player.music
 
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.core.net.toUri
 import androidx.datastore.core.DataStore
@@ -16,6 +18,8 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.RepeatMode
+import com.makd.afinity.player.AudioService
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -55,8 +59,10 @@ private const val MAX_QUEUE_SIZE = 5000
 class MusicQueueManager
 @Inject
 constructor(
+    @param:ApplicationContext private val context: Context,
     private val musicQueueDao: MusicQueueDao,
     private val sessionManager: SessionManager,
+    private val playbackManager: MusicPlaybackManager,
     private val dataStore: DataStore<Preferences>,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -89,6 +95,41 @@ constructor(
 
     init {
         scope.launch { restoreFromRoom() }
+
+        scope.launch {
+            var previousKey: String? = null
+            var previousUrl: String? = null
+            sessionManager.currentSession.collect { session ->
+                val newKey = session?.let { "${it.serverId}/${it.userId}" }
+                val newUrl = session?.serverUrl
+                if (previousKey != null && newKey != previousKey) {
+                    Timber.d("Jellyfin session changed, stopping music playback")
+                    if (playbackManager.state.value.currentTrack != null) {
+                        context.startService(
+                            Intent(context, AudioService::class.java)
+                                .setAction(AudioService.ACTION_STOP)
+                        )
+                    }
+                    clearQueue()
+                } else if (
+                    newKey != null &&
+                        newKey == previousKey &&
+                        previousUrl != null &&
+                        newUrl != previousUrl
+                ) {
+                    val current = _queue.value
+                    if (current.isNotEmpty()) {
+                        Timber.d("Server URL changed, rebuilding music queue stream URLs")
+                        val mediaItems = current.map { buildMediaItem(it) }
+                        _rearrangeQueueEvents.emit(
+                            RearrangeQueueEvent(mediaItems, _currentIndex.value)
+                        )
+                    }
+                }
+                previousKey = newKey
+                previousUrl = newUrl
+            }
+        }
     }
 
     fun loadQueue(tracks: List<AfinityTrack>, startIndex: Int, startPositionMs: Long = 0L) {

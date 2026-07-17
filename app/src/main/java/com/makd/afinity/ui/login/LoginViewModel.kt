@@ -107,7 +107,7 @@ constructor(
             viewModelScope.launch {
                 authRepository.isAuthenticated.collect { isAuthenticated ->
                     if (isAuthenticated) {
-                        _uiState.value = _uiState.value.copy(isLoggedIn = true, isLoggingIn = false)
+                        _uiState.value = _uiState.value.copy(isLoggedIn = true, password = "", isLoggingIn = false)
                     }
                 }
             }
@@ -331,7 +331,7 @@ constructor(
 
                     if (result.isSuccess) {
                         discoveryJob?.cancel()
-                        _uiState.value = _uiState.value.copy(isLoggingIn = false, isLoggedIn = true)
+                        _uiState.value = _uiState.value.copy(isLoggingIn = false, isLoggedIn = true, password = "")
                         Timber.d("Successfully logged in with saved user: ${user.name}")
                     } else {
                         _uiState.value =
@@ -417,7 +417,7 @@ constructor(
                             if (sessionResult.isSuccess) {
                                 discoveryJob?.cancel()
                                 _uiState.value =
-                                    _uiState.value.copy(isLoggingIn = false, isLoggedIn = true)
+                                    _uiState.value.copy(isLoggingIn = false, isLoggedIn = true, password = "")
                                 Timber.d("Successfully logged in user: ${currentState.username}")
                             } else {
                                 _uiState.value =
@@ -535,7 +535,7 @@ constructor(
                                     _uiState.value =
                                         _uiState.value.copy(
                                             isLoggingIn = false,
-                                            isLoggedIn = true,
+                                            isLoggedIn = true, password = "",
                                             quickConnectCode = null,
                                             quickConnectSecret = null,
                                         )

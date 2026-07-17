@@ -17,10 +17,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -175,11 +171,7 @@ object NetworkModule {
                 timeUnit = TimeUnit.SECONDS,
             )
 
-        CoroutineScope(Dispatchers.Default).launch {
-            merge(networkMonitor.networkSwitchEvents, networkMonitor.networkDropEvents).collect {
-                connectionPool.evictAll()
-            }
-        }
+        networkMonitor.evictOnNetworkChange(connectionPool)
 
         val builder =
             OkHttpClient.Builder()
@@ -213,9 +205,6 @@ object NetworkModule {
                         if (
                             sanitizedMessage.contains("ERROR") ||
                                 sanitizedMessage.contains("FAILED")
-                        //                            ||
-                        //                                sanitizedMessage.contains("-->") ||
-                        //                                sanitizedMessage.contains("<--")
                         ) {
                             Timber.tag("Jellyfin-HTTP").d(sanitizedMessage)
                         }
@@ -304,11 +293,7 @@ object NetworkModule {
                 timeUnit = TimeUnit.MINUTES,
             )
 
-        CoroutineScope(Dispatchers.Default).launch {
-            merge(networkMonitor.networkSwitchEvents, networkMonitor.networkDropEvents).collect {
-                connectionPool.evictAll()
-            }
-        }
+        networkMonitor.evictOnNetworkChange(connectionPool)
 
         val builder =
             OkHttpClient.Builder()

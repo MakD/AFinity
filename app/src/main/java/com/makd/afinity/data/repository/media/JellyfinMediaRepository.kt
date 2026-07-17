@@ -38,6 +38,7 @@ import com.makd.afinity.data.paging.JellyfinItemsPagingSource
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinApiInvoker
+import com.makd.afinity.data.repository.NoActiveSessionException
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.di.ApplicationScope
@@ -443,7 +444,13 @@ constructor(
         }
 
     override suspend fun getLibraries(): List<AfinityCollection> =
-        apiCall(emptyList(), "Failed to get libraries") { apiClient, userId ->
+        getLibrariesResult().getOrElse { e ->
+            if (e !is NoActiveSessionException) Timber.e(e, "Failed to get libraries")
+            emptyList()
+        }
+
+    override suspend fun getLibrariesResult(): Result<List<AfinityCollection>> =
+        apiInvoker.apiResult { apiClient, userId ->
             val libraries =
                 UserViewsApi(apiClient)
                     .getUserViews(userId = userId)
@@ -552,10 +559,78 @@ constructor(
         is4k: Boolean?,
         is3d: Boolean?,
     ): BaseItemDtoQueryResult =
-        apiCall(
-            BaseItemDtoQueryResult(items = emptyList(), totalRecordCount = 0, startIndex = 0),
-            "Failed to get items",
-        ) { apiClient, userId ->
+        getItemsResult(
+                parentId = parentId,
+                collectionTypes = collectionTypes,
+                sortBy = sortBy,
+                sortDescending = sortDescending,
+                limit = limit,
+                startIndex = startIndex,
+                searchTerm = searchTerm,
+                includeItemTypes = includeItemTypes,
+                genres = genres,
+                years = years,
+                isFavorite = isFavorite,
+                isPlayed = isPlayed,
+                isLiked = isLiked,
+                isResumable = isResumable,
+                nameStartsWith = nameStartsWith,
+                fields = fields,
+                imageTypes = imageTypes,
+                hasOverview = hasOverview,
+                studios = studios,
+                officialRatings = officialRatings,
+                tags = tags,
+                videoTypes = videoTypes,
+                seriesStatuses = seriesStatuses,
+                hasSubtitles = hasSubtitles,
+                hasTrailer = hasTrailer,
+                hasSpecialFeature = hasSpecialFeature,
+                hasThemeSong = hasThemeSong,
+                hasThemeVideo = hasThemeVideo,
+                isHd = isHd,
+                is4k = is4k,
+                is3d = is3d,
+            )
+            .getOrElse { e ->
+                if (e !is NoActiveSessionException) Timber.e(e, "Failed to get items")
+                BaseItemDtoQueryResult(items = emptyList(), totalRecordCount = 0, startIndex = 0)
+            }
+
+    override suspend fun getItemsResult(
+        parentId: UUID?,
+        collectionTypes: List<CollectionType>,
+        sortBy: SortBy,
+        sortDescending: Boolean,
+        limit: Int?,
+        startIndex: Int,
+        searchTerm: String?,
+        includeItemTypes: List<String>,
+        genres: List<String>,
+        years: List<Int>,
+        isFavorite: Boolean?,
+        isPlayed: Boolean?,
+        isLiked: Boolean?,
+        isResumable: Boolean?,
+        nameStartsWith: String?,
+        fields: List<ItemFields>?,
+        imageTypes: List<String>,
+        hasOverview: Boolean?,
+        studios: List<String>,
+        officialRatings: List<String>,
+        tags: List<String>,
+        videoTypes: List<String>,
+        seriesStatuses: List<String>,
+        hasSubtitles: Boolean?,
+        hasTrailer: Boolean?,
+        hasSpecialFeature: Boolean?,
+        hasThemeSong: Boolean?,
+        hasThemeVideo: Boolean?,
+        isHd: Boolean?,
+        is4k: Boolean?,
+        is3d: Boolean?,
+    ): Result<BaseItemDtoQueryResult> =
+        apiInvoker.apiResult { apiClient, userId ->
             val filters = buildList {
                 if (isLiked == true) add(ItemFilter.LIKES)
                 if (isResumable == true) add(ItemFilter.IS_RESUMABLE)
@@ -586,7 +661,9 @@ constructor(
                         recursive =
                             if (parentId == null) true
                             else if (
-                                includeItemTypes.size == 1 && includeItemTypes.contains("SERIES")
+                                includeItemTypes.size == 1 &&
+                                    (includeItemTypes.contains("SERIES") ||
+                                        includeItemTypes.contains("BOX_SET"))
                             )
                                 true
                             else if (searchTerm != null) true else null,
@@ -1304,7 +1381,16 @@ constructor(
                     .getStudios(
                         userId = userId,
                         parentId = parentId,
-                        includeItemTypes = listOf(BaseItemKind.SERIES),
+                        includeItemTypes =
+                            includeItemTypes
+                                .mapNotNull {
+                                    try {
+                                        BaseItemKind.valueOf(it.uppercase())
+                                    } catch (e: Exception) {
+                                        null
+                                    }
+                                }
+                                .ifEmpty { listOf(BaseItemKind.SERIES) },
                         enableImages = true,
                         imageTypeLimit = 1,
                         enableImageTypes = listOf(ImageType.THUMB),

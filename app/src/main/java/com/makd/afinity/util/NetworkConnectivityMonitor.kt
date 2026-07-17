@@ -5,7 +5,9 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import com.makd.afinity.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,6 +15,9 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.launch
+import okhttp3.ConnectionPool
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -20,7 +25,10 @@ import javax.inject.Singleton
 @Singleton
 class NetworkConnectivityMonitor
 @Inject
-constructor(@param:ApplicationContext private val context: Context) {
+constructor(
+    @param:ApplicationContext private val context: Context,
+    @ApplicationScope private val scope: CoroutineScope,
+) {
     private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
@@ -128,5 +136,14 @@ constructor(@param:ApplicationContext private val context: Context) {
         return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) ||
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+    }
+
+    fun evictOnNetworkChange(connectionPool: ConnectionPool) {
+        scope.launch {
+            merge(networkSwitchEvents, networkDropEvents).collect {
+                runCatching { connectionPool.evictAll() }
+                    .onFailure { Timber.w(it, "Failed to evict connection pool") }
+            }
+        }
     }
 }

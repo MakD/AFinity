@@ -168,7 +168,11 @@ fun ItemDetailScreen(
                 FullScreenLoading()
             }
             uiState.error != null -> {
-                FullScreenError(message = uiState.error!!)
+                FullScreenError(
+                    message = uiState.error!!,
+                    actionText = stringResource(R.string.action_retry),
+                    onActionClick = { viewModel.loadItem() },
+                )
             }
             uiState.item != null -> {
                 ItemDetailContent(

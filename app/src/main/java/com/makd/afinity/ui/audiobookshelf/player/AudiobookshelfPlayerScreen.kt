@@ -35,7 +35,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.google.android.gms.cast.framework.CastButtonFactory
 import com.makd.afinity.R
@@ -85,11 +85,11 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
     animatedVisibilityScope: AnimatedVisibilityScope,
     viewModel: AudiobookshelfPlayerViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val playbackState by viewModel.playbackState.collectAsState()
-    val equalizerState by viewModel.equalizerState.collectAsState()
-    val skipSilenceEnabled by viewModel.skipSilenceEnabled.collectAsState()
-    val isAbsCasting by viewModel.isAbsCasting.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val playbackState by viewModel.playbackState.collectAsStateWithLifecycle()
+    val equalizerState by viewModel.equalizerState.collectAsStateWithLifecycle()
+    val skipSilenceEnabled by viewModel.skipSilenceEnabled.collectAsStateWithLifecycle()
+    val isAbsCasting by viewModel.isAbsCasting.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showCastChooser by remember { mutableStateOf(false) }
     val context = LocalContext.current

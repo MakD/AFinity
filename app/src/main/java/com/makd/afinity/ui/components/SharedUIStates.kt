@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -20,6 +21,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 
@@ -31,7 +33,13 @@ fun FullScreenLoading(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun FullScreenError(message: String?, modifier: Modifier = Modifier, title: String? = null) {
+fun FullScreenError(
+    message: String?,
+    modifier: Modifier = Modifier,
+    title: String? = null,
+    actionText: String? = null,
+    onActionClick: (() -> Unit)? = null,
+) {
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -50,6 +58,18 @@ fun FullScreenError(message: String?, modifier: Modifier = Modifier, title: Stri
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
+            if (actionText != null && onActionClick != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = onActionClick,
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                ) {
+                    Text(text = actionText, style = MaterialTheme.typography.labelLarge)
+                }
+            }
         }
     }
 }
@@ -60,6 +80,7 @@ fun FullScreenEmpty(
     modifier: Modifier = Modifier,
     title: String? = null,
     icon: Painter? = null,
+    iconSize: Dp = 48.dp,
     actionText: String? = null,
     onActionClick: (() -> Unit)? = null,
 ) {
@@ -74,6 +95,7 @@ fun FullScreenEmpty(
                     painter = icon,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    modifier = Modifier.size(iconSize),
                 )
             }
             if (title != null) {

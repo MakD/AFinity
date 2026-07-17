@@ -740,7 +740,12 @@ constructor(
                         _uiState.value.copy(
                             isLoading = false,
                             error =
-                                if (isOffline) "Item not available offline" else "Item not found",
+                                when {
+                                    isOffline -> context.getString(R.string.item_error_offline)
+                                    !hasInternet ->
+                                        context.getString(R.string.item_error_connection)
+                                    else -> context.getString(R.string.item_error_not_found)
+                                },
                         )
                     return@launch
                 }

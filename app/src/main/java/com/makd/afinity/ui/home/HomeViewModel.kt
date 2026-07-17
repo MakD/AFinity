@@ -10,6 +10,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.OfflineModeManager
@@ -268,10 +269,36 @@ constructor(
         }
 
         viewModelScope.launch {
+            combine(
+                    appDataRepository.initialLoadFailed,
+                    appDataRepository.libraries,
+                    offlineModeManager.isOffline,
+                ) { failed, libs, offline ->
+                    failed && libs.isEmpty() && !offline
+                }
+                .distinctUntilChanged()
+                .collect { showError ->
+                    _uiState.update {
+                        it.copy(
+                            error =
+                                if (showError) context.getString(R.string.home_load_failed)
+                                else null,
+                            isLoading = if (showError) false else it.isLoading,
+                        )
+                    }
+                }
+        }
+
+        viewModelScope.launch {
             var previousIsOffline: Boolean? = null
             offlineModeManager.isOffline.collect { isOffline ->
                 Timber.d("Offline mode changed: $isOffline")
-                _uiState.update { it.copy(isOffline = isOffline) }
+                _uiState.update {
+                    it.copy(
+                        isOffline = isOffline,
+                        offlineContentLoaded = if (isOffline) it.offlineContentLoaded else false,
+                    )
+                }
 
                 if (previousIsOffline == true && !isOffline) {
                     scheduleHomeDataReload()
@@ -412,6 +439,10 @@ constructor(
         homeSectionsRepository.hydrate(key)
     }
 
+    fun retryInitialLoad() {
+        appDataRepository.retryInitialLoad()
+    }
+
     private suspend fun loadDownloadedContent(userId: UUID) {
         try {
             Timber.d("Loading downloaded content for user: $userId")
@@ -547,6 +578,7 @@ constructor(
                     downloadedMusicAlbums = downloadedMusicAlbums,
                     downloadedMusicTracks = downloadedMusicTracks,
                     unavailableDownloadIds = unavailableDownloadIds,
+                    offlineContentLoaded = true,
                 )
             }
         } catch (e: Exception) {
@@ -619,10 +651,9 @@ constructor(
     }
 
     suspend fun getRandomUnwatchedItem(): AfinityItem? {
-        if (_isFetchingRandomItem.value) return null
+        if (!_isFetchingRandomItem.compareAndSet(expect = false, update = true)) return null
 
         return try {
-            _isFetchingRandomItem.value = true
             mediaRepository
                 .getItems(
                     includeItemTypes = listOf("Movie", "Series"),
@@ -882,6 +913,7 @@ data class HomeUiState(
     val downloadedMusicAlbums: List<AfinityAlbum> = emptyList(),
     val downloadedMusicTracks: List<AfinityTrack> = emptyList(),
     val unavailableDownloadIds: Set<UUID> = emptySet(),
+    val offlineContentLoaded: Boolean = false,
     val isLoading: Boolean = true,
     val error: String? = null,
     val combineLibrarySections: Boolean = false,

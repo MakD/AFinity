@@ -32,7 +32,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,12 +49,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.ui.components.AsyncImage
 import java.util.UUID
 
-private enum class DialogScreen { List, Create }
+private enum class DialogScreen {
+    List,
+    Create,
+}
 
 @Composable
 fun AddToPlaylistDialog(
@@ -64,7 +67,7 @@ fun AddToPlaylistDialog(
     onDismiss: () -> Unit,
     onResult: (AddToPlaylistResult) -> Unit,
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     var screen by remember { mutableStateOf(DialogScreen.List) }
 
     LaunchedEffect(Unit) {
@@ -79,24 +82,26 @@ fun AddToPlaylistDialog(
     }
 
     when (screen) {
-        DialogScreen.List -> PlaylistListDialog(
-            state = state,
-            onDismiss = onDismiss,
-            onSelectPlaylist = { playlist ->
-                if (!state.isSubmitting) {
-                    viewModel.addToPlaylist(playlist, trackIds)
-                }
-            },
-            onCreateNew = { screen = DialogScreen.Create },
-        )
+        DialogScreen.List ->
+            PlaylistListDialog(
+                state = state,
+                onDismiss = onDismiss,
+                onSelectPlaylist = { playlist ->
+                    if (!state.isSubmitting) {
+                        viewModel.addToPlaylist(playlist, trackIds)
+                    }
+                },
+                onCreateNew = { screen = DialogScreen.Create },
+            )
 
-        DialogScreen.Create -> CreatePlaylistDialogContent(
-            isLoading = state.isSubmitting,
-            onDismiss = { screen = DialogScreen.List },
-            onCreate = { name, isPublic ->
-                viewModel.createPlaylist(name, trackIds, isPublic)
-            },
-        )
+        DialogScreen.Create ->
+            CreatePlaylistDialogContent(
+                isLoading = state.isSubmitting,
+                onDismiss = { screen = DialogScreen.List },
+                onCreate = { name, isPublic ->
+                    viewModel.createPlaylist(name, trackIds, isPublic)
+                },
+            )
     }
 }
 
@@ -130,22 +135,23 @@ private fun PlaylistListDialog(
                     LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
                         items(state.playlists, key = { it.id }) { playlist ->
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable(
-                                        enabled = !state.isSubmitting,
-                                        indication = null,
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        onClick = { onSelectPlaylist(playlist) },
-                                    )
-                                    .padding(vertical = 8.dp),
+                                modifier =
+                                    Modifier.fillMaxWidth()
+                                        .clickable(
+                                            enabled = !state.isSubmitting,
+                                            indication = null,
+                                            interactionSource =
+                                                remember { MutableInteractionSource() },
+                                            onClick = { onSelectPlaylist(playlist) },
+                                        )
+                                        .padding(vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Box(
-                                    modifier = Modifier
-                                        .size(44.dp)
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                                    modifier =
+                                        Modifier.size(44.dp)
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(MaterialTheme.colorScheme.surfaceVariant)
                                 ) {
                                     AsyncImage(
                                         imageUrl = playlist.images.primary?.toString(),
@@ -161,7 +167,10 @@ private fun PlaylistListDialog(
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = playlist.name,
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                        style =
+                                            MaterialTheme.typography.bodyMedium.copy(
+                                                fontWeight = FontWeight.Medium
+                                            ),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                     )
@@ -197,14 +206,14 @@ private fun PlaylistListDialog(
                 Spacer(Modifier.height(4.dp))
 
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() },
-                            onClick = onCreateNew,
-                        )
-                        .padding(vertical = 10.dp),
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .clickable(
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() },
+                                onClick = onCreateNew,
+                            )
+                            .padding(vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
@@ -216,7 +225,10 @@ private fun PlaylistListDialog(
                     )
                     Text(
                         text = stringResource(R.string.music_new_playlist_title),
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                        style =
+                            MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Medium
+                            ),
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -253,13 +265,14 @@ fun CreatePlaylistDialogContent(
                     onValueChange = { name = it },
                     label = { Text(stringResource(R.string.music_new_playlist_name_label)) },
                     singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(focusRequester),
+                    modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = {
-                        if (name.isNotBlank() && !isLoading) onCreate(name.trim(), isPublic)
-                    }),
+                    keyboardActions =
+                        KeyboardActions(
+                            onDone = {
+                                if (name.isNotBlank() && !isLoading) onCreate(name.trim(), isPublic)
+                            }
+                        ),
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -272,7 +285,11 @@ fun CreatePlaylistDialogContent(
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         Text(
-                            text = stringResource(if (isPublic) R.string.music_playlist_visible_all else R.string.music_playlist_visible_only_you),
+                            text =
+                                stringResource(
+                                    if (isPublic) R.string.music_playlist_visible_all
+                                    else R.string.music_playlist_visible_only_you
+                                ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

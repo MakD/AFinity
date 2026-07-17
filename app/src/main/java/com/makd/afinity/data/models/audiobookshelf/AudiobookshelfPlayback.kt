@@ -49,6 +49,9 @@ data class BookChapter(
     @SerialName("title") val title: String,
 )
 
+fun mediaProgressKey(libraryItemId: String, episodeId: String? = null): String =
+    if (episodeId.isNullOrEmpty()) libraryItemId else "$libraryItemId|$episodeId"
+
 @Serializable
 data class MediaProgress(
     @SerialName("id") val id: String,

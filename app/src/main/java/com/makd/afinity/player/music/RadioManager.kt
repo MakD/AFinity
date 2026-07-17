@@ -18,7 +18,6 @@ import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.random.Random
 
 private const val MIN_UPCOMING_TRACKS = 5
 private const val INITIAL_BATCH_SIZE = 20
@@ -145,6 +144,6 @@ class RadioManager @Inject constructor(
 
     private fun randomTracks(sourceTracks: List<AfinityTrack>, count: Int): List<AfinityTrack> {
         if (sourceTracks.isEmpty()) return emptyList()
-        return List(count) { sourceTracks[Random.nextInt(sourceTracks.size)] }
+        return sourceTracks.shuffled().take(count)
     }
 }

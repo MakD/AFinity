@@ -1521,4 +1521,13 @@
     <string name="cd_music_seek_forward">Seek forward</string>
     <string name="cd_music_filter">Filter</string>
     <string name="cd_music_delete_playlist">Delete playlist</string>
+    <string name="library_load_failed">Couldn\'t load this library. Check your connection and try again.</string>
+    <string name="home_load_failed">Couldn\'t reach your server. Check your connection and try again.</string>
+    <string name="item_error_offline">This item isn\'t available offline.</string>
+    <string name="item_error_connection">Couldn\'t reach your server. Check your connection and try again.</string>
+    <string name="item_error_not_found">Item not found.</string>
+    <string name="offline_empty_title">You\'re offline</string>
+    <string name="offline_empty_message">We can\'t reach your server right now. Once you\'re back online, anything you download will be available here.</string>
+    <string name="websocket_server_restarting">Server is restarting, reconnecting automatically…</string>
+    <string name="websocket_server_shutdown">Server has shut down</string>
 </resources>

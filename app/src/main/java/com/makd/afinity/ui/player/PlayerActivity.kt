@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.data.models.player.PlayerEvent
@@ -136,7 +137,7 @@ class PlayerActivity : AppCompatActivity() {
             val dynamicColors by
                 preferencesRepository.getDynamicColorsFlow().collectAsState(initial = true)
 
-            val uiState by viewModel.uiState.collectAsState()
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
             LaunchedEffect(Unit) {
                 viewModel.enterPictureInPicture = { enterPictureInPicture() }

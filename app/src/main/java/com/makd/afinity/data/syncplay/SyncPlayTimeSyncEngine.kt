@@ -13,7 +13,7 @@ import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.operations.TimeSyncApi
 import org.jellyfin.sdk.model.DateTime
 import timber.log.Timber
-import java.time.ZoneId
+import java.time.ZoneOffset
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -110,5 +110,4 @@ constructor(
     }
 }
 
-private fun DateTime.toEpochMs(): Long =
-    this.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+private fun DateTime.toEpochMs(): Long = this.toInstant(ZoneOffset.UTC).toEpochMilli()

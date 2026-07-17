@@ -45,6 +45,7 @@ import com.makd.afinity.cast.CastEvent
 import com.makd.afinity.cast.CastManager
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.ChannelType
 import com.makd.afinity.data.models.livetv.LiveTvPlaybackInfo
@@ -120,6 +121,7 @@ constructor(
     private val audiobookshelfPlayer: AudiobookshelfPlayer,
     private val musicPlaybackManager: com.makd.afinity.player.music.MusicPlaybackManager,
     private val offlineModeManager: OfflineModeManager,
+    private val sessionManager: SessionManager,
 ) : ViewModel(), Player.Listener {
 
     lateinit var player: Player
@@ -193,14 +195,12 @@ constructor(
             Timber.d("PlayerViewModel: player ready, starting observers and loops")
             updateUiState { it.copy(isPlayerReady = true) }
             launch {
-                appDataRepository.isInitialDataLoaded.collect { isLoaded ->
-                    if (!isLoaded) {
-                        Timber.d("Session cleared, stopping playback")
-                        stopPlayback()
-                        player.stop()
-                        player.clearMediaItems()
-                        updateUiState { PlayerUiState() }
-                    }
+                appDataRepository.sessionCleared.collect {
+                    Timber.d("Session cleared, stopping playback")
+                    stopPlayback()
+                    player.stop()
+                    player.clearMediaItems()
+                    updateUiState { PlayerUiState() }
                 }
             }
             startPositionUpdateLoop()
@@ -209,7 +209,58 @@ constructor(
             initializeLogoAutoHide()
             initializeBackgroundPlay()
             observeCastState()
+            observeServerUrlChanges()
         }
+    }
+
+    private fun observeServerUrlChanges() {
+        viewModelScope.launch {
+            var previousKey: String? = null
+            var previousUrl: String? = null
+            sessionManager.currentSession.collect { session ->
+                val newKey = session?.let { "${it.serverId}_${it.userId}" }
+                val newUrl = session?.serverUrl
+                if (
+                    newKey != null &&
+                        newKey == previousKey &&
+                        previousUrl != null &&
+                        newUrl != previousUrl
+                ) {
+                    migrateStreamToNewUrl()
+                }
+                previousKey = newKey
+                previousUrl = newUrl
+            }
+        }
+    }
+
+    private suspend fun migrateStreamToNewUrl() {
+        val item = currentItem ?: return
+        val state = _uiState.value
+        if (state.isLiveChannel || castManager.isCasting) return
+        val sourceId = state.currentMediaSourceId ?: return
+        val source = item.sources.firstOrNull { it.id == sourceId } ?: return
+        if (source.type == AfinitySourceType.LOCAL) return
+
+        val audioStreams = source.mediaStreams.filter { it.type == MediaStreamType.AUDIO }
+        val subStreams = source.mediaStreams.filter { it.type == MediaStreamType.SUBTITLE }
+        val jfAudioIndex = state.audioStreamIndex?.let { audioStreams.getOrNull(it)?.index }
+        val jfSubIndex =
+            state.subtitleStreamIndex?.let {
+                if (it < 0) -1 else subStreams.getOrNull(it)?.index
+            }
+
+        val position = player.currentPosition
+        Timber.d("Server URL changed mid-playback, migrating stream at ${position}ms")
+        suppressNextControlShow = true
+        updateUiState { it.copy(isLoading = true) }
+        loadMedia(
+            item = item,
+            mediaSourceId = sourceId,
+            audioStreamIndex = jfAudioIndex,
+            subtitleStreamIndex = jfSubIndex,
+            startPositionMs = position,
+        )
     }
 
     private fun initializeVideoZoomMode() {
@@ -343,14 +394,21 @@ constructor(
         }
     }
 
+    private var positionUpdateJob: Job? = null
+
     private fun startPositionUpdateLoop() {
-        viewModelScope.launch {
+        if (positionUpdateJob?.isActive == true) return
+        positionUpdateJob = viewModelScope.launch {
             var lastPreloadedTileIndex = -1
 
             while (true) {
                 delay(100)
                 val isMpvLive = player is MPVPlayer && _uiState.value.isLiveChannel
-                if ((player.isPlaying || isMpvLive) && !_uiState.value.isSeeking) {
+                if (!player.isPlaying && !isMpvLive) {
+                    updatePlayerState()
+                    break
+                }
+                if (!_uiState.value.isSeeking) {
                     updatePlayerState()
 
                     val info = currentTrickplayInfo
@@ -701,9 +759,18 @@ constructor(
             if (_uiState.value.showControls) {
                 startControlsAutoHide()
             }
+            startPositionUpdateLoop()
         }
         updatePlayerState()
         updatePipParams?.invoke()
+    }
+
+    override fun onPositionDiscontinuity(
+        oldPosition: Player.PositionInfo,
+        newPosition: Player.PositionInfo,
+        reason: Int,
+    ) {
+        updatePlayerState()
     }
 
     override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
@@ -775,7 +842,6 @@ constructor(
 
         val isBuffering = !isActuallyPlaying && playbackState == Player.STATE_BUFFERING
         val isPausedState = !isActuallyPlaying && playbackState == Player.STATE_READY
-        if (isBuffering) false else !uiState.value.isControlsLocked
 
         lastKnownPosition = position
         lastKnownDuration = duration
@@ -1385,6 +1451,26 @@ constructor(
         }
     }
 
+    private fun subtitleMimeType(codecOrExtension: String): String? =
+        when (codecOrExtension.lowercase()) {
+            "subrip",
+            "srt" -> MimeTypes.APPLICATION_SUBRIP
+            "vtt",
+            "webvtt" -> MimeTypes.TEXT_VTT
+            "ass",
+            "ssa" -> MimeTypes.TEXT_SSA
+            else -> null
+        }
+
+    private fun subtitleExtension(codec: String): String =
+        when (codec.lowercase()) {
+            "vtt",
+            "webvtt" -> "vtt"
+            "ass" -> "ass"
+            "ssa" -> "ssa"
+            else -> "srt"
+        }
+
     private suspend fun loadMedia(
         item: AfinityItem,
         mediaSourceId: String,
@@ -1622,15 +1708,9 @@ constructor(
                             val files = subtitlesDir.listFiles()
                             files?.mapNotNull { subtitleFile ->
                                 try {
-                                    val extension = subtitleFile.extension
                                     val mimeType =
-                                        when (extension.lowercase()) {
-                                            "srt" -> MimeTypes.APPLICATION_SUBRIP
-                                            "vtt" -> MimeTypes.TEXT_VTT
-                                            "ass",
-                                            "ssa" -> MimeTypes.TEXT_SSA
-                                            else -> MimeTypes.TEXT_UNKNOWN
-                                        }
+                                        subtitleMimeType(subtitleFile.extension)
+                                            ?: MimeTypes.TEXT_UNKNOWN
 
                                     val rawCode =
                                         subtitleFile.nameWithoutExtension.split("_").firstOrNull()
@@ -1659,29 +1739,12 @@ constructor(
                             }
                             .mapNotNull { stream ->
                                 try {
-                                    val extension =
-                                        when (stream.codec.lowercase()) {
-                                            "subrip",
-                                            "srt" -> "srt"
-                                            "vtt",
-                                            "webvtt" -> "vtt"
-                                            "ass" -> "ass"
-                                            "ssa" -> "ssa"
-                                            else -> "srt"
-                                        }
+                                    val extension = subtitleExtension(stream.codec)
                                     val mimeType =
-                                        when (stream.codec.lowercase()) {
-                                            "subrip",
-                                            "srt" -> MimeTypes.APPLICATION_SUBRIP
-                                            "vtt",
-                                            "webvtt" -> MimeTypes.TEXT_VTT
-                                            "ass",
-                                            "ssa" -> MimeTypes.TEXT_SSA
-                                            else -> MimeTypes.APPLICATION_SUBRIP
-                                        }
+                                        subtitleMimeType(stream.codec)
+                                            ?: MimeTypes.APPLICATION_SUBRIP
                                     val subtitleUrl =
                                         "${apiClient.baseUrl}/Videos/${fullItem.id}/${actualMediaSourceId}/Subtitles/${stream.index}/Stream.$extension"
-                                    MediaItem.SubtitleConfiguration.Builder(subtitleUrl.toUri())
                                     val langCode = stream.language ?: "eng"
                                     val localizedLang = langCode.toLocalizedLanguageName()
                                     val finalLabel =
@@ -1888,6 +1951,7 @@ constructor(
                 liveStreamId = playbackInfo.liveStreamId,
             )
             playbackStateManager.trackCurrentItem(channelId)
+            startPositionUpdateLoop()
             viewModelScope.launch(Dispatchers.IO) {
                 playbackRepository.reportPlaybackStart(
                     itemId = channelId,

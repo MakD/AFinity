@@ -70,7 +70,9 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
+import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
+import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.HeroCarousel
 import com.makd.afinity.ui.home.components.ContinueWatchingSkeleton
 import com.makd.afinity.ui.home.components.DownloadedAudiobooksSection
@@ -165,13 +167,42 @@ fun HomeScreen(
     val isScrolling by remember { derivedStateOf { lazyListState.isScrollInProgress } }
 
     Box(modifier = modifier.fillMaxSize()) {
+        val offlineAndEmpty =
+            uiState.isOffline &&
+                uiState.offlineContentLoaded &&
+                uiState.offlineContinueWatching.isEmpty() &&
+                uiState.offlineNextUp.isEmpty() &&
+                uiState.downloadedMovies.isEmpty() &&
+                uiState.downloadedShows.isEmpty() &&
+                uiState.downloadedAudiobooks.isEmpty() &&
+                uiState.downloadedPodcastEpisodes.isEmpty() &&
+                uiState.downloadedMusicAlbums.isEmpty() &&
+                uiState.downloadedMusicTracks.isEmpty()
+
         uiState.error?.let { error ->
             FullScreenError(
                 message = error,
                 modifier = Modifier.background(MaterialTheme.colorScheme.background),
+                actionText = stringResource(R.string.action_retry),
+                onActionClick = { viewModel.retryInitialLoad() },
             )
         }
             ?: run {
+                if (uiState.isOffline && !uiState.offlineContentLoaded) {
+                    FullScreenLoading(
+                        modifier = Modifier.background(MaterialTheme.colorScheme.background)
+                    )
+                    return@run
+                }
+                if (offlineAndEmpty) {
+                    FullScreenEmpty(
+                        icon = painterResource(R.drawable.ic_server_off),
+                        title = stringResource(R.string.offline_empty_title),
+                        message = stringResource(R.string.offline_empty_message),
+                        modifier = Modifier.background(MaterialTheme.colorScheme.background),
+                    )
+                    return@run
+                }
                 Box(modifier = Modifier.fillMaxSize()) {
                     LocalDensity.current
                     val statusBarHeight =

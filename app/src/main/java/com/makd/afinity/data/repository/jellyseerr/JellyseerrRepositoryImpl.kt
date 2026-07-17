@@ -95,6 +95,30 @@ constructor(
         private const val CACHE_VALIDITY_MS = 5 * 60 * 1000L
     }
 
+    private suspend fun <T> seerrResult(
+        errorMessage: String,
+        call: suspend (JellyseerrApiService) -> retrofit2.Response<T>,
+    ): Result<T> =
+        withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+                val response = call(apiService.get())
+                val body = response.body()
+                if (response.isSuccessful && body != null) {
+                    Result.success(body)
+                } else {
+                    Result.failure(Exception("$errorMessage: ${response.message()}"))
+                }
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, errorMessage)
+                Result.failure(e)
+            }
+        }
+
     init {
         repositoryScope.launch {
             networkConnectivityMonitor.isNetworkAvailable.collect { isAvailable ->
@@ -426,62 +450,17 @@ constructor(
     }
 
     override suspend fun getUsers(take: Int): Result<List<JellyseerrUser>> {
-        return withContext(Dispatchers.IO) {
-            try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
-                    return@withContext Result.failure(Exception("No network connection"))
-                }
-                val response = apiService.get().getUsers(take)
-                if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!.results)
-                } else {
-                    Result.failure(Exception("Failed to get users: ${response.message()}"))
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get Jellyseerr users")
-                Result.failure(e)
-            }
-        }
+        return seerrResult("Failed to get users") { api -> api.getUsers(take) }.map { it.results }
     }
 
     override suspend fun getPersonCombinedCredits(
         personId: Int
     ): Result<PersonCombinedCreditsResponse> {
-        return withContext(Dispatchers.IO) {
-            try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
-                    return@withContext Result.failure(Exception("No network connection"))
-                }
-                val response = apiService.get().getPersonCombinedCredits(personId)
-                if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!)
-                } else {
-                    Result.failure(Exception("Failed to get person credits: ${response.message()}"))
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get person credits for $personId")
-                Result.failure(e)
-            }
-        }
+        return seerrResult("Failed to get person credits") { api -> api.getPersonCombinedCredits(personId) }
     }
 
     override suspend fun getCollection(collectionId: Int): Result<CollectionDetails> {
-        return withContext(Dispatchers.IO) {
-            try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
-                    return@withContext Result.failure(Exception("No network connection"))
-                }
-                val response = apiService.get().getCollection(collectionId)
-                if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!)
-                } else {
-                    Result.failure(Exception("Failed to get collection: ${response.message()}"))
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get collection $collectionId")
-                Result.failure(e)
-            }
-        }
+        return seerrResult("Failed to get collection") { api -> api.getCollection(collectionId) }
     }
 
     override suspend fun getRecommendations(
@@ -489,23 +468,10 @@ constructor(
         tmdbId: Int,
         page: Int,
     ): Result<JellyseerrSearchResult> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val response =
-                    when (mediaType) {
-                        MediaType.MOVIE -> apiService.get().getMovieRecommendations(tmdbId, page)
-                        MediaType.TV -> apiService.get().getTvRecommendations(tmdbId, page)
-                    }
-                if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!)
-                } else {
-                    Result.failure(
-                        Exception("Failed to get recommendations: ${response.message()}")
-                    )
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get recommendations for $tmdbId")
-                Result.failure(e)
+        return seerrResult("Failed to get recommendations") { api ->
+            when (mediaType) {
+                MediaType.MOVIE -> api.getMovieRecommendations(tmdbId, page)
+                MediaType.TV -> api.getTvRecommendations(tmdbId, page)
             }
         }
     }
@@ -515,42 +481,16 @@ constructor(
         tmdbId: Int,
         page: Int,
     ): Result<JellyseerrSearchResult> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val response =
-                    when (mediaType) {
-                        MediaType.MOVIE -> apiService.get().getMovieSimilar(tmdbId, page)
-                        MediaType.TV -> apiService.get().getTvSimilar(tmdbId, page)
-                    }
-                if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!)
-                } else {
-                    Result.failure(Exception("Failed to get similar: ${response.message()}"))
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get similar titles for $tmdbId")
-                Result.failure(e)
+        return seerrResult("Failed to get similar") { api ->
+            when (mediaType) {
+                MediaType.MOVIE -> api.getMovieSimilar(tmdbId, page)
+                MediaType.TV -> api.getTvSimilar(tmdbId, page)
             }
         }
     }
 
     override suspend fun sonarrLookup(tmdbId: Int): Result<List<SonarrSeries>> {
-        return withContext(Dispatchers.IO) {
-            try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
-                    return@withContext Result.failure(Exception("No network connection"))
-                }
-                val response = apiService.get().sonarrLookup(tmdbId)
-                if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!)
-                } else {
-                    Result.failure(Exception("Sonarr lookup failed: ${response.message()}"))
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Sonarr lookup failed for tmdbId $tmdbId")
-                Result.failure(e)
-            }
-        }
+        return seerrResult("Sonarr lookup failed") { api -> api.sonarrLookup(tmdbId) }
     }
 
     override suspend fun setServerUrl(url: String) {
@@ -1060,23 +1000,9 @@ constructor(
     }
 
     override suspend fun getTvDetails(tvId: Int): Result<MediaDetails> {
-        return withContext(Dispatchers.IO) {
-            try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
-                    return@withContext Result.failure(Exception("No network connection"))
-                }
+        return seerrResult("Failed to get TV details") { api ->
+ api.getTvDetails(tvId)
 
-                val response = apiService.get().getTvDetails(tvId)
-
-                if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!)
-                } else {
-                    Result.failure(Exception("Failed to get TV details: ${response.message()}"))
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get TV show details for ID: $tvId")
-                Result.failure(e)
-            }
         }
     }
 
@@ -1526,26 +1452,10 @@ constructor(
         mediaType: MediaType,
         serviceId: Int,
     ): Result<ServiceDetailsResponse> {
-        return withContext(Dispatchers.IO) {
-            try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
-                    return@withContext Result.failure(Exception("No network connection"))
-                }
-                val response =
-                    when (mediaType) {
-                        MediaType.MOVIE -> apiService.get().getRadarrDetails(serviceId)
-                        MediaType.TV -> apiService.get().getSonarrDetails(serviceId)
-                    }
-                if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!)
-                } else {
-                    Result.failure(
-                        Exception("Failed to get service details: ${response.message()}")
-                    )
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get service details")
-                Result.failure(e)
+        return seerrResult("Failed to get service details") { api ->
+            when (mediaType) {
+                MediaType.MOVIE -> api.getRadarrDetails(serviceId)
+                MediaType.TV -> api.getSonarrDetails(serviceId)
             }
         }
     }

@@ -31,7 +31,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,6 +45,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.navigation.LocalPlayerOffset
@@ -64,17 +64,17 @@ fun AppearanceOptionsScreen(
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val combineLibrarySections by viewModel.combineLibrarySections.collectAsState()
-    val homeSortByDateAdded by viewModel.homeSortByDateAdded.collectAsState()
-    val navigationDrawerEnabled by viewModel.navigationDrawerEnabled.collectAsState()
-    val librariesInDrawer by viewModel.librariesInDrawer.collectAsState()
-    val episodeLayout by viewModel.episodeLayout.collectAsState()
-    val showRatings by viewModel.showRatings.collectAsState()
-    val tmdbApiKey by viewModel.tmdbApiKey.collectAsState()
-    val mdbListApiKey by viewModel.mdbListApiKey.collectAsState()
-    val omdbApiKey by viewModel.omdbApiKey.collectAsState()
-    val appFont by viewModel.appFont.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val combineLibrarySections by viewModel.combineLibrarySections.collectAsStateWithLifecycle()
+    val homeSortByDateAdded by viewModel.homeSortByDateAdded.collectAsStateWithLifecycle()
+    val navigationDrawerEnabled by viewModel.navigationDrawerEnabled.collectAsStateWithLifecycle()
+    val librariesInDrawer by viewModel.librariesInDrawer.collectAsStateWithLifecycle()
+    val episodeLayout by viewModel.episodeLayout.collectAsStateWithLifecycle()
+    val showRatings by viewModel.showRatings.collectAsStateWithLifecycle()
+    val tmdbApiKey by viewModel.tmdbApiKey.collectAsStateWithLifecycle()
+    val mdbListApiKey by viewModel.mdbListApiKey.collectAsStateWithLifecycle()
+    val omdbApiKey by viewModel.omdbApiKey.collectAsStateWithLifecycle()
+    val appFont by viewModel.appFont.collectAsStateWithLifecycle()
     var showTmdbDialog by remember { mutableStateOf(false) }
     var showMdbListDialog by remember { mutableStateOf(false) }
     var showOmdbDialog by remember { mutableStateOf(false) }
