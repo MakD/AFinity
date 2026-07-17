@@ -10,6 +10,8 @@ import com.makd.afinity.data.network.JellyseerrApiService
 import com.makd.afinity.data.network.MdbListApiService
 import com.makd.afinity.data.network.OmdbApiService
 import com.makd.afinity.data.network.TmdbApiService
+import com.makd.afinity.data.network.resolveDynamicBaseUrl
+import com.makd.afinity.data.network.rewriteWithRequestPathAndQuery
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Module
@@ -366,24 +368,6 @@ object NetworkModule {
         return jellyfin.createApi()
     }
 
-    private fun normalizeJellyseerrUrl(raw: String?): String {
-        if (raw.isNullOrBlank()) {
-            throw IOException("Seerr server URL not configured")
-        }
-
-        var base = raw.trim()
-
-        if (!base.startsWith("http://") && !base.startsWith("https://")) {
-            base = "http://$base"
-        }
-
-        if (!base.endsWith("/")) {
-            base += "/"
-        }
-
-        return base
-    }
-
     @Provides
     @Singleton
     @JellyseerrClient
@@ -407,19 +391,11 @@ object NetworkModule {
             .addInterceptor { chain ->
                 val originalRequest = chain.request()
 
-                val savedUrl = securePreferencesRepository.getCachedJellyseerrServerUrl()
                 val currentBaseUrl =
-                    try {
-                        if (!savedUrl.isNullOrBlank()) normalizeJellyseerrUrl(savedUrl) else null
-                    } catch (e: Exception) {
-                        null
-                    }
-
-                if (currentBaseUrl == null) {
-                    throw IOException(
-                        "Jellyseerr server URL not configured. Please configure the server URL first."
+                    resolveDynamicBaseUrl(
+                        securePreferencesRepository.getCachedJellyseerrServerUrl(),
+                        "Jellyseerr server URL not configured. Please configure the server URL first.",
                     )
-                }
 
                 val baseHttpUrl =
                     currentBaseUrl.toHttpUrlOrNull()
@@ -430,19 +406,7 @@ object NetworkModule {
                     securePreferencesRepository.getCachedJellyseerrCookie(),
                 )
 
-                val newUrl =
-                    baseHttpUrl
-                        .newBuilder()
-                        .addPathSegments(originalRequest.url.encodedPath.removePrefix("/"))
-                        .apply {
-                            for (i in 0 until originalRequest.url.querySize) {
-                                addQueryParameter(
-                                    originalRequest.url.queryParameterName(i),
-                                    originalRequest.url.queryParameterValue(i),
-                                )
-                            }
-                        }
-                        .build()
+                val newUrl = baseHttpUrl.rewriteWithRequestPathAndQuery(originalRequest)
 
                 val isMutating = originalRequest.method in listOf("POST", "PUT", "DELETE", "PATCH")
 
@@ -515,24 +479,6 @@ object NetworkModule {
         return retrofit.create(JellyseerrApiService::class.java)
     }
 
-    private fun normalizeAudiobookshelfUrl(raw: String?): String {
-        if (raw.isNullOrBlank()) {
-            throw IOException("Audiobookshelf server URL not configured")
-        }
-
-        var base = raw.trim()
-
-        if (!base.startsWith("http://") && !base.startsWith("https://")) {
-            base = "http://$base"
-        }
-
-        if (!base.endsWith("/")) {
-            base += "/"
-        }
-
-        return base
-    }
-
     private val absTokenRefreshLock = Any()
 
     @Provides
@@ -547,26 +493,14 @@ object NetworkModule {
             .addInterceptor { chain ->
                 val originalRequest = chain.request()
 
-                val savedUrl = securePreferencesRepository.getCachedAudiobookshelfServerUrl()
                 val currentBaseUrl =
-                    try {
-                        if (!savedUrl.isNullOrBlank()) {
-                            normalizeAudiobookshelfUrl(savedUrl)
-                        } else {
-                            null
-                        }
-                    } catch (e: Exception) {
-                        null
-                    }
-
-                if (currentBaseUrl == null) {
-                    throw IOException(
-                        "Audiobookshelf server URL not configured. Please configure the server URL first."
+                    resolveDynamicBaseUrl(
+                        securePreferencesRepository.getCachedAudiobookshelfServerUrl(),
+                        "Audiobookshelf server URL not configured. Please configure the server URL first.",
                     )
-                }
 
                 val newUrl =
-                    buildAbsUrl(originalRequest, currentBaseUrl)
+                    currentBaseUrl.toHttpUrlOrNull()?.rewriteWithRequestPathAndQuery(originalRequest)
                         ?: throw IOException("Failed to build Audiobookshelf URL")
 
                 val token = securePreferencesRepository.getCachedAudiobookshelfToken()
@@ -647,22 +581,6 @@ object NetworkModule {
                 response
             }
             .build()
-    }
-
-    private fun buildAbsUrl(originalRequest: Request, baseUrl: String): HttpUrl? {
-        return baseUrl
-            .toHttpUrlOrNull()
-            ?.newBuilder()
-            ?.addPathSegments(originalRequest.url.encodedPath.removePrefix("/"))
-            ?.apply {
-                for (i in 0 until originalRequest.url.querySize) {
-                    addQueryParameter(
-                        originalRequest.url.queryParameterName(i),
-                        originalRequest.url.queryParameterValue(i),
-                    )
-                }
-            }
-            ?.build()
     }
 
     private fun attemptAbsTokenRefresh(
