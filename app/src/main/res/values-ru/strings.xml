@@ -1318,4 +1318,13 @@
     <string name="music_sort_field_album">Альбом</string>
     <string name="cd_random_item">Подобрать что-нибудь для просмотра</string>
     <string name="abs_recently_added_series">Недавно добавленные серии</string>
+    <string name="library_load_failed">Не удалось загрузить библиотеку. Проверьте соединение и попробуйте еще раз.</string>
+    <string name="home_load_failed">Не удалось связаться с вашим сервером. Проверьте соединение и попробуйте еще раз.</string>
+    <string name="item_error_offline">Этот элемент недоступен вне сети.</string>
+    <string name="item_error_connection">Не удалось связаться с вашим сервером. Проверьте соединение и попробуйте еще раз.</string>
+    <string name="item_error_not_found">Элемент не найден.</string>
+    <string name="offline_empty_title">Вы не в сети</string>
+    <string name="offline_empty_message">На данный момент ваш сервер недоступен. Как только вы снова подключитесь к сети, все, что вы скачаете, будет доступно здесь.</string>
+    <string name="websocket_server_restarting">Перезапуск сервера, идет автоматическое переподключение…</string>
+    <string name="websocket_server_shutdown">Сервер выключен</string>
 </resources>
