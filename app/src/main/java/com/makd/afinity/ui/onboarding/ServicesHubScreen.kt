@@ -756,38 +756,51 @@ private fun AddressRow(
 private fun AddAddressBar(verifying: Boolean, error: String?, onAdd: (String) -> Unit) {
     var input by remember { mutableStateOf("") }
     Column {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            AfinityTextField(
-                value = input,
-                onValueChange = { input = it },
-                placeholder = stringResource(R.string.services_hub_add_address_placeholder),
-                enabled = !verifying,
-                modifier = Modifier.weight(1f),
-            )
-            Button(
-                onClick = {
-                    if (input.isNotBlank()) {
-                        onAdd(input.trim())
-                        input = ""
+        AfinityTextField(
+            value = input,
+            onValueChange = { input = it },
+            placeholder = stringResource(R.string.services_hub_add_address_placeholder),
+            enabled = !verifying,
+            trailingIcon = {
+                Row(
+                    modifier = Modifier.padding(end = 12.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (verifying) {
+                        Box(
+                            modifier = Modifier.size(36.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                            )
+                        }
+                    } else {
+                        IconButton(
+                            onClick = {
+                                onAdd(input.trim())
+                                input = ""
+                            },
+                            enabled = input.isNotBlank(),
+                            modifier = Modifier.size(36.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_save),
+                                contentDescription =
+                                    stringResource(R.string.services_hub_action_verify),
+                                tint =
+                                    if (input.isNotBlank()) SaveColor
+                                    else SaveColor.copy(alpha = 0.3f),
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
                     }
-                },
-                enabled = input.isNotBlank() && !verifying,
-                modifier = Modifier.height(56.dp),
-            ) {
-                if (verifying) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                } else {
-                    Text(stringResource(R.string.services_hub_action_verify))
                 }
-            }
-        }
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
         if (error != null) {
             Spacer(Modifier.height(4.dp))
             Text(
@@ -881,16 +894,19 @@ private fun RatingKeyRow(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = label,
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.bodySmall,
                         color = labelColor,
                     )
                     Text(
                         text = maskKey(currentKey),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         maxLines = 1,
                     )
                 }
-                IconButton(onClick = { onEditingChange(true) }) {
+                IconButton(
+                    onClick = { onEditingChange(true) },
+                    modifier = Modifier.size(36.dp),
+                ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_edit),
                         contentDescription = stringResource(R.string.services_hub_action_edit),
@@ -914,10 +930,24 @@ private fun RatingKeyRow(
             supportingText = error,
             trailingIcon = {
                 if (validating) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                    Box(
+                        modifier = Modifier.padding(end = 12.dp).size(36.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    }
                 } else if (editing) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = { onEditingChange(false) }) {
+                    Row(
+                        modifier = Modifier.padding(end = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        IconButton(
+                            onClick = { onEditingChange(false) },
+                            modifier = Modifier.size(36.dp),
+                        ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_cancel_save),
                                 contentDescription = stringResource(R.string.action_cancel),
@@ -928,6 +958,7 @@ private fun RatingKeyRow(
                         IconButton(
                             onClick = { onSave(input.trim()) },
                             enabled = input.trim() != currentKey,
+                            modifier = Modifier.size(36.dp),
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_save),
