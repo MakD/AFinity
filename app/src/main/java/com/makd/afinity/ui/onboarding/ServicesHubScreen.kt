@@ -46,6 +46,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,9 +64,11 @@ import com.makd.afinity.R
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.settings.SettingsViewModel
 import com.makd.afinity.ui.settings.servers.AudiobookshelfColor
+import com.makd.afinity.ui.settings.servers.CancelColor
 import com.makd.afinity.ui.settings.servers.JellyseerrColor
 import com.makd.afinity.ui.settings.servers.LocalColor
 import com.makd.afinity.ui.settings.servers.RemoteColor
+import com.makd.afinity.ui.settings.servers.SaveColor
 import com.makd.afinity.ui.settings.servers.ServerManagementViewModel
 import com.makd.afinity.ui.settings.servers.ServerWithUserCount
 import com.makd.afinity.ui.settings.servers.TailscaleColor
@@ -355,7 +358,7 @@ fun ServicesHubScreen(
         }
         if (showSeerrDisconnect) {
             DisconnectDialog(
-                serviceName = "Jellyseerr",
+                serviceName = "Seerr",
                 onConfirm = {
                     showSeerrDisconnect = false
                     viewModel.disconnectJellyseerr()
@@ -444,7 +447,7 @@ private fun HubList(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 ServiceTile(
                     iconRes = R.drawable.ic_seerr_logo,
-                    name = "Jellyseerr",
+                    name = "Seerr",
                     connected = seerrConnected,
                     accent = JellyseerrColor,
                     statusText =
@@ -812,6 +815,7 @@ private fun RatingsKeys(viewModel: SettingsViewModel) {
     val tmdb by viewModel.tmdbApiKey.collectAsStateWithLifecycle()
     val mdb by viewModel.mdbListApiKey.collectAsStateWithLifecycle()
     val omdb by viewModel.omdbApiKey.collectAsStateWithLifecycle()
+    var editingLabel by remember { mutableStateOf<String?>(null) }
     Text(
         text = stringResource(R.string.services_hub_ratings_intro),
         style = MaterialTheme.typography.bodyMedium,
@@ -823,7 +827,9 @@ private fun RatingsKeys(viewModel: SettingsViewModel) {
         currentKey = tmdb,
         validating = uiState.isTmdbKeyValidating,
         error = uiState.tmdbKeyValidationError,
-        onSave = { viewModel.validateAndSaveTmdbKey(it) {} },
+        editing = editingLabel == "TMDB",
+        onEditingChange = { editingLabel = if (it) "TMDB" else null },
+        onSave = { viewModel.validateAndSaveTmdbKey(it) { editingLabel = null } },
     )
     RatingKeyRow(
         label = "MDBList",
@@ -831,7 +837,9 @@ private fun RatingsKeys(viewModel: SettingsViewModel) {
         currentKey = mdb,
         validating = uiState.isMdbListKeyValidating,
         error = uiState.mdbListKeyValidationError,
-        onSave = { viewModel.validateAndSaveMdbListKey(it) {} },
+        editing = editingLabel == "MDBList",
+        onEditingChange = { editingLabel = if (it) "MDBList" else null },
+        onSave = { viewModel.validateAndSaveMdbListKey(it) { editingLabel = null } },
     )
     RatingKeyRow(
         label = "OMDb",
@@ -839,7 +847,9 @@ private fun RatingsKeys(viewModel: SettingsViewModel) {
         currentKey = omdb,
         validating = uiState.isOmdbKeyValidating,
         error = uiState.omdbKeyValidationError,
-        onSave = { viewModel.validateAndSaveOmdbKey(it) {} },
+        editing = editingLabel == "OMDb",
+        onEditingChange = { editingLabel = if (it) "OMDb" else null },
+        onSave = { viewModel.validateAndSaveOmdbKey(it) { editingLabel = null } },
     )
 }
 
@@ -850,19 +860,22 @@ private fun RatingKeyRow(
     currentKey: String,
     validating: Boolean,
     error: String?,
+    editing: Boolean,
+    onEditingChange: (Boolean) -> Unit,
     onSave: (String) -> Unit,
 ) {
-    var editing by remember(currentKey) { mutableStateOf(false) }
     var input by remember(currentKey) { mutableStateOf(currentKey) }
+
+    LaunchedEffect(editing) { if (!editing) input = currentKey }
 
     if (currentKey.isNotBlank() && !editing && !validating) {
         Surface(
             shape = RoundedCornerShape(14.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHighest,
-            modifier = Modifier.fillMaxWidth().clickable { editing = true },
+            modifier = Modifier.fillMaxWidth().clickable { onEditingChange(true) },
         ) {
             Row(
-                modifier = Modifier.heightIn(min = 56.dp).padding(start = 16.dp, end = 8.dp),
+                modifier = Modifier.heightIn(min = 56.dp).padding(start = 16.dp, end = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -877,8 +890,13 @@ private fun RatingKeyRow(
                         maxLines = 1,
                     )
                 }
-                TextButton(onClick = { editing = true }) {
-                    Text(stringResource(R.string.services_hub_action_edit))
+                IconButton(onClick = { onEditingChange(true) }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_edit),
+                        contentDescription = stringResource(R.string.services_hub_action_edit),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
+                    )
                 }
             }
         }
@@ -887,7 +905,7 @@ private fun RatingKeyRow(
             value = input,
             onValueChange = {
                 input = it
-                editing = true
+                if (!editing) onEditingChange(true)
             },
             label = label,
             labelColor = labelColor,
@@ -897,9 +915,29 @@ private fun RatingKeyRow(
             trailingIcon = {
                 if (validating) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                } else if (input.trim() != currentKey && input.isNotBlank()) {
-                    TextButton(onClick = { onSave(input.trim()) }) {
-                        Text(stringResource(R.string.action_save))
+                } else if (editing) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { onEditingChange(false) }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_cancel_save),
+                                contentDescription = stringResource(R.string.action_cancel),
+                                tint = CancelColor,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                        IconButton(
+                            onClick = { onSave(input.trim()) },
+                            enabled = input.trim() != currentKey,
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_save),
+                                contentDescription = stringResource(R.string.action_save),
+                                tint =
+                                    if (input.trim() != currentKey) SaveColor
+                                    else SaveColor.copy(alpha = 0.3f),
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
                     }
                 }
             },

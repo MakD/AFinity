@@ -911,7 +911,7 @@
     <string name="pref_manage_servers">Manage Servers</string>
     <string name="pref_manage_servers_summary">Add or remove Jellyfin servers</string>
     <string name="pref_connect_services">Connect Services</string>
-    <string name="pref_connect_services_summary">Set up Jellyseerr, Audiobookshelf, and remote access</string>
+    <string name="pref_connect_services_summary">Set up Seerr, Audiobookshelf, and remote access</string>
 
     <string name="pref_group_preferences">Preferences</string>
     <string name="pref_appearance">Appearance</string>
@@ -1014,7 +1014,7 @@
 
     <string name="state_loading_data">Loading data...</string>
     <string name="action_remove">Remove</string>
-    <string name="cd_jellyseerr">Jellyseerr</string>
+    <string name="cd_jellyseerr">Seerr</string>
     <string name="cd_audiobookshelf">Audiobookshelf</string>
     <string name="cd_tmdb">TMDB</string>
     <string name="cd_mdblist">MDBList</string>
@@ -1567,9 +1567,9 @@
     <string name="services_hub_remote_error_no_server">No active server.</string>
     <string name="services_hub_remote_error_different_server">That address belongs to a different server.</string>
     <string name="services_hub_remote_error_unreachable">Couldn\'t reach that address.</string>
-    <string name="error_address_different_jellyseerr">That address belongs to a different Jellyseerr server.</string>
+    <string name="error_address_different_jellyseerr">That address belongs to a different Seerr server.</string>
     <string name="error_address_different_audiobookshelf">That address belongs to a different Audiobookshelf server.</string>
-    <string name="error_verify_jellyseerr_failed">Could not verify Jellyseerr server at this address.</string>
+    <string name="error_verify_jellyseerr_failed">Could not verify Seerr server at this address.</string>
     <string name="error_verify_audiobookshelf_failed">Could not verify Audiobookshelf server at this address.</string>
     <string name="unverified_address_title">Can\'t confirm this server</string>
     <string name="unverified_address_message">We reached a server at %1$s, but couldn\'t confirm it\'s the same one you\'re signed in to. Add it anyway?</string>

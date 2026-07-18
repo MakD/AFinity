@@ -122,7 +122,7 @@ constructor(
                         it.copy(
                             isLoading = false,
                             error =
-                                "Could not connect. Please verify this is a valid Jellyseerr server.",
+                                "Could not connect. Please verify this is a valid Seerr server.",
                         )
                     }
                     return@launch
