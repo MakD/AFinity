@@ -74,6 +74,7 @@ enum class Destination(
         const val ADD_EDIT_SERVER_ROUTE = "add_edit_server?serverId={serverId}"
 
         const val LOGIN_ROUTE = "login?serverUrl={serverUrl}"
+        const val SERVICES_HUB_ROUTE = "services_hub?entry={entry}"
 
         const val EDIT_METADATA_ROUTE = "admin/edit_metadata/{itemId}"
         const val IDENTIFY_ITEM_ROUTE = "admin/identify/{itemId}/{itemType}"
@@ -318,6 +319,10 @@ enum class Destination(
             } else {
                 "login"
             }
+        }
+
+        fun createServicesHubRoute(entry: String = "firstRun"): String {
+            return "services_hub?entry=$entry"
         }
     }
 }

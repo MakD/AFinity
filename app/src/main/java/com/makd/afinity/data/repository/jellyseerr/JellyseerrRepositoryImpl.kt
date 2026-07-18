@@ -33,6 +33,7 @@ import com.makd.afinity.data.models.jellyseerr.TmdbKeywordSearchResponse
 import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import com.makd.afinity.data.models.jellyseerr.WatchProviderDetails
 import com.makd.afinity.data.models.jellyseerr.WatchProviderRegion
+import com.makd.afinity.data.models.server.AddressCheck
 import com.makd.afinity.data.network.JellyseerrApiService
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.RequestEvent
@@ -56,6 +57,12 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -170,6 +177,100 @@ constructor(
             } catch (e: Exception) {
                 Timber.d("Jellyseerr server verification failed for $url: ${e.message}")
                 false
+            }
+        }
+    }
+
+    private fun identityClient() =
+        okhttp3.OkHttpClient.Builder()
+            .connectTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
+
+    private fun fetchInstanceId(baseUrl: String): String? {
+        return try {
+            val request =
+                okhttp3.Request.Builder().url("$baseUrl/api/v1/settings/public").get().build()
+            identityClient().newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return null
+                val body = response.body?.string() ?: return null
+                Json.parseToJsonElement(body)
+                    .jsonObject["plexClientIdentifier"]
+                    ?.jsonPrimitive
+                    ?.contentOrNull
+                    ?.takeIf { it.isNotBlank() }
+            }
+        } catch (e: Exception) {
+            Timber.d("Jellyseerr instance id fetch failed for $baseUrl: ${e.message}")
+            null
+        }
+    }
+
+    override suspend fun verifyAddressIdentity(url: String): AddressCheck {
+        return withContext(Dispatchers.IO) {
+            val candidateBase = url.trim().removeSuffix("/")
+            val currentBase =
+                securePreferencesRepository
+                    .getCachedJellyseerrServerUrl()
+                    ?.trim()
+                    ?.removeSuffix("/")
+                    ?.takeIf { it.isNotBlank() }
+
+            if (currentBase != null) {
+                val currentId = fetchInstanceId(currentBase)
+                val candidateId = fetchInstanceId(candidateBase)
+                if (currentId != null && candidateId != null) {
+                    return@withContext if (currentId == candidateId) AddressCheck.SAME_SERVER
+                    else AddressCheck.DIFFERENT_SERVER
+                }
+            }
+
+            verifyAddressIdentityByCredential(candidateBase)
+        }
+    }
+
+    private suspend fun verifyAddressIdentityByCredential(url: String): AddressCheck {
+        return withContext(Dispatchers.IO) {
+            try {
+                val currentUserId =
+                    getCurrentUser().getOrNull()?.id
+                        ?: return@withContext AddressCheck.INDETERMINATE
+                val rawCookie =
+                    securePreferencesRepository.getCachedJellyseerrCookie()
+                        ?: return@withContext AddressCheck.INDETERMINATE
+
+                val base = url.trim().removeSuffix("/")
+                val httpUrl =
+                    "$base/api/v1/auth/me".toHttpUrlOrNull()
+                        ?: return@withContext AddressCheck.INDETERMINATE
+                val cookie =
+                    okhttp3.Cookie.parse(httpUrl, rawCookie)
+                        ?: return@withContext AddressCheck.INDETERMINATE
+
+                val request =
+                    okhttp3.Request.Builder()
+                        .url(httpUrl)
+                        .header("Cookie", "${cookie.name}=${cookie.value}")
+                        .get()
+                        .build()
+
+                identityClient().newCall(request).execute().use { response ->
+                    if (response.code == 401 || response.code == 403) {
+                        return@use AddressCheck.DIFFERENT_SERVER
+                    }
+                    if (!response.isSuccessful) return@use AddressCheck.INDETERMINATE
+                    val body = response.body?.string() ?: return@use AddressCheck.INDETERMINATE
+                    val id =
+                        Json.parseToJsonElement(body).jsonObject["id"]?.jsonPrimitive?.intOrNull
+                    when (id) {
+                        null -> AddressCheck.INDETERMINATE
+                        currentUserId -> AddressCheck.SAME_SERVER
+                        else -> AddressCheck.DIFFERENT_SERVER
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.d("Jellyseerr identity check failed for $url: ${e.message}")
+                AddressCheck.INDETERMINATE
             }
         }
     }
@@ -456,7 +557,9 @@ constructor(
     override suspend fun getPersonCombinedCredits(
         personId: Int
     ): Result<PersonCombinedCreditsResponse> {
-        return seerrResult("Failed to get person credits") { api -> api.getPersonCombinedCredits(personId) }
+        return seerrResult("Failed to get person credits") { api ->
+            api.getPersonCombinedCredits(personId)
+        }
     }
 
     override suspend fun getCollection(collectionId: Int): Result<CollectionDetails> {
@@ -988,9 +1091,7 @@ constructor(
                 if (response.isSuccessful && response.body() != null) {
                     Result.success(response.body()!!)
                 } else {
-                    Result.failure(
-                        Exception("Failed to get movie details: ${response.message()}")
-                    )
+                    Result.failure(Exception("Failed to get movie details: ${response.message()}"))
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get movie details for ID: $movieId")
@@ -1001,8 +1102,7 @@ constructor(
 
     override suspend fun getTvDetails(tvId: Int): Result<MediaDetails> {
         return seerrResult("Failed to get TV details") { api ->
- api.getTvDetails(tvId)
-
+            api.getTvDetails(tvId)
         }
     }
 
@@ -1104,18 +1204,24 @@ constructor(
                             page = page,
                             sortBy = sortBy,
                             studio = studio,
-                            genre = filterOptions.genreIds.takeIf { it.isNotEmpty() }?.joinToString(","),
+                            genre =
+                                filterOptions.genreIds
+                                    .takeIf { it.isNotEmpty() }
+                                    ?.joinToString(","),
                             keywords =
                                 keywords
-                                    ?: filterOptions.keywordIds.takeIf { it.isNotEmpty() }
+                                    ?: filterOptions.keywordIds
+                                        .takeIf { it.isNotEmpty() }
                                         ?.joinToString(","),
                             excludeKeywords =
-                                filterOptions.excludeKeywordIds.takeIf { it.isNotEmpty() }
+                                filterOptions.excludeKeywordIds
+                                    .takeIf { it.isNotEmpty() }
                                     ?.joinToString(","),
                             watchRegion = watchRegion ?: filterOptions.watchRegion,
                             watchProviders =
                                 watchProviders
-                                    ?: filterOptions.watchProviderIds.takeIf { it.isNotEmpty() }
+                                    ?: filterOptions.watchProviderIds
+                                        .takeIf { it.isNotEmpty() }
                                         ?.joinToString(","),
                             primaryReleaseDateGte = filterOptions.releaseDateGte,
                             primaryReleaseDateLte = filterOptions.releaseDateLte,
@@ -1128,7 +1234,8 @@ constructor(
                             certificationCountry =
                                 if (filterOptions.certification.isNotEmpty()) "US" else null,
                             certification =
-                                filterOptions.certification.takeIf { it.isNotEmpty() }
+                                filterOptions.certification
+                                    .takeIf { it.isNotEmpty() }
                                     ?.joinToString("|"),
                         )
                 if (response.isSuccessful && response.body() != null) {
@@ -1162,18 +1269,24 @@ constructor(
                             page = page,
                             sortBy = sortBy,
                             network = network,
-                            genre = filterOptions.genreIds.takeIf { it.isNotEmpty() }?.joinToString(","),
+                            genre =
+                                filterOptions.genreIds
+                                    .takeIf { it.isNotEmpty() }
+                                    ?.joinToString(","),
                             keywords =
                                 keywords
-                                    ?: filterOptions.keywordIds.takeIf { it.isNotEmpty() }
+                                    ?: filterOptions.keywordIds
+                                        .takeIf { it.isNotEmpty() }
                                         ?.joinToString(","),
                             excludeKeywords =
-                                filterOptions.excludeKeywordIds.takeIf { it.isNotEmpty() }
+                                filterOptions.excludeKeywordIds
+                                    .takeIf { it.isNotEmpty() }
                                     ?.joinToString(","),
                             watchRegion = watchRegion ?: filterOptions.watchRegion,
                             watchProviders =
                                 watchProviders
-                                    ?: filterOptions.watchProviderIds.takeIf { it.isNotEmpty() }
+                                    ?: filterOptions.watchProviderIds
+                                        .takeIf { it.isNotEmpty() }
                                         ?.joinToString(","),
                             firstAirDateGte = filterOptions.releaseDateGte,
                             firstAirDateLte = filterOptions.releaseDateLte,
@@ -1183,11 +1296,15 @@ constructor(
                             voteAverageLte = filterOptions.voteAverageLte,
                             voteCountGte = filterOptions.voteCountGte,
                             voteCountLte = filterOptions.voteCountLte,
-                            status = filterOptions.tvStatus.takeIf { it.isNotEmpty() }?.joinToString(","),
+                            status =
+                                filterOptions.tvStatus
+                                    .takeIf { it.isNotEmpty() }
+                                    ?.joinToString(","),
                             certificationCountry =
                                 if (filterOptions.certification.isNotEmpty()) "US" else null,
                             certification =
-                                filterOptions.certification.takeIf { it.isNotEmpty() }
+                                filterOptions.certification
+                                    .takeIf { it.isNotEmpty() }
                                     ?.joinToString("|"),
                         )
                 if (response.isSuccessful && response.body() != null) {
@@ -1318,7 +1435,6 @@ constructor(
             filterOptions = filterOptions.copy(genreIds = listOf(genreId)),
         )
 
-
     override suspend fun getWatchProviderRegions(): Result<List<WatchProviderRegion>> {
         return withContext(Dispatchers.IO) {
             try {
@@ -1339,7 +1455,9 @@ constructor(
             try {
                 val response = apiService.get().getMovieWatchProviders(watchRegion)
                 if (response.isSuccessful && response.body() != null)
-                    Result.success(response.body()!!.sortedBy { it.displayPriority ?: Int.MAX_VALUE })
+                    Result.success(
+                        response.body()!!.sortedBy { it.displayPriority ?: Int.MAX_VALUE }
+                    )
                 else Result.failure(Exception("Failed"))
             } catch (e: Exception) {
                 Result.failure(e)
@@ -1354,7 +1472,9 @@ constructor(
             try {
                 val response = apiService.get().getTvWatchProviders(watchRegion)
                 if (response.isSuccessful && response.body() != null)
-                    Result.success(response.body()!!.sortedBy { it.displayPriority ?: Int.MAX_VALUE })
+                    Result.success(
+                        response.body()!!.sortedBy { it.displayPriority ?: Int.MAX_VALUE }
+                    )
                 else Result.failure(Exception("Failed"))
             } catch (e: Exception) {
                 Result.failure(e)

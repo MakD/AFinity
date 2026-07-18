@@ -44,8 +44,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Surface
@@ -91,6 +89,7 @@ import coil3.request.crossfade
 import com.makd.afinity.R
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
+import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.LoadingButton
 import com.makd.afinity.util.isInsecurePublicUrl
 
@@ -573,21 +572,14 @@ private fun ManualServerContent(
             }
         } else {
             Column {
-                OutlinedTextField(
+                AfinityTextField(
                     value = serverUrl,
                     onValueChange = onUrlChange,
-                    placeholder = { Text(stringResource(R.string.login_server_url_placeholder)) },
-                    label = { Text(stringResource(R.string.login_server_url_label)) },
-                    leadingIcon = {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_link_rotated),
-                            contentDescription = null,
-                        )
-                    },
-                    supportingText = serverUrlError?.let { { Text(it) } },
+                    placeholder = stringResource(R.string.login_server_url_placeholder),
+                    label = stringResource(R.string.login_server_url_label),
+                    leadingIcon = painterResource(id = R.drawable.ic_link_rotated),
+                    supportingText = serverUrlError,
                     isError = serverUrlError != null,
-                    singleLine = true,
-                    shape = RoundedCornerShape(16.dp),
                     keyboardOptions =
                         KeyboardOptions(
                             keyboardType = KeyboardType.Uri,
@@ -595,13 +587,6 @@ private fun ManualServerContent(
                         ),
                     keyboardActions = KeyboardActions(onDone = { onConnectToServer() }),
                     modifier = Modifier.fillMaxWidth(),
-                    colors =
-                        OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                            focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent,
-                        ),
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -935,38 +920,22 @@ private fun PasswordForm(
     val passwordFocusRequester = remember { FocusRequester() }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        OutlinedTextField(
+        AfinityTextField(
             value = uiState.username,
             onValueChange = onUsernameChange,
-            label = { Text(stringResource(R.string.login_username_label)) },
-            leadingIcon = {
-                Icon(painter = painterResource(id = R.drawable.ic_user), contentDescription = null)
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(16.dp),
+            label = stringResource(R.string.login_username_label),
+            leadingIcon = painterResource(id = R.drawable.ic_user),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             keyboardActions =
                 KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
             modifier = Modifier.fillMaxWidth(),
-            colors =
-                OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                ),
         )
 
-        OutlinedTextField(
+        AfinityTextField(
             value = uiState.password,
             onValueChange = onPasswordChange,
-            label = { Text(stringResource(R.string.login_password_label)) },
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_lock_filled),
-                    contentDescription = null,
-                )
-            },
+            label = stringResource(R.string.login_password_label),
+            leadingIcon = painterResource(id = R.drawable.ic_lock_filled),
             trailingIcon = {
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(
@@ -979,8 +948,6 @@ private fun PasswordForm(
             },
             visualTransformation =
                 if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            singleLine = true,
-            shape = RoundedCornerShape(16.dp),
             keyboardOptions =
                 KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
             keyboardActions =
@@ -991,13 +958,6 @@ private fun PasswordForm(
                     }
                 ),
             modifier = Modifier.fillMaxWidth().focusRequester(passwordFocusRequester),
-            colors =
-                OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                ),
         )
 
         Spacer(modifier = Modifier.height(8.dp))

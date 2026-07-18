@@ -123,10 +123,6 @@ fun SettingsScreen(
     val connectionType by viewModel.connectionType.collectAsStateWithLifecycle()
     val manualOfflineMode by viewModel.manualOfflineMode.collectAsStateWithLifecycle()
     val isNetworkAvailable by viewModel.isNetworkAvailable.collectAsStateWithLifecycle()
-    val isJellyseerrAuthenticated by
-        viewModel.isJellyseerrAuthenticated.collectAsStateWithLifecycle()
-    val isAudiobookshelfAuthenticated by
-        viewModel.isAudiobookshelfAuthenticated.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
     val defaultLangString = stringResource(R.string.lang_system_default)
@@ -141,15 +137,9 @@ fun SettingsScreen(
 
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
-    var showJellyseerrLogoutDialog by remember { mutableStateOf(false) }
-    var showAudiobookshelfLogoutDialog by remember { mutableStateOf(false) }
     var showQuickConnectDialog by remember { mutableStateOf(false) }
-    var showJellyseerrBottomSheet by remember { mutableStateOf(false) }
-    var showAudiobookshelfBottomSheet by remember { mutableStateOf(false) }
     var showSessionSwitcherSheet by remember { mutableStateOf(false) }
     var showControlPanel by remember { mutableStateOf(false) }
-    val jellyseerrSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val audiobookshelfSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val sessionSwitcherSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val playerOffset = LocalPlayerOffset.current
     val controlPanelViewModel: ControlPanelViewModel = hiltViewModel(key = "settings_control_panel")
@@ -215,26 +205,6 @@ fun SettingsScreen(
         )
     }
 
-    if (showJellyseerrLogoutDialog) {
-        JellyseerrLogoutConfirmationDialog(
-            onConfirm = {
-                showJellyseerrLogoutDialog = false
-                viewModel.logoutFromJellyseerr()
-            },
-            onDismiss = { showJellyseerrLogoutDialog = false },
-        )
-    }
-
-    if (showAudiobookshelfLogoutDialog) {
-        AudiobookshelfLogoutConfirmationDialog(
-            onConfirm = {
-                showAudiobookshelfLogoutDialog = false
-                viewModel.logoutFromAudiobookshelf()
-            },
-            onDismiss = { showAudiobookshelfLogoutDialog = false },
-        )
-    }
-
     if (showLanguageDialog) {
         LanguagePickerDialog(onDismiss = { showLanguageDialog = false })
     }
@@ -250,52 +220,6 @@ fun SettingsScreen(
                 viewModel.clearQuickConnectAuthState()
             },
         )
-    }
-
-    if (showJellyseerrBottomSheet) {
-        if (isDualPane) {
-            Dialog(
-                onDismissRequest = { showJellyseerrBottomSheet = false },
-                properties = DialogProperties(usePlatformDefaultWidth = false),
-            ) {
-                Surface(
-                    modifier = Modifier.width(480.dp).padding(16.dp),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    color = MaterialTheme.colorScheme.surface,
-                ) {
-                    JellyseerrLoginContent(onDismiss = { showJellyseerrBottomSheet = false })
-                }
-            }
-        } else {
-            JellyseerrBottomSheet(
-                onDismiss = { showJellyseerrBottomSheet = false },
-                sheetState = jellyseerrSheetState,
-            )
-        }
-    }
-
-    if (showAudiobookshelfBottomSheet) {
-        if (isDualPane) {
-            Dialog(
-                onDismissRequest = { showAudiobookshelfBottomSheet = false },
-                properties = DialogProperties(usePlatformDefaultWidth = false),
-            ) {
-                Surface(
-                    modifier = Modifier.width(480.dp).padding(16.dp),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    color = MaterialTheme.colorScheme.surface,
-                ) {
-                    AudiobookshelfLoginContent(
-                        onDismiss = { showAudiobookshelfBottomSheet = false }
-                    )
-                }
-            }
-        } else {
-            AudiobookshelfBottomSheet(
-                onDismiss = { showAudiobookshelfBottomSheet = false },
-                sheetState = audiobookshelfSheetState,
-            )
-        }
     }
 
     if (showSessionSwitcherSheet) {
@@ -468,39 +392,6 @@ fun SettingsScreen(
                                         enabled = isNetworkAvailable,
                                     )
                                     SettingsDivider()
-                                    SettingsSwitchItem(
-                                        icon = painterResource(id = R.drawable.ic_seerr_logo),
-                                        title = stringResource(R.string.pref_discovery_requests),
-                                        subtitle =
-                                            if (isJellyseerrAuthenticated)
-                                                stringResource(R.string.discovery_connected)
-                                            else stringResource(R.string.discovery_connect),
-                                        checked = isJellyseerrAuthenticated,
-                                        onCheckedChange = { enabled ->
-                                            if (enabled) showJellyseerrBottomSheet = true
-                                            else showJellyseerrLogoutDialog = true
-                                        },
-                                        enabled = !effectiveOfflineMode,
-                                    )
-                                    SettingsDivider()
-                                    SettingsSwitchItem(
-                                        icon =
-                                            painterResource(
-                                                id = R.drawable.ic_audiobookshelf_light
-                                            ),
-                                        title = stringResource(R.string.pref_audiobookshelf),
-                                        subtitle =
-                                            if (isAudiobookshelfAuthenticated)
-                                                stringResource(R.string.audiobookshelf_connected)
-                                            else stringResource(R.string.audiobookshelf_connect),
-                                        checked = isAudiobookshelfAuthenticated,
-                                        onCheckedChange = { enabled ->
-                                            if (enabled) showAudiobookshelfBottomSheet = true
-                                            else showAudiobookshelfLogoutDialog = true
-                                        },
-                                        enabled = !effectiveOfflineMode,
-                                    )
-                                    SettingsDivider()
                                     SettingsItem(
                                         icon = painterResource(id = R.drawable.ic_database),
                                         title = stringResource(R.string.pref_downloads_and_storage),
@@ -586,6 +477,18 @@ fun SettingsScreen(
                                                     SettingsPaneDestination.ServerManagement,
                                                 )
                                             }
+                                        },
+                                    )
+                                    SettingsDivider()
+                                    SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_link),
+                                        title = stringResource(R.string.pref_connect_services),
+                                        subtitle =
+                                            stringResource(R.string.pref_connect_services_summary),
+                                        onClick = {
+                                            navController.navigate(
+                                                Destination.createServicesHubRoute("manual")
+                                            )
                                         },
                                     )
                                 }
@@ -1005,94 +908,6 @@ private fun LogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Uni
                     ),
             ) {
                 Text(stringResource(R.string.action_logout))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        },
-        shape = MaterialTheme.shapes.extraLarge,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-    )
-}
-
-@Composable
-private fun AudiobookshelfLogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_audiobookshelf_light),
-                contentDescription = null,
-                modifier = Modifier.size(30.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        },
-        title = {
-            Text(
-                stringResource(R.string.dialog_disconnect_audiobookshelf_title),
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            )
-        },
-        text = {
-            Text(
-                stringResource(R.string.dialog_disconnect_audiobookshelf_message),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError,
-                    ),
-            ) {
-                Text(stringResource(R.string.action_disconnect))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        },
-        shape = MaterialTheme.shapes.extraLarge,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-    )
-}
-
-@Composable
-private fun JellyseerrLogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_seerr_logo),
-                contentDescription = null,
-                modifier = Modifier.size(30.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        },
-        title = {
-            Text(
-                stringResource(R.string.dialog_disconnect_seerr_title),
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            )
-        },
-        text = {
-            Text(
-                stringResource(R.string.dialog_disconnect_seerr_message),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError,
-                    ),
-            ) {
-                Text(stringResource(R.string.action_disconnect))
             }
         },
         dismissButton = {

@@ -20,7 +20,6 @@ import com.makd.afinity.data.models.jellyseerr.hasPermission
 import com.makd.afinity.data.models.jellyseerr.isAdmin
 import com.makd.afinity.ui.settings.servers.JellyseerrStats
 import com.makd.afinity.ui.settings.servers.ServerWithUserCount
-import com.makd.afinity.ui.settings.servers.components.ActiveConnectionCard
 import com.makd.afinity.ui.settings.servers.components.AddAddressField
 import com.makd.afinity.ui.settings.servers.components.DetailRow
 import com.makd.afinity.ui.settings.servers.components.LoadingState
@@ -34,7 +33,6 @@ internal fun JellyseerrTabContent(
     serverWithCount: ServerWithUserCount,
     jellyseerrStats: JellyseerrStats?,
     statsLoading: Boolean,
-    onManageClick: () -> Unit,
 ) {
     if (statsLoading) {
         LoadingState()
@@ -147,20 +145,6 @@ internal fun JellyseerrTabContent(
                 )
             }
         }
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SectionHeader(stringResource(R.string.section_network))
-        val activeAddress =
-            serverWithCount.jellyseerrConnectionUrl
-                ?: serverWithCount.jellyseerrAddresses.firstOrNull()?.address
-                ?: stringResource(R.string.server_default_proxy)
-        val total = serverWithCount.jellyseerrAddresses.size
-        ActiveConnectionCard(
-            activeAddress = activeAddress,
-            totalAddresses = total,
-            onManageClick = onManageClick,
-        )
     }
 }
 

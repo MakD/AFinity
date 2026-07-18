@@ -33,7 +33,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -64,6 +63,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
+import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.LoadingButton
 import com.makd.afinity.util.isInsecurePublicUrl
 
@@ -184,42 +184,28 @@ fun AddEditServerScreen(
 
             InsecureConnectionBanner(serverUrl = state.serverUrl)
 
-            OutlinedTextField(
+            AfinityTextField(
                 value = state.serverUrl,
                 onValueChange = viewModel::updateServerUrl,
-                label = { Text(stringResource(R.string.label_server_url)) },
-                placeholder = { Text(stringResource(R.string.placeholder_server_url)) },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_link_rotated),
-                        contentDescription = null,
-                    )
-                },
+                label = stringResource(R.string.label_server_url),
+                placeholder = stringResource(R.string.placeholder_server_url),
+                leadingIcon = painterResource(id = R.drawable.ic_link_rotated),
                 keyboardOptions =
                     KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
-                shape = RoundedCornerShape(16.dp),
-                singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedTextField(
+            AfinityTextField(
                 value = state.serverName,
                 onValueChange = viewModel::updateServerName,
-                label = { Text(stringResource(R.string.label_server_name_optional)) },
-                placeholder = { Text(stringResource(R.string.placeholder_server_name)) },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_edit),
-                        contentDescription = null,
-                    )
-                },
+                label = stringResource(R.string.label_server_name_optional),
+                placeholder = stringResource(R.string.placeholder_server_name),
+                leadingIcon = painterResource(id = R.drawable.ic_edit),
                 keyboardOptions =
                     KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { viewModel.testConnection() }),
-                shape = RoundedCornerShape(16.dp),
-                singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
 

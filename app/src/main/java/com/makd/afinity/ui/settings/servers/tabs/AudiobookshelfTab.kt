@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.ui.settings.servers.AudiobookshelfStats
 import com.makd.afinity.ui.settings.servers.ServerWithUserCount
-import com.makd.afinity.ui.settings.servers.components.ActiveConnectionCard
 import com.makd.afinity.ui.settings.servers.components.AddAddressField
 import com.makd.afinity.ui.settings.servers.components.LoadingState
 import com.makd.afinity.ui.settings.servers.components.SectionHeader
@@ -36,7 +35,6 @@ internal fun AudiobookshelfTabContent(
     serverWithCount: ServerWithUserCount,
     absStats: AudiobookshelfStats?,
     statsLoading: Boolean,
-    onManageClick: () -> Unit,
 ) {
     if (statsLoading) {
         LoadingState()
@@ -216,20 +214,6 @@ internal fun AudiobookshelfTabContent(
                 )
             }
         }
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SectionHeader(stringResource(R.string.section_network))
-        val activeAddress =
-            serverWithCount.audiobookshelfConnectionUrl
-                ?: serverWithCount.audiobookshelfAddresses.firstOrNull()?.address
-                ?: stringResource(R.string.server_default_proxy)
-        val total = serverWithCount.audiobookshelfAddresses.size
-        ActiveConnectionCard(
-            activeAddress = activeAddress,
-            totalAddresses = total,
-            onManageClick = onManageClick,
-        )
     }
 }
 

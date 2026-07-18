@@ -12,6 +12,7 @@ import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.PersonalizedView
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
 import com.makd.afinity.data.models.audiobookshelf.SearchResponse
+import com.makd.afinity.data.models.server.AddressCheck
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import java.util.UUID
@@ -21,6 +22,8 @@ data class ItemWithProgress(val item: LibraryItem, val progress: MediaProgress?)
 interface AudiobookshelfRepository {
 
     suspend fun verifyServer(url: String): Boolean
+
+    suspend fun verifyAddressIdentity(url: String): AddressCheck
 
     suspend fun setActiveJellyfinSession(serverId: String, userId: UUID)
 

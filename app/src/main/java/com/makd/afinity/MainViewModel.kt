@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.repository.AppDataRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import com.makd.afinity.navigation.AppLoadingState
@@ -28,7 +29,11 @@ constructor(
     private val webSocketManager: JellyfinWebSocketManager,
     private val appDataRepository: AppDataRepository,
     private val offlineModeManager: OfflineModeManager,
+    private val preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
+
+    suspend fun isOnboardingFirstRunDone(): Boolean =
+        preferencesRepository.getOnboardingFirstRunDone()
 
     private val _authenticationState =
         MutableStateFlow<AuthenticationState>(AuthenticationState.Loading)

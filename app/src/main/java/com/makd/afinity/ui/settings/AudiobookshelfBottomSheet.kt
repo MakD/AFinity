@@ -25,7 +25,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -53,6 +52,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.ui.audiobookshelf.login.AudiobookshelfLoginViewModel
+import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.LoadingButton
 import com.makd.afinity.util.isInsecurePublicUrl
 
@@ -96,41 +96,29 @@ internal fun AudiobookshelfLoginContent(
 
         InsecureConnectionBannerAbs(serverUrl = uiState.serverUrl)
 
-        OutlinedTextField(
+        AfinityTextField(
             value = uiState.serverUrl,
             onValueChange = viewModel::updateServerUrl,
-            label = { Text(stringResource(R.string.label_server_url)) },
-            placeholder = { Text(stringResource(R.string.abs_server_url_placeholder)) },
-            leadingIcon = {
-                Icon(
-                    painterResource(id = R.drawable.ic_link_rotated),
-                    contentDescription = null,
-                )
-            },
-            supportingText = uiState.serverUrlError?.let { { Text(it) } },
+            label = stringResource(R.string.label_server_url),
+            placeholder = stringResource(R.string.abs_server_url_placeholder),
+            leadingIcon = painterResource(id = R.drawable.ic_link_rotated),
+            supportingText = uiState.serverUrlError,
             isError = uiState.serverUrlError != null,
             enabled = !uiState.isLoggingIn,
             keyboardOptions =
                 KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
             keyboardActions =
                 KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
-            singleLine = true,
-            shape = RoundedCornerShape(16.dp),
             modifier = Modifier.fillMaxWidth(),
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            OutlinedTextField(
+            AfinityTextField(
                 value = uiState.username,
                 onValueChange = viewModel::updateUsername,
-                label = { Text(stringResource(R.string.placeholder_username)) },
-                placeholder = { Text(stringResource(R.string.placeholder_username)) },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_user),
-                        contentDescription = null,
-                    )
-                },
+                label = stringResource(R.string.placeholder_username),
+                placeholder = stringResource(R.string.placeholder_username),
+                leadingIcon = painterResource(id = R.drawable.ic_user),
                 enabled = !uiState.isLoggingIn,
                 keyboardOptions =
                     KeyboardOptions(
@@ -139,21 +127,14 @@ internal fun AudiobookshelfLoginContent(
                     ),
                 keyboardActions =
                     KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
-                singleLine = true,
-                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            OutlinedTextField(
+            AfinityTextField(
                 value = uiState.password,
                 onValueChange = viewModel::updatePassword,
-                label = { Text(stringResource(R.string.login_password_label)) },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_lock_filled),
-                        contentDescription = null,
-                    )
-                },
+                label = stringResource(R.string.login_password_label),
+                leadingIcon = painterResource(id = R.drawable.ic_lock_filled),
                 enabled = !uiState.isLoggingIn,
                 visualTransformation =
                     if (passwordVisible) {
@@ -196,8 +177,6 @@ internal fun AudiobookshelfLoginContent(
                             }
                         }
                     ),
-                singleLine = true,
-                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth(),
             )
         }

@@ -34,6 +34,7 @@ import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
 import com.makd.afinity.data.models.audiobookshelf.ProgressUpdateRequest
 import com.makd.afinity.data.models.audiobookshelf.SearchResponse
 import com.makd.afinity.data.models.audiobookshelf.mediaProgressKey
+import com.makd.afinity.data.models.server.AddressCheck
 import com.makd.afinity.data.network.AudiobookshelfApiService
 import com.makd.afinity.data.network.AudnexusApiService
 import com.makd.afinity.data.repository.AudiobookshelfConfig
@@ -61,6 +62,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import timber.log.Timber
 import java.util.Locale
 import java.util.UUID
@@ -203,6 +207,55 @@ constructor(
             } catch (e: Exception) {
                 Timber.d("Audiobookshelf server verification failed for $url: ${e.message}")
                 false
+            }
+        }
+    }
+
+    override suspend fun verifyAddressIdentity(url: String): AddressCheck {
+        return withContext(Dispatchers.IO) {
+            try {
+                val token =
+                    securePreferencesRepository.getCachedAudiobookshelfToken()
+                        ?: return@withContext AddressCheck.INDETERMINATE
+                val currentUserId =
+                    apiService.get().getMe().body()?.id
+                        ?: return@withContext AddressCheck.INDETERMINATE
+
+                var base = url.trim().removeSuffix("/")
+                if (base.endsWith("/api", ignoreCase = true)) {
+                    base = base.dropLast(4).removeSuffix("/")
+                }
+
+                val client =
+                    okhttp3.OkHttpClient.Builder()
+                        .connectTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+                        .readTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+                        .build()
+
+                val request =
+                    okhttp3.Request.Builder()
+                        .url("$base/api/me")
+                        .header("Authorization", "Bearer $token")
+                        .get()
+                        .build()
+
+                client.newCall(request).execute().use { response ->
+                    if (response.code == 401 || response.code == 403) {
+                        return@use AddressCheck.DIFFERENT_SERVER
+                    }
+                    if (!response.isSuccessful) return@use AddressCheck.INDETERMINATE
+                    val body = response.body?.string() ?: return@use AddressCheck.INDETERMINATE
+                    val id =
+                        Json.parseToJsonElement(body).jsonObject["id"]?.jsonPrimitive?.contentOrNull
+                    when (id) {
+                        null -> AddressCheck.INDETERMINATE
+                        currentUserId -> AddressCheck.SAME_SERVER
+                        else -> AddressCheck.DIFFERENT_SERVER
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.d("Audiobookshelf identity check failed for $url: ${e.message}")
+                AddressCheck.INDETERMINATE
             }
         }
     }

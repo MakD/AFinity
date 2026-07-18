@@ -14,9 +14,6 @@ import io.socket.client.IO
 import io.socket.client.Manager
 import io.socket.client.Socket
 import io.socket.engineio.client.transports.WebSocket
-import java.net.URI
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -34,6 +31,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import timber.log.Timber
+import java.net.URI
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Serializable
 private data class AbsProgressEventPayload(@SerialName("data") val data: MediaProgress? = null)
@@ -247,7 +247,9 @@ constructor(
                     json.decodeFromString<AbsProgressEventPayload>(raw).data ?: return@launch
                 mergeRemoteProgress(listOf(progress), source = "user_item_progress_updated")
             } catch (e: Exception) {
-                Timber.e(e, "AbsSocket: failed to parse user_item_progress_updated")
+                Timber.e(
+                    "AbsSocket: failed to parse user_item_progress_updated (${e::class.simpleName})"
+                )
             }
         }
     }
@@ -261,7 +263,7 @@ constructor(
                     mergeRemoteProgress(progressList, source = "user_updated")
                 }
             } catch (e: Exception) {
-                Timber.e(e, "AbsSocket: failed to parse user_updated")
+                Timber.e("AbsSocket: failed to parse user_updated (${e::class.simpleName})")
             }
         }
     }

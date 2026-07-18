@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.ui.settings.servers.JellyfinStats
 import com.makd.afinity.ui.settings.servers.ServerWithUserCount
-import com.makd.afinity.ui.settings.servers.components.ActiveConnectionCard
 import com.makd.afinity.ui.settings.servers.components.LoadingState
 import com.makd.afinity.ui.settings.servers.components.SectionHeader
 import com.makd.afinity.ui.settings.servers.components.SelectableAddressRow
@@ -39,7 +38,6 @@ internal fun JellyfinTabContent(
     jellyfinStats: JellyfinStats?,
     statsLoading: Boolean,
     isAdmin: Boolean?,
-    onManageClick: () -> Unit,
     onControlPanelClick: () -> Unit,
 ) {
     val primaryAddress =
@@ -172,15 +170,6 @@ internal fun JellyfinTabContent(
                 }
             }
         }
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SectionHeader(stringResource(R.string.section_network))
-        ActiveConnectionCard(
-            activeAddress = primaryAddress,
-            totalAddresses = allAddressesCount,
-            onManageClick = onManageClick,
-        )
     }
 }
 

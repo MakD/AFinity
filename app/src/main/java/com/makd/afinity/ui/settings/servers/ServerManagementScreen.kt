@@ -50,6 +50,7 @@ import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.settings.servers.components.DeleteServerConfirmationDialog
 import com.makd.afinity.ui.settings.servers.components.EmptyServersState
 import com.makd.afinity.ui.settings.servers.components.SectionHeader
+import com.makd.afinity.ui.settings.servers.components.UnverifiedAddressDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,16 +98,6 @@ fun ServerManagementScreen(
                 stats = state.detailStats,
                 statsLoading = state.statsLoading,
                 onDismiss = { viewModel.hideServerDetail() },
-                onDeleteAddress = { viewModel.deleteAddress(it) },
-                onSetPrimary = { viewModel.setPrimaryAddress(inlineServer.server.id, it) },
-                onDeleteJellyseerrAddress = { viewModel.deleteJellyseerrAddress(it) },
-                onDeleteAudiobookshelfAddress = { viewModel.deleteAudiobookshelfAddress(it) },
-                onAddJellyseerrAddress = { address ->
-                    viewModel.addJellyseerrAddress(inlineServer.server.id, address)
-                },
-                onAddAudiobookshelfAddress = { address ->
-                    viewModel.addAudiobookshelfAddress(inlineServer.server.id, address)
-                },
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
@@ -254,6 +245,14 @@ private fun ServerListPane(
             }
         }
 
+        state.pendingAddress?.let { pending ->
+            UnverifiedAddressDialog(
+                url = pending.url,
+                onConfirm = { viewModel.confirmPendingAddress() },
+                onDismiss = { viewModel.dismissPendingAddress() },
+            )
+        }
+
         state.serverToDelete?.let { serverToDelete ->
             DeleteServerConfirmationDialog(
                 serverWithCount = serverToDelete,
@@ -269,16 +268,6 @@ private fun ServerListPane(
                     stats = state.detailStats,
                     statsLoading = state.statsLoading,
                     onDismiss = { viewModel.hideServerDetail() },
-                    onDeleteAddress = { viewModel.deleteAddress(it) },
-                    onSetPrimary = { viewModel.setPrimaryAddress(detailServer.server.id, it) },
-                    onDeleteJellyseerrAddress = { viewModel.deleteJellyseerrAddress(it) },
-                    onDeleteAudiobookshelfAddress = { viewModel.deleteAudiobookshelfAddress(it) },
-                    onAddJellyseerrAddress = { address ->
-                        viewModel.addJellyseerrAddress(detailServer.server.id, address)
-                    },
-                    onAddAudiobookshelfAddress = { address ->
-                        viewModel.addAudiobookshelfAddress(detailServer.server.id, address)
-                    },
                 )
             }
         }

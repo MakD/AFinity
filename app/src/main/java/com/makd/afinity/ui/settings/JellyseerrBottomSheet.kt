@@ -25,7 +25,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SheetState
@@ -54,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.LoadingButton
 import com.makd.afinity.ui.jellyseerr.JellyseerrLoginViewModel
 import com.makd.afinity.util.isInsecurePublicUrl
@@ -100,26 +100,19 @@ internal fun JellyseerrLoginContent(
 
         InsecureConnectionBannerJellyseerr(serverUrl = uiState.serverUrl)
 
-        OutlinedTextField(
+        AfinityTextField(
             value = uiState.serverUrl,
             onValueChange = viewModel::updateServerUrl,
-            label = { Text(stringResource(R.string.label_server_url)) },
-            placeholder = { Text(stringResource(R.string.jellyseerr_placeholder_url)) },
-            leadingIcon = {
-                Icon(
-                    painterResource(id = R.drawable.ic_link_rotated),
-                    contentDescription = null,
-                )
-            },
-            supportingText = uiState.serverUrlError?.let { { Text(it) } },
+            label = stringResource(R.string.label_server_url),
+            placeholder = stringResource(R.string.jellyseerr_placeholder_url),
+            leadingIcon = painterResource(id = R.drawable.ic_link_rotated),
+            supportingText = uiState.serverUrlError,
             isError = uiState.serverUrlError != null,
             enabled = !uiState.isLoading,
             keyboardOptions =
                 KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
             keyboardActions =
                 KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
-            singleLine = true,
-            shape = RoundedCornerShape(16.dp),
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -163,29 +156,18 @@ internal fun JellyseerrLoginContent(
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            OutlinedTextField(
+            AfinityTextField(
                 value = uiState.email,
                 onValueChange = viewModel::updateEmail,
-                label = {
-                    Text(
-                        if (uiState.useJellyfinAuth)
-                            stringResource(R.string.label_jellyfin_username)
-                        else stringResource(R.string.label_seerr_email)
-                    )
-                },
-                placeholder = {
-                    Text(
-                        if (uiState.useJellyfinAuth) stringResource(R.string.placeholder_username)
-                        else stringResource(R.string.placeholder_email_example)
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_user),
-                        contentDescription = null,
-                    )
-                },
-                supportingText = uiState.emailError?.let { { Text(it) } },
+                label =
+                    if (uiState.useJellyfinAuth)
+                        stringResource(R.string.label_jellyfin_username)
+                    else stringResource(R.string.label_seerr_email),
+                placeholder =
+                    if (uiState.useJellyfinAuth) stringResource(R.string.placeholder_username)
+                    else stringResource(R.string.placeholder_email_example),
+                leadingIcon = painterResource(id = R.drawable.ic_user),
+                supportingText = uiState.emailError,
                 isError = uiState.emailError != null,
                 enabled = !uiState.isLoading,
                 keyboardOptions =
@@ -196,28 +178,18 @@ internal fun JellyseerrLoginContent(
                     ),
                 keyboardActions =
                     KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
-                singleLine = true,
-                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            OutlinedTextField(
+            AfinityTextField(
                 value = uiState.password,
                 onValueChange = viewModel::updatePassword,
-                label = {
-                    Text(
-                        if (uiState.useJellyfinAuth)
-                            stringResource(R.string.label_jellyfin_password)
-                        else stringResource(R.string.label_seerr_password)
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_lock_filled),
-                        contentDescription = null,
-                    )
-                },
-                supportingText = uiState.passwordError?.let { { Text(it) } },
+                label =
+                    if (uiState.useJellyfinAuth)
+                        stringResource(R.string.label_jellyfin_password)
+                    else stringResource(R.string.label_seerr_password),
+                leadingIcon = painterResource(id = R.drawable.ic_lock_filled),
+                supportingText = uiState.passwordError,
                 isError = uiState.passwordError != null,
                 enabled = !uiState.isLoading,
                 visualTransformation =
@@ -261,8 +233,6 @@ internal fun JellyseerrLoginContent(
                             }
                         }
                     ),
-                singleLine = true,
-                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth(),
             )
         }

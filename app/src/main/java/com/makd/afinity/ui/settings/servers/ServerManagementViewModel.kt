@@ -13,6 +13,7 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.ListeningStats
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
+import com.makd.afinity.data.models.server.AddressCheck
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.server.ServerAddress
 import com.makd.afinity.data.repository.AudiobookshelfRepository
@@ -55,6 +56,19 @@ data class ServerManagementState(
     val detailServer: ServerWithUserCount? = null,
     val detailStats: ServerDetailStats? = null,
     val statsLoading: Boolean = false,
+    val pendingAddress: PendingAddress? = null,
+)
+
+enum class PendingAddressKind {
+    JELLYSEERR,
+    AUDIOBOOKSHELF,
+}
+
+data class PendingAddress(
+    val kind: PendingAddressKind,
+    val serverId: String,
+    val userId: String,
+    val url: String,
 )
 
 enum class AddressType {
@@ -539,7 +553,7 @@ constructor(
                 if (validUrl == null) {
                     _state.value =
                         _state.value.copy(
-                            error = "Could not verify Jellyseerr server at this address.",
+                            error = context.getString(R.string.error_verify_jellyseerr_failed),
                             isLoading = false,
                         )
                     return@launch
@@ -556,16 +570,36 @@ constructor(
                     return@launch
                 }
 
-                jellyseerrDao.insertAddress(
-                    JellyseerrAddressEntity(
-                        id = UUID.randomUUID(),
-                        jellyfinServerId = serverId,
-                        jellyfinUserId = userId,
-                        address = validUrl,
-                    )
-                )
-                reloadAndRefreshDetail()
-                Timber.d("Jellyseerr address added: $validUrl")
+                when (repository.verifyAddressIdentity(validUrl)) {
+                    AddressCheck.DIFFERENT_SERVER -> {
+                        _state.value =
+                            _state.value.copy(
+                                error =
+                                    context.getString(
+                                        R.string.error_address_different_jellyseerr
+                                    ),
+                                isLoading = false,
+                            )
+                        return@launch
+                    }
+                    AddressCheck.INDETERMINATE -> {
+                        _state.value =
+                            _state.value.copy(
+                                pendingAddress =
+                                    PendingAddress(
+                                        kind = PendingAddressKind.JELLYSEERR,
+                                        serverId = serverId,
+                                        userId = userId,
+                                        url = validUrl,
+                                    ),
+                                isLoading = false,
+                            )
+                        return@launch
+                    }
+                    AddressCheck.SAME_SERVER -> Unit
+                }
+
+                insertJellyseerrAddress(serverId, userId, validUrl)
             } catch (e: Exception) {
                 Timber.e(e, "Error adding Jellyseerr address")
                 _state.value = _state.value.copy(error = e.message, isLoading = false)
@@ -602,7 +636,7 @@ constructor(
                 if (validUrl == null) {
                     _state.value =
                         _state.value.copy(
-                            error = "Could not verify Audiobookshelf server at this address.",
+                            error = context.getString(R.string.error_verify_audiobookshelf_failed),
                             isLoading = false,
                         )
                     return@launch
@@ -619,21 +653,94 @@ constructor(
                     return@launch
                 }
 
-                audiobookshelfDao.insertAddress(
-                    AudiobookshelfAddressEntity(
-                        id = UUID.randomUUID(),
-                        jellyfinServerId = serverId,
-                        jellyfinUserId = userId,
-                        address = validUrl,
-                    )
-                )
-                reloadAndRefreshDetail()
-                Timber.d("Audiobookshelf address added: $validUrl")
+                when (repository.verifyAddressIdentity(validUrl)) {
+                    AddressCheck.DIFFERENT_SERVER -> {
+                        _state.value =
+                            _state.value.copy(
+                                error =
+                                    context.getString(
+                                        R.string.error_address_different_audiobookshelf
+                                    ),
+                                isLoading = false,
+                            )
+                        return@launch
+                    }
+                    AddressCheck.INDETERMINATE -> {
+                        _state.value =
+                            _state.value.copy(
+                                pendingAddress =
+                                    PendingAddress(
+                                        kind = PendingAddressKind.AUDIOBOOKSHELF,
+                                        serverId = serverId,
+                                        userId = userId,
+                                        url = validUrl,
+                                    ),
+                                isLoading = false,
+                            )
+                        return@launch
+                    }
+                    AddressCheck.SAME_SERVER -> Unit
+                }
+
+                insertAudiobookshelfAddress(serverId, userId, validUrl)
             } catch (e: Exception) {
                 Timber.e(e, "Error adding Audiobookshelf address")
                 _state.value = _state.value.copy(error = e.message, isLoading = false)
             }
         }
+    }
+
+    private suspend fun insertJellyseerrAddress(serverId: String, userId: String, url: String) {
+        jellyseerrDao.insertAddress(
+            JellyseerrAddressEntity(
+                id = UUID.randomUUID(),
+                jellyfinServerId = serverId,
+                jellyfinUserId = userId,
+                address = url,
+            )
+        )
+        reloadAndRefreshDetail()
+        Timber.d("Jellyseerr address added: $url")
+    }
+
+    private suspend fun insertAudiobookshelfAddress(
+        serverId: String,
+        userId: String,
+        url: String,
+    ) {
+        audiobookshelfDao.insertAddress(
+            AudiobookshelfAddressEntity(
+                id = UUID.randomUUID(),
+                jellyfinServerId = serverId,
+                jellyfinUserId = userId,
+                address = url,
+            )
+        )
+        reloadAndRefreshDetail()
+        Timber.d("Audiobookshelf address added: $url")
+    }
+
+    fun confirmPendingAddress() {
+        val pending = _state.value.pendingAddress ?: return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(pendingAddress = null, isLoading = true)
+            try {
+                when (pending.kind) {
+                    PendingAddressKind.JELLYSEERR ->
+                        insertJellyseerrAddress(pending.serverId, pending.userId, pending.url)
+                    PendingAddressKind.AUDIOBOOKSHELF ->
+                        insertAudiobookshelfAddress(pending.serverId, pending.userId, pending.url)
+                }
+                _state.value = _state.value.copy(isLoading = false)
+            } catch (e: Exception) {
+                Timber.e(e, "Error adding unverified address")
+                _state.value = _state.value.copy(error = e.message, isLoading = false)
+            }
+        }
+    }
+
+    fun dismissPendingAddress() {
+        _state.value = _state.value.copy(pendingAddress = null)
     }
 
     private suspend fun reloadAndRefreshDetail() {

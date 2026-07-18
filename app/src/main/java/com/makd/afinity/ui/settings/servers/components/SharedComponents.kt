@@ -29,8 +29,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Surface
@@ -54,6 +52,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.settings.servers.AudiobookshelfColor
 import com.makd.afinity.ui.settings.servers.JellyseerrColor
@@ -407,12 +406,10 @@ internal fun AddAddressField(placeholder: String, onAdd: (String) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        OutlinedTextField(
+        AfinityTextField(
             value = text,
             onValueChange = { text = it },
-            placeholder = { Text(text = placeholder, style = MaterialTheme.typography.bodyMedium) },
-            textStyle = MaterialTheme.typography.bodyMedium,
-            singleLine = true,
+            placeholder = placeholder,
             keyboardOptions =
                 KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
             keyboardActions =
@@ -424,11 +421,6 @@ internal fun AddAddressField(placeholder: String, onAdd: (String) -> Unit) {
                             text = ""
                         }
                     }
-                ),
-            shape = RoundedCornerShape(16.dp),
-            colors =
-                OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                 ),
             modifier = Modifier.weight(1f),
         )
@@ -624,6 +616,32 @@ internal fun DeleteServerConfirmationDialog(
                     ),
             ) {
                 Text(stringResource(R.string.action_delete))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+    )
+}
+
+@Composable
+internal fun UnverifiedAddressDialog(url: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.unverified_address_title)) },
+        text = {
+            Text(
+                stringResource(
+                    R.string.unverified_address_message,
+                    url.substringAfter("://"),
+                )
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(stringResource(R.string.unverified_address_confirm))
             }
         },
         dismissButton = {

@@ -68,6 +68,7 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val HOME_SORT_BY_DATE_ADDED = booleanPreferencesKey("home_sort_by_date_added")
         val NAVIGATION_DRAWER_ENABLED = booleanPreferencesKey("navigation_drawer_enabled")
         val LIBRARIES_IN_DRAWER = booleanPreferencesKey("libraries_in_drawer")
+        val ONBOARDING_FIRST_RUN_DONE = booleanPreferencesKey("onboarding_first_run_done")
 
         val DOWNLOAD_WIFI_ONLY = booleanPreferencesKey("download_wifi_only")
         val DOWNLOAD_QUALITY = stringPreferencesKey("download_quality")
@@ -273,6 +274,14 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         return dataStore.data.map { preferences ->
             preferences[Keys.NAVIGATION_DRAWER_ENABLED] ?: false
         }
+    }
+
+    override suspend fun setOnboardingFirstRunDone(done: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.ONBOARDING_FIRST_RUN_DONE] = done }
+    }
+
+    override suspend fun getOnboardingFirstRunDone(): Boolean {
+        return dataStore.data.first()[Keys.ONBOARDING_FIRST_RUN_DONE] ?: false
     }
 
     override suspend fun setLibrariesInDrawer(enabled: Boolean) {

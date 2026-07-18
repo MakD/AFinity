@@ -20,7 +20,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Surface
@@ -38,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.makd.afinity.data.models.syncplay.SyncPlayState
+import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.player.SyncPlayUiState
 import org.jellyfin.sdk.model.UUID
 import org.jellyfin.sdk.model.api.GroupInfoDto
@@ -171,11 +171,10 @@ private fun NotInGroupContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
+        AfinityTextField(
             value = groupName,
             onValueChange = { groupName = it },
-            label = { Text("Group name") },
-            singleLine = true,
+            label = "Group name",
             enabled = !isJoining,
             modifier = Modifier.fillMaxWidth(),
         )

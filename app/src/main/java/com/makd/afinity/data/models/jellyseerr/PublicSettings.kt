@@ -14,4 +14,5 @@ data class PublicSettings(
     @SerialName("applicationTitle") val applicationTitle: String? = null,
     @SerialName("applicationUrl") val applicationUrl: String? = null,
     @SerialName("discoverRegion") val discoverRegion: String? = null,
+    @SerialName("plexClientIdentifier") val instanceId: String? = null,
 )

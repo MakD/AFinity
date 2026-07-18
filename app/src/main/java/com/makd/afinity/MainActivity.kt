@@ -27,7 +27,11 @@ import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSiz
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
@@ -231,6 +235,26 @@ private fun MainContent(
     val authState by viewModel.authenticationState.collectAsStateWithLifecycle()
     val appLoadingState by viewModel.appLoadingState.collectAsStateWithLifecycle()
 
+    var sawLogin by rememberSaveable { mutableStateOf(false) }
+    // 0 = unresolved, 1 = start at home, 2 = start at onboarding hub
+    var startDecision by rememberSaveable { mutableStateOf(0) }
+
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthenticationState.NotAuthenticated -> {
+                sawLogin = true
+                startDecision = 0
+            }
+            is AuthenticationState.Authenticated -> {
+                if (startDecision == 0) {
+                    startDecision =
+                        if (sawLogin && !viewModel.isOnboardingFirstRunDone()) 2 else 1
+                }
+            }
+            else -> {}
+        }
+    }
+
     AnimatedContent(
         targetState = authState is AuthenticationState.NotAuthenticated,
         transitionSpec = {
@@ -242,18 +266,21 @@ private fun MainContent(
             LoginScreen(onLoginSuccess = {}, modifier = modifier, widthSizeClass = widthSizeClass)
         } else {
             Box(modifier = modifier) {
-                if (authState is AuthenticationState.Authenticated) {
+                if (authState is AuthenticationState.Authenticated && startDecision != 0) {
                     MainNavigation(
                         modifier = Modifier.fillMaxSize(),
                         updateManager = updateManager,
                         offlineModeManager = offlineModeManager,
                         widthSizeClass = widthSizeClass,
+                        startAtOnboarding = startDecision == 2,
                     )
                 }
 
                 val isAuthenticating = authState is AuthenticationState.Loading
+                val resolvingOnboarding =
+                    authState is AuthenticationState.Authenticated && startDecision == 0
                 AnimatedVisibility(
-                    visible = isAuthenticating || appLoadingState.isLoading,
+                    visible = isAuthenticating || resolvingOnboarding || appLoadingState.isLoading,
                     enter = fadeIn(animationSpec = tween(400)),
                     exit = fadeOut(animationSpec = tween(400)),
                 ) {

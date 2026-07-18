@@ -92,6 +92,7 @@ import com.makd.afinity.ui.music.library.MusicBrowseScreen
 import com.makd.afinity.ui.music.library.MusicLibraryScreen
 import com.makd.afinity.ui.music.player.MusicPlayerScreen
 import com.makd.afinity.ui.music.playlist.MusicPlaylistScreen
+import com.makd.afinity.ui.onboarding.ServicesHubScreen
 import com.makd.afinity.ui.person.PersonScreen
 import com.makd.afinity.ui.player.AudioMiniPlayer
 import com.makd.afinity.ui.player.AudioMiniPlayerState
@@ -128,6 +129,7 @@ fun MainNavigation(
     updateManager: UpdateManager,
     offlineModeManager: OfflineModeManager,
     widthSizeClass: WindowWidthSizeClass,
+    startAtOnboarding: Boolean = false,
 ) {
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
     val favoritesCount by viewModel.favoritesCount.collectAsStateWithLifecycle()
@@ -366,7 +368,10 @@ fun MainNavigation(
                             Box(modifier = Modifier.fillMaxSize()) {
                                 NavHost(
                                     navController = navController,
-                                    startDestination = Destination.HOME.route,
+                                    startDestination =
+                                        if (startAtOnboarding)
+                                            Destination.createServicesHubRoute("firstRun")
+                                        else Destination.HOME.route,
                                     modifier = Modifier.fillMaxSize(),
                                 ) {
                                     composable(Destination.HOME.route) {
@@ -881,8 +886,7 @@ fun MainNavigation(
                                         val categoryName =
                                             backStackEntry.arguments?.getString("category")
                                                 ?: return@composable
-                                        val category =
-                                            FavoritesCategory.valueOf(categoryName)
+                                        val category = FavoritesCategory.valueOf(categoryName)
 
                                         FavoritesCategoryScreen(
                                             category = category,
@@ -926,8 +930,7 @@ fun MainNavigation(
                                         val categoryName =
                                             backStackEntry.arguments?.getString("category")
                                                 ?: return@composable
-                                        val category =
-                                            WatchlistCategory.valueOf(categoryName)
+                                        val category = WatchlistCategory.valueOf(categoryName)
 
                                         WatchlistCategoryScreen(
                                             category = category,
@@ -1026,7 +1029,8 @@ fun MainNavigation(
 
                                     composable(Destination.SEARCH_ROUTE) {
                                         SearchScreen(
-                                            onBackClick = dropUnlessResumed { navController.popBackStack() },
+                                            onBackClick =
+                                                dropUnlessResumed { navController.popBackStack() },
                                             onItemClick = { item ->
                                                 val route =
                                                     Destination.createItemDetailRoute(
@@ -1115,7 +1119,8 @@ fun MainNavigation(
                                     ) {
                                         GenreResultsScreen(
                                             genre = it.arguments?.getString("genre") ?: "",
-                                            onBackClick = dropUnlessResumed { navController.popBackStack() },
+                                            onBackClick =
+                                                dropUnlessResumed { navController.popBackStack() },
                                             onItemClick = { item ->
                                                 val route =
                                                     Destination.createItemDetailRoute(
@@ -1147,7 +1152,8 @@ fun MainNavigation(
                                     ) {
                                         AudiobookshelfGenreResultsScreen(
                                             genre = it.arguments?.getString("genre") ?: "",
-                                            onBackClick = dropUnlessResumed { navController.popBackStack() },
+                                            onBackClick =
+                                                dropUnlessResumed { navController.popBackStack() },
                                             onItemClick = { itemId ->
                                                 navController.navigate(
                                                     Destination.createAudiobookshelfItemRoute(
@@ -1163,7 +1169,8 @@ fun MainNavigation(
                                     composable(Destination.SETTINGS_ROUTE) {
                                         SettingsScreen(
                                             navController = navController,
-                                            onBackClick = dropUnlessResumed { navController.popBackStack() },
+                                            onBackClick =
+                                                dropUnlessResumed { navController.popBackStack() },
                                             onLogoutComplete = {
                                                 // Logout handled by MainActivity observing auth
                                                 // state
@@ -1173,7 +1180,8 @@ fun MainNavigation(
 
                                     composable(Destination.DOWNLOAD_SETTINGS_ROUTE) {
                                         DownloadSettingsScreen(
-                                            onBackClick = dropUnlessResumed { navController.popBackStack() },
+                                            onBackClick =
+                                                dropUnlessResumed { navController.popBackStack() },
                                             onNavigateToAbsItem = { itemId ->
                                                 navController.navigate(
                                                     Destination.createAudiobookshelfItemRoute(
@@ -1187,26 +1195,30 @@ fun MainNavigation(
 
                                     composable(Destination.PLAYER_OPTIONS_ROUTE) {
                                         PlayerOptionsScreen(
-                                            onBackClick = dropUnlessResumed { navController.popBackStack() },
+                                            onBackClick =
+                                                dropUnlessResumed { navController.popBackStack() },
                                             modifier = Modifier.fillMaxSize(),
                                         )
                                     }
 
                                     composable(Destination.APPEARANCE_OPTIONS_ROUTE) {
                                         AppearanceOptionsScreen(
-                                            onBackClick = dropUnlessResumed { navController.popBackStack() }
+                                            onBackClick =
+                                                dropUnlessResumed { navController.popBackStack() }
                                         )
                                     }
 
                                     composable(Destination.LICENSES_ROUTE) {
                                         LicensesScreen(
-                                            onBackClick = dropUnlessResumed { navController.popBackStack() }
+                                            onBackClick =
+                                                dropUnlessResumed { navController.popBackStack() }
                                         )
                                     }
 
                                     composable(Destination.SERVER_MANAGEMENT_ROUTE) {
                                         ServerManagementScreen(
-                                            onBackClick = dropUnlessResumed { navController.popBackStack() },
+                                            onBackClick =
+                                                dropUnlessResumed { navController.popBackStack() },
                                             onAddServerClick = {
                                                 val route =
                                                     Destination.createAddEditServerRoute(
@@ -1236,7 +1248,8 @@ fun MainNavigation(
                                             ),
                                     ) {
                                         AddEditServerScreen(
-                                            onBackClick = dropUnlessResumed { navController.popBackStack() }
+                                            onBackClick =
+                                                dropUnlessResumed { navController.popBackStack() }
                                         )
                                     }
 
@@ -1259,6 +1272,45 @@ fun MainNavigation(
                                             },
                                             modifier = Modifier.fillMaxSize(),
                                             widthSizeClass = widthSizeClass,
+                                        )
+                                    }
+
+                                    composable(
+                                        route = Destination.SERVICES_HUB_ROUTE,
+                                        arguments =
+                                            listOf(
+                                                navArgument("entry") {
+                                                    type = NavType.StringType
+                                                    nullable = true
+                                                    defaultValue = "firstRun"
+                                                }
+                                            ),
+                                    ) { backStackEntry ->
+                                        val entry =
+                                            backStackEntry.arguments?.getString("entry")
+                                                ?: "firstRun"
+                                        ServicesHubScreen(
+                                            onFinish = {
+                                                if (!navController.popBackStack()) {
+                                                    navController.navigate(Destination.HOME.route) {
+                                                        popUpTo(0) { inclusive = true }
+                                                    }
+                                                }
+                                            },
+                                            onNavigateToServerManagement = {
+                                                navController.navigate(
+                                                    Destination.SERVER_MANAGEMENT_ROUTE
+                                                ) {
+                                                    launchSingleTop = true
+                                                }
+                                            },
+                                            finishLabel =
+                                                if (entry == "manual")
+                                                    R.string.services_hub_finish_done
+                                                else R.string.services_hub_finish_go_to_app,
+                                            showRatings = entry == "manual",
+                                            showAppBar = entry == "manual",
+                                            modifier = Modifier.fillMaxSize(),
                                         )
                                     }
 
@@ -1516,14 +1568,16 @@ fun MainNavigation(
                                             ),
                                     ) {
                                         AudiobookshelfPlayerScreen(
-                                            onNavigateBack = dropUnlessResumed { navController.popBackStack() },
+                                            onNavigateBack =
+                                                dropUnlessResumed { navController.popBackStack() },
                                             animatedVisibilityScope = this@composable,
                                         )
                                     }
 
                                     composable(route = Destination.MUSIC_PLAYER_ROUTE) {
                                         MusicPlayerScreen(
-                                            onNavigateBack = dropUnlessResumed { navController.popBackStack() },
+                                            onNavigateBack =
+                                                dropUnlessResumed { navController.popBackStack() },
                                             animatedVisibilityScope = this@composable,
                                         )
                                     }

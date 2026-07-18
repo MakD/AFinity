@@ -3,31 +3,20 @@ package com.makd.afinity.ui.settings.appearance
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -40,8 +29,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -71,13 +58,7 @@ fun AppearanceOptionsScreen(
     val librariesInDrawer by viewModel.librariesInDrawer.collectAsStateWithLifecycle()
     val episodeLayout by viewModel.episodeLayout.collectAsStateWithLifecycle()
     val showRatings by viewModel.showRatings.collectAsStateWithLifecycle()
-    val tmdbApiKey by viewModel.tmdbApiKey.collectAsStateWithLifecycle()
-    val mdbListApiKey by viewModel.mdbListApiKey.collectAsStateWithLifecycle()
-    val omdbApiKey by viewModel.omdbApiKey.collectAsStateWithLifecycle()
     val appFont by viewModel.appFont.collectAsStateWithLifecycle()
-    var showTmdbDialog by remember { mutableStateOf(false) }
-    var showMdbListDialog by remember { mutableStateOf(false) }
-    var showOmdbDialog by remember { mutableStateOf(false) }
     val playerOffset = LocalPlayerOffset.current
 
     Scaffold(
@@ -204,99 +185,7 @@ fun AppearanceOptionsScreen(
                     )
                 }
             }
-
-            item {
-                SettingsGroup(title = stringResource(R.string.pref_group_integrations)) {
-                    SettingsItem(
-                        icon = painterResource(id = R.drawable.ic_tmdb_short),
-                        title = stringResource(R.string.pref_tmdb_api_key_title),
-                        subtitle =
-                            if (tmdbApiKey.isNotBlank())
-                                stringResource(R.string.pref_api_key_configured)
-                            else stringResource(R.string.pref_api_key_not_configured),
-                        onClick = { showTmdbDialog = true },
-                    )
-
-                    SettingsDivider()
-
-                    SettingsItem(
-                        icon = painterResource(id = R.drawable.ic_mdblist),
-                        title = stringResource(R.string.pref_mdblist_api_key_title),
-                        subtitle =
-                            if (mdbListApiKey.isNotBlank())
-                                stringResource(R.string.pref_api_key_configured)
-                            else stringResource(R.string.pref_api_key_not_configured),
-                        onClick = { showMdbListDialog = true },
-                    )
-
-                    SettingsDivider()
-
-                    SettingsItem(
-                        icon = painterResource(id = R.drawable.ic_omdb_logo),
-                        title = stringResource(R.string.pref_omdb_api_key_title),
-                        subtitle =
-                            if (omdbApiKey.isNotBlank())
-                                stringResource(R.string.pref_api_key_configured)
-                            else stringResource(R.string.pref_api_key_not_configured),
-                        onClick = { showOmdbDialog = true },
-                    )
-                }
-            }
         }
-    }
-
-    if (showTmdbDialog) {
-        ApiKeyDialog(
-            title = stringResource(R.string.pref_tmdb_config_title),
-            initialKey = tmdbApiKey,
-            isValidationLoading = uiState.isTmdbKeyValidating,
-            validationError = uiState.tmdbKeyValidationError,
-            onDismiss = {
-                showTmdbDialog = false
-                viewModel.clearApiValidationErrors()
-            },
-            onSave = { newKey ->
-                viewModel.validateAndSaveTmdbKey(newKey) {
-                    showTmdbDialog = false
-                }
-            },
-        )
-    }
-
-    if (showMdbListDialog) {
-        ApiKeyDialog(
-            title = stringResource(R.string.pref_mdblist_config_title),
-            initialKey = mdbListApiKey,
-            isValidationLoading = uiState.isMdbListKeyValidating,
-            validationError = uiState.mdbListKeyValidationError,
-            onDismiss = {
-                showMdbListDialog = false
-                viewModel.clearApiValidationErrors()
-            },
-            onSave = { newKey ->
-                viewModel.validateAndSaveMdbListKey(newKey) {
-                    showMdbListDialog = false
-                }
-            },
-        )
-    }
-
-    if (showOmdbDialog) {
-        ApiKeyDialog(
-            title = stringResource(R.string.pref_omdb_config_title),
-            initialKey = omdbApiKey,
-            isValidationLoading = uiState.isOmdbKeyValidating,
-            validationError = uiState.omdbKeyValidationError,
-            onDismiss = {
-                showOmdbDialog = false
-                viewModel.clearApiValidationErrors()
-            },
-            onSave = { newKey ->
-                viewModel.validateAndSaveOmdbKey(newKey) {
-                    showOmdbDialog = false
-                }
-            },
-        )
     }
 }
 
@@ -417,115 +306,6 @@ private fun getEpisodeLayoutDisplayName(layout: EpisodeLayout): String {
         EpisodeLayout.HORIZONTAL -> stringResource(R.string.layout_horizontal)
         EpisodeLayout.VERTICAL -> stringResource(R.string.layout_vertical)
     }
-}
-
-@Composable
-private fun ApiKeyDialog(
-    title: String,
-    initialKey: String,
-    onDismiss: () -> Unit,
-    isValidationLoading: Boolean = false,
-    validationError: String? = null,
-    onSave: (String) -> Unit,
-) {
-    var input by remember { mutableStateOf(initialKey) }
-    var localError by remember(validationError) { mutableStateOf(validationError) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        title = {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = stringResource(R.string.api_key_dialog_message),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 16.dp),
-                )
-                OutlinedTextField(
-                    value = input,
-                    onValueChange = {
-                        input = it
-                        localError = null
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    shape = RoundedCornerShape(12.dp),
-                    isError = localError != null,
-                    trailingIcon = {
-                        if (localError != null) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_exclamation_circle),
-                                contentDescription = stringResource(R.string.cd_invalid_key),
-                                tint = MaterialTheme.colorScheme.error,
-                            )
-                        } else if (isValidationLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    },
-                    supportingText = {
-                        if (localError != null) {
-                            Text(
-                                text = localError!!,
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                        }
-                    },
-                    colors =
-                        OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                        ),
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onSave(input.trim()) },
-                enabled = !isValidationLoading,
-            ) {
-                Text(stringResource(R.string.action_save), fontWeight = FontWeight.Bold)
-            }
-        },
-        dismissButton = {
-            Row {
-                if (initialKey.isNotBlank()) {
-                    TextButton(
-                        onClick = { onSave("") },
-                        enabled = !isValidationLoading,
-                        colors =
-                            androidx.compose.material3.ButtonDefaults.textButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error
-                            ),
-                    ) {
-                        Text(stringResource(R.string.action_clear_key))
-                    }
-                }
-                TextButton(
-                    onClick = onDismiss,
-                    enabled = !isValidationLoading,
-                ) {
-                    Text(
-                        stringResource(R.string.action_cancel),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        },
-    )
 }
 
 @Composable

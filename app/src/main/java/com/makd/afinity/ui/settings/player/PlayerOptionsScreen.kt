@@ -39,7 +39,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -86,6 +85,7 @@ import com.makd.afinity.data.models.player.SubtitleVerticalPosition
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.di.PreferencesEntryPoint
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
@@ -1201,26 +1201,19 @@ private fun SimpleColorPickerDialog(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        OutlinedTextField(
+                        AfinityTextField(
                             value = hexInput,
                             onValueChange = { newValue ->
                                 hexInput = newValue.uppercase()
                                 val parsedColor = parseHexColor(newValue)
                                 isValidHex = parsedColor != null
                             },
-                            label = { Text(stringResource(R.string.color_picker_hex_label)) },
-                            placeholder = { Text(stringResource(R.string.color_picker_hex_hint)) },
+                            label = stringResource(R.string.color_picker_hex_label),
+                            placeholder = stringResource(R.string.color_picker_hex_hint),
                             isError = !isValidHex,
                             supportingText =
-                                if (!isValidHex) {
-                                    {
-                                        Text(
-                                            stringResource(R.string.color_picker_invalid),
-                                            color = MaterialTheme.colorScheme.error,
-                                        )
-                                    }
-                                } else null,
-                            singleLine = true,
+                                if (!isValidHex) stringResource(R.string.color_picker_invalid)
+                                else null,
                             modifier = Modifier.weight(1f),
                         )
 

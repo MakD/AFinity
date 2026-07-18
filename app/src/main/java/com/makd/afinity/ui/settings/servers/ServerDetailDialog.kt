@@ -54,18 +54,12 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
-import com.makd.afinity.ui.settings.servers.components.ManageAddressesView
-import com.makd.afinity.ui.settings.servers.tabs.AudiobookshelfManageAddresses
 import com.makd.afinity.ui.settings.servers.tabs.AudiobookshelfTabContent
-import com.makd.afinity.ui.settings.servers.tabs.JellyfinManageAddresses
 import com.makd.afinity.ui.settings.servers.tabs.JellyfinTabContent
-import com.makd.afinity.ui.settings.servers.tabs.JellyseerrManageAddresses
 import com.makd.afinity.ui.settings.servers.tabs.JellyseerrTabContent
-import java.util.UUID
 
 internal enum class DialogView {
     STATS,
-    MANAGE_ADDRESSES,
     CONTROL_PANEL,
 }
 
@@ -96,15 +90,8 @@ internal fun ServerDetailContent(
     stats: ServerDetailStats?,
     statsLoading: Boolean,
     onDismiss: () -> Unit,
-    onDeleteAddress: (UUID) -> Unit,
-    onSetPrimary: (String) -> Unit,
-    onDeleteJellyseerrAddress: (UUID) -> Unit,
-    onDeleteAudiobookshelfAddress: (UUID) -> Unit,
-    onAddJellyseerrAddress: (String) -> Unit,
-    onAddAudiobookshelfAddress: (String) -> Unit,
     modifier: Modifier = Modifier,
-    controlPanelViewModel: ControlPanelViewModel =
-        hiltViewModel(key = serverWithCount.server.id),
+    controlPanelViewModel: ControlPanelViewModel = hiltViewModel(key = serverWithCount.server.id),
 ) {
     val status = serverWithCount.currentUserServiceStatus
     val tabs = buildList {
@@ -234,7 +221,6 @@ internal fun ServerDetailContent(
                                         jellyfinStats = stats?.jellyfinStats,
                                         statsLoading = statsLoading,
                                         isAdmin = isAdmin,
-                                        onManageClick = { dialogView = DialogView.MANAGE_ADDRESSES },
                                         onControlPanelClick = {
                                             dialogView = DialogView.CONTROL_PANEL
                                         },
@@ -244,56 +230,15 @@ internal fun ServerDetailContent(
                                         serverWithCount = serverWithCount,
                                         jellyseerrStats = stats?.jellyseerrStats,
                                         statsLoading = statsLoading,
-                                        onManageClick = { dialogView = DialogView.MANAGE_ADDRESSES },
                                     )
                                 DetailTab.AUDIOBOOKSHELF ->
                                     AudiobookshelfTabContent(
                                         serverWithCount = serverWithCount,
                                         absStats = stats?.audiobookshelfStats,
                                         statsLoading = statsLoading,
-                                        onManageClick = { dialogView = DialogView.MANAGE_ADDRESSES },
                                     )
                             }
                         }
-                    }
-                }
-            }
-            DialogView.MANAGE_ADDRESSES -> {
-                val currentTab = tabs.getOrNull(selectedTabIndex) ?: DetailTab.JELLYFIN
-                ManageAddressesView(
-                    title = stringResource(R.string.server_manage_connections),
-                    onBack = { dialogView = DialogView.STATS },
-                ) {
-                    when (currentTab) {
-                        DetailTab.JELLYFIN -> {
-                            val primaryAddress = serverWithCount.server.address
-                            val allAddresses = buildList {
-                                add(primaryAddress)
-                                serverWithCount.addresses
-                                    .map { it.address }
-                                    .filter { it != primaryAddress }
-                                    .forEach { add(it) }
-                            }
-                            JellyfinManageAddresses(
-                                allAddresses,
-                                primaryAddress,
-                                serverWithCount,
-                                onDeleteAddress,
-                                onSetPrimary,
-                            )
-                        }
-                        DetailTab.JELLYSEERR ->
-                            JellyseerrManageAddresses(
-                                serverWithCount,
-                                onDeleteJellyseerrAddress,
-                                onAddJellyseerrAddress,
-                            )
-                        DetailTab.AUDIOBOOKSHELF ->
-                            AudiobookshelfManageAddresses(
-                                serverWithCount,
-                                onDeleteAudiobookshelfAddress,
-                                onAddAudiobookshelfAddress,
-                            )
                     }
                 }
             }
@@ -313,12 +258,6 @@ internal fun ServerDetailDialog(
     stats: ServerDetailStats?,
     statsLoading: Boolean,
     onDismiss: () -> Unit,
-    onDeleteAddress: (UUID) -> Unit,
-    onSetPrimary: (String) -> Unit,
-    onDeleteJellyseerrAddress: (UUID) -> Unit,
-    onDeleteAudiobookshelfAddress: (UUID) -> Unit,
-    onAddJellyseerrAddress: (String) -> Unit,
-    onAddAudiobookshelfAddress: (String) -> Unit,
     controlPanelViewModel: ControlPanelViewModel = hiltViewModel(key = serverWithCount.server.id),
 ) {
     Dialog(
@@ -336,12 +275,6 @@ internal fun ServerDetailDialog(
                 stats = stats,
                 statsLoading = statsLoading,
                 onDismiss = onDismiss,
-                onDeleteAddress = onDeleteAddress,
-                onSetPrimary = onSetPrimary,
-                onDeleteJellyseerrAddress = onDeleteJellyseerrAddress,
-                onDeleteAudiobookshelfAddress = onDeleteAudiobookshelfAddress,
-                onAddJellyseerrAddress = onAddJellyseerrAddress,
-                onAddAudiobookshelfAddress = onAddAudiobookshelfAddress,
                 modifier = Modifier.fillMaxSize(),
                 controlPanelViewModel = controlPanelViewModel,
             )
