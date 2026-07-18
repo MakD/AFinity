@@ -35,6 +35,7 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.AfinityVideo
+import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityTrack
@@ -657,9 +658,9 @@ constructor(
             mediaRepository
                 .getItems(
                     includeItemTypes = listOf("Movie", "Series"),
-                    isPlayed = false,
                     sortBy = SortBy.RANDOM,
                     limit = 1,
+                    criteria = ItemFilterCriteria(isPlayed = false),
                 )
                 .items
                 .firstOrNull()

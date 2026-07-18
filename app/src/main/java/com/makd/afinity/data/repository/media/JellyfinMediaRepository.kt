@@ -28,6 +28,7 @@ import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
+import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.models.media.LibraryFilterOptions
 import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.data.models.media.toAfinityCollection
@@ -535,29 +536,11 @@ constructor(
         startIndex: Int,
         searchTerm: String?,
         includeItemTypes: List<String>,
-        genres: List<String>,
-        years: List<Int>,
-        isFavorite: Boolean?,
-        isPlayed: Boolean?,
-        isLiked: Boolean?,
-        isResumable: Boolean?,
         nameStartsWith: String?,
         fields: List<ItemFields>?,
         imageTypes: List<String>,
-        hasOverview: Boolean?,
-        studios: List<String>,
-        officialRatings: List<String>,
-        tags: List<String>,
-        videoTypes: List<String>,
-        seriesStatuses: List<String>,
-        hasSubtitles: Boolean?,
-        hasTrailer: Boolean?,
-        hasSpecialFeature: Boolean?,
-        hasThemeSong: Boolean?,
-        hasThemeVideo: Boolean?,
-        isHd: Boolean?,
-        is4k: Boolean?,
-        is3d: Boolean?,
+        recursive: Boolean?,
+        criteria: ItemFilterCriteria,
     ): BaseItemDtoQueryResult =
         getItemsResult(
                 parentId = parentId,
@@ -568,29 +551,11 @@ constructor(
                 startIndex = startIndex,
                 searchTerm = searchTerm,
                 includeItemTypes = includeItemTypes,
-                genres = genres,
-                years = years,
-                isFavorite = isFavorite,
-                isPlayed = isPlayed,
-                isLiked = isLiked,
-                isResumable = isResumable,
                 nameStartsWith = nameStartsWith,
                 fields = fields,
                 imageTypes = imageTypes,
-                hasOverview = hasOverview,
-                studios = studios,
-                officialRatings = officialRatings,
-                tags = tags,
-                videoTypes = videoTypes,
-                seriesStatuses = seriesStatuses,
-                hasSubtitles = hasSubtitles,
-                hasTrailer = hasTrailer,
-                hasSpecialFeature = hasSpecialFeature,
-                hasThemeSong = hasThemeSong,
-                hasThemeVideo = hasThemeVideo,
-                isHd = isHd,
-                is4k = is4k,
-                is3d = is3d,
+                recursive = recursive,
+                criteria = criteria,
             )
             .getOrElse { e ->
                 if (e !is NoActiveSessionException) Timber.e(e, "Failed to get items")
@@ -606,34 +571,16 @@ constructor(
         startIndex: Int,
         searchTerm: String?,
         includeItemTypes: List<String>,
-        genres: List<String>,
-        years: List<Int>,
-        isFavorite: Boolean?,
-        isPlayed: Boolean?,
-        isLiked: Boolean?,
-        isResumable: Boolean?,
         nameStartsWith: String?,
         fields: List<ItemFields>?,
         imageTypes: List<String>,
-        hasOverview: Boolean?,
-        studios: List<String>,
-        officialRatings: List<String>,
-        tags: List<String>,
-        videoTypes: List<String>,
-        seriesStatuses: List<String>,
-        hasSubtitles: Boolean?,
-        hasTrailer: Boolean?,
-        hasSpecialFeature: Boolean?,
-        hasThemeSong: Boolean?,
-        hasThemeVideo: Boolean?,
-        isHd: Boolean?,
-        is4k: Boolean?,
-        is3d: Boolean?,
+        recursive: Boolean?,
+        criteria: ItemFilterCriteria,
     ): Result<BaseItemDtoQueryResult> =
         apiInvoker.apiResult { apiClient, userId ->
             val filters = buildList {
-                if (isLiked == true) add(ItemFilter.LIKES)
-                if (isResumable == true) add(ItemFilter.IS_RESUMABLE)
+                if (criteria.isLiked == true) add(ItemFilter.LIKES)
+                if (criteria.isResumable == true) add(ItemFilter.IS_RESUMABLE)
             }
 
             ItemsApi(apiClient)
@@ -659,44 +606,45 @@ constructor(
                                 }
                                 .ifEmpty { null },
                         recursive =
-                            if (parentId == null) true
-                            else if (
-                                includeItemTypes.size == 1 &&
-                                    (includeItemTypes.contains("SERIES") ||
-                                        includeItemTypes.contains("BOX_SET"))
-                            )
-                                true
-                            else if (searchTerm != null) true else null,
+                            recursive
+                                ?: if (parentId == null) true
+                                else if (
+                                    includeItemTypes.size == 1 &&
+                                        (includeItemTypes.contains("SERIES") ||
+                                            includeItemTypes.contains("BOX_SET"))
+                                )
+                                    true
+                                else if (searchTerm != null) true else null,
                         collapseBoxSetItems =
                             if (includeItemTypes.size == 1 && includeItemTypes.contains("SERIES"))
                                 false
                             else null,
-                        genres = genres,
-                        years = years,
-                        isFavorite = isFavorite,
-                        isPlayed = isPlayed,
+                        genres = criteria.genres,
+                        years = criteria.years,
+                        isFavorite = criteria.isFavorite,
+                        isPlayed = criteria.isPlayed,
                         isMissing = false,
                         filters = filters.ifEmpty { null },
                         nameStartsWith = nameStartsWith,
-                        studios = studios.ifEmpty { null },
-                        officialRatings = officialRatings.ifEmpty { null },
-                        tags = tags.ifEmpty { null },
+                        studios = criteria.studios.ifEmpty { null },
+                        officialRatings = criteria.officialRatings.ifEmpty { null },
+                        tags = criteria.tags.ifEmpty { null },
                         videoTypes =
-                            videoTypes
+                            criteria.videoTypes
                                 .mapNotNull { VideoType.fromNameOrNull(it) }
                                 .ifEmpty { null },
                         seriesStatus =
-                            seriesStatuses
+                            criteria.seriesStatuses
                                 .mapNotNull { SeriesStatus.fromNameOrNull(it) }
                                 .ifEmpty { null },
-                        hasSubtitles = hasSubtitles,
-                        hasTrailer = hasTrailer,
-                        hasSpecialFeature = hasSpecialFeature,
-                        hasThemeSong = hasThemeSong,
-                        hasThemeVideo = hasThemeVideo,
-                        isHd = isHd,
-                        is4k = is4k,
-                        is3d = is3d,
+                        hasSubtitles = criteria.hasSubtitles,
+                        hasTrailer = criteria.hasTrailer,
+                        hasSpecialFeature = criteria.hasSpecialFeature,
+                        hasThemeSong = criteria.hasThemeSong,
+                        hasThemeVideo = criteria.hasThemeVideo,
+                        isHd = criteria.isHd,
+                        is4k = criteria.is4k,
+                        is3d = criteria.is3d,
                         fields = fields ?: FieldSets.LIBRARY_GRID,
                         imageTypes =
                             if (imageTypes.isNotEmpty()) {
@@ -710,7 +658,7 @@ constructor(
                             } else {
                                 null
                             },
-                        hasOverview = hasOverview,
+                        hasOverview = criteria.hasOverview,
                         enableImages = true,
                         enableUserData = true,
                     )

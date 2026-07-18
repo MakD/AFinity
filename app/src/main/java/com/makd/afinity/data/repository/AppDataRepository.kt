@@ -20,6 +20,7 @@ import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
+import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
@@ -583,10 +584,9 @@ constructor(
                     sortBy = SortBy.RANDOM,
                     sortDescending = false,
                     limit = 15,
-                    isPlayed = false,
                     fields = FieldSets.HERO_CAROUSEL,
                     imageTypes = listOf("Logo", "Backdrop"),
-                    hasOverview = true,
+                    criteria = ItemFilterCriteria(isPlayed = false, hasOverview = true),
                 )
 
             randomHeroItems.items?.mapNotNull { it.toAfinityItem(baseUrl) } ?: emptyList()

@@ -1,12 +1,13 @@
 package com.makd.afinity.data.repository.watchlist
 
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
-import com.makd.afinity.data.models.extensions.toAfinityBoxSet
+import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.media.toAfinitySeason
 import com.makd.afinity.data.repository.FieldSets
@@ -72,11 +73,11 @@ constructor(
             try {
                 val response =
                     mediaRepository.getItems(
-                        isLiked = true,
                         includeItemTypes = listOf("BOX_SET"),
                         sortBy = SortBy.DATE_ADDED,
                         sortDescending = true,
                         fields = FieldSets.MEDIA_ITEM_CARDS,
+                        criteria = ItemFilterCriteria(isLiked = true),
                     )
                 response.items
                     ?.filter { it.type?.name == "BOX_SET" }
@@ -125,11 +126,11 @@ constructor(
             try {
                 val response =
                     mediaRepository.getItems(
-                        isLiked = true,
                         includeItemTypes = listOf("SEASON"),
                         sortBy = SortBy.DATE_ADDED,
                         sortDescending = true,
                         fields = FieldSets.MEDIA_ITEM_CARDS,
+                        criteria = ItemFilterCriteria(isLiked = true),
                     )
                 response.items
                     ?.filter { it.type?.name == "SEASON" }
@@ -146,15 +147,16 @@ constructor(
             try {
                 val response =
                     mediaRepository.getItems(
-                        isLiked = true,
                         includeItemTypes = listOf("EPISODE"),
                         sortBy = SortBy.DATE_ADDED,
                         sortDescending = true,
                         fields = FieldSets.MEDIA_ITEM_CARDS,
+                        criteria = ItemFilterCriteria(isLiked = true),
                     )
                 response.items
                     ?.filter { it.type?.name == "EPISODE" }
-                    ?.mapNotNull { it.toAfinityEpisode(mediaRepository.getBaseUrl()) } ?: emptyList()
+                    ?.mapNotNull { it.toAfinityEpisode(mediaRepository.getBaseUrl()) }
+                    ?: emptyList()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load liked episodes")
                 emptyList()
@@ -165,7 +167,11 @@ constructor(
     override suspend fun getWatchlistCount(): Int {
         return withContext(Dispatchers.IO) {
             try {
-                val response = mediaRepository.getItems(isLiked = true, limit = 0)
+                val response =
+                    mediaRepository.getItems(
+                        limit = 0,
+                        criteria = ItemFilterCriteria(isLiked = true),
+                    )
                 response.totalRecordCount ?: 0
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get watchlist count")
@@ -177,7 +183,11 @@ constructor(
     override suspend fun clearWatchlist() {
         return withContext(Dispatchers.IO) {
             try {
-                val allLikedResponse = mediaRepository.getItems(isLiked = true, limit = 1000)
+                val allLikedResponse =
+                    mediaRepository.getItems(
+                        limit = 1000,
+                        criteria = ItemFilterCriteria(isLiked = true),
+                    )
                 val likedItemIds = allLikedResponse.items?.mapNotNull { it.id } ?: emptyList()
 
                 likedItemIds.forEach { itemId ->

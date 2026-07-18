@@ -15,6 +15,7 @@ import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.resolveChangedItems
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -146,10 +147,10 @@ class GenrePagingSource(
         return try {
             val response =
                 mediaRepository.getItems(
-                    genres = listOf(genre),
                     includeItemTypes = listOf(itemType),
                     startIndex = position,
                     limit = params.loadSize,
+                    criteria = ItemFilterCriteria(genres = listOf(genre)),
                 )
 
             val items =
