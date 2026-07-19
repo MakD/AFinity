@@ -377,7 +377,7 @@
     <string name="download_status_failed_fmt">Fallido: %1$s</string>
     <string name="empty_downloads_title">Sin descargas</string>
     <string name="empty_downloads_message">El contenido descargado aparecerá aquí</string>
-    <string name="storage_free_on_device_fmt">%1$s gratis en el dispositivo</string>
+    <string name="storage_free_on_device_fmt">%1$s disponibles en el dispositivo</string>
     <string name="storage_this_server">Este servidor</string>
     <string name="storage_all_servers_fmt">%1$s total en todos los servidores</string>
     <string name="download_preferences_title">Descargar ajustes</string>
