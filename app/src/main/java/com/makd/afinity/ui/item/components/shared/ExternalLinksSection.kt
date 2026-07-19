@@ -90,5 +90,5 @@ private fun getExternalLinks(item: AfinityItem, defaultName: String): List<Exter
         )
     }
 
-    return links
+    return links.distinctBy { it.url }
 }
