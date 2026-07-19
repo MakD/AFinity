@@ -112,6 +112,7 @@ configure<ApplicationExtension> {
             excludes += "/META-INF/versions/**"
             excludes += "/META-INF/INDEX.LIST"
         }
+        jniLibs { pickFirsts += "**/libc++_shared.so" }
     }
 
     buildFeatures {
@@ -182,6 +183,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.ass.media)
     implementation(libs.blurhash)
     implementation(libs.coil.compose)
     implementation(libs.coil.gif)

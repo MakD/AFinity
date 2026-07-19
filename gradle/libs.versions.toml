@@ -3,6 +3,7 @@ aboutlibrariesCore = "15.0.3"
 activityCompose = "1.13.0"
 agp = "9.2.1"
 android-desugar-jdk-libs = "2.1.5"
+assMedia = "0.5.0-beta01"
 blurhash = "0.3.0"
 coilCompose = "3.5.0"
 commonmark = "0.29.0"
@@ -50,6 +51,7 @@ adaptive = "1.3.0-rc01"
 aboutlibraries-compose-m3 = { group = "com.mikepenz", name = "aboutlibraries-compose-m3", version.ref = "aboutlibrariesCore" }
 aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "aboutlibrariesCore" }
 android-desugar-jdk = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "android-desugar-jdk-libs" }
+ass-media = { group = "io.github.peerless2012", name = "ass-media", version.ref = "assMedia" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }

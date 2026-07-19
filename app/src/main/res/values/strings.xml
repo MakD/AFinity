@@ -654,6 +654,9 @@
     <string name="pref_group_engine">Engine &amp; Behavior</string>
     <string name="pref_use_exoplayer_title">Use ExoPlayer</string>
     <string name="pref_use_exoplayer_summary">Uses LibMPV when disabled</string>
+    <string name="pref_group_exoplayer">ExoPlayer Options</string>
+    <string name="pref_ass_render_mode_title">ASS subtitle rendering</string>
+    <string name="pref_ass_render_mode_hint">Native rendering of ASS/SSA subtitle styling via libass. Smooth mode draws animations on a GPU overlay.</string>
     <string name="pref_group_mpv">MPV Options</string>
     <string name="pref_mpv_hwdec_title">Hardware Decoding</string>
     <string name="pref_mpv_hwdec_summary">Hardware acceleration for video decoding</string>

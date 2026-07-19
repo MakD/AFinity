@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.common.EpisodeLayout
+import com.makd.afinity.data.models.player.AssRenderMode
 import com.makd.afinity.data.models.player.MpvAudioOutput
 import com.makd.afinity.data.models.player.MpvGpuApi
 import com.makd.afinity.data.models.player.MpvHdrOutput
@@ -335,6 +336,12 @@ constructor(
         }
 
         viewModelScope.launch {
+            preferencesRepository.getAssRenderModeFlow().collect { mode ->
+                _uiState.value = _uiState.value.copy(assRenderMode = mode)
+            }
+        }
+
+        viewModelScope.launch {
             preferencesRepository.getMpvToneMappingFlow().collect { toneMapping ->
                 _uiState.value = _uiState.value.copy(mpvToneMapping = toneMapping)
             }
@@ -568,6 +575,17 @@ constructor(
                 Timber.d("MPV HDR output set to: ${hdrOutput.getDisplayName()}")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set MPV HDR output")
+            }
+        }
+    }
+
+    fun setAssRenderMode(mode: AssRenderMode) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setAssRenderMode(mode)
+                Timber.d("ASS render mode set to: ${mode.getDisplayName()}")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set ASS render mode")
             }
         }
     }
@@ -1056,6 +1074,7 @@ data class SettingsUiState(
     val mpvAudioOutput: MpvAudioOutput = MpvAudioOutput.default,
     val mpvGpuApi: MpvGpuApi = MpvGpuApi.default,
     val mpvHdrOutput: MpvHdrOutput = MpvHdrOutput.default,
+    val assRenderMode: AssRenderMode = AssRenderMode.default,
     val mpvToneMapping: MpvToneMapping = MpvToneMapping.default,
     val mpvHdrPeakDetection: Boolean = true,
     val preferredAudioLanguage: String = "",

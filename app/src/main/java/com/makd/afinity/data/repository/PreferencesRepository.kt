@@ -2,6 +2,7 @@ package com.makd.afinity.data.repository
 
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.player.AssRenderMode
 import com.makd.afinity.data.models.player.MpvAudioOutput
 import com.makd.afinity.data.models.player.MpvGpuApi
 import com.makd.afinity.data.models.player.MpvHdrOutput
@@ -72,6 +73,12 @@ interface PreferencesRepository {
     val useExoPlayer: Flow<Boolean>
 
     suspend fun setUseExoPlayer(value: Boolean)
+
+    suspend fun setAssRenderMode(mode: AssRenderMode)
+
+    suspend fun getAssRenderMode(): AssRenderMode
+
+    fun getAssRenderModeFlow(): Flow<AssRenderMode>
 
     suspend fun setMpvHwDec(hwDec: MpvHwDec)
 

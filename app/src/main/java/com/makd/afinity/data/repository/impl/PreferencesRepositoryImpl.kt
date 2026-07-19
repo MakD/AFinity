@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.player.AssRenderMode
 import com.makd.afinity.data.models.player.MpvAudioOutput
 import com.makd.afinity.data.models.player.MpvGpuApi
 import com.makd.afinity.data.models.player.MpvHdrOutput
@@ -105,6 +106,7 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
         val LOGO_AUTO_HIDE = booleanPreferencesKey("logo_auto_hide")
 
+        val ASS_RENDER_MODE = stringPreferencesKey("ass_render_mode")
         val MPV_HW_DEC = stringPreferencesKey("mpv_hw_dec")
         val MPV_GPU_API = stringPreferencesKey("mpv_gpu_api")
         val MPV_HDR_OUTPUT = stringPreferencesKey("mpv_hdr_output")
@@ -603,6 +605,22 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
     override fun getMpvGpuApiFlow(): Flow<MpvGpuApi> {
         return dataStore.data.map { preferences ->
             preferences[Keys.MPV_GPU_API]?.let { MpvGpuApi.fromValue(it) } ?: MpvGpuApi.default
+        }
+    }
+
+    override suspend fun setAssRenderMode(mode: AssRenderMode) {
+        dataStore.edit { preferences -> preferences[Keys.ASS_RENDER_MODE] = mode.value }
+    }
+
+    override suspend fun getAssRenderMode(): AssRenderMode {
+        return dataStore.data.first()[Keys.ASS_RENDER_MODE]?.let { AssRenderMode.fromValue(it) }
+            ?: AssRenderMode.default
+    }
+
+    override fun getAssRenderModeFlow(): Flow<AssRenderMode> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.ASS_RENDER_MODE]?.let { AssRenderMode.fromValue(it) }
+                ?: AssRenderMode.default
         }
     }
 

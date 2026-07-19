@@ -58,6 +58,7 @@ import com.makd.afinity.ui.player.components.VersionPickerSheet
 import com.makd.afinity.ui.player.utils.KeepScreenOn
 import com.makd.afinity.ui.player.utils.PlayerSystemBarsController
 import com.makd.afinity.ui.player.utils.ScreenBrightnessController
+import io.github.peerless2012.ass.media.kt.withAssSupport
 import kotlinx.coroutines.flow.map
 import org.jellyfin.sdk.model.api.GroupStateType
 import timber.log.Timber
@@ -302,12 +303,25 @@ fun PlayerScreen(
                                 factory = { ctx ->
                                     PlayerView(ctx).apply {
                                         useController = false
-                                        subtitleView?.visibility = android.view.View.GONE
+                                        if (viewModel.isAssActive) {
+                                            subtitleView?.apply {
+                                                setApplyEmbeddedStyles(false)
+                                                setApplyEmbeddedFontSizes(false)
+                                                viewModel.assOverlayHandler?.let {
+                                                    withAssSupport(it)
+                                                }
+                                            }
+                                        } else {
+                                            subtitleView?.visibility = android.view.View.GONE
+                                        }
                                         this.player = player
                                     }
                                 },
                                 update = { view ->
                                     view.resizeMode = uiState.videoZoomMode.toExoPlayerResizeMode()
+                                    if (viewModel.isAssActive) {
+                                        view.subtitleView?.applySubtitleStyle(subtitlePrefs)
+                                    }
                                 },
                                 modifier = Modifier.fillMaxSize(),
                             )
@@ -328,7 +342,7 @@ fun PlayerScreen(
                 }
             }
 
-            if (viewModel.player is ExoPlayer) {
+            if (viewModel.player is ExoPlayer && !viewModel.isAssActive) {
                 ExoPlayerSubtitles(
                     player = viewModel.player as ExoPlayer,
                     subtitlePrefs = subtitlePrefs,
@@ -471,27 +485,7 @@ private fun ExoPlayerSubtitles(
                 subtitleView = this
             }
         },
-        update = { view ->
-            val baseTypeface = Typeface.SANS_SERIF
-            val typeface =
-                if (subtitlePrefs.bold) {
-                    Typeface.create(baseTypeface, Typeface.BOLD)
-                } else {
-                    baseTypeface
-                }
-
-            val customStyle =
-                CaptionStyleCompat(
-                    subtitlePrefs.textColor,
-                    subtitlePrefs.backgroundColor,
-                    subtitlePrefs.windowColor,
-                    subtitlePrefs.outlineStyle.toExoPlayerEdgeType(),
-                    subtitlePrefs.outlineColor,
-                    typeface,
-                )
-            view.setStyle(customStyle)
-            view.setFractionalTextSize(subtitlePrefs.toExoPlayerFractionalSize())
-        },
+        update = { view -> view.applySubtitleStyle(subtitlePrefs) },
         modifier = modifier,
     )
 
@@ -510,4 +504,27 @@ private fun ExoPlayerSubtitles(
             subtitleView?.setCues(emptyList())
         }
     }
+}
+
+@OptIn(UnstableApi::class)
+private fun SubtitleView.applySubtitleStyle(subtitlePrefs: SubtitlePreferences) {
+    val baseTypeface = Typeface.SANS_SERIF
+    val typeface =
+        if (subtitlePrefs.bold) {
+            Typeface.create(baseTypeface, Typeface.BOLD)
+        } else {
+            baseTypeface
+        }
+
+    val customStyle =
+        CaptionStyleCompat(
+            subtitlePrefs.textColor,
+            subtitlePrefs.backgroundColor,
+            subtitlePrefs.windowColor,
+            subtitlePrefs.outlineStyle.toExoPlayerEdgeType(),
+            subtitlePrefs.outlineColor,
+            typeface,
+        )
+    setStyle(customStyle)
+    setFractionalTextSize(subtitlePrefs.toExoPlayerFractionalSize())
 }

@@ -50,6 +50,7 @@ constructor(
                 listOf(
                     SubtitleProfile("srt", SubtitleDeliveryMethod.EXTERNAL),
                     SubtitleProfile("ass", SubtitleDeliveryMethod.EXTERNAL),
+                    SubtitleProfile("ssa", SubtitleDeliveryMethod.EXTERNAL),
                     SubtitleProfile("vtt", SubtitleDeliveryMethod.EXTERNAL),
                     SubtitleProfile("sub", SubtitleDeliveryMethod.EXTERNAL),
                     SubtitleProfile("idx", SubtitleDeliveryMethod.EXTERNAL),

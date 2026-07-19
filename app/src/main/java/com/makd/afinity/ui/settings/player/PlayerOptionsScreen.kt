@@ -74,6 +74,7 @@ import androidx.core.graphics.toColorInt
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.data.models.player.AssRenderMode
 import com.makd.afinity.data.models.player.MpvAudioOutput
 import com.makd.afinity.data.models.player.MpvHwDec
 import com.makd.afinity.data.models.player.MpvVideoOutput
@@ -192,6 +193,27 @@ fun PlayerOptionsScreen(
                             selectedSizeMb = uiState.bufferSizeMb,
                             onSizeSelected = viewModel::setBufferSizeMb,
                         )
+                    }
+
+                    AnimatedVisibility(
+                        visible = uiState.useExoPlayer,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically(),
+                    ) {
+                        Column {
+                            Spacer(modifier = Modifier.height(24.dp))
+                            SettingsGroup(title = stringResource(R.string.pref_group_exoplayer)) {
+                                SubtitleDropdownItem(
+                                    title = stringResource(R.string.pref_ass_render_mode_title),
+                                    selectedOption = uiState.assRenderMode,
+                                    options = AssRenderMode.entries.toList(),
+                                    onValueChange = viewModel::setAssRenderMode,
+                                    labelProvider = { it.getDisplayName() },
+                                    icon = painterResource(id = R.drawable.ic_subtitles),
+                                    hint = stringResource(R.string.pref_ass_render_mode_hint),
+                                )
+                            }
+                        }
                     }
 
                     AnimatedVisibility(

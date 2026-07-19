@@ -33,12 +33,14 @@ import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.RenderersFactory
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
+import androidx.media3.extractor.DefaultExtractorsFactory
 import com.makd.afinity.BuildConfig
 import com.makd.afinity.R
 import com.makd.afinity.cast.CastEvent
@@ -60,6 +62,7 @@ import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinitySources
 import com.makd.afinity.data.models.media.AfinityTrickplayInfo
+import com.makd.afinity.data.models.player.AssRenderMode
 import com.makd.afinity.data.models.player.GestureConfig
 import com.makd.afinity.data.models.player.MpvHdrOutput
 import com.makd.afinity.data.models.player.PlaybackStats
@@ -80,6 +83,12 @@ import com.makd.afinity.player.mpv.MPVPlayer
 import com.makd.afinity.ui.player.utils.VolumeManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import io.github.peerless2012.ass.media.AssHandler
+import io.github.peerless2012.ass.media.AssHandlerConfig
+import io.github.peerless2012.ass.media.kt.withAssMkvSupport
+import io.github.peerless2012.ass.media.kt.withAssSupport
+import io.github.peerless2012.ass.media.parser.AssSubtitleParserFactory
+import io.github.peerless2012.ass.media.type.AssRenderType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
@@ -99,6 +108,8 @@ import timber.log.Timber
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
+
+private const val EXTERNAL_SUBTITLE_ID_BASE = 128
 
 @UnstableApi
 @HiltViewModel
@@ -126,6 +137,14 @@ constructor(
 
     lateinit var player: Player
         private set
+
+    private var assHandler: AssHandler? = null
+
+    val assOverlayHandler: AssHandler?
+        get() = assHandler?.takeIf { it.renderType == AssRenderType.OVERLAY_OPEN_GL }
+
+    val isAssActive: Boolean
+        get() = assHandler != null
 
     private var videoMediaSession: androidx.media3.session.MediaSession? = null
 
@@ -590,12 +609,39 @@ constructor(
 
         val dataSourceFactory = DefaultDataSource.Factory(context, cacheDataSourceFactory)
 
-        val mediaSourceFactory =
-            DefaultMediaSourceFactory(context).setDataSourceFactory(dataSourceFactory)
+        val assRenderMode = preferencesRepository.getAssRenderMode()
+        val handler =
+            when (assRenderMode) {
+                AssRenderMode.OFF -> null
+                AssRenderMode.CUES -> AssHandler(AssRenderType.CUES)
+                AssRenderMode.OVERLAY ->
+                    AssHandler(
+                        AssRenderType.OVERLAY_OPEN_GL,
+                        AssHandlerConfig(maxRenderPixels = 1920 * 1080),
+                    )
+            }
+        assHandler = handler
 
-        val renderersFactory =
+        val baseRenderersFactory =
             DefaultRenderersFactory(context)
                 .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
+
+        val mediaSourceFactory: DefaultMediaSourceFactory
+        val renderersFactory: RenderersFactory
+        if (handler != null) {
+            val assParserFactory = AssSubtitleParserFactory(handler)
+            mediaSourceFactory =
+                DefaultMediaSourceFactory(
+                        dataSourceFactory,
+                        DefaultExtractorsFactory().withAssMkvSupport(assParserFactory, handler),
+                    )
+                    .setSubtitleParserFactory(assParserFactory)
+            renderersFactory = baseRenderersFactory.withAssSupport(handler)
+        } else {
+            mediaSourceFactory =
+                DefaultMediaSourceFactory(context).setDataSourceFactory(dataSourceFactory)
+            renderersFactory = baseRenderersFactory
+        }
 
         return ExoPlayer.Builder(context, renderersFactory)
             .setMediaSourceFactory(mediaSourceFactory)
@@ -608,6 +654,7 @@ constructor(
             .setPauseAtEndOfMediaItems(true)
             .build()
             .apply {
+                handler?.init(this)
                 addAnalyticsListener(
                     object : AnalyticsListener {
                         override fun onVideoDecoderInitialized(
@@ -1706,7 +1753,7 @@ constructor(
                         val subtitlesDir = java.io.File(itemDir, "subtitles")
                         if (subtitlesDir.exists()) {
                             val files = subtitlesDir.listFiles()
-                            files?.mapNotNull { subtitleFile ->
+                            files?.mapIndexedNotNull { subtitleIndex, subtitleFile ->
                                 try {
                                     val mimeType =
                                         subtitleMimeType(subtitleFile.extension)
@@ -1721,6 +1768,7 @@ constructor(
                                     MediaItem.SubtitleConfiguration.Builder(
                                             "file://${subtitleFile.absolutePath}".toUri()
                                         )
+                                        .setId((EXTERNAL_SUBTITLE_ID_BASE + subtitleIndex).toString())
                                         .setLabel(language)
                                         .setMimeType(mimeType)
                                         .setLanguage(language)
@@ -1737,7 +1785,7 @@ constructor(
                             .filter { stream ->
                                 stream.type == MediaStreamType.SUBTITLE && stream.isExternal
                             }
-                            .mapNotNull { stream ->
+                            .mapIndexedNotNull { subtitleIndex, stream ->
                                 try {
                                     val extension = subtitleExtension(stream.codec)
                                     val mimeType =
@@ -1775,6 +1823,7 @@ constructor(
                                             )
 
                                     MediaItem.SubtitleConfiguration.Builder(subtitleUrl.toUri())
+                                        .setId((EXTERNAL_SUBTITLE_ID_BASE + subtitleIndex).toString())
                                         .setLabel(finalLabel)
                                         .setMimeType(mimeType)
                                         .setLanguage(stream.language ?: "eng")
@@ -2791,6 +2840,8 @@ constructor(
             player.removeListener(this)
             player.release()
         }
+        assHandler?.release()
+        assHandler = null
     }
 
     fun onPipModeChanged(isInPictureInPictureMode: Boolean) {
