@@ -20,7 +20,7 @@
     <string name="login_btn_cancel">Cancelar</string>
     <string name="login_local_network">Red local</string>
     <string name="login_no_servers_found">No se encontraron servidores cercanos</string>
-    <string name="login_refresh">Refrescar</string>
+    <string name="login_refresh">Actualizar</string>
     <string name="login_switch_server">Cambiar servidor</string>
     <string name="login_method_password">Contraseña</string>
     <string name="login_method_quick_connect">Conexión rápida</string>
@@ -741,4 +741,16 @@
     <string name="cd_abs_minimize">Minimizar</string>
     <string name="cd_abs_options">Opciones</string>
     <string name="cd_abs_previous_preset">Preajuste previo</string>
+    <string name="pref_authorize_quickconnect_summary">Autorizar una solicitud de inicio de sesión desde otro dispositivo</string>
+    <string name="pref_api_key_not_configured">No configurado</string>
+    <string name="player_fast_forward_speed_label">Velocidad 2×</string>
+    <string name="playback_stats_section_video_info">Información del vídeo</string>
+    <string name="playback_stats_title">Estadísticas de reproducción</string>
+    <string name="playback_stats_value_direct_play_local">Reproducción directa (archivo local)</string>
+    <string name="playback_stats_value_direct_streaming">Transmisión directa</string>
+    <string name="playback_stats_value_seconds_fmt">%1$d segundos</string>
+    <string name="playback_stats_value_hdr_output">Se reproduce en HDR</string>
+    <string name="playback_stats_value_hdr_tonemapped">Convertido a SDR mediante mapeo de tonos</string>
+    <string name="play_error_missing_source">No se encontró ningún elemento reproducible en el servidor</string>
+    <string name="abs_server_url_placeholder">https://abs.example.com</string>
 </resources>
