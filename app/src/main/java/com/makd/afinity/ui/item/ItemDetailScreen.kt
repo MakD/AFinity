@@ -5,6 +5,7 @@ package com.makd.afinity.ui.item
 import android.content.Context
 import android.content.res.Configuration
 import androidx.annotation.OptIn
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -26,9 +27,14 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import java.util.UUID
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -131,6 +137,7 @@ fun ItemDetailScreen(
     val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
     var showEpisodeRefreshDialog by remember { mutableStateOf(false) }
+    var showEpisodeDeleteDialog by remember { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
@@ -279,6 +286,7 @@ fun ItemDetailScreen(
                             )
                         AdminAction.Refresh -> showEpisodeRefreshDialog = true
                         AdminAction.Identify -> Unit
+                        AdminAction.Delete -> showEpisodeDeleteDialog = true
                     }
                 },
             )
@@ -287,6 +295,17 @@ fun ItemDetailScreen(
                 RefreshMetadataDialog(
                     itemId = episode.id.toString(),
                     onDismiss = { showEpisodeRefreshDialog = false },
+                )
+            }
+
+            if (showEpisodeDeleteDialog) {
+                DeleteConfirmationDialog(
+                    targetId = episode.id,
+                    targetName = episode.name,
+                    isMainItem = false,
+                    viewModel = viewModel,
+                    navController = navController,
+                    onDismiss = { showEpisodeDeleteDialog = false },
                 )
             }
         }
@@ -511,6 +530,7 @@ private fun LandscapeItemDetailContent(
     val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
     var showRefreshDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     val density = LocalDensity.current
     val statusBarHeight = WindowInsets.statusBars.getTop(density)
     val displayCutoutLeft = WindowInsets.displayCutout.getLeft(density, LayoutDirection.Ltr)
@@ -665,6 +685,7 @@ private fun LandscapeItemDetailContent(
                                                 )
                                             )
                                         AdminAction.Refresh -> showRefreshDialog = true
+                                        AdminAction.Delete -> showDeleteDialog = true
                                     }
                                 },
                                 modifier = Modifier.weight(2f),
@@ -674,6 +695,17 @@ private fun LandscapeItemDetailContent(
                                 RefreshMetadataDialog(
                                     itemId = item.id.toString(),
                                     onDismiss = { showRefreshDialog = false },
+                                )
+                            }
+
+                            if (showDeleteDialog) {
+                                DeleteConfirmationDialog(
+                                    targetId = item.id,
+                                    targetName = item.name,
+                                    isMainItem = true,
+                                    viewModel = viewModel,
+                                    navController = navController,
+                                    onDismiss = { showDeleteDialog = false },
                                 )
                             }
                         }
@@ -751,6 +783,7 @@ private fun PortraitItemDetailContent(
     val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
     var showRefreshDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     val playerOffset = LocalPlayerOffset.current
 
     LazyColumn(
@@ -839,6 +872,7 @@ private fun PortraitItemDetailContent(
                                     Destination.createEditImagesRoute(item.id.toString())
                                 )
                             AdminAction.Refresh -> showRefreshDialog = true
+                            AdminAction.Delete -> showDeleteDialog = true
                         }
                     },
                 )
@@ -847,6 +881,17 @@ private fun PortraitItemDetailContent(
                     RefreshMetadataDialog(
                         itemId = item.id.toString(),
                         onDismiss = { showRefreshDialog = false },
+                    )
+                }
+
+                if (showDeleteDialog) {
+                    DeleteConfirmationDialog(
+                        targetId = item.id,
+                        targetName = item.name,
+                        isMainItem = true,
+                        viewModel = viewModel,
+                        navController = navController,
+                        onDismiss = { showDeleteDialog = false },
                     )
                 }
 
@@ -1154,4 +1199,61 @@ private fun shufflePlay(item: AfinityItem, nextEpisode: AfinityEpisode?, context
             shuffle = true,
         )
     }
+}
+
+@Composable
+private fun DeleteConfirmationDialog(
+    targetId: UUID,
+    targetName: String,
+    isMainItem: Boolean,
+    viewModel: ItemDetailViewModel,
+    navController: NavController,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.admin_delete_dialog_title)) },
+        text = { Text(stringResource(R.string.admin_delete_dialog_message, targetName)) },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onDismiss()
+                    viewModel.deleteItem(
+                        targetItemId = targetId,
+                        onSuccess = {
+                            Toast.makeText(
+                                context,
+                                R.string.admin_delete_success,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                            if (isMainItem) {
+                                navController.popBackStack()
+                            } else {
+                                viewModel.clearSelectedEpisode()
+                            }
+                        },
+                        onError = { error ->
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.admin_delete_error, error),
+                                Toast.LENGTH_LONG,
+                            ).show()
+                        },
+                    )
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError,
+                ),
+            ) {
+                Text(stringResource(R.string.admin_action_delete))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        },
+    )
 }

@@ -1331,6 +1331,11 @@
     <string name="admin_action_identify">Identify</string>
     <string name="admin_action_edit_images">Edit Images</string>
     <string name="admin_action_refresh_metadata">Refresh Metadata</string>
+    <string name="admin_action_delete">Delete</string>
+    <string name="admin_delete_dialog_title">Delete Item</string>
+    <string name="admin_delete_dialog_message">Are you sure you want to delete "%1$s"? This action cannot be undone and will delete the media file(s) from your server.</string>
+    <string name="admin_delete_success">Item deleted successfully</string>
+    <string name="admin_delete_error">Failed to delete item: %1$s</string>
 
     <!--Admin - Refresh Metadata Dialog-->
     <string name="admin_refresh_title">Refresh Metadata</string>

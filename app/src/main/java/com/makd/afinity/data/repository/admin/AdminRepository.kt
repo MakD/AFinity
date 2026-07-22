@@ -67,4 +67,7 @@ interface AdminRepository {
         replaceAllMetadata: Boolean,
         replaceAllImages: Boolean,
     ): Result<Unit>
+
+    suspend fun deleteItem(itemId: String): Result<Unit>
 }
+

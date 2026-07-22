@@ -12,6 +12,7 @@ import androidx.paging.map
 import com.makd.afinity.R
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
+import com.makd.afinity.data.repository.admin.AdminRepository
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.MediaChangeSource
 import com.makd.afinity.data.manager.OfflineModeManager
@@ -98,6 +99,7 @@ constructor(
     private val authRepository: AuthRepository,
     private val playbackStateManager: PlaybackStateManager,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
+    private val adminRepository: AdminRepository,
     private val mediaChangeManager: MediaChangeManager,
     private val serverRepository: ServerRepository,
     private val securePreferencesRepository: SecurePreferencesRepository,
@@ -1573,6 +1575,23 @@ constructor(
         val episodes = season.episodes.sortedBy { it.indexNumber }
         return episodes.firstOrNull { it.playbackPositionTicks > 0 && !it.played }
             ?: episodes.firstOrNull { !it.played }
+    }
+
+    fun deleteItem(
+        targetItemId: UUID,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        viewModelScope.launch {
+            val result = adminRepository.deleteItem(targetItemId.toString())
+            if (result.isSuccess) {
+                adminChangeBroadcaster.notifyItemChanged(targetItemId.toString())
+                onSuccess()
+            } else {
+                val errorMsg = result.exceptionOrNull()?.localizedMessage ?: "Unknown error"
+                onError(errorMsg)
+            }
+        }
     }
 }
 

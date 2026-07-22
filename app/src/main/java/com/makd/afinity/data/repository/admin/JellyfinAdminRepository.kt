@@ -15,6 +15,7 @@ import org.jellyfin.sdk.api.operations.ImageApi
 import org.jellyfin.sdk.api.operations.ItemLookupApi
 import org.jellyfin.sdk.api.operations.ItemRefreshApi
 import org.jellyfin.sdk.api.operations.ItemUpdateApi
+import org.jellyfin.sdk.api.operations.LibraryApi
 import org.jellyfin.sdk.api.operations.RemoteImageApi
 import org.jellyfin.sdk.api.operations.UserLibraryApi
 import org.jellyfin.sdk.model.FileInfo
@@ -472,6 +473,26 @@ constructor(
                 Result.failure(e)
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error refreshing item $itemId")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun deleteItem(itemId: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                val apiClient =
+                    getApiClient()
+                        ?: return@withContext Result.failure(
+                            IllegalStateException("No API client")
+                        )
+                LibraryApi(apiClient).deleteItem(itemId = UUID.fromString(itemId))
+                adminChangeBroadcaster.notifyItemChanged(itemId)
+                Result.success(Unit)
+            } catch (e: ApiClientException) {
+                Timber.e(e, "Failed to delete item $itemId")
+                Result.failure(e)
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error deleting item $itemId")
                 Result.failure(e)
             }
         }
