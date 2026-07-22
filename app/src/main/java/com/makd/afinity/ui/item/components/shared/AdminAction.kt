@@ -5,4 +5,5 @@ sealed interface AdminAction {
     data object Identify : AdminAction
     data object EditImages : AdminAction
     data object Refresh : AdminAction
+    data object Delete : AdminAction
 }
