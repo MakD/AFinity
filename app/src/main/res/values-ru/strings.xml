@@ -1337,7 +1337,7 @@
     <string name="services_hub_finish_done">Готово</string>
     <string name="services_hub_welcome_named">Вы подключились к %1$s.</string>
     <string name="services_hub_welcome">Вы подключены.</string>
-    <string name="services_hub_welcome_subtitle">Добавить что-нибудь еще? Здесь все необязательно.</string>
+    <string name="services_hub_welcome_subtitle">Добавить что-нибудь еще? Все перечисленное здесь — необязательно.</string>
     <string name="services_hub_tile_remote">Удаленный доступ</string>
     <string name="services_hub_tile_ratings">Оценки</string>
     <string name="services_hub_status_connected">Подключено</string>
