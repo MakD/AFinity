@@ -460,4 +460,21 @@
     <string name="sort_option_popularity">Popolarità</string>
     <string name="sort_option_rating">Valutazione</string>
     <string name="discover_filter_title">Filtri</string>
+    <string name="cd_random_item">Riproduci qualcosa a caso</string>
+    <string name="random_item_none">Niente di nuovo da guardare</string>
+    <string name="cd_scroll_to_top">Torna all\'inizio</string>
+    <string name="drawer_app_version">AFinity v%1$s</string>
+    <string name="chapter_number_fmt">Capitolo %1$d</string>
+    <string name="filter_empty_filtered">Nessun elemento corrisponde ai tuoi filtri</string>
+    <string name="library_filter_status">Filtri</string>
+    <string name="library_filter_series_status">Stato</string>
+    <string name="series_status_continuing">Proseguendo</string>
+    <string name="series_status_ended">Terminato</string>
+    <string name="series_status_unreleased">Non ancora pubblicato</string>
+    <string name="library_filter_features">Caratteristiche</string>
+    <string name="library_filter_genres">Generi</string>
+    <string name="library_filter_ratings">Classificazioni per i genitori</string>
+    <string name="library_filter_tags">Tags</string>
+    <string name="library_filter_video_type">Tipo di video</string>
+    <string name="library_filter_years">Anni</string>
 </resources>
