@@ -75,6 +75,7 @@ private fun getExternalLinks(item: AfinityItem, defaultName: String): List<Exter
 
         val iconRes =
             when {
+                "anidb" in lowerUrl -> R.drawable.ic_anidb
                 "imdb" in lowerUrl -> R.drawable.ic_imdb_logo
                 "themoviedb.org/collection" in lowerUrl -> R.drawable.ic_tmdb_collection
                 "themoviedb.org/movie" in lowerUrl -> R.drawable.ic_tmdb
