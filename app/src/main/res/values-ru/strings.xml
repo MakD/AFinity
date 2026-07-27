@@ -1374,4 +1374,9 @@
     <string name="unverified_address_title">Не удалось проверить сервер</string>
     <string name="unverified_address_message">По адресу %1$s есть доступный сервер, но не удалось подтвердить, что это тот же сервер, на который вы вошли. Все равно добавить его?</string>
     <string name="unverified_address_confirm">Все равно добавить</string>
+    <string name="admin_action_delete">Удалить</string>
+    <string name="admin_delete_dialog_title">Удалить элемент</string>
+    <string name="admin_delete_dialog_message">Вы уверены, что хотите удалить «%1$s»? Это действие нельзя отменить и удалит медиафайл(ы) с вашего сервера.</string>
+    <string name="admin_delete_success">Элемент успешно удален</string>
+    <string name="admin_delete_error">Не удалось удалить элемент: %1$s</string>
 </resources>
