@@ -181,6 +181,26 @@ fun ActionButtonsRow(
                             onAdminAction(AdminAction.Refresh)
                         },
                     )
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = stringResource(R.string.admin_action_delete),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_delete),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onAdminAction(AdminAction.Delete)
+                        },
+                    )
                 }
             }
         }
