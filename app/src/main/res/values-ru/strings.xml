@@ -1376,7 +1376,15 @@
     <string name="unverified_address_confirm">Все равно добавить</string>
     <string name="admin_action_delete">Удалить</string>
     <string name="admin_delete_dialog_title">Удалить элемент</string>
-    <string name="admin_delete_dialog_message">Вы уверены, что хотите удалить «%1$s»? Это действие нельзя отменить и удалит медиафайл(ы) с вашего сервера.</string>
+    <string name="admin_delete_dialog_message">Вы уверены, что хотите удалить «%1$s»? Это действие нельзя отменить и оно удалит медиафайл(ы) с вашего сервера.</string>
     <string name="admin_delete_success">Элемент успешно удален</string>
     <string name="admin_delete_error">Не удалось удалить элемент: %1$s</string>
+    <string name="player_tracks_label">Аудио и субтитры</string>
+    <string name="player_more_label">Еще</string>
+    <string name="player_next_episode_label">Следующий эпизод</string>
+    <string name="player_resume">Возобновить</string>
+    <string name="player_restart">Перезапустить</string>
+    <string name="player_cast_heading">Трансляция</string>
+    <string name="player_ends_at">Конец в %1$s</string>
+    <string name="player_time_left">Осталось: %1$s</string>
 </resources>
