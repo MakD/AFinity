@@ -2045,9 +2045,12 @@ constructor(
         super.onVideoSizeChanged(videoSize)
         if (videoSize.width > 0 && videoSize.height > 0) {
             isVideoPortrait = videoSize.height > videoSize.width
+            val aspectRatio =
+                videoSize.width * videoSize.pixelWidthHeightRatio / videoSize.height
             Timber.d(
                 "Video size changed: ${videoSize.width}x${videoSize.height}, isPortrait=$isVideoPortrait"
             )
+            updateUiState { it.copy(videoAspectRatio = aspectRatio) }
             if (!isOrientationOverridden) {
                 updateUiState { it.copy(resolvedOrientation = computeOrientation(isVideoPortrait)) }
             }
@@ -2902,6 +2905,7 @@ constructor(
         val pipBackgroundPlay: Boolean = true,
         val isControlsVisible: Boolean = true,
         val videoZoomMode: VideoZoomMode = VideoZoomMode.FIT,
+        val videoAspectRatio: Float = 0f,
         val resolvedOrientation: Int = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,
         val logoAutoHide: Boolean = false,
         val isLiveChannel: Boolean = false,

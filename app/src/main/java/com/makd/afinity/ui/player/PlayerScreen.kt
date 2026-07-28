@@ -30,8 +30,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.media3.common.Player
-import androidx.media3.common.text.CueGroup
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.CaptionStyleCompat
@@ -42,6 +40,7 @@ import com.makd.afinity.data.models.livetv.LiveTvPlaybackInfo
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.models.player.SubtitlePreferences
+import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.player.mpv.MPVPlayer
 import com.makd.afinity.ui.player.cast.CastRemoteControllerScreen
 import com.makd.afinity.ui.player.components.BufferingIndicator
@@ -303,25 +302,21 @@ fun PlayerScreen(
                                 factory = { ctx ->
                                     PlayerView(ctx).apply {
                                         useController = false
-                                        if (viewModel.isAssActive) {
-                                            subtitleView?.apply {
-                                                setApplyEmbeddedStyles(false)
-                                                setApplyEmbeddedFontSizes(false)
+                                        subtitleView?.apply {
+                                            setApplyEmbeddedStyles(false)
+                                            setApplyEmbeddedFontSizes(false)
+                                            if (viewModel.isAssActive) {
                                                 viewModel.assOverlayHandler?.let {
                                                     withAssSupport(it)
                                                 }
                                             }
-                                        } else {
-                                            subtitleView?.visibility = android.view.View.GONE
                                         }
                                         this.player = player
                                     }
                                 },
                                 update = { view ->
                                     view.resizeMode = uiState.videoZoomMode.toExoPlayerResizeMode()
-                                    if (viewModel.isAssActive) {
-                                        view.subtitleView?.applySubtitleStyle(subtitlePrefs)
-                                    }
+                                    view.subtitleView?.applySubtitleStyle(subtitlePrefs)
                                 },
                                 modifier = Modifier.fillMaxSize(),
                             )
@@ -333,6 +328,8 @@ fun PlayerScreen(
                             modifier = Modifier.fillMaxSize(),
                             mpv = player.mpv,
                             videoOutput = viewModel.mpvVideoOutputValue,
+                            aspectRatio = uiState.videoAspectRatio,
+                            fitToVideo = uiState.videoZoomMode == VideoZoomMode.FIT,
                             onSurfaceCreated = { Timber.d("MPV surface created in player screen") },
                             onSurfaceDestroyed = {
                                 Timber.d("MPV surface destroyed in player screen")
@@ -340,14 +337,6 @@ fun PlayerScreen(
                         )
                     }
                 }
-            }
-
-            if (viewModel.player is ExoPlayer && !viewModel.isAssActive) {
-                ExoPlayerSubtitles(
-                    player = viewModel.player as ExoPlayer,
-                    subtitlePrefs = subtitlePrefs,
-                    modifier = Modifier.fillMaxSize(),
-                )
             }
 
             PlayerControls(
@@ -467,43 +456,6 @@ fun PlayerScreen(
     ScreenBrightnessController(brightness = uiState.brightnessLevel)
     KeepScreenOn(keepOn = uiState.isPlaying)
     PlayerSystemBarsController(isControlsVisible = uiState.showControls)
-}
-
-@OptIn(UnstableApi::class)
-@Composable
-private fun ExoPlayerSubtitles(
-    player: ExoPlayer,
-    subtitlePrefs: SubtitlePreferences,
-    modifier: Modifier = Modifier,
-) {
-    var subtitleView: SubtitleView? by remember { mutableStateOf(null) }
-    AndroidView(
-        factory = { ctx ->
-            SubtitleView(ctx).apply {
-                setApplyEmbeddedStyles(false)
-                setApplyEmbeddedFontSizes(false)
-                subtitleView = this
-            }
-        },
-        update = { view -> view.applySubtitleStyle(subtitlePrefs) },
-        modifier = modifier,
-    )
-
-    DisposableEffect(player) {
-        val listener =
-            object : Player.Listener {
-                override fun onCues(cueGroup: CueGroup) {
-                    subtitleView?.setCues(cueGroup.cues)
-                }
-            }
-
-        player.addListener(listener)
-
-        onDispose {
-            player.removeListener(listener)
-            subtitleView?.setCues(emptyList())
-        }
-    }
 }
 
 @OptIn(UnstableApi::class)
