@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.player.components
 
+import android.content.res.Configuration
 import android.text.format.DateFormat
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
@@ -70,6 +71,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -1026,16 +1028,20 @@ private fun BottomControls(
                 )
             }
             if (!uiState.isPlayingIntro) {
+                val isPortrait =
+                    LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement =
-                        Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                        if (isPortrait) Arrangement.spacedBy(4.dp, Alignment.End)
+                        else Arrangement.SpaceBetween,
                 ) {
                     if (showEpisodeSwitcherButton) {
                         LabeledControl(
                             painter = painterResource(id = R.drawable.ic_episodes_list),
                             label = stringResource(R.string.cd_episodes),
+                            showLabel = !isPortrait,
                             onClick = onEpisodeSwitcherToggle,
                         )
                     }
@@ -1046,18 +1052,21 @@ private fun BottomControls(
                         painter = painterResource(id = R.drawable.ic_subtitles),
                         label = stringResource(R.string.player_tracks_label),
                         tint = if (tracksActive) MaterialTheme.colorScheme.primary else Color.White,
+                        showLabel = !isPortrait,
                         onClick = onTrackPanelToggle,
                     )
 
                     LabeledControl(
                         painter = painterResource(id = R.drawable.ic_speed),
                         label = stringResource(R.string.cd_speed),
+                        showLabel = !isPortrait,
                         onClick = onSpeedToggle,
                     )
 
                     LabeledControl(
                         painter = painterResource(id = R.drawable.ic_dots_vertical),
                         label = stringResource(R.string.player_more_label),
+                        showLabel = !isPortrait,
                         onClick = onMoreToggle,
                     )
                 }
@@ -1072,6 +1081,7 @@ private fun LabeledControl(
     label: String,
     modifier: Modifier = Modifier,
     tint: Color = Color.White,
+    showLabel: Boolean = true,
     onClick: () -> Unit,
 ) {
     Row(
@@ -1085,18 +1095,20 @@ private fun LabeledControl(
     ) {
         Icon(
             painter = painter,
-            contentDescription = null,
+            contentDescription = if (showLabel) null else label,
             tint = tint,
             modifier = Modifier.size(22.dp),
         )
-        Text(
-            text = label,
-            color = tint,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        if (showLabel) {
+            Text(
+                text = label,
+                color = tint,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
