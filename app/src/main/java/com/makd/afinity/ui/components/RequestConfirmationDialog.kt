@@ -990,7 +990,11 @@ private fun MetadataDot() {
 }
 
 @Composable
-internal fun CircleFlagIcon(url: String, modifier: Modifier = Modifier) {
+internal fun CircleFlagIcon(
+    url: String,
+    modifier: Modifier = Modifier,
+    size: androidx.compose.ui.unit.Dp = 14.dp,
+) {
     coil3.compose.AsyncImage(
         model =
             ImageRequest.Builder(LocalContext.current)
@@ -999,7 +1003,7 @@ internal fun CircleFlagIcon(url: String, modifier: Modifier = Modifier) {
                 .crossfade(true)
                 .build(),
         contentDescription = "Flag",
-        modifier = modifier.size(14.dp).clip(CircleShape),
+        modifier = modifier.size(size).clip(CircleShape),
         contentScale = ContentScale.Crop,
     )
 }

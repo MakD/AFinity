@@ -63,6 +63,7 @@ import com.makd.afinity.ui.components.FavoriteToggleButton
 import com.makd.afinity.ui.components.WatchedToggleButton
 import com.makd.afinity.ui.components.WatchlistToggleButton
 import com.makd.afinity.ui.item.components.shared.AdminAction
+import com.makd.afinity.ui.item.components.shared.MediaLanguageFlagsSection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelectionButton
 import org.jellyfin.sdk.model.api.MediaStreamType
@@ -439,6 +440,8 @@ fun EpisodeDetailOverlay(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+
+            MediaLanguageFlagsSection(item = episode)
 
             Column(
                 modifier = Modifier.fillMaxWidth(),

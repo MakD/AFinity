@@ -69,6 +69,8 @@ fun BaseMediaDetailContent(
         DirectorSection(item = item)
         WriterSection(item = item)
 
+        MediaLanguageFlagsSection(item = item)
+
         typeSpecificContent()
 
         CastSection(item = item, onPersonClick = onPersonClick, widthSizeClass = widthSizeClass)
