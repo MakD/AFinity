@@ -91,6 +91,18 @@ class AudioService : MediaSessionService() {
         const val ACTION_PAUSE_FOR_CAST = "com.makd.afinity.player.ACTION_PAUSE_FOR_CAST"
 
         private const val CHANNEL_ID = "afinity_audio_playback"
+
+        private val ABS_AUDIO_ATTRIBUTES =
+            AudioAttributes.Builder()
+                .setUsage(C.USAGE_MEDIA)
+                .setContentType(C.AUDIO_CONTENT_TYPE_SPEECH)
+                .build()
+
+        private val MUSIC_AUDIO_ATTRIBUTES =
+            AudioAttributes.Builder()
+                .setUsage(C.USAGE_MEDIA)
+                .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                .build()
     }
 
     @Inject lateinit var absPlaybackManager: AudiobookshelfPlaybackManager
@@ -204,7 +216,7 @@ class AudioService : MediaSessionService() {
 
         exoPlayer =
             ExoPlayer.Builder(this, renderersFactory)
-                .setAudioAttributes(AudioAttributes.DEFAULT, true)
+                .setAudioAttributes(MUSIC_AUDIO_ATTRIBUTES, true)
                 .setHandleAudioBecomingNoisy(true)
                 .setWakeMode(C.WAKE_MODE_NETWORK)
                 .setLoadControl(loadControl)
@@ -286,6 +298,7 @@ class AudioService : MediaSessionService() {
             "AudioService: switchToAbs() from engine=$activeEngine — musicTrack=${musicPlaybackManager.state.value.currentTrack?.name}"
         )
         activeEngine = ActiveEngine.ABS
+        exoPlayer?.setAudioAttributes(ABS_AUDIO_ATTRIBUTES, true)
         musicEqualizerManager.releaseEqualizer()
         exoPlayer
             ?.audioSessionId
@@ -308,6 +321,7 @@ class AudioService : MediaSessionService() {
         if (activeEngine == ActiveEngine.MUSIC) return
         Timber.d("AudioService: switching to Music engine")
         activeEngine = ActiveEngine.MUSIC
+        exoPlayer?.setAudioAttributes(MUSIC_AUDIO_ATTRIBUTES, true)
         absEqualizerManager.releaseEqualizer()
         exoPlayer
             ?.audioSessionId
