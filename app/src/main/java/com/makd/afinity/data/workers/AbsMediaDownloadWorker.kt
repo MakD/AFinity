@@ -305,6 +305,16 @@ constructor(
                 )
 
                 val localCoverPath = downloadCover(libraryItemId, baseUrl, token, localDir)
+                if (localCoverPath != null) {
+                    absDownloadDao.getById(downloadId)?.let { current ->
+                        absDownloadDao.upsert(
+                            current.copy(
+                                coverUrl = localCoverPath,
+                                updatedAt = System.currentTimeMillis(),
+                            )
+                        )
+                    }
+                }
                 val notificationIcon = decodeCover(localCoverPath)
 
                 downloadNotificationManager.notify(

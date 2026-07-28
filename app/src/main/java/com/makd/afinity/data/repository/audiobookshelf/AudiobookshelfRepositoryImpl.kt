@@ -66,6 +66,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import timber.log.Timber
+import java.io.File
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
@@ -731,7 +732,25 @@ constructor(
             val entity =
                 audiobookshelfDao.getItem(itemId, serverId, userId.toString())
                     ?: return@withContext null
-            Triple(entity.title, entity.authorName, entity.coverUrl)
+            val localCover = localDownloadedCoverUrl(itemId, serverId, userId.toString())
+            Triple(entity.title, entity.authorName, localCover ?: entity.coverUrl)
+        }
+    }
+
+    private suspend fun localDownloadedCoverUrl(
+        itemId: String,
+        serverId: String,
+        userId: String,
+    ): String? {
+        val download =
+            database.absDownloadDao().getDownloadForBook(itemId, serverId, userId)
+                ?: database.absDownloadDao().getFirstCompletedEpisodeForItem(itemId, serverId, userId)
+        val dirPath = download?.localDirPath ?: return null
+        val coverFile = File(dirPath, "cover.jpg")
+        return if (coverFile.exists() && coverFile.length() > 0) {
+            "file://${coverFile.absolutePath}"
+        } else {
+            null
         }
     }
 
@@ -1248,10 +1267,12 @@ constructor(
                             )
                         }
                     if (progressEntity != null && progressEntity.currentTime > 0) {
+                        val resumeTime =
+                            if (progressEntity.isFinished) 0.0 else progressEntity.currentTime
                         Timber.d(
-                            "startPlaybackSession: overriding stale currentTime=${session.currentTime} with saved progress ${progressEntity.currentTime}"
+                            "startPlaybackSession: overriding stale currentTime=${session.currentTime} with saved progress ${progressEntity.currentTime} (finished=${progressEntity.isFinished}, resume=$resumeTime)"
                         )
-                        session = session.copy(currentTime = progressEntity.currentTime)
+                        session = session.copy(currentTime = resumeTime)
                     }
                     return@withContext Result.success(session)
                 }

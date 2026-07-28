@@ -241,6 +241,16 @@ constructor(
     }
 }
 
+private fun localCoverUrl(localDirPath: String?): String? {
+    if (localDirPath == null) return null
+    val coverFile = File(localDirPath, "cover.jpg")
+    return if (coverFile.exists() && coverFile.length() > 0) {
+        "file://${coverFile.absolutePath}"
+    } else {
+        null
+    }
+}
+
 fun AbsDownloadEntity.toAbsDownloadInfo(): AbsDownloadInfo =
     AbsDownloadInfo(
         id = id,
@@ -249,7 +259,7 @@ fun AbsDownloadEntity.toAbsDownloadInfo(): AbsDownloadInfo =
         title = title,
         authorName = authorName,
         mediaType = mediaType,
-        coverUrl = coverUrl,
+        coverUrl = localCoverUrl(localDirPath) ?: coverUrl,
         duration = duration,
         status = status,
         progress = progress,
