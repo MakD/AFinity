@@ -446,6 +446,14 @@
     <string name="cd_playback_info">Playback Stats</string>
     <string name="cd_audio_settings">Audio Settings</string>
     <string name="cd_subtitle_settings">Subtitle Settings</string>
+    <string name="player_tracks_label">Audio &amp; Subtitles</string>
+    <string name="player_more_label">More</string>
+    <string name="player_next_episode_label">Next Episode</string>
+    <string name="player_resume">Resume</string>
+    <string name="player_restart">Restart</string>
+    <string name="player_cast_heading">Cast</string>
+    <string name="player_ends_at">Ends %1$s</string>
+    <string name="player_time_left">%1$s left</string>
     <string name="cd_aspect_ratio">Aspect Ratio</string>
     <string name="cd_screen_rotation">Screen rotation</string>
 

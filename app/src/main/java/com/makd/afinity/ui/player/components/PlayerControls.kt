@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.player.components
 
+import android.text.format.DateFormat
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
@@ -16,6 +17,9 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -38,15 +42,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -63,7 +68,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -76,8 +83,11 @@ import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
 import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityPerson
+import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.models.syncplay.SyncPlayMemberInfo
 import com.makd.afinity.ui.components.AfinityBadge
@@ -86,6 +96,8 @@ import com.makd.afinity.ui.livetv.components.LiveBadge
 import com.makd.afinity.ui.player.PlayerViewModel
 import com.makd.afinity.ui.player.toLocalizedLanguageName
 import org.jellyfin.sdk.model.api.MediaStreamType
+import org.jellyfin.sdk.model.api.PersonKind
+import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
 
@@ -114,7 +126,7 @@ fun PlayerControls(
     onNextClick: () -> Unit = {},
     onPreviousClick: () -> Unit = {},
     onPipToggle: () -> Unit = {},
-    playlistQueue: List<com.makd.afinity.data.models.media.AfinityItem> = emptyList(),
+    playlistQueue: List<AfinityItem> = emptyList(),
     currentPlaylistIndex: Int = -1,
     playlistContentStartIndex: Int = 0,
     onJumpToEpisode: (java.util.UUID) -> Unit = {},
@@ -125,8 +137,8 @@ fun PlayerControls(
     syncPlayGroupName: String = "",
     syncPlayMemberInfo: Map<String, SyncPlayMemberInfo> = emptyMap(),
 ) {
-    var showAudioSelector by remember { mutableStateOf(false) }
-    var showSubtitleSelector by remember { mutableStateOf(false) }
+    var showTrackPanel by remember { mutableStateOf(false) }
+    var showMoreMenu by remember { mutableStateOf(false) }
     var showSpeedDialog by remember { mutableStateOf(false) }
     var showEpisodeSwitcher by remember { mutableStateOf(false) }
     var showMembersPopup by remember { mutableStateOf(false) }
@@ -251,9 +263,34 @@ fun PlayerControls(
         )
 
     Box(modifier = Modifier.fillMaxSize()) {
+        val showPauseDetails =
+            !uiState.isPlaying &&
+                !uiState.isBuffering &&
+                !uiState.isControlsLocked &&
+                !uiState.isInPictureInPictureMode &&
+                uiState.currentItem != null &&
+                !uiState.isLiveChannel &&
+                !uiState.isPlayingIntro
+
+        AnimatedVisibility(
+            visible = shouldShowControls,
+            enter = fadeIn(animationSpec = tween(200)),
+            exit = fadeOut(animationSpec = tween(200)),
+        ) {
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.46f)))
+        }
+
+        AnimatedVisibility(
+            visible = showPauseDetails,
+            enter = fadeIn(animationSpec = tween(220)),
+            exit = fadeOut(animationSpec = tween(180)),
+        ) {
+            PauseDetailsOverlay(uiState = uiState, onPlayerEvent = onPlayerEvent)
+        }
         AnimatedVisibility(
             visible =
                 !uiState.isInPictureInPictureMode &&
+                    !showPauseDetails &&
                     (!uiState.logoAutoHide || uiState.showControls),
             enter = fadeIn(animationSpec = tween(300)),
             exit = fadeOut(animationSpec = tween(300)),
@@ -389,7 +426,11 @@ fun PlayerControls(
                     },
                 )
 
-                if (!uiState.isControlsLocked && !uiState.isInPictureInPictureMode) {
+                if (
+                    !uiState.isControlsLocked &&
+                        !uiState.isInPictureInPictureMode &&
+                        !showPauseDetails
+                ) {
                     CenterPlayButton(
                         uiState = uiState,
                         isPlaying = uiState.isPlaying,
@@ -410,15 +451,12 @@ fun PlayerControls(
                         uiState = uiState,
                         onPlayerEvent = onPlayerEvent,
                         onSpeedToggle = { showSpeedDialog = !showSpeedDialog },
-                        onAudioToggle = { showAudioSelector = !showAudioSelector },
-                        onSubtitleToggle = { showSubtitleSelector = !showSubtitleSelector },
+                        onTrackPanelToggle = { showTrackPanel = !showTrackPanel },
                         onEpisodeSwitcherToggle = { showEpisodeSwitcher = !showEpisodeSwitcher },
                         showEpisodeSwitcherButton =
                             (playlistQueue.size - playlistContentStartIndex) > 1 &&
                                 !uiState.isPlayingIntro,
-                        onVersionToggle = onVersionToggleRequest,
-                        showVersionButton = uiState.availableSources.size > 1,
-                        hasSubtitleTracks = subtitleStreamOptions.size > 1,
+                        onMoreToggle = { showMoreMenu = !showMoreMenu },
                         modifier = Modifier.align(Alignment.BottomCenter),
                     )
                 }
@@ -488,189 +526,41 @@ fun PlayerControls(
             }
         }
 
-        if (showAudioSelector && audioStreamOptions.isNotEmpty()) {
-            Box(
-                modifier =
-                    Modifier.fillMaxSize().clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                    ) {
-                        showAudioSelector = false
-                    }
-            ) {
-                Box(
-                    modifier =
-                        Modifier.align(Alignment.BottomEnd)
-                            .padding(bottom = 110.dp, end = 56.dp)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                            ) {
-                                /* Consume clicks */
-                            }
-                ) {
-                    Box(
-                        modifier =
-                            Modifier.background(
-                                    Color.Black.copy(alpha = 0.95f),
-                                    RoundedCornerShape(8.dp),
-                                )
-                                .padding(12.dp)
-                                .widthIn(min = 200.dp, max = 280.dp)
-                                .heightIn(max = 400.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            Text(
-                                text = stringResource(R.string.player_audio_title),
-                                style = MaterialTheme.typography.titleSmall,
-                                color = Color.White,
-                                modifier = Modifier.padding(bottom = 4.dp),
-                            )
-                            audioStreamOptions.forEach { option ->
-                                Row(
-                                    modifier =
-                                        Modifier.fillMaxWidth()
-                                            .clickable {
-                                                onPlayerEvent(
-                                                    PlayerEvent.SwitchToTrack(
-                                                        C.TRACK_TYPE_AUDIO,
-                                                        option.position,
-                                                    )
-                                                )
-                                                showAudioSelector = false
-                                            }
-                                            .padding(vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    val currentAudioIndex =
-                                        uiState.audioStreamIndex
-                                            ?: audioStreamOptions.find { it.isDefault }?.position
-                                            ?: 0
-                                    RadioButton(
-                                        selected = currentAudioIndex == option.position,
-                                        onClick = {
-                                            onPlayerEvent(
-                                                PlayerEvent.SwitchToTrack(
-                                                    C.TRACK_TYPE_AUDIO,
-                                                    option.position,
-                                                )
-                                            )
-                                            showAudioSelector = false
-                                        },
-                                        colors =
-                                            RadioButtonDefaults.colors(
-                                                selectedColor = MaterialTheme.colorScheme.primary
-                                            ),
-                                        modifier = Modifier.size(20.dp),
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = option.displayName,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color.White,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+        if (showTrackPanel) {
+            TrackPanel(
+                audioOptions = audioStreamOptions,
+                subtitleOptions = subtitleStreamOptions,
+                currentAudioIndex =
+                    uiState.audioStreamIndex
+                        ?: audioStreamOptions.find { it.isDefault }?.position
+                        ?: 0,
+                currentSubtitleIndex = uiState.subtitleStreamIndex ?: -1,
+                onSelectTrack = { trackType, index ->
+                    onPlayerEvent(PlayerEvent.SwitchToTrack(trackType, index))
+                },
+                onDismiss = { showTrackPanel = false },
+            )
         }
 
-        if (showSubtitleSelector && subtitleStreamOptions.isNotEmpty()) {
-            Box(
-                modifier =
-                    Modifier.fillMaxSize().clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                    ) {
-                        showSubtitleSelector = false
-                    }
-            ) {
-                Box(
-                    modifier =
-                        Modifier.align(Alignment.BottomEnd)
-                            .padding(bottom = 110.dp, end = 8.dp)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                            ) {
-                                /* Consume clicks */
-                            }
-                ) {
-                    Box(
-                        modifier =
-                            Modifier.background(
-                                    Color.Black.copy(alpha = 0.95f),
-                                    RoundedCornerShape(8.dp),
-                                )
-                                .padding(12.dp)
-                                .widthIn(min = 200.dp, max = 280.dp)
-                                .heightIn(max = 400.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            Text(
-                                text = stringResource(R.string.player_subtitle_title),
-                                style = MaterialTheme.typography.titleSmall,
-                                color = Color.White,
-                                modifier = Modifier.padding(bottom = 4.dp),
-                            )
-                            subtitleStreamOptions.forEach { option ->
-                                Row(
-                                    modifier =
-                                        Modifier.fillMaxWidth()
-                                            .clickable {
-                                                onPlayerEvent(
-                                                    PlayerEvent.SwitchToTrack(
-                                                        C.TRACK_TYPE_TEXT,
-                                                        option.index,
-                                                    )
-                                                )
-                                                showSubtitleSelector = false
-                                            }
-                                            .padding(vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    val currentSubIndex = uiState.subtitleStreamIndex ?: -1
-                                    RadioButton(
-                                        selected = currentSubIndex == option.index,
-                                        onClick = {
-                                            onPlayerEvent(
-                                                PlayerEvent.SwitchToTrack(
-                                                    C.TRACK_TYPE_TEXT,
-                                                    option.index,
-                                                )
-                                            )
-                                            showSubtitleSelector = false
-                                        },
-                                        colors =
-                                            RadioButtonDefaults.colors(
-                                                selectedColor = MaterialTheme.colorScheme.primary
-                                            ),
-                                        modifier = Modifier.size(20.dp),
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = option.displayName,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color.White,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+        if (showMoreMenu) {
+            MoreMenu(
+                showVersion = uiState.availableSources.size > 1,
+                onVersion = {
+                    showMoreMenu = false
+                    onVersionToggleRequest()
+                },
+                aspectIcon = uiState.videoZoomMode.getIconPainter(),
+                onAspect = { onPlayerEvent(PlayerEvent.CycleVideoZoomMode) },
+                onRotation = {
+                    showMoreMenu = false
+                    onPlayerEvent(PlayerEvent.CycleScreenRotation)
+                },
+                onStats = {
+                    showMoreMenu = false
+                    onPlayerEvent(PlayerEvent.TogglePlaybackStats)
+                },
+                onDismiss = { showMoreMenu = false },
+            )
         }
 
         if (showSpeedDialog) {
@@ -765,7 +655,8 @@ fun PlayerControls(
 
                             AfinityBadge(
                                 text = stringResource(R.string.syncplay_synced_badge),
-                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                containerColor =
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                                 contentColor = MaterialTheme.colorScheme.primary,
                             )
                         }
@@ -993,20 +884,6 @@ private fun TopControls(
                         )
                     }
                 }
-
-                if (!uiState.isControlsLocked && !uiState.isInPictureInPictureMode) {
-                    IconButton(
-                        onClick = { onPlayerEvent(PlayerEvent.CycleScreenRotation) },
-                        modifier = Modifier.size(40.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_screen_rotation),
-                            contentDescription = stringResource(R.string.cd_screen_rotation),
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
-                }
             }
         }
     }
@@ -1116,13 +993,10 @@ private fun BottomControls(
     uiState: PlayerViewModel.PlayerUiState,
     onPlayerEvent: (PlayerEvent) -> Unit,
     onSpeedToggle: () -> Unit,
-    onAudioToggle: () -> Unit,
-    onSubtitleToggle: () -> Unit,
+    onTrackPanelToggle: () -> Unit,
     onEpisodeSwitcherToggle: () -> Unit = {},
     showEpisodeSwitcherButton: Boolean = false,
-    onVersionToggle: () -> Unit = {},
-    showVersionButton: Boolean = false,
-    hasSubtitleTracks: Boolean = true,
+    onMoreToggle: () -> Unit = {},
 ) {
     Box(
         modifier =
@@ -1138,7 +1012,7 @@ private fun BottomControls(
                         WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
                     )
                 )
-                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp)
+                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp)
     ) {
         Column {
             if (!uiState.isPlayingIntro) {
@@ -1151,111 +1025,78 @@ private fun BottomControls(
                     modifier = Modifier.padding(start = 8.dp, bottom = 12.dp),
                 )
             }
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (!uiState.isPlayingIntro) {
-                        if (showVersionButton) {
-                            IconButton(onClick = onVersionToggle, modifier = Modifier.size(40.dp)) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_versions),
-                                    contentDescription =
-                                        stringResource(R.string.cd_version_selector),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp),
-                                )
-                            }
-                        }
-
-                        if (showEpisodeSwitcherButton) {
-                            IconButton(
-                                onClick = onEpisodeSwitcherToggle,
-                                modifier = Modifier.size(40.dp),
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_episodes_list),
-                                    contentDescription = stringResource(R.string.cd_episodes),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp),
-                                )
-                            }
-                        }
-                    }
-
-                    IconButton(
-                        onClick = { onPlayerEvent(PlayerEvent.TogglePlaybackStats) },
-                        modifier = Modifier.size(40.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_info),
-                            contentDescription = stringResource(R.string.cd_playback_info),
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp),
+            if (!uiState.isPlayingIntro) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement =
+                        Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                ) {
+                    if (showEpisodeSwitcherButton) {
+                        LabeledControl(
+                            painter = painterResource(id = R.drawable.ic_episodes_list),
+                            label = stringResource(R.string.cd_episodes),
+                            onClick = onEpisodeSwitcherToggle,
                         )
                     }
 
-                    IconButton(onClick = onSpeedToggle, modifier = Modifier.size(40.dp)) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_speed),
-                            contentDescription = stringResource(R.string.cd_speed),
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
+                    val tracksActive =
+                        uiState.audioStreamIndex != null || uiState.subtitleStreamIndex != null
+                    LabeledControl(
+                        painter = painterResource(id = R.drawable.ic_subtitles),
+                        label = stringResource(R.string.player_tracks_label),
+                        tint = if (tracksActive) MaterialTheme.colorScheme.primary else Color.White,
+                        onClick = onTrackPanelToggle,
+                    )
 
-                    IconButton(onClick = onAudioToggle, modifier = Modifier.size(40.dp)) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_audio),
-                            contentDescription = stringResource(R.string.cd_audio_settings),
-                            tint =
-                                if (uiState.audioStreamIndex != null)
-                                    MaterialTheme.colorScheme.primary
-                                else Color.White,
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
+                    LabeledControl(
+                        painter = painterResource(id = R.drawable.ic_speed),
+                        label = stringResource(R.string.cd_speed),
+                        onClick = onSpeedToggle,
+                    )
 
-                    IconButton(
-                        onClick = onSubtitleToggle,
-                        enabled = hasSubtitleTracks,
-                        modifier = Modifier.size(40.dp),
-                    ) {
-                        Icon(
-                            painter =
-                                painterResource(
-                                    id =
-                                        if (hasSubtitleTracks) R.drawable.ic_subtitles
-                                        else R.drawable.ic_subtitles_off
-                                ),
-                            contentDescription = stringResource(R.string.cd_subtitle_settings),
-                            tint =
-                                when {
-                                    !hasSubtitleTracks -> Color.White.copy(alpha = 0.3f)
-                                    uiState.subtitleStreamIndex != null ->
-                                        MaterialTheme.colorScheme.primary
-                                    else -> Color.White
-                                },
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
-
-                    IconButton(
-                        onClick = { onPlayerEvent(PlayerEvent.CycleVideoZoomMode) },
-                        modifier = Modifier.size(40.dp),
-                    ) {
-                        Icon(
-                            painter = uiState.videoZoomMode.getIconPainter(),
-                            contentDescription = stringResource(R.string.cd_aspect_ratio),
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
+                    LabeledControl(
+                        painter = painterResource(id = R.drawable.ic_dots_vertical),
+                        label = stringResource(R.string.player_more_label),
+                        onClick = onMoreToggle,
+                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun LabeledControl(
+    painter: Painter,
+    label: String,
+    modifier: Modifier = Modifier,
+    tint: Color = Color.White,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(onClick = onClick)
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(
+            painter = painter,
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(22.dp),
+        )
+        Text(
+            text = label,
+            color = tint,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -1398,6 +1239,646 @@ private fun SeekBar(
             }
         }
     }
+}
+
+@OptIn(UnstableApi::class)
+@Composable
+private fun TrackPanel(
+    audioOptions: List<AudioStreamOption>,
+    subtitleOptions: List<SubtitleStreamOption>,
+    currentAudioIndex: Int,
+    currentSubtitleIndex: Int,
+    onSelectTrack: (Int, Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Box(
+        modifier =
+            Modifier.fillMaxSize().clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+            ) {
+                onDismiss()
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 6.dp,
+            shadowElevation = 8.dp,
+            modifier =
+                Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) {}
+                    .widthIn(min = 340.dp, max = 600.dp)
+                    .heightIn(max = 400.dp),
+        ) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Text(
+                    text = stringResource(R.string.player_tracks_label),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 16.dp),
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    TrackColumn(
+                        title = stringResource(R.string.player_audio_title),
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        audioOptions.forEach { option ->
+                            TrackRow(
+                                label = option.displayName,
+                                selected = currentAudioIndex == option.position,
+                                onClick = {
+                                    onSelectTrack(C.TRACK_TYPE_AUDIO, option.position)
+                                    onDismiss()
+                                },
+                            )
+                        }
+                    }
+                    TrackColumn(
+                        title = stringResource(R.string.player_subtitle_title),
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        subtitleOptions.forEach { option ->
+                            TrackRow(
+                                label = option.displayName,
+                                selected = currentSubtitleIndex == option.index,
+                                onClick = {
+                                    onSelectTrack(C.TRACK_TYPE_TEXT, option.index)
+                                    onDismiss()
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrackColumn(
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
+        )
+        Column(
+            modifier = Modifier.verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            content = content,
+        )
+    }
+}
+
+@Composable
+private fun TrackRow(label: String, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(
+                    if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                    else Color.Transparent
+                )
+                .clickable(onClick = onClick)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color =
+                if (selected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurface,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        if (selected) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                painter = painterResource(id = R.drawable.ic_check),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun MoreMenu(
+    showVersion: Boolean,
+    onVersion: () -> Unit,
+    aspectIcon: Painter,
+    onAspect: () -> Unit,
+    onRotation: () -> Unit,
+    onStats: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Box(
+        modifier =
+            Modifier.fillMaxSize().clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+            ) {
+                onDismiss()
+            }
+    ) {
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 6.dp,
+            shadowElevation = 8.dp,
+            modifier =
+                Modifier.align(Alignment.BottomEnd)
+                    .windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(
+                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                        )
+                    )
+                    .padding(bottom = 96.dp, end = 16.dp)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) {}
+                    .widthIn(max = 260.dp),
+        ) {
+            Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                if (showVersion) {
+                    MoreMenuItem(
+                        icon = painterResource(id = R.drawable.ic_versions),
+                        label = stringResource(R.string.cd_version_selector),
+                        onClick = onVersion,
+                    )
+                }
+                MoreMenuItem(
+                    icon = aspectIcon,
+                    label = stringResource(R.string.cd_aspect_ratio),
+                    onClick = onAspect,
+                )
+                MoreMenuItem(
+                    icon = painterResource(id = R.drawable.ic_screen_rotation),
+                    label = stringResource(R.string.cd_screen_rotation),
+                    onClick = onRotation,
+                )
+                MoreMenuItem(
+                    icon = painterResource(id = R.drawable.ic_info),
+                    label = stringResource(R.string.cd_playback_info),
+                    onClick = onStats,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MoreMenuItem(icon: Painter, label: String, onClick: () -> Unit) {
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Icon(
+            painter = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(22.dp),
+        )
+        Text(
+            text = label,
+            color = MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.typography.bodyLarge,
+        )
+    }
+}
+
+@OptIn(UnstableApi::class, ExperimentalLayoutApi::class)
+@Composable
+private fun PauseDetailsOverlay(
+    uiState: PlayerViewModel.PlayerUiState,
+    onPlayerEvent: (PlayerEvent) -> Unit,
+) {
+    val item = uiState.currentItem ?: return
+    val context = LocalContext.current
+
+    val source =
+        item.sources.firstOrNull { it.id == uiState.currentMediaSourceId }
+            ?: item.sources.firstOrNull()
+    val videoStream = source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+    val audioStream =
+        source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO && it.isDefault }
+            ?: source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }
+
+    val resolution = videoStream?.let { vs ->
+        val w = vs.width ?: 0
+        val h = vs.height ?: 0
+        when {
+            w >= 3800 || h >= 2000 -> "4K"
+            w >= 1900 || h >= 1000 -> "1080p"
+            w >= 1200 || h >= 700 -> "720p"
+            w > 0 || h > 0 -> "SD"
+            else -> null
+        }
+    }
+    val hdr =
+        when {
+            videoStream?.videoDoViTitle != null -> "Dolby Vision"
+            else ->
+                videoStream?.videoRangeType?.name?.uppercase()?.let { n ->
+                    when {
+                        n.contains("HDR10") && n.contains("PLUS") -> "HDR10+"
+                        n.contains("HDR10") -> "HDR10"
+                        n.contains("DOVI") || n.contains("DOLBY") -> "Dolby Vision"
+                        n.contains("HLG") -> "HLG"
+                        else -> null
+                    }
+                }
+        }
+    val audioLabel = formatAudioChannels(audioStream?.channels)
+
+    val genres =
+        when (item) {
+            is AfinityMovie -> item.genres
+            is AfinityShow -> item.genres
+            else -> emptyList()
+        }
+    val year =
+        when (item) {
+            is AfinityMovie -> item.productionYear
+            is AfinityShow -> item.productionYear
+            else -> null
+        }
+    val officialRating =
+        when (item) {
+            is AfinityMovie -> item.officialRating
+            is AfinityShow -> item.officialRating
+            else -> null
+        }
+    val runtimeText = formatRuntime(item.runtimeTicks)
+    val overview = item.overview.takeIf { it.isNotBlank() }
+    val people =
+        when (item) {
+            is AfinityMovie -> item.people
+            is AfinityEpisode -> item.people
+            is AfinityShow -> item.people
+            else -> emptyList()
+        }
+    val cast = people.filter { it.type == PersonKind.ACTOR }.take(3)
+    val directors = people.filter { it.type == PersonKind.DIRECTOR }.map { it.name }
+
+    val ratings = uiState.externalRatings
+    val speed = uiState.playbackSpeed.coerceAtLeast(0.1f)
+    val remainingMs =
+        ((uiState.duration - uiState.currentPosition).coerceAtLeast(0L) / speed).toLong()
+    val endsAt =
+        remember(remainingMs / 60000L) {
+            DateFormat.getTimeFormat(context).format(Date(System.currentTimeMillis() + remainingMs))
+        }
+
+    val logoUrl =
+        when (item) {
+            is AfinityEpisode ->
+                (item.seriesLogo ?: item.images.showLogo)?.toString()?.let { url ->
+                    if (url.contains("?")) "$url&format=png" else "$url?format=png"
+                }
+            is AfinityMovie ->
+                if (item.images.logo != null) item.images.logoImageUrlWithTransparency.toString()
+                else null
+            is AfinityShow ->
+                if (item.images.logo != null) item.images.logoImageUrlWithTransparency.toString()
+                else null
+            else -> null
+        }
+    val primaryTitle = if (item is AfinityEpisode) item.seriesName else item.name
+    val episodeSubtitle =
+        (item as? AfinityEpisode)?.let { ep ->
+            buildString {
+                val s = ep.parentIndexNumber
+                val e = ep.indexNumber
+                if (s != null && e != null) append("S$s:E$e")
+                if (ep.name.isNotBlank()) {
+                    if (isNotEmpty()) append(" · ")
+                    append(ep.name)
+                }
+            }
+        }
+    val communityRating =
+        when (item) {
+            is AfinityMovie -> item.communityRating
+            is AfinityEpisode -> item.communityRating
+            is AfinityShow -> item.communityRating
+            else -> null
+        }
+    val criticRating = (item as? AfinityMovie)?.criticRating
+
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f))) {
+        Column(
+            modifier =
+                Modifier.fillMaxSize()
+                    .windowInsetsPadding(
+                        WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                    )
+                    .padding(start = 32.dp, end = 32.dp, top = 56.dp, bottom = 28.dp),
+            verticalArrangement = Arrangement.Bottom,
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(28.dp),
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    if (logoUrl != null) {
+                        AsyncImage(
+                            imageUrl = logoUrl,
+                            contentDescription = primaryTitle,
+                            modifier = Modifier.heightIn(max = 52.dp).widthIn(max = 300.dp),
+                            contentScale = ContentScale.Fit,
+                            blurHash = null,
+                            targetWidth = 300.dp,
+                            targetHeight = 52.dp,
+                        )
+                    } else {
+                        Text(
+                            text = primaryTitle,
+                            color = Color.White,
+                            fontSize = 30.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    if (!episodeSubtitle.isNullOrBlank()) {
+                        Text(
+                            text = episodeSubtitle,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                    }
+
+                    val metaColor = Color.White.copy(alpha = 0.8f)
+                    val metadataItems = mutableListOf<@Composable () -> Unit>()
+                    genres
+                        .take(2)
+                        .joinToString(" · ")
+                        .takeIf { it.isNotBlank() && item !is AfinityEpisode }
+                        ?.let { g -> metadataItems.add { PauseMetaText(g, metaColor) } }
+                    year?.let { metadataItems.add { PauseMetaText(it.toString(), metaColor) } }
+                    officialRating
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { metadataItems.add { PauseMetaText(it, metaColor) } }
+                    runtimeText?.let { metadataItems.add { PauseMetaText(it, metaColor) } }
+                    resolution?.let { r -> metadataItems.add { PauseMetaText(r, metaColor) } }
+                    hdr?.let { h -> metadataItems.add { PauseMetaText(h, metaColor) } }
+                    audioLabel?.let { a -> metadataItems.add { PauseMetaText(a, metaColor) } }
+                    communityRating?.let { r ->
+                        metadataItems.add {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                    contentDescription = stringResource(R.string.cd_imdb),
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                PauseMetaText(String.format(Locale.US, "%.1f", r), metaColor)
+                            }
+                        }
+                    }
+                    criticRating?.let { rt ->
+                        metadataItems.add {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                Icon(
+                                    painter =
+                                        painterResource(
+                                            id =
+                                                if (rt > 60) R.drawable.ic_rotten_tomato_fresh
+                                                else R.drawable.ic_rotten_tomato_rotten
+                                        ),
+                                    contentDescription = stringResource(R.string.cd_rotten_tomatoes),
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(13.dp),
+                                )
+                                PauseMetaText("${rt.toInt()}%", metaColor)
+                            }
+                        }
+                    }
+                    ratings.tmdb?.let { t ->
+                        metadataItems.add {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                PauseMetaText("TMDB", Color.White.copy(alpha = 0.5f))
+                                PauseMetaText(t, metaColor)
+                            }
+                        }
+                    }
+                    if (metadataItems.isNotEmpty()) {
+                        FlowRow(
+                            modifier = Modifier.padding(top = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            metadataItems.forEachIndexed { index, mItem ->
+                                mItem()
+                                if (index < metadataItems.size - 1) {
+                                    PauseMetaText("•", Color.White.copy(alpha = 0.4f))
+                                }
+                            }
+                        }
+                    }
+                    if (directors.isNotEmpty()) {
+                        Text(
+                            text =
+                                stringResource(
+                                    R.string.home_person_directed_by,
+                                    directors.joinToString(", "),
+                                ),
+                            color = Color.White.copy(alpha = 0.65f),
+                            fontSize = 13.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = 12.dp),
+                        )
+                    }
+                    overview?.let {
+                        Text(
+                            text = it,
+                            color = Color.White.copy(alpha = 0.72f),
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = 14.dp).widthIn(max = 540.dp),
+                        )
+                    }
+                }
+
+                if (cast.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier.widthIn(max = 280.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.player_cast_heading).uppercase(),
+                            color = Color.White.copy(alpha = 0.55f),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 1.5.sp,
+                        )
+                        cast.forEach { person -> CastRow(person) }
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 22.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Button(
+                    onClick = { onPlayerEvent(PlayerEvent.Play) },
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Black,
+                        ),
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_player_play_filled),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.player_resume),
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                TextButton(
+                    onClick = {
+                        onPlayerEvent(PlayerEvent.Seek(0))
+                        onPlayerEvent(PlayerEvent.Play)
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_player_skip_back),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = stringResource(R.string.player_restart))
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text =
+                        stringResource(R.string.player_time_left, formatTime(remainingMs)) +
+                            "  ·  " +
+                            stringResource(R.string.player_ends_at, endsAt),
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 13.sp,
+                    maxLines = 1,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PauseMetaText(
+    text: String,
+    color: Color,
+    fontWeight: FontWeight = FontWeight.Normal,
+) {
+    Text(text = text, color = color, fontSize = 13.sp, fontWeight = fontWeight, maxLines = 1)
+}
+
+@Composable
+private fun CastRow(person: AfinityPerson) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(
+            modifier =
+                Modifier.size(54.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                    .border(1.5.dp, Color.White.copy(alpha = 0.12f), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            val uri = person.image.uri?.toString()
+            if (uri != null) {
+                AsyncImage(
+                    imageUrl = uri,
+                    contentDescription = person.name,
+                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                    contentScale = ContentScale.Crop,
+                    blurHash = person.image.blurHash,
+                    targetWidth = 54.dp,
+                    targetHeight = 54.dp,
+                )
+            } else {
+                Text(
+                    text = person.name.take(1).uppercase(),
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                )
+            }
+        }
+        Column {
+            Text(
+                text = person.name,
+                color = Color.White,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (person.role.isNotBlank()) {
+                Text(
+                    text = person.role,
+                    color = Color.White.copy(alpha = 0.55f),
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+private fun formatRuntime(ticks: Long): String? {
+    if (ticks <= 0L) return null
+    val totalMinutes = (ticks / 10_000_000L / 60L).toInt()
+    if (totalMinutes <= 0) return null
+    val h = totalMinutes / 60
+    val m = totalMinutes % 60
+    return if (h > 0) "${h}h ${m}m" else "${m}m"
 }
 
 private fun formatTime(timeMs: Long): String {

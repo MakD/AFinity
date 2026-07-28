@@ -1699,8 +1699,10 @@ constructor(
                     subtitleUserSelected = false,
                     availableSources = fullItem.sources,
                     currentMediaSourceId = actualMediaSourceId,
+                    externalRatings = ExternalRatings(),
                 )
             }
+            loadExternalRatings(fullItem)
             currentSessionId = playbackInfo?.playSessionId ?: UUID.randomUUID().toString()
             currentLivePlaybackInfo = null
             Timber.d(
@@ -2039,6 +2041,44 @@ constructor(
         currentTrickplayItemId = item.id
         trickplayTileCache.clear()
         trickplayFetchJob?.cancel()
+    }
+
+    private fun loadExternalRatings(item: AfinityItem) {
+        viewModelScope.launch {
+            val community =
+                when (item) {
+                    is AfinityMovie -> item.communityRating
+                    is AfinityEpisode -> item.communityRating
+                    else -> null
+                }
+            val isMovie = item is AfinityMovie
+            val tmdbId = item.providerIds?.get("Tmdb")
+            var imdb: String? = null
+            var rt: String? = (item as? AfinityMovie)?.criticRating?.let { "${it.toInt()}%" }
+            var tmdb: String? = null
+            if (tmdbId != null) {
+                runCatching {
+                    val result = mediaRepository.getMdbListRatings(tmdbId, isMovie)
+                    result.ratings.firstOrNull { it.source.equals("imdb", ignoreCase = true) }
+                        ?.value
+                        ?.let { imdb = String.format(java.util.Locale.ROOT, "%.1f", it) }
+                    result.ratings.firstOrNull { it.source.equals("tomatoes", ignoreCase = true) }
+                        ?.value
+                        ?.let { rt = "${it.toInt()}%" }
+                    result.ratings.firstOrNull { it.source.equals("tmdb", ignoreCase = true) }
+                        ?.value
+                        ?.let { tmdb = String.format(java.util.Locale.ROOT, "%.1f", it) }
+                }
+            }
+            if (imdb == null && community != null) {
+                imdb = String.format(java.util.Locale.ROOT, "%.1f", community)
+            }
+            updateUiState {
+                it.copy(
+                    externalRatings = ExternalRatings(imdb = imdb, rottenTomatoes = rt, tmdb = tmdb)
+                )
+            }
+        }
     }
 
     override fun onVideoSizeChanged(videoSize: VideoSize) {
@@ -2861,6 +2901,15 @@ constructor(
         enterPictureInPicture?.invoke()
     }
 
+    data class ExternalRatings(
+        val imdb: String? = null,
+        val rottenTomatoes: String? = null,
+        val tmdb: String? = null,
+    ) {
+        val hasAny: Boolean
+            get() = imdb != null || rottenTomatoes != null || tmdb != null
+    }
+
     data class PlayerUiState(
         val isPlayerReady: Boolean = false,
         val isPlaying: Boolean = false,
@@ -2906,6 +2955,7 @@ constructor(
         val isControlsVisible: Boolean = true,
         val videoZoomMode: VideoZoomMode = VideoZoomMode.FIT,
         val videoAspectRatio: Float = 0f,
+        val externalRatings: ExternalRatings = ExternalRatings(),
         val resolvedOrientation: Int = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,
         val logoAutoHide: Boolean = false,
         val isLiveChannel: Boolean = false,
