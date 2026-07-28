@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.Session
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.manager.UserImageStore
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.DatabaseRepository
@@ -52,6 +53,7 @@ constructor(
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val authRepository: AuthRepository,
     private val appDataRepository: AppDataRepository,
+    private val userImageStore: UserImageStore,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SessionSwitcherState())
@@ -80,13 +82,21 @@ constructor(
                                             ?: return@mapNotNull null
                                     val baseUrl = server.address.removeSuffix("/")
 
+                                    val tag = user.primaryImageTag
+                                    if (!tag.isNullOrBlank()) {
+                                        viewModelScope.launch {
+                                            userImageStore.cacheAvatar(user.id, baseUrl, tag)
+                                        }
+                                    }
+
                                     UserSession(
                                         serverId = server.id,
                                         userId = token.userId,
                                         username = token.username,
                                         userAvatar =
-                                            user.primaryImageTag?.let { tag ->
-                                                "$baseUrl/Users/${user.id}/Images/Primary?tag=$tag"
+                                            tag?.let {
+                                                userImageStore.localAvatar(user.id, it)
+                                                    ?: "$baseUrl/Users/${user.id}/Images/Primary?tag=$it"
                                             },
                                         isCurrent =
                                             currentSession?.serverId == server.id &&

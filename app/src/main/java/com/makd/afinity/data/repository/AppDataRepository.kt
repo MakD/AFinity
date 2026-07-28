@@ -6,6 +6,7 @@ import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.MediaRefreshBus
 import com.makd.afinity.data.manager.RefreshTrigger
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.manager.UserImageStore
 import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
@@ -76,6 +77,7 @@ constructor(
     private val mediaRepository: MediaRepository,
     private val preferencesRepository: PreferencesRepository,
     private val sessionManager: SessionManager,
+    private val userImageStore: UserImageStore,
     private val jellyfinImageUrlBuilder: JellyfinImageUrlBuilder,
     private val watchlistRepository: WatchlistRepository,
     private val liveTvRepository: LiveTvRepository,
@@ -122,11 +124,12 @@ constructor(
         sessionManager.currentSession
             .map { session ->
                 if (session?.user != null && !session.user.primaryImageTag.isNullOrBlank()) {
-                    jellyfinImageUrlBuilder.buildUserPrimaryImageUrl(
-                        baseUrl = session.serverUrl,
-                        userId = session.user.id.toString(),
-                        tag = session.user.primaryImageTag,
-                    )
+                    userImageStore.localAvatar(session.user.id, session.user.primaryImageTag)
+                        ?: jellyfinImageUrlBuilder.buildUserPrimaryImageUrl(
+                            baseUrl = session.serverUrl,
+                            userId = session.user.id.toString(),
+                            tag = session.user.primaryImageTag,
+                        )
                 } else {
                     null
                 }
@@ -145,6 +148,20 @@ constructor(
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = null,
             )
+
+    init {
+        scope.launch {
+            sessionManager.currentSession
+                .map { it?.user?.id to (it?.user?.primaryImageTag to it?.serverUrl) }
+                .distinctUntilChanged()
+                .collect { (userId, tagAndUrl) ->
+                    val (tag, serverUrl) = tagAndUrl
+                    if (userId != null && !tag.isNullOrBlank() && !serverUrl.isNullOrBlank()) {
+                        userImageStore.cacheAvatar(userId, serverUrl, tag)
+                    }
+                }
+        }
+    }
 
     private val _latestMovies = MutableStateFlow<List<AfinityMovie>>(emptyList())
     val latestMovies: StateFlow<List<AfinityMovie>> = _latestMovies.asStateFlow()
