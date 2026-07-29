@@ -421,6 +421,8 @@
     <string name="player_subtitle_title">Subtitles</string>
     <string name="media_languages_audio">Available Audio:</string>
     <string name="media_languages_subtitles">Available Subtitles:</string>
+    <string name="media_language_none">No language</string>
+    <string name="media_language_unidentified">Unidentified</string>
     <string name="player_version_title">Version</string>
     <string name="player_version_default_label">Default</string>
     <string name="version_dialog_subtitle">Select which version to play</string>

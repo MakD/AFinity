@@ -1381,11 +1381,14 @@ internal fun getAutoFlagUrl(langCode: String): String? {
             }
 
     return if (!countryCode.isNullOrBlank()) {
-        "https://hatscripts.github.io/circle-flags/flags/${countryCode.lowercase()}.svg"
+        circleFlagAsset(countryCode)
     } else {
         null
     }
 }
+
+internal fun circleFlagAsset(code: String): String =
+    "file:///android_asset/flags/${code.lowercase()}.svg"
 
 private fun formatReleaseDate(dateString: String): String {
     if (dateString.isBlank()) return ""

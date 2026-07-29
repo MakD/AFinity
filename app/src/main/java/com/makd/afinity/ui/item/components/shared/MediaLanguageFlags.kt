@@ -1,16 +1,20 @@
 package com.makd.afinity.ui.item.components.shared
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -18,6 +22,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySources
 import com.makd.afinity.ui.components.CircleFlagIcon
+import com.makd.afinity.ui.components.circleFlagAsset
 import org.jellyfin.sdk.model.api.MediaStreamType
 
 private val languageToCountry: Map<String, String> =
@@ -175,41 +180,81 @@ private val languageToCountry: Map<String, String> =
         "eus" to "es-pv",
     )
 
-private fun languageFlagUrls(item: AfinityItem, type: MediaStreamType): List<String> {
+private sealed interface LanguageChip {
+    data class Flag(val assetUrl: String) : LanguageChip
+
+    data object NoLanguage : LanguageChip
+
+    data object Unidentified : LanguageChip
+
+    data class Code(val text: String) : LanguageChip
+}
+
+private fun languageChips(item: AfinityItem, type: MediaStreamType): List<LanguageChip> {
     val sources = (item as? AfinitySources)?.sources ?: return emptyList()
-    val countryCodes = LinkedHashSet<String>()
+    val seenCountries = LinkedHashSet<String>()
+    val seenCodes = LinkedHashSet<String>()
+    var hasNoLanguage = false
+    var hasUnidentified = false
+    val chips = mutableListOf<LanguageChip>()
+
     sources
         .flatMap { it.mediaStreams }
         .filter { it.type == type }
         .forEach { stream ->
             val raw = stream.language.trim()
             if (raw.isBlank()) return@forEach
-            val code = raw.substringBefore('-').lowercase()
-            if (code.isBlank() || code == "und" || code == "root") return@forEach
-            val country =
-                languageToCountry[code] ?: languageToCountry[raw.lowercase()] ?: return@forEach
-            countryCodes.add(country)
+            val lower = raw.lowercase()
+            val base = lower.substringBefore('-')
+            if (base.isBlank() || base == "root" || base == "mis") return@forEach
+            if (base == "zxx") {
+                if (!hasNoLanguage) {
+                    hasNoLanguage = true
+                    chips.add(LanguageChip.NoLanguage)
+                }
+                return@forEach
+            }
+            if (base == "und") {
+                if (!hasUnidentified) {
+                    hasUnidentified = true
+                    chips.add(LanguageChip.Unidentified)
+                }
+                return@forEach
+            }
+            // Region variant wins so pt-BR -> br, pt-PT -> pt, en-GB -> gb, en-US -> us.
+            val region = lower.substringAfter('-', "").takeIf { it.length == 2 }
+            val country = region ?: languageToCountry[base] ?: languageToCountry[lower]
+            if (country != null) {
+                if (seenCountries.add(country)) {
+                    chips.add(LanguageChip.Flag(circleFlagAsset(country)))
+                }
+            } else {
+                val label = base.uppercase()
+                if (seenCodes.add(label)) {
+                    chips.add(LanguageChip.Code(label))
+                }
+            }
         }
-    return countryCodes.map { "https://hatscripts.github.io/circle-flags/flags/$it.svg" }
+    return chips
 }
 
 @Composable
 fun MediaLanguageFlagsSection(item: AfinityItem, modifier: Modifier = Modifier) {
-    val audio = remember(item) { languageFlagUrls(item, MediaStreamType.AUDIO) }
-    val subtitles = remember(item) { languageFlagUrls(item, MediaStreamType.SUBTITLE) }
+    val audio = remember(item) { languageChips(item, MediaStreamType.AUDIO) }
+    val subtitles = remember(item) { languageChips(item, MediaStreamType.SUBTITLE) }
     if (audio.isEmpty() && subtitles.isEmpty()) return
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         if (audio.isNotEmpty()) {
             LanguageFlagRow(
                 label = stringResource(R.string.media_languages_audio),
-                flagUrls = audio,
+                chips = audio,
             )
         }
         if (subtitles.isNotEmpty()) {
             LanguageFlagRow(
                 label = stringResource(R.string.media_languages_subtitles),
-                flagUrls = subtitles,
+                chips = subtitles,
             )
         }
     }
@@ -217,7 +262,7 @@ fun MediaLanguageFlagsSection(item: AfinityItem, modifier: Modifier = Modifier) 
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun LanguageFlagRow(label: String, flagUrls: List<String>) {
+private fun LanguageFlagRow(label: String, chips: List<LanguageChip>) {
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -229,12 +274,44 @@ private fun LanguageFlagRow(label: String, flagUrls: List<String>) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.align(Alignment.CenterVertically),
         )
-        flagUrls.forEach { url ->
-            CircleFlagIcon(
-                url = url,
-                size = 14.dp,
-                modifier = Modifier.align(Alignment.CenterVertically),
-            )
+        chips.forEach { chip ->
+            when (chip) {
+                is LanguageChip.Flag ->
+                    CircleFlagIcon(
+                        url = chip.assetUrl,
+                        size = 14.dp,
+                        modifier = Modifier.align(Alignment.CenterVertically),
+                    )
+                LanguageChip.NoLanguage ->
+                    LanguageCodeChip(
+                        text = stringResource(R.string.media_language_none),
+                        modifier = Modifier.align(Alignment.CenterVertically),
+                    )
+                LanguageChip.Unidentified ->
+                    LanguageCodeChip(
+                        text = stringResource(R.string.media_language_unidentified),
+                        modifier = Modifier.align(Alignment.CenterVertically),
+                    )
+                is LanguageChip.Code ->
+                    LanguageCodeChip(
+                        text = chip.text,
+                        modifier = Modifier.align(Alignment.CenterVertically),
+                    )
+            }
         }
     }
+}
+
+@Composable
+private fun LanguageCodeChip(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(4.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                .padding(horizontal = 5.dp, vertical = 1.dp),
+    )
 }
