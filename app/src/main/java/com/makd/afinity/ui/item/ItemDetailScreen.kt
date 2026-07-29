@@ -4,8 +4,8 @@ package com.makd.afinity.ui.item
 
 import android.content.Context
 import android.content.res.Configuration
-import androidx.annotation.OptIn
 import android.widget.Toast
+import androidx.annotation.OptIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -34,7 +34,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
-import java.util.UUID
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -117,6 +116,7 @@ import com.makd.afinity.util.rememberPreferencesRepository
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
+import java.util.UUID
 
 @Composable
 fun ItemDetailScreen(
@@ -952,7 +952,7 @@ private fun ColumnScope.MediaLogoHeader(item: AfinityItem, isLandscape: Boolean)
             targetWidth = if (isLandscape) 300.dp else screenWidthDp * 0.8f,
             targetHeight = if (isLandscape) 150.dp else 120.dp,
             modifier =
-                Modifier.fillMaxWidth(0.8f)
+                (if (isLandscape) Modifier.widthIn(max = 300.dp) else Modifier.fillMaxWidth(0.8f))
                     .height(if (isLandscape) 150.dp else 120.dp)
                     .align(if (isLandscape) Alignment.Start else Alignment.CenterHorizontally),
             contentScale = ContentScale.Fit,
@@ -1223,10 +1223,11 @@ private fun DeleteConfirmationDialog(
                         targetItemId = targetId,
                         onSuccess = {
                             Toast.makeText(
-                                context,
-                                R.string.admin_delete_success,
-                                Toast.LENGTH_SHORT,
-                            ).show()
+                                    context,
+                                    R.string.admin_delete_success,
+                                    Toast.LENGTH_SHORT,
+                                )
+                                .show()
                             if (isMainItem) {
                                 navController.popBackStack()
                             } else {
@@ -1235,17 +1236,19 @@ private fun DeleteConfirmationDialog(
                         },
                         onError = { error ->
                             Toast.makeText(
-                                context,
-                                context.getString(R.string.admin_delete_error, error),
-                                Toast.LENGTH_LONG,
-                            ).show()
+                                    context,
+                                    context.getString(R.string.admin_delete_error, error),
+                                    Toast.LENGTH_LONG,
+                                )
+                                .show()
                         },
                     )
                 },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError,
-                ),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
             ) {
                 Text(stringResource(R.string.admin_action_delete))
             }
