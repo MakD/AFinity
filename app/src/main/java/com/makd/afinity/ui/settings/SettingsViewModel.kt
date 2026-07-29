@@ -1121,7 +1121,7 @@ data class SettingsUiState(
     val logoAutoHide: Boolean = false,
     val pauseScreenEnabled: Boolean = false,
     val pauseScreenDelaySeconds: Int = 0,
-    val chapterSkipGesture: Boolean = false,
+    val chapterSkipGesture: Boolean = true,
     val defaultVideoZoomMode: VideoZoomMode = VideoZoomMode.FIT,
     val mpvHwDec: MpvHwDec = MpvHwDec.default,
     val mpvVideoOutput: MpvVideoOutput = MpvVideoOutput.default,

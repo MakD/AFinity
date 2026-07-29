@@ -868,11 +868,11 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
     }
 
     override suspend fun getChapterSkipGesture(): Boolean {
-        return dataStore.data.first()[Keys.CHAPTER_SKIP_GESTURE] ?: false
+        return dataStore.data.first()[Keys.CHAPTER_SKIP_GESTURE] ?: true
     }
 
     override fun getChapterSkipGestureFlow(): Flow<Boolean> {
-        return dataStore.data.map { preferences -> preferences[Keys.CHAPTER_SKIP_GESTURE] ?: false }
+        return dataStore.data.map { preferences -> preferences[Keys.CHAPTER_SKIP_GESTURE] ?: true }
     }
 
     override suspend fun setDefaultVideoZoomMode(mode: VideoZoomMode) {
