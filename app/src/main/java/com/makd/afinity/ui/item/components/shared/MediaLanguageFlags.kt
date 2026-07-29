@@ -199,7 +199,7 @@ fun MediaLanguageFlagsSection(item: AfinityItem, modifier: Modifier = Modifier) 
     val subtitles = remember(item) { languageFlagUrls(item, MediaStreamType.SUBTITLE) }
     if (audio.isEmpty() && subtitles.isEmpty()) return
 
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         if (audio.isNotEmpty()) {
             LanguageFlagRow(
                 label = stringResource(R.string.media_languages_audio),

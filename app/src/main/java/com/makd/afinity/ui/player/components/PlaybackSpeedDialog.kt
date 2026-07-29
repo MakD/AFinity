@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.player.components
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -25,17 +26,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
-import android.content.res.Configuration
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -52,13 +52,13 @@ fun PlaybackSpeedDialog(
     onSpeedChange: (Float) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var sliderSpeed by remember(currentSpeed) { mutableFloatStateOf(currentSpeed) }
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val cardWidthFraction = if (isLandscape) 0.5f else 0.9f
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = true),
+        properties =
+            DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = true),
     ) {
         Box(
             modifier =
@@ -67,133 +67,146 @@ fun PlaybackSpeedDialog(
                 },
             contentAlignment = Alignment.BottomCenter,
         ) {
-            Card(
-                modifier =
-                    Modifier.fillMaxWidth(cardWidthFraction).pointerInput(Unit) {
-                        detectTapGestures(onTap = { /* Consume tap - prevent dismissal */ })
-                    },
-                shape = RoundedCornerShape(16.dp),
-                colors =
-                    CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer
-                    ),
+            PlaybackSpeedPanel(
+                currentSpeed = currentSpeed,
+                onSpeedChange = onSpeedChange,
+                modifier = Modifier.fillMaxWidth(cardWidthFraction),
+            )
+        }
+    }
+}
+
+@Composable
+fun PlaybackSpeedPanel(
+    currentSpeed: Float,
+    onSpeedChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var sliderSpeed by remember(currentSpeed) { mutableFloatStateOf(currentSpeed) }
+
+    Card(
+        modifier =
+            modifier.pointerInput(Unit) {
+                detectTapGestures(onTap = { /* Consume tap - prevent dismissal */ })
+            },
+        shape = RoundedCornerShape(16.dp),
+        colors =
+            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = stringResource(R.string.player_speed_title_fmt, sliderSpeed),
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Medium,
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                IconButton(
+                    onClick = {
+                        sliderSpeed = (sliderSpeed - 0.25f).coerceIn(0.25f, 2.0f)
+                        onSpeedChange(sliderSpeed)
+                    },
+                    modifier =
+                        Modifier.size(48.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
                 ) {
-                    Text(
-                        text = stringResource(R.string.player_speed_title_fmt, sliderSpeed),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Medium,
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_remove),
+                        contentDescription = stringResource(R.string.cd_speed_decrease),
+                        tint = MaterialTheme.colorScheme.primary,
                     )
-
-                    Spacer(modifier = Modifier.height(32.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        IconButton(
-                            onClick = {
-                                sliderSpeed = (sliderSpeed - 0.25f).coerceIn(0.25f, 2.0f)
-                                onSpeedChange(sliderSpeed)
-                            },
-                            modifier =
-                                Modifier.size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_remove),
-                                contentDescription = stringResource(R.string.cd_speed_decrease),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-
-                        Slider(
-                            value = sliderSpeed,
-                            onValueChange = { newSpeed -> sliderSpeed = newSpeed },
-                            onValueChangeFinished = { onSpeedChange(sliderSpeed) },
-                            valueRange = 0.25f..2.0f,
-                            steps = 6,
-                            modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
-                            colors =
-                                SliderDefaults.colors(
-                                    thumbColor = MaterialTheme.colorScheme.primary,
-                                    activeTrackColor = MaterialTheme.colorScheme.primary,
-                                    inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
-                                ),
-                        )
-
-                        IconButton(
-                            onClick = {
-                                sliderSpeed = (sliderSpeed + 0.25f).coerceIn(0.25f, 2.0f)
-                                onSpeedChange(sliderSpeed)
-                            },
-                            modifier =
-                                Modifier.size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_add),
-                                contentDescription = stringResource(R.string.cd_speed_increase),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                    ) {
-                        SpeedChip(
-                            speed = 0.25f,
-                            isSelected = (sliderSpeed - 0.25f).absoluteValue < 0.01f,
-                            onClick = {
-                                sliderSpeed = 0.25f
-                                onSpeedChange(0.25f)
-                            },
-                        )
-                        SpeedChip(
-                            speed = 0.50f,
-                            isSelected = (sliderSpeed - 0.50f).absoluteValue < 0.01f,
-                            onClick = {
-                                sliderSpeed = 0.50f
-                                onSpeedChange(0.50f)
-                            },
-                        )
-                        SpeedChip(
-                            speed = 1.00f,
-                            isSelected = (sliderSpeed - 1.00f).absoluteValue < 0.01f,
-                            onClick = {
-                                sliderSpeed = 1.00f
-                                onSpeedChange(1.00f)
-                            },
-                        )
-                        SpeedChip(
-                            speed = 1.50f,
-                            isSelected = (sliderSpeed - 1.50f).absoluteValue < 0.01f,
-                            onClick = {
-                                sliderSpeed = 1.50f
-                                onSpeedChange(1.50f)
-                            },
-                        )
-                        SpeedChip(
-                            speed = 2.00f,
-                            isSelected = (sliderSpeed - 2.00f).absoluteValue < 0.01f,
-                            onClick = {
-                                sliderSpeed = 2.00f
-                                onSpeedChange(2.00f)
-                            },
-                        )
-                    }
                 }
+
+                Slider(
+                    value = sliderSpeed,
+                    onValueChange = { newSpeed -> sliderSpeed = newSpeed },
+                    onValueChangeFinished = { onSpeedChange(sliderSpeed) },
+                    valueRange = 0.25f..2.0f,
+                    steps = 6,
+                    modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
+                    colors =
+                        SliderDefaults.colors(
+                            thumbColor = MaterialTheme.colorScheme.primary,
+                            activeTrackColor = MaterialTheme.colorScheme.primary,
+                            inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        ),
+                )
+
+                IconButton(
+                    onClick = {
+                        sliderSpeed = (sliderSpeed + 0.25f).coerceIn(0.25f, 2.0f)
+                        onSpeedChange(sliderSpeed)
+                    },
+                    modifier =
+                        Modifier.size(48.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_add),
+                        contentDescription = stringResource(R.string.cd_speed_increase),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
+                SpeedChip(
+                    speed = 0.25f,
+                    isSelected = (sliderSpeed - 0.25f).absoluteValue < 0.01f,
+                    onClick = {
+                        sliderSpeed = 0.25f
+                        onSpeedChange(0.25f)
+                    },
+                )
+                SpeedChip(
+                    speed = 0.50f,
+                    isSelected = (sliderSpeed - 0.50f).absoluteValue < 0.01f,
+                    onClick = {
+                        sliderSpeed = 0.50f
+                        onSpeedChange(0.50f)
+                    },
+                )
+                SpeedChip(
+                    speed = 1.00f,
+                    isSelected = (sliderSpeed - 1.00f).absoluteValue < 0.01f,
+                    onClick = {
+                        sliderSpeed = 1.00f
+                        onSpeedChange(1.00f)
+                    },
+                )
+                SpeedChip(
+                    speed = 1.50f,
+                    isSelected = (sliderSpeed - 1.50f).absoluteValue < 0.01f,
+                    onClick = {
+                        sliderSpeed = 1.50f
+                        onSpeedChange(1.50f)
+                    },
+                )
+                SpeedChip(
+                    speed = 2.00f,
+                    isSelected = (sliderSpeed - 2.00f).absoluteValue < 0.01f,
+                    onClick = {
+                        sliderSpeed = 2.00f
+                        onSpeedChange(2.00f)
+                    },
+                )
             }
         }
     }

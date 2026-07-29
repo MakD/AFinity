@@ -12,7 +12,6 @@ import androidx.paging.map
 import com.makd.afinity.R
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
-import com.makd.afinity.data.repository.admin.AdminRepository
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.MediaChangeSource
 import com.makd.afinity.data.manager.OfflineModeManager
@@ -46,6 +45,7 @@ import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
+import com.makd.afinity.data.repository.admin.AdminRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
@@ -759,7 +759,8 @@ constructor(
                     val nextEpisodeFetchCovered =
                         when (item) {
                             is AfinityShow -> itemType?.uppercase() == "SERIES"
-                            is AfinitySeason -> itemType?.uppercase() == "SEASON" && seriesId != null
+                            is AfinitySeason ->
+                                itemType?.uppercase() == "SEASON" && seriesId != null
                             else -> true
                         }
                     if (!nextEpisodeFetchCovered) {
@@ -887,6 +888,16 @@ constructor(
             }
             "SEASON" -> {
                 fetchNextUp()
+                viewModelScope.launch {
+                    try {
+                        getCurrentUserId()?.let { id ->
+                            val features = mediaRepository.getSpecialFeatures(itemId, id)
+                            _uiState.update { it.copy(specialFeatures = features) }
+                        }
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to get special features")
+                    }
+                }
                 if (seriesId != null) {
                     viewModelScope.launch {
                         try {
@@ -1268,16 +1279,15 @@ constructor(
 
     /**
      * Long-press entry point. Always opens the version/location dialog for the leaf item (movie or
-     * episode), even when there is a single version — letting the user pick a storage location.
-     * For bulk show/season downloads, opens a storage-location picker when more than one volume is
+     * episode), even when there is a single version — letting the user pick a storage location. For
+     * bulk show/season downloads, opens a storage-location picker when more than one volume is
      * available; otherwise falls back to the normal tap behavior.
      */
     fun onDownloadLongClick() {
         val selectedEpisode = _selectedEpisode.value
         val currentItem = _uiState.value.item
         val leaf =
-            selectedEpisode
-                ?: currentItem?.takeIf { it !is AfinityShow && it !is AfinitySeason }
+            selectedEpisode ?: currentItem?.takeIf { it !is AfinityShow && it !is AfinitySeason }
         if (leaf != null) {
             showQualityDialogWithVolumes()
         } else {
@@ -1349,8 +1359,7 @@ constructor(
     }
 
     fun dismissLocationDialog() {
-        _uiState.value =
-            _uiState.value.copy(showLocationDialog = false, selectedVolumeId = null)
+        _uiState.value = _uiState.value.copy(showLocationDialog = false, selectedVolumeId = null)
     }
 
     fun onQualitySelected(sourceId: String) {
@@ -1556,8 +1565,7 @@ constructor(
     }
 
     fun dismissQualityDialog() {
-        _uiState.value =
-            _uiState.value.copy(showQualityDialog = false, selectedVolumeId = null)
+        _uiState.value = _uiState.value.copy(showQualityDialog = false, selectedVolumeId = null)
     }
 
     fun getBaseUrl(): String = mediaRepository.getBaseUrl()

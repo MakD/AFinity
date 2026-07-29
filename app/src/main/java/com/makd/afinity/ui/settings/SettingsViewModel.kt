@@ -300,6 +300,18 @@ constructor(
         }
 
         viewModelScope.launch {
+            preferencesRepository.getPauseScreenEnabledFlow().collect {
+                _uiState.value = _uiState.value.copy(pauseScreenEnabled = it)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getPauseScreenDelaySecondsFlow().collect {
+                _uiState.value = _uiState.value.copy(pauseScreenDelaySeconds = it)
+            }
+        }
+
+        viewModelScope.launch {
             preferencesRepository.getDefaultVideoZoomModeFlow().collect { mode ->
                 _uiState.value = _uiState.value.copy(defaultVideoZoomMode = mode)
             }
@@ -542,6 +554,28 @@ constructor(
                 Timber.d("Logo auto-hide set to: $enabled")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle logo auto-hide")
+            }
+        }
+    }
+
+    fun togglePauseScreen(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setPauseScreenEnabled(enabled)
+                Timber.d("Pause screen set to: $enabled")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle pause screen")
+            }
+        }
+    }
+
+    fun setPauseScreenDelaySeconds(seconds: Int) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setPauseScreenDelaySeconds(seconds)
+                Timber.d("Pause screen delay set to: ${seconds}s")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set pause screen delay")
             }
         }
     }
@@ -1068,6 +1102,8 @@ data class SettingsUiState(
     val skipOutroMode: SkipMode = SkipMode.BUTTON,
     val useExoPlayer: Boolean = true,
     val logoAutoHide: Boolean = false,
+    val pauseScreenEnabled: Boolean = false,
+    val pauseScreenDelaySeconds: Int = 0,
     val defaultVideoZoomMode: VideoZoomMode = VideoZoomMode.FIT,
     val mpvHwDec: MpvHwDec = MpvHwDec.default,
     val mpvVideoOutput: MpvVideoOutput = MpvVideoOutput.default,

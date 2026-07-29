@@ -278,6 +278,18 @@ interface PreferencesRepository {
 
     fun getLogoAutoHideFlow(): Flow<Boolean>
 
+    suspend fun setPauseScreenEnabled(enabled: Boolean)
+
+    suspend fun getPauseScreenEnabled(): Boolean
+
+    fun getPauseScreenEnabledFlow(): Flow<Boolean>
+
+    suspend fun setPauseScreenDelaySeconds(seconds: Int)
+
+    suspend fun getPauseScreenDelaySeconds(): Int
+
+    fun getPauseScreenDelaySecondsFlow(): Flow<Int>
+
     suspend fun setDefaultVideoZoomMode(mode: VideoZoomMode)
 
     suspend fun getDefaultVideoZoomMode(): VideoZoomMode

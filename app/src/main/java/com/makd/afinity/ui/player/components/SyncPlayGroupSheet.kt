@@ -57,7 +57,11 @@ fun SyncPlayGroupSheet(
 ) {
     Dialog(
         onDismissRequest = { if (!uiState.isJoining) onDismiss() },
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+        properties =
+            DialogProperties(
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false,
+            ),
     ) {
         Surface(
             modifier = Modifier.widthIn(max = 440.dp).fillMaxWidth(0.9f).padding(vertical = 24.dp),

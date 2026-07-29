@@ -106,6 +106,10 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
         val LOGO_AUTO_HIDE = booleanPreferencesKey("logo_auto_hide")
 
+        val PAUSE_SCREEN_ENABLED = booleanPreferencesKey("pause_screen_enabled")
+
+        val PAUSE_SCREEN_DELAY_SECONDS = intPreferencesKey("pause_screen_delay_seconds")
+
         val ASS_RENDER_MODE = stringPreferencesKey("ass_render_mode")
         val MPV_HW_DEC = stringPreferencesKey("mpv_hw_dec")
         val MPV_GPU_API = stringPreferencesKey("mpv_gpu_api")
@@ -827,6 +831,34 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
     override fun getLogoAutoHideFlow(): Flow<Boolean> {
         return dataStore.data.map { preferences -> preferences[Keys.LOGO_AUTO_HIDE] ?: true }
+    }
+
+    override suspend fun setPauseScreenEnabled(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.PAUSE_SCREEN_ENABLED] = enabled }
+    }
+
+    override suspend fun getPauseScreenEnabled(): Boolean {
+        return dataStore.data.first()[Keys.PAUSE_SCREEN_ENABLED] ?: false
+    }
+
+    override fun getPauseScreenEnabledFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences -> preferences[Keys.PAUSE_SCREEN_ENABLED] ?: false }
+    }
+
+    override suspend fun setPauseScreenDelaySeconds(seconds: Int) {
+        dataStore.edit { preferences ->
+            preferences[Keys.PAUSE_SCREEN_DELAY_SECONDS] = seconds.coerceIn(0, 5)
+        }
+    }
+
+    override suspend fun getPauseScreenDelaySeconds(): Int {
+        return (dataStore.data.first()[Keys.PAUSE_SCREEN_DELAY_SECONDS] ?: 0).coerceIn(0, 5)
+    }
+
+    override fun getPauseScreenDelaySecondsFlow(): Flow<Int> {
+        return dataStore.data.map { preferences ->
+            (preferences[Keys.PAUSE_SCREEN_DELAY_SECONDS] ?: 0).coerceIn(0, 5)
+        }
     }
 
     override suspend fun setDefaultVideoZoomMode(mode: VideoZoomMode) {

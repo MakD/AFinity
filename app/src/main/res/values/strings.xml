@@ -702,6 +702,9 @@
     <string name="pref_autohide_logo_summary">Hide title logo with player controls</string>
     <string name="pref_pause_screen_title">Pause Screen</string>
     <string name="pref_pause_screen_summary">Show item details and ratings when paused</string>
+    <string name="pref_pause_screen_delay_title">Show after</string>
+    <string name="pause_screen_delay_instant">Instant</string>
+    <string name="pause_screen_delay_seconds_fmt">%1$ds</string>
     <string name="pref_default_zoom_title">Default Zoom</string>
 
     <string name="pref_group_subtitles">Subtitles</string>

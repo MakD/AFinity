@@ -226,6 +226,7 @@ constructor(
             startProgressReporting()
             initializeVideoZoomMode()
             initializeLogoAutoHide()
+            initializePauseScreen()
             initializeBackgroundPlay()
             observeCastState()
             observeServerUrlChanges()
@@ -301,6 +302,19 @@ constructor(
         viewModelScope.launch {
             val logoAutoHide = preferencesRepository.getLogoAutoHide()
             updateUiState { it.copy(logoAutoHide = logoAutoHide) }
+        }
+    }
+
+    private fun initializePauseScreen() {
+        viewModelScope.launch {
+            val pauseScreenEnabled = preferencesRepository.getPauseScreenEnabled()
+            val pauseScreenDelaySeconds = preferencesRepository.getPauseScreenDelaySeconds()
+            updateUiState {
+                it.copy(
+                    pauseScreenEnabled = pauseScreenEnabled,
+                    pauseScreenDelaySeconds = pauseScreenDelaySeconds,
+                )
+            }
         }
     }
 
@@ -2958,6 +2972,8 @@ constructor(
         val externalRatings: ExternalRatings = ExternalRatings(),
         val resolvedOrientation: Int = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,
         val logoAutoHide: Boolean = false,
+        val pauseScreenEnabled: Boolean = false,
+        val pauseScreenDelaySeconds: Int = 0,
         val isLiveChannel: Boolean = false,
         val isCasting: Boolean = false,
         val showCastChooser: Boolean = false,

@@ -56,6 +56,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -97,6 +98,7 @@ import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.livetv.components.LiveBadge
 import com.makd.afinity.ui.player.PlayerViewModel
 import com.makd.afinity.ui.player.toLocalizedLanguageName
+import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.PersonKind
 import java.util.Date
@@ -265,14 +267,25 @@ fun PlayerControls(
         )
 
     Box(modifier = Modifier.fillMaxSize()) {
-        val showPauseDetails =
-            !uiState.isPlaying &&
+        val pauseDetailsEligible =
+            uiState.pauseScreenEnabled &&
+                !uiState.isPlaying &&
                 !uiState.isBuffering &&
                 !uiState.isControlsLocked &&
                 !uiState.isInPictureInPictureMode &&
                 uiState.currentItem != null &&
                 !uiState.isLiveChannel &&
                 !uiState.isPlayingIntro
+
+        var showPauseDetails by remember { mutableStateOf(false) }
+        LaunchedEffect(pauseDetailsEligible, uiState.pauseScreenDelaySeconds) {
+            if (pauseDetailsEligible) {
+                delay(uiState.pauseScreenDelaySeconds * 1000L)
+                showPauseDetails = true
+            } else {
+                showPauseDetails = false
+            }
+        }
 
         AnimatedVisibility(
             visible = shouldShowControls,
@@ -566,11 +579,26 @@ fun PlayerControls(
         }
 
         if (showSpeedDialog) {
-            PlaybackSpeedDialog(
-                currentSpeed = uiState.playbackSpeed,
-                onSpeedChange = { speed -> onPlayerEvent(PlayerEvent.SetPlaybackSpeed(speed)) },
-                onDismiss = { showSpeedDialog = false },
-            )
+            Box(
+                modifier =
+                    Modifier.fillMaxSize().clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) {
+                        showSpeedDialog = false
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                PlaybackSpeedPanel(
+                    currentSpeed = uiState.playbackSpeed,
+                    onSpeedChange = { speed -> onPlayerEvent(PlayerEvent.SetPlaybackSpeed(speed)) },
+                    modifier =
+                        Modifier.windowInsetsPadding(
+                                WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                            )
+                            .widthIn(min = 340.dp, max = 560.dp),
+                )
+            }
         }
 
         if (showEpisodeSwitcher && playlistQueue.isNotEmpty()) {
@@ -1037,8 +1065,10 @@ private fun BottomControls(
                         if (isPortrait) Arrangement.spacedBy(4.dp, Alignment.End)
                         else Arrangement.SpaceBetween,
                 ) {
+                    val cellModifier = if (isPortrait) Modifier else Modifier.weight(1f)
                     if (showEpisodeSwitcherButton) {
                         LabeledControl(
+                            modifier = cellModifier,
                             painter = painterResource(id = R.drawable.ic_episodes_list),
                             label = stringResource(R.string.cd_episodes),
                             showLabel = !isPortrait,
@@ -1049,6 +1079,7 @@ private fun BottomControls(
                     val tracksActive =
                         uiState.audioStreamIndex != null || uiState.subtitleStreamIndex != null
                     LabeledControl(
+                        modifier = cellModifier,
                         painter = painterResource(id = R.drawable.ic_subtitles),
                         label = stringResource(R.string.player_tracks_label),
                         tint = if (tracksActive) MaterialTheme.colorScheme.primary else Color.White,
@@ -1057,6 +1088,7 @@ private fun BottomControls(
                     )
 
                     LabeledControl(
+                        modifier = cellModifier,
                         painter = painterResource(id = R.drawable.ic_speed),
                         label = stringResource(R.string.cd_speed),
                         showLabel = !isPortrait,
@@ -1064,6 +1096,7 @@ private fun BottomControls(
                     )
 
                     LabeledControl(
+                        modifier = cellModifier,
                         painter = painterResource(id = R.drawable.ic_dots_vertical),
                         label = stringResource(R.string.player_more_label),
                         showLabel = !isPortrait,
@@ -1091,7 +1124,7 @@ private fun LabeledControl(
                 .clickable(onClick = onClick)
                 .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
     ) {
         Icon(
             painter = painter,
@@ -1415,7 +1448,7 @@ private fun MoreMenu(
             modifier =
                 Modifier.align(Alignment.BottomEnd)
                     .windowInsetsPadding(
-                        WindowInsets.safeDrawing.only(
+                        WindowInsets.displayCutout.only(
                             WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
                         )
                     )

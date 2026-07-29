@@ -68,6 +68,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.core.graphics.toColorInt
@@ -364,6 +365,27 @@ fun PlayerOptionsScreen(
                         onCheckedChange = viewModel::toggleLogoAutoHide,
                     )
                     SettingsDivider()
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_player_pause_filled),
+                        title = stringResource(R.string.pref_pause_screen_title),
+                        subtitle = stringResource(R.string.pref_pause_screen_summary),
+                        checked = uiState.pauseScreenEnabled,
+                        onCheckedChange = viewModel::togglePauseScreen,
+                    )
+                    AnimatedVisibility(
+                        visible = uiState.pauseScreenEnabled,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically(),
+                    ) {
+                        Column {
+                            SettingsDivider()
+                            PauseScreenDelaySelectorItem(
+                                seconds = uiState.pauseScreenDelaySeconds,
+                                onSecondsChange = viewModel::setPauseScreenDelaySeconds,
+                            )
+                        }
+                    }
+                    SettingsDivider()
                     VideoZoomModeSelectorItem(
                         selectedMode = uiState.defaultVideoZoomMode,
                         onModeSelected = viewModel::setDefaultVideoZoomMode,
@@ -620,6 +642,90 @@ private fun VideoZoomModeSelectorItem(
                             }
                         } else null,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PauseScreenDelaySelectorItem(seconds: Int, onSecondsChange: (Int) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.ic_timer),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(24.dp),
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = stringResource(R.string.pref_pause_screen_delay_title),
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f).padding(end = 16.dp),
+        )
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier.size(36.dp),
+            ) {
+                IconButton(
+                    onClick = { if (seconds > 0) onSecondsChange(seconds - 1) },
+                    enabled = seconds > 0,
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_remove),
+                        contentDescription = stringResource(R.string.cd_decrease_limit),
+                        tint =
+                            if (seconds > 0) MaterialTheme.colorScheme.onSurface
+                            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    )
+                }
+            }
+
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            ) {
+                Text(
+                    text =
+                        if (seconds == 0) stringResource(R.string.pause_screen_delay_instant)
+                        else stringResource(R.string.pause_screen_delay_seconds_fmt, seconds),
+                    style =
+                        MaterialTheme.typography.labelMedium.copy(
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.width(72.dp).padding(vertical = 6.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier.size(36.dp),
+            ) {
+                IconButton(
+                    onClick = { if (seconds < 5) onSecondsChange(seconds + 1) },
+                    enabled = seconds < 5,
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_add),
+                        contentDescription = stringResource(R.string.cd_increase_limit),
+                        tint =
+                            if (seconds < 5) MaterialTheme.colorScheme.onSurface
+                            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    )
+                }
             }
         }
     }
