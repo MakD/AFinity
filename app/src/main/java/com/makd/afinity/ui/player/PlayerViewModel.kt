@@ -2524,11 +2524,11 @@ constructor(
         val chapters = _uiState.value.chapters
         if (chapterSkipGestureEnabled && chapters.isNotEmpty()) {
             when {
-                xFraction < 0.4f -> {
+                xFraction < 0.25f -> {
                     seekToPreviousChapter()
                     return
                 }
-                xFraction > 0.6f -> {
+                xFraction > 0.75f -> {
                     seekToNextChapter()
                     return
                 }
