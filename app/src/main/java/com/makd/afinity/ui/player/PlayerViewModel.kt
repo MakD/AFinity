@@ -1559,7 +1559,7 @@ constructor(
             currentItem = fullItem
 
             val chapters = fullItem.chapters
-            updateUiState { it.copy(chapters = chapters) }
+            updateUiState { it.copy(chapters = chapters, baseUrl = apiClient.baseUrl ?: it.baseUrl) }
 
             val finalMediaSourceId =
                 if (mediaSourceId.isBlank() && fullItem.sources.isNotEmpty()) {
@@ -2970,6 +2970,7 @@ constructor(
         val trickplayPreviewImage: ImageBitmap? = null,
         val trickplayPreviewPosition: Long = 0L,
         val chapters: List<AfinityChapter> = emptyList(),
+        val baseUrl: String = "",
         val currentItem: AfinityItem? = null,
         val showSkipButton: Boolean = false,
         val skipButtonText: String = "Skip",

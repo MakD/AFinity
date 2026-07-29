@@ -142,6 +142,7 @@ fun PlayerControls(
     var showTrackPanel by remember { mutableStateOf(false) }
     var showSpeedDialog by remember { mutableStateOf(false) }
     var showEpisodeSwitcher by remember { mutableStateOf(false) }
+    var showChapterSwitcher by remember { mutableStateOf(false) }
     var showMembersPopup by remember { mutableStateOf(false) }
 
     val currentItem = uiState.currentItem
@@ -468,6 +469,9 @@ fun PlayerControls(
                         showEpisodeSwitcherButton =
                             (playlistQueue.size - playlistContentStartIndex) > 1 &&
                                 !uiState.isPlayingIntro,
+                        onChapterSwitcherToggle = { showChapterSwitcher = !showChapterSwitcher },
+                        showChapterSwitcherButton =
+                            uiState.chapters.isNotEmpty() && !uiState.isPlayingIntro,
                         onVersionToggle = onVersionToggleRequest,
                         modifier = Modifier.align(Alignment.BottomCenter),
                     )
@@ -534,6 +538,25 @@ fun PlayerControls(
                     segment = currentSegment,
                     skipButtonText = uiState.skipButtonText,
                     onSkipClick = { onPlayerEvent(PlayerEvent.SkipSegment(currentSegment)) },
+                )
+            }
+        }
+
+        if (showChapterSwitcher && uiState.chapters.isNotEmpty()) {
+            val chapterItemId = uiState.currentItem?.id
+            if (chapterItemId != null) {
+                ChapterSwitcher(
+                    chapters = uiState.chapters,
+                    currentPosition =
+                        if (uiState.isSeeking) uiState.seekPosition else uiState.currentPosition,
+                    itemId = chapterItemId,
+                    baseUrl = uiState.baseUrl,
+                    onChapterClick = { startPosition ->
+                        onPlayerEvent(PlayerEvent.Seek(startPosition))
+                        showChapterSwitcher = false
+                    },
+                    onDismiss = { showChapterSwitcher = false },
+                    modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
         }
@@ -1012,6 +1035,8 @@ private fun BottomControls(
     onTrackPanelToggle: () -> Unit,
     onEpisodeSwitcherToggle: () -> Unit = {},
     showEpisodeSwitcherButton: Boolean = false,
+    onChapterSwitcherToggle: () -> Unit = {},
+    showChapterSwitcherButton: Boolean = false,
     onVersionToggle: () -> Unit = {},
 ) {
     Box(
@@ -1081,6 +1106,14 @@ private fun BottomControls(
                                 label = stringResource(R.string.cd_version_selector),
                                 showLabel = false,
                                 onClick = onVersionToggle,
+                            )
+                        }
+                        if (showChapterSwitcherButton) {
+                            LabeledControl(
+                                painter = painterResource(id = R.drawable.ic_bookmarks),
+                                label = stringResource(R.string.chapters_title),
+                                showLabel = false,
+                                onClick = onChapterSwitcherToggle,
                             )
                         }
                         if (showEpisodeSwitcherButton) {
@@ -1244,8 +1277,7 @@ private fun SeekBar(
                                     val x =
                                         (chapter.startPosition.toFloat() / duration.toFloat()) *
                                             size.width
-                                    val cx =
-                                        x.coerceIn(markerRadius, size.width - markerRadius)
+                                    val cx = x.coerceIn(markerRadius, size.width - markerRadius)
                                     val markerColor =
                                         if (cx < thumbCenterX) onPrimaryColor.copy(alpha = 0.85f)
                                         else Color.White.copy(alpha = 0.8f)
@@ -1530,7 +1562,7 @@ private fun PauseDetailsOverlay(
             buildString {
                 val s = ep.parentIndexNumber
                 val e = ep.indexNumber
-                if (s != null && e != null) append("S$s:E$e")
+                append("S$s:E$e")
                 if (ep.name.isNotBlank()) {
                     if (isNotEmpty()) append(" · ")
                     append(ep.name)
