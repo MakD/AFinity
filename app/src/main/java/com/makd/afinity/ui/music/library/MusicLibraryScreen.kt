@@ -874,7 +874,7 @@ private fun LibraryShortcutsRow(
             LibraryShortcut(
                 filter = LibraryFilter.Albums,
                 labelRes = R.string.music_nav_albums,
-                iconRes = R.drawable.ic_disc,
+                iconRes = R.drawable.ic_vinyl,
                 gradientStart = Color(0xFFA4C4D6),
                 gradientEnd = Color(0xFF50787A),
             ),
