@@ -8,14 +8,22 @@ import com.makd.afinity.util.NetworkConnectivityMonitor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.Jellyfin
@@ -57,6 +65,8 @@ constructor(
     private val _currentServer = MutableStateFlow<Server?>(null)
     override val currentServer: StateFlow<Server?> = _currentServer.asStateFlow()
 
+    private val reconnectMutex = Mutex()
+
     init {
         scope.launch {
             sessionManager.currentSession.collect { session ->
@@ -92,35 +102,89 @@ constructor(
                     networkConnectivityMonitor.networkDropEvents,
                 )
                 .debounce(500)
-                .collect {
-                val session = sessionManager.currentSession.value ?: return@collect
-                if (_currentBaseUrl.value.isBlank()) return@collect
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) return@collect
-                try {
-                    when (val result = serverAddressResolver.resolveAddress(session.serverId)) {
-                        is AddressResolutionResult.Success -> {
-                            sessionManager.setServerReachable(true)
-                            if (result.address != _currentBaseUrl.value) {
-                                Timber.d(
-                                    "Network switched, updating URL from ${_currentBaseUrl.value} to ${result.address}"
-                                )
-                                setBaseUrl(result.address)
-                                sessionManager.updateSessionUrl(result.address)
-                            }
-                        }
-                        is AddressResolutionResult.AllFailed -> {
-                            Timber.w(
-                                "Re-resolution failed for all addresses, marking server unreachable"
-                            )
-                            sessionManager.setServerReachable(false)
-                        }
+                .collectLatest {
+                    val session = sessionManager.currentSession.value ?: return@collectLatest
+                    if (_currentBaseUrl.value.isBlank()) return@collectLatest
+                    if (!networkConnectivityMonitor.isCurrentlyConnected()) return@collectLatest
+                    if (!tryResolveAndConnect()) {
+                        confirmUnreachable(session.serverId)
                     }
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to re-resolve address on network switch")
                 }
-            }
+        }
+        scope.launch {
+            combine(
+                    sessionManager.isServerReachable,
+                    networkConnectivityMonitor.isNetworkAvailable,
+                ) { reachable, networkAvailable -> !reachable && networkAvailable }
+                .distinctUntilChanged()
+                .collectLatest { shouldRecover ->
+                    if (!shouldRecover) return@collectLatest
+                    if (sessionManager.currentSession.value == null) return@collectLatest
+                    var delayMs = RECONNECT_INITIAL_DELAY_MS
+                    while (
+                        currentCoroutineContext().isActive &&
+                            !sessionManager.isServerReachable.value
+                    ) {
+                        if (
+                            networkConnectivityMonitor.isCurrentlyConnected() &&
+                                tryResolveAndConnect()
+                        ) {
+                            break
+                        }
+                        delay(delayMs)
+                        delayMs = (delayMs * 2).coerceAtMost(RECONNECT_MAX_DELAY_MS)
+                    }
+                }
         }
     }
+
+    private suspend fun tryResolveAndConnect(): Boolean =
+        reconnectMutex.withLock {
+            val session = sessionManager.currentSession.value ?: return@withLock false
+            if (_currentBaseUrl.value.isBlank()) return@withLock false
+            val serverId = session.serverId
+            try {
+                val result = serverAddressResolver.resolveAddress(serverId)
+                if (sessionManager.currentSession.value?.serverId != serverId) {
+                    Timber.d("Session changed during re-resolution, discarding result for $serverId")
+                    return@withLock false
+                }
+                when (result) {
+                    is AddressResolutionResult.Success -> {
+                        sessionManager.setServerReachable(true)
+                        if (result.address != _currentBaseUrl.value) {
+                            Timber.d(
+                                "Reconnected: updating URL from ${_currentBaseUrl.value} to ${result.address}"
+                            )
+                            setBaseUrl(result.address)
+                            sessionManager.updateSessionUrl(result.address)
+                        }
+                        true
+                    }
+                    is AddressResolutionResult.AllFailed -> {
+                        Timber.w("Re-resolution failed for all addresses")
+                        false
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to re-resolve server address")
+                false
+            }
+        }
+
+    private suspend fun confirmUnreachable(serverId: String) {
+        if (!sessionManager.isServerReachable.value) return
+        delay(UNREACHABLE_CONFIRM_DELAY_MS)
+        if (!networkConnectivityMonitor.isCurrentlyConnected()) return
+        if (sessionManager.currentSession.value?.serverId != serverId) return
+        if (!sessionManager.isServerReachable.value) return
+        if (tryResolveAndConnect()) return
+        if (sessionManager.currentSession.value?.serverId != serverId) return
+        Timber.w("Sustained re-resolution failure, marking server unreachable")
+        sessionManager.setServerReachable(false)
+    }
+
+    override suspend fun forceReconnect(): Boolean = tryResolveAndConnect()
 
     override fun getBaseUrl(): String {
         return apiClient.baseUrl ?: ""
@@ -376,5 +440,11 @@ constructor(
         ) : ServerConnectionResult()
 
         data class Error(val message: String) : ServerConnectionResult()
+    }
+
+    private companion object {
+        const val RECONNECT_INITIAL_DELAY_MS = 2_000L
+        const val RECONNECT_MAX_DELAY_MS = 30_000L
+        const val UNREACHABLE_CONFIRM_DELAY_MS = 4_000L
     }
 }

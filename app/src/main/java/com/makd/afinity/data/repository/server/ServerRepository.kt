@@ -12,6 +12,8 @@ interface ServerRepository {
 
     suspend fun refreshServerInfo()
 
+    suspend fun forceReconnect(): Boolean
+
     fun getBaseUrl(): String
 
     suspend fun setBaseUrl(baseUrl: String)

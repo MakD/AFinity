@@ -1,16 +1,19 @@
 package com.makd.afinity.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,16 +38,41 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.server.ConnectionType
+import com.makd.afinity.data.repository.server.ServerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class AfinityTopAppBarViewModel @Inject constructor(offlineModeManager: OfflineModeManager) :
-    ViewModel() {
+class AfinityTopAppBarViewModel
+@Inject
+constructor(
+    offlineModeManager: OfflineModeManager,
+    private val serverRepository: ServerRepository,
+) : ViewModel() {
     val connectionType = offlineModeManager.connectionType
+
+    private val _isRetrying = MutableStateFlow(false)
+    val isRetrying: StateFlow<Boolean> = _isRetrying.asStateFlow()
+
+    fun retryConnection() {
+        if (_isRetrying.value) return
+        viewModelScope.launch {
+            _isRetrying.value = true
+            try {
+                serverRepository.forceReconnect()
+            } finally {
+                _isRetrying.value = false
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,6 +93,7 @@ fun AfinityTopAppBar(
     isFetchingRandom: Boolean = false,
 ) {
     val connectionType by viewModel.connectionType.collectAsStateWithLifecycle()
+    val isRetrying by viewModel.isRetrying.collectAsStateWithLifecycle()
     val surfaceColor = MaterialTheme.colorScheme.surface
 
     TopAppBar(
@@ -99,6 +128,44 @@ fun AfinityTopAppBar(
             }
         },
         actions = {
+            if (connectionType == ConnectionType.OFFLINE) {
+                Row(
+                    modifier =
+                        Modifier.height(42.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(Color.Black.copy(alpha = 0.3f))
+                            .clickable(enabled = !isRetrying) { viewModel.retryConnection() }
+                            .padding(horizontal = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (isRetrying) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = Color.White,
+                        )
+                    } else {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_cloud_off),
+                            contentDescription = stringResource(R.string.cd_retry_connection),
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text =
+                            stringResource(
+                                if (isRetrying) R.string.connection_retrying
+                                else R.string.connection_retry
+                            ),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White,
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
             val showDice = onRandomClick != null && connectionType != ConnectionType.OFFLINE
             if (onSearchClick != null || showDice) {
                 Row(
