@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.player.components
 
-import android.content.res.Configuration
 import android.text.format.DateFormat
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
@@ -72,7 +71,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -142,7 +140,6 @@ fun PlayerControls(
     syncPlayMemberInfo: Map<String, SyncPlayMemberInfo> = emptyMap(),
 ) {
     var showTrackPanel by remember { mutableStateOf(false) }
-    var showMoreMenu by remember { mutableStateOf(false) }
     var showSpeedDialog by remember { mutableStateOf(false) }
     var showEpisodeSwitcher by remember { mutableStateOf(false) }
     var showMembersPopup by remember { mutableStateOf(false) }
@@ -471,7 +468,7 @@ fun PlayerControls(
                         showEpisodeSwitcherButton =
                             (playlistQueue.size - playlistContentStartIndex) > 1 &&
                                 !uiState.isPlayingIntro,
-                        onMoreToggle = { showMoreMenu = !showMoreMenu },
+                        onVersionToggle = onVersionToggleRequest,
                         modifier = Modifier.align(Alignment.BottomCenter),
                     )
                 }
@@ -554,27 +551,6 @@ fun PlayerControls(
                     onPlayerEvent(PlayerEvent.SwitchToTrack(trackType, index))
                 },
                 onDismiss = { showTrackPanel = false },
-            )
-        }
-
-        if (showMoreMenu) {
-            MoreMenu(
-                showVersion = uiState.availableSources.size > 1,
-                onVersion = {
-                    showMoreMenu = false
-                    onVersionToggleRequest()
-                },
-                aspectIcon = uiState.videoZoomMode.getIconPainter(),
-                onAspect = { onPlayerEvent(PlayerEvent.CycleVideoZoomMode) },
-                onRotation = {
-                    showMoreMenu = false
-                    onPlayerEvent(PlayerEvent.CycleScreenRotation)
-                },
-                onStats = {
-                    showMoreMenu = false
-                    onPlayerEvent(PlayerEvent.TogglePlaybackStats)
-                },
-                onDismiss = { showMoreMenu = false },
             )
         }
 
@@ -913,6 +889,18 @@ private fun TopControls(
                             modifier = Modifier.size(24.dp),
                         )
                     }
+
+                    IconButton(
+                        onClick = { onPlayerEvent(PlayerEvent.CycleVideoZoomMode) },
+                        modifier = Modifier.size(40.dp),
+                    ) {
+                        Icon(
+                            painter = uiState.videoZoomMode.getIconPainter(),
+                            contentDescription = stringResource(R.string.cd_aspect_ratio),
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
                 }
             }
         }
@@ -1026,7 +1014,7 @@ private fun BottomControls(
     onTrackPanelToggle: () -> Unit,
     onEpisodeSwitcherToggle: () -> Unit = {},
     showEpisodeSwitcherButton: Boolean = false,
-    onMoreToggle: () -> Unit = {},
+    onVersionToggle: () -> Unit = {},
 ) {
     Box(
         modifier =
@@ -1056,52 +1044,68 @@ private fun BottomControls(
                 )
             }
             if (!uiState.isPlayingIntro) {
-                val isPortrait =
-                    LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement =
-                        if (isPortrait) Arrangement.spacedBy(4.dp, Alignment.End)
-                        else Arrangement.SpaceBetween,
                 ) {
-                    val cellModifier = if (isPortrait) Modifier else Modifier.weight(1f)
-                    if (showEpisodeSwitcherButton) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        val tracksActive =
+                            uiState.audioStreamIndex != null || uiState.subtitleStreamIndex != null
                         LabeledControl(
-                            modifier = cellModifier,
-                            painter = painterResource(id = R.drawable.ic_episodes_list),
-                            label = stringResource(R.string.cd_episodes),
-                            showLabel = !isPortrait,
-                            onClick = onEpisodeSwitcherToggle,
+                            painter = painterResource(id = R.drawable.ic_subtitles),
+                            label = stringResource(R.string.player_tracks_label),
+                            tint =
+                                if (tracksActive) MaterialTheme.colorScheme.primary
+                                else Color.White,
+                            showLabel = false,
+                            onClick = onTrackPanelToggle,
+                        )
+                        LabeledControl(
+                            painter = painterResource(id = R.drawable.ic_speed),
+                            label = stringResource(R.string.cd_speed),
+                            showLabel = false,
+                            onClick = onSpeedToggle,
                         )
                     }
 
-                    val tracksActive =
-                        uiState.audioStreamIndex != null || uiState.subtitleStreamIndex != null
-                    LabeledControl(
-                        modifier = cellModifier,
-                        painter = painterResource(id = R.drawable.ic_subtitles),
-                        label = stringResource(R.string.player_tracks_label),
-                        tint = if (tracksActive) MaterialTheme.colorScheme.primary else Color.White,
-                        showLabel = !isPortrait,
-                        onClick = onTrackPanelToggle,
-                    )
+                    Spacer(modifier = Modifier.weight(1f))
 
-                    LabeledControl(
-                        modifier = cellModifier,
-                        painter = painterResource(id = R.drawable.ic_speed),
-                        label = stringResource(R.string.cd_speed),
-                        showLabel = !isPortrait,
-                        onClick = onSpeedToggle,
-                    )
-
-                    LabeledControl(
-                        modifier = cellModifier,
-                        painter = painterResource(id = R.drawable.ic_dots_vertical),
-                        label = stringResource(R.string.player_more_label),
-                        showLabel = !isPortrait,
-                        onClick = onMoreToggle,
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (uiState.availableSources.size > 1) {
+                            LabeledControl(
+                                painter = painterResource(id = R.drawable.ic_versions),
+                                label = stringResource(R.string.cd_version_selector),
+                                showLabel = false,
+                                onClick = onVersionToggle,
+                            )
+                        }
+                        if (showEpisodeSwitcherButton) {
+                            LabeledControl(
+                                painter = painterResource(id = R.drawable.ic_episodes_list),
+                                label = stringResource(R.string.cd_episodes),
+                                showLabel = false,
+                                onClick = onEpisodeSwitcherToggle,
+                            )
+                        }
+                        LabeledControl(
+                            painter = painterResource(id = R.drawable.ic_screen_rotation),
+                            label = stringResource(R.string.cd_screen_rotation),
+                            showLabel = false,
+                            onClick = { onPlayerEvent(PlayerEvent.CycleScreenRotation) },
+                        )
+                        LabeledControl(
+                            painter = painterResource(id = R.drawable.ic_info),
+                            label = stringResource(R.string.cd_playback_info),
+                            showLabel = false,
+                            onClick = { onPlayerEvent(PlayerEvent.TogglePlaybackStats) },
+                        )
+                    }
                 }
             }
         }
@@ -1194,6 +1198,7 @@ private fun SeekBar(
                     ),
                 track = { sliderState ->
                     val primaryColor = MaterialTheme.colorScheme.primary
+                    val onPrimaryColor = MaterialTheme.colorScheme.onPrimary
                     Box(
                         modifier = Modifier.fillMaxWidth().height(18.dp),
                         contentAlignment = Alignment.Center,
@@ -1236,17 +1241,20 @@ private fun SeekBar(
                                         cornerRadius = cornerR,
                                     )
                                 }
+                                val markerRadius = 2.dp.toPx()
                                 uiState.chapters.forEach { chapter ->
                                     val x =
                                         (chapter.startPosition.toFloat() / duration.toFloat()) *
                                             size.width
+                                    val cx =
+                                        x.coerceIn(markerRadius, size.width - markerRadius)
                                     val markerColor =
-                                        if (x < thumbCenterX) Color.White.copy(alpha = 0.6f)
+                                        if (cx < thumbCenterX) onPrimaryColor.copy(alpha = 0.85f)
                                         else Color.White.copy(alpha = 0.8f)
                                     drawCircle(
                                         color = markerColor,
-                                        radius = 2.dp.toPx(),
-                                        center = Offset(x, h / 2),
+                                        radius = markerRadius,
+                                        center = Offset(cx, h / 2),
                                     )
                                 }
                             }
@@ -1418,96 +1426,6 @@ private fun TrackRow(label: String, selected: Boolean, onClick: () -> Unit) {
                 modifier = Modifier.size(18.dp),
             )
         }
-    }
-}
-
-@Composable
-private fun MoreMenu(
-    showVersion: Boolean,
-    onVersion: () -> Unit,
-    aspectIcon: Painter,
-    onAspect: () -> Unit,
-    onRotation: () -> Unit,
-    onStats: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    Box(
-        modifier =
-            Modifier.fillMaxSize().clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-            ) {
-                onDismiss()
-            }
-    ) {
-        Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            tonalElevation = 6.dp,
-            shadowElevation = 8.dp,
-            modifier =
-                Modifier.align(Alignment.BottomEnd)
-                    .windowInsetsPadding(
-                        WindowInsets.displayCutout.only(
-                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
-                        )
-                    )
-                    .padding(bottom = 96.dp, end = 16.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                    ) {}
-                    .widthIn(max = 260.dp),
-        ) {
-            Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                if (showVersion) {
-                    MoreMenuItem(
-                        icon = painterResource(id = R.drawable.ic_versions),
-                        label = stringResource(R.string.cd_version_selector),
-                        onClick = onVersion,
-                    )
-                }
-                MoreMenuItem(
-                    icon = aspectIcon,
-                    label = stringResource(R.string.cd_aspect_ratio),
-                    onClick = onAspect,
-                )
-                MoreMenuItem(
-                    icon = painterResource(id = R.drawable.ic_screen_rotation),
-                    label = stringResource(R.string.cd_screen_rotation),
-                    onClick = onRotation,
-                )
-                MoreMenuItem(
-                    icon = painterResource(id = R.drawable.ic_info),
-                    label = stringResource(R.string.cd_playback_info),
-                    onClick = onStats,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun MoreMenuItem(icon: Painter, label: String, onClick: () -> Unit) {
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(horizontal = 20.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Icon(
-            painter = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(22.dp),
-        )
-        Text(
-            text = label,
-            color = MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.bodyLarge,
-        )
     }
 }
 
@@ -1721,7 +1639,8 @@ private fun PauseDetailsOverlay(
                                                 if (rt > 60) R.drawable.ic_rotten_tomato_fresh
                                                 else R.drawable.ic_rotten_tomato_rotten
                                         ),
-                                    contentDescription = stringResource(R.string.cd_rotten_tomatoes),
+                                    contentDescription =
+                                        stringResource(R.string.cd_rotten_tomatoes),
                                     tint = Color.Unspecified,
                                     modifier = Modifier.size(13.dp),
                                 )
