@@ -110,6 +110,8 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
         val PAUSE_SCREEN_DELAY_SECONDS = intPreferencesKey("pause_screen_delay_seconds")
 
+        val CHAPTER_SKIP_GESTURE = booleanPreferencesKey("chapter_skip_gesture")
+
         val ASS_RENDER_MODE = stringPreferencesKey("ass_render_mode")
         val MPV_HW_DEC = stringPreferencesKey("mpv_hw_dec")
         val MPV_GPU_API = stringPreferencesKey("mpv_gpu_api")
@@ -859,6 +861,18 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         return dataStore.data.map { preferences ->
             (preferences[Keys.PAUSE_SCREEN_DELAY_SECONDS] ?: 0).coerceIn(0, 5)
         }
+    }
+
+    override suspend fun setChapterSkipGesture(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.CHAPTER_SKIP_GESTURE] = enabled }
+    }
+
+    override suspend fun getChapterSkipGesture(): Boolean {
+        return dataStore.data.first()[Keys.CHAPTER_SKIP_GESTURE] ?: false
+    }
+
+    override fun getChapterSkipGestureFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences -> preferences[Keys.CHAPTER_SKIP_GESTURE] ?: false }
     }
 
     override suspend fun setDefaultVideoZoomMode(mode: VideoZoomMode) {

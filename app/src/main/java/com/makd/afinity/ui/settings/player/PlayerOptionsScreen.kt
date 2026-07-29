@@ -31,6 +31,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -45,9 +46,11 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -96,6 +99,8 @@ import com.makd.afinity.ui.settings.SettingsViewModel
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -122,6 +127,11 @@ fun PlayerOptionsScreen(
             .getSubtitlePreferencesFlow()
             .collectAsStateWithLifecycle(initialValue = SubtitlePreferences.DEFAULT)
     val playerOffset = LocalPlayerOffset.current
+
+    var editingConfigFile by remember { mutableStateOf<String?>(null) }
+    editingConfigFile?.let { fileName ->
+        MpvConfigEditorDialog(fileName = fileName, onDismiss = { editingConfigFile = null })
+    }
 
     Scaffold(
         topBar = {
@@ -250,6 +260,20 @@ fun PlayerOptionsScreen(
                                     onValueChange = viewModel::setMpvAudioOutput,
                                     labelProvider = { it.getDisplayName() },
                                     icon = painterResource(id = R.drawable.ic_audio),
+                                )
+                                SettingsDivider()
+                                SettingsItem(
+                                    icon = painterResource(id = R.drawable.ic_edit),
+                                    title = stringResource(R.string.pref_edit_mpv_conf_title),
+                                    subtitle = stringResource(R.string.pref_edit_config_summary),
+                                    onClick = { editingConfigFile = "mpv.conf" },
+                                )
+                                SettingsDivider()
+                                SettingsItem(
+                                    icon = painterResource(id = R.drawable.ic_edit),
+                                    title = stringResource(R.string.pref_edit_input_conf_title),
+                                    subtitle = stringResource(R.string.pref_edit_config_summary),
+                                    onClick = { editingConfigFile = "input.conf" },
                                 )
                                 // Temporarily hidden; backend prefs retained.
                                 /*
@@ -385,6 +409,14 @@ fun PlayerOptionsScreen(
                             )
                         }
                     }
+                    SettingsDivider()
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_fast_forward),
+                        title = stringResource(R.string.pref_chapter_skip_gesture_title),
+                        subtitle = stringResource(R.string.pref_chapter_skip_gesture_summary),
+                        checked = uiState.chapterSkipGesture,
+                        onCheckedChange = viewModel::toggleChapterSkipGesture,
+                    )
                     SettingsDivider()
                     VideoZoomModeSelectorItem(
                         selectedMode = uiState.defaultVideoZoomMode,
@@ -728,6 +760,96 @@ private fun PauseScreenDelaySelectorItem(seconds: Int, onSecondsChange: (Int) ->
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun MpvConfigEditorDialog(fileName: String, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var text by remember { mutableStateOf("") }
+    var loaded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(fileName) {
+        text = withContext(Dispatchers.IO) { readMpvConfig(context, fileName) }
+        loaded = true
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(fileName) },
+        text = {
+            Column {
+                if (!loaded) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(240.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    TextField(
+                        value = text,
+                        onValueChange = { text = it },
+                        modifier = Modifier.fillMaxWidth().height(320.dp),
+                        textStyle =
+                            MaterialTheme.typography.bodySmall.copy(
+                                fontFamily = FontFamily.Monospace
+                            ),
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.mpv_conf_editor_note),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = loaded,
+                onClick = {
+                    val toSave = text
+                    scope.launch {
+                        withContext(Dispatchers.IO) { writeMpvConfig(context, fileName, toSave) }
+                        onDismiss()
+                    }
+                },
+            ) {
+                Text(stringResource(R.string.action_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+    )
+}
+
+private fun mpvConfigDir(context: android.content.Context) = File(context.filesDir, "mpv")
+
+private fun readMpvConfig(context: android.content.Context, fileName: String): String {
+    return try {
+        val file = File(mpvConfigDir(context), fileName)
+        when {
+            file.exists() -> file.readText()
+            fileName == "mpv.conf" ->
+                context.assets.open("mpv.conf").bufferedReader().use { it.readText() }
+            else -> ""
+        }
+    } catch (e: Exception) {
+        timber.log.Timber.e(e, "Failed to read $fileName")
+        ""
+    }
+}
+
+private fun writeMpvConfig(context: android.content.Context, fileName: String, text: String) {
+    try {
+        val dir = mpvConfigDir(context)
+        if (!dir.exists()) dir.mkdirs()
+        File(dir, fileName).writeText(text)
+    } catch (e: Exception) {
+        timber.log.Timber.e(e, "Failed to write $fileName")
     }
 }
 

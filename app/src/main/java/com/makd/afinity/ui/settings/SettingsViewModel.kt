@@ -312,6 +312,12 @@ constructor(
         }
 
         viewModelScope.launch {
+            preferencesRepository.getChapterSkipGestureFlow().collect {
+                _uiState.value = _uiState.value.copy(chapterSkipGesture = it)
+            }
+        }
+
+        viewModelScope.launch {
             preferencesRepository.getDefaultVideoZoomModeFlow().collect { mode ->
                 _uiState.value = _uiState.value.copy(defaultVideoZoomMode = mode)
             }
@@ -576,6 +582,17 @@ constructor(
                 Timber.d("Pause screen delay set to: ${seconds}s")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set pause screen delay")
+            }
+        }
+    }
+
+    fun toggleChapterSkipGesture(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setChapterSkipGesture(enabled)
+                Timber.d("Chapter skip gesture set to: $enabled")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle chapter skip gesture")
             }
         }
     }
@@ -1104,6 +1121,7 @@ data class SettingsUiState(
     val logoAutoHide: Boolean = false,
     val pauseScreenEnabled: Boolean = false,
     val pauseScreenDelaySeconds: Int = 0,
+    val chapterSkipGesture: Boolean = false,
     val defaultVideoZoomMode: VideoZoomMode = VideoZoomMode.FIT,
     val mpvHwDec: MpvHwDec = MpvHwDec.default,
     val mpvVideoOutput: MpvVideoOutput = MpvVideoOutput.default,

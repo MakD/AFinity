@@ -40,7 +40,7 @@ fun GestureHandler(
     isSeekEnabled: Boolean = true,
     onSingleTap: () -> Unit,
     onDoubleTap: (isForward: Boolean) -> Unit,
-    onLongPressStart: () -> Unit = {},
+    onLongPressStart: (xFraction: Float) -> Unit = {},
     onLongPressEnd: () -> Unit = {},
     onBrightnessGesture: (percent: Float, isActive: Boolean) -> Unit,
     onVolumeGesture: (percent: Float, isActive: Boolean) -> Unit,
@@ -105,14 +105,17 @@ fun GestureHandler(
                             }
                         },
                         onTap = { if (!wasLongPress) currentOnSingleTap() },
-                        onPress = { _ ->
+                        onPress = { offset ->
                             wasLongPress = false
                             val job = coroutineScope.launch {
                                 delay(500)
                                 if (!isDragging && gestureType == null) {
                                     isLongPressActive = true
                                     wasLongPress = true
-                                    currentOnLongPressStart()
+                                    val xFraction =
+                                        if (componentWidth > 0f) offset.x / componentWidth
+                                        else 0.5f
+                                    currentOnLongPressStart(xFraction)
                                 }
                             }
 

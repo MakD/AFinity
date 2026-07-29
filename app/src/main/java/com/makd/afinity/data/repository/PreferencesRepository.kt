@@ -290,6 +290,12 @@ interface PreferencesRepository {
 
     fun getPauseScreenDelaySecondsFlow(): Flow<Int>
 
+    suspend fun setChapterSkipGesture(enabled: Boolean)
+
+    suspend fun getChapterSkipGesture(): Boolean
+
+    fun getChapterSkipGestureFlow(): Flow<Boolean>
+
     suspend fun setDefaultVideoZoomMode(mode: VideoZoomMode)
 
     suspend fun getDefaultVideoZoomMode(): VideoZoomMode
