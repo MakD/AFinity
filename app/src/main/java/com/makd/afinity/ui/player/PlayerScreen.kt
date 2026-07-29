@@ -244,7 +244,9 @@ fun PlayerScreen(
                 onDoubleTap = { isForward ->
                     if (!uiState.isControlsLocked) viewModel.onDoubleTapSeek(isForward)
                 },
-                onLongPressStart = { if (!uiState.isControlsLocked) viewModel.onLongPressStart() },
+                onLongPressStart = { xFraction ->
+                    if (!uiState.isControlsLocked) viewModel.onLongPress(xFraction)
+                },
                 onLongPressEnd = { if (!uiState.isControlsLocked) viewModel.onLongPressEnd() },
                 onVolumeGesture = { percent, isActive ->
                     if (!uiState.isControlsLocked) {
@@ -351,8 +353,8 @@ fun PlayerScreen(
                         onBackPressed()
                     }
                 },
-                onNextClick = viewModel::onNextChapterOrEpisode,
-                onPreviousClick = viewModel::onPreviousChapterOrEpisode,
+                onNextClick = viewModel::onNextEpisode,
+                onPreviousClick = viewModel::onPreviousEpisode,
                 onPipToggle = { viewModel.handlePlayerEvent(PlayerEvent.EnterPictureInPicture) },
                 playlistQueue = playlistState.queue,
                 currentPlaylistIndex = playlistState.currentIndex,

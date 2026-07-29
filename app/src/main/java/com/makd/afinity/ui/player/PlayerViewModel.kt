@@ -173,6 +173,7 @@ constructor(
     private var controlsHideJob: Job? = null
     private var statsPollingJob: Job? = null
     private var speedBeforeLongPress: Float? = null
+    private var chapterSkipGestureEnabled: Boolean = false
     private var currentMediaSegments: List<AfinitySegment> = emptyList()
     private var segmentCheckingJob: Job? = null
     private var skipButtonHideJob: Job? = null
@@ -227,6 +228,7 @@ constructor(
             initializeVideoZoomMode()
             initializeLogoAutoHide()
             initializePauseScreen()
+            initializeChapterSkipGesture()
             initializeBackgroundPlay()
             observeCastState()
             observeServerUrlChanges()
@@ -315,6 +317,12 @@ constructor(
                     pauseScreenDelaySeconds = pauseScreenDelaySeconds,
                 )
             }
+        }
+    }
+
+    private fun initializeChapterSkipGesture() {
+        viewModelScope.launch {
+            chapterSkipGestureEnabled = preferencesRepository.getChapterSkipGesture()
         }
     }
 
@@ -2512,12 +2520,59 @@ constructor(
         handlePlayerEvent(PlayerEvent.ToggleControls)
     }
 
+    fun onLongPress(xFraction: Float) {
+        val chapters = _uiState.value.chapters
+        if (chapterSkipGestureEnabled && chapters.isNotEmpty()) {
+            when {
+                xFraction < 0.4f -> {
+                    seekToPreviousChapter()
+                    return
+                }
+                xFraction > 0.6f -> {
+                    seekToNextChapter()
+                    return
+                }
+            }
+        }
+        onLongPressStart()
+    }
+
     fun onLongPressStart() {
         val currentSpeed = _uiState.value.playbackSpeed
         if (currentSpeed < 2.0f) {
             speedBeforeLongPress = currentSpeed
             handlePlayerEvent(PlayerEvent.SetPlaybackSpeed(2.0f))
             updateUiState { it.copy(isSpeedingUp = true) }
+        }
+    }
+
+    private fun seekToPreviousChapter() {
+        val chapters = _uiState.value.chapters
+        if (chapters.isEmpty()) return
+        val currentPos = player.currentPosition
+        val currentChapterIndex = chapters.indexOfLast { it.startPosition <= currentPos }
+        if (currentChapterIndex == -1) return
+        val currentChapter = chapters[currentChapterIndex]
+        val targetPosition =
+            if (currentPos - currentChapter.startPosition > 3000) {
+                currentChapter.startPosition
+            } else if (currentChapterIndex > 0) {
+                chapters[currentChapterIndex - 1].startPosition
+            } else {
+                0L
+            }
+        handlePlayerEvent(PlayerEvent.Seek(targetPosition))
+    }
+
+    private fun seekToNextChapter() {
+        val chapters = _uiState.value.chapters
+        if (chapters.isEmpty()) return
+        val currentPos = player.currentPosition
+        val nextChapter = chapters.find { it.startPosition > currentPos + 1000 }
+        if (nextChapter != null) {
+            handlePlayerEvent(PlayerEvent.Seek(nextChapter.startPosition))
+        } else {
+            onNextEpisode()
         }
     }
 
@@ -2563,43 +2618,6 @@ constructor(
         viewModelScope.launch {
             playlistManager.jumpToItem(episodeId)?.let { targetItem -> playQueueItem(targetItem) }
         }
-    }
-
-    fun onNextChapterOrEpisode() {
-        val chapters = uiState.value.chapters
-        if (chapters.isNotEmpty()) {
-            val currentPos = player.currentPosition
-            val nextChapter = chapters.find { it.startPosition > currentPos + 1000 }
-
-            if (nextChapter != null) {
-                handlePlayerEvent(PlayerEvent.Seek(nextChapter.startPosition))
-                return
-            }
-        }
-        onNextEpisode()
-    }
-
-    fun onPreviousChapterOrEpisode() {
-        val chapters = uiState.value.chapters
-        if (chapters.isNotEmpty()) {
-            val currentPos = player.currentPosition
-            val currentChapterIndex = chapters.indexOfLast { it.startPosition <= currentPos }
-
-            if (currentChapterIndex != -1) {
-                val currentChapter = chapters[currentChapterIndex]
-                val targetPosition =
-                    if (currentPos - currentChapter.startPosition > 3000) {
-                        currentChapter.startPosition
-                    } else if (currentChapterIndex > 0) {
-                        chapters[currentChapterIndex - 1].startPosition
-                    } else {
-                        0L
-                    }
-                handlePlayerEvent(PlayerEvent.Seek(targetPosition))
-                return
-            }
-        }
-        onPreviousEpisode()
     }
 
     private suspend fun playQueueItem(item: AfinityItem) {

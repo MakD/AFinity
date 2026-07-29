@@ -922,9 +922,7 @@ private fun CenterPlayButton(
     onNextClick: () -> Unit,
     onPreviousClick: () -> Unit,
 ) {
-    val hasChapters = uiState.chapters.isNotEmpty()
-    val isEpisode = uiState.currentItem is AfinityEpisode
-    val showSkipButtons = (isEpisode || hasChapters || hasQueueNeighbors) && !uiState.isPlayingIntro
+    val showSkipButtons = hasQueueNeighbors && !uiState.isPlayingIntro
 
     AnimatedVisibility(
         visible = showPlayButton,
