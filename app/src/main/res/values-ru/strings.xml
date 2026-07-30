@@ -1387,4 +1387,27 @@
     <string name="player_cast_heading">Трансляция</string>
     <string name="player_ends_at">Конец в %1$s</string>
     <string name="player_time_left">Осталось: %1$s</string>
+    <string name="cd_retry_connection">Повторное подключение</string>
+    <string name="connection_retry">Повторить</string>
+    <string name="connection_retrying">Подключение…</string>
+    <string name="home_watch_again">Смотреть еще раз</string>
+    <string name="media_languages_audio">Доступные дорожки:</string>
+    <string name="media_languages_subtitles">Доступные субтитры:</string>
+    <string name="media_language_none">Нет языка</string>
+    <string name="media_language_unidentified">Неопределенный</string>
+    <string name="pref_pause_screen_title">Экран паузы</string>
+    <string name="pref_pause_screen_summary">Показывать подробности и оценки во время паузы</string>
+    <string name="pref_pause_screen_delay_title">Показать после</string>
+    <string name="pause_screen_delay_instant">Сразу же</string>
+    <string name="pause_screen_delay_seconds_fmt">%1$d сек</string>
+    <string name="pref_chapter_skip_gesture_title">Жест для пропуска глав</string>
+    <string name="pref_chapter_skip_gesture_summary">Пропуск глав по долгому нажатию на левую или правую грань экрана (посередине - скорость 2×)</string>
+    <string name="pref_edit_mpv_conf_title">Изменить mpv.conf</string>
+    <string name="pref_edit_input_conf_title">Изменить input.conf</string>
+    <string name="pref_edit_config_summary">Продвинутые настройки MPV</string>
+    <string name="pref_edit_input_conf_summary">Привязывать комманды к жестам</string>
+    <string name="mpv_conf_editor_note">Изменения применятся при следующем воспроизведении</string>
+    <string name="home_directed_by_from_watched">Вы смотрели «%2$s», режиссер которого — %1$s</string>
+    <string name="home_written_by_from_watched">Вы смотрели «%2$s», сценарист которого — %1$s</string>
+    <string name="home_because_you_liked">Вам понравилось: %1$s</string>
 </resources>
