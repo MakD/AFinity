@@ -241,8 +241,8 @@ fun PlayerScreen(
             GestureHandler(
                 isSeekEnabled = !uiState.isPlayingIntro,
                 onSingleTap = { viewModel.onSingleTap() },
-                onDoubleTap = { isForward ->
-                    if (!uiState.isControlsLocked) viewModel.onDoubleTapSeek(isForward)
+                onDoubleTap = { isForward, xFraction ->
+                    if (!uiState.isControlsLocked) viewModel.onDoubleTapSeek(isForward, xFraction)
                 },
                 onLongPressStart = { xFraction ->
                     if (!uiState.isControlsLocked) viewModel.onLongPress(xFraction)

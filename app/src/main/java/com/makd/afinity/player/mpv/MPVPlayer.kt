@@ -61,6 +61,7 @@ class MPVPlayer(
     private val hdrPassthrough: Boolean = true,
     private val toneMapping: String = "auto",
     private val hdrPeakDetection: Boolean = true,
+    private val initialOptions: List<Pair<String, String>> = emptyList(),
 ) : BasePlayer(), MPVLib.EventObserver, AudioManager.OnAudioFocusChangeListener {
 
     val mpv: MPVLib
@@ -68,6 +69,8 @@ class MPVPlayer(
     private var audioFocusCallback: () -> Unit = {}
     private lateinit var audioFocusRequest: AudioFocusRequestCompat
     private val handler = Handler(context.mainLooper)
+    private val effectiveVideoOutput: String
+    private val boundInputKeys: Set<String>
 
     private constructor(
         builder: Builder
@@ -87,6 +90,7 @@ class MPVPlayer(
         hdrPassthrough = builder.hdrPassthrough,
         toneMapping = builder.toneMapping,
         hdrPeakDetection = builder.hdrPeakDetection,
+        initialOptions = builder.initialOptions,
     )
 
     class Builder(val context: Context) {
@@ -132,6 +136,9 @@ class MPVPlayer(
         var hdrPeakDetection: Boolean = true
             private set
 
+        var initialOptions: List<Pair<String, String>> = emptyList()
+            private set
+
         fun setAudioAttributes(audioAttributes: AudioAttributes, handleAudioFocus: Boolean) =
             apply {
                 this.audioAttributes = audioAttributes
@@ -173,6 +180,10 @@ class MPVPlayer(
 
         fun setHdrPeakDetection(hdrPeakDetection: Boolean) = apply {
             this.hdrPeakDetection = hdrPeakDetection
+        }
+
+        fun setInitialOptions(initialOptions: List<Pair<String, String>>) = apply {
+            this.initialOptions = initialOptions
         }
 
         fun build() = MPVPlayer(this)
@@ -219,6 +230,8 @@ class MPVPlayer(
 
         mpv.setOptionString("sub-scale-with-window", "yes")
         mpv.setOptionString("sub-use-margins", "no")
+        mpv.setOptionString("sub-auto", "exact")
+        mpv.setOptionString("sub-visibility", "yes")
 
         mpv.setOptionString("force-window", "no")
         mpv.setOptionString("keep-open", "always")
@@ -226,10 +239,13 @@ class MPVPlayer(
         mpv.setOptionString("ytdl", "no")
         mpv.setOptionString("audio-set-media-role", "yes")
 
+        for ((name, value) in initialOptions) mpv.setOptionString(name, value)
+
         mpv.init()
 
-        mpv.setOptionString("sub-auto", "exact")
-        mpv.setOptionString("sub-visibility", "yes")
+        effectiveVideoOutput =
+            mpv.getPropertyString("vo")?.takeIf { it.isNotBlank() } ?: videoOutput
+        boundInputKeys = readBoundInputKeys(configDir)
 
         val audioSessionId = audioManager.generateAudioSessionId()
         if (audioSessionId != AudioManager.ERROR) {
@@ -269,6 +285,39 @@ class MPVPlayer(
                 mpv.setPropertyBoolean("pause", true)
             }
         }
+    }
+
+    private fun readBoundInputKeys(configDir: File): Set<String> {
+        val inputConf = File(configDir, "input.conf")
+        if (!inputConf.exists()) return emptySet()
+
+        return try {
+            inputConf
+                .readLines()
+                .mapNotNull { line ->
+                    val trimmed = line.trim()
+                    if (trimmed.isEmpty() || trimmed.startsWith("#")) return@mapNotNull null
+                    trimmed.substringBefore(' ').substringBefore('\t').takeIf { it.isNotEmpty() }
+                }
+                .toSet()
+        } catch (e: IOException) {
+            Timber.w("Could not read input.conf: ${e.message}")
+            emptySet()
+        }
+    }
+
+    fun sendGestureKeypress(zone: Int): Boolean = sendKeypress(GESTURE_KEYCODE_CENTER + zone)
+
+    fun sendLongPressKeypress(): Boolean = sendKeypress(GESTURE_KEYCODE_LONG_PRESS)
+
+    private fun sendKeypress(keycode: Int): Boolean {
+        if (boundInputKeys.isEmpty()) return false
+
+        val key = "0x%x".format(keycode)
+        if (key !in boundInputKeys) return false
+
+        mpv.command(arrayOf("keypress", key))
+        return true
     }
 
     private fun setupDirectories(context: Context, configDir: File, cacheDir: File) {
@@ -1080,7 +1129,7 @@ class MPVPlayer(
             override fun surfaceCreated(holder: SurfaceHolder) {
                 mpv.attachSurface(holder.surface)
                 mpv.setOptionString("force-window", "yes")
-                mpv.setOptionString("vo", videoOutput)
+                mpv.setOptionString("vo", effectiveVideoOutput)
                 mpv.setOptionString("vid", "auto")
             }
 
@@ -1112,6 +1161,8 @@ class MPVPlayer(
 
     companion object {
         private const val AUDIO_FOCUS_DUCKING = 0.5f
+        private const val GESTURE_KEYCODE_CENTER = 0x10002
+        private const val GESTURE_KEYCODE_LONG_PRESS = 0x10004
 
         private val permanentAvailableCommands: Player.Commands =
             Player.Commands.Builder()

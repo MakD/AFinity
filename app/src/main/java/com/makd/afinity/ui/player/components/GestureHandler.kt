@@ -39,7 +39,7 @@ fun GestureHandler(
     modifier: Modifier = Modifier,
     isSeekEnabled: Boolean = true,
     onSingleTap: () -> Unit,
-    onDoubleTap: (isForward: Boolean) -> Unit,
+    onDoubleTap: (isForward: Boolean, xFraction: Float) -> Unit,
     onLongPressStart: (xFraction: Float) -> Unit = {},
     onLongPressEnd: () -> Unit = {},
     onBrightnessGesture: (percent: Float, isActive: Boolean) -> Unit,
@@ -101,7 +101,9 @@ fun GestureHandler(
                         onDoubleTap = { offset ->
                             if (currentIsSeekEnabled) {
                                 val isForward = offset.x > componentWidth / 2
-                                currentOnDoubleTap(isForward)
+                                val xFraction =
+                                    if (componentWidth > 0f) offset.x / componentWidth else 0.5f
+                                currentOnDoubleTap(isForward, xFraction)
                             }
                         },
                         onTap = { if (!wasLongPress) currentOnSingleTap() },

@@ -83,7 +83,11 @@
     <string name="home_person_directed_by">Directed by %1$s</string>
     <string name="home_person_written_by">Written by %1$s</string>
     <string name="home_because_you_watched">Because you watched %1$s</string>
+    <string name="home_because_you_liked">Because you liked %1$s</string>
     <string name="home_starring_from_watched">Starring %1$s because you watched %2$s</string>
+    <string name="home_directed_by_from_watched">Directed by %1$s because you watched %2$s</string>
+    <string name="home_written_by_from_watched">Written by %1$s because you watched %2$s</string>
+    <string name="home_watch_again">Watch Again</string>
     <string name="hero_btn_more_info">More Information</string>
     <string name="hero_btn_play_trailer">Play Trailer</string>
     <string name="hero_btn_play_media">Play Media</string>
@@ -712,6 +716,7 @@
     <string name="pref_edit_mpv_conf_title">Edit mpv.conf</string>
     <string name="pref_edit_input_conf_title">Edit input.conf</string>
     <string name="pref_edit_config_summary">Advanced MPV configuration</string>
+    <string name="pref_edit_input_conf_summary">Bind commands to gestures</string>
     <string name="mpv_conf_editor_note">Changes apply the next time you start playback</string>
     <string name="pref_default_zoom_title">Default Zoom</string>
 

@@ -272,7 +272,8 @@ fun PlayerOptionsScreen(
                                 SettingsItem(
                                     icon = painterResource(id = R.drawable.ic_edit),
                                     title = stringResource(R.string.pref_edit_input_conf_title),
-                                    subtitle = stringResource(R.string.pref_edit_config_summary),
+                                    subtitle =
+                                        stringResource(R.string.pref_edit_input_conf_summary),
                                     onClick = { editingConfigFile = "input.conf" },
                                 )
                                 // Temporarily hidden; backend prefs retained.

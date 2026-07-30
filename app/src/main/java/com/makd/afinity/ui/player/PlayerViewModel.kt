@@ -741,6 +741,66 @@ constructor(
         val toneMapping = preferencesRepository.getMpvToneMapping()
         val hdrPeakDetection = preferencesRepository.getMpvHdrPeakDetection()
 
+        val initialOptions = buildList {
+            add("sub-ass-override" to "no")
+            add("sub-ass-force-margins" to "yes")
+            add("sub-use-margins" to "yes")
+            add("sub-color" to SubtitlePreferences.colorToMpvHex(subtitlePrefs.textColor))
+            add("sub-font-size" to subtitlePrefs.toMpvFontSize().toString())
+            add("sub-bold" to if (subtitlePrefs.bold) "yes" else "no")
+            add("sub-italic" to if (subtitlePrefs.italic) "yes" else "no")
+
+            when (subtitlePrefs.outlineStyle) {
+                SubtitleOutlineStyle.OUTLINE -> {
+                    add("sub-border-style" to "outline-and-shadow")
+                    add("sub-border-size" to subtitlePrefs.outlineSize.toString())
+                    add(
+                        "sub-border-color" to
+                            SubtitlePreferences.colorToMpvHex(subtitlePrefs.outlineColor)
+                    )
+                    add("sub-shadow-offset" to "0")
+                    add("sub-shadow-color" to "#00000000")
+                }
+
+                SubtitleOutlineStyle.DROP_SHADOW -> {
+                    add("sub-border-style" to "outline-and-shadow")
+                    add("sub-border-size" to "0")
+                    add("sub-border-color" to "#00000000")
+                    add("sub-shadow-offset" to subtitlePrefs.outlineSize.toString())
+                    add(
+                        "sub-shadow-color" to
+                            SubtitlePreferences.colorToMpvHex(subtitlePrefs.outlineColor)
+                    )
+                }
+
+                SubtitleOutlineStyle.BACKGROUND_BOX -> {
+                    add("sub-border-style" to "background-box")
+                    add(
+                        "sub-back-color" to
+                            SubtitlePreferences.colorToMpvHex(subtitlePrefs.backgroundColor)
+                    )
+                    add("sub-spacing" to "0.5")
+                }
+
+                else -> {
+                    add("sub-border-style" to "outline-and-shadow")
+                    add("sub-border-size" to "0")
+                    add("sub-border-color" to "#00000000")
+                    add("sub-shadow-offset" to "0")
+                    add("sub-shadow-color" to "#00000000")
+                }
+            }
+
+            add("sub-align-y" to subtitlePrefs.verticalPosition.mpvValue)
+            add("sub-align-x" to subtitlePrefs.horizontalAlignment.mpvValue)
+
+            if (preferredAudioLang.isNotEmpty()) {
+                add("alang" to preferredAudioLang)
+            }
+            add("subs-with-matching-audio" to "yes")
+            add("subs-fallback" to "no")
+        }
+
         val mpvPlayer =
             MPVPlayer.Builder(application)
                 .setAudioAttributes(audioAttributes, true)
@@ -755,65 +815,8 @@ constructor(
                 .setHdrPassthrough(hdrOutput == MpvHdrOutput.AUTO)
                 .setToneMapping(toneMapping.value)
                 .setHdrPeakDetection(hdrPeakDetection)
+                .setInitialOptions(initialOptions)
                 .build()
-
-        mpvPlayer.setOption("sub-ass-override", "no")
-        mpvPlayer.setOption("sub-ass-force-margins", "yes")
-        mpvPlayer.setOption("sub-use-margins", "yes")
-        mpvPlayer.setOption("sub-color", SubtitlePreferences.colorToMpvHex(subtitlePrefs.textColor))
-        mpvPlayer.setOption("sub-font-size", subtitlePrefs.toMpvFontSize().toString())
-        mpvPlayer.setOption("sub-bold", if (subtitlePrefs.bold) "yes" else "no")
-        mpvPlayer.setOption("sub-italic", if (subtitlePrefs.italic) "yes" else "no")
-
-        when (subtitlePrefs.outlineStyle) {
-            SubtitleOutlineStyle.OUTLINE -> {
-                mpvPlayer.setOption("sub-border-style", "outline-and-shadow")
-                mpvPlayer.setOption("sub-border-size", subtitlePrefs.outlineSize.toString())
-                mpvPlayer.setOption(
-                    "sub-border-color",
-                    SubtitlePreferences.colorToMpvHex(subtitlePrefs.outlineColor),
-                )
-                mpvPlayer.setOption("sub-shadow-offset", "0")
-                mpvPlayer.setOption("sub-shadow-color", "#00000000")
-            }
-
-            SubtitleOutlineStyle.DROP_SHADOW -> {
-                mpvPlayer.setOption("sub-border-style", "outline-and-shadow")
-                mpvPlayer.setOption("sub-border-size", "0")
-                mpvPlayer.setOption("sub-border-color", "#00000000")
-                mpvPlayer.setOption("sub-shadow-offset", subtitlePrefs.outlineSize.toString())
-                mpvPlayer.setOption(
-                    "sub-shadow-color",
-                    SubtitlePreferences.colorToMpvHex(subtitlePrefs.outlineColor),
-                )
-            }
-
-            SubtitleOutlineStyle.BACKGROUND_BOX -> {
-                mpvPlayer.setOption("sub-border-style", "background-box")
-                mpvPlayer.setOption(
-                    "sub-back-color",
-                    SubtitlePreferences.colorToMpvHex(subtitlePrefs.backgroundColor),
-                )
-                mpvPlayer.setOption("sub-spacing", "0.5")
-            }
-
-            else -> {
-                mpvPlayer.setOption("sub-border-style", "outline-and-shadow")
-                mpvPlayer.setOption("sub-border-size", "0")
-                mpvPlayer.setOption("sub-border-color", "#00000000")
-                mpvPlayer.setOption("sub-shadow-offset", "0")
-                mpvPlayer.setOption("sub-shadow-color", "#00000000")
-            }
-        }
-
-        mpvPlayer.setOption("sub-align-y", subtitlePrefs.verticalPosition.mpvValue)
-        mpvPlayer.setOption("sub-align-x", subtitlePrefs.horizontalAlignment.mpvValue)
-
-        if (preferredAudioLang.isNotEmpty()) {
-            mpvPlayer.setOption("alang", preferredAudioLang)
-        }
-        mpvPlayer.setOption("subs-with-matching-audio", "yes")
-        mpvPlayer.setOption("subs-fallback", "no")
 
         return mpvPlayer
     }
@@ -2521,6 +2524,8 @@ constructor(
     }
 
     fun onLongPress(xFraction: Float) {
+        if (mpvPlayerOrNull()?.sendLongPressKeypress() == true) return
+
         val chapters = _uiState.value.chapters
         if (chapterSkipGestureEnabled && chapters.isNotEmpty()) {
             when {
@@ -2584,9 +2589,26 @@ constructor(
         }
     }
 
-    fun onDoubleTapSeek(isForward: Boolean) {
+    fun onDoubleTapSeek(isForward: Boolean, xFraction: Float) {
+        if (sendMpvGestureKeypress(xFraction)) return
+
         val delta = if (isForward) 10000L else -10000L
         handlePlayerEvent(PlayerEvent.SeekRelative(delta))
+    }
+
+    private fun mpvPlayerOrNull(): MPVPlayer? =
+        (if (::player.isInitialized) player else null) as? MPVPlayer
+
+    private fun sendMpvGestureKeypress(xFraction: Float): Boolean {
+        val mpvPlayer = mpvPlayerOrNull() ?: return false
+
+        val zone =
+            when {
+                xFraction < 1f / 3f -> -1
+                xFraction > 2f / 3f -> 1
+                else -> 0
+            }
+        return mpvPlayer.sendGestureKeypress(zone)
     }
 
     private fun onLockToggle() {
