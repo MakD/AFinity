@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.aspectRatio
@@ -80,10 +79,6 @@ fun ChapterSwitcher(
         listState.animateScrollToItem(activeChapterIndex)
     }
 
-    val activeChapter = chapters.getOrNull(activeChapterIndex)
-    val activeChapterTitle =
-        activeChapter?.name ?: stringResource(R.string.chapter_number_fmt, activeChapterIndex + 1)
-
     Box(
         modifier =
             modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.45f)).clickable(
@@ -119,28 +114,12 @@ fun ChapterSwitcher(
                 color = MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.92f),
                 tonalElevation = 4.dp,
             ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = activeChapterTitle,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 24.dp),
-                    )
-
+                Column(modifier = Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 12.dp)) {
                     LazyRow(
                         state = listState,
                         flingBehavior = flingBehavior,
-                        contentPadding = PaddingValues(horizontal = 24.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                     ) {
                         itemsIndexed(
                             items = chapters,
@@ -174,66 +153,85 @@ private fun ChapterSwitcherCard(
     val title = chapter.name ?: stringResource(R.string.chapter_number_fmt, index + 1)
     val imageUrl = chapter.getChapterImageUrl(baseUrl, itemId)
 
-    Box(
-        modifier =
-            Modifier.width(ChapterCardWidth)
-                .aspectRatio(16f / 9f)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                .border(
-                    width = if (isCurrent) 3.dp else 0.dp,
-                    color = if (isCurrent) MaterialTheme.colorScheme.primary else Color.Transparent,
-                    shape = RoundedCornerShape(12.dp),
-                )
-                .clickable(onClick = onClick)
+    Column(
+        modifier = Modifier.width(ChapterCardWidth).clickable(onClick = onClick),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        if (imageUrl != null) {
-            AsyncImage(
-                imageUrl = imageUrl,
-                contentDescription = title,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                targetWidth = ChapterCardWidth,
-                targetHeight = 124.dp,
-            )
-        } else {
-            Text(
-                text = (index + 1).toString(),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier.align(Alignment.Center),
-            )
-        }
-
         Box(
             modifier =
-                Modifier.fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors =
-                                listOf(
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.6f),
-                                ),
-                            startY = 60f,
-                        )
+                Modifier.fillMaxWidth()
+                    .aspectRatio(16f / 9f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .border(
+                        width = if (isCurrent) 3.dp else 0.dp,
+                        color =
+                            if (isCurrent) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        shape = RoundedCornerShape(12.dp),
                     )
-        )
-
-        Surface(
-            modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),
-            color = Color.Black.copy(alpha = 0.8f),
-            shape = RoundedCornerShape(4.dp),
         ) {
-            Text(
-                text = formatChapterTime(chapter.startPosition),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+            if (imageUrl != null) {
+                AsyncImage(
+                    imageUrl = imageUrl,
+                    contentDescription = title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    targetWidth = ChapterCardWidth,
+                    targetHeight = 124.dp,
+                )
+            } else {
+                Text(
+                    text = (index + 1).toString(),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.align(Alignment.Center),
+                )
+            }
+
+            Box(
+                modifier =
+                    Modifier.fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.6f),
+                                    ),
+                                startY = 60f,
+                            )
+                        )
             )
+
+            Surface(
+                modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),
+                color = Color.Black.copy(alpha = 0.8f),
+                shape = RoundedCornerShape(4.dp),
+            ) {
+                Text(
+                    text = formatChapterTime(chapter.startPosition),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                )
+            }
         }
+
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium,
+            color =
+                if (isCurrent) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurface,
+            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
+            minLines = 2,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+        )
     }
 }
 
