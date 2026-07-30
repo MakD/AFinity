@@ -23,14 +23,14 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -156,6 +156,7 @@ fun <T> SearchableChipMultiSelect(
     selectedLabel: (T) -> String,
     onRemoveSelected: (T) -> Unit,
     onClearAll: () -> Unit,
+    collapseOnSelect: Boolean = false,
 ) {
     var expanded by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf(false) }
@@ -201,11 +202,13 @@ fun <T> SearchableChipMultiSelect(
                 modifier =
                     Modifier.fillMaxWidth()
                         .noRippleClickable {
-                            expanded = true
                             if (editing) {
                                 editing = false
                                 focusManager.clearFocus()
                                 keyboardController?.hide()
+                                expanded = true
+                            } else {
+                                expanded = !expanded
                             }
                         }
                         .padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
@@ -257,6 +260,7 @@ fun <T> SearchableChipMultiSelect(
                                         }
                                     } else {
                                         editing = false
+                                        expanded = false
                                     }
                                 },
                         decorationBox = { innerTextField ->
@@ -322,8 +326,8 @@ fun <T> SearchableChipMultiSelect(
                         .padding(horizontal = 4.dp)
                         .heightIn(max = if (isLandscape) 130.dp else 220.dp),
             ) {
-                Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-                    suggestions.forEach { suggestion ->
+                LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                    items(items = suggestions) { suggestion ->
                         DropdownMenuItem(
                             text = {
                                 Text(
@@ -334,6 +338,12 @@ fun <T> SearchableChipMultiSelect(
                             onClick = {
                                 onSuggestionSelected(suggestion)
                                 onQueryChange("")
+                                if (collapseOnSelect) {
+                                    expanded = false
+                                    editing = false
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+                                }
                             },
                         )
                     }

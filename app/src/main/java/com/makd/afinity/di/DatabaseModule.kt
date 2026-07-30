@@ -5,9 +5,11 @@ import androidx.room.Room
 import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.database.DatabaseMigrations
 import com.makd.afinity.data.database.dao.BoxSetCacheDao
+import com.makd.afinity.data.database.dao.CustomHomeSectionDao
 import com.makd.afinity.data.database.dao.EpisodeDao
 import com.makd.afinity.data.database.dao.GenreCacheDao
 import com.makd.afinity.data.database.dao.HomeCacheDao
+import com.makd.afinity.data.database.dao.HomeLayoutPreferenceDao
 import com.makd.afinity.data.database.dao.ItemMetadataCacheDao
 import com.makd.afinity.data.database.dao.JellyfinStatsDao
 import com.makd.afinity.data.database.dao.LibraryCacheDao
@@ -175,5 +177,15 @@ object DatabaseModule {
     @Provides
     fun provideHomeCacheDao(database: AfinityDatabase): HomeCacheDao {
         return database.homeCacheDao()
+    }
+
+    @Provides
+    fun provideCustomHomeSectionDao(database: AfinityDatabase): CustomHomeSectionDao {
+        return database.customHomeSectionDao()
+    }
+
+    @Provides
+    fun provideHomeLayoutPreferenceDao(database: AfinityDatabase): HomeLayoutPreferenceDao {
+        return database.homeLayoutPreferenceDao()
     }
 }

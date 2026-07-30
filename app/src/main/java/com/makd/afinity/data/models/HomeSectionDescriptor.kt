@@ -1,6 +1,7 @@
 package com.makd.afinity.data.models
 
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityStudio
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -9,13 +10,20 @@ enum class HomeSectionType {
     DIRECTED_BY,
     WRITTEN_BY,
     BECAUSE_YOU_WATCHED,
+    BECAUSE_YOU_LIKED,
     ACTOR_FROM_MOVIE,
+    DIRECTOR_FROM_MOVIE,
+    WRITER_FROM_MOVIE,
+    WATCH_AGAIN,
     SPOTLIGHT_GENRE_MOVIE,
     SPOTLIGHT_GENRE_SHOW,
     SPOTLIGHT_STUDIO,
     SPOTLIGHT_BOXSET,
     GENRE_MOVIE,
     GENRE_SHOW,
+    CRITICS_CHOICE,
+    POPULAR_STUDIOS,
+    CUSTOM,
 }
 
 @Serializable
@@ -28,6 +36,8 @@ data class HomeSectionDescriptor(
     val genreName: String? = null,
     val studioName: String? = null,
     val boxSetId: String? = null,
+    val customSectionId: String? = null,
+    val cardStyle: String? = null,
 )
 
 sealed interface HomeSectionContent {
@@ -38,6 +48,12 @@ sealed interface HomeSectionContent {
     data class PersonFromMovie(val section: PersonFromMovieSection) : HomeSectionContent
 
     data class Spotlight(val items: List<AfinityItem>) : HomeSectionContent
+
+    data class Items(val items: List<AfinityItem>) : HomeSectionContent
+
+    data class RankedItems(val items: List<AfinityItem>) : HomeSectionContent
+
+    data class Studios(val studios: List<AfinityStudio>) : HomeSectionContent
 
     data object Empty : HomeSectionContent
 }

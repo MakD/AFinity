@@ -20,9 +20,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
-import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.ItemFilterCriteria
-import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityPlaylist
@@ -176,9 +174,6 @@ constructor(
     fun getHomeSortByDateAddedFlow(): Flow<Boolean> {
         return preferencesRepository.getHomeSortByDateAddedFlow()
     }
-
-    private val _highestRated = MutableStateFlow<List<AfinityItem>>(emptyList())
-    val highestRated: StateFlow<List<AfinityItem>> = _highestRated.asStateFlow()
 
     val combinedGenres: StateFlow<List<GenreItem>> = genreRepository.combinedGenres
     val genreMovies: StateFlow<Map<String, List<AfinityMovie>>> = genreRepository.genreMovies
@@ -393,10 +388,9 @@ constructor(
 
                 updateProgress(0.8f, context.getString(R.string.loading_phase_finalizing))
 
-                val (latestMovies, latestTvSeries, highestRated) = homeDataDeferred.await()
+                val (latestMovies, latestTvSeries) = homeDataDeferred.await()
                 _latestMovies.value = latestMovies
                 _latestTvSeries.value = latestTvSeries
-                _highestRated.value = highestRated
 
                 updateProgress(1f, context.getString(R.string.loading_phase_ready))
                 _isInitialDataLoaded.value = true
@@ -430,17 +424,11 @@ constructor(
                 val libraries = librariesDeferred.await()
                 _libraries.value = libraries
 
-                val homeDataDeferred = async {
-                    loadHomeSpecificData(
-                        libraries,
-                        existingHighestRated = _highestRated.value.takeIf { it.isNotEmpty() },
-                    )
-                }
+                val homeDataDeferred = async { loadHomeSpecificData(libraries) }
 
-                val (latestMovies, latestTvSeries, highestRated) = homeDataDeferred.await()
+                val (latestMovies, latestTvSeries) = homeDataDeferred.await()
                 _latestMovies.value = latestMovies
                 _latestTvSeries.value = latestTvSeries
-                _highestRated.value = highestRated
 
                 continueWatchingDeferred.await()
                 nextUpDeferred.await()
@@ -543,27 +531,9 @@ constructor(
             val libraries = _libraries.value
             if (libraries.isNotEmpty()) {
                 Timber.d("Reloading home data...")
-                val currentBaseUrl = mediaRepository.getBaseUrl()
-                val patchedExisting =
-                    _highestRated.value
-                        .map { item ->
-                            when (item) {
-                                is AfinityMovie ->
-                                    item.copy(images = item.images.withBaseUrl(currentBaseUrl))
-                                is AfinityShow ->
-                                    item.copy(images = item.images.withBaseUrl(currentBaseUrl))
-                                else -> item
-                            }
-                        }
-                        .takeIf { it.isNotEmpty() }
-                val (latestMovies, latestTvSeries, highestRated) =
-                    loadHomeSpecificData(
-                        libraries = libraries,
-                        existingHighestRated = patchedExisting,
-                    )
+                val (latestMovies, latestTvSeries) = loadHomeSpecificData(libraries)
                 _latestMovies.value = latestMovies
                 _latestTvSeries.value = latestTvSeries
-                _highestRated.value = highestRated
                 Timber.d("Home data reloaded successfully")
             }
         } catch (e: Exception) {
@@ -624,9 +594,8 @@ constructor(
     }
 
     private suspend fun loadHomeSpecificData(
-        libraries: List<AfinityCollection>,
-        existingHighestRated: List<AfinityItem>? = null,
-    ): Triple<List<AfinityMovie>, List<AfinityShow>, List<AfinityItem>> {
+        libraries: List<AfinityCollection>
+    ): Pair<List<AfinityMovie>, List<AfinityShow>> {
         return try {
             val movieLibraries = libraries.filter { it.type == CollectionType.Movies }
             val tvLibraries = libraries.filter { it.type == CollectionType.TvShows }
@@ -736,29 +705,10 @@ constructor(
                     allLatestSeries.sortedByDescending { it.premiereDate }.take(15)
                 }
 
-            val highestRated =
-                existingHighestRated
-                    ?: run {
-                        val highRatedMovies = allMoviesIncludingWatched.filter {
-                            (it.communityRating ?: 0f) > 6.5f
-                        }
-                        val highRatedShows = allSeriesIncludingWatched.filter {
-                            (it.communityRating ?: 0f) > 6.5f
-                        }
-
-                        (highRatedMovies + highRatedShows).shuffled().take(10).sortedByDescending {
-                            when (it) {
-                                is AfinityMovie -> it.communityRating ?: 0f
-                                is AfinityShow -> it.communityRating ?: 0f
-                                else -> 0f
-                            }
-                        }
-                    }
-
-            Triple(latestMovies, latestTvSeries, highestRated)
+            Pair(latestMovies, latestTvSeries)
         } catch (e: Exception) {
             Timber.e(e, "Failed to load home specific data")
-            Triple(emptyList(), emptyList(), emptyList())
+            Pair(emptyList(), emptyList())
         }
     }
 
@@ -770,9 +720,7 @@ constructor(
     suspend fun loadShowsForGenre(genre: String, limit: Int = 20) =
         genreRepository.loadShowsForGenre(genre, limit)
 
-    val studios: StateFlow<List<AfinityStudio>> = studioRepository.studios
 
-    suspend fun loadStudios() = studioRepository.loadStudios()
 
     private fun updateProgress(progress: Float, phase: String) {
         _loadingProgress.value = progress
@@ -795,8 +743,7 @@ constructor(
         val libs = _libraries.value
         if (libs.isEmpty()) return
         try {
-            val (latestMovies, latestTvSeries, _) =
-                loadHomeSpecificData(libs, existingHighestRated = _highestRated.value)
+            val (latestMovies, latestTvSeries) = loadHomeSpecificData(libs)
             if (latestMovies.isNotEmpty()) _latestMovies.value = latestMovies
             if (latestTvSeries.isNotEmpty()) _latestTvSeries.value = latestTvSeries
             Timber.d("Refreshed library sections (latest movies + shows)")
@@ -814,8 +761,7 @@ constructor(
                 val libs = _libraries.value
                 if (libs.isNotEmpty()) {
                     launch {
-                        val (latestMovies, latestTvSeries, _) =
-                            loadHomeSpecificData(libs, existingHighestRated = _highestRated.value)
+                        val (latestMovies, latestTvSeries) = loadHomeSpecificData(libs)
                         if (latestMovies.isNotEmpty()) _latestMovies.value = latestMovies
                         if (latestTvSeries.isNotEmpty()) _latestTvSeries.value = latestTvSeries
                     }
@@ -858,10 +804,6 @@ constructor(
             }
             else -> Unit
         }
-        _highestRated.update { items ->
-            items.map { if (it.id == updatedItem.id) updatedItem else it }
-        }
-
         _favoritesData.update { data ->
             when (updatedItem) {
                 is AfinityMovie -> data.copy(movies = data.movies.replacedWith(updatedItem))
@@ -1091,7 +1033,6 @@ constructor(
         _libraries.value = emptyList()
         _latestMovies.value = emptyList()
         _latestTvSeries.value = emptyList()
-        _highestRated.value = emptyList()
         _isInitialDataLoaded.value = false
         _initialLoadFailed.value = false
         _loadingProgress.value = 0f

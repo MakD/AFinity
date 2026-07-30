@@ -15,8 +15,10 @@ import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.GenreType
+import com.makd.afinity.data.models.HomeRow
 import com.makd.afinity.data.models.HomeSectionContent
 import com.makd.afinity.data.models.HomeSectionDescriptor
 import com.makd.afinity.data.models.HomeSectionType
@@ -46,6 +48,7 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsDownloadRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
+import com.makd.afinity.data.repository.home.HomeLayoutPreferencesRepository
 import com.makd.afinity.data.repository.home.HomeSectionsRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
@@ -106,6 +109,7 @@ constructor(
     private val preferencesRepository: PreferencesRepository,
     private val networkMonitor: NetworkConnectivityMonitor,
     private val homeSectionsRepository: HomeSectionsRepository,
+    private val homeLayoutPreferencesRepository: HomeLayoutPreferencesRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -138,7 +142,6 @@ constructor(
                     _uiState.update { it.copy(isLoading = false) }
                     launch {
                         coroutineScope {
-                            launch { loadStudios() }
                             launch { loadCombinedGenres() }
                             launch { loadUpcomingEpisodes() }
                         }
@@ -176,7 +179,7 @@ constructor(
 
         viewModelScope.launch {
             mediaRepository.getNextUpFlow().collect { items ->
-                _uiState.update { it.copy(nextUp = items) }
+                _uiState.update { it.copy(nextUp = items, nextUpLoaded = true) }
             }
         }
 
@@ -229,12 +232,6 @@ constructor(
         }
 
         viewModelScope.launch {
-            appDataRepository.highestRated.collect { highestRated ->
-                _uiState.update { it.copy(highestRated = highestRated) }
-            }
-        }
-
-        viewModelScope.launch {
             combine(homeSectionsRepository.layout, homeSectionsRepository.content) { layout, content
                     ->
                     layout.mapNotNull { descriptor ->
@@ -246,26 +243,74 @@ constructor(
         }
 
         viewModelScope.launch {
+            combine(homeSectionsRepository.pinnedLayout, homeSectionsRepository.content) {
+                    layout,
+                    content ->
+                    layout.mapNotNull { descriptor ->
+                        descriptor.toHomeSection(content[descriptor.key])
+                    }
+                }
+                .distinctUntilChanged()
+                .collect { sections -> _uiState.update { it.copy(pinnedSections = sections) } }
+        }
+
+        viewModelScope.launch {
+            homeSectionsRepository.watchAgain.collect { items ->
+                _uiState.update { it.copy(watchAgain = items) }
+            }
+        }
+
+        viewModelScope.launch {
+            homeSectionsRepository.watchAgainLoaded.collect { loaded ->
+                _uiState.update { it.copy(watchAgainLoaded = loaded) }
+            }
+        }
+
+        viewModelScope.launch {
+            homeSectionsRepository.criticsChoice.collect { items ->
+                _uiState.update { it.copy(highestRated = items) }
+            }
+        }
+
+        viewModelScope.launch {
+            homeSectionsRepository.criticsChoiceLoaded.collect { loaded ->
+                _uiState.update { it.copy(highestRatedLoaded = loaded) }
+            }
+        }
+
+        viewModelScope.launch {
+            homeLayoutPreferencesRepository.hiddenRows.collect { hidden ->
+                _uiState.update { it.copy(hiddenRows = hidden) }
+            }
+        }
+
+        viewModelScope.launch {
             appDataRepository.genreMovies.collect { genreMovies ->
-                _uiState.update { it.copy(genreMovies = genreMovies) }
+                val ordered =
+                    genreMovies.mapValues { (genre, movies) ->
+                        homeSectionsRepository
+                            .presentationOrder("genre_movie_$genre", movies)
+                            .take(HOME_GENRE_ROW_SIZE)
+                    }
+                _uiState.update { it.copy(genreMovies = ordered) }
             }
         }
 
         viewModelScope.launch {
             appDataRepository.genreShows.collect { genreShows ->
-                _uiState.update { it.copy(genreShows = genreShows) }
+                val ordered =
+                    genreShows.mapValues { (genre, shows) ->
+                        homeSectionsRepository
+                            .presentationOrder("genre_show_$genre", shows)
+                            .take(HOME_GENRE_ROW_SIZE)
+                    }
+                _uiState.update { it.copy(genreShows = ordered) }
             }
         }
 
         viewModelScope.launch {
             appDataRepository.genreLoadingStates.collect { loadingStates ->
                 _uiState.update { it.copy(genreLoadingStates = loadingStates) }
-            }
-        }
-
-        viewModelScope.launch {
-            appDataRepository.studios.collect { studios ->
-                _uiState.update { it.copy(studios = studios) }
             }
         }
 
@@ -396,7 +441,6 @@ constructor(
                 libraryContentReloadJob = launch {
                     delay(2_000L)
                     coroutineScope {
-                        launch { loadStudios() }
                         launch { loadCombinedGenres() }
                         launch { loadUpcomingEpisodes() }
                     }
@@ -427,7 +471,6 @@ constructor(
 
             state.copy(
                 heroCarouselItems = patchItem(state.heroCarouselItems, updatedItem),
-                highestRated = patchItem(state.highestRated, updatedItem),
                 latestMovies = patchItem(state.latestMovies, updatedItem as? AfinityMovie),
                 latestTvSeries = patchItem(state.latestTvSeries, updatedItem as? AfinityShow),
                 genreMovies = patchMap(state.genreMovies, updatedItem as? AfinityMovie),
@@ -769,7 +812,7 @@ constructor(
 
         viewModelScope.launch {
             try {
-                appDataRepository.loadMoviesForGenre(genre)
+                appDataRepository.loadMoviesForGenre(genre, HOME_GENRE_POOL)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load movies for genre: $genre")
             }
@@ -781,28 +824,23 @@ constructor(
 
         viewModelScope.launch {
             try {
-                appDataRepository.loadShowsForGenre(genre)
+                appDataRepository.loadShowsForGenre(genre, HOME_GENRE_POOL)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load shows for genre: $genre")
             }
         }
     }
 
-    private suspend fun loadStudios() {
-        if (offlineModeManager.isOffline.first()) return
-        try {
-            appDataRepository.loadStudios()
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to load studios")
-        }
-    }
-
     private suspend fun loadUpcomingEpisodes() {
         try {
-            if (offlineModeManager.isOffline.first()) return
+            if (offlineModeManager.isOffline.first()) {
+                _uiState.update { it.copy(upcomingLoaded = true) }
+                return
+            }
             val upcoming = mediaRepository.getUpcomingEpisodes(limit = 24)
-            _uiState.update { it.copy(upcomingEpisodes = upcoming) }
+            _uiState.update { it.copy(upcomingEpisodes = upcoming, upcomingLoaded = true) }
         } catch (e: Exception) {
+            _uiState.update { it.copy(upcomingLoaded = true) }
             Timber.e(e, "Failed to load upcoming episodes")
         }
     }
@@ -862,6 +900,17 @@ sealed interface HomeSection {
         val title: String,
         val items: List<AfinityItem>,
     ) : HomeSection
+
+    data class Items(
+        override val key: String,
+        val title: String,
+        val items: List<AfinityItem>,
+        val cardStyle: CustomSectionCardStyle = CustomSectionCardStyle.PORTRAIT,
+    ) : HomeSection
+
+    data class Ranked(override val key: String, val items: List<AfinityItem>) : HomeSection
+
+    data class Studios(override val key: String, val studios: List<AfinityStudio>) : HomeSection
 }
 
 private fun HomeSectionDescriptor.toHomeSection(content: HomeSectionContent?): HomeSection? =
@@ -880,7 +929,9 @@ private fun HomeSectionDescriptor.toHomeSection(content: HomeSectionContent?): H
                             type == HomeSectionType.SPOTLIGHT_GENRE_MOVIE ||
                                 type == HomeSectionType.SPOTLIGHT_GENRE_SHOW ||
                                 type == HomeSectionType.SPOTLIGHT_STUDIO ||
-                                type == HomeSectionType.SPOTLIGHT_BOXSET,
+                                type == HomeSectionType.SPOTLIGHT_BOXSET ||
+                                (type == HomeSectionType.CUSTOM &&
+                                    cardStyle == CustomSectionCardStyle.SPOTLIGHT.name),
                     )
                 HomeSectionContent.Empty -> null
                 is HomeSectionContent.Person -> HomeSection.Person(key, content.section)
@@ -888,6 +939,19 @@ private fun HomeSectionDescriptor.toHomeSection(content: HomeSectionContent?): H
                 is HomeSectionContent.PersonFromMovie ->
                     HomeSection.PersonFromMovie(key, content.section)
                 is HomeSectionContent.Spotlight -> HomeSection.Spotlight(key, title, content.items)
+                is HomeSectionContent.RankedItems -> HomeSection.Ranked(key, content.items)
+                is HomeSectionContent.Studios -> HomeSection.Studios(key, content.studios)
+                is HomeSectionContent.Items ->
+                    HomeSection.Items(
+                        key = key,
+                        title = title,
+                        items = content.items,
+                        cardStyle =
+                            cardStyle
+                                ?.let {
+                                    runCatching { CustomSectionCardStyle.valueOf(it) }.getOrNull()
+                                } ?: CustomSectionCardStyle.PORTRAIT,
+                    )
             }
     }
 
@@ -901,9 +965,15 @@ data class HomeUiState(
     val upcomingEpisodes: List<AfinityEpisode> = emptyList(),
     val latestMovies: List<AfinityMovie> = emptyList(),
     val latestTvSeries: List<AfinityShow> = emptyList(),
-    val highestRated: List<AfinityItem> = emptyList(),
-    val studios: List<AfinityStudio> = emptyList(),
     val combinedSections: List<HomeSection> = emptyList(),
+    val pinnedSections: List<HomeSection> = emptyList(),
+    val watchAgain: List<AfinityItem> = emptyList(),
+    val watchAgainLoaded: Boolean = false,
+    val highestRated: List<AfinityItem> = emptyList(),
+    val highestRatedLoaded: Boolean = false,
+    val nextUpLoaded: Boolean = false,
+    val upcomingLoaded: Boolean = false,
+    val hiddenRows: Set<HomeRow> = emptySet(),
     val genreMovies: Map<String, List<AfinityMovie>> = emptyMap(),
     val genreShows: Map<String, List<AfinityShow>> = emptyMap(),
     val genreLoadingStates: Map<String, Boolean> = emptyMap(),
@@ -924,3 +994,6 @@ data class HomeUiState(
     val separateTvLibrarySections: List<Pair<AfinityCollection, List<AfinityShow>>> = emptyList(),
     val isOffline: Boolean = false,
 )
+
+private const val HOME_GENRE_POOL = 50
+private const val HOME_GENRE_ROW_SIZE = 20

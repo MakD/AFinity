@@ -8,6 +8,9 @@ sealed interface SettingsPaneDestination : Parcelable {
     data object Appearance : SettingsPaneDestination
 
     @Parcelize
+    data object CustomSections : SettingsPaneDestination
+
+    @Parcelize
     data object Player : SettingsPaneDestination
 
     @Parcelize

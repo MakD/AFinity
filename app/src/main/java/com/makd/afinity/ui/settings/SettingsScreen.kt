@@ -101,6 +101,7 @@ import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
 import com.makd.afinity.ui.settings.appearance.AppearanceOptionsScreen
 import com.makd.afinity.ui.settings.downloads.DownloadSettingsScreen
+import com.makd.afinity.ui.settings.home.CustomSectionsScreen
 import com.makd.afinity.ui.settings.player.PlayerOptionsScreen
 import com.makd.afinity.ui.settings.servers.ControlPanelView
 import com.makd.afinity.ui.settings.servers.ControlPanelViewModel
@@ -514,6 +515,23 @@ fun SettingsScreen(
                                     )
                                     SettingsDivider()
                                     SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_view_module),
+                                        title = stringResource(R.string.custom_sections_title),
+                                        subtitle =
+                                            stringResource(
+                                                R.string.custom_sections_settings_summary
+                                            ),
+                                        onClick = {
+                                            scope.launch {
+                                                navigator.navigateTo(
+                                                    ListDetailPaneScaffoldRole.Detail,
+                                                    SettingsPaneDestination.CustomSections,
+                                                )
+                                            }
+                                        },
+                                    )
+                                    SettingsDivider()
+                                    SettingsItem(
                                         icon = painterResource(id = R.drawable.ic_language),
                                         title = stringResource(R.string.pref_app_language),
                                         subtitle = appLanguageSubtitle,
@@ -671,6 +689,10 @@ fun SettingsScreen(
                 when (navigator.currentDestination?.contentKey) {
                     is SettingsPaneDestination.Appearance ->
                         AppearanceOptionsScreen(
+                            onBackClick = { scope.launch { navigator.navigateBack() } }
+                        )
+                    is SettingsPaneDestination.CustomSections ->
+                        CustomSectionsScreen(
                             onBackClick = { scope.launch { navigator.navigateBack() } }
                         )
                     is SettingsPaneDestination.Player ->

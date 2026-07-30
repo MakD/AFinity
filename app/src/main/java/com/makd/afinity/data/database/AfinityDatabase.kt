@@ -7,9 +7,11 @@ import com.makd.afinity.data.database.dao.AbsDownloadDao
 import com.makd.afinity.data.database.dao.AudibleRatingDao
 import com.makd.afinity.data.database.dao.AudiobookshelfDao
 import com.makd.afinity.data.database.dao.BoxSetCacheDao
+import com.makd.afinity.data.database.dao.CustomHomeSectionDao
 import com.makd.afinity.data.database.dao.EpisodeDao
 import com.makd.afinity.data.database.dao.GenreCacheDao
 import com.makd.afinity.data.database.dao.HomeCacheDao
+import com.makd.afinity.data.database.dao.HomeLayoutPreferenceDao
 import com.makd.afinity.data.database.dao.ItemMetadataCacheDao
 import com.makd.afinity.data.database.dao.JellyfinStatsDao
 import com.makd.afinity.data.database.dao.JellyseerrDao
@@ -50,11 +52,13 @@ import com.makd.afinity.data.database.entities.AudiobookshelfLibraryEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfProgressEntity
 import com.makd.afinity.data.database.entities.BoxSetCacheEntity
 import com.makd.afinity.data.database.entities.BoxSetCacheMetadata
+import com.makd.afinity.data.database.entities.CustomHomeSectionEntity
 import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.database.entities.GenreCacheEntity
 import com.makd.afinity.data.database.entities.GenreMovieCacheEntity
 import com.makd.afinity.data.database.entities.GenreShowCacheEntity
 import com.makd.afinity.data.database.entities.HomeCacheEntity
+import com.makd.afinity.data.database.entities.HomeLayoutPreferenceEntity
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
 import com.makd.afinity.data.database.entities.JellyfinStatsCacheEntity
 import com.makd.afinity.data.database.entities.JellyseerrAddressEntity
@@ -122,8 +126,10 @@ import com.makd.afinity.data.models.user.User
             MusicLyricsEntity::class,
             HomeCacheEntity::class,
             JellyseerrDiscoverFilterEntity::class,
+            CustomHomeSectionEntity::class,
+            HomeLayoutPreferenceEntity::class,
         ],
-    version = 56,
+    version = 58,
     exportSchema = false,
 )
 @TypeConverters(AfinityTypeConverters::class)
@@ -186,4 +192,8 @@ abstract class AfinityDatabase : RoomDatabase() {
     abstract fun musicLyricsDao(): MusicLyricsDao
 
     abstract fun homeCacheDao(): HomeCacheDao
+
+    abstract fun customHomeSectionDao(): CustomHomeSectionDao
+
+    abstract fun homeLayoutPreferenceDao(): HomeLayoutPreferenceDao
 }

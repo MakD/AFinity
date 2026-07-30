@@ -64,6 +64,7 @@ enum class Destination(
         const val DOWNLOAD_SETTINGS_ROUTE = "download_settings"
         const val PLAYER_OPTIONS_ROUTE = "player_options"
         const val APPEARANCE_OPTIONS_ROUTE = "appearance_options"
+        const val CUSTOM_SECTIONS_ROUTE = "custom_sections"
         const val LICENSES_ROUTE = "licenses"
         const val FILTERED_MEDIA_ROUTE = "filtered_media/{filterType}/{filterId}/{filterName}"
         const val FAVORITES_CATEGORY_ROUTE = "favorites_category/{category}"
@@ -257,6 +258,10 @@ enum class Destination(
 
         fun createAppearanceOptionsRoute(): String {
             return APPEARANCE_OPTIONS_ROUTE
+        }
+
+        fun createCustomSectionsRoute(): String {
+            return CUSTOM_SECTIONS_ROUTE
         }
 
         fun createLicensesRoute(): String {

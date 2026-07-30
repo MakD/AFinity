@@ -27,6 +27,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,8 +61,12 @@ fun SpotlightCarousel(
     val configuration = LocalConfiguration.current
     val isLandscape =
         configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-    val preferredItemWidth = (configuration.screenWidthDp * if (isLandscape) 0.58f else 0.82f).dp
-    val carouselHeight = if (isLandscape) (configuration.screenHeightDp * 0.62f).dp else 220.dp
+    val containerSize = LocalWindowInfo.current.containerSize
+    val density = LocalDensity.current
+    val containerWidth = with(density) { containerSize.width.toDp() }
+    val containerHeight = with(density) { containerSize.height.toDp() }
+    val preferredItemWidth = containerWidth * if (isLandscape) 0.58f else 0.82f
+    val carouselHeight = if (isLandscape) containerHeight * 0.62f else 220.dp
     val state = rememberCarouselState { items.size }
 
     Column(modifier = modifier) {
@@ -135,7 +141,7 @@ fun SpotlightCarousel(
                                 modifier = Modifier.fillMaxWidth().height(56.dp),
                                 contentScale = ContentScale.Fit,
                                 alignment = Alignment.CenterStart,
-                                targetWidth = LocalConfiguration.current.screenWidthDp.dp,
+                                targetWidth = containerWidth,
                                 targetHeight = 56.dp,
                             )
                         } else {

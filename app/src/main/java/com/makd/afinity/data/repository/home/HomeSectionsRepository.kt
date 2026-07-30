@@ -4,6 +4,9 @@ import android.content.Context
 import com.makd.afinity.R
 import com.makd.afinity.data.database.AfinityTypeConverters
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.CustomHomeSection
+import com.makd.afinity.data.models.CustomSectionSourceType
+import com.makd.afinity.data.models.DiscoverySection
 import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.HomeSectionContent
 import com.makd.afinity.data.models.HomeSectionDescriptor
@@ -16,8 +19,11 @@ import com.makd.afinity.data.models.PersonWithCount
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.extensions.toAfinityMovie
+import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.GenreRepository
@@ -34,6 +40,9 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -58,6 +67,8 @@ constructor(
     private val genreRepository: GenreRepository,
     private val sessionManager: SessionManager,
     private val homeCacheRepository: HomeCacheRepository,
+    private val customHomeSectionsRepository: CustomHomeSectionsRepository,
+    private val homeLayoutPreferencesRepository: HomeLayoutPreferencesRepository,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
     private val layoutTTL = 24.hours.inWholeMilliseconds
@@ -72,14 +83,120 @@ constructor(
     private val _content = MutableStateFlow<Map<String, HomeSectionContent>>(emptyMap())
     val content: StateFlow<Map<String, HomeSectionContent>> = _content.asStateFlow()
 
+    private val _pinnedLayout = MutableStateFlow<List<HomeSectionDescriptor>>(emptyList())
+    val pinnedLayout: StateFlow<List<HomeSectionDescriptor>> = _pinnedLayout.asStateFlow()
+
+    private val _watchAgain = MutableStateFlow<List<AfinityItem>>(emptyList())
+    val watchAgain: StateFlow<List<AfinityItem>> = _watchAgain.asStateFlow()
+
+    private val _watchAgainLoaded = MutableStateFlow(false)
+    val watchAgainLoaded: StateFlow<Boolean> = _watchAgainLoaded.asStateFlow()
+
+    private val _criticsChoice = MutableStateFlow<List<AfinityItem>>(emptyList())
+    val criticsChoice: StateFlow<List<AfinityItem>> = _criticsChoice.asStateFlow()
+
+    private val _criticsChoiceLoaded = MutableStateFlow(false)
+    val criticsChoiceLoaded: StateFlow<Boolean> = _criticsChoiceLoaded.asStateFlow()
+
+    private var criticsChoiceJob: Job? = null
+
+    private var watchAgainJob: Job? = null
+
+    private val customSectionSignatures = mutableMapOf<String, String>()
+
+    private val seasonRecheck = MutableStateFlow(0)
+
+    init {
+        scope.launch {
+            combine(customHomeSectionsRepository.sections, seasonRecheck) { sections, _ ->
+                    sections
+                }
+                .collect { sections -> applyCustomSections(sections) }
+        }
+
+        scope.launch {
+            homeLayoutPreferencesRepository.discoveryConfig.distinctUntilChanged().drop(1).collect {
+                sessionKey()?.let { sk ->
+                    homeCacheRepository.invalidate(layoutCacheKey(sk))
+                }
+                ensureLayout(force = true)
+            }
+        }
+    }
+
+    private suspend fun applyCustomSections(sections: List<CustomHomeSection>) {
+        val visible = sections.filter {
+            it.enabled && CustomHomeSectionsRepository.isInSeason(it)
+        }
+
+        val sk = sessionKey()
+        val staleKeys = mutableListOf<String>()
+        val nextSignatures = mutableMapOf<String, String>()
+        visible.forEach { section ->
+            val signature = section.signature()
+            nextSignatures[section.id] = signature
+            val previous = customSectionSignatures[section.id]
+            if (previous != null && previous != signature) {
+                staleKeys.add(customDescriptorKey(section.id))
+            }
+        }
+        customSectionSignatures.keys.retainAll(nextSignatures.keys)
+        customSectionSignatures.putAll(nextSignatures)
+
+        if (staleKeys.isNotEmpty()) {
+            if (sk != null) {
+                staleKeys.forEach { homeCacheRepository.invalidate(contentCacheKey(sk, it)) }
+            }
+            _content.update { map -> map - staleKeys.toSet() }
+        }
+
+        _pinnedLayout.value =
+            visible
+                .sortedWith(
+                    compareByDescending<CustomHomeSection> { it.isSeasonal }.thenBy { it.position }
+                )
+                .map { section ->
+                    HomeSectionDescriptor(
+                        key = customDescriptorKey(section.id),
+                        type = HomeSectionType.CUSTOM,
+                        title = section.title,
+                        customSectionId = section.id,
+                        cardStyle = section.cardStyle.name,
+                    )
+                }
+    }
+
+    private fun customDescriptorKey(sectionId: String) = "custom_$sectionId"
+
+    private fun CustomHomeSection.signature(): String =
+        listOf(
+                sourceType.name,
+                sourceValues.joinToString("|"),
+                includeItemTypes.joinToString("|"),
+                itemLimit.toString(),
+                sortBy.name,
+                sortDescending.toString(),
+                randomOrder.toString(),
+            )
+            .joinToString(";")
+
     private val hydrationMutex = Mutex()
     private val hydrationInFlight = mutableSetOf<String>()
     private val renderedItemIds = mutableSetOf<UUID>()
     private val spotlightSeenIds = mutableSetOf<UUID>()
 
+    private var presentationSeed = System.currentTimeMillis()
+
+    fun <T> presentationOrder(key: String, items: List<T>): List<T> =
+        if (items.size < 2) items else items.shuffled(Random(presentationSeed + key.hashCode()))
+
+    private fun <T> presentationSample(key: String, items: List<T>, size: Int): List<T> =
+        presentationOrder(key, items).take(size)
+
     private var buildJob: Job? = null
     private var layoutSessionKey: String? = null
     private var recentWatchedCache: Pair<Long, List<AfinityMovie>>? = null
+    private var favoriteMoviesCache: Pair<Long, List<AfinityMovie>>? = null
 
     private fun sessionKey(): String? {
         val session = sessionManager.currentSession.value ?: return null
@@ -93,6 +210,9 @@ constructor(
         "home_sec_${sessionKey}_$descriptorKey"
 
     fun ensureLayout(force: Boolean = false) {
+        seasonRecheck.update { it + 1 }
+        ensureWatchAgain(force)
+        ensureCriticsChoice(force)
         val sk = sessionKey() ?: return
         if (!force && sk == layoutSessionKey && _layout.value.isNotEmpty()) return
         if (!force && buildJob?.isActive == true) return
@@ -150,10 +270,61 @@ constructor(
             }
     }
 
+    private fun ensureCriticsChoice(force: Boolean) {
+        if (sessionKey() == null) return
+        if (!force && _criticsChoice.value.isNotEmpty()) return
+        if (!force && criticsChoiceJob?.isActive == true) return
+
+        criticsChoiceJob?.cancel()
+        criticsChoiceJob =
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val items = loadCriticsChoiceItems()
+                    if (items.isNotEmpty()) {
+                        hydrationMutex.withLock { renderedItemIds.addAll(items.map { it.id }) }
+                    }
+                    _criticsChoice.value = items
+                    _criticsChoiceLoaded.value = true
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to load critics choice")
+                    _criticsChoiceLoaded.value = true
+                }
+            }
+    }
+
+    private fun ensureWatchAgain(force: Boolean) {
+        if (sessionKey() == null) return
+        if (!force && _watchAgain.value.isNotEmpty()) return
+        if (!force && watchAgainJob?.isActive == true) return
+
+        watchAgainJob?.cancel()
+        watchAgainJob =
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val items = presentationSample(WATCH_AGAIN_KEY, loadWatchAgainItems(), ROW_SIZE)
+                    if (items.isNotEmpty()) {
+                        hydrationMutex.withLock { renderedItemIds.addAll(items.map { it.id }) }
+                    }
+                    _watchAgain.value = items
+                    _watchAgainLoaded.value = true
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to load watch again")
+                    _watchAgainLoaded.value = true
+                }
+            }
+    }
+
     fun hydrate(descriptorKey: String) {
         if (_content.value.containsKey(descriptorKey)) return
         scope.launch(Dispatchers.IO) {
-            val descriptor = _layout.value.firstOrNull { it.key == descriptorKey } ?: return@launch
+            val descriptor =
+                _layout.value.firstOrNull { it.key == descriptorKey }
+                    ?: _pinnedLayout.value.firstOrNull { it.key == descriptorKey }
+                    ?: return@launch
             val shouldRun = hydrationMutex.withLock {
                 if (
                     descriptorKey in hydrationInFlight || _content.value.containsKey(descriptorKey)
@@ -183,6 +354,14 @@ constructor(
     }
 
     fun updateItem(updatedItem: AfinityItem) {
+        _watchAgain.update { items ->
+            if (items.none { it.id == updatedItem.id }) items
+            else items.map { if (it.id == updatedItem.id) updatedItem else it }
+        }
+        _criticsChoice.update { items ->
+            if (items.none { it.id == updatedItem.id }) items
+            else items.map { if (it.id == updatedItem.id) updatedItem else it }
+        }
         _content.update { map ->
             var changed = false
             val patched = map.mapValues { (_, content) ->
@@ -198,6 +377,7 @@ constructor(
         buildJob?.cancel()
         layoutSessionKey = null
         recentWatchedCache = null
+        favoriteMoviesCache = null
         hydrationMutex.withLock {
             hydrationInFlight.clear()
             renderedItemIds.clear()
@@ -205,6 +385,15 @@ constructor(
         }
         _layout.value = emptyList()
         _content.value = emptyMap()
+        _pinnedLayout.value = emptyList()
+        customSectionSignatures.clear()
+        presentationSeed = System.currentTimeMillis()
+        watchAgainJob?.cancel()
+        _watchAgain.value = emptyList()
+        _watchAgainLoaded.value = false
+        criticsChoiceJob?.cancel()
+        _criticsChoice.value = emptyList()
+        _criticsChoiceLoaded.value = false
     }
 
     private fun patchContent(
@@ -247,6 +436,13 @@ constructor(
             is HomeSectionContent.Spotlight -> {
                 patchItems(content.items)?.let { HomeSectionContent.Spotlight(it) } ?: content
             }
+            is HomeSectionContent.Items -> {
+                patchItems(content.items)?.let { HomeSectionContent.Items(it) } ?: content
+            }
+            is HomeSectionContent.RankedItems -> {
+                patchItems(content.items)?.let { HomeSectionContent.RankedItems(it) } ?: content
+            }
+            is HomeSectionContent.Studios -> content
             HomeSectionContent.Empty -> content
         }
     }
@@ -260,6 +456,9 @@ constructor(
                 is HomeSectionContent.PersonFromMovie ->
                     content.section.items.map { it.id } to false
                 is HomeSectionContent.Spotlight -> content.items.map { it.id } to true
+                is HomeSectionContent.Items -> content.items.map { it.id } to false
+                is HomeSectionContent.RankedItems -> content.items.map { it.id } to false
+                is HomeSectionContent.Studios -> return
                 HomeSectionContent.Empty -> return
             }
         hydrationMutex.withLock {
@@ -272,8 +471,24 @@ constructor(
             HomeSectionType.STARRING,
             HomeSectionType.DIRECTED_BY,
             HomeSectionType.WRITTEN_BY -> hydratePersonSection(descriptor)
-            HomeSectionType.BECAUSE_YOU_WATCHED -> hydrateBecauseYouWatched(descriptor)
-            HomeSectionType.ACTOR_FROM_MOVIE -> hydrateActorFromMovie(descriptor)
+            HomeSectionType.BECAUSE_YOU_WATCHED ->
+                hydrateSimilarToReference(descriptor, MovieSectionType.BECAUSE_YOU_WATCHED)
+            HomeSectionType.BECAUSE_YOU_LIKED ->
+                hydrateSimilarToReference(descriptor, MovieSectionType.BECAUSE_YOU_LIKED)
+            HomeSectionType.ACTOR_FROM_MOVIE ->
+                hydratePersonFromMovie(descriptor, PersonKind.ACTOR, PersonSectionType.STARRING)
+            HomeSectionType.DIRECTOR_FROM_MOVIE ->
+                hydratePersonFromMovie(
+                    descriptor,
+                    PersonKind.DIRECTOR,
+                    PersonSectionType.DIRECTED_BY,
+                )
+            HomeSectionType.WRITER_FROM_MOVIE ->
+                hydratePersonFromMovie(descriptor, PersonKind.WRITER, PersonSectionType.WRITTEN_BY)
+            HomeSectionType.WATCH_AGAIN -> hydrateWatchAgain(descriptor)
+            HomeSectionType.CRITICS_CHOICE -> hydrateCriticsChoice(descriptor)
+            HomeSectionType.POPULAR_STUDIOS -> hydratePopularStudios()
+            HomeSectionType.CUSTOM -> hydrateCustomSection(descriptor)
             HomeSectionType.SPOTLIGHT_GENRE_MOVIE,
             HomeSectionType.SPOTLIGHT_GENRE_SHOW,
             HomeSectionType.SPOTLIGHT_STUDIO,
@@ -297,7 +512,9 @@ constructor(
         val section =
             peopleRepository.getPersonSection(personWithCount, sectionType)
                 ?: return HomeSectionContent.Empty
-        return HomeSectionContent.Person(section)
+        return HomeSectionContent.Person(
+            section.copy(items = presentationOrder(descriptor.key, section.items))
+        )
     }
 
     private suspend fun decodeReferenceMovie(movieJson: String?): AfinityMovie? {
@@ -305,8 +522,9 @@ constructor(
         return movie.copy(images = movie.images.withBaseUrl(mediaRepository.getBaseUrl()))
     }
 
-    private suspend fun hydrateBecauseYouWatched(
-        descriptor: HomeSectionDescriptor
+    private suspend fun hydrateSimilarToReference(
+        descriptor: HomeSectionDescriptor,
+        sectionType: MovieSectionType,
     ): HomeSectionContent {
         val referenceMovie =
             decodeReferenceMovie(descriptor.referenceMovieJson) ?: return HomeSectionContent.Empty
@@ -321,33 +539,243 @@ constructor(
             return HomeSectionContent.Movie(
                 MovieSection(
                     referenceMovie = referenceMovie,
-                    recommendedItems = cachedItems,
-                    sectionType = MovieSectionType.BECAUSE_YOU_WATCHED,
+                    recommendedItems = presentationSample(descriptor.key, cachedItems, ROW_SIZE),
+                    sectionType = sectionType,
                 )
             )
         }
 
         val excluded = hydrationMutex.withLock { renderedItemIds.toSet() }
-        val similarMovies =
+        val pool =
             mediaRepository
-                .getSimilarMovies(movieId = referenceMovie.id, limit = 32)
+                .getSimilarMovies(movieId = referenceMovie.id, limit = SIMILAR_POOL)
                 .filterNot { it.id in excluded }
-                .shuffled()
-                .take(20)
-        if (similarMovies.size < 5) return HomeSectionContent.Empty
+        if (pool.size < 5) return HomeSectionContent.Empty
 
-        homeCacheRepository.putItems(cacheKey, similarMovies)
+        homeCacheRepository.putItems(cacheKey, pool)
         return HomeSectionContent.Movie(
             MovieSection(
                 referenceMovie = referenceMovie,
-                recommendedItems = similarMovies,
-                sectionType = MovieSectionType.BECAUSE_YOU_WATCHED,
+                recommendedItems = presentationSample(descriptor.key, pool, ROW_SIZE),
+                sectionType = sectionType,
             )
         )
     }
 
-    private suspend fun hydrateActorFromMovie(
+    private suspend fun hydrateWatchAgain(descriptor: HomeSectionDescriptor): HomeSectionContent {
+        val items =
+            presentationSample(descriptor.key, loadWatchAgainItems(descriptor.key), ROW_SIZE)
+        return if (items.isEmpty()) HomeSectionContent.Empty else HomeSectionContent.Items(items)
+    }
+
+    private suspend fun loadWatchAgainItems(
+        descriptorKey: String = WATCH_AGAIN_KEY
+    ): List<AfinityItem> {
+        val sk = sessionKey() ?: return emptyList()
+        val cacheKey = contentCacheKey(sk, descriptorKey)
+        val cachedItems = homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl())
+        if (!cachedItems.isNullOrEmpty()) {
+            return cachedItems
+        }
+
+        val baseUrl = mediaRepository.getBaseUrl()
+        val watchedShows =
+            try {
+                mediaRepository.getShows(
+                    sortBy = SortBy.DATE_PLAYED,
+                    sortDescending = true,
+                    isPlayed = true,
+                    limit = 30,
+                    fields = FieldSets.MEDIA_ITEM_CARDS,
+                )
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to load watched shows for watch again")
+                emptyList()
+            }
+
+        val watchedBoxSets =
+            try {
+                mediaRepository
+                    .getItems(
+                        includeItemTypes = listOf("BOX_SET"),
+                        fields = FieldSets.MEDIA_ITEM_CARDS,
+                    )
+                    .items
+                    ?.mapNotNull { it.toAfinityItem(baseUrl) }
+                    ?.filterIsInstance<AfinityBoxSet>()
+                    ?.filter { it.unplayedItemCount == 0 && (it.itemCount ?: 0) >= 2 }
+                    ?: emptyList()
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to load watched boxsets for watch again")
+                emptyList()
+            }
+
+        val candidates =
+            buildList<AfinityItem> {
+                addAll(
+                    watchedShows.filter {
+                        it.unplayedItemCount == null || it.unplayedItemCount == 0
+                    }
+                )
+                addAll(watchedBoxSets)
+            }
+        if (candidates.size < 5) return emptyList()
+
+        homeCacheRepository.putItems(cacheKey, candidates)
+        return candidates
+    }
+
+    private suspend fun hydrateCriticsChoice(
         descriptor: HomeSectionDescriptor
+    ): HomeSectionContent {
+        val items = loadCriticsChoiceItems(descriptor.key)
+        return if (items.isEmpty()) HomeSectionContent.Empty
+        else HomeSectionContent.RankedItems(items)
+    }
+
+    private suspend fun loadCriticsChoiceItems(
+        descriptorKey: String = CRITICS_CHOICE_KEY
+    ): List<AfinityItem> {
+        val sk = sessionKey() ?: return emptyList()
+        val cacheKey = contentCacheKey(sk, descriptorKey)
+        val cachedItems = homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl())
+        if (!cachedItems.isNullOrEmpty()) {
+            return rankByRating(presentationSample(descriptorKey, cachedItems, CRITICS_ROW_SIZE))
+        }
+
+        val topMovies =
+            try {
+                mediaRepository.getMovies(
+                    sortBy = SortBy.IMDB_RATING,
+                    sortDescending = true,
+                    limit = 25,
+                    fields = FieldSets.MEDIA_ITEM_CARDS,
+                )
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to load top rated movies")
+                emptyList()
+            }
+
+        val topShows =
+            try {
+                mediaRepository.getShows(
+                    sortBy = SortBy.IMDB_RATING,
+                    sortDescending = true,
+                    limit = 25,
+                    fields = FieldSets.MEDIA_ITEM_CARDS,
+                )
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to load top rated shows")
+                emptyList()
+            }
+
+        val items =
+            buildList<AfinityItem> {
+                    addAll(topMovies.filter { (it.communityRating ?: 0f) > MIN_CRITICS_RATING })
+                    addAll(topShows.filter { (it.communityRating ?: 0f) > MIN_CRITICS_RATING })
+                }
+                .distinctBy { it.id }
+        if (items.size < 5) return emptyList()
+
+        homeCacheRepository.putItems(cacheKey, items)
+        return rankByRating(presentationSample(descriptorKey, items, CRITICS_ROW_SIZE))
+    }
+
+    private fun rankByRating(items: List<AfinityItem>): List<AfinityItem> =
+        items.sortedByDescending {
+            when (it) {
+                is AfinityMovie -> it.communityRating ?: 0f
+                is AfinityShow -> it.communityRating ?: 0f
+                else -> 0f
+            }
+        }
+
+    private suspend fun hydratePopularStudios(): HomeSectionContent {
+        val studios =
+            try {
+                mediaRepository.getStudios(limit = 20)
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to load studios for home")
+                emptyList()
+            }
+        return if (studios.size < 3) HomeSectionContent.Empty
+        else HomeSectionContent.Studios(presentationOrder("popular_studios", studios))
+    }
+
+    private suspend fun hydrateCustomSection(
+        descriptor: HomeSectionDescriptor
+    ): HomeSectionContent {
+        val sectionId = descriptor.customSectionId ?: return HomeSectionContent.Empty
+        val section = customHomeSectionsRepository.get(sectionId) ?: return HomeSectionContent.Empty
+
+        val sk = sessionKey() ?: return HomeSectionContent.Empty
+        val cacheKey = contentCacheKey(sk, descriptor.key)
+        val cachedItems = homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl())
+        if (!cachedItems.isNullOrEmpty()) {
+            return HomeSectionContent.Items(
+                presentationSample(descriptor.key, cachedItems, section.itemLimit)
+            )
+        }
+
+        val baseUrl = mediaRepository.getBaseUrl()
+        val sourceId =
+            when (section.sourceType) {
+                CustomSectionSourceType.COLLECTION,
+                CustomSectionSourceType.PLAYLIST,
+                CustomSectionSourceType.LIBRARY ->
+                    try {
+                        UUID.fromString(section.primarySourceValue.orEmpty())
+                    } catch (e: Exception) {
+                        Timber.w(e, "Custom section ${section.id} has an invalid source id")
+                        return HomeSectionContent.Empty
+                    }
+                else -> null
+            }
+
+        val criteria =
+            when (section.sourceType) {
+                CustomSectionSourceType.GENRE -> ItemFilterCriteria(genres = section.sourceValues)
+                CustomSectionSourceType.STUDIO -> ItemFilterCriteria(studios = section.sourceValues)
+                CustomSectionSourceType.TAG -> ItemFilterCriteria(tags = section.sourceValues)
+                else -> ItemFilterCriteria()
+            }
+
+        val fetchLimit = (section.itemLimit * 3).coerceAtMost(100)
+
+        val items =
+            try {
+                mediaRepository
+                    .getItems(
+                        parentId = sourceId,
+                        sortBy = section.sortBy,
+                        sortDescending = section.sortDescending,
+                        limit = fetchLimit,
+                        includeItemTypes = section.includeItemTypes,
+                        fields = FieldSets.MEDIA_ITEM_CARDS,
+                        recursive = if (sourceId != null) true else null,
+                        criteria = criteria,
+                    )
+                    .items
+                    ?.mapNotNull { it.toAfinityItem(baseUrl) } ?: emptyList()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load custom home section ${section.id}")
+                return HomeSectionContent.Empty
+            }
+
+        if (items.isEmpty()) return HomeSectionContent.Empty
+
+        homeCacheRepository.putItems(cacheKey, items)
+        return HomeSectionContent.Items(
+            if (section.randomOrder) {
+                presentationSample(descriptor.key, items, section.itemLimit)
+            } else items.take(section.itemLimit)
+        )
+    }
+
+    private suspend fun hydratePersonFromMovie(
+        descriptor: HomeSectionDescriptor,
+        personKind: PersonKind,
+        sectionType: PersonSectionType,
     ): HomeSectionContent {
         val cachedPerson = descriptor.person ?: return HomeSectionContent.Empty
         val person = PersonWithCount.fromCached(cachedPerson, mediaRepository.getBaseUrl()).person
@@ -362,13 +790,14 @@ constructor(
                 PersonFromMovieSection(
                     person = person,
                     referenceMovie = referenceMovie,
-                    items = cachedItems,
+                    items = presentationSample(descriptor.key, cachedItems, ROW_SIZE),
+                    sectionType = sectionType,
                 )
             )
         }
 
         val excluded = hydrationMutex.withLock { renderedItemIds.toSet() }
-        val actorMovies =
+        val personMovies =
             mediaRepository
                 .getPersonItems(
                     personId = person.id,
@@ -377,19 +806,19 @@ constructor(
                 )
                 .filterIsInstance<AfinityMovie>()
                 .filter { movie ->
-                    movie.people.any { it.id == person.id && it.type == PersonKind.ACTOR }
+                    movie.people.any { it.id == person.id && it.type == personKind }
                 }
                 .filterNot { it.id == referenceMovie.id || it.id in excluded }
-                .shuffled()
-                .take(20)
-        if (actorMovies.size < 5) return HomeSectionContent.Empty
+                .take(PERSON_POOL)
+        if (personMovies.size < 5) return HomeSectionContent.Empty
 
-        homeCacheRepository.putItems(cacheKey, actorMovies)
+        homeCacheRepository.putItems(cacheKey, personMovies)
         return HomeSectionContent.PersonFromMovie(
             PersonFromMovieSection(
                 person = person,
                 referenceMovie = referenceMovie,
-                items = actorMovies,
+                items = presentationSample(descriptor.key, personMovies, ROW_SIZE),
+                sectionType = sectionType,
             )
         )
     }
@@ -399,7 +828,9 @@ constructor(
         val cacheKey = contentCacheKey(sk, descriptor.key)
         val cachedItems = homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl())
         if (!cachedItems.isNullOrEmpty()) {
-            return HomeSectionContent.Spotlight(cachedItems)
+            return HomeSectionContent.Spotlight(
+                presentationSample(descriptor.key, cachedItems, SPOTLIGHT_ROW_SIZE)
+            )
         }
 
         val rawItems =
@@ -444,14 +875,19 @@ constructor(
             }
 
         val excluded = hydrationMutex.withLock { spotlightSeenIds.toSet() }
-        val items = rawItems.filterNot { it.id in excluded }.take(10)
-        if (items.size < 3) return HomeSectionContent.Empty
+        val pool = rawItems.filterNot { it.id in excluded }
+        if (pool.size < 3) return HomeSectionContent.Empty
 
-        homeCacheRepository.putItems(cacheKey, items)
-        return HomeSectionContent.Spotlight(items)
+        homeCacheRepository.putItems(cacheKey, pool)
+        return HomeSectionContent.Spotlight(
+            presentationSample(descriptor.key, pool, SPOTLIGHT_ROW_SIZE)
+        )
     }
 
     private suspend fun buildLayout(): List<HomeSectionDescriptor> = coroutineScope {
+        val discovery = homeLayoutPreferencesRepository.getDiscoveryConfig()
+        fun cap(section: DiscoverySection) = discovery.countFor(section)
+
         val actorsDeferred = async {
             peopleRepository.getTopPeople(PersonKind.ACTOR, limit = 75, minAppearances = 5)
         }
@@ -510,27 +946,27 @@ constructor(
             personDescriptors(
                 actorsDeferred.await(),
                 HomeSectionType.STARRING,
-                max = 15,
+                max = cap(DiscoverySection.STARRING),
                 titleRes = R.string.home_person_starring,
             )
         val directorDescriptors =
             personDescriptors(
                 directorsDeferred.await(),
                 HomeSectionType.DIRECTED_BY,
-                max = 8,
+                max = cap(DiscoverySection.DIRECTED_BY),
                 titleRes = R.string.home_person_directed_by,
             )
         val writerDescriptors =
             personDescriptors(
                 writersDeferred.await(),
                 HomeSectionType.WRITTEN_BY,
-                max = 7,
+                max = cap(DiscoverySection.WRITTEN_BY),
                 titleRes = R.string.home_person_written_by,
             )
 
         val becauseYouWatchedDescriptors = mutableListOf<HomeSectionDescriptor>()
         val usedReferenceMovies = mutableSetOf<UUID>()
-        while (becauseYouWatchedDescriptors.size < 7) {
+        while (becauseYouWatchedDescriptors.size < cap(DiscoverySection.BECAUSE_YOU_WATCHED)) {
             val referenceMovie = getRandomRecentlyWatchedMovie(usedReferenceMovies) ?: break
             usedReferenceMovies.add(referenceMovie.id)
             val movieJson = converters.fromAfinityMovie(referenceMovie) ?: continue
@@ -545,44 +981,85 @@ constructor(
             )
         }
 
-        val actorFromMovieDescriptors = mutableListOf<HomeSectionDescriptor>()
-        val usedActorFromMovies = mutableSetOf<UUID>()
-        while (actorFromMovieDescriptors.size < 3) {
-            val randomMovie = getRandomRecentlyWatchedMovie(usedActorFromMovies) ?: break
-            usedActorFromMovies.add(randomMovie.id)
-
-            val movieWithPeople =
-                try {
-                    mediaRepository
-                        .getItem(itemId = randomMovie.id, fields = listOf(ItemFields.PEOPLE))
-                        ?.toAfinityMovie(mediaRepository.getBaseUrl())
-                } catch (e: Exception) {
-                    null
-                } ?: continue
-
-            val availableActors =
-                movieWithPeople.people
-                    .filter { it.type == PersonKind.ACTOR }
-                    .filterNot { it.name in usedPeopleNames }
-            val selectedActor = availableActors.take(3).randomOrNull() ?: continue
-            usedPeopleNames.add(selectedActor.name)
-
-            val movieJson = converters.fromAfinityMovie(movieWithPeople) ?: continue
-            actorFromMovieDescriptors.add(
+        val becauseYouLikedDescriptors = mutableListOf<HomeSectionDescriptor>()
+        val usedFavoriteMovies = mutableSetOf<UUID>()
+        while (becauseYouLikedDescriptors.size < cap(DiscoverySection.BECAUSE_YOU_LIKED)) {
+            val referenceMovie = getRandomFavoriteMovie(usedFavoriteMovies) ?: break
+            usedFavoriteMovies.add(referenceMovie.id)
+            if (referenceMovie.id in usedReferenceMovies) continue
+            val movieJson = converters.fromAfinityMovie(referenceMovie) ?: continue
+            becauseYouLikedDescriptors.add(
                 HomeSectionDescriptor(
-                    key = "actorfrom_${selectedActor.id}_${randomMovie.id}",
-                    type = HomeSectionType.ACTOR_FROM_MOVIE,
-                    title =
-                        context.getString(
-                            R.string.home_starring_from_watched,
-                            selectedActor.name,
-                            randomMovie.name,
-                        ),
-                    person = PersonWithCount(selectedActor, 0).toCached(),
+                    key = "byl_${referenceMovie.id}",
+                    type = HomeSectionType.BECAUSE_YOU_LIKED,
+                    title = context.getString(R.string.home_because_you_liked, referenceMovie.name),
                     referenceMovieJson = movieJson,
                 )
             )
         }
+
+        val personFromMovieDescriptors = mutableListOf<HomeSectionDescriptor>()
+        val usedPersonFromMovies = mutableSetOf<UUID>()
+
+        suspend fun addPersonFromMovieDescriptors(
+            type: HomeSectionType,
+            personKind: PersonKind,
+            max: Int,
+            titleRes: Int,
+        ) {
+            var added = 0
+            while (added < max) {
+                val randomMovie = getRandomRecentlyWatchedMovie(usedPersonFromMovies) ?: break
+                usedPersonFromMovies.add(randomMovie.id)
+
+                val movieWithPeople =
+                    try {
+                        mediaRepository
+                            .getItem(itemId = randomMovie.id, fields = listOf(ItemFields.PEOPLE))
+                            ?.toAfinityMovie(mediaRepository.getBaseUrl())
+                    } catch (e: Exception) {
+                        null
+                    } ?: continue
+
+                val availablePeople =
+                    movieWithPeople.people
+                        .filter { it.type == personKind }
+                        .filterNot { it.name in usedPeopleNames }
+                val selectedPerson = availablePeople.take(3).randomOrNull() ?: continue
+                usedPeopleNames.add(selectedPerson.name)
+
+                val movieJson = converters.fromAfinityMovie(movieWithPeople) ?: continue
+                personFromMovieDescriptors.add(
+                    HomeSectionDescriptor(
+                        key = "personfrom_${type.name}_${selectedPerson.id}_${randomMovie.id}",
+                        type = type,
+                        title = context.getString(titleRes, selectedPerson.name, randomMovie.name),
+                        person = PersonWithCount(selectedPerson, 0).toCached(),
+                        referenceMovieJson = movieJson,
+                    )
+                )
+                added++
+            }
+        }
+
+        addPersonFromMovieDescriptors(
+            HomeSectionType.ACTOR_FROM_MOVIE,
+            PersonKind.ACTOR,
+            max = cap(DiscoverySection.ACTOR_FROM_MOVIE),
+            titleRes = R.string.home_starring_from_watched,
+        )
+        addPersonFromMovieDescriptors(
+            HomeSectionType.DIRECTOR_FROM_MOVIE,
+            PersonKind.DIRECTOR,
+            max = cap(DiscoverySection.DIRECTOR_FROM_MOVIE),
+            titleRes = R.string.home_directed_by_from_watched,
+        )
+        addPersonFromMovieDescriptors(
+            HomeSectionType.WRITER_FROM_MOVIE,
+            PersonKind.WRITER,
+            max = cap(DiscoverySection.WRITER_FROM_MOVIE),
+            titleRes = R.string.home_written_by_from_watched,
+        )
 
         val genres = genreRepository.combinedGenres.value
         val spotlightDescriptors = buildList {
@@ -637,15 +1114,30 @@ constructor(
                 )
             }
         }
-        val spotlights = spotlightDescriptors.shuffled().take(20)
+        val spotlights = spotlightDescriptors.shuffled().take(cap(DiscoverySection.SPOTLIGHTS))
+
+        val popularStudiosDescriptor =
+            HomeSectionDescriptor(
+                key = "popular_studios",
+                type = HomeSectionType.POPULAR_STUDIOS,
+                title = context.getString(R.string.home_popular_studios),
+            )
+
+        val singletonDescriptors =
+            listOfNotNull(
+                popularStudiosDescriptor.takeIf {
+                    discovery.isEnabled(DiscoverySection.POPULAR_STUDIOS)
+                }
+            )
 
         val recommendationDescriptors =
-            (actorDescriptors + directorDescriptors).shuffled() +
-                (writerDescriptors + becauseYouWatchedDescriptors).shuffled() +
-                actorFromMovieDescriptors
+            (actorDescriptors + directorDescriptors + singletonDescriptors).shuffled() +
+                (writerDescriptors + becauseYouWatchedDescriptors + becauseYouLikedDescriptors)
+                    .shuffled() +
+                personFromMovieDescriptors.shuffled()
 
         val genreDescriptors =
-            genres.shuffled().map { genre ->
+            genres.shuffled().take(cap(DiscoverySection.GENRES)).map { genre ->
                 HomeSectionDescriptor(
                     key = "genre_${genre.type.name.lowercase()}_${genre.name}",
                     type =
@@ -684,7 +1176,11 @@ constructor(
                         it.type == HomeSectionType.DIRECTED_BY ||
                         it.type == HomeSectionType.WRITTEN_BY ||
                         it.type == HomeSectionType.BECAUSE_YOU_WATCHED ||
-                        it.type == HomeSectionType.ACTOR_FROM_MOVIE
+                        it.type == HomeSectionType.BECAUSE_YOU_LIKED ||
+                        it.type == HomeSectionType.ACTOR_FROM_MOVIE ||
+                        it.type == HomeSectionType.DIRECTOR_FROM_MOVIE ||
+                        it.type == HomeSectionType.WRITER_FROM_MOVIE ||
+                        it.type == HomeSectionType.POPULAR_STUDIOS
                 }
                 .shuffled()
 
@@ -696,20 +1192,7 @@ constructor(
         recommendations: List<HomeSectionDescriptor>,
         spotlights: List<HomeSectionDescriptor>,
     ): List<HomeSectionDescriptor> {
-        val finalLayout = mutableListOf<HomeSectionDescriptor>()
-        val genreIterator = genres.iterator()
-        val recIterator = recommendations.iterator()
-        var counter = 0
-        while (genreIterator.hasNext()) {
-            finalLayout.add(genreIterator.next())
-            counter++
-            if (counter % 2 == 0 && recIterator.hasNext()) {
-                finalLayout.add(recIterator.next())
-            }
-        }
-        while (recIterator.hasNext()) {
-            finalLayout.add(recIterator.next())
-        }
+        val finalLayout = mergeProportionally(genres, recommendations).toMutableList()
 
         if (spotlights.isNotEmpty()) {
             val positions = computeSpotlightPositions(finalLayout.size, spotlights.size)
@@ -718,6 +1201,39 @@ constructor(
             }
         }
         return finalLayout
+    }
+
+    private fun mergeProportionally(
+        primary: List<HomeSectionDescriptor>,
+        secondary: List<HomeSectionDescriptor>,
+    ): List<HomeSectionDescriptor> {
+        if (primary.isEmpty()) return secondary
+        if (secondary.isEmpty()) return primary
+
+        val total = primary.size + secondary.size
+        val merged = ArrayList<HomeSectionDescriptor>(total)
+        var primaryIndex = 0
+        var secondaryIndex = 0
+
+        for (slot in 0 until total) {
+            val takePrimary =
+                if (primaryIndex >= primary.size) false
+                else if (secondaryIndex >= secondary.size) true
+                else {
+                    val primaryProgress = (primaryIndex + 1).toFloat() / primary.size
+                    val secondaryProgress = (secondaryIndex + 1).toFloat() / secondary.size
+                    primaryProgress <= secondaryProgress
+                }
+
+            if (takePrimary) {
+                merged.add(primary[primaryIndex])
+                primaryIndex++
+            } else {
+                merged.add(secondary[secondaryIndex])
+                secondaryIndex++
+            }
+        }
+        return merged
     }
 
     private fun computeSpotlightPositions(listSize: Int, count: Int): List<Int> {
@@ -742,6 +1258,33 @@ constructor(
             lastPos = newPos
         }
         return adjustedPositions
+    }
+
+    private suspend fun getRandomFavoriteMovie(excludedMovies: Set<UUID>): AfinityMovie? {
+        try {
+            val now = System.currentTimeMillis()
+            val cached = favoriteMoviesCache
+
+            val allFavorites =
+                if (cached != null && now - cached.first < recentCacheTTL) {
+                    cached.second
+                } else {
+                    val movies =
+                        mediaRepository.getMovies(
+                            sortBy = SortBy.DATE_ADDED,
+                            sortDescending = true,
+                            limit = 10,
+                            isFavorite = true,
+                        )
+                    favoriteMoviesCache = now to movies
+                    movies
+                }
+
+            return allFavorites.filterNot { it.id in excludedMovies }.randomOrNull()
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get random favorite movie")
+            return null
+        }
     }
 
     private suspend fun getRandomRecentlyWatchedMovie(excludedMovies: Set<UUID>): AfinityMovie? {
@@ -782,3 +1325,13 @@ constructor(
         }
     }
 }
+
+private const val WATCH_AGAIN_KEY = "watch_again"
+private const val MIN_CRITICS_RATING = 6.5f
+private const val CRITICS_CHOICE_KEY = "critics_choice"
+
+private const val ROW_SIZE = 20
+private const val SPOTLIGHT_ROW_SIZE = 10
+private const val CRITICS_ROW_SIZE = 10
+private const val SIMILAR_POOL = 50
+private const val PERSON_POOL = 50

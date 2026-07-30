@@ -76,6 +76,7 @@ data class PersonSection(
 
 enum class MovieSectionType {
     BECAUSE_YOU_WATCHED,
+    BECAUSE_YOU_LIKED,
     STARRING_ACTOR_FROM,
 }
 
@@ -89,4 +90,5 @@ data class PersonFromMovieSection(
     val person: AfinityPerson,
     val referenceMovie: AfinityMovie,
     val items: List<AfinityItem>,
+    val sectionType: PersonSectionType = PersonSectionType.STARRING,
 )

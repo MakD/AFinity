@@ -62,7 +62,9 @@ import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.R.drawable.ic_launcher_monochrome
+import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.GenreType
+import com.makd.afinity.data.models.HomeRow
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -80,6 +82,7 @@ import com.makd.afinity.ui.home.components.DownloadedMusicAlbumsSection
 import com.makd.afinity.ui.home.components.DownloadedMusicTracksSection
 import com.makd.afinity.ui.home.components.GenreSection
 import com.makd.afinity.ui.home.components.HighestRatedSection
+import com.makd.afinity.ui.home.components.ItemsRowSection
 import com.makd.afinity.ui.home.components.LibrariesSection
 import com.makd.afinity.ui.home.components.MovieRecommendationSection
 import com.makd.afinity.ui.home.components.MoviesSectionSkeleton
@@ -209,7 +212,10 @@ fun HomeScreen(
                         WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
                     val bottomPadding =
                         WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                    val showCarousel = !uiState.isOffline && uiState.heroCarouselItems.isNotEmpty()
+                    val showCarousel =
+                        !uiState.isOffline &&
+                            uiState.heroCarouselItems.isNotEmpty() &&
+                            HomeRow.HERO_CAROUSEL !in uiState.hiddenRows
 
                     val baseModifier =
                         Modifier.fillMaxWidth()
@@ -244,7 +250,8 @@ fun HomeScreen(
                         if (
                             !uiState.isOffline &&
                                 uiState.libraries.isNotEmpty() &&
-                                !hideLibrariesSection
+                                !hideLibrariesSection &&
+                                HomeRow.LIBRARIES !in uiState.hiddenRows
                         ) {
                             item(key = "libraries_section") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
@@ -271,7 +278,10 @@ fun HomeScreen(
                             }
                         }
 
-                        if (continueWatchingItems.isNotEmpty()) {
+                        if (
+                            continueWatchingItems.isNotEmpty() &&
+                                HomeRow.CONTINUE_WATCHING !in uiState.hiddenRows
+                        ) {
                             item(key = "continue_watching") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     OptimizedContinueWatchingSection(
@@ -402,7 +412,23 @@ fun HomeScreen(
                             }
                         }
 
-                        if (!uiState.isOffline && uiState.nextUp.isNotEmpty()) {
+                        if (
+                            !uiState.isOffline &&
+                                HomeRow.NEXT_UP !in uiState.hiddenRows &&
+                                !uiState.nextUpLoaded
+                        ) {
+                            item(key = "next_up_skeleton") {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                    ContinueWatchingSkeleton(widthSizeClass)
+                                }
+                            }
+                        }
+
+                        if (
+                            !uiState.isOffline &&
+                                uiState.nextUp.isNotEmpty() &&
+                                HomeRow.NEXT_UP !in uiState.hiddenRows
+                        ) {
                             item(key = "next_up") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     NextUpSection(
@@ -416,7 +442,7 @@ fun HomeScreen(
                             }
                         }
 
-                        if (!uiState.isOffline) {
+                        if (!uiState.isOffline && HomeRow.LATEST_MOVIES !in uiState.hiddenRows) {
                             if (uiState.combineLibrarySections) {
                                 if (uiState.latestMovies.isNotEmpty()) {
                                     item(key = "latest_movies_combined") {
@@ -454,7 +480,7 @@ fun HomeScreen(
                             }
                         }
 
-                        if (!uiState.isOffline) {
+                        if (!uiState.isOffline && HomeRow.LATEST_TV !in uiState.hiddenRows) {
                             if (uiState.combineLibrarySections) {
                                 if (uiState.latestTvSeries.isNotEmpty()) {
                                     item(key = "latest_tv_combined") {
@@ -490,7 +516,23 @@ fun HomeScreen(
                             }
                         }
 
-                        if (!uiState.isOffline && uiState.upcomingEpisodes.isNotEmpty()) {
+                        if (
+                            !uiState.isOffline &&
+                                HomeRow.UPCOMING_EPISODES !in uiState.hiddenRows &&
+                                !uiState.upcomingLoaded
+                        ) {
+                            item(key = "upcoming_skeleton") {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                    ContinueWatchingSkeleton(widthSizeClass)
+                                }
+                            }
+                        }
+
+                        if (
+                            !uiState.isOffline &&
+                                uiState.upcomingEpisodes.isNotEmpty() &&
+                                HomeRow.UPCOMING_EPISODES !in uiState.hiddenRows
+                        ) {
                             item(key = "upcoming_episodes") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     UpcomingEpisodesSection(
@@ -504,7 +546,23 @@ fun HomeScreen(
                             }
                         }
 
-                        if (!uiState.isOffline && uiState.highestRated.isNotEmpty()) {
+                        if (
+                            !uiState.isOffline &&
+                                HomeRow.CRITICS_CHOICE !in uiState.hiddenRows &&
+                                !uiState.highestRatedLoaded
+                        ) {
+                            item(key = "critics_choice_skeleton") {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                    MoviesSectionSkeleton(widthSizeClass)
+                                }
+                            }
+                        }
+
+                        if (
+                            !uiState.isOffline &&
+                                uiState.highestRated.isNotEmpty() &&
+                                HomeRow.CRITICS_CHOICE !in uiState.hiddenRows
+                        ) {
                             item(key = "highest_rated") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     HighestRatedSection(
@@ -516,16 +574,80 @@ fun HomeScreen(
                             }
                         }
 
-                        if (!uiState.isOffline && uiState.studios.isNotEmpty()) {
-                            item(key = "popular_studios") {
+                        if (
+                            !uiState.isOffline &&
+                                HomeRow.WATCH_AGAIN !in uiState.hiddenRows &&
+                                !uiState.watchAgainLoaded
+                        ) {
+                            item(key = "watch_again_skeleton") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
-                                    PopularStudiosSection(
-                                        studios = uiState.studios,
-                                        onStudioClick = { studio ->
-                                            viewModel.onStudioClick(studio, navController)
-                                        },
+                                    MoviesSectionSkeleton(widthSizeClass)
+                                }
+                            }
+                        }
+
+                        if (
+                            !uiState.isOffline &&
+                                uiState.watchAgain.isNotEmpty() &&
+                                HomeRow.WATCH_AGAIN !in uiState.hiddenRows
+                        ) {
+                            item(key = "watch_again") {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                    ItemsRowSection(
+                                        title = stringResource(R.string.home_watch_again),
+                                        items = uiState.watchAgain,
+                                        sectionKey = "watch_again",
+                                        onItemClick = onItemClick,
                                         widthSizeClass = widthSizeClass,
                                     )
+                                }
+                            }
+                        }
+
+                        if (!uiState.isOffline && uiState.pinnedSections.isNotEmpty()) {
+                            items(
+                                items = uiState.pinnedSections,
+                                key = { section -> section.key },
+                                contentType = { section -> section::class },
+                            ) { section ->
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                    when (section) {
+                                        is HomeSection.Pending -> {
+                                            PendingSection(
+                                                title = section.title,
+                                                isSpotlight = section.isSpotlight,
+                                                onVisible = {
+                                                    viewModel.hydrateSection(section.key)
+                                                },
+                                                widthSizeClass = widthSizeClass,
+                                            )
+                                        }
+
+                                        is HomeSection.Items -> {
+                                            if (
+                                                section.cardStyle ==
+                                                    CustomSectionCardStyle.SPOTLIGHT
+                                            ) {
+                                                SpotlightCarousel(
+                                                    title = section.title,
+                                                    items = section.items,
+                                                    onItemClick = onItemClick,
+                                                    onPlayClick = onPlayClick,
+                                                )
+                                            } else {
+                                                ItemsRowSection(
+                                                    title = section.title,
+                                                    items = section.items,
+                                                    sectionKey = section.key,
+                                                    onItemClick = onItemClick,
+                                                    widthSizeClass = widthSizeClass,
+                                                    cardStyle = section.cardStyle,
+                                                )
+                                            }
+                                        }
+
+                                        else -> Unit
+                                    }
                                 }
                             }
                         }
@@ -579,6 +701,35 @@ fun HomeScreen(
                                                 items = section.items,
                                                 onItemClick = onItemClick,
                                                 onPlayClick = onPlayClick,
+                                            )
+                                        }
+
+                                        is HomeSection.Items -> {
+                                            ItemsRowSection(
+                                                title = section.title,
+                                                items = section.items,
+                                                sectionKey = section.key,
+                                                onItemClick = onItemClick,
+                                                widthSizeClass = widthSizeClass,
+                                                cardStyle = section.cardStyle,
+                                            )
+                                        }
+
+                                        is HomeSection.Ranked -> {
+                                            HighestRatedSection(
+                                                items = section.items,
+                                                onItemClick = onItemClick,
+                                                widthSizeClass = widthSizeClass,
+                                            )
+                                        }
+
+                                        is HomeSection.Studios -> {
+                                            PopularStudiosSection(
+                                                studios = section.studios,
+                                                onStudioClick = { studio ->
+                                                    viewModel.onStudioClick(studio, navController)
+                                                },
+                                                widthSizeClass = widthSizeClass,
                                             )
                                         }
 

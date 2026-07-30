@@ -1306,6 +1306,60 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_56_57 =
+        object : Migration(56, 57) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `custom_home_sections` (
+                        id TEXT NOT NULL,
+                        sessionKey TEXT NOT NULL,
+                        position INTEGER NOT NULL,
+                        title TEXT NOT NULL,
+                        sourceType TEXT NOT NULL,
+                        sourceValue TEXT NOT NULL,
+                        includeItemTypes TEXT NOT NULL,
+                        itemLimit INTEGER NOT NULL,
+                        sortBy TEXT NOT NULL,
+                        sortDescending INTEGER NOT NULL,
+                        randomOrder INTEGER NOT NULL,
+                        cardStyle TEXT NOT NULL,
+                        enabled INTEGER NOT NULL,
+                        seasonStart TEXT,
+                        seasonEnd TEXT,
+                        PRIMARY KEY(id)
+                    )
+                    """
+                        .trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_custom_home_sections_sessionKey` ON `custom_home_sections` (sessionKey)"
+                )
+            }
+        }
+
+    val MIGRATION_57_58 =
+        object : Migration(57, 58) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `home_layout_preferences` (
+                        sessionKey TEXT NOT NULL,
+                        sectionKey TEXT NOT NULL,
+                        position INTEGER NOT NULL,
+                        visible INTEGER NOT NULL,
+                        maxCount INTEGER,
+                        PRIMARY KEY(sessionKey, sectionKey)
+                    )
+                    """
+                        .trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_home_layout_preferences_sessionKey` ON `home_layout_preferences` (sessionKey)"
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1363,5 +1417,7 @@ object DatabaseMigrations {
             MIGRATION_53_54,
             MIGRATION_54_55,
             MIGRATION_55_56,
+            MIGRATION_56_57,
+            MIGRATION_57_58,
         )
 }

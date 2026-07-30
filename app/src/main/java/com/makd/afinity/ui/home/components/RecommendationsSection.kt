@@ -80,6 +80,8 @@ fun MovieRecommendationSection(
             when (section.sectionType) {
                 MovieSectionType.BECAUSE_YOU_WATCHED ->
                     stringResource(R.string.home_because_you_watched, section.referenceMovie.name)
+                MovieSectionType.BECAUSE_YOU_LIKED ->
+                    stringResource(R.string.home_because_you_liked, section.referenceMovie.name)
                 MovieSectionType.STARRING_ACTOR_FROM ->
                     stringResource(
                         R.string.home_starring_from_watched,
@@ -118,13 +120,15 @@ fun PersonFromMovieSection(
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
+        val titleRes =
+            when (section.sectionType) {
+                PersonSectionType.STARRING -> R.string.home_starring_from_watched
+                PersonSectionType.DIRECTED_BY -> R.string.home_directed_by_from_watched
+                PersonSectionType.WRITTEN_BY -> R.string.home_written_by_from_watched
+            }
         HomeSectionHeader(
             title =
-                stringResource(
-                    R.string.home_starring_from_watched,
-                    section.person.name,
-                    section.referenceMovie.name,
-                )
+                stringResource(titleRes, section.person.name, section.referenceMovie.name)
         )
 
         LazyRow(
@@ -135,7 +139,7 @@ fun PersonFromMovieSection(
             items(
                 items = section.items,
                 key = { movie ->
-                    "actor_recent_${section.person.id}_${section.referenceMovie.id}_${movie.id}"
+                    "person_recent_${section.sectionType.name}_${section.person.id}_${section.referenceMovie.id}_${movie.id}"
                 },
             ) { item ->
                 MediaItemCard(item = item, onClick = { onItemClick(item) }, cardWidth = cardWidth)
