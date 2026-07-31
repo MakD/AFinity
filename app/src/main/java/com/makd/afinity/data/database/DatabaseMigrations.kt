@@ -1367,6 +1367,15 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_59_60 =
+        object : Migration(59, 60) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "UPDATE `custom_home_sections` SET includeItemTypes = 'MOVIE,SERIES' WHERE includeItemTypes IS NULL OR includeItemTypes = ''"
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1427,5 +1436,6 @@ object DatabaseMigrations {
             MIGRATION_56_57,
             MIGRATION_57_58,
             MIGRATION_58_59,
+            MIGRATION_59_60,
         )
 }

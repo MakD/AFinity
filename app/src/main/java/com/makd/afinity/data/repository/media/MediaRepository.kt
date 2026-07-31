@@ -118,6 +118,11 @@ interface MediaRepository {
 
     suspend fun getItem(itemId: UUID, fields: List<ItemFields>? = null): BaseItemDto?
 
+    suspend fun getPlaylistItems(
+        playlistId: UUID,
+        fields: List<ItemFields>? = null,
+    ): List<BaseItemDto>
+
     suspend fun getItemById(itemId: UUID): AfinityItem?
 
     suspend fun getItemsByIds(ids: List<UUID>, fields: List<ItemFields>? = null): List<AfinityItem>

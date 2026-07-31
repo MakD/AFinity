@@ -52,13 +52,14 @@ fun MediaItemCard(
     cardWidth: Dp,
     modifier: Modifier = Modifier,
     isUnavailable: Boolean = false,
+    aspectRatio: Float = CardDimensions.ASPECT_RATIO_PORTRAIT,
 ) {
     val ratingScale = rememberRatingMetadataScale()
 
     Column(modifier = modifier.width(cardWidth)) {
         Card(
             onClick = onClick,
-            modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
+            modifier = Modifier.fillMaxWidth().aspectRatio(aspectRatio),
             colors =
                 CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -69,7 +70,7 @@ fun MediaItemCard(
                     contentDescription = item.name,
                     blurHash = item.images.primaryBlurHash ?: item.images.backdropBlurHash,
                     targetWidth = cardWidth,
-                    targetHeight = cardWidth * 3f / 2f,
+                    targetHeight = cardWidth / aspectRatio,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize().alpha(if (isUnavailable) 0.4f else 1f),
                 )

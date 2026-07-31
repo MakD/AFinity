@@ -18,6 +18,7 @@ import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
+import com.makd.afinity.ui.theme.CardDimensions.squareWidth
 
 @Composable
 fun ItemsRowSection(
@@ -30,10 +31,19 @@ fun ItemsRowSection(
     cardStyle: CustomSectionCardStyle = CustomSectionCardStyle.PORTRAIT,
 ) {
     val isLandscape = cardStyle == CustomSectionCardStyle.LANDSCAPE
-    val cardWidth = if (isLandscape) widthSizeClass.landscapeWidth else widthSizeClass.portraitWidth
+    val isSquare = cardStyle == CustomSectionCardStyle.SQUARE
+    val cardWidth =
+        when {
+            isLandscape -> widthSizeClass.landscapeWidth
+            isSquare -> widthSizeClass.squareWidth
+            else -> widthSizeClass.portraitWidth
+        }
     val aspectRatio =
-        if (isLandscape) CardDimensions.ASPECT_RATIO_LANDSCAPE
-        else CardDimensions.ASPECT_RATIO_PORTRAIT
+        when {
+            isLandscape -> CardDimensions.ASPECT_RATIO_LANDSCAPE
+            isSquare -> CardDimensions.ASPECT_RATIO_SQUARE
+            else -> CardDimensions.ASPECT_RATIO_PORTRAIT
+        }
     val cardHeight = CardDimensions.calculateHeight(cardWidth, aspectRatio)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
@@ -57,6 +67,7 @@ fun ItemsRowSection(
                         item = item,
                         onClick = { onItemClick(item) },
                         cardWidth = cardWidth,
+                        aspectRatio = aspectRatio,
                     )
                 }
             }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -29,6 +30,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -68,7 +70,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.CustomHomeSection
 import com.makd.afinity.data.models.CustomSectionCardStyle
+import com.makd.afinity.data.models.CustomSectionItemType
 import com.makd.afinity.data.models.CustomSectionSourceType
+import com.makd.afinity.data.models.CustomSectionTypeGroup
 import com.makd.afinity.data.models.DiscoveryConfig
 import com.makd.afinity.data.models.DiscoveryDensity
 import com.makd.afinity.data.models.DiscoverySection
@@ -499,7 +503,7 @@ private fun ColumnScope.CustomSectionEditor(
     onDelete: (() -> Unit)?,
 ) {
     val locale = LocalConfiguration.current.locales[0]
-    var draft by remember(section.id) { mutableStateOf(section) }
+    var draft by remember(section.id) { mutableStateOf(section.withSanitizedItemTypes()) }
     var sourceQuery by remember(section.id) { mutableStateOf("") }
     val options = optionsFor(draft.sourceType)
     val allowsMultiple = draft.sourceType.supportsMultipleSources
@@ -532,7 +536,7 @@ private fun ColumnScope.CustomSectionEditor(
                 entries = CustomSectionSourceType.entries.map { sourceTypeLabel(it, locale) to it },
                 isSelected = { it == draft.sourceType },
                 onSelect = {
-                    draft = draft.copy(sourceType = it, sourceValues = emptyList())
+                    draft = draft.withSourceType(it)
                     sourceQuery = ""
                 },
             )
@@ -548,7 +552,7 @@ private fun ColumnScope.CustomSectionEditor(
                     }
                 SearchableChipMultiSelect(
                     label = stringResource(R.string.custom_sections_field_source),
-                    placeholder = stringResource(R.string.custom_sections_pick_source),
+                    placeholder = stringResource(sourcePlaceholderRes(draft.sourceType)),
                     query = sourceQuery,
                     onQueryChange = { sourceQuery = it },
                     suggestions = suggestions,
@@ -571,16 +575,37 @@ private fun ColumnScope.CustomSectionEditor(
                     collapseOnSelect = !allowsMultiple,
                 )
             }
+            SettingsDivider()
+            ItemTypeSelector(
+                selected = draft.itemTypes,
+                sourceType = draft.sourceType,
+                onToggle = { draft = draft.withItemTypeToggled(it) },
+            )
         }
 
         SettingsGroup(title = stringResource(R.string.custom_sections_group_display)) {
-            DropdownSelectorItem(
-                title = stringResource(R.string.custom_sections_field_card_style),
-                selectedLabel = cardStyleLabel(draft.cardStyle, locale),
-                entries = CustomSectionCardStyle.entries.map { cardStyleLabel(it, locale) to it },
-                isSelected = { it == draft.cardStyle },
-                onSelect = { draft = draft.copy(cardStyle = it) },
-            )
+            val lockedStyle = draft.lockedCardStyle
+            if (lockedStyle == null) {
+                DropdownSelectorItem(
+                    title = stringResource(R.string.custom_sections_field_card_style),
+                    selectedLabel = cardStyleLabel(draft.cardStyle, locale),
+                    entries =
+                        CustomSectionCardStyle.entries
+                            .filterNot { it == CustomSectionCardStyle.SQUARE }
+                            .map { cardStyleLabel(it, locale) to it },
+                    isSelected = { it == draft.cardStyle },
+                    onSelect = { draft = draft.copy(cardStyle = it) },
+                )
+            } else {
+                SettingsItem(
+                    title = stringResource(R.string.custom_sections_field_card_style),
+                    subtitle =
+                        stringResource(
+                            R.string.custom_sections_card_style_locked_fmt,
+                            cardStyleLabel(lockedStyle, locale),
+                        ),
+                )
+            }
             SettingsDivider()
             DropdownSelectorItem(
                 title = stringResource(R.string.custom_sections_field_sort),
@@ -589,7 +614,9 @@ private fun ColumnScope.CustomSectionEditor(
                     else sortLabel(draft.sortBy, locale),
                 entries =
                     listOf(stringResource(R.string.custom_sections_sort_random) to null) +
-                        SortBy.entries.map { sortLabel(it, locale) to it },
+                        SortBy.entries
+                            .filterNot { it == SortBy.RANDOM }
+                            .map { sortLabel(it, locale) to it },
                 isSelected = {
                     if (it == null) draft.randomOrder else !draft.randomOrder && it == draft.sortBy
                 },
@@ -660,9 +687,54 @@ private fun ColumnScope.CustomSectionEditor(
         Box(modifier = Modifier.weight(1f))
         Button(
             onClick = { onSave(draft) },
-            enabled = draft.title.isNotBlank() && draft.sourceValues.isNotEmpty(),
+            enabled =
+                draft.title.isNotBlank() &&
+                    draft.sourceValues.isNotEmpty() &&
+                    draft.itemTypes.isNotEmpty(),
         ) {
             Text(text = stringResource(R.string.custom_sections_save))
+        }
+    }
+}
+
+@Composable
+private fun ItemTypeSelector(
+    selected: List<CustomSectionItemType>,
+    sourceType: CustomSectionSourceType,
+    onToggle: (CustomSectionItemType) -> Unit,
+) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Text(
+            text = stringResource(R.string.custom_sections_field_item_types),
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text =
+                when {
+                    selected.firstOrNull()?.group == CustomSectionTypeGroup.EPISODE ->
+                        stringResource(R.string.custom_sections_item_types_episode_hint)
+                    selected.firstOrNull()?.group == CustomSectionTypeGroup.MUSIC ->
+                        stringResource(R.string.custom_sections_item_types_music_hint)
+                    sourceType == CustomSectionSourceType.PLAYLIST ->
+                        stringResource(R.string.custom_sections_item_types_playlist_hint)
+                    else -> stringResource(R.string.custom_sections_item_types_hint)
+                },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 2.dp),
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(top = 8.dp),
+        ) {
+            CustomSectionItemType.availableFor(sourceType).forEach { type ->
+                FilterChip(
+                    selected = type in selected,
+                    onClick = { onToggle(type) },
+                    label = { Text(text = stringResource(type.labelRes)) },
+                )
+            }
         }
     }
 }
@@ -960,6 +1032,16 @@ private fun MonthDayPickerItems(
         onSelect = { onValueChange(formatMonthDay(month, it)) },
     )
 }
+
+private fun sourcePlaceholderRes(type: CustomSectionSourceType): Int =
+    when (type) {
+        CustomSectionSourceType.GENRE -> R.string.custom_sections_pick_genre
+        CustomSectionSourceType.STUDIO -> R.string.custom_sections_pick_studio
+        CustomSectionSourceType.TAG -> R.string.custom_sections_pick_tag
+        CustomSectionSourceType.COLLECTION -> R.string.custom_sections_pick_collection
+        CustomSectionSourceType.PLAYLIST -> R.string.custom_sections_pick_playlist
+        CustomSectionSourceType.LIBRARY -> R.string.custom_sections_pick_library
+    }
 
 private fun sourceTypeIcon(type: CustomSectionSourceType): Int =
     when (type) {

@@ -171,7 +171,7 @@ constructor(
                         type = HomeSectionType.CUSTOM,
                         title = section.title,
                         customSectionId = section.id,
-                        cardStyle = section.cardStyle.name,
+                        cardStyle = section.effectiveCardStyle.name,
                     )
                 }
     }
@@ -781,19 +781,27 @@ constructor(
 
         val items =
             try {
-                mediaRepository
-                    .getItems(
-                        parentId = sourceId,
-                        sortBy = section.sortBy,
-                        sortDescending = section.sortDescending,
-                        limit = fetchLimit,
-                        includeItemTypes = section.includeItemTypes,
-                        fields = FieldSets.MEDIA_ITEM_CARDS,
-                        recursive = if (sourceId != null) true else null,
-                        criteria = criteria,
-                    )
-                    .items
-                    ?.mapNotNull { it.toAfinityItem(baseUrl) } ?: emptyList()
+                if (section.sourceType == CustomSectionSourceType.PLAYLIST && sourceId != null) {
+                    mediaRepository
+                        .getPlaylistItems(sourceId, fields = FieldSets.MEDIA_ITEM_CARDS)
+                        .filter { it.type.name in section.includeItemTypes }
+                        .take(fetchLimit)
+                        .mapNotNull { it.toAfinityItem(baseUrl) }
+                } else {
+                    mediaRepository
+                        .getItems(
+                            parentId = sourceId,
+                            sortBy = section.sortBy,
+                            sortDescending = section.sortDescending,
+                            limit = fetchLimit,
+                            includeItemTypes = section.includeItemTypes,
+                            fields = FieldSets.MEDIA_ITEM_CARDS,
+                            recursive = if (sourceId != null) true else null,
+                            criteria = criteria,
+                        )
+                        .items
+                        ?.mapNotNull { it.toAfinityItem(baseUrl) } ?: emptyList()
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load custom home section ${section.id}")
                 return HomeSectionContent.Empty

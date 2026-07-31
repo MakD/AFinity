@@ -8,6 +8,7 @@ object CardDimensions {
 
     const val ASPECT_RATIO_PORTRAIT = 2f / 3f
     const val ASPECT_RATIO_LANDSCAPE = 16f / 9f
+    const val ASPECT_RATIO_SQUARE = 1f
 
     private object Values {
         val PortraitCompact = 140.dp
@@ -17,6 +18,10 @@ object CardDimensions {
         val LandscapeCompact = 240.dp
         val LandscapeMedium = 260.dp
         val LandscapeExpanded = 320.dp
+
+        val SquareCompact = 150.dp
+        val SquareMedium = 160.dp
+        val SquareExpanded = 190.dp
 
         val GridCompact = 140.dp
         val GridMedium = 160.dp
@@ -39,6 +44,15 @@ object CardDimensions {
                 WindowWidthSizeClass.Medium -> Values.LandscapeMedium
                 WindowWidthSizeClass.Expanded -> Values.LandscapeExpanded
                 else -> Values.LandscapeCompact
+            }
+
+    val WindowWidthSizeClass.squareWidth: Dp
+        get() =
+            when (this) {
+                WindowWidthSizeClass.Compact -> Values.SquareCompact
+                WindowWidthSizeClass.Medium -> Values.SquareMedium
+                WindowWidthSizeClass.Expanded -> Values.SquareExpanded
+                else -> Values.SquareCompact
             }
 
     val WindowWidthSizeClass.gridMinSize: Dp

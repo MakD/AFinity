@@ -515,7 +515,7 @@ fun SettingsScreen(
                                     )
                                     SettingsDivider()
                                     SettingsItem(
-                                        icon = painterResource(id = R.drawable.ic_view_module),
+                                        icon = painterResource(id = R.drawable.ic_row_custom),
                                         title = stringResource(R.string.custom_sections_title),
                                         subtitle =
                                             stringResource(

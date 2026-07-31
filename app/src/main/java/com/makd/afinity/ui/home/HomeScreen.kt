@@ -657,7 +657,13 @@ fun HomeScreen(
                                                     title = section.title,
                                                     items = section.items,
                                                     sectionKey = section.key,
-                                                    onItemClick = onItemClick,
+                                                    onItemClick = { item ->
+                                                        if (item is AfinityEpisode) {
+                                                            viewModel.selectEpisode(item)
+                                                        } else {
+                                                            onItemClick(item)
+                                                        }
+                                                    },
                                                     widthSizeClass = widthSizeClass,
                                                     cardStyle = section.cardStyle,
                                                 )

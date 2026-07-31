@@ -64,6 +64,7 @@ import org.jellyfin.sdk.api.operations.GenresApi
 import org.jellyfin.sdk.api.operations.ItemsApi
 import org.jellyfin.sdk.api.operations.LibraryApi
 import org.jellyfin.sdk.api.operations.PersonsApi
+import org.jellyfin.sdk.api.operations.PlaylistsApi
 import org.jellyfin.sdk.api.operations.StudiosApi
 import org.jellyfin.sdk.api.operations.TrickplayApi
 import org.jellyfin.sdk.api.operations.TvShowsApi
@@ -663,6 +664,22 @@ constructor(
                         enableUserData = true,
                     )
                 .content
+        }
+
+    override suspend fun getPlaylistItems(
+        playlistId: UUID,
+        fields: List<ItemFields>?,
+    ): List<BaseItemDto> =
+        apiCall(emptyList(), "Failed to get items for playlist: $playlistId") { apiClient, userId ->
+            PlaylistsApi(apiClient)
+                .getPlaylistItems(
+                    playlistId = playlistId,
+                    userId = userId,
+                    fields = fields,
+                    enableUserData = true,
+                )
+                .content
+                .items
         }
 
     override suspend fun getItem(itemId: UUID, fields: List<ItemFields>?): BaseItemDto? =

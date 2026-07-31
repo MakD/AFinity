@@ -187,15 +187,12 @@ fun <T> SearchableChipMultiSelect(
         }
 
         Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(14.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHighest,
             border =
-                BorderStroke(
-                    width = 1.dp,
-                    color =
-                        if (expanded || editing) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.outline,
-                ),
+                if (expanded || editing) {
+                    BorderStroke(width = 1.dp, color = MaterialTheme.colorScheme.primary)
+                } else null,
             modifier = Modifier.fillMaxWidth().bringIntoViewRequester(bringIntoViewRequester),
         ) {
             Row(
@@ -265,7 +262,7 @@ fun <T> SearchableChipMultiSelect(
                                 },
                         decorationBox = { innerTextField ->
                             Box(contentAlignment = Alignment.CenterStart) {
-                                if (query.isEmpty()) {
+                                if (query.isEmpty() && selected.isEmpty()) {
                                     Text(
                                         text = placeholder,
                                         style = MaterialTheme.typography.bodyLarge,
@@ -318,7 +315,7 @@ fun <T> SearchableChipMultiSelect(
             exit = fadeOut() + shrinkVertically(),
         ) {
             Surface(
-                shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
+                shape = RoundedCornerShape(bottomStart = 14.dp, bottomEnd = 14.dp),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 tonalElevation = 4.dp,
                 modifier =
