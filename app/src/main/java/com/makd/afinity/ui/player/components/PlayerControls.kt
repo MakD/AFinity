@@ -116,6 +116,7 @@ data class SubtitleStreamOption(
     val isDefault: Boolean,
     val index: Int,
     val isNone: Boolean = false,
+    val secondaryName: String? = null,
 )
 
 @OptIn(UnstableApi::class)
@@ -253,7 +254,7 @@ fun PlayerControls(
                         )
                     )
                 }
-            assertSubtitleOptions(options)
+            assertSubtitleOptions(options, trackFmt)
         }
 
     val shouldShowControls = uiState.showControls && !uiState.isInPictureInPictureMode
@@ -1392,6 +1393,7 @@ private fun TrackPanel(
                                     onSelectTrack(C.TRACK_TYPE_TEXT, option.index)
                                     onDismiss()
                                 },
+                                secondaryLabel = option.secondaryName,
                             )
                         }
                     }
@@ -1423,7 +1425,12 @@ private fun TrackColumn(
 }
 
 @Composable
-private fun TrackRow(label: String, selected: Boolean, onClick: () -> Unit) {
+private fun TrackRow(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    secondaryLabel: String? = null,
+) {
     Row(
         modifier =
             Modifier.fillMaxWidth()
@@ -1436,17 +1443,28 @@ private fun TrackRow(label: String, selected: Boolean, onClick: () -> Unit) {
                 .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color =
-                if (selected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurface,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color =
+                    if (selected) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurface,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+
+            if (!secondaryLabel.isNullOrBlank()) {
+                Text(
+                    text = secondaryLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
         if (selected) {
             Spacer(modifier = Modifier.width(8.dp))
             Icon(
@@ -1912,12 +1930,63 @@ private fun assertAudioOptions(options: List<AudioStreamOption>): List<AudioStre
     }
 }
 
-private fun assertSubtitleOptions(options: List<SubtitleStreamOption>): List<SubtitleStreamOption> {
+private fun prettySubtitleCodec(codec: String?): String? =
+    when (codec?.lowercase()) {
+        null, "" -> null
+        "subrip", "srt" -> "SRT"
+        "ass", "ssa" -> "ASS"
+        "webvtt", "vtt" -> "VTT"
+        "pgssub", "pgs", "hdmv_pgs_subtitle" -> "PGS"
+        "dvdsub", "vobsub", "dvd_subtitle" -> "VOBSUB"
+        "dvbsub", "dvb_subtitle" -> "DVBSUB"
+        "mov_text", "tx3g" -> "TX3G"
+        else -> codec.uppercase()
+    }
+
+private fun subtitleFileName(path: String?): String? =
+    path?.substringAfterLast('/')?.substringAfterLast('\\')?.takeIf { it.isNotBlank() }
+
+private fun subtitleTrackTitle(stream: AfinityMediaStream?, primaryLabel: String): String? {
+    if (stream == null) return null
+    val candidate =
+        stream.title.takeIf { it.isNotBlank() }
+            ?: stream.displayTitle?.takeIf { it.isNotBlank() }
+            ?: return null
+    val isRedundant =
+        candidate.equals(primaryLabel, ignoreCase = true) ||
+            candidate.equals(stream.language, ignoreCase = true) ||
+            candidate.equals(primaryLabel.substringBefore(" ["), ignoreCase = true)
+    return candidate.takeIf { !isRedundant }
+}
+
+private fun assertSubtitleOptions(
+    options: List<SubtitleStreamOption>,
+    trackFmt: String,
+): List<SubtitleStreamOption> {
     val duplicates =
         options.filter { !it.isNone }.groupBy { it.displayName }.filter { it.value.size > 1 }.keys
-    return options.map { opt ->
-        if (opt.isNone || opt.displayName !in duplicates) return@map opt
-        val hint = extractRegionalHint(opt.stream?.displayTitle) ?: return@map opt
-        opt.copy(displayName = "${opt.displayName} ($hint)")
+
+    val disambiguated =
+        options.map { opt ->
+            if (opt.isNone || opt.displayName !in duplicates) return@map opt
+            if (!opt.secondaryName.isNullOrBlank()) return@map opt
+            val fallback =
+                subtitleTrackTitle(opt.stream, opt.displayName)
+                    ?: prettySubtitleCodec(opt.stream?.codec)
+                    ?: subtitleFileName(opt.stream?.path)
+                    ?: String.format(trackFmt, opt.index + 1)
+            opt.copy(secondaryName = fallback)
+        }
+
+    val stillColliding =
+        disambiguated
+            .filter { !it.isNone }
+            .groupBy { it.displayName to it.secondaryName }
+            .filter { it.value.size > 1 }
+            .keys
+
+    return disambiguated.map { opt ->
+        if (opt.isNone || (opt.displayName to opt.secondaryName) !in stillColliding) return@map opt
+        opt.copy(secondaryName = String.format(trackFmt, opt.index + 1))
     }
 }
