@@ -122,9 +122,11 @@ fun CustomSectionsScreen(
     val transfer by viewModel.transfer.collectAsStateWithLifecycle()
     val playerOffset = LocalPlayerOffset.current
     val context = LocalContext.current
+    val locale = LocalConfiguration.current.locales[0]
 
     var editing by remember { mutableStateOf<CustomHomeSection?>(null) }
     var editingIsNew by remember { mutableStateOf(false) }
+    var choosingTemplate by remember { mutableStateOf(false) }
 
     val exportLauncher =
         rememberLauncherForActivityResult(
@@ -186,33 +188,6 @@ fun CustomSectionsScreen(
                         )
                     }
                 },
-                actions = {
-                    if (uiState.canAddMore) {
-                        var presetsExpanded by remember { mutableStateOf(false) }
-                        IconButton(onClick = { presetsExpanded = true }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_calendar),
-                                contentDescription =
-                                    stringResource(R.string.custom_sections_add_preset),
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = presetsExpanded,
-                            onDismissRequest = { presetsExpanded = false },
-                        ) {
-                            SeasonalPreset.entries.forEach { preset ->
-                                DropdownMenuItem(
-                                    text = { Text(text = preset.defaultTitle) },
-                                    onClick = {
-                                        editing = viewModel.presetTemplate(preset)
-                                        editingIsNew = true
-                                        presetsExpanded = false
-                                    },
-                                )
-                            }
-                        }
-                    }
-                },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surface
@@ -222,10 +197,7 @@ fun CustomSectionsScreen(
         floatingActionButton = {
             if (uiState.canAddMore) {
                 FloatingActionButton(
-                    onClick = {
-                        editing = viewModel.newSectionTemplate()
-                        editingIsNew = true
-                    },
+                    onClick = { choosingTemplate = true },
                     modifier = Modifier.padding(bottom = playerOffset),
                 ) {
                     Icon(
@@ -378,6 +350,29 @@ fun CustomSectionsScreen(
         onApply = { viewModel.applyImport() },
         onDismiss = { viewModel.dismissTransfer() },
     )
+
+    val pendingTemplate by viewModel.pendingTemplate.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingTemplate) {
+        pendingTemplate?.let { template ->
+            editing = template
+            editingIsNew = true
+            choosingTemplate = false
+            viewModel.consumePendingTemplate()
+        }
+    }
+
+    if (choosingTemplate) {
+        AddSectionDialog(
+            locale = locale,
+            onBlank = {
+                editing = viewModel.newSectionTemplate()
+                editingIsNew = true
+                choosingTemplate = false
+            },
+            onPreset = { viewModel.requestPreset(it) },
+            onDismiss = { choosingTemplate = false },
+        )
+    }
 
     val current = editing
     if (current != null) {
@@ -840,6 +835,48 @@ private fun ItemTypeSelector(
             }
         }
     }
+}
+
+@Composable
+private fun AddSectionDialog(
+    locale: Locale,
+    onBlank: () -> Unit,
+    onPreset: (SeasonalPreset) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    ListPickerDialog(
+        title = stringResource(R.string.custom_sections_add),
+        onDismiss = onDismiss,
+        height = 400.dp,
+    ) {
+        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+            SettingsItem(
+                title = stringResource(R.string.custom_sections_add_blank),
+                subtitle = stringResource(R.string.custom_sections_add_blank_summary),
+                onClick = onBlank,
+            )
+            SettingsDivider()
+            SeasonalPreset.entries.forEachIndexed { index, preset ->
+                if (index > 0) SettingsDivider()
+                SettingsItem(
+                    title = preset.defaultTitle,
+                    subtitle =
+                        stringResource(
+                            R.string.custom_sections_preset_range_fmt,
+                            monthDayLabel(preset.start, locale),
+                            monthDayLabel(preset.end, locale),
+                        ),
+                    onClick = { onPreset(preset) },
+                )
+            }
+        }
+    }
+}
+
+private fun monthDayLabel(value: String, locale: Locale): String {
+    val month = value.substringBefore('-').toIntOrNull()?.coerceIn(1, 12) ?: 1
+    val day = value.substringAfter('-', "").toIntOrNull()?.coerceIn(1, 31) ?: 1
+    return "${Month.of(month).getDisplayName(TextStyle.SHORT, locale)} $day"
 }
 
 @Composable

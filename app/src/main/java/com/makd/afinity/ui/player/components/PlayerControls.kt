@@ -251,6 +251,13 @@ fun PlayerControls(
                             isDefault = trackGroup.isSelected,
                             index = index,
                             isNone = false,
+                            secondaryName =
+                                subtitleSecondaryLabel(
+                                    stream = serverStream,
+                                    formatLabel = format.label,
+                                    formatMimeType = format.sampleMimeType,
+                                    primaryLabel = displayName,
+                                ),
                         )
                     )
                 }
@@ -1931,32 +1938,55 @@ private fun assertAudioOptions(options: List<AudioStreamOption>): List<AudioStre
 }
 
 private fun prettySubtitleCodec(codec: String?): String? =
-    when (codec?.lowercase()) {
+    when (val value = codec?.lowercase()) {
         null, "" -> null
-        "subrip", "srt" -> "SRT"
-        "ass", "ssa" -> "ASS"
-        "webvtt", "vtt" -> "VTT"
-        "pgssub", "pgs", "hdmv_pgs_subtitle" -> "PGS"
-        "dvdsub", "vobsub", "dvd_subtitle" -> "VOBSUB"
-        "dvbsub", "dvb_subtitle" -> "DVBSUB"
-        "mov_text", "tx3g" -> "TX3G"
-        else -> codec.uppercase()
+        "subrip", "srt", "application/x-subrip" -> "SRT"
+        "ass", "ssa", "text/x-ssa", "text/x-ass" -> "ASS"
+        "webvtt", "vtt", "text/vtt" -> "VTT"
+        "pgssub",
+        "pgs",
+        "hdmv_pgs_subtitle",
+        "application/pgs" -> "PGS"
+        "dvdsub", "vobsub", "dvd_subtitle", "application/vobsub" -> "VOBSUB"
+        "dvbsub", "dvb_subtitle", "application/dvbsubs" -> "DVBSUB"
+        "mov_text", "tx3g", "application/x-quicktime-tx3g" -> "TX3G"
+        "application/cea-608", "application/cea-708" -> "CEA"
+        else ->
+            value
+                .substringAfterLast('/')
+                .removePrefix("x-")
+                .takeIf { it.isNotBlank() }
+                ?.uppercase()
     }
 
 private fun subtitleFileName(path: String?): String? =
     path?.substringAfterLast('/')?.substringAfterLast('\\')?.takeIf { it.isNotBlank() }
 
-private fun subtitleTrackTitle(stream: AfinityMediaStream?, primaryLabel: String): String? {
-    if (stream == null) return null
+private fun subtitleTrackTitle(
+    stream: AfinityMediaStream?,
+    formatLabel: String?,
+    primaryLabel: String,
+): String? {
     val candidate =
-        stream.title.takeIf { it.isNotBlank() }
-            ?: stream.displayTitle?.takeIf { it.isNotBlank() }
+        stream?.title?.takeIf { it.isNotBlank() }
+            ?: formatLabel?.takeIf { it.isNotBlank() }
             ?: return null
     val isRedundant =
         candidate.equals(primaryLabel, ignoreCase = true) ||
-            candidate.equals(stream.language, ignoreCase = true) ||
+            candidate.equals(stream?.language, ignoreCase = true) ||
             candidate.equals(primaryLabel.substringBefore(" ["), ignoreCase = true)
     return candidate.takeIf { !isRedundant }
+}
+
+private fun subtitleSecondaryLabel(
+    stream: AfinityMediaStream?,
+    formatLabel: String?,
+    formatMimeType: String?,
+    primaryLabel: String,
+): String? {
+    val title = subtitleTrackTitle(stream, formatLabel, primaryLabel)
+    val codec = prettySubtitleCodec(stream?.codec?.takeIf { it.isNotBlank() } ?: formatMimeType)
+    return listOfNotNull(title, codec).joinToString(" · ").takeIf { it.isNotBlank() }
 }
 
 private fun assertSubtitleOptions(
@@ -1971,10 +2001,7 @@ private fun assertSubtitleOptions(
             if (opt.isNone || opt.displayName !in duplicates) return@map opt
             if (!opt.secondaryName.isNullOrBlank()) return@map opt
             val fallback =
-                subtitleTrackTitle(opt.stream, opt.displayName)
-                    ?: prettySubtitleCodec(opt.stream?.codec)
-                    ?: subtitleFileName(opt.stream?.path)
-                    ?: String.format(trackFmt, opt.index + 1)
+                subtitleFileName(opt.stream?.path) ?: String.format(trackFmt, opt.index + 1)
             opt.copy(secondaryName = fallback)
         }
 
@@ -1987,6 +2014,10 @@ private fun assertSubtitleOptions(
 
     return disambiguated.map { opt ->
         if (opt.isNone || (opt.displayName to opt.secondaryName) !in stillColliding) return@map opt
-        opt.copy(secondaryName = String.format(trackFmt, opt.index + 1))
+        val track = String.format(trackFmt, opt.index + 1)
+        val secondary =
+            listOfNotNull(opt.secondaryName?.takeIf { it.isNotBlank() }, track)
+                .joinToString(" · ")
+        opt.copy(secondaryName = secondary)
     }
 }

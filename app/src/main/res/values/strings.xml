@@ -143,6 +143,9 @@
     <string name="custom_sections_field_source_type">Source type</string>
     <string name="custom_sections_field_source">Source</string>
     <string name="custom_sections_source_resolving">…</string>
+    <string name="custom_sections_add_blank">Blank section</string>
+    <string name="custom_sections_add_blank_summary">Start from scratch</string>
+    <string name="custom_sections_preset_range_fmt">Seasonal · %1$s – %2$s</string>
     <string name="custom_sections_group_backup">Backup</string>
     <string name="custom_sections_backup_caption">Save this home screen setup to a file, or apply one from another device.</string>
     <string name="custom_sections_export">Export setup</string>
@@ -194,7 +197,6 @@
     <string name="custom_sections_seasonal_hint">Only show during a date range each year</string>
     <string name="custom_sections_field_season_start">Starts</string>
     <string name="custom_sections_field_season_end">Ends</string>
-    <string name="custom_sections_add_preset">Add seasonal preset</string>
     <string name="custom_sections_reorder">Drag to reorder</string>
     <string name="custom_sections_save">Save</string>
     <string name="custom_sections_delete">Delete</string>

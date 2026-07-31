@@ -102,6 +102,9 @@ constructor(
     private val _transfer = MutableStateFlow(TransferState())
     val transfer: StateFlow<TransferState> = _transfer.asStateFlow()
 
+    private val _pendingTemplate = MutableStateFlow<CustomHomeSection?>(null)
+    val pendingTemplate: StateFlow<CustomHomeSection?> = _pendingTemplate.asStateFlow()
+
     private val _uiState = MutableStateFlow(CustomSectionsUiState())
     val uiState: StateFlow<CustomSectionsUiState> = _uiState.asStateFlow()
 
@@ -160,6 +163,18 @@ constructor(
         }
     }
 
+    fun requestPreset(preset: SeasonalPreset) {
+        viewModelScope.launch {
+            awaitSources(CustomSectionSourceType.TAG)
+            awaitSources(CustomSectionSourceType.GENRE)
+            _pendingTemplate.value = presetTemplate(preset)
+        }
+    }
+
+    fun consumePendingTemplate() {
+        _pendingTemplate.value = null
+    }
+
     fun prepareExport() {
         viewModelScope.launch {
             val payload =
@@ -212,35 +227,41 @@ constructor(
     }
 
     private fun loadSourcesFor(sourceType: CustomSectionSourceType) {
-        viewModelScope.launch {
-            setSourceState(sourceType, SourceLoadState.LOADING)
-            try {
-                val options = fetchSourceOptions(sourceType)
-                if (options == null) {
-                    setSourceState(sourceType, SourceLoadState.FAILED)
-                    return@launch
-                }
-                _uiState.update {
-                    val next =
-                        when (sourceType) {
-                            CustomSectionSourceType.GENRE -> it.copy(genreOptions = options)
-                            CustomSectionSourceType.STUDIO -> it.copy(studioOptions = options)
-                            CustomSectionSourceType.COLLECTION ->
-                                it.copy(collectionOptions = options)
-                            CustomSectionSourceType.PLAYLIST -> it.copy(playlistOptions = options)
-                            CustomSectionSourceType.LIBRARY -> it.copy(libraryOptions = options)
-                            CustomSectionSourceType.TAG -> it.copy(tagOptions = options)
-                        }
-                    next.copy(
-                        sourceStates = next.sourceStates + (sourceType to SourceLoadState.LOADED)
-                    )
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load $sourceType options for custom sections")
+        viewModelScope.launch { loadSourcesNow(sourceType) }
+    }
+
+    private suspend fun awaitSources(sourceType: CustomSectionSourceType) {
+        if (_uiState.value.stateFor(sourceType) == SourceLoadState.LOADED) return
+        loadSourcesNow(sourceType)
+    }
+
+    private suspend fun loadSourcesNow(sourceType: CustomSectionSourceType) {
+        setSourceState(sourceType, SourceLoadState.LOADING)
+        try {
+            val options = fetchSourceOptions(sourceType)
+            if (options == null) {
                 setSourceState(sourceType, SourceLoadState.FAILED)
+                return
             }
+            _uiState.update {
+                val next =
+                    when (sourceType) {
+                        CustomSectionSourceType.GENRE -> it.copy(genreOptions = options)
+                        CustomSectionSourceType.STUDIO -> it.copy(studioOptions = options)
+                        CustomSectionSourceType.COLLECTION -> it.copy(collectionOptions = options)
+                        CustomSectionSourceType.PLAYLIST -> it.copy(playlistOptions = options)
+                        CustomSectionSourceType.LIBRARY -> it.copy(libraryOptions = options)
+                        CustomSectionSourceType.TAG -> it.copy(tagOptions = options)
+                    }
+                next.copy(
+                    sourceStates = next.sourceStates + (sourceType to SourceLoadState.LOADED)
+                )
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load $sourceType options for custom sections")
+            setSourceState(sourceType, SourceLoadState.FAILED)
         }
     }
 
