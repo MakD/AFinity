@@ -5,6 +5,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -103,7 +104,9 @@ import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import timber.log.Timber
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.time.Month
+import java.time.MonthDay
 import java.time.format.TextStyle
 import java.util.Date
 import java.util.Locale
@@ -706,8 +709,14 @@ private fun ColumnScope.CustomSectionEditor(
                 checked = draft.isSeasonal,
                 onCheckedChange = { checked ->
                     draft =
-                        if (checked) draft.copy(seasonStart = "10-01", seasonEnd = "10-31")
-                        else draft.copy(seasonStart = null, seasonEnd = null)
+                        if (checked) {
+                            val start = LocalDate.now()
+                            val end = start.plusMonths(1)
+                            draft.copy(
+                                seasonStart = formatMonthDay(start.monthValue, start.dayOfMonth),
+                                seasonEnd = formatMonthDay(end.monthValue, end.dayOfMonth),
+                            )
+                        } else draft.copy(seasonStart = null, seasonEnd = null)
                 },
             )
             if (draft.isSeasonal) {
@@ -1230,8 +1239,9 @@ private fun <T> DropdownSelectorItem(
 @Composable
 private fun MonthDayPickerItem(label: String, value: String, onValueChange: (String) -> Unit) {
     val locale = LocalConfiguration.current.locales[0]
-    val month = value.substringBefore('-').toIntOrNull()?.coerceIn(1, 12) ?: 1
-    val day = value.substringAfter('-', "").toIntOrNull()?.coerceIn(1, 31) ?: 1
+    val today = remember { MonthDay.now() }
+    val month = value.substringBefore('-').toIntOrNull()?.coerceIn(1, 12) ?: today.monthValue
+    val day = value.substringAfter('-', "").toIntOrNull()?.coerceIn(1, 31) ?: today.dayOfMonth
     var picking by remember { mutableStateOf(false) }
 
     SettingsItem(
@@ -1267,6 +1277,7 @@ private fun MonthDayPickerDialog(
     var month by remember { mutableStateOf(initialMonth) }
     var day by remember { mutableStateOf(initialDay) }
     var monthGridOpen by remember { mutableStateOf(false) }
+    val today = remember { MonthDay.now() }
     val daysInMonth = Month.of(month).maxLength()
     val clampedDay = day.coerceAtMost(daysInMonth)
     val monthName = Month.of(month).getDisplayName(TextStyle.FULL, locale)
@@ -1358,6 +1369,7 @@ private fun MonthDayPickerDialog(
                                             Month.of(candidate)
                                                 .getDisplayName(TextStyle.SHORT, locale),
                                         selected = candidate == month,
+                                        isToday = candidate == today.monthValue,
                                         onClick = {
                                             month = candidate
                                             monthGridOpen = false
@@ -1379,6 +1391,9 @@ private fun MonthDayPickerDialog(
                                     DayCell(
                                         day = candidate,
                                         selected = candidate == clampedDay,
+                                        isToday =
+                                            month == today.monthValue &&
+                                                candidate == today.dayOfMonth,
                                         onClick = { day = candidate },
                                         modifier = Modifier.weight(1f),
                                     )
@@ -1409,15 +1424,22 @@ private fun MonthDayPickerDialog(
 private fun MonthCell(
     label: String,
     selected: Boolean,
+    isToday: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val shape = RoundedCornerShape(12.dp)
     Box(
         modifier =
             modifier
                 .heightIn(min = 44.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(shape)
                 .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                .then(
+                    if (isToday && !selected) {
+                        Modifier.border(1.dp, MaterialTheme.colorScheme.primary, shape)
+                    } else Modifier
+                )
                 .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
@@ -1439,6 +1461,7 @@ private fun MonthCell(
 private fun DayCell(
     day: Int,
     selected: Boolean,
+    isToday: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -1448,6 +1471,11 @@ private fun DayCell(
                 .aspectRatio(1f)
                 .clip(CircleShape)
                 .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                .then(
+                    if (isToday && !selected) {
+                        Modifier.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                    } else Modifier
+                )
                 .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
