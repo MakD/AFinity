@@ -1640,6 +1640,7 @@
     <string name="cd_music_go_to_home">Go to Home</string>
     <string name="cd_music_now_playing">Now playing</string>
     <string name="cd_music_more_options">More options</string>
+    <string name="cd_episode_details">Episode details</string>
     <string name="cd_music_downloaded">Downloaded</string>
     <string name="cd_music_drag_reorder">Drag to reorder</string>
     <string name="cd_music_remove">Remove</string>

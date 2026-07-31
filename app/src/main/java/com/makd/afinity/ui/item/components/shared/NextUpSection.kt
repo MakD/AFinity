@@ -19,6 +19,7 @@ fun NextUpSection(
     episode: AfinityEpisode,
     onEpisodeClick: (AfinityEpisode) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
+    onEpisodeMoreClick: ((AfinityEpisode) -> Unit)? = null,
 ) {
     val isInProgress = episode.playbackPositionTicks > 0 && !episode.played
     val sectionTitle =
@@ -40,6 +41,7 @@ fun NextUpSection(
             item = episode,
             onClick = { onEpisodeClick(episode) },
             cardWidth = cardWidth,
+            onMoreClick = onEpisodeMoreClick?.let { callback -> { callback(episode) } },
         )
     }
 }

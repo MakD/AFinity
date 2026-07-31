@@ -1027,6 +1027,7 @@ private fun TypeSpecificContent(
                         startPos,
                     )
                 },
+                onEpisodeMoreClick = { ep -> viewModel.selectEpisode(ep) },
                 onSpecialFeatureClick = { sf ->
                     val mediaSourceId = sf.sources.firstOrNull()?.id
                     if (mediaSourceId != null) {

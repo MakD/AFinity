@@ -63,6 +63,7 @@ fun SeriesDetailContent(
     omdbAwards: String? = null,
     isRatingsFromCache: Boolean = false,
     onEpisodeClick: (AfinityEpisode) -> Unit,
+    onEpisodeMoreClick: (AfinityEpisode) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     navController: NavController,
     widthSizeClass: WindowWidthSizeClass,
@@ -92,6 +93,7 @@ fun SeriesDetailContent(
                 episode = nextEpisode,
                 onEpisodeClick = onEpisodeClick,
                 widthSizeClass = widthSizeClass,
+                onEpisodeMoreClick = onEpisodeMoreClick,
             )
         }
 

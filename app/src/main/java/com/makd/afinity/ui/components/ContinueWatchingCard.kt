@@ -1,6 +1,8 @@
 package com.makd.afinity.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +23,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -59,6 +62,7 @@ fun ContinueWatchingCard(
     cardWidth: Dp,
     modifier: Modifier = Modifier,
     fillWidth: Boolean = false,
+    onMoreClick: (() -> Unit)? = null,
 ) {
     val ratingScale = rememberRatingMetadataScale()
 
@@ -181,8 +185,12 @@ fun ContinueWatchingCard(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        when (item) {
-            is AfinityEpisode -> {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = item.name,
                     style =
@@ -192,48 +200,165 @@ fun ContinueWatchingCard(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.fillMaxWidth(),
                 )
-            }
 
-            else -> {
-                Text(
-                    text = item.name,
-                    style =
-                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onBackground,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
+                when (item) {
+                    is AfinityMovie -> {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            val metadataItems = mutableListOf<@Composable () -> Unit>()
+                            val showRatings = LocalShowRatings.current
 
-        when (item) {
-            is AfinityMovie -> {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    val metadataItems = mutableListOf<@Composable () -> Unit>()
-                    val showRatings = LocalShowRatings.current
+                            item.productionYear?.let { year ->
+                                metadataItems.add {
+                                    Text(
+                                        text = year.toString(),
+                                        style =
+                                            MaterialTheme.typography.bodySmall.copy(
+                                                fontSize =
+                                                    MaterialTheme.typography.bodySmall.fontSize *
+                                                        ratingScale.textScale
+                                            ),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
 
-                    item.productionYear?.let { year ->
-                        metadataItems.add {
-                            Text(
-                                text = year.toString(),
-                                style =
-                                    MaterialTheme.typography.bodySmall.copy(
-                                        fontSize =
-                                            MaterialTheme.typography.bodySmall.fontSize *
-                                                ratingScale.textScale
-                                    ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            if (showRatings) {
+                                item.communityRating?.let { imdbRating ->
+                                    metadataItems.add {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                                contentDescription = stringResource(R.string.cd_imdb),
+                                                tint = Color.Unspecified,
+                                                modifier = Modifier.size(ratingScale.imdbIconSize),
+                                            )
+                                            Text(
+                                                text = String.format(Locale.US, "%.1f", imdbRating),
+                                                style =
+                                                    MaterialTheme.typography.bodySmall.copy(
+                                                        fontSize =
+                                                            MaterialTheme.typography.bodySmall.fontSize *
+                                                                ratingScale.textScale
+                                                    ),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    }
+                                }
+
+                                item.criticRating?.let { rtRating ->
+                                    metadataItems.add {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                painter =
+                                                    painterResource(
+                                                        id =
+                                                            if (rtRating > 60) {
+                                                                R.drawable.ic_rotten_tomato_fresh
+                                                            } else {
+                                                                R.drawable.ic_rotten_tomato_rotten
+                                                            }
+                                                    ),
+                                                contentDescription =
+                                                    stringResource(R.string.cd_rotten_tomatoes_rating),
+                                                modifier = Modifier.size(ratingScale.rtIconSize),
+                                                tint = Color.Unspecified,
+                                            )
+                                            Spacer(modifier = Modifier.width(2.dp))
+                                            Text(
+                                                text = "${rtRating.toInt()}%",
+                                                style =
+                                                    MaterialTheme.typography.bodySmall.copy(
+                                                        fontSize =
+                                                            MaterialTheme.typography.bodySmall.fontSize *
+                                                                ratingScale.textScale
+                                                    ),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            metadataItems.forEachIndexed { index, metadataItem ->
+                                metadataItem()
+                                if (index < metadataItems.size - 1) {
+                                    Text(
+                                        text = "•",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
                         }
                     }
 
-                    if (showRatings) {
-                        item.communityRating?.let { imdbRating ->
-                            metadataItems.add {
+                    is AfinityEpisode -> {
+                        val showRatings = LocalShowRatings.current
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                text =
+                                    "S${item.parentIndexNumber}:E" +
+                                        (if (
+                                            item.indexNumberEnd != null &&
+                                                item.indexNumberEnd != item.indexNumber
+                                        )
+                                            "${item.indexNumber}-E${item.indexNumberEnd}"
+                                        else "${item.indexNumber}") +
+                                        " • ${item.seriesName}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false),
+                            )
+
+                            if (showRatings) {
+                                item.communityRating?.let { imdbRating ->
+                                    Text(
+                                        text = "•",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                            contentDescription = stringResource(R.string.cd_imdb),
+                                            tint = Color.Unspecified,
+                                            modifier = Modifier.size(ratingScale.imdbIconSize),
+                                        )
+                                        Text(
+                                            text = String.format(Locale.US, "%.1f", imdbRating),
+                                            style =
+                                                MaterialTheme.typography.bodySmall.copy(
+                                                    fontSize =
+                                                        MaterialTheme.typography.bodySmall.fontSize *
+                                                            ratingScale.textScale
+                                                ),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    is AfinityShow -> {
+                        if (LocalShowRatings.current) {
+                            item.communityRating?.let { rating ->
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -245,40 +370,7 @@ fun ContinueWatchingCard(
                                         modifier = Modifier.size(ratingScale.imdbIconSize),
                                     )
                                     Text(
-                                        text = String.format(Locale.US, "%.1f", imdbRating),
-                                        style =
-                                            MaterialTheme.typography.bodySmall.copy(
-                                                fontSize =
-                                                    MaterialTheme.typography.bodySmall.fontSize *
-                                                        ratingScale.textScale
-                                            ),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-                        }
-
-                        item.criticRating?.let { rtRating ->
-                            metadataItems.add {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        painter =
-                                            painterResource(
-                                                id =
-                                                    if (rtRating > 60) {
-                                                        R.drawable.ic_rotten_tomato_fresh
-                                                    } else {
-                                                        R.drawable.ic_rotten_tomato_rotten
-                                                    }
-                                            ),
-                                        contentDescription =
-                                            stringResource(R.string.cd_rotten_tomatoes_rating),
-                                        modifier = Modifier.size(ratingScale.rtIconSize),
-                                        tint = Color.Unspecified,
-                                    )
-                                    Spacer(modifier = Modifier.width(2.dp))
-                                    Text(
-                                        text = "${rtRating.toInt()}%",
+                                        text = String.format(Locale.US, "%.1f", rating),
                                         style =
                                             MaterialTheme.typography.bodySmall.copy(
                                                 fontSize =
@@ -291,103 +383,23 @@ fun ContinueWatchingCard(
                             }
                         }
                     }
-
-                    metadataItems.forEachIndexed { index, metadataItem ->
-                        metadataItem()
-                        if (index < metadataItems.size - 1) {
-                            Text(
-                                text = "•",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
                 }
             }
 
-            is AfinityEpisode -> {
-                val showRatings = LocalShowRatings.current
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        text =
-                            "S${item.parentIndexNumber}:E" +
-                                (if (
-                                    item.indexNumberEnd != null &&
-                                        item.indexNumberEnd != item.indexNumber
-                                )
-                                    "${item.indexNumber}-E${item.indexNumberEnd}"
-                                else "${item.indexNumber}") +
-                                " • ${item.seriesName}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
-
-                    if (showRatings) {
-                        item.communityRating?.let { imdbRating ->
-                            Text(
-                                text = "•",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                    contentDescription = stringResource(R.string.cd_imdb),
-                                    tint = Color.Unspecified,
-                                    modifier = Modifier.size(ratingScale.imdbIconSize),
-                                )
-                                Text(
-                                    text = String.format(Locale.US, "%.1f", imdbRating),
-                                    style =
-                                        MaterialTheme.typography.bodySmall.copy(
-                                            fontSize =
-                                                MaterialTheme.typography.bodySmall.fontSize *
-                                                    ratingScale.textScale
-                                        ),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            is AfinityShow -> {
-                if (LocalShowRatings.current) {
-                    item.communityRating?.let { rating ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                contentDescription = stringResource(R.string.cd_imdb),
-                                tint = Color.Unspecified,
-                                modifier = Modifier.size(ratingScale.imdbIconSize),
-                            )
-                            Text(
-                                text = String.format(Locale.US, "%.1f", rating),
-                                style =
-                                    MaterialTheme.typography.bodySmall.copy(
-                                        fontSize =
-                                            MaterialTheme.typography.bodySmall.fontSize *
-                                                ratingScale.textScale
-                                    ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
+            if (onMoreClick != null) {
+                val moreInteractionSource = remember { MutableInteractionSource() }
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_dots_vertical),
+                    contentDescription = stringResource(R.string.cd_episode_details),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier =
+                        Modifier.size(20.dp)
+                            .clickable(
+                                interactionSource = moreInteractionSource,
+                                indication = null,
+                                onClick = onMoreClick,
+                            ),
+                )
             }
         }
     }
