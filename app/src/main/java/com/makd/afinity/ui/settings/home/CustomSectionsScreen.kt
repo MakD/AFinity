@@ -1,7 +1,9 @@
 package com.makd.afinity.ui.settings.home
 
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,6 +11,8 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,6 +47,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +55,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -90,7 +97,6 @@ import com.makd.afinity.ui.components.filter.SearchableChipMultiSelect
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import java.time.Month
-import java.time.MonthDay
 import java.time.format.TextStyle
 import java.util.Locale
 
@@ -110,7 +116,7 @@ fun CustomSectionsScreen(
     val lazyListState = rememberLazyListState()
     val reorderState =
         rememberReorderableLazyListState(lazyListState) { from, to ->
-            viewModel.move(from.index, to.index)
+            viewModel.move(from.key, to.key)
         }
 
     Scaffold(
@@ -235,6 +241,34 @@ fun CustomSectionsScreen(
                 }
             }
 
+            if (uiState.sections.isNotEmpty()) {
+                item {
+                    GroupHeader(
+                        title = stringResource(R.string.custom_sections_group_yours),
+                        caption = stringResource(R.string.custom_sections_yours_caption),
+                    )
+                }
+            }
+
+            itemsIndexed(uiState.sections, key = { _, section -> section.id }) { _, section ->
+                ReorderableItem(reorderState, key = section.id) { isDragging ->
+                    val elevation by
+                        animateDpAsState(if (isDragging) 8.dp else 0.dp, label = "drag_elev")
+                    CustomSectionRow(
+                        section = section,
+                        sourceLabels = uiState.sourceLabelsFor(section),
+                        elevation = elevation,
+                        onClick = {
+                            editing = section
+                            editingIsNew = false
+                        },
+                        onToggle = { viewModel.setEnabled(section.id, it) },
+                        dragHandleModifier =
+                            Modifier.draggableHandle(onDragStopped = { viewModel.commitOrder() }),
+                    )
+                }
+            }
+
             item {
                 Column {
                     GroupHeader(
@@ -267,44 +301,6 @@ fun CustomSectionsScreen(
                     }
                 }
             }
-
-            item {
-                GroupHeader(
-                    title = stringResource(R.string.custom_sections_group_yours),
-                    caption = stringResource(R.string.custom_sections_yours_caption),
-                )
-            }
-
-            if (uiState.sections.isEmpty()) {
-                item {
-                    CustomSectionsEmptyState(
-                        onAdd = {
-                            editing = viewModel.newSectionTemplate()
-                            editingIsNew = true
-                        }
-                    )
-                }
-            } else {
-                itemsIndexed(uiState.sections, key = { _, section -> section.id }) { _, section ->
-                    ReorderableItem(reorderState, key = section.id) { isDragging ->
-                        val elevation by
-                            animateDpAsState(if (isDragging) 8.dp else 0.dp, label = "drag_elev")
-                        CustomSectionRow(
-                            section = section,
-                            elevation = elevation,
-                            onClick = {
-                                editing = section
-                                editingIsNew = false
-                            },
-                            onToggle = { viewModel.setEnabled(section.id, it) },
-                            dragHandleModifier =
-                                Modifier.draggableHandle(
-                                    onDragStopped = { viewModel.commitOrder() }
-                                ),
-                        )
-                    }
-                }
-            }
         }
     }
 
@@ -312,7 +308,7 @@ fun CustomSectionsScreen(
     if (current != null) {
         val containerHeight =
             with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
-        val dialogHeight = min(560.dp, containerHeight * 0.9f)
+        val dialogHeight = min(720.dp, containerHeight * 0.9f)
         ListPickerDialog(
             title =
                 stringResource(
@@ -324,7 +320,9 @@ fun CustomSectionsScreen(
         ) {
             CustomSectionEditor(
                 section = current,
-                optionsFor = viewModel::optionsFor,
+                optionsFor = uiState::optionsFor,
+                sourceStateFor = uiState::stateFor,
+                onLoadSources = viewModel::ensureSourcesLoaded,
                 onSave = {
                     viewModel.save(it, editingIsNew)
                     editing = null
@@ -345,6 +343,7 @@ fun CustomSectionsScreen(
 @Composable
 private fun CustomSectionRow(
     section: CustomHomeSection,
+    sourceLabels: List<String>?,
     onClick: () -> Unit,
     onToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -403,7 +402,7 @@ private fun CustomSectionRow(
                     text =
                         listOfNotNull(
                                 sourceTypeLabel(section.sourceType, locale),
-                                section.sourceValues.takeIf { it.isNotEmpty() }?.joinToString(", "),
+                                sourceLabels?.takeIf { it.isNotEmpty() }?.joinToString(", "),
                             )
                             .joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
@@ -457,48 +456,11 @@ private fun CustomSectionRow(
 }
 
 @Composable
-private fun CustomSectionsEmptyState(onAdd: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 48.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Box(
-            modifier =
-                Modifier.size(72.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_view_module),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(32.dp),
-            )
-        }
-        Text(
-            text = stringResource(R.string.custom_sections_empty_title),
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            text = stringResource(R.string.custom_sections_empty),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        Button(onClick = onAdd, modifier = Modifier.padding(top = 8.dp)) {
-            Text(text = stringResource(R.string.custom_sections_add))
-        }
-    }
-}
-
-@Composable
 private fun ColumnScope.CustomSectionEditor(
     section: CustomHomeSection,
     optionsFor: (CustomSectionSourceType) -> List<SourceOption>,
+    sourceStateFor: (CustomSectionSourceType) -> SourceLoadState?,
+    onLoadSources: (CustomSectionSourceType, Boolean) -> Unit,
     onSave: (CustomHomeSection) -> Unit,
     onDelete: (() -> Unit)?,
 ) {
@@ -507,10 +469,27 @@ private fun ColumnScope.CustomSectionEditor(
     var sourceQuery by remember(section.id) { mutableStateOf("") }
     val options = optionsFor(draft.sourceType)
     val allowsMultiple = draft.sourceType.supportsMultipleSources
+    val unresolvedLabel = stringResource(R.string.custom_sections_source_resolving)
     val selectedOptions =
         draft.sourceValues.map { value ->
-            options.firstOrNull { it.value == value } ?: SourceOption(value, value)
+            options.firstOrNull { it.value == value }
+                ?: SourceOption(
+                    value = value,
+                    label = if (draft.sourceType.usesItemIds) unresolvedLabel else value,
+                )
         }
+    val libraryType =
+        if (draft.sourceType == CustomSectionSourceType.LIBRARY) {
+            selectedOptions.firstOrNull()?.libraryType
+        } else null
+    val allowedItemTypes =
+        remember(draft.sourceType, libraryType) {
+            CustomSectionItemType.availableFor(draft.sourceType, libraryType)
+        }
+
+    LaunchedEffect(allowedItemTypes) { draft = draft.withItemTypesLimitedTo(allowedItemTypes) }
+
+    LaunchedEffect(draft.sourceType) { onLoadSources(draft.sourceType, false) }
 
     Column(
         modifier =
@@ -541,7 +520,7 @@ private fun ColumnScope.CustomSectionEditor(
                 },
             )
             SettingsDivider()
-            Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                 val suggestions =
                     remember(options, draft.sourceValues, sourceQuery) {
                         options.filter {
@@ -574,10 +553,17 @@ private fun ColumnScope.CustomSectionEditor(
                     onClearAll = { draft = draft.copy(sourceValues = emptyList()) },
                     collapseOnSelect = !allowsMultiple,
                 )
+                if (options.isEmpty()) {
+                    SourceStatusRow(
+                        state = sourceStateFor(draft.sourceType),
+                        onRetry = { onLoadSources(draft.sourceType, true) },
+                    )
+                }
             }
             SettingsDivider()
             ItemTypeSelector(
                 selected = draft.itemTypes,
+                available = allowedItemTypes,
                 sourceType = draft.sourceType,
                 onToggle = { draft = draft.withItemTypeToggled(it) },
             )
@@ -654,13 +640,13 @@ private fun ColumnScope.CustomSectionEditor(
             )
             if (draft.isSeasonal) {
                 SettingsDivider()
-                MonthDayPickerItems(
+                MonthDayPickerItem(
                     label = stringResource(R.string.custom_sections_field_season_start),
                     value = draft.seasonStart.orEmpty(),
                     onValueChange = { draft = draft.copy(seasonStart = it) },
                 )
                 SettingsDivider()
-                MonthDayPickerItems(
+                MonthDayPickerItem(
                     label = stringResource(R.string.custom_sections_field_season_end),
                     value = draft.seasonEnd.orEmpty(),
                     onValueChange = { draft = draft.copy(seasonEnd = it) },
@@ -698,8 +684,40 @@ private fun ColumnScope.CustomSectionEditor(
 }
 
 @Composable
+private fun SourceStatusRow(state: SourceLoadState?, onRetry: () -> Unit) {
+    val failed = state == SourceLoadState.FAILED
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text =
+                stringResource(
+                    when (state) {
+                        SourceLoadState.LOADED -> R.string.custom_sections_sources_empty
+                        SourceLoadState.FAILED -> R.string.custom_sections_sources_failed
+                        else -> R.string.custom_sections_sources_loading
+                    }
+                ),
+            style = MaterialTheme.typography.bodySmall,
+            color =
+                if (failed) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        if (failed) {
+            TextButton(onClick = onRetry) {
+                Text(text = stringResource(R.string.custom_sections_sources_retry))
+            }
+        }
+    }
+}
+
+@Composable
 private fun ItemTypeSelector(
     selected: List<CustomSectionItemType>,
+    available: List<CustomSectionItemType>,
     sourceType: CustomSectionSourceType,
     onToggle: (CustomSectionItemType) -> Unit,
 ) {
@@ -718,6 +736,10 @@ private fun ItemTypeSelector(
                         stringResource(R.string.custom_sections_item_types_music_hint)
                     sourceType == CustomSectionSourceType.PLAYLIST ->
                         stringResource(R.string.custom_sections_item_types_playlist_hint)
+                    sourceType == CustomSectionSourceType.COLLECTION ->
+                        stringResource(R.string.custom_sections_item_types_collection_hint)
+                    sourceType == CustomSectionSourceType.LIBRARY ->
+                        stringResource(R.string.custom_sections_item_types_library_hint)
                     else -> stringResource(R.string.custom_sections_item_types_hint)
                 },
             style = MaterialTheme.typography.bodyMedium,
@@ -728,7 +750,7 @@ private fun ItemTypeSelector(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(top = 8.dp),
         ) {
-            CustomSectionItemType.availableFor(sourceType).forEach { type ->
+            available.forEach { type ->
                 FilterChip(
                     selected = type in selected,
                     onClick = { onToggle(type) },
@@ -740,7 +762,7 @@ private fun ItemTypeSelector(
 }
 
 @Composable
-private fun GroupHeader(title: String, caption: String) {
+private fun GroupHeader(title: String, caption: String? = null) {
     Column(modifier = Modifier.padding(start = 32.dp, end = 32.dp, bottom = 8.dp)) {
         Text(
             text = title,
@@ -748,12 +770,14 @@ private fun GroupHeader(title: String, caption: String) {
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Bold,
         )
-        Text(
-            text = caption,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp),
-        )
+        if (caption != null) {
+            Text(
+                text = caption,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
     }
 }
 
@@ -1003,34 +1027,240 @@ private fun <T> DropdownSelectorItem(
 }
 
 @Composable
-private fun MonthDayPickerItems(
-    label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-) {
+private fun MonthDayPickerItem(label: String, value: String, onValueChange: (String) -> Unit) {
+    val locale = LocalConfiguration.current.locales[0]
     val month = value.substringBefore('-').toIntOrNull()?.coerceIn(1, 12) ?: 1
     val day = value.substringAfter('-', "").toIntOrNull()?.coerceIn(1, 31) ?: 1
-    val locale = LocalConfiguration.current.locales[0]
-    val daysInMonth = MonthDay.of(month, 1).month.maxLength()
-    val monthName = Month.of(month).getDisplayName(TextStyle.FULL, locale)
+    var picking by remember { mutableStateOf(false) }
 
-    DropdownSelectorItem(
+    SettingsItem(
         title = label,
-        selectedLabel = "$monthName $day",
-        entries = (1..12).map { Month.of(it).getDisplayName(TextStyle.FULL, locale) to it },
-        isSelected = { it == month },
-        onSelect = { newMonth ->
-            val maxDay = MonthDay.of(newMonth, 1).month.maxLength()
-            onValueChange(formatMonthDay(newMonth, day.coerceAtMost(maxDay)))
+        subtitle = "${Month.of(month).getDisplayName(TextStyle.FULL, locale)} $day",
+        onClick = { picking = true },
+    )
+
+    if (picking) {
+        MonthDayPickerDialog(
+            title = label,
+            initialMonth = month,
+            initialDay = day,
+            locale = locale,
+            onDismiss = { picking = false },
+            onConfirm = { newMonth, newDay ->
+                onValueChange(formatMonthDay(newMonth, newDay))
+                picking = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun MonthDayPickerDialog(
+    title: String,
+    initialMonth: Int,
+    initialDay: Int,
+    locale: Locale,
+    onDismiss: () -> Unit,
+    onConfirm: (Int, Int) -> Unit,
+) {
+    var month by remember { mutableStateOf(initialMonth) }
+    var day by remember { mutableStateOf(initialDay) }
+    var monthGridOpen by remember { mutableStateOf(false) }
+    val daysInMonth = Month.of(month).maxLength()
+    val clampedDay = day.coerceAtMost(daysInMonth)
+    val monthName = Month.of(month).getDisplayName(TextStyle.FULL, locale)
+    val chevronRotation by
+        animateFloatAsState(if (monthGridOpen) 180f else 0f, label = "month_chevron")
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = "$monthName $clampedDay",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(
+                        modifier =
+                            Modifier.clip(RoundedCornerShape(50))
+                                .clickable { monthGridOpen = !monthGridOpen }
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = monthName,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp).rotate(chevronRotation),
+                        )
+                    }
+
+                    if (!monthGridOpen) {
+                        Row {
+                            IconButton(onClick = { month = if (month == 1) 12 else month - 1 }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_chevron_left),
+                                    contentDescription = stringResource(R.string.cd_previous_month),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            IconButton(onClick = { month = if (month == 12) 1 else month + 1 }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_chevron_right),
+                                    contentDescription = stringResource(R.string.cd_next_month),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (monthGridOpen) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        (1..12).chunked(3).forEach { quarter ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                quarter.forEach { candidate ->
+                                    MonthCell(
+                                        label =
+                                            Month.of(candidate)
+                                                .getDisplayName(TextStyle.SHORT, locale),
+                                        selected = candidate == month,
+                                        onClick = {
+                                            month = candidate
+                                            monthGridOpen = false
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        (1..daysInMonth).chunked(7).forEach { week ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
+                                week.forEach { candidate ->
+                                    DayCell(
+                                        day = candidate,
+                                        selected = candidate == clampedDay,
+                                        onClick = { day = candidate },
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
+                                repeat(7 - week.size) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(month, clampedDay) }) {
+                Text(text = stringResource(R.string.action_ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.action_cancel))
+            }
         },
     )
-    DropdownSelectorItem(
-        title = stringResource(R.string.custom_sections_field_day),
-        selectedLabel = day.toString(),
-        entries = (1..daysInMonth).map { it.toString() to it },
-        isSelected = { it == day },
-        onSelect = { onValueChange(formatMonthDay(month, it)) },
-    )
+}
+
+@Composable
+private fun MonthCell(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .heightIn(min = 44.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            style =
+                MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                ),
+            color =
+                if (selected) MaterialTheme.colorScheme.onPrimary
+                else MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+private fun DayCell(
+    day: Int,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .aspectRatio(1f)
+                .clip(CircleShape)
+                .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = day.toString(),
+            style =
+                MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                ),
+            color =
+                if (selected) MaterialTheme.colorScheme.onPrimary
+                else MaterialTheme.colorScheme.onSurface,
+        )
+    }
 }
 
 private fun sourcePlaceholderRes(type: CustomSectionSourceType): Int =

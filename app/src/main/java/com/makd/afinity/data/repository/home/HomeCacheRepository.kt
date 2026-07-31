@@ -31,8 +31,15 @@ class HomeCacheRepository @Inject constructor(private val dao: HomeCacheDao) {
         }
     }
 
-    suspend fun getItems(key: String, baseUrl: String? = null): List<AfinityItem>? {
+    suspend fun getItems(
+        key: String,
+        baseUrl: String? = null,
+        maxAgeMs: Long? = null,
+    ): List<AfinityItem>? {
         val entity = dao.get(key) ?: return null
+        if (maxAgeMs != null && System.currentTimeMillis() - entity.updatedAt > maxAgeMs) {
+            return null
+        }
         return try {
             val wrapper = json.decodeFromString<StringList>(entity.json)
             wrapper.items.mapNotNull { converters.toAfinityItem(it)?.rebase(baseUrl) }

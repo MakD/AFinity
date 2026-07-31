@@ -13,8 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.ui.components.hasCardMetadata
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
@@ -45,7 +47,10 @@ fun ItemsRowSection(
             else -> CardDimensions.ASPECT_RATIO_PORTRAIT
         }
     val cardHeight = CardDimensions.calculateHeight(cardWidth, aspectRatio)
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+    val showRatings = LocalShowRatings.current
+    val hasMetadataLine =
+        isLandscape || items.any { it.hasCardMetadata(showRatings) }
+    val fixedRowHeight = cardHeight + 8.dp + 20.dp + if (hasMetadataLine) 22.dp else 0.dp
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
         HomeSectionHeader(title = title)

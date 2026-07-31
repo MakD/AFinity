@@ -17,6 +17,7 @@ import com.makd.afinity.data.repository.home.CustomHomeSectionsRepository
 import com.makd.afinity.data.repository.home.HomeLayoutPreferencesRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,7 +29,17 @@ import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
 
-data class SourceOption(val value: String, val label: String)
+enum class SourceLoadState {
+    LOADING,
+    LOADED,
+    FAILED,
+}
+
+data class SourceOption(
+    val value: String,
+    val label: String,
+    val libraryType: CollectionType? = null,
+)
 
 data class CustomSectionsUiState(
     val sections: List<CustomHomeSection> = emptyList(),
@@ -38,11 +49,33 @@ data class CustomSectionsUiState(
     val playlistOptions: List<SourceOption> = emptyList(),
     val libraryOptions: List<SourceOption> = emptyList(),
     val tagOptions: List<SourceOption> = emptyList(),
-    val isLoadingSources: Boolean = false,
+    val sourceStates: Map<CustomSectionSourceType, SourceLoadState> = emptyMap(),
     val canAddMore: Boolean = true,
     val hiddenRows: Set<HomeRow> = emptySet(),
     val discovery: DiscoveryConfig = DiscoveryConfig(),
-)
+) {
+    fun stateFor(sourceType: CustomSectionSourceType): SourceLoadState? = sourceStates[sourceType]
+
+    fun optionsFor(sourceType: CustomSectionSourceType): List<SourceOption> =
+        when (sourceType) {
+            CustomSectionSourceType.GENRE -> genreOptions
+            CustomSectionSourceType.STUDIO -> studioOptions
+            CustomSectionSourceType.COLLECTION -> collectionOptions
+            CustomSectionSourceType.PLAYLIST -> playlistOptions
+            CustomSectionSourceType.LIBRARY -> libraryOptions
+            CustomSectionSourceType.TAG -> tagOptions
+        }
+
+    fun sourceLabelsFor(section: CustomHomeSection): List<String>? {
+        val options = optionsFor(section.sourceType)
+        val labels =
+            section.sourceValues.map { value ->
+                options.firstOrNull { it.value == value }?.label
+                    ?: if (section.sourceType.usesItemIds) return null else value
+            }
+        return labels
+    }
+}
 
 @HiltViewModel
 class CustomSectionsViewModel
@@ -66,6 +99,11 @@ constructor(
                         canAddMore = sections.size < CustomHomeSection.MAX_SECTIONS,
                     )
                 }
+                sections
+                    .map { it.sourceType }
+                    .filter { it.usesItemIds }
+                    .distinct()
+                    .forEach { ensureSourcesLoaded(it) }
             }
         }
         viewModelScope.launch {
@@ -79,7 +117,6 @@ constructor(
                 _uiState.update { it.copy(discovery = config) }
             }
         }
-        loadSources()
     }
 
     fun setRowVisible(row: HomeRow, visible: Boolean) {
@@ -108,83 +145,115 @@ constructor(
         }
     }
 
-    private fun loadSources() {
+    fun ensureSourcesLoaded(sourceType: CustomSectionSourceType, force: Boolean = false) {
+        val state = _uiState.value.stateFor(sourceType)
+        if (state == SourceLoadState.LOADING) return
+        if (!force && state == SourceLoadState.LOADED) return
+        loadSourcesFor(sourceType)
+    }
+
+    private fun setSourceState(sourceType: CustomSectionSourceType, state: SourceLoadState) {
+        _uiState.update { it.copy(sourceStates = it.sourceStates + (sourceType to state)) }
+    }
+
+    private fun loadSourcesFor(sourceType: CustomSectionSourceType) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingSources = true) }
+            setSourceState(sourceType, SourceLoadState.LOADING)
             try {
-                val genres =
-                    genreRepository.combinedGenres.value
-                        .map { SourceOption(it.name, it.name) }
-                        .distinctBy { it.value }
-                        .sortedBy { it.label }
-
-                val studios =
-                    withContext(Dispatchers.IO) {
-                        try {
-                            mediaRepository
-                                .getStudios(
-                                    includeItemTypes = listOf("MOVIE", "SERIES"),
-                                    limit = 200,
-                                )
-                                .map { SourceOption(it.name, it.name) }
-                        } catch (e: Exception) {
-                            Timber.w(e, "Failed to load studios for custom sections")
-                            emptyList()
-                        }
-                    }
-
-                val collections = loadItemOptions("BOX_SET")
-                val playlists = loadItemOptions("PLAYLIST")
-
-                val tags =
-                    withContext(Dispatchers.IO) {
-                        try {
-                            mediaRepository
-                                .getFilterOptions(
-                                    parentId = null,
-                                    libraryType = CollectionType.Unknown,
-                                )
-                                .tags
-                                .distinct()
-                                .sorted()
-                                .map { SourceOption(it, it) }
-                        } catch (e: Exception) {
-                            Timber.w(e, "Failed to load tags for custom sections")
-                            emptyList()
-                        }
-                    }
-
-                val libraries =
-                    withContext(Dispatchers.IO) {
-                        try {
-                            mediaRepository.getLibraries().map { library: AfinityCollection ->
-                                SourceOption(library.id.toString(), library.name)
-                            }
-                        } catch (e: Exception) {
-                            Timber.w(e, "Failed to load libraries for custom sections")
-                            emptyList()
-                        }
-                    }
-
+                val options = fetchSourceOptions(sourceType)
+                if (options == null) {
+                    setSourceState(sourceType, SourceLoadState.FAILED)
+                    return@launch
+                }
                 _uiState.update {
-                    it.copy(
-                        genreOptions = genres,
-                        studioOptions = studios,
-                        collectionOptions = collections,
-                        playlistOptions = playlists,
-                        libraryOptions = libraries,
-                        tagOptions = tags,
-                        isLoadingSources = false,
+                    val next =
+                        when (sourceType) {
+                            CustomSectionSourceType.GENRE -> it.copy(genreOptions = options)
+                            CustomSectionSourceType.STUDIO -> it.copy(studioOptions = options)
+                            CustomSectionSourceType.COLLECTION ->
+                                it.copy(collectionOptions = options)
+                            CustomSectionSourceType.PLAYLIST -> it.copy(playlistOptions = options)
+                            CustomSectionSourceType.LIBRARY -> it.copy(libraryOptions = options)
+                            CustomSectionSourceType.TAG -> it.copy(tagOptions = options)
+                        }
+                    next.copy(
+                        sourceStates = next.sourceStates + (sourceType to SourceLoadState.LOADED)
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                Timber.e(e, "Failed to load custom section sources")
-                _uiState.update { it.copy(isLoadingSources = false) }
+                Timber.e(e, "Failed to load $sourceType options for custom sections")
+                setSourceState(sourceType, SourceLoadState.FAILED)
             }
         }
     }
 
-    private suspend fun loadItemOptions(itemType: String): List<SourceOption> =
+    private suspend fun fetchSourceOptions(
+        sourceType: CustomSectionSourceType
+    ): List<SourceOption>? =
+        when (sourceType) {
+            CustomSectionSourceType.GENRE -> {
+                if (genreRepository.combinedGenres.value.isEmpty()) {
+                    try {
+                        genreRepository.loadCombinedGenres()
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to load genres for custom sections")
+                    }
+                }
+                genreRepository.combinedGenres.value
+                    .map { SourceOption(it.name, it.name) }
+                    .distinctBy { it.value }
+                    .sortedBy { it.label }
+            }
+            CustomSectionSourceType.STUDIO ->
+                withContext(Dispatchers.IO) {
+                    try {
+                        mediaRepository
+                            .getStudios(includeItemTypes = listOf("MOVIE", "SERIES"), limit = 200)
+                            .map { SourceOption(it.name, it.name) }
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to load studios for custom sections")
+                        null
+                    }
+                }
+            CustomSectionSourceType.COLLECTION -> loadItemOptions("BOX_SET")
+            CustomSectionSourceType.PLAYLIST -> loadItemOptions("PLAYLIST")
+            CustomSectionSourceType.TAG ->
+                withContext(Dispatchers.IO) {
+                    try {
+                        mediaRepository
+                            .getFilterOptions(parentId = null, libraryType = CollectionType.Unknown)
+                            .tags
+                            .distinct()
+                            .sorted()
+                            .map { SourceOption(it, it) }
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to load tags for custom sections")
+                        null
+                    }
+                }
+            CustomSectionSourceType.LIBRARY ->
+                withContext(Dispatchers.IO) {
+                    try {
+                        mediaRepository
+                            .getLibraries()
+                            .filterNot { it.type == CollectionType.Music }
+                            .map { library: AfinityCollection ->
+                                SourceOption(
+                                    value = library.id.toString(),
+                                    label = library.name,
+                                    libraryType = library.type,
+                                )
+                            }
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to load libraries for custom sections")
+                        null
+                    }
+                }
+        }
+
+    private suspend fun loadItemOptions(itemType: String): List<SourceOption>? =
         withContext(Dispatchers.IO) {
             try {
                 mediaRepository
@@ -200,21 +269,12 @@ constructor(
                     ?.sortedBy { it.label } ?: emptyList()
             } catch (e: Exception) {
                 Timber.w(e, "Failed to load $itemType options for custom sections")
-                emptyList()
+                null
             }
         }
 
-    fun optionsFor(sourceType: CustomSectionSourceType): List<SourceOption> {
-        val state = _uiState.value
-        return when (sourceType) {
-            CustomSectionSourceType.GENRE -> state.genreOptions
-            CustomSectionSourceType.STUDIO -> state.studioOptions
-            CustomSectionSourceType.COLLECTION -> state.collectionOptions
-            CustomSectionSourceType.PLAYLIST -> state.playlistOptions
-            CustomSectionSourceType.LIBRARY -> state.libraryOptions
-            CustomSectionSourceType.TAG -> state.tagOptions
-        }
-    }
+    fun optionsFor(sourceType: CustomSectionSourceType): List<SourceOption> =
+        _uiState.value.optionsFor(sourceType)
 
     fun save(section: CustomHomeSection, isNew: Boolean) {
         viewModelScope.launch {
@@ -234,9 +294,14 @@ constructor(
         viewModelScope.launch { customHomeSectionsRepository.setEnabled(id, enabled) }
     }
 
-    fun move(fromIndex: Int, toIndex: Int) {
+    fun move(fromKey: Any?, toKey: Any?) {
+        val fromId = fromKey as? String ?: return
+        val toId = toKey as? String ?: return
+        if (fromId == toId) return
         _uiState.update { state ->
-            if (fromIndex !in state.sections.indices || toIndex !in state.sections.indices) {
+            val fromIndex = state.sections.indexOfFirst { it.id == fromId }
+            val toIndex = state.sections.indexOfFirst { it.id == toId }
+            if (fromIndex < 0 || toIndex < 0) {
                 state
             } else {
                 val reordered = state.sections.toMutableList()

@@ -747,14 +747,16 @@ constructor(
 
         val sk = sessionKey() ?: return HomeSectionContent.Empty
         val cacheKey = contentCacheKey(sk, descriptor.key)
-        val cachedItems = homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl())
-        if (!cachedItems.isNullOrEmpty()) {
-            return HomeSectionContent.Items(
-                presentationSample(descriptor.key, cachedItems, section.itemLimit)
-            )
+        val baseUrl = mediaRepository.getBaseUrl()
+
+        if (!section.randomOrder) {
+            val cachedItems =
+                homeCacheRepository.getItems(cacheKey, baseUrl, CUSTOM_CONTENT_TTL_MS)
+            if (!cachedItems.isNullOrEmpty()) {
+                return HomeSectionContent.Items(cachedItems.take(section.itemLimit))
+            }
         }
 
-        val baseUrl = mediaRepository.getBaseUrl()
         val sourceId =
             when (section.sourceType) {
                 CustomSectionSourceType.COLLECTION,
@@ -777,7 +779,7 @@ constructor(
                 else -> ItemFilterCriteria()
             }
 
-        val fetchLimit = (section.itemLimit * 3).coerceAtMost(100)
+        val fetchLimit = section.itemLimit
 
         val items =
             try {
@@ -785,18 +787,24 @@ constructor(
                     mediaRepository
                         .getPlaylistItems(sourceId, fields = FieldSets.MEDIA_ITEM_CARDS)
                         .filter { it.type.name in section.includeItemTypes }
+                        .let { if (section.randomOrder) it.shuffled() else it }
                         .take(fetchLimit)
                         .mapNotNull { it.toAfinityItem(baseUrl) }
                 } else {
                     mediaRepository
                         .getItems(
                             parentId = sourceId,
-                            sortBy = section.sortBy,
+                            sortBy = if (section.randomOrder) SortBy.RANDOM else section.sortBy,
                             sortDescending = section.sortDescending,
                             limit = fetchLimit,
                             includeItemTypes = section.includeItemTypes,
                             fields = FieldSets.MEDIA_ITEM_CARDS,
-                            recursive = if (sourceId != null) true else null,
+                            recursive =
+                                when (section.sourceType) {
+                                    CustomSectionSourceType.LIBRARY -> true
+                                    CustomSectionSourceType.COLLECTION -> false
+                                    else -> null
+                                },
                             criteria = criteria,
                         )
                         .items
@@ -804,17 +812,22 @@ constructor(
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load custom home section ${section.id}")
-                return HomeSectionContent.Empty
+                val stale =
+                    if (section.randomOrder) null
+                    else homeCacheRepository.getItems(cacheKey, baseUrl)
+                return if (stale.isNullOrEmpty()) {
+                    HomeSectionContent.Empty
+                } else {
+                    HomeSectionContent.Items(stale.take(section.itemLimit))
+                }
             }
 
         if (items.isEmpty()) return HomeSectionContent.Empty
 
-        homeCacheRepository.putItems(cacheKey, items)
-        return HomeSectionContent.Items(
-            if (section.randomOrder) {
-                presentationSample(descriptor.key, items, section.itemLimit)
-            } else items.take(section.itemLimit)
-        )
+        if (!section.randomOrder) {
+            homeCacheRepository.putItems(cacheKey, items)
+        }
+        return HomeSectionContent.Items(items.take(section.itemLimit))
     }
 
     private suspend fun hydratePersonFromMovie(
@@ -1359,6 +1372,8 @@ constructor(
         }
     }
 }
+
+private const val CUSTOM_CONTENT_TTL_MS = 6L * 60 * 60 * 1000
 
 private const val WATCH_AGAIN_KEY = "watch_again"
 private const val WATCH_AGAIN_SHOW_POOL = 50

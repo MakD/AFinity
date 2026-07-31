@@ -1,6 +1,7 @@
 package com.makd.afinity.data.models
 
 import com.makd.afinity.R
+import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 
 enum class CustomSectionTypeGroup(val cardStyle: CustomSectionCardStyle?) {
@@ -23,10 +24,22 @@ enum class CustomSectionItemType(
     companion object {
         fun fromKey(key: String): CustomSectionItemType? = entries.firstOrNull { it.key == key }
 
-        fun availableFor(sourceType: CustomSectionSourceType): List<CustomSectionItemType> =
-            if (sourceType == CustomSectionSourceType.PLAYLIST) {
-                entries.filterNot { it == SERIES || it == SEASON }
-            } else entries
+        fun availableFor(
+            sourceType: CustomSectionSourceType,
+            libraryType: CollectionType? = null,
+        ): List<CustomSectionItemType> =
+            when (sourceType) {
+                CustomSectionSourceType.COLLECTION -> entries.filterNot { it == BOX_SET }
+                CustomSectionSourceType.PLAYLIST -> entries.filterNot { it == SERIES || it == SEASON }
+                CustomSectionSourceType.LIBRARY ->
+                    when (libraryType) {
+                        CollectionType.Movies -> listOf(MOVIE)
+                        CollectionType.TvShows -> listOf(SERIES, SEASON, EPISODE)
+                        CollectionType.BoxSets -> listOf(BOX_SET)
+                        else -> entries
+                    }
+                else -> entries.filterNot { it == SEASON }
+            }
     }
 }
 
@@ -40,6 +53,9 @@ enum class CustomSectionSourceType {
 
     val supportsMultipleSources: Boolean
         get() = this == GENRE || this == STUDIO || this == TAG
+
+    val usesItemIds: Boolean
+        get() = this == COLLECTION || this == PLAYLIST || this == LIBRARY
 }
 
 enum class CustomSectionCardStyle {
@@ -86,14 +102,16 @@ data class CustomHomeSection(
     val effectiveCardStyle: CustomSectionCardStyle
         get() = lockedCardStyle ?: cardStyle
 
-    fun withSanitizedItemTypes(): CustomHomeSection {
-        val allowed = CustomSectionItemType.availableFor(sourceType)
+    fun withItemTypesLimitedTo(allowed: List<CustomSectionItemType>): CustomHomeSection {
         val kept = itemTypes.filter { it in allowed }
         if (kept == itemTypes && kept.isNotEmpty()) return this
         val next =
-            kept.ifEmpty { allowed.filter { it.key in DEFAULT_ITEM_TYPES }.ifEmpty { listOf(allowed.first()) } }
+            kept.ifEmpty { allowed.filter { it.key in DEFAULT_ITEM_TYPES }.ifEmpty { allowed.take(1) } }
         return copy(includeItemTypes = next.map { it.key })
     }
+
+    fun withSanitizedItemTypes(libraryType: CollectionType? = null): CustomHomeSection =
+        withItemTypesLimitedTo(CustomSectionItemType.availableFor(sourceType, libraryType))
 
     fun withSourceType(newSourceType: CustomSectionSourceType): CustomHomeSection =
         copy(sourceType = newSourceType, sourceValues = emptyList()).withSanitizedItemTypes()

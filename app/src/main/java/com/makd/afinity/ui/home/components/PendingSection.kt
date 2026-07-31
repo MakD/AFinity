@@ -58,7 +58,7 @@ fun PendingSection(
             val cardWidth = widthSizeClass.portraitWidth
             val cardHeight =
                 CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
-            val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+            val fixedRowHeight = cardHeight + 8.dp + 20.dp
 
             MediaRowSkeleton(cardWidth = cardWidth, height = fixedRowHeight)
         }

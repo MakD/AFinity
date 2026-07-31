@@ -45,6 +45,25 @@ import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.theme.CardDimensions
 import java.util.Locale
 
+fun AfinityItem.hasCardMetadata(showRatings: Boolean): Boolean {
+    val year =
+        when (this) {
+            is AfinityMovie -> productionYear
+            is AfinityShow -> productionYear
+            else -> null
+        }
+    if (year != null) return true
+    if (!showRatings) return false
+    val communityRating =
+        when (this) {
+            is AfinityMovie -> communityRating
+            is AfinityShow -> communityRating
+            else -> null
+        }
+    if (communityRating != null) return true
+    return this is AfinityMovie && criticRating != null
+}
+
 @Composable
 fun MediaItemCard(
     item: AfinityItem,

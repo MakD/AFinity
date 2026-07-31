@@ -70,11 +70,11 @@ fun SpotlightCarousel(
     val state = rememberCarouselState { items.size }
 
     Column(modifier = modifier) {
-        HomeSectionHeader(title = title, startPadding = 14.dp, bottomPadding = 12.dp)
+        HomeSectionHeader(title = title, startPadding = 14.dp)
         HorizontalMultiBrowseCarousel(
             state = state,
             preferredItemWidth = preferredItemWidth,
-            modifier = Modifier.height(carouselHeight).padding(horizontal = 16.dp),
+            modifier = Modifier.height(carouselHeight).padding(horizontal = 14.dp),
             itemSpacing = 8.dp,
         ) { index ->
             val item = items[index]
