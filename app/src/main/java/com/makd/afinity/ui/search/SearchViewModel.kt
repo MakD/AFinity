@@ -337,6 +337,8 @@ constructor(
     }
 
     fun loadAudiobookshelfGenres() {
+        if (!audiobookshelfRepository.isAuthenticated.value) return
+
         viewModelScope.launch {
             try {
                 var libraries = audiobookshelfRepository.getLibrariesFlow().first()
@@ -670,6 +672,8 @@ constructor(
     }
 
     fun performAudiobookshelfSearch() {
+        if (!audiobookshelfRepository.isAuthenticated.value) return
+
         val query = _uiState.value.searchQuery.trim()
         if (query.isEmpty()) return
 
@@ -740,6 +744,8 @@ constructor(
     }
 
     fun performJellyseerrSearch() {
+        if (!jellyseerrRepository.isAuthenticated.value) return
+
         val query = _uiState.value.searchQuery.trim()
         if (query.isEmpty()) return
 

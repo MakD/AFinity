@@ -109,7 +109,19 @@ object LogExporter {
         return try {
             val pid = android.os.Process.myPid()
             val process =
-                ProcessBuilder("logcat", "-d", "--pid=$pid", "-v", "time", "*:I")
+                ProcessBuilder(
+                        "logcat",
+                        "-d",
+                        "--pid=$pid",
+                        "-v",
+                        "time",
+                        "View:W",
+                        "ViewRootImpl:W",
+                        "Choreographer:W",
+                        "OpenGLRenderer:W",
+                        "HWUI:W",
+                        "*:I",
+                    )
                     .redirectErrorStream(true)
                     .start()
             process.inputStream.bufferedReader().readText()
