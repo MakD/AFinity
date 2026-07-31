@@ -1001,6 +1001,8 @@ private fun TypeSpecificContent(
     preferencesRepository: com.makd.afinity.data.repository.PreferencesRepository,
     widthSizeClass: WindowWidthSizeClass,
 ) {
+    val selectedMediaSource by viewModel.selectedMediaSource.collectAsStateWithLifecycle()
+
     when (item) {
         is AfinityShow ->
             SeriesDetailContent(
@@ -1084,6 +1086,7 @@ private fun TypeSpecificContent(
                 onPartClick = { part -> onPlayClick(part, null) },
                 navController = navController,
                 widthSizeClass = widthSizeClass,
+                selectedSourceId = selectedMediaSource?.id,
             )
         is AfinityBoxSet ->
             BoxSetDetailContent(
@@ -1212,6 +1215,7 @@ private fun DeleteConfirmationDialog(
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
+    val deleteErrorFmt = stringResource(R.string.admin_delete_error)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.admin_delete_dialog_title)) },
@@ -1238,7 +1242,7 @@ private fun DeleteConfirmationDialog(
                         onError = { error ->
                             Toast.makeText(
                                     context,
-                                    context.getString(R.string.admin_delete_error, error),
+                                    String.format(deleteErrorFmt, error),
                                     Toast.LENGTH_LONG,
                                 )
                                 .show()

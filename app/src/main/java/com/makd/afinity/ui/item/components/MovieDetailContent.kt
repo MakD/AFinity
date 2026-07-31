@@ -70,9 +70,11 @@ fun MovieDetailContent(
     onPartClick: (AfinityItem) -> Unit = {},
     navController: androidx.navigation.NavController,
     widthSizeClass: WindowWidthSizeClass,
+    selectedSourceId: String? = null,
 ) {
     BaseMediaDetailContent(
         item = item,
+        selectedSourceId = selectedSourceId,
         specialFeatures = specialFeatures,
         containingBoxSets = containingBoxSets,
         tmdbReviews = tmdbReviews,

@@ -59,6 +59,7 @@ fun BaseMediaDetailContent(
     onBoxSetClick: (AfinityBoxSet) -> Unit,
     onPersonClick: (UUID) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
+    selectedSourceId: String? = null,
     typeSpecificContent: @Composable () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -69,7 +70,7 @@ fun BaseMediaDetailContent(
         DirectorSection(item = item)
         WriterSection(item = item)
 
-        MediaLanguageFlagsSection(item = item)
+        MediaLanguageFlagsSection(item = item, selectedSourceId = selectedSourceId)
 
         typeSpecificContent()
 

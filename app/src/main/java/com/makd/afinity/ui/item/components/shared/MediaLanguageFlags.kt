@@ -328,16 +328,22 @@ private sealed interface LanguageChip {
     data class Code(val text: String) : LanguageChip
 }
 
-private fun languageChips(item: AfinityItem, type: MediaStreamType): List<LanguageChip> {
+private fun languageChips(
+    item: AfinityItem,
+    type: MediaStreamType,
+    selectedSourceId: String?,
+): List<LanguageChip> {
     val sources = (item as? AfinitySources)?.sources ?: return emptyList()
+    val source = sources.find { it.id == selectedSourceId } ?: sources.firstOrNull()
     val seenCountries = LinkedHashSet<String>()
     val seenCodes = LinkedHashSet<String>()
     var hasNoLanguage = false
     var hasUnidentified = false
     val chips = mutableListOf<LanguageChip>()
 
-    sources
-        .flatMap { it.mediaStreams }
+    source
+        ?.mediaStreams
+        .orEmpty()
         .filter { it.type == type }
         .forEach { stream ->
             val raw = stream.language.trim()
@@ -377,9 +383,19 @@ private fun languageChips(item: AfinityItem, type: MediaStreamType): List<Langua
 }
 
 @Composable
-fun MediaLanguageFlagsSection(item: AfinityItem, modifier: Modifier = Modifier) {
-    val audio = remember(item) { languageChips(item, MediaStreamType.AUDIO) }
-    val subtitles = remember(item) { languageChips(item, MediaStreamType.SUBTITLE) }
+fun MediaLanguageFlagsSection(
+    item: AfinityItem,
+    modifier: Modifier = Modifier,
+    selectedSourceId: String? = null,
+) {
+    val audio =
+        remember(item, selectedSourceId) {
+            languageChips(item, MediaStreamType.AUDIO, selectedSourceId)
+        }
+    val subtitles =
+        remember(item, selectedSourceId) {
+            languageChips(item, MediaStreamType.SUBTITLE, selectedSourceId)
+        }
     if (audio.isEmpty() && subtitles.isEmpty()) return
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
