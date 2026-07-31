@@ -59,6 +59,20 @@ constructor(
             }
         }
 
+    suspend fun getHiddenRows(): Set<HomeRow> {
+        val key = sessionKey() ?: return emptySet()
+        return try {
+            dao.getForSession(key)
+                .filterNot { it.visible }
+                .mapNotNull { HomeRow.fromKey(it.sectionKey) }
+                .filterNot { it.mandatory }
+                .toSet()
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to read hidden home rows")
+            emptySet()
+        }
+    }
+
     suspend fun getDiscoveryConfig(): DiscoveryConfig {
         val key = sessionKey() ?: return DiscoveryConfig()
         return try {

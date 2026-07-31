@@ -14,7 +14,11 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.GenreRepository
 import com.makd.afinity.data.repository.home.CustomHomeSectionsRepository
+import com.makd.afinity.data.repository.home.HomeConfigTransfer
 import com.makd.afinity.data.repository.home.HomeLayoutPreferencesRepository
+import com.makd.afinity.data.repository.home.ImportFailure
+import com.makd.afinity.data.repository.home.ImportPlan
+import com.makd.afinity.data.repository.home.ImportResult
 import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -28,6 +32,13 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
+
+data class TransferState(
+    val pendingExport: String? = null,
+    val plan: ImportPlan? = null,
+    val failure: ImportFailure? = null,
+    val imported: Boolean = false,
+)
 
 enum class SourceLoadState {
     LOADING,
@@ -85,7 +96,11 @@ constructor(
     private val homeLayoutPreferencesRepository: HomeLayoutPreferencesRepository,
     private val mediaRepository: MediaRepository,
     private val genreRepository: GenreRepository,
+    private val homeConfigTransfer: HomeConfigTransfer,
 ) : ViewModel() {
+
+    private val _transfer = MutableStateFlow(TransferState())
+    val transfer: StateFlow<TransferState> = _transfer.asStateFlow()
 
     private val _uiState = MutableStateFlow(CustomSectionsUiState())
     val uiState: StateFlow<CustomSectionsUiState> = _uiState.asStateFlow()
@@ -143,6 +158,46 @@ constructor(
                 )
             }
         }
+    }
+
+    fun prepareExport() {
+        viewModelScope.launch {
+            val payload =
+                try {
+                    homeConfigTransfer.export()
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to build home config export")
+                    return@launch
+                }
+            _transfer.update { it.copy(pendingExport = payload) }
+        }
+    }
+
+    fun onExportDelivered() {
+        _transfer.update { it.copy(pendingExport = null) }
+    }
+
+    fun previewImport(raw: String) {
+        viewModelScope.launch {
+            when (val result = homeConfigTransfer.parse(raw)) {
+                is ImportResult.Ready ->
+                    _transfer.update { it.copy(plan = result.plan, failure = null) }
+                is ImportResult.Failed ->
+                    _transfer.update { it.copy(plan = null, failure = result.reason) }
+            }
+        }
+    }
+
+    fun applyImport() {
+        val plan = _transfer.value.plan ?: return
+        viewModelScope.launch {
+            homeConfigTransfer.apply(plan)
+            _transfer.update { TransferState(imported = true) }
+        }
+    }
+
+    fun dismissTransfer() {
+        _transfer.update { TransferState() }
     }
 
     fun ensureSourcesLoaded(sourceType: CustomSectionSourceType, force: Boolean = false) {

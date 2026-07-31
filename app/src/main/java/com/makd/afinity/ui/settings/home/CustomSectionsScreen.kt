@@ -1,5 +1,7 @@
 package com.makd.afinity.ui.settings.home
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -58,6 +60,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -85,6 +88,8 @@ import com.makd.afinity.data.models.DiscoveryDensity
 import com.makd.afinity.data.models.DiscoverySection
 import com.makd.afinity.data.models.HomeRow
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.repository.home.ImportFailure
+import com.makd.afinity.data.repository.home.SkipReason
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinitySwitch
 import com.makd.afinity.ui.components.AfinityTextField
@@ -96,8 +101,11 @@ import com.makd.afinity.ui.components.SettingsSwitchItem
 import com.makd.afinity.ui.components.filter.SearchableChipMultiSelect
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import timber.log.Timber
+import java.text.SimpleDateFormat
 import java.time.Month
 import java.time.format.TextStyle
+import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,10 +116,46 @@ fun CustomSectionsScreen(
     viewModel: CustomSectionsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val transfer by viewModel.transfer.collectAsStateWithLifecycle()
     val playerOffset = LocalPlayerOffset.current
+    val context = LocalContext.current
 
     var editing by remember { mutableStateOf<CustomHomeSection?>(null) }
     var editingIsNew by remember { mutableStateOf(false) }
+
+    val exportLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument("application/json")
+        ) { uri ->
+            val payload = transfer.pendingExport
+            if (uri != null && payload != null) {
+                runCatching {
+                        context.contentResolver.openOutputStream(uri)?.use {
+                            it.write(payload.toByteArray())
+                        }
+                    }
+                    .onFailure { Timber.e(it, "Failed to write home config") }
+            }
+            viewModel.onExportDelivered()
+        }
+
+    val importLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            val raw =
+                runCatching {
+                        context.contentResolver.openInputStream(uri)?.use {
+                            it.readBytes().decodeToString()
+                        }
+                    }
+                    .onFailure { Timber.e(it, "Failed to read home config") }
+                    .getOrNull()
+            if (raw != null) viewModel.previewImport(raw)
+        }
+
+    LaunchedEffect(transfer.pendingExport) {
+        transfer.pendingExport?.let { exportLauncher.launch(defaultExportFileName()) }
+    }
 
     val lazyListState = rememberLazyListState()
     val reorderState =
@@ -301,8 +345,36 @@ fun CustomSectionsScreen(
                     }
                 }
             }
+
+            item {
+                Column {
+                    GroupHeader(
+                        title = stringResource(R.string.custom_sections_group_backup),
+                        caption = stringResource(R.string.custom_sections_backup_caption),
+                    )
+                    SettingsGroup {
+                        SettingsItem(
+                            title = stringResource(R.string.custom_sections_export),
+                            subtitle = stringResource(R.string.custom_sections_export_summary),
+                            onClick = { viewModel.prepareExport() },
+                        )
+                        SettingsDivider()
+                        SettingsItem(
+                            title = stringResource(R.string.custom_sections_import),
+                            subtitle = stringResource(R.string.custom_sections_import_summary),
+                            onClick = { importLauncher.launch(IMPORT_MIME_TYPES) },
+                        )
+                    }
+                }
+            }
         }
     }
+
+    ImportDialogs(
+        transfer = transfer,
+        onApply = { viewModel.applyImport() },
+        onDismiss = { viewModel.dismissTransfer() },
+    )
 
     val current = editing
     if (current != null) {
@@ -760,6 +832,135 @@ private fun ItemTypeSelector(
         }
     }
 }
+
+@Composable
+private fun ImportDialogs(
+    transfer: TransferState,
+    onApply: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val plan = transfer.plan
+    if (plan != null) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text(text = stringResource(R.string.custom_sections_import_title)) },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.custom_sections_import_from_fmt,
+                                plan.appVersion,
+                            ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.custom_sections_import_sections_fmt,
+                                plan.sections.size,
+                            ),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    if (plan.existingSectionCount > 0) {
+                        Text(
+                            text =
+                                stringResource(
+                                    R.string.custom_sections_import_replace_fmt,
+                                    plan.existingSectionCount,
+                                ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                    Text(
+                        text = stringResource(R.string.custom_sections_import_rows),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    if (plan.skipped.isNotEmpty()) {
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        )
+                        Text(
+                            text = stringResource(R.string.custom_sections_import_skipped),
+                            style =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                        )
+                        plan.skipped.forEach { entry ->
+                            Text(
+                                text = "${entry.title} — ${stringResource(entry.reason.labelRes())}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = onApply) {
+                    Text(text = stringResource(R.string.custom_sections_import_apply))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) {
+                    Text(text = stringResource(R.string.action_cancel))
+                }
+            },
+        )
+    }
+
+    val failure = transfer.failure
+    if (failure != null) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text(text = stringResource(R.string.custom_sections_import_title)) },
+            text = { Text(text = stringResource(failure.labelRes())) },
+            confirmButton = {
+                TextButton(onClick = onDismiss) {
+                    Text(text = stringResource(R.string.action_ok))
+                }
+            },
+        )
+    }
+
+    if (transfer.imported) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text(text = stringResource(R.string.custom_sections_import_done)) },
+            confirmButton = {
+                TextButton(onClick = onDismiss) {
+                    Text(text = stringResource(R.string.action_ok))
+                }
+            },
+        )
+    }
+}
+
+private fun SkipReason.labelRes(): Int =
+    when (this) {
+        SkipReason.SOURCE_NOT_ON_SERVER -> R.string.custom_sections_import_skip_missing
+        SkipReason.INVALID -> R.string.custom_sections_import_skip_invalid
+        SkipReason.LIMIT_REACHED -> R.string.custom_sections_import_skip_limit
+    }
+
+private fun ImportFailure.labelRes(): Int =
+    when (this) {
+        ImportFailure.NOT_AFINITY_CONFIG -> R.string.custom_sections_import_error_format
+        ImportFailure.NEWER_SCHEMA -> R.string.custom_sections_import_error_version
+        ImportFailure.UNREADABLE -> R.string.custom_sections_import_error_unreadable
+    }
+
+private fun defaultExportFileName(): String =
+    "afinity-home-${SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())}.json"
+
+private val IMPORT_MIME_TYPES =
+    arrayOf("application/json", "text/plain", "application/octet-stream")
 
 @Composable
 private fun GroupHeader(title: String, caption: String? = null) {
