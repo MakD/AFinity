@@ -1657,8 +1657,14 @@ constructor(
             Timber.d("Getting episode to play for series: $seriesId")
             try {
                 val nextUpEpisodes =
-                    getNextUp(seriesId = seriesId, limit = 1, fields = FieldSets.PLAYABLE_EPISODE)
-                val playableNextUp = nextUpEpisodes.filter { !it.missing }
+                    getNextUp(
+                        seriesId = seriesId,
+                        limit = 1,
+                        fields = FieldSets.PLAYABLE_EPISODE,
+                        enableResumable = true,
+                    )
+                val playableNextUp =
+                    nextUpEpisodes.filter { !it.missing && it.parentIndexNumber != 0 }
                 if (playableNextUp.isNotEmpty()) {
                     Timber.d("Found NextUp episode: ${playableNextUp.first().name}")
                     return playableNextUp.first()
@@ -1670,7 +1676,8 @@ constructor(
             val seasons = getSeasons(seriesId)
             if (seasons.isEmpty()) return null
 
-            val sortedSeasons = seasons.sortedBy { it.indexNumber }
+            val sortedSeasons =
+                seasons.sortedWith(compareBy({ it.indexNumber == 0 }, { it.indexNumber }))
             val episodesBySeason = coroutineScope {
                 sortedSeasons
                     .map { season ->
