@@ -1,7 +1,6 @@
 package com.makd.afinity.data.models
 
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.data.models.media.AfinityStudio
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -22,7 +21,6 @@ enum class HomeSectionType {
     GENRE_MOVIE,
     GENRE_SHOW,
     CRITICS_CHOICE,
-    POPULAR_STUDIOS,
     CUSTOM,
 }
 
@@ -52,8 +50,6 @@ sealed interface HomeSectionContent {
     data class Items(val items: List<AfinityItem>) : HomeSectionContent
 
     data class RankedItems(val items: List<AfinityItem>) : HomeSectionContent
-
-    data class Studios(val studios: List<AfinityStudio>) : HomeSectionContent
 
     data object Empty : HomeSectionContent
 }

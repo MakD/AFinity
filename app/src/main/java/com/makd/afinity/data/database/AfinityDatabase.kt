@@ -30,7 +30,6 @@ import com.makd.afinity.data.database.dao.ServerDao
 import com.makd.afinity.data.database.dao.ServerDatabaseDao
 import com.makd.afinity.data.database.dao.ShowDao
 import com.makd.afinity.data.database.dao.SourceDao
-import com.makd.afinity.data.database.dao.StudioCacheDao
 import com.makd.afinity.data.database.dao.TopPeopleDao
 import com.makd.afinity.data.database.dao.UserDao
 import com.makd.afinity.data.database.dao.UserDataDao
@@ -73,7 +72,6 @@ import com.makd.afinity.data.database.entities.MusicQueueEntity
 import com.makd.afinity.data.database.entities.MusicTrackEntity
 import com.makd.afinity.data.database.entities.PersonSectionCacheEntity
 import com.makd.afinity.data.database.entities.ShowGenreCacheEntity
-import com.makd.afinity.data.database.entities.StudioCacheEntity
 import com.makd.afinity.data.database.entities.TopPeopleCacheEntity
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.server.ServerAddress
@@ -93,7 +91,6 @@ import com.makd.afinity.data.models.user.User
             GenreMovieCacheEntity::class,
             ShowGenreCacheEntity::class,
             GenreShowCacheEntity::class,
-            StudioCacheEntity::class,
             TopPeopleCacheEntity::class,
             PersonSectionCacheEntity::class,
             MovieSectionCacheEntity::class,
@@ -129,7 +126,7 @@ import com.makd.afinity.data.models.user.User
             CustomHomeSectionEntity::class,
             HomeLayoutPreferenceEntity::class,
         ],
-    version = 58,
+    version = 59,
     exportSchema = false,
 )
 @TypeConverters(AfinityTypeConverters::class)
@@ -162,8 +159,6 @@ abstract class AfinityDatabase : RoomDatabase() {
     abstract fun boxSetCacheDao(): BoxSetCacheDao
 
     abstract fun genreCacheDao(): GenreCacheDao
-
-    abstract fun studioCacheDao(): StudioCacheDao
 
     abstract fun topPeopleDao(): TopPeopleDao
 

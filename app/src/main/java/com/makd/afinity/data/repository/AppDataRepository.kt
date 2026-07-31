@@ -81,7 +81,6 @@ constructor(
     private val liveTvRepository: LiveTvRepository,
     private val genreRepository: GenreRepository,
     private val peopleRepository: PeopleRepository,
-    private val studioRepository: StudioRepository,
     private val serverRepository: ServerRepository,
     private val mediaRefreshBus: MediaRefreshBus,
     private val mediaChangeManager: MediaChangeManager,
@@ -1045,7 +1044,6 @@ constructor(
         homeCacheRepository.invalidateAll()
 
         try {
-            studioRepository.clearAllData()
             peopleRepository.clearAllData()
             genreRepository.clearAllData()
         } catch (e: Exception) {

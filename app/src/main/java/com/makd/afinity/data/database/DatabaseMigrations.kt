@@ -1360,6 +1360,13 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_58_59 =
+        object : Migration(58, 59) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP TABLE IF EXISTS `studio_cache`")
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1419,5 +1426,6 @@ object DatabaseMigrations {
             MIGRATION_55_56,
             MIGRATION_56_57,
             MIGRATION_57_58,
+            MIGRATION_58_59,
         )
 }

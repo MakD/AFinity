@@ -6,6 +6,7 @@ import com.makd.afinity.data.database.AfinityTypeConverters
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.CustomHomeSection
 import com.makd.afinity.data.models.CustomSectionSourceType
+import com.makd.afinity.data.models.DiscoveryConfig
 import com.makd.afinity.data.models.DiscoverySection
 import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.HomeSectionContent
@@ -23,6 +24,7 @@ import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.repository.FieldSets
@@ -98,9 +100,17 @@ constructor(
     private val _criticsChoiceLoaded = MutableStateFlow(false)
     val criticsChoiceLoaded: StateFlow<Boolean> = _criticsChoiceLoaded.asStateFlow()
 
+    private val _popularStudios = MutableStateFlow<List<AfinityStudio>>(emptyList())
+    val popularStudios: StateFlow<List<AfinityStudio>> = _popularStudios.asStateFlow()
+
+    private val _popularStudiosLoaded = MutableStateFlow(false)
+    val popularStudiosLoaded: StateFlow<Boolean> = _popularStudiosLoaded.asStateFlow()
+
     private var criticsChoiceJob: Job? = null
 
     private var watchAgainJob: Job? = null
+
+    private var popularStudiosJob: Job? = null
 
     private val customSectionSignatures = mutableMapOf<String, String>()
 
@@ -213,6 +223,7 @@ constructor(
         seasonRecheck.update { it + 1 }
         ensureWatchAgain(force)
         ensureCriticsChoice(force)
+        ensurePopularStudios(force)
         val sk = sessionKey() ?: return
         if (!force && sk == layoutSessionKey && _layout.value.isNotEmpty()) return
         if (!force && buildJob?.isActive == true) return
@@ -247,8 +258,10 @@ constructor(
                     }
 
                     val oldKeys = _layout.value.map { it.key }
-                    val fresh = buildLayout()
-                    if (fresh.isEmpty()) {
+                    val discovery = homeLayoutPreferencesRepository.getDiscoveryConfig()
+                    val fresh =
+                        if (discovery.isDiscoveryOff) emptyList() else buildLayout(discovery)
+                    if (fresh.isEmpty() && !discovery.isDiscoveryOff) {
                         Timber.d("Home layout build produced no sections, keeping current state")
                         return@launch
                     }
@@ -314,6 +327,38 @@ constructor(
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load watch again")
                     _watchAgainLoaded.value = true
+                }
+            }
+    }
+
+    private fun ensurePopularStudios(force: Boolean) {
+        if (sessionKey() == null) return
+        if (!force && _popularStudios.value.isNotEmpty()) return
+        if (!force && popularStudiosJob?.isActive == true) return
+
+        popularStudiosJob?.cancel()
+        popularStudiosJob =
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val studios =
+                        try {
+                            mediaRepository.getStudios(
+                                limit = POPULAR_STUDIOS_POOL,
+                                includeItemTypes = POPULAR_STUDIOS_TYPES,
+                            )
+                        } catch (e: Exception) {
+                            Timber.w(e, "Failed to load studios for home")
+                            emptyList()
+                        }
+                    _popularStudios.value =
+                        if (studios.size < MIN_POPULAR_STUDIOS) emptyList()
+                        else presentationOrder(POPULAR_STUDIOS_KEY, studios)
+                    _popularStudiosLoaded.value = true
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to load popular studios")
+                    _popularStudiosLoaded.value = true
                 }
             }
     }
@@ -394,6 +439,9 @@ constructor(
         criticsChoiceJob?.cancel()
         _criticsChoice.value = emptyList()
         _criticsChoiceLoaded.value = false
+        popularStudiosJob?.cancel()
+        _popularStudios.value = emptyList()
+        _popularStudiosLoaded.value = false
     }
 
     private fun patchContent(
@@ -442,7 +490,6 @@ constructor(
             is HomeSectionContent.RankedItems -> {
                 patchItems(content.items)?.let { HomeSectionContent.RankedItems(it) } ?: content
             }
-            is HomeSectionContent.Studios -> content
             HomeSectionContent.Empty -> content
         }
     }
@@ -458,7 +505,6 @@ constructor(
                 is HomeSectionContent.Spotlight -> content.items.map { it.id } to true
                 is HomeSectionContent.Items -> content.items.map { it.id } to false
                 is HomeSectionContent.RankedItems -> content.items.map { it.id } to false
-                is HomeSectionContent.Studios -> return
                 HomeSectionContent.Empty -> return
             }
         hydrationMutex.withLock {
@@ -487,7 +533,6 @@ constructor(
                 hydratePersonFromMovie(descriptor, PersonKind.WRITER, PersonSectionType.WRITTEN_BY)
             HomeSectionType.WATCH_AGAIN -> hydrateWatchAgain(descriptor)
             HomeSectionType.CRITICS_CHOICE -> hydrateCriticsChoice(descriptor)
-            HomeSectionType.POPULAR_STUDIOS -> hydratePopularStudios()
             HomeSectionType.CUSTOM -> hydrateCustomSection(descriptor)
             HomeSectionType.SPOTLIGHT_GENRE_MOVIE,
             HomeSectionType.SPOTLIGHT_GENRE_SHOW,
@@ -573,42 +618,48 @@ constructor(
     ): List<AfinityItem> {
         val sk = sessionKey() ?: return emptyList()
         val cacheKey = contentCacheKey(sk, descriptorKey)
-        val cachedItems = homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl())
+        val baseUrl = mediaRepository.getBaseUrl()
+        val cachedItems = homeCacheRepository.getItems(cacheKey, baseUrl)
         if (!cachedItems.isNullOrEmpty()) {
-            return cachedItems
+            return if (cachedItems.size < WATCH_AGAIN_MIN_ITEMS) emptyList() else cachedItems
         }
 
-        val baseUrl = mediaRepository.getBaseUrl()
-        val watchedShows =
-            try {
-                mediaRepository.getShows(
-                    sortBy = SortBy.DATE_PLAYED,
-                    sortDescending = true,
-                    isPlayed = true,
-                    limit = 30,
-                    fields = FieldSets.MEDIA_ITEM_CARDS,
-                )
-            } catch (e: Exception) {
-                Timber.w(e, "Failed to load watched shows for watch again")
-                emptyList()
-            }
-
-        val watchedBoxSets =
-            try {
-                mediaRepository
-                    .getItems(
-                        includeItemTypes = listOf("BOX_SET"),
-                        fields = FieldSets.MEDIA_ITEM_CARDS,
-                    )
-                    .items
-                    ?.mapNotNull { it.toAfinityItem(baseUrl) }
-                    ?.filterIsInstance<AfinityBoxSet>()
-                    ?.filter { it.unplayedItemCount == 0 && (it.itemCount ?: 0) >= 2 }
-                    ?: emptyList()
-            } catch (e: Exception) {
-                Timber.w(e, "Failed to load watched boxsets for watch again")
-                emptyList()
-            }
+        val (watchedShows, watchedBoxSets) = coroutineScope {
+            val showsDeferred =
+                async {
+                    try {
+                        mediaRepository.getShows(
+                            sortBy = SortBy.DATE_PLAYED,
+                            sortDescending = true,
+                            isPlayed = true,
+                            limit = WATCH_AGAIN_SHOW_POOL,
+                            fields = FieldSets.MEDIA_ITEM_CARDS,
+                        )
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to load watched shows for watch again")
+                        emptyList()
+                    }
+                }
+            val boxSetsDeferred =
+                async {
+                    try {
+                        mediaRepository
+                            .getItems(
+                                includeItemTypes = listOf("BOX_SET"),
+                                fields = FieldSets.MEDIA_ITEM_CARDS,
+                            )
+                            .items
+                            ?.mapNotNull { it.toAfinityItem(baseUrl) }
+                            ?.filterIsInstance<AfinityBoxSet>()
+                            ?.filter { it.unplayedItemCount == 0 && (it.itemCount ?: 0) >= 2 }
+                            ?: emptyList()
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to load watched boxsets for watch again")
+                        emptyList()
+                    }
+                }
+            showsDeferred.await() to boxSetsDeferred.await()
+        }
 
         val candidates =
             buildList<AfinityItem> {
@@ -619,10 +670,8 @@ constructor(
                 )
                 addAll(watchedBoxSets)
             }
-        if (candidates.size < 5) return emptyList()
-
         homeCacheRepository.putItems(cacheKey, candidates)
-        return candidates
+        return if (candidates.size < WATCH_AGAIN_MIN_ITEMS) emptyList() else candidates
     }
 
     private suspend fun hydrateCriticsChoice(
@@ -689,18 +738,6 @@ constructor(
                 else -> 0f
             }
         }
-
-    private suspend fun hydratePopularStudios(): HomeSectionContent {
-        val studios =
-            try {
-                mediaRepository.getStudios(limit = 20)
-            } catch (e: Exception) {
-                Timber.w(e, "Failed to load studios for home")
-                emptyList()
-            }
-        return if (studios.size < 3) HomeSectionContent.Empty
-        else HomeSectionContent.Studios(presentationOrder("popular_studios", studios))
-    }
 
     private suspend fun hydrateCustomSection(
         descriptor: HomeSectionDescriptor
@@ -884,8 +921,9 @@ constructor(
         )
     }
 
-    private suspend fun buildLayout(): List<HomeSectionDescriptor> = coroutineScope {
-        val discovery = homeLayoutPreferencesRepository.getDiscoveryConfig()
+    private suspend fun buildLayout(
+        discovery: DiscoveryConfig
+    ): List<HomeSectionDescriptor> = coroutineScope {
         fun cap(section: DiscoverySection) = discovery.countFor(section)
 
         val actorsDeferred = async {
@@ -899,7 +937,10 @@ constructor(
         }
         val studiosDeferred = async {
             try {
-                mediaRepository.getStudios(limit = 50)
+                mediaRepository.getStudios(
+                    includeItemTypes = POPULAR_STUDIOS_TYPES,
+                    limit = 50,
+                )
             } catch (e: Exception) {
                 Timber.w(e, "Failed to load studios for spotlight descriptors")
                 emptyList()
@@ -1116,22 +1157,8 @@ constructor(
         }
         val spotlights = spotlightDescriptors.shuffled().take(cap(DiscoverySection.SPOTLIGHTS))
 
-        val popularStudiosDescriptor =
-            HomeSectionDescriptor(
-                key = "popular_studios",
-                type = HomeSectionType.POPULAR_STUDIOS,
-                title = context.getString(R.string.home_popular_studios),
-            )
-
-        val singletonDescriptors =
-            listOfNotNull(
-                popularStudiosDescriptor.takeIf {
-                    discovery.isEnabled(DiscoverySection.POPULAR_STUDIOS)
-                }
-            )
-
         val recommendationDescriptors =
-            (actorDescriptors + directorDescriptors + singletonDescriptors).shuffled() +
+            (actorDescriptors + directorDescriptors).shuffled() +
                 (writerDescriptors + becauseYouWatchedDescriptors + becauseYouLikedDescriptors)
                     .shuffled() +
                 personFromMovieDescriptors.shuffled()
@@ -1179,8 +1206,7 @@ constructor(
                         it.type == HomeSectionType.BECAUSE_YOU_LIKED ||
                         it.type == HomeSectionType.ACTOR_FROM_MOVIE ||
                         it.type == HomeSectionType.DIRECTOR_FROM_MOVIE ||
-                        it.type == HomeSectionType.WRITER_FROM_MOVIE ||
-                        it.type == HomeSectionType.POPULAR_STUDIOS
+                        it.type == HomeSectionType.WRITER_FROM_MOVIE
                 }
                 .shuffled()
 
@@ -1327,6 +1353,12 @@ constructor(
 }
 
 private const val WATCH_AGAIN_KEY = "watch_again"
+private const val WATCH_AGAIN_SHOW_POOL = 50
+private const val WATCH_AGAIN_MIN_ITEMS = 5
+private const val POPULAR_STUDIOS_KEY = "popular_studios"
+private const val POPULAR_STUDIOS_POOL = 20
+private const val MIN_POPULAR_STUDIOS = 3
+private val POPULAR_STUDIOS_TYPES = listOf("MOVIE", "SERIES")
 private const val MIN_CRITICS_RATING = 6.5f
 private const val CRITICS_CHOICE_KEY = "critics_choice"
 

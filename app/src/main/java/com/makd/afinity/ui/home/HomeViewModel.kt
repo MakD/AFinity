@@ -267,6 +267,18 @@ constructor(
         }
 
         viewModelScope.launch {
+            homeSectionsRepository.popularStudios.collect { studios ->
+                _uiState.update { it.copy(popularStudios = studios) }
+            }
+        }
+
+        viewModelScope.launch {
+            homeSectionsRepository.popularStudiosLoaded.collect { loaded ->
+                _uiState.update { it.copy(popularStudiosLoaded = loaded) }
+            }
+        }
+
+        viewModelScope.launch {
             homeSectionsRepository.criticsChoice.collect { items ->
                 _uiState.update { it.copy(highestRated = items) }
             }
@@ -909,8 +921,6 @@ sealed interface HomeSection {
     ) : HomeSection
 
     data class Ranked(override val key: String, val items: List<AfinityItem>) : HomeSection
-
-    data class Studios(override val key: String, val studios: List<AfinityStudio>) : HomeSection
 }
 
 private fun HomeSectionDescriptor.toHomeSection(content: HomeSectionContent?): HomeSection? =
@@ -940,7 +950,6 @@ private fun HomeSectionDescriptor.toHomeSection(content: HomeSectionContent?): H
                     HomeSection.PersonFromMovie(key, content.section)
                 is HomeSectionContent.Spotlight -> HomeSection.Spotlight(key, title, content.items)
                 is HomeSectionContent.RankedItems -> HomeSection.Ranked(key, content.items)
-                is HomeSectionContent.Studios -> HomeSection.Studios(key, content.studios)
                 is HomeSectionContent.Items ->
                     HomeSection.Items(
                         key = key,
@@ -971,6 +980,8 @@ data class HomeUiState(
     val watchAgainLoaded: Boolean = false,
     val highestRated: List<AfinityItem> = emptyList(),
     val highestRatedLoaded: Boolean = false,
+    val popularStudios: List<AfinityStudio> = emptyList(),
+    val popularStudiosLoaded: Boolean = false,
     val nextUpLoaded: Boolean = false,
     val upcomingLoaded: Boolean = false,
     val hiddenRows: Set<HomeRow> = emptySet(),

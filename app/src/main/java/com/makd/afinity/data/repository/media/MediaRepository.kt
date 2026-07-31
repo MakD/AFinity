@@ -203,9 +203,9 @@ interface MediaRepository {
     ): List<String>
 
     suspend fun getStudios(
+        includeItemTypes: List<String>,
         parentId: UUID? = null,
         limit: Int? = null,
-        includeItemTypes: List<String> = emptyList(),
     ): List<AfinityStudio>
 
     suspend fun getNextUp(

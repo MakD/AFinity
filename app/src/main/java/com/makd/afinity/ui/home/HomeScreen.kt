@@ -604,6 +604,24 @@ fun HomeScreen(
                             }
                         }
 
+                        if (
+                            !uiState.isOffline &&
+                                uiState.popularStudios.isNotEmpty() &&
+                                HomeRow.POPULAR_STUDIOS !in uiState.hiddenRows
+                        ) {
+                            item(key = "popular_studios") {
+                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                    PopularStudiosSection(
+                                        studios = uiState.popularStudios,
+                                        onStudioClick = { studio ->
+                                            viewModel.onStudioClick(studio, navController)
+                                        },
+                                        widthSizeClass = widthSizeClass,
+                                    )
+                                }
+                            }
+                        }
+
                         if (!uiState.isOffline && uiState.pinnedSections.isNotEmpty()) {
                             items(
                                 items = uiState.pinnedSections,
@@ -719,16 +737,6 @@ fun HomeScreen(
                                             HighestRatedSection(
                                                 items = section.items,
                                                 onItemClick = onItemClick,
-                                                widthSizeClass = widthSizeClass,
-                                            )
-                                        }
-
-                                        is HomeSection.Studios -> {
-                                            PopularStudiosSection(
-                                                studios = section.studios,
-                                                onStudioClick = { studio ->
-                                                    viewModel.onStudioClick(studio, navController)
-                                                },
                                                 widthSizeClass = widthSizeClass,
                                             )
                                         }

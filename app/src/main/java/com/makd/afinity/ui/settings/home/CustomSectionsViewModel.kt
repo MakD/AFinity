@@ -90,33 +90,21 @@ constructor(
         viewModelScope.launch { homeLayoutPreferencesRepository.setDiscoveryDensity(density) }
     }
 
-    fun setDiscoveryAuto(section: DiscoverySection) {
-        viewModelScope.launch {
-            homeLayoutPreferencesRepository.setDiscoverySection(
-                section,
-                enabled = true,
-                maxCount = null,
-            )
-        }
-    }
-
-    fun setDiscoveryOff(section: DiscoverySection) {
-        viewModelScope.launch {
-            homeLayoutPreferencesRepository.setDiscoverySection(
-                section,
-                enabled = false,
-                maxCount = null,
-            )
-        }
-    }
-
     fun setDiscoveryCount(section: DiscoverySection, count: Int) {
         viewModelScope.launch {
-            homeLayoutPreferencesRepository.setDiscoverySection(
-                section,
-                enabled = true,
-                maxCount = count,
-            )
+            if (count <= 0) {
+                homeLayoutPreferencesRepository.setDiscoverySection(
+                    section,
+                    enabled = false,
+                    maxCount = null,
+                )
+            } else {
+                homeLayoutPreferencesRepository.setDiscoverySection(
+                    section,
+                    enabled = true,
+                    maxCount = count,
+                )
+            }
         }
     }
 
@@ -133,9 +121,12 @@ constructor(
                 val studios =
                     withContext(Dispatchers.IO) {
                         try {
-                            mediaRepository.getStudios(limit = 200).map {
-                                SourceOption(it.name, it.name)
-                            }
+                            mediaRepository
+                                .getStudios(
+                                    includeItemTypes = listOf("MOVIE", "SERIES"),
+                                    limit = 200,
+                                )
+                                .map { SourceOption(it.name, it.name) }
                         } catch (e: Exception) {
                             Timber.w(e, "Failed to load studios for custom sections")
                             emptyList()

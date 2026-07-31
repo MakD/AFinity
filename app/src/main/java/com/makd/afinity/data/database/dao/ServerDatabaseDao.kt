@@ -251,9 +251,6 @@ abstract class ServerDatabaseDao {
     @Query("DELETE FROM genre_show_cache WHERE serverId = :serverId")
     abstract suspend fun deleteGenreShowCacheByServerId(serverId: String)
 
-    @Query("DELETE FROM studio_cache WHERE serverId = :serverId")
-    abstract suspend fun deleteStudioCacheByServerId(serverId: String)
-
     @Query("DELETE FROM library_cache WHERE serverId = :serverId")
     abstract suspend fun deleteLibraryCacheByServerId(serverId: String)
 
@@ -298,7 +295,6 @@ abstract class ServerDatabaseDao {
         deleteGenreMovieCacheByServerId(serverId)
         deleteShowGenreCacheByServerId(serverId)
         deleteGenreShowCacheByServerId(serverId)
-        deleteStudioCacheByServerId(serverId)
         deleteLibraryCacheByServerId(serverId)
         deleteMovieSectionCacheByServerId(serverId)
         deleteBoxSetCacheByServerId(serverId)

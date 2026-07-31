@@ -27,7 +27,6 @@ import com.makd.afinity.data.database.dao.ServerDao
 import com.makd.afinity.data.database.dao.ServerDatabaseDao
 import com.makd.afinity.data.database.dao.ShowDao
 import com.makd.afinity.data.database.dao.SourceDao
-import com.makd.afinity.data.database.dao.StudioCacheDao
 import com.makd.afinity.data.database.dao.TopPeopleDao
 import com.makd.afinity.data.database.dao.UserDao
 import com.makd.afinity.data.database.dao.UserDataDao
@@ -132,11 +131,6 @@ object DatabaseModule {
     @Provides
     fun provideGenreCacheDao(database: AfinityDatabase): GenreCacheDao {
         return database.genreCacheDao()
-    }
-
-    @Provides
-    fun provideStudioCacheDao(database: AfinityDatabase): StudioCacheDao {
-        return database.studioCacheDao()
     }
 
     @Provides

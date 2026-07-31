@@ -6,10 +6,14 @@ import kotlin.math.roundToInt
 enum class DiscoveryDensity(val key: String, val factor: Float, val labelRes: Int) {
     LIGHT("light", 0.5f, R.string.discovery_density_light),
     BALANCED("balanced", 1.0f, R.string.discovery_density_balanced),
-    FULL("full", 1.5f, R.string.discovery_density_full);
+    FULL("full", 1.5f, R.string.discovery_density_full),
+    OFF("off", 0f, R.string.discovery_density_off),
+    CUSTOM("custom", 1.0f, R.string.discovery_density_custom);
 
     companion object {
         val default = BALANCED
+
+        val displayOrder = listOf(OFF, LIGHT, BALANCED, FULL, CUSTOM)
 
         fun fromKey(key: String?): DiscoveryDensity =
             entries.firstOrNull { it.key == key } ?: default
@@ -36,8 +40,7 @@ enum class DiscoverySection(
     BECAUSE_YOU_LIKED("discovery_because_liked", R.string.discovery_section_because_liked, 3, 10),
     ACTOR_FROM_MOVIE("discovery_actor_from", R.string.discovery_section_actor_from, 3, 6),
     DIRECTOR_FROM_MOVIE("discovery_director_from", R.string.discovery_section_director_from, 2, 6),
-    WRITER_FROM_MOVIE("discovery_writer_from", R.string.discovery_section_writer_from, 2, 6),
-    POPULAR_STUDIOS("discovery_popular_studios", R.string.discovery_section_popular_studios, 1, 1);
+    WRITER_FROM_MOVIE("discovery_writer_from", R.string.discovery_section_writer_from, 2, 6);
 
     companion object {
         fun fromKey(key: String): DiscoverySection? = entries.firstOrNull { it.key == key }
@@ -51,13 +54,16 @@ data class DiscoveryConfig(
     val disabled: Set<DiscoverySection> = emptySet(),
     val overrides: Map<DiscoverySection, Int> = emptyMap(),
 ) {
-    fun isEnabled(section: DiscoverySection): Boolean = section !in disabled
+    val isDiscoveryOff: Boolean = density == DiscoveryDensity.OFF
+
+    fun isEnabled(section: DiscoverySection): Boolean = !isDiscoveryOff && section !in disabled
 
     fun countFor(section: DiscoverySection): Int {
         if (!isEnabled(section)) return 0
         overrides[section]?.let {
             return it.coerceIn(0, section.ceiling)
         }
+        if (density == DiscoveryDensity.CUSTOM) return section.defaultCount
         return (section.defaultCount * density.factor).roundToInt().coerceIn(1, section.ceiling)
     }
 }

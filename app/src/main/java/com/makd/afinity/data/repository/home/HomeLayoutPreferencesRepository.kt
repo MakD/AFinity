@@ -41,6 +41,7 @@ constructor(
                 dao.observeForSession(key).map { rows ->
                     rows.filterNot { it.visible }
                         .mapNotNull { HomeRow.fromKey(it.sectionKey) }
+                        .filterNot { it.mandatory }
                         .toSet()
                 }
             }
@@ -122,6 +123,7 @@ constructor(
     }
 
     suspend fun setRowVisible(row: HomeRow, visible: Boolean) {
+        if (row.mandatory) return
         val key = sessionKey() ?: return
         try {
             dao.upsert(

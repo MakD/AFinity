@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -22,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -41,7 +44,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +54,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -80,13 +83,12 @@ import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
 import com.makd.afinity.ui.components.filter.SearchableChipMultiSelect
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 import java.time.Month
 import java.time.MonthDay
 import java.time.format.TextStyle
 import java.util.Locale
-import kotlin.math.roundToInt
-import sh.calvin.reorderable.ReorderableItem
-import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,7 +102,6 @@ fun CustomSectionsScreen(
 
     var editing by remember { mutableStateOf<CustomHomeSection?>(null) }
     var editingIsNew by remember { mutableStateOf(false) }
-    var advancedExpanded by rememberSaveable { mutableStateOf(false) }
 
     val lazyListState = rememberLazyListState()
     val reorderState =
@@ -195,9 +196,30 @@ fun CustomSectionsScreen(
         ) {
             item {
                 Column {
-                    GroupCaption(stringResource(R.string.custom_sections_rows_caption))
-                    SettingsGroup(title = stringResource(R.string.custom_sections_group_rows)) {
-                        HomeRow.entries.forEachIndexed { index, row ->
+                    GroupHeader(
+                        title = stringResource(R.string.custom_sections_group_always),
+                        caption = stringResource(R.string.custom_sections_always_caption),
+                    )
+                    SettingsGroup {
+                        HomeRow.alwaysOn.forEachIndexed { index, row ->
+                            if (index > 0) SettingsDivider()
+                            SettingsItem(
+                                title = stringResource(row.labelRes),
+                                trailing = { AlwaysOnBadge() },
+                            )
+                        }
+                    }
+                }
+            }
+
+            item {
+                Column {
+                    GroupHeader(
+                        title = stringResource(R.string.custom_sections_group_rows),
+                        caption = stringResource(R.string.custom_sections_rows_caption),
+                    )
+                    SettingsGroup {
+                        HomeRow.configurable.forEachIndexed { index, row ->
                             if (index > 0) SettingsDivider()
                             SettingsSwitchItem(
                                 title = stringResource(row.labelRes),
@@ -210,65 +232,43 @@ fun CustomSectionsScreen(
             }
 
             item {
-                GroupCaption(stringResource(R.string.custom_sections_discovery_caption))
-            }
-
-            item {
-                SettingsGroup(title = stringResource(R.string.custom_sections_group_discovery)) {
-                    DropdownSelectorItem(
-                        title = stringResource(R.string.custom_sections_field_density),
-                        selectedLabel = stringResource(uiState.discovery.density.labelRes),
-                        entries =
-                            DiscoveryDensity.entries.map { stringResource(it.labelRes) to it },
-                        isSelected = { it == uiState.discovery.density },
-                        onSelect = { viewModel.setDensity(it) },
+                Column {
+                    GroupHeader(
+                        title = stringResource(R.string.custom_sections_group_discovery),
+                        caption = stringResource(R.string.custom_sections_discovery_caption),
                     )
-                    SettingsDivider()
-                    SettingsItem(
-                        title = stringResource(R.string.custom_sections_advanced),
-                        subtitle = stringResource(R.string.custom_sections_advanced_summary),
-                        onClick = { advancedExpanded = !advancedExpanded },
-                        trailing = {
-                            Icon(
-                                painter =
-                                    painterResource(
-                                        id =
-                                            if (advancedExpanded) {
-                                                R.drawable.ic_keyboard_arrow_up
-                                            } else R.drawable.ic_keyboard_arrow_down
-                                    ),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(24.dp),
-                            )
-                        },
-                    )
-                    if (advancedExpanded) {
-                        DiscoverySection.entries.forEach { section ->
+                    SettingsGroup {
+                        DropdownSelectorItem(
+                            title = stringResource(R.string.custom_sections_field_density),
+                            selectedLabel = stringResource(uiState.discovery.density.labelRes),
+                            entries =
+                                DiscoveryDensity.displayOrder.map {
+                                    stringResource(it.labelRes) to it
+                                },
+                            isSelected = { it == uiState.discovery.density },
+                            onSelect = { viewModel.setDensity(it) },
+                        )
+                        if (uiState.discovery.density == DiscoveryDensity.CUSTOM) {
                             SettingsDivider()
-                            DiscoverySectionItem(
-                                section = section,
-                                config = uiState.discovery,
-                                onAuto = { viewModel.setDiscoveryAuto(section) },
-                                onOff = { viewModel.setDiscoveryOff(section) },
-                                onCount = { viewModel.setDiscoveryCount(section, it) },
-                            )
+                            AdvancedHeader()
+                            DiscoverySection.entries.forEach { section ->
+                                SettingsDivider()
+                                DiscoveryCountItem(
+                                    section = section,
+                                    config = uiState.discovery,
+                                    onCount = { viewModel.setDiscoveryCount(section, it) },
+                                )
+                            }
                         }
                     }
                 }
             }
 
             item {
-                Column {
-                    Text(
-                        text = stringResource(R.string.custom_sections_group_yours),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(start = 32.dp, bottom = 8.dp),
-                    )
-                    GroupCaption(stringResource(R.string.custom_sections_yours_caption))
-                }
+                GroupHeader(
+                    title = stringResource(R.string.custom_sections_group_yours),
+                    caption = stringResource(R.string.custom_sections_yours_caption),
+                )
             }
 
             if (uiState.sections.isEmpty()) {
@@ -668,72 +668,212 @@ private fun ColumnScope.CustomSectionEditor(
 }
 
 @Composable
-private fun GroupCaption(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = 32.dp, end = 32.dp, bottom = 8.dp),
-    )
+private fun GroupHeader(title: String, caption: String) {
+    Column(modifier = Modifier.padding(start = 32.dp, end = 32.dp, bottom = 8.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = caption,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+    }
 }
 
 @Composable
-private fun DiscoverySectionItem(
+private fun AlwaysOnBadge() {
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    ) {
+        Text(
+            text = stringResource(R.string.custom_sections_always_on),
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+        )
+    }
+}
+
+@Composable
+private fun AdvancedHeader() {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
+        Text(
+            text = stringResource(R.string.custom_sections_advanced),
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = stringResource(R.string.custom_sections_advanced_summary),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 2.dp),
+        )
+    }
+}
+
+@Composable
+private fun DiscoveryCountItem(
     section: DiscoverySection,
     config: DiscoveryConfig,
-    onAuto: () -> Unit,
-    onOff: () -> Unit,
     onCount: (Int) -> Unit,
 ) {
-    val enabled = config.isEnabled(section)
-    val override = config.overrides[section]
-    val resolved = config.countFor(section)
+    var showInput by remember { mutableStateOf(false) }
+    val value = config.countFor(section)
 
-    val autoLabel =
-        if (section.ceiling > 1) {
-            stringResource(
-                R.string.discovery_auto_count_fmt,
-                (section.defaultCount * config.density.factor)
-                    .roundToInt()
-                    .coerceIn(1, section.ceiling),
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .heightIn(min = 64.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(section.labelRes),
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f).padding(end = 8.dp),
+        )
+        CountStepper(
+            value = value,
+            max = section.ceiling,
+            onValueChange = onCount,
+            onValueClick = { showInput = true },
+        )
+    }
+
+    if (showInput) {
+        CountInputDialog(
+            title = stringResource(section.labelRes),
+            value = value,
+            max = section.ceiling,
+            onDismiss = { showInput = false },
+            onConfirm = {
+                onCount(it)
+                showInput = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun CountStepper(
+    value: Int,
+    max: Int,
+    onValueChange: (Int) -> Unit,
+    onValueClick: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        StepperButton(
+            iconRes = R.drawable.ic_remove,
+            contentDescription = stringResource(R.string.cd_decrease_limit),
+            enabled = value > 0,
+            onClick = { onValueChange(value - 1) },
+        )
+
+        Surface(
+            onClick = onValueClick,
+            shape = RoundedCornerShape(8.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        ) {
+            Text(
+                text = if (value <= 0) stringResource(R.string.discovery_off) else value.toString(),
+                style =
+                    MaterialTheme.typography.labelMedium.copy(
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                textAlign = TextAlign.Center,
+                modifier =
+                    Modifier.widthIn(min = 48.dp).padding(horizontal = 12.dp, vertical = 6.dp),
+                color =
+                    if (value <= 0) MaterialTheme.colorScheme.onSurfaceVariant
+                    else MaterialTheme.colorScheme.primary,
             )
-        } else stringResource(R.string.discovery_auto)
-
-    val selectedLabel =
-        when {
-            !enabled -> stringResource(R.string.discovery_off)
-            override == null -> autoLabel
-            section.ceiling > 1 -> stringResource(R.string.discovery_count_fmt, resolved)
-            else -> stringResource(R.string.discovery_on)
         }
 
-    val entries =
-        buildList<Pair<String, Int?>> {
-            add(autoLabel to AUTO_CHOICE)
-            add(stringResource(R.string.discovery_off) to OFF_CHOICE)
-            if (section.ceiling > 1) {
-                (1..section.ceiling).forEach { n ->
-                    add(stringResource(R.string.discovery_count_fmt, n) to n)
-                }
-            }
-        }
+        StepperButton(
+            iconRes = R.drawable.ic_add,
+            contentDescription = stringResource(R.string.cd_increase_limit),
+            enabled = value < max,
+            onClick = { onValueChange(value + 1) },
+        )
+    }
+}
 
-    DropdownSelectorItem(
-        title = stringResource(section.labelRes),
-        selectedLabel = selectedLabel,
-        entries = entries,
-        isSelected = { choice ->
-            when (choice) {
-                AUTO_CHOICE -> enabled && override == null
-                OFF_CHOICE -> !enabled
-                else -> enabled && override == choice
+@Composable
+private fun StepperButton(
+    iconRes: Int,
+    contentDescription: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = Modifier.size(36.dp),
+    ) {
+        IconButton(onClick = onClick, enabled = enabled) {
+            Icon(
+                painter = painterResource(id = iconRes),
+                contentDescription = contentDescription,
+                tint =
+                    if (enabled) MaterialTheme.colorScheme.onSurface
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun CountInputDialog(
+    title: String,
+    value: Int,
+    max: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (Int) -> Unit,
+) {
+    var text by remember { mutableStateOf(value.toString()) }
+    val parsed = text.toIntOrNull()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                AfinityTextField(
+                    value = text,
+                    onValueChange = { input -> text = input.filter { it.isDigit() }.take(2) },
+                    label = stringResource(R.string.discovery_count_label),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(
+                    text = stringResource(R.string.discovery_count_range_fmt, max),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         },
-        onSelect = { choice ->
-            when (choice) {
-                AUTO_CHOICE -> onAuto()
-                OFF_CHOICE -> onOff()
-                else -> choice?.let(onCount)
+        confirmButton = {
+            TextButton(
+                onClick = { parsed?.let { onConfirm(it.coerceIn(0, max)) } },
+                enabled = parsed != null,
+            ) {
+                Text(text = stringResource(R.string.custom_sections_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.action_cancel))
             }
         },
     )
@@ -843,9 +983,6 @@ private fun formatSeasonRange(start: String, end: String, locale: Locale): Strin
     val to = label(end)
     return if (from != null && to != null) "$from – $to" else ""
 }
-
-private val AUTO_CHOICE: Int? = null
-private val OFF_CHOICE: Int? = -1
 
 private fun formatMonthDay(month: Int, day: Int): String = "%02d-%02d".format(Locale.US, month, day)
 

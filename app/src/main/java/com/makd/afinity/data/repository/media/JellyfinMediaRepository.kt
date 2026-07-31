@@ -1319,9 +1319,9 @@ constructor(
         }
 
     override suspend fun getStudios(
+        includeItemTypes: List<String>,
         parentId: UUID?,
         limit: Int?,
-        includeItemTypes: List<String>,
     ): List<AfinityStudio> =
         apiCall(emptyList(), "Failed to get studios") { apiClient, userId ->
             val response =
@@ -1335,10 +1335,11 @@ constructor(
                                     try {
                                         BaseItemKind.valueOf(it.uppercase())
                                     } catch (e: Exception) {
+                                        Timber.w("Unknown item type dropped from studio query: $it")
                                         null
                                     }
                                 }
-                                .ifEmpty { listOf(BaseItemKind.SERIES) },
+                                .ifEmpty { null },
                         enableImages = true,
                         imageTypeLimit = 1,
                         enableImageTypes = listOf(ImageType.THUMB),
