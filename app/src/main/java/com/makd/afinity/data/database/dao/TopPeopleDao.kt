@@ -31,4 +31,7 @@ interface TopPeopleDao {
     suspend fun deleteTopPeople(type: String, serverId: String, userId: String)
 
     @Query("DELETE FROM top_people_cache") suspend fun clearAllCache()
+
+    @Query("SELECT (SELECT COUNT(*) FROM top_people_cache)")
+    suspend fun cachedEntryCount(): Int
 }

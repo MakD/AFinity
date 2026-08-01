@@ -20,4 +20,7 @@ interface HomeCacheDao {
 
     @Query("DELETE FROM home_cache")
     suspend fun deleteAll()
+
+    @Query("SELECT (SELECT COUNT(*) FROM home_cache)")
+    suspend fun cachedEntryCount(): Int
 }

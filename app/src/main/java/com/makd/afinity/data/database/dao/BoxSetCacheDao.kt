@@ -47,4 +47,7 @@ interface BoxSetCacheDao {
         clearAllCacheEntries(serverId, userId)
         clearMetadata(serverId, userId)
     }
+
+    @Query("SELECT (SELECT COUNT(*) FROM boxset_cache)")
+    suspend fun cachedEntryCount(): Int
 }

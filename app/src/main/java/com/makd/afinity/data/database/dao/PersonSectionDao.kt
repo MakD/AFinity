@@ -37,4 +37,7 @@ interface PersonSectionDao {
     suspend fun getAllCachedSections(serverId: String, userId: String): List<PersonSectionCacheEntity>
 
     @Query("DELETE FROM person_section_cache") suspend fun clearAllCache()
+
+    @Query("SELECT (SELECT COUNT(*) FROM person_section_cache)")
+    suspend fun cachedEntryCount(): Int
 }

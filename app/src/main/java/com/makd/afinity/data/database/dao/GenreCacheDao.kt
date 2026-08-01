@@ -202,4 +202,7 @@ interface GenreCacheDao {
             insertGenreShows(shows)
         }
     }
+
+    @Query("SELECT (SELECT COUNT(*) FROM genre_cache) + (SELECT COUNT(*) FROM genre_movie_cache) + (SELECT COUNT(*) FROM genre_show_cache) + (SELECT COUNT(*) FROM show_genre_cache)")
+    suspend fun cachedEntryCount(): Int
 }

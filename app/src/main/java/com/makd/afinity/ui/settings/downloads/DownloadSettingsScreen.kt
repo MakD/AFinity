@@ -47,7 +47,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,6 +58,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.painterResource
@@ -72,12 +76,17 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.data.repository.CacheKind
+import com.makd.afinity.data.repository.CacheUsage
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.DownloadListItemRow
 import com.makd.afinity.ui.components.EmptyState
+import com.makd.afinity.ui.components.SettingsGroup
+import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.downloads.DownloadsViewModel
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -93,6 +102,61 @@ fun DownloadSettingsScreen(
         viewModel.offlineModeManager.isOffline.collectAsStateWithLifecycle(initialValue = false)
     val snackbarHostState = remember { SnackbarHostState() }
     val playerOffset = LocalPlayerOffset.current
+
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val cacheUsage by viewModel.cacheUsage.collectAsStateWithLifecycle()
+    val isClearingCache by viewModel.isClearingCache.collectAsStateWithLifecycle()
+    var showClearCacheDialog by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { viewModel.refreshCacheUsage() }
+
+    val cacheUsageSubtitle =
+        cacheUsage?.let { usage ->
+            if (usage.isEmpty) {
+                stringResource(R.string.pref_clear_cache_empty)
+            } else {
+                stringResource(
+                    R.string.pref_clear_cache_usage_fmt,
+                    android.text.format.Formatter.formatShortFileSize(context, usage.imageBytes),
+                    usage.metadataEntries,
+                )
+            }
+        } ?: stringResource(R.string.pref_clear_cache_summary)
+
+    val cacheClearedMessage = stringResource(R.string.pref_clear_cache_done)
+    if (showClearCacheDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!isClearingCache) showClearCacheDialog = false },
+            title = { Text(text = stringResource(R.string.pref_clear_cache_confirm)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(text = stringResource(R.string.pref_clear_cache_message))
+                    cacheUsage?.let { usage -> CacheUsageBreakdown(usage = usage, context = context) }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.clearCachedData {
+                            showClearCacheDialog = false
+                            scope.launch { snackbarHostState.showSnackbar(cacheClearedMessage) }
+                        }
+                    },
+                    enabled = !isClearingCache,
+                ) {
+                    Text(text = stringResource(R.string.pref_clear_cache))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showClearCacheDialog = false },
+                    enabled = !isClearingCache,
+                ) {
+                    Text(text = stringResource(R.string.action_cancel))
+                }
+            },
+        )
+    }
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
@@ -258,6 +322,17 @@ fun DownloadSettingsScreen(
                     onCacheSizeChange = { viewModel.setImageCacheSizeMb(it.toInt()) },
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
+            }
+
+            item {
+                SettingsGroup(modifier = Modifier.padding(top = 8.dp)) {
+                    SettingsItem(
+                        icon = painterResource(id = R.drawable.ic_database_off),
+                        title = stringResource(R.string.pref_clear_cache),
+                        subtitle = cacheUsageSubtitle,
+                        onClick = { showClearCacheDialog = true },
+                    )
+                }
             }
 
             val allActiveCount = uiState.activeDownloads.size + uiState.absActiveDownloads.size
@@ -1513,3 +1588,50 @@ fun MusicTrackRow(
         )
     }
 }
+
+@Composable
+private fun CacheUsageBreakdown(usage: CacheUsage, context: android.content.Context) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        if (usage.imageBytes > 0L) {
+            CacheUsageRow(
+                label = stringResource(R.string.cache_kind_images),
+                value =
+                    android.text.format.Formatter.formatShortFileSize(context, usage.imageBytes),
+            )
+        }
+        CacheKind.entries.forEach { kind ->
+            val count = usage.entries[kind] ?: 0
+            if (count > 0) {
+                CacheUsageRow(
+                    label = stringResource(kind.labelRes()),
+                    value = stringResource(R.string.cache_entries_fmt, count),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CacheUsageRow(label: String, value: String) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+private fun CacheKind.labelRes(): Int =
+    when (this) {
+        CacheKind.HOME_ROWS -> R.string.cache_kind_home_rows
+        CacheKind.GENRES -> R.string.cache_kind_genres
+        CacheKind.PEOPLE -> R.string.cache_kind_people
+        CacheKind.PERSON_DETAILS -> R.string.cache_kind_person_details
+        CacheKind.BOX_SETS -> R.string.cache_kind_box_sets
+    }

@@ -66,6 +66,7 @@ constructor(
     private val omdbApiService: OmdbApiService,
 ) : ViewModel() {
 
+
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 

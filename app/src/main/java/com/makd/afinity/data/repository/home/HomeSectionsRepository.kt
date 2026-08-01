@@ -619,12 +619,12 @@ constructor(
         val sk = sessionKey() ?: return emptyList()
         val cacheKey = contentCacheKey(sk, descriptorKey)
         val baseUrl = mediaRepository.getBaseUrl()
-        val cachedItems = homeCacheRepository.getItems(cacheKey, baseUrl)
+        val cachedItems = homeCacheRepository.getItems(cacheKey, baseUrl, recentCacheTTL)
         if (!cachedItems.isNullOrEmpty()) {
             return if (cachedItems.size < WATCH_AGAIN_MIN_ITEMS) emptyList() else cachedItems
         }
 
-        val (watchedShows, watchedBoxSets) = coroutineScope {
+        val (watchedItems, watchedBoxSets) = coroutineScope {
             val showsDeferred =
                 async {
                     try {
@@ -632,11 +632,26 @@ constructor(
                             sortBy = SortBy.DATE_PLAYED,
                             sortDescending = true,
                             isPlayed = true,
-                            limit = WATCH_AGAIN_SHOW_POOL,
+                            limit = WATCH_AGAIN_POOL,
                             fields = FieldSets.MEDIA_ITEM_CARDS,
                         )
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to load watched shows for watch again")
+                        emptyList()
+                    }
+                }
+            val moviesDeferred =
+                async {
+                    try {
+                        mediaRepository.getMovies(
+                            sortBy = SortBy.DATE_PLAYED,
+                            sortDescending = true,
+                            isPlayed = true,
+                            limit = WATCH_AGAIN_POOL,
+                            fields = FieldSets.MEDIA_ITEM_CARDS,
+                        )
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to load watched movies for watch again")
                         emptyList()
                     }
                 }
@@ -658,16 +673,16 @@ constructor(
                         emptyList()
                     }
                 }
-            showsDeferred.await() to boxSetsDeferred.await()
+            val shows =
+                showsDeferred.await().filter {
+                    it.unplayedItemCount == null || it.unplayedItemCount == 0
+                }
+            (shows + moviesDeferred.await()) to boxSetsDeferred.await()
         }
 
         val candidates =
             buildList<AfinityItem> {
-                addAll(
-                    watchedShows.filter {
-                        it.unplayedItemCount == null || it.unplayedItemCount == 0
-                    }
-                )
+                addAll(watchedItems)
                 addAll(watchedBoxSets)
             }
         homeCacheRepository.putItems(cacheKey, candidates)
@@ -687,7 +702,7 @@ constructor(
     ): List<AfinityItem> {
         val sk = sessionKey() ?: return emptyList()
         val cacheKey = contentCacheKey(sk, descriptorKey)
-        val cachedItems = homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl())
+        val cachedItems = homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
         if (!cachedItems.isNullOrEmpty()) {
             return rankByRating(presentationSample(descriptorKey, cachedItems, CRITICS_ROW_SIZE))
         }
@@ -751,7 +766,7 @@ constructor(
 
         if (!section.randomOrder) {
             val cachedItems =
-                homeCacheRepository.getItems(cacheKey, baseUrl, CUSTOM_CONTENT_TTL_MS)
+                homeCacheRepository.getItems(cacheKey, baseUrl, recentCacheTTL)
             if (!cachedItems.isNullOrEmpty()) {
                 return HomeSectionContent.Items(cachedItems.take(section.itemLimit))
             }
@@ -842,7 +857,7 @@ constructor(
 
         val sk = sessionKey() ?: return HomeSectionContent.Empty
         val cacheKey = contentCacheKey(sk, descriptor.key)
-        val cachedItems = homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl())
+        val cachedItems = homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
         if (!cachedItems.isNullOrEmpty()) {
             return HomeSectionContent.PersonFromMovie(
                 PersonFromMovieSection(
@@ -884,7 +899,7 @@ constructor(
     private suspend fun hydrateSpotlight(descriptor: HomeSectionDescriptor): HomeSectionContent {
         val sk = sessionKey() ?: return HomeSectionContent.Empty
         val cacheKey = contentCacheKey(sk, descriptor.key)
-        val cachedItems = homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl())
+        val cachedItems = homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
         if (!cachedItems.isNullOrEmpty()) {
             return HomeSectionContent.Spotlight(
                 presentationSample(descriptor.key, cachedItems, SPOTLIGHT_ROW_SIZE)
@@ -1379,10 +1394,8 @@ constructor(
     }
 }
 
-private const val CUSTOM_CONTENT_TTL_MS = 6L * 60 * 60 * 1000
-
 private const val WATCH_AGAIN_KEY = "watch_again"
-private const val WATCH_AGAIN_SHOW_POOL = 50
+private const val WATCH_AGAIN_POOL = 50
 private const val WATCH_AGAIN_MIN_ITEMS = 5
 private const val POPULAR_STUDIOS_KEY = "popular_studios"
 private const val POPULAR_STUDIOS_POOL = 20

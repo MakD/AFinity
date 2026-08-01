@@ -10,6 +10,8 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.data.repository.CacheMaintenance
+import com.makd.afinity.data.repository.CacheUsage
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsDownloadRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
@@ -37,8 +39,43 @@ constructor(
     private val absDownloadRepository: AbsDownloadRepository,
     private val preferencesRepository: PreferencesRepository,
     private val storageLocationProvider: StorageLocationProvider,
+    private val cacheMaintenance: CacheMaintenance,
     val offlineModeManager: OfflineModeManager,
 ) : ViewModel() {
+
+    private val _cacheUsage = MutableStateFlow<CacheUsage?>(null)
+    val cacheUsage: StateFlow<CacheUsage?> = _cacheUsage.asStateFlow()
+
+    private val _isClearingCache = MutableStateFlow(false)
+    val isClearingCache: StateFlow<Boolean> = _isClearingCache.asStateFlow()
+
+    fun refreshCacheUsage() {
+        viewModelScope.launch {
+            _cacheUsage.value =
+                try {
+                    cacheMaintenance.usage()
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to read cache usage")
+                    null
+                }
+        }
+    }
+
+    fun clearCachedData(onDone: () -> Unit = {}) {
+        if (_isClearingCache.value) return
+        viewModelScope.launch {
+            _isClearingCache.value = true
+            try {
+                cacheMaintenance.clearCachedData()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to clear cached data")
+            } finally {
+                _isClearingCache.value = false
+                refreshCacheUsage()
+                onDone()
+            }
+        }
+    }
 
     private val _uiState = MutableStateFlow(DownloadsUiState())
     val uiState: StateFlow<DownloadsUiState> = _uiState.asStateFlow()
