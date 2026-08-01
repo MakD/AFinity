@@ -19,6 +19,9 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -228,77 +231,92 @@ constructor(
                     .sortedBy { it.label }
             }
             CustomSectionSourceType.STUDIO ->
-                withContext(Dispatchers.IO) {
-                    try {
-                        mediaRepository
-                            .getStudios(
-                                includeItemTypes = listOf("MOVIE", "SERIES", "BOX_SET"),
-                                limit = 200,
-                            )
-                            .map { SourceOption(it.name, it.name) }
-                    } catch (e: Exception) {
-                        Timber.w(e, "Failed to load studios for custom sections")
-                        null
-                    }
+                perLibrary { library ->
+                    mediaRepository.getStudiosResult(
+                        includeItemTypes = listOf("MOVIE", "SERIES", "BOX_SET"),
+                        parentId = library.id,
+                        limit = null,
+                        requireImages = false,
+                        minItemCount = 0,
+                    )
+                        .map { studios -> studios.map { SourceOption(it.name, it.name) } }
                 }
             CustomSectionSourceType.COLLECTION -> loadItemOptions("BOX_SET")
             CustomSectionSourceType.PLAYLIST -> loadItemOptions("PLAYLIST")
             CustomSectionSourceType.TAG ->
-                withContext(Dispatchers.IO) {
-                    try {
-                        mediaRepository
-                            .getFilterOptions(
-                                parentId = null,
-                                libraryType = CollectionType.Unknown,
-                                includeItemTypes = listOf("MOVIE", "SERIES", "BOX_SET"),
-                            )
-                            .tags
-                            .distinct()
-                            .sorted()
-                            .map { SourceOption(it, it) }
-                    } catch (e: Exception) {
-                        Timber.w(e, "Failed to load tags for custom sections")
-                        null
-                    }
+                perLibrary { library ->
+                    mediaRepository.getFilterOptionsResult(
+                        parentId = library.id,
+                        libraryType = library.type,
+                    )
+                        .map { options -> options.tags.map { SourceOption(it, it) } }
                 }
             CustomSectionSourceType.LIBRARY ->
                 withContext(Dispatchers.IO) {
-                    try {
-                        mediaRepository
-                            .getLibraries()
-                            .filterNot { it.type == CollectionType.Music }
-                            .map { library: AfinityCollection ->
-                                SourceOption(
-                                    value = library.id.toString(),
-                                    label = library.name,
-                                    libraryType = library.type,
-                                )
-                            }
-                    } catch (e: Exception) {
-                        Timber.w(e, "Failed to load libraries for custom sections")
-                        null
-                    }
+                    mediaRepository
+                        .getLibrariesResult()
+                        .getOrElse {
+                            Timber.w(it, "Failed to load libraries for custom sections")
+                            return@withContext null
+                        }
+                        .filterNot { it.type == CollectionType.Music }
+                        .map { library: AfinityCollection ->
+                            SourceOption(
+                                value = library.id.toString(),
+                                label = library.name,
+                                libraryType = library.type,
+                            )
+                        }
                 }
+        }
+
+    private suspend fun perLibrary(
+        fetch: suspend (AfinityCollection) -> Result<List<SourceOption>>
+    ): List<SourceOption>? =
+        withContext(Dispatchers.IO) {
+            val libraries =
+                mediaRepository
+                    .getLibrariesResult()
+                    .getOrElse {
+                        Timber.w(it, "Failed to load libraries for custom section sources")
+                        return@withContext null
+                    }
+                    .filterNot { it.type == CollectionType.Music }
+            if (libraries.isEmpty()) return@withContext emptyList()
+
+            val results = coroutineScope { libraries.map { async { fetch(it) } }.awaitAll() }
+            if (results.all { it.isFailure }) {
+                results.firstNotNullOfOrNull { it.exceptionOrNull() }?.let {
+                    Timber.w(it, "Failed to load custom section sources from every library")
+                }
+                return@withContext null
+            }
+            results
+                .mapNotNull { it.getOrNull() }
+                .flatten()
+                .distinctBy { it.value }
+                .sortedBy { it.label.lowercase() }
         }
 
     private suspend fun loadItemOptions(itemType: String): List<SourceOption>? =
         withContext(Dispatchers.IO) {
-            try {
-                mediaRepository
-                    .getItems(
-                        includeItemTypes = listOf(itemType),
-                        fields = FieldSets.MEDIA_ITEM_CARDS,
-                    )
-                    .items
-                    ?.mapNotNull { dto ->
-                        val name = dto.name ?: return@mapNotNull null
-                        SourceOption(dto.id.toString(), name)
-                    }
-                    ?.sortedBy { it.label } ?: emptyList()
-            } catch (e: Exception) {
-                Timber.w(e, "Failed to load $itemType options for custom sections")
-                null
-            }
+            mediaRepository
+                .getItemsResult(
+                    includeItemTypes = listOf(itemType),
+                    fields = FieldSets.MEDIA_ITEM_CARDS,
+                )
+                .getOrElse {
+                    Timber.w(it, "Failed to load $itemType options for custom sections")
+                    return@withContext null
+                }
+                .items
+                .orEmpty()
+                .mapNotNull { dto ->
+                    val name = dto.name ?: return@mapNotNull null
+                    SourceOption(dto.id.toString(), name)
+                }
+                .distinctBy { it.value }
+                .sortedBy { it.label.lowercase() }
         }
 
     fun optionsFor(sourceType: CustomSectionSourceType): List<SourceOption> =

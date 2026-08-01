@@ -421,7 +421,17 @@ constructor(
         libraryType: CollectionType,
         includeItemTypes: List<String>,
     ): LibraryFilterOptions =
-        apiCall(LibraryFilterOptions(), "Failed to get filter options") { apiClient, userId ->
+        getFilterOptionsResult(parentId, libraryType, includeItemTypes).getOrElse { e ->
+            if (e !is NoActiveSessionException) Timber.e(e, "Failed to get filter options")
+            LibraryFilterOptions()
+        }
+
+    override suspend fun getFilterOptionsResult(
+        parentId: UUID?,
+        libraryType: CollectionType,
+        includeItemTypes: List<String>,
+    ): Result<LibraryFilterOptions> =
+        apiInvoker.apiResult { apiClient, userId ->
             val requestedTypes =
                 includeItemTypes
                     .mapNotNull {
@@ -1351,8 +1361,23 @@ constructor(
         includeItemTypes: List<String>,
         parentId: UUID?,
         limit: Int?,
+        requireImages: Boolean,
+        minItemCount: Int,
     ): List<AfinityStudio> =
-        apiCall(emptyList(), "Failed to get studios") { apiClient, userId ->
+        getStudiosResult(includeItemTypes, parentId, limit, requireImages, minItemCount).getOrElse {
+            e ->
+            if (e !is NoActiveSessionException) Timber.e(e, "Failed to get studios")
+            emptyList()
+        }
+
+    override suspend fun getStudiosResult(
+        includeItemTypes: List<String>,
+        parentId: UUID?,
+        limit: Int?,
+        requireImages: Boolean,
+        minItemCount: Int,
+    ): Result<List<AfinityStudio>> =
+        apiInvoker.apiResult { apiClient, userId ->
             val response =
                 StudiosApi(apiClient)
                     .getStudios(
@@ -1399,7 +1424,9 @@ constructor(
                             itemCount = childCount,
                         )
                     }
-                    .filter { it.itemCount >= 5 && it.primaryImageUrl != null }
+                    .filter {
+                        it.itemCount >= minItemCount && (!requireImages || it.primaryImageUrl != null)
+                    }
                     .sortedByDescending { it.itemCount }
                     .take(limit ?: 15)
                     .also { Timber.d("Returning ${it.size} studios after filtering") }

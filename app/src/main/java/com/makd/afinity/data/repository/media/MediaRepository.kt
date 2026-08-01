@@ -211,7 +211,17 @@ interface MediaRepository {
         includeItemTypes: List<String>,
         parentId: UUID? = null,
         limit: Int? = null,
+        requireImages: Boolean = true,
+        minItemCount: Int = 5,
     ): List<AfinityStudio>
+
+    suspend fun getStudiosResult(
+        includeItemTypes: List<String>,
+        parentId: UUID? = null,
+        limit: Int? = null,
+        requireImages: Boolean = true,
+        minItemCount: Int = 5,
+    ): Result<List<AfinityStudio>>
 
     suspend fun getNextUp(
         seriesId: UUID? = null,
@@ -279,6 +289,12 @@ interface MediaRepository {
         libraryType: CollectionType,
         includeItemTypes: List<String> = emptyList(),
     ): LibraryFilterOptions
+
+    suspend fun getFilterOptionsResult(
+        parentId: UUID?,
+        libraryType: CollectionType,
+        includeItemTypes: List<String> = emptyList(),
+    ): Result<LibraryFilterOptions>
 
     fun getLibrariesFlow(): Flow<List<AfinityCollection>>
 
