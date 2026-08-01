@@ -21,4 +21,5 @@ data class CustomHomeSectionEntity(
     val enabled: Boolean,
     val seasonStart: String?,
     val seasonEnd: String?,
+    val filtersJson: String? = null,
 )

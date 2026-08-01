@@ -2,12 +2,12 @@
     <!--Splash Screen-->
     <string name="splash_powered_by">Powered By Jellyfin</string>
     <string name="splash_progress_fmt">%1$d%%</string>
-    <string name="splash_status_authenticating">Authenticating...</string>
+    <string name="splash_status_authenticating">Authenticating…</string>
     <string name="loading_phase_offline">Ready (Offline Mode)</string>
-    <string name="loading_phase_connecting">Connecting to server...</string>
-    <string name="loading_phase_fetching">Fetching content...</string>
-    <string name="loading_phase_processing">Processing libraries...</string>
-    <string name="loading_phase_finalizing">Finalizing home screen...</string>
+    <string name="loading_phase_connecting">Connecting to server…</string>
+    <string name="loading_phase_fetching">Fetching content…</string>
+    <string name="loading_phase_processing">Processing libraries…</string>
+    <string name="loading_phase_finalizing">Finalizing home screen…</string>
     <string name="loading_phase_ready">Ready!</string>
 
     <!--Login Screen-->
@@ -207,6 +207,9 @@
     <string name="custom_sections_field_sort">Sort</string>
     <string name="custom_sections_field_card_style">Card style</string>
     <string name="custom_sections_card_style_locked_fmt">%1$s — set automatically for this kind of row</string>
+    <string name="custom_sections_field_refine">Refine</string>
+    <string name="custom_sections_refine_none">No extra filters</string>
+    <string name="custom_sections_refine_summary_fmt">%1$s · %2$d filters</string>
     <string name="custom_sections_group_content">Content</string>
     <string name="custom_sections_group_display">Display</string>
     <string name="custom_sections_group_schedule">Schedule</string>
@@ -318,7 +321,7 @@
     <string name="action_rewatch">Rewatch</string>
     <string name="action_resume_playback">Resume Playback</string>
     <string name="play_error_missing_source">No playable item found on server</string>
-    <string name="status_loading">Loading...</string>
+    <string name="status_loading">Loading…</string>
 
     <string name="cd_backdrop_fmt">%1$s backdrop</string>
     <string name="cd_logo_fmt">%1$s logo</string>
@@ -610,7 +613,7 @@
 
     <string name="cd_skip_button_icon">Skip</string>
 
-    <string name="player_live_tuning_fmt">Tuning %1$s...</string>
+    <string name="player_live_tuning_fmt">Tuning %1$s…</string>
     <string name="player_error_stream_load">Failed to load stream</string>
     <string name="player_error_media_load">Failed to load media</string>
     <string name="channel_default_name">Live TV</string>
@@ -926,7 +929,7 @@
     <string name="label_server_name_optional">Server Name (Optional)</string>
     <string name="placeholder_server_name">My Jellyfin Server</string>
     <string name="btn_test_connection">Test Connection</string>
-    <string name="btn_testing">Testing...</string>
+    <string name="btn_testing">Testing…</string>
     <string name="btn_save_server">Save Server</string>
     <string name="btn_save_changes">Save Changes</string>
     <string name="connection_success_title">Connection Successful</string>
@@ -972,7 +975,7 @@
     <string name="update_whats_new">What\'s New</string>
     <string name="update_version_fmt">v%1$s</string>
     <string name="btn_download_update">Download Update</string>
-    <string name="btn_downloading">Downloading...</string>
+    <string name="btn_downloading">Downloading…</string>
     <string name="btn_install_restart">Install &amp; Restart</string>
     <string name="btn_validate">Validate</string>
     <string name="update_console_status_hashing">hashing downloaded file…</string>
@@ -983,8 +986,8 @@
 
     <string name="pref_group_updates">Updates</string>
     <string name="pref_check_updates_title">Check for Updates</string>
-    <string name="update_status_checking">Checking...</string>
-    <string name="update_status_downloading">Downloading...</string>
+    <string name="update_status_checking">Checking…</string>
+    <string name="update_status_downloading">Downloading…</string>
     <string name="update_status_uptodate_fmt">Up to date • %1$s</string>
     <string name="update_status_failed_fmt">Check failed • %1$s</string>
     <string name="update_status_last_check_fmt">Last check: %1$s</string>
@@ -1178,7 +1181,7 @@
     <string name="action_open_control_panel">Open Control Panel</string>
     <string name="control_panel_active_only">Available for the active server only</string>
 
-    <string name="state_loading_data">Loading data...</string>
+    <string name="state_loading_data">Loading data…</string>
     <string name="action_remove">Remove</string>
     <string name="cd_jellyseerr">Seerr</string>
     <string name="cd_audiobookshelf">Audiobookshelf</string>

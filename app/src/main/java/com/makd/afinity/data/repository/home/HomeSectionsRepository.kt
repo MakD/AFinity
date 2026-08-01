@@ -25,7 +25,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
-import com.makd.afinity.data.models.media.ItemFilterCriteria
+import com.makd.afinity.data.models.media.toItemFilterCriteria
 import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.GenreRepository
@@ -624,9 +624,9 @@ constructor(
             return if (cachedItems.size < WATCH_AGAIN_MIN_ITEMS) emptyList() else cachedItems
         }
 
-        val (watchedItems, watchedBoxSets) = coroutineScope {
-            val showsDeferred =
-                async {
+        val (watchedItems, watchedBoxSets) =
+            coroutineScope {
+                val showsDeferred = async {
                     try {
                         mediaRepository.getShows(
                             sortBy = SortBy.DATE_PLAYED,
@@ -640,8 +640,7 @@ constructor(
                         emptyList()
                     }
                 }
-            val moviesDeferred =
-                async {
+                val moviesDeferred = async {
                     try {
                         mediaRepository.getMovies(
                             sortBy = SortBy.DATE_PLAYED,
@@ -655,8 +654,7 @@ constructor(
                         emptyList()
                     }
                 }
-            val boxSetsDeferred =
-                async {
+                val boxSetsDeferred = async {
                     try {
                         mediaRepository
                             .getItems(
@@ -673,12 +671,12 @@ constructor(
                         emptyList()
                     }
                 }
-            val shows =
-                showsDeferred.await().filter {
-                    it.unplayedItemCount == null || it.unplayedItemCount == 0
-                }
-            (shows + moviesDeferred.await()) to boxSetsDeferred.await()
-        }
+                val shows =
+                    showsDeferred.await().filter {
+                        it.unplayedItemCount == null || it.unplayedItemCount == 0
+                    }
+                (shows + moviesDeferred.await()) to boxSetsDeferred.await()
+            }
 
         val candidates =
             buildList<AfinityItem> {
@@ -702,7 +700,8 @@ constructor(
     ): List<AfinityItem> {
         val sk = sessionKey() ?: return emptyList()
         val cacheKey = contentCacheKey(sk, descriptorKey)
-        val cachedItems = homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
+        val cachedItems =
+            homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
         if (!cachedItems.isNullOrEmpty()) {
             return rankByRating(presentationSample(descriptorKey, cachedItems, CRITICS_ROW_SIZE))
         }
@@ -765,8 +764,7 @@ constructor(
         val baseUrl = mediaRepository.getBaseUrl()
 
         if (!section.randomOrder) {
-            val cachedItems =
-                homeCacheRepository.getItems(cacheKey, baseUrl, recentCacheTTL)
+            val cachedItems = homeCacheRepository.getItems(cacheKey, baseUrl, recentCacheTTL)
             if (!cachedItems.isNullOrEmpty()) {
                 return HomeSectionContent.Items(cachedItems.take(section.itemLimit))
             }
@@ -786,12 +784,15 @@ constructor(
                 else -> null
             }
 
+        val refinement = section.filters.toItemFilterCriteria()
         val criteria =
             when (section.sourceType) {
-                CustomSectionSourceType.GENRE -> ItemFilterCriteria(genres = section.sourceValues)
-                CustomSectionSourceType.STUDIO -> ItemFilterCriteria(studios = section.sourceValues)
-                CustomSectionSourceType.TAG -> ItemFilterCriteria(tags = section.sourceValues)
-                else -> ItemFilterCriteria()
+                CustomSectionSourceType.GENRE ->
+                    refinement.copy(genres = (refinement.genres + section.sourceValues).distinct())
+                CustomSectionSourceType.STUDIO -> refinement.copy(studios = section.sourceValues)
+                CustomSectionSourceType.TAG ->
+                    refinement.copy(tags = (refinement.tags + section.sourceValues).distinct())
+                else -> refinement
             }
 
         val fetchLimit = section.itemLimit
@@ -857,7 +858,8 @@ constructor(
 
         val sk = sessionKey() ?: return HomeSectionContent.Empty
         val cacheKey = contentCacheKey(sk, descriptor.key)
-        val cachedItems = homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
+        val cachedItems =
+            homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
         if (!cachedItems.isNullOrEmpty()) {
             return HomeSectionContent.PersonFromMovie(
                 PersonFromMovieSection(
@@ -899,7 +901,8 @@ constructor(
     private suspend fun hydrateSpotlight(descriptor: HomeSectionDescriptor): HomeSectionContent {
         val sk = sessionKey() ?: return HomeSectionContent.Empty
         val cacheKey = contentCacheKey(sk, descriptor.key)
-        val cachedItems = homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
+        val cachedItems =
+            homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
         if (!cachedItems.isNullOrEmpty()) {
             return HomeSectionContent.Spotlight(
                 presentationSample(descriptor.key, cachedItems, SPOTLIGHT_ROW_SIZE)
@@ -957,268 +960,284 @@ constructor(
         )
     }
 
-    private suspend fun buildLayout(
-        discovery: DiscoveryConfig
-    ): List<HomeSectionDescriptor> = coroutineScope {
-        fun cap(section: DiscoverySection) = discovery.countFor(section)
+    private suspend fun buildLayout(discovery: DiscoveryConfig): List<HomeSectionDescriptor> =
+        coroutineScope {
+            fun cap(section: DiscoverySection) = discovery.countFor(section)
 
-        val actorsDeferred = async {
-            peopleRepository.getTopPeople(PersonKind.ACTOR, limit = 75, minAppearances = 5)
-        }
-        val directorsDeferred = async {
-            peopleRepository.getTopPeople(PersonKind.DIRECTOR, limit = 75, minAppearances = 5)
-        }
-        val writersDeferred = async {
-            peopleRepository.getTopPeople(PersonKind.WRITER, limit = 50, minAppearances = 3)
-        }
-        val studiosDeferred = async {
-            try {
-                mediaRepository.getStudios(
-                    includeItemTypes = POPULAR_STUDIOS_TYPES,
-                    limit = 50,
-                )
-            } catch (e: Exception) {
-                Timber.w(e, "Failed to load studios for spotlight descriptors")
-                emptyList()
+            val actorsDeferred = async {
+                peopleRepository.getTopPeople(PersonKind.ACTOR, limit = 75, minAppearances = 5)
             }
-        }
-        val boxSetsDeferred = async {
-            try {
-                mediaRepository
-                    .getItems(
-                        includeItemTypes = listOf("BOX_SET"),
-                        fields = FieldSets.MEDIA_ITEM_CARDS,
-                    )
-                    .items
-                    ?.filter { (it.childCount ?: 0) >= 3 && it.name != null } ?: emptyList()
-            } catch (e: Exception) {
-                Timber.w(e, "Failed to load boxsets for spotlight descriptors")
-                emptyList()
+            val directorsDeferred = async {
+                peopleRepository.getTopPeople(PersonKind.DIRECTOR, limit = 75, minAppearances = 5)
             }
-        }
-
-        val usedPeopleNames = mutableSetOf<String>()
-        val usedPeopleIds = mutableSetOf<UUID>()
-
-        fun personDescriptors(
-            people: List<PersonWithCount>,
-            type: HomeSectionType,
-            max: Int,
-            titleRes: Int,
-        ): List<HomeSectionDescriptor> =
-            people
-                .distinctBy { it.person.id }
-                .filterNot {
-                    it.person.name in usedPeopleNames || it.person.id in usedPeopleIds
-                }
-                .shuffled()
-                .take(max)
-                .map { personWithCount ->
-                    usedPeopleNames.add(personWithCount.person.name)
-                    usedPeopleIds.add(personWithCount.person.id)
-                    HomeSectionDescriptor(
-                        key = "person_${type.name}_${personWithCount.person.id}",
-                        type = type,
-                        title = context.getString(titleRes, personWithCount.person.name),
-                        person = personWithCount.toCached(),
+            val writersDeferred = async {
+                peopleRepository.getTopPeople(PersonKind.WRITER, limit = 50, minAppearances = 3)
+            }
+            val studiosDeferred = async {
+                try {
+                    mediaRepository.getStudios(
+                        includeItemTypes = POPULAR_STUDIOS_TYPES,
+                        limit = 50,
                     )
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to load studios for spotlight descriptors")
+                    emptyList()
                 }
+            }
+            val boxSetsDeferred = async {
+                try {
+                    mediaRepository
+                        .getItems(
+                            includeItemTypes = listOf("BOX_SET"),
+                            fields = FieldSets.MEDIA_ITEM_CARDS,
+                        )
+                        .items
+                        ?.filter { (it.childCount ?: 0) >= 3 && it.name != null } ?: emptyList()
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to load boxsets for spotlight descriptors")
+                    emptyList()
+                }
+            }
 
-        val actorDescriptors =
-            personDescriptors(
-                actorsDeferred.await(),
-                HomeSectionType.STARRING,
-                max = cap(DiscoverySection.STARRING),
-                titleRes = R.string.home_person_starring,
-            )
-        val directorDescriptors =
-            personDescriptors(
-                directorsDeferred.await(),
-                HomeSectionType.DIRECTED_BY,
-                max = cap(DiscoverySection.DIRECTED_BY),
-                titleRes = R.string.home_person_directed_by,
-            )
-        val writerDescriptors =
-            personDescriptors(
-                writersDeferred.await(),
-                HomeSectionType.WRITTEN_BY,
-                max = cap(DiscoverySection.WRITTEN_BY),
-                titleRes = R.string.home_person_written_by,
-            )
+            val usedPeopleNames = mutableSetOf<String>()
+            val usedPeopleIds = mutableSetOf<UUID>()
 
-        val becauseYouWatchedDescriptors = mutableListOf<HomeSectionDescriptor>()
-        val usedReferenceMovies = mutableSetOf<UUID>()
-        while (becauseYouWatchedDescriptors.size < cap(DiscoverySection.BECAUSE_YOU_WATCHED)) {
-            val referenceMovie = getRandomRecentlyWatchedMovie(usedReferenceMovies) ?: break
-            usedReferenceMovies.add(referenceMovie.id)
-            val movieJson = converters.fromAfinityMovie(referenceMovie) ?: continue
-            becauseYouWatchedDescriptors.add(
-                HomeSectionDescriptor(
-                    key = "byw_${referenceMovie.id}",
-                    type = HomeSectionType.BECAUSE_YOU_WATCHED,
-                    title =
-                        context.getString(R.string.home_because_you_watched, referenceMovie.name),
-                    referenceMovieJson = movieJson,
+            fun personDescriptors(
+                people: List<PersonWithCount>,
+                type: HomeSectionType,
+                max: Int,
+                titleRes: Int,
+            ): List<HomeSectionDescriptor> =
+                people
+                    .distinctBy { it.person.id }
+                    .filterNot {
+                        it.person.name in usedPeopleNames || it.person.id in usedPeopleIds
+                    }
+                    .shuffled()
+                    .take(max)
+                    .map { personWithCount ->
+                        usedPeopleNames.add(personWithCount.person.name)
+                        usedPeopleIds.add(personWithCount.person.id)
+                        HomeSectionDescriptor(
+                            key = "person_${type.name}_${personWithCount.person.id}",
+                            type = type,
+                            title = context.getString(titleRes, personWithCount.person.name),
+                            person = personWithCount.toCached(),
+                        )
+                    }
+
+            val actorDescriptors =
+                personDescriptors(
+                    actorsDeferred.await(),
+                    HomeSectionType.STARRING,
+                    max = cap(DiscoverySection.STARRING),
+                    titleRes = R.string.home_person_starring,
                 )
-            )
-        }
-
-        val becauseYouLikedDescriptors = mutableListOf<HomeSectionDescriptor>()
-        val usedFavoriteMovies = mutableSetOf<UUID>()
-        while (becauseYouLikedDescriptors.size < cap(DiscoverySection.BECAUSE_YOU_LIKED)) {
-            val referenceMovie = getRandomFavoriteMovie(usedFavoriteMovies) ?: break
-            usedFavoriteMovies.add(referenceMovie.id)
-            if (referenceMovie.id in usedReferenceMovies) continue
-            val movieJson = converters.fromAfinityMovie(referenceMovie) ?: continue
-            becauseYouLikedDescriptors.add(
-                HomeSectionDescriptor(
-                    key = "byl_${referenceMovie.id}",
-                    type = HomeSectionType.BECAUSE_YOU_LIKED,
-                    title = context.getString(R.string.home_because_you_liked, referenceMovie.name),
-                    referenceMovieJson = movieJson,
+            val directorDescriptors =
+                personDescriptors(
+                    directorsDeferred.await(),
+                    HomeSectionType.DIRECTED_BY,
+                    max = cap(DiscoverySection.DIRECTED_BY),
+                    titleRes = R.string.home_person_directed_by,
                 )
-            )
-        }
+            val writerDescriptors =
+                personDescriptors(
+                    writersDeferred.await(),
+                    HomeSectionType.WRITTEN_BY,
+                    max = cap(DiscoverySection.WRITTEN_BY),
+                    titleRes = R.string.home_person_written_by,
+                )
 
-        val personFromMovieDescriptors = mutableListOf<HomeSectionDescriptor>()
-        val usedPersonFromMovies = mutableSetOf<UUID>()
-
-        suspend fun addPersonFromMovieDescriptors(
-            type: HomeSectionType,
-            personKind: PersonKind,
-            max: Int,
-            titleRes: Int,
-        ) {
-            var added = 0
-            while (added < max) {
-                val randomMovie = getRandomRecentlyWatchedMovie(usedPersonFromMovies) ?: break
-                usedPersonFromMovies.add(randomMovie.id)
-
-                val movieWithPeople =
-                    try {
-                        mediaRepository
-                            .getItem(itemId = randomMovie.id, fields = listOf(ItemFields.PEOPLE))
-                            ?.toAfinityMovie(mediaRepository.getBaseUrl())
-                    } catch (e: Exception) {
-                        null
-                    } ?: continue
-
-                val availablePeople =
-                    movieWithPeople.people
-                        .filter { it.type == personKind }
-                        .filterNot { it.name in usedPeopleNames || it.id in usedPeopleIds }
-                val selectedPerson = availablePeople.take(3).randomOrNull() ?: continue
-                usedPeopleNames.add(selectedPerson.name)
-                usedPeopleIds.add(selectedPerson.id)
-
-                val movieJson = converters.fromAfinityMovie(movieWithPeople) ?: continue
-                personFromMovieDescriptors.add(
+            val becauseYouWatchedDescriptors = mutableListOf<HomeSectionDescriptor>()
+            val usedReferenceMovies = mutableSetOf<UUID>()
+            while (becauseYouWatchedDescriptors.size < cap(DiscoverySection.BECAUSE_YOU_WATCHED)) {
+                val referenceMovie = getRandomRecentlyWatchedMovie(usedReferenceMovies) ?: break
+                usedReferenceMovies.add(referenceMovie.id)
+                val movieJson = converters.fromAfinityMovie(referenceMovie) ?: continue
+                becauseYouWatchedDescriptors.add(
                     HomeSectionDescriptor(
-                        key = "personfrom_${type.name}_${selectedPerson.id}_${randomMovie.id}",
-                        type = type,
-                        title = context.getString(titleRes, selectedPerson.name, randomMovie.name),
-                        person = PersonWithCount(selectedPerson, 0).toCached(),
+                        key = "byw_${referenceMovie.id}",
+                        type = HomeSectionType.BECAUSE_YOU_WATCHED,
+                        title =
+                            context.getString(
+                                R.string.home_because_you_watched,
+                                referenceMovie.name,
+                            ),
                         referenceMovieJson = movieJson,
                     )
                 )
-                added++
             }
-        }
 
-        addPersonFromMovieDescriptors(
-            HomeSectionType.ACTOR_FROM_MOVIE,
-            PersonKind.ACTOR,
-            max = cap(DiscoverySection.ACTOR_FROM_MOVIE),
-            titleRes = R.string.home_starring_from_watched,
-        )
-        addPersonFromMovieDescriptors(
-            HomeSectionType.DIRECTOR_FROM_MOVIE,
-            PersonKind.DIRECTOR,
-            max = cap(DiscoverySection.DIRECTOR_FROM_MOVIE),
-            titleRes = R.string.home_directed_by_from_watched,
-        )
-        addPersonFromMovieDescriptors(
-            HomeSectionType.WRITER_FROM_MOVIE,
-            PersonKind.WRITER,
-            max = cap(DiscoverySection.WRITER_FROM_MOVIE),
-            titleRes = R.string.home_written_by_from_watched,
-        )
+            val becauseYouLikedDescriptors = mutableListOf<HomeSectionDescriptor>()
+            val usedFavoriteMovies = mutableSetOf<UUID>()
+            while (becauseYouLikedDescriptors.size < cap(DiscoverySection.BECAUSE_YOU_LIKED)) {
+                val referenceMovie = getRandomFavoriteMovie(usedFavoriteMovies) ?: break
+                usedFavoriteMovies.add(referenceMovie.id)
+                if (referenceMovie.id in usedReferenceMovies) continue
+                val movieJson = converters.fromAfinityMovie(referenceMovie) ?: continue
+                becauseYouLikedDescriptors.add(
+                    HomeSectionDescriptor(
+                        key = "byl_${referenceMovie.id}",
+                        type = HomeSectionType.BECAUSE_YOU_LIKED,
+                        title =
+                            context.getString(R.string.home_because_you_liked, referenceMovie.name),
+                        referenceMovieJson = movieJson,
+                    )
+                )
+            }
 
-        val genres = genreRepository.combinedGenres.value
-        val spotlightDescriptors = buildList {
-            genres
-                .filter { it.type == GenreType.MOVIE }
-                .shuffled()
-                .take(7)
-                .forEach { genre ->
+            val personFromMovieDescriptors = mutableListOf<HomeSectionDescriptor>()
+            val usedPersonFromMovies = mutableSetOf<UUID>()
+
+            suspend fun addPersonFromMovieDescriptors(
+                type: HomeSectionType,
+                personKind: PersonKind,
+                max: Int,
+                titleRes: Int,
+            ) {
+                var added = 0
+                while (added < max) {
+                    val randomMovie = getRandomRecentlyWatchedMovie(usedPersonFromMovies) ?: break
+                    usedPersonFromMovies.add(randomMovie.id)
+
+                    val movieWithPeople =
+                        try {
+                            mediaRepository
+                                .getItem(
+                                    itemId = randomMovie.id,
+                                    fields = listOf(ItemFields.PEOPLE),
+                                )
+                                ?.toAfinityMovie(mediaRepository.getBaseUrl())
+                        } catch (e: Exception) {
+                            null
+                        } ?: continue
+
+                    val availablePeople =
+                        movieWithPeople.people
+                            .filter { it.type == personKind }
+                            .filterNot { it.name in usedPeopleNames || it.id in usedPeopleIds }
+                    val selectedPerson = availablePeople.take(3).randomOrNull() ?: continue
+                    usedPeopleNames.add(selectedPerson.name)
+                    usedPeopleIds.add(selectedPerson.id)
+
+                    val movieJson = converters.fromAfinityMovie(movieWithPeople) ?: continue
+                    personFromMovieDescriptors.add(
+                        HomeSectionDescriptor(
+                            key = "personfrom_${type.name}_${selectedPerson.id}_${randomMovie.id}",
+                            type = type,
+                            title =
+                                context.getString(titleRes, selectedPerson.name, randomMovie.name),
+                            person = PersonWithCount(selectedPerson, 0).toCached(),
+                            referenceMovieJson = movieJson,
+                        )
+                    )
+                    added++
+                }
+            }
+
+            addPersonFromMovieDescriptors(
+                HomeSectionType.ACTOR_FROM_MOVIE,
+                PersonKind.ACTOR,
+                max = cap(DiscoverySection.ACTOR_FROM_MOVIE),
+                titleRes = R.string.home_starring_from_watched,
+            )
+            addPersonFromMovieDescriptors(
+                HomeSectionType.DIRECTOR_FROM_MOVIE,
+                PersonKind.DIRECTOR,
+                max = cap(DiscoverySection.DIRECTOR_FROM_MOVIE),
+                titleRes = R.string.home_directed_by_from_watched,
+            )
+            addPersonFromMovieDescriptors(
+                HomeSectionType.WRITER_FROM_MOVIE,
+                PersonKind.WRITER,
+                max = cap(DiscoverySection.WRITER_FROM_MOVIE),
+                titleRes = R.string.home_written_by_from_watched,
+            )
+
+            val genres = genreRepository.combinedGenres.value
+            val spotlightDescriptors = buildList {
+                genres
+                    .filter { it.type == GenreType.MOVIE }
+                    .shuffled()
+                    .take(7)
+                    .forEach { genre ->
+                        add(
+                            HomeSectionDescriptor(
+                                key = "spot_genre_movie_${genre.name}",
+                                type = HomeSectionType.SPOTLIGHT_GENRE_MOVIE,
+                                title =
+                                    context.getString(
+                                        R.string.home_genre_top_movies_fmt,
+                                        genre.name,
+                                    ),
+                                genreName = genre.name,
+                            )
+                        )
+                    }
+                genres
+                    .filter { it.type == GenreType.SHOW }
+                    .shuffled()
+                    .take(7)
+                    .forEach { genre ->
+                        add(
+                            HomeSectionDescriptor(
+                                key = "spot_genre_show_${genre.name}",
+                                type = HomeSectionType.SPOTLIGHT_GENRE_SHOW,
+                                title =
+                                    context.getString(
+                                        R.string.home_genre_top_series_fmt,
+                                        genre.name,
+                                    ),
+                                genreName = genre.name,
+                            )
+                        )
+                    }
+                studiosDeferred.await().shuffled().take(10).forEach { studio ->
                     add(
                         HomeSectionDescriptor(
-                            key = "spot_genre_movie_${genre.name}",
-                            type = HomeSectionType.SPOTLIGHT_GENRE_MOVIE,
+                            key = "spot_studio_${studio.name}",
+                            type = HomeSectionType.SPOTLIGHT_STUDIO,
                             title =
-                                context.getString(R.string.home_genre_top_movies_fmt, genre.name),
-                            genreName = genre.name,
+                                context.getString(R.string.home_best_of_studio_fmt, studio.name),
+                            studioName = studio.name,
                         )
                     )
                 }
-            genres
-                .filter { it.type == GenreType.SHOW }
-                .shuffled()
-                .take(7)
-                .forEach { genre ->
+                boxSetsDeferred.await().shuffled().take(8).forEach { boxSet ->
                     add(
                         HomeSectionDescriptor(
-                            key = "spot_genre_show_${genre.name}",
-                            type = HomeSectionType.SPOTLIGHT_GENRE_SHOW,
-                            title =
-                                context.getString(R.string.home_genre_top_series_fmt, genre.name),
-                            genreName = genre.name,
+                            key = "spot_boxset_${boxSet.id}",
+                            type = HomeSectionType.SPOTLIGHT_BOXSET,
+                            title = boxSet.name.orEmpty(),
+                            boxSetId = boxSet.id.toString(),
                         )
                     )
                 }
-            studiosDeferred.await().shuffled().take(10).forEach { studio ->
-                add(
-                    HomeSectionDescriptor(
-                        key = "spot_studio_${studio.name}",
-                        type = HomeSectionType.SPOTLIGHT_STUDIO,
-                        title = context.getString(R.string.home_best_of_studio_fmt, studio.name),
-                        studioName = studio.name,
-                    )
-                )
             }
-            boxSetsDeferred.await().shuffled().take(8).forEach { boxSet ->
-                add(
+            val spotlights = spotlightDescriptors.shuffled().take(cap(DiscoverySection.SPOTLIGHTS))
+
+            val recommendationDescriptors =
+                (actorDescriptors + directorDescriptors).shuffled() +
+                    (writerDescriptors + becauseYouWatchedDescriptors + becauseYouLikedDescriptors)
+                        .shuffled() +
+                    personFromMovieDescriptors.shuffled()
+
+            val genreDescriptors =
+                genres.shuffled().take(cap(DiscoverySection.GENRES)).map { genre ->
                     HomeSectionDescriptor(
-                        key = "spot_boxset_${boxSet.id}",
-                        type = HomeSectionType.SPOTLIGHT_BOXSET,
-                        title = boxSet.name.orEmpty(),
-                        boxSetId = boxSet.id.toString(),
+                        key = "genre_${genre.type.name.lowercase()}_${genre.name}",
+                        type =
+                            if (genre.type == GenreType.MOVIE) HomeSectionType.GENRE_MOVIE
+                            else HomeSectionType.GENRE_SHOW,
+                        title = genre.name,
+                        genreName = genre.name,
                     )
-                )
+                }
+
+            interleave(genreDescriptors, recommendationDescriptors, spotlights).distinctBy {
+                it.key
             }
         }
-        val spotlights = spotlightDescriptors.shuffled().take(cap(DiscoverySection.SPOTLIGHTS))
-
-        val recommendationDescriptors =
-            (actorDescriptors + directorDescriptors).shuffled() +
-                (writerDescriptors + becauseYouWatchedDescriptors + becauseYouLikedDescriptors)
-                    .shuffled() +
-                personFromMovieDescriptors.shuffled()
-
-        val genreDescriptors =
-            genres.shuffled().take(cap(DiscoverySection.GENRES)).map { genre ->
-                HomeSectionDescriptor(
-                    key = "genre_${genre.type.name.lowercase()}_${genre.name}",
-                    type =
-                        if (genre.type == GenreType.MOVIE) HomeSectionType.GENRE_MOVIE
-                        else HomeSectionType.GENRE_SHOW,
-                    title = genre.name,
-                    genreName = genre.name,
-                )
-            }
-
-        interleave(genreDescriptors, recommendationDescriptors, spotlights).distinctBy { it.key }
-    }
 
     private fun reinterleave(
         descriptors: List<HomeSectionDescriptor>

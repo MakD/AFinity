@@ -3,6 +3,7 @@ package com.makd.afinity.data.models
 import com.makd.afinity.R
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.media.LibraryFilters
 
 enum class CustomSectionTypeGroup(val cardStyle: CustomSectionCardStyle?) {
     VIDEO(null),
@@ -56,7 +57,26 @@ enum class CustomSectionSourceType {
 
     val usesItemIds: Boolean
         get() = this == COLLECTION || this == PLAYLIST || this == LIBRARY
+
+    val supportsRefinement: Boolean
+        get() = this != PLAYLIST
+
+    val refinesGenres: Boolean
+        get() = this != GENRE
+
+    val refinesTags: Boolean
+        get() = this != TAG
 }
+
+fun LibraryFilters.scopedTo(sourceType: CustomSectionSourceType): LibraryFilters =
+    if (!sourceType.supportsRefinement) {
+        LibraryFilters()
+    } else {
+        copy(
+            genres = if (sourceType.refinesGenres) genres else emptySet(),
+            tags = if (sourceType.refinesTags) tags else emptySet(),
+        )
+    }
 
 enum class CustomSectionCardStyle {
     PORTRAIT,
@@ -80,6 +100,7 @@ data class CustomHomeSection(
     val enabled: Boolean = true,
     val seasonStart: String? = null,
     val seasonEnd: String? = null,
+    val filters: LibraryFilters = LibraryFilters(),
 ) {
     val isSeasonal: Boolean
         get() = seasonStart != null && seasonEnd != null
@@ -114,7 +135,12 @@ data class CustomHomeSection(
         withItemTypesLimitedTo(CustomSectionItemType.availableFor(sourceType, libraryType))
 
     fun withSourceType(newSourceType: CustomSectionSourceType): CustomHomeSection =
-        copy(sourceType = newSourceType, sourceValues = emptyList()).withSanitizedItemTypes()
+        copy(
+                sourceType = newSourceType,
+                sourceValues = emptyList(),
+                filters = filters.scopedTo(newSourceType),
+            )
+            .withSanitizedItemTypes()
 
     fun withItemTypeToggled(type: CustomSectionItemType): CustomHomeSection {
         val current = itemTypes

@@ -1,5 +1,6 @@
 package com.makd.afinity.data.models
 
+import com.makd.afinity.data.models.media.LibraryFilters
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -24,4 +25,5 @@ data class CustomSectionExport(
     val enabled: Boolean = true,
     @SerialName("seasonStart") val seasonStart: String? = null,
     @SerialName("seasonEnd") val seasonEnd: String? = null,
+    val filters: LibraryFilters? = null,
 )

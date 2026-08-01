@@ -11,6 +11,7 @@ import com.makd.afinity.data.models.DiscoverySection
 import com.makd.afinity.data.models.HomePayload
 import com.makd.afinity.data.models.HomeRow
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.data.repository.media.MediaRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -130,6 +131,7 @@ private fun CustomHomeSection.toExport(): CustomSectionExport =
         enabled = enabled,
         seasonStart = seasonStart,
         seasonEnd = seasonEnd,
+        filters = filters.takeIf { !it.isEmpty },
     )
 
 private fun CustomSectionExport.toDomain(position: Int): CustomHomeSection? {
@@ -153,6 +155,7 @@ private fun CustomSectionExport.toDomain(position: Int): CustomHomeSection? {
             enabled = enabled,
             seasonStart = seasonStart,
             seasonEnd = seasonEnd,
+            filters = filters ?: LibraryFilters(),
         )
         .withSanitizedItemTypes()
 }

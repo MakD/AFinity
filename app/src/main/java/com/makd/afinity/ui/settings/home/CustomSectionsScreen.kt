@@ -86,6 +86,8 @@ import com.makd.afinity.data.models.DiscoveryDensity
 import com.makd.afinity.data.models.DiscoverySection
 import com.makd.afinity.data.models.HomeRow
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.media.LibraryFilterOptions
+import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinitySwitch
 import com.makd.afinity.ui.components.AfinityTextField
@@ -95,6 +97,8 @@ import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
 import com.makd.afinity.ui.components.filter.SearchableChipMultiSelect
+import com.makd.afinity.ui.library.LibraryFilterBottomSheet
+import com.makd.afinity.ui.library.LibraryFilterCapabilities
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import java.time.LocalDate
@@ -276,7 +280,6 @@ fun CustomSectionsScreen(
                     }
                 }
             }
-
         }
     }
 
@@ -322,6 +325,8 @@ fun CustomSectionsScreen(
                 optionsFor = uiState::optionsFor,
                 sourceStateFor = uiState::stateFor,
                 onLoadSources = viewModel::ensureSourcesLoaded,
+                filterOptions = uiState.filterOptions,
+                onLoadFilterOptions = viewModel::ensureFilterOptionsLoaded,
                 onSave = {
                     viewModel.save(it, editingIsNew)
                     editing = null
@@ -460,6 +465,8 @@ private fun ColumnScope.CustomSectionEditor(
     optionsFor: (CustomSectionSourceType) -> List<SourceOption>,
     sourceStateFor: (CustomSectionSourceType) -> SourceLoadState?,
     onLoadSources: (CustomSectionSourceType, Boolean) -> Unit,
+    filterOptions: LibraryFilterOptions,
+    onLoadFilterOptions: () -> Unit,
     onSave: (CustomHomeSection) -> Unit,
     onDelete: (() -> Unit)?,
 ) {
@@ -486,9 +493,32 @@ private fun ColumnScope.CustomSectionEditor(
             CustomSectionItemType.availableFor(draft.sourceType, libraryType)
         }
 
+    val supportsRefinement = draft.sourceType.supportsRefinement
+    var showRefineSheet by remember { mutableStateOf(false) }
+
     LaunchedEffect(allowedItemTypes) { draft = draft.withItemTypesLimitedTo(allowedItemTypes) }
 
     LaunchedEffect(draft.sourceType) { onLoadSources(draft.sourceType, false) }
+
+    LaunchedEffect(supportsRefinement) { if (supportsRefinement) onLoadFilterOptions() }
+
+    if (showRefineSheet) {
+        LibraryFilterBottomSheet(
+            filters = draft.filters,
+            options = filterOptions,
+            capabilities =
+                LibraryFilterCapabilities(
+                    genres = draft.sourceType.refinesGenres,
+                    ratings = true,
+                    tags = draft.sourceType.refinesTags,
+                    years = true,
+                    videoType = CustomSectionItemType.MOVIE in draft.itemTypes,
+                    seriesStatus = CustomSectionItemType.SERIES in draft.itemTypes,
+                ),
+            onApply = { draft = draft.copy(filters = it) },
+            onDismiss = { showRefineSheet = false },
+        )
+    }
 
     Column(
         modifier =
@@ -558,6 +588,21 @@ private fun ColumnScope.CustomSectionEditor(
                         onRetry = { onLoadSources(draft.sourceType, true) },
                     )
                 }
+            }
+            if (supportsRefinement) {
+                SettingsDivider()
+                SettingsItem(
+                    title = stringResource(R.string.custom_sections_field_refine),
+                    subtitle = refineSummary(draft.filters),
+                    onClick = { showRefineSheet = true },
+                    trailing = {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_chevron_right),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                )
             }
             SettingsDivider()
             ItemTypeSelector(
@@ -685,6 +730,35 @@ private fun ColumnScope.CustomSectionEditor(
         ) {
             Text(text = stringResource(R.string.custom_sections_save))
         }
+    }
+}
+
+@Composable
+private fun refineSummary(filters: LibraryFilters): String {
+    if (filters.isEmpty) return stringResource(R.string.custom_sections_refine_none)
+    val parts = buildList {
+        if (filters.played) add(stringResource(R.string.filter_played))
+        if (filters.unplayed) add(stringResource(R.string.filter_unplayed))
+        if (filters.resumable) add(stringResource(R.string.filter_resumable))
+        if (filters.favorites) add(stringResource(R.string.filter_favorites))
+        if (filters.watchlist) add(stringResource(R.string.filter_watchlist))
+        addAll(filters.genres)
+        addAll(filters.tags)
+        addAll(filters.officialRatings)
+        addAll(filters.years.map { it.toString() })
+        if (filters.features.isNotEmpty()) add(stringResource(R.string.library_filter_features))
+        if (filters.videoTypes.isNotEmpty()) {
+            add(stringResource(R.string.library_filter_video_type))
+        }
+        if (filters.seriesStatuses.isNotEmpty()) {
+            add(stringResource(R.string.library_filter_series_status))
+        }
+    }
+    val lead = parts.take(2).joinToString(", ")
+    return if (filters.activeCount <= 2) {
+        lead
+    } else {
+        stringResource(R.string.custom_sections_refine_summary_fmt, lead, filters.activeCount)
     }
 }
 

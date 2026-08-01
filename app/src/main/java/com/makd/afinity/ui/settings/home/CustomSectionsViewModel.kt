@@ -11,6 +11,7 @@ import com.makd.afinity.data.models.DiscoverySection
 import com.makd.afinity.data.models.HomeRow
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.media.AfinityCollection
+import com.makd.afinity.data.models.media.LibraryFilterOptions
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.GenreRepository
 import com.makd.afinity.data.repository.home.CustomHomeSectionsRepository
@@ -52,6 +53,7 @@ data class CustomSectionsUiState(
     val playlistOptions: List<SourceOption> = emptyList(),
     val libraryOptions: List<SourceOption> = emptyList(),
     val tagOptions: List<SourceOption> = emptyList(),
+    val filterOptions: LibraryFilterOptions = LibraryFilterOptions(),
     val sourceStates: Map<CustomSectionSourceType, SourceLoadState> = emptyMap(),
     val canAddMore: Boolean = true,
     val hiddenRows: Set<HomeRow> = emptySet(),
@@ -163,6 +165,10 @@ constructor(
         _pendingTemplate.value = null
     }
 
+    fun ensureFilterOptionsLoaded() {
+        ensureSourcesLoaded(CustomSectionSourceType.TAG)
+    }
+
     fun ensureSourcesLoaded(sourceType: CustomSectionSourceType, force: Boolean = false) {
         val state = _uiState.value.stateFor(sourceType)
         if (state == SourceLoadState.LOADING) return
@@ -244,12 +250,9 @@ constructor(
             CustomSectionSourceType.COLLECTION -> loadItemOptions("BOX_SET")
             CustomSectionSourceType.PLAYLIST -> loadItemOptions("PLAYLIST")
             CustomSectionSourceType.TAG ->
-                perLibrary { library ->
-                    mediaRepository.getFilterOptionsResult(
-                        parentId = library.id,
-                        libraryType = library.type,
-                    )
-                        .map { options -> options.tags.map { SourceOption(it, it) } }
+                mergedFilterOptions()?.let { merged ->
+                    _uiState.update { state -> state.copy(filterOptions = merged) }
+                    merged.tags.map { SourceOption(it, it) }
                 }
             CustomSectionSourceType.LIBRARY ->
                 withContext(Dispatchers.IO) {
@@ -268,6 +271,48 @@ constructor(
                             )
                         }
                 }
+        }
+
+    private suspend fun mergedFilterOptions(): LibraryFilterOptions? =
+        withContext(Dispatchers.IO) {
+            val libraries =
+                mediaRepository
+                    .getLibrariesResult()
+                    .getOrElse {
+                        Timber.w(it, "Failed to load libraries for custom section filters")
+                        return@withContext null
+                    }
+                    .filterNot { it.type == CollectionType.Music }
+            if (libraries.isEmpty()) return@withContext LibraryFilterOptions()
+
+            val results =
+                coroutineScope {
+                    libraries
+                        .map { library ->
+                            async {
+                                mediaRepository.getFilterOptionsResult(
+                                    parentId = library.id,
+                                    libraryType = library.type,
+                                )
+                            }
+                        }
+                        .awaitAll()
+                }
+            if (results.all { it.isFailure }) {
+                results.firstNotNullOfOrNull { it.exceptionOrNull() }?.let {
+                    Timber.w(it, "Failed to load filter options from every library")
+                }
+                return@withContext null
+            }
+
+            val loaded = results.mapNotNull { it.getOrNull() }
+            LibraryFilterOptions(
+                genres = loaded.flatMap { it.genres }.distinct().sortedBy { it.lowercase() },
+                tags = loaded.flatMap { it.tags }.distinct().sortedBy { it.lowercase() },
+                officialRatings =
+                    loaded.flatMap { it.officialRatings }.distinct().sortedBy { it.lowercase() },
+                years = loaded.flatMap { it.years }.distinct().sortedDescending(),
+            )
         }
 
     private suspend fun perLibrary(

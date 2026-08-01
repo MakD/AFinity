@@ -97,24 +97,7 @@ interface MediaRepository {
         imageTypes: List<String> = emptyList(),
         recursive: Boolean? = null,
         criteria: ItemFilterCriteria = ItemFilterCriteria(),
-    ): Result<BaseItemDtoQueryResult> =
-        Result.success(
-            getItems(
-                parentId = parentId,
-                collectionTypes = collectionTypes,
-                searchTerm = searchTerm,
-                imageTypes = imageTypes,
-                sortBy = sortBy,
-                sortDescending = sortDescending,
-                limit = limit,
-                startIndex = startIndex,
-                includeItemTypes = includeItemTypes,
-                nameStartsWith = nameStartsWith,
-                fields = fields,
-                recursive = recursive,
-                criteria = criteria,
-            )
-        )
+    ): Result<BaseItemDtoQueryResult>
 
     suspend fun getItem(itemId: UUID, fields: List<ItemFields>? = null): BaseItemDto?
 

@@ -1389,6 +1389,13 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_61_62 =
+        object : Migration(61, 62) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `custom_home_sections` ADD COLUMN `filtersJson` TEXT")
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1451,5 +1458,6 @@ object DatabaseMigrations {
             MIGRATION_58_59,
             MIGRATION_59_60,
             MIGRATION_60_61,
+            MIGRATION_61_62,
         )
 }

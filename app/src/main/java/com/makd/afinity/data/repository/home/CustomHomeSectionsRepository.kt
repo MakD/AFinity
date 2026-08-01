@@ -7,11 +7,13 @@ import com.makd.afinity.data.models.CustomHomeSection
 import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.CustomSectionSourceType
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.media.LibraryFilters
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.Json
 import timber.log.Timber
 import java.time.MonthDay
 import java.util.UUID
@@ -120,6 +122,16 @@ constructor(
             enabled = enabled,
             seasonStart = seasonStart,
             seasonEnd = seasonEnd,
+            filters =
+                filtersJson
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let {
+                        runCatching { filtersCodec.decodeFromString<LibraryFilters>(it) }
+                            .onFailure { e ->
+                                Timber.w(e, "Dropping unreadable filters for custom section $id")
+                            }
+                            .getOrNull()
+                    } ?: LibraryFilters(),
         )
 
     private fun CustomHomeSection.toEntity(key: String): CustomHomeSectionEntity =
@@ -139,9 +151,13 @@ constructor(
             enabled = enabled,
             seasonStart = seasonStart,
             seasonEnd = seasonEnd,
+            filtersJson =
+                if (filters.isEmpty) null else filtersCodec.encodeToString(filters),
         )
 
     companion object {
+        private val filtersCodec = Json { ignoreUnknownKeys = true }
+
         fun isInSeason(
             section: CustomHomeSection,
             today: MonthDay = MonthDay.now(),
