@@ -66,6 +66,9 @@ enum class CustomSectionSourceType {
 
     val refinesTags: Boolean
         get() = this != TAG
+
+    val supportsFullList: Boolean
+        get() = this != PLAYLIST
 }
 
 fun LibraryFilters.scopedTo(sourceType: CustomSectionSourceType): LibraryFilters =

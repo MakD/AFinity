@@ -21,7 +21,8 @@ class JellyfinItemsPagingSource(
     private val filters: LibraryFilters,
     private val baseUrl: String,
     private val nameStartsWith: String? = null,
-    private val studioName: String? = null,
+    private val studioNames: List<String> = emptyList(),
+    private val includeItemTypes: List<String>? = null,
 ) : PagingSource<Int, AfinityItem>() {
 
     companion object {
@@ -38,12 +39,13 @@ class JellyfinItemsPagingSource(
             )
 
             val includeTypes =
-                when (libraryType) {
-                    CollectionType.TvShows -> listOf("SERIES")
-                    CollectionType.Movies -> listOf("MOVIE")
-                    CollectionType.BoxSets -> listOf("BOX_SET")
-                    else -> listOf("MOVIE", "SERIES", "BOX_SET", "FOLDER")
-                }
+                includeItemTypes?.takeIf { it.isNotEmpty() }
+                    ?: when (libraryType) {
+                        CollectionType.TvShows -> listOf("SERIES")
+                        CollectionType.Movies -> listOf("MOVIE")
+                        CollectionType.BoxSets -> listOf("BOX_SET")
+                        else -> listOf("MOVIE", "SERIES", "BOX_SET", "FOLDER")
+                    }
 
             val response =
                 mediaRepository
@@ -56,7 +58,7 @@ class JellyfinItemsPagingSource(
                         includeItemTypes = includeTypes,
                         nameStartsWith = nameStartsWith,
                         recursive = true,
-                        criteria = filters.toItemFilterCriteria(studioName),
+                        criteria = filters.toItemFilterCriteria(studioNames),
                     )
                     .getOrThrow()
 

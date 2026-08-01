@@ -1,4 +1,5 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
+@file:UnstableApi
 
 package com.makd.afinity.ui.library
 
@@ -63,17 +64,20 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.makd.afinity.R
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AlphabetScroller
+import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
@@ -96,6 +100,12 @@ fun LibraryContentScreen(
     val scrollToIndex by viewModel.scrollToIndex.collectAsStateWithLifecycle()
     var showSortDialog by remember { mutableStateOf(false) }
     var showFilterSheet by remember { mutableStateOf(false) }
+    val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
+    val selectedEpisodeWatchlistStatus by
+        viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
+    val selectedEpisodeDownloadInfo by
+        viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
+    val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
@@ -265,8 +275,12 @@ fun LibraryContentScreen(
                                     MediaItemGridCard(
                                         item = item,
                                         onClick = {
-                                            viewModel.onItemClick(item)
-                                            onItemClick(item)
+                                            if (item is AfinityEpisode) {
+                                                viewModel.selectEpisode(item)
+                                            } else {
+                                                viewModel.onItemClick(item)
+                                                onItemClick(item)
+                                            }
                                         },
                                     )
                                 }
@@ -296,20 +310,22 @@ fun LibraryContentScreen(
                             .padding(end = 24.dp)
                             .padding(bottom = 16.dp + playerOffset),
                 ) {
-                    FloatingActionButton(onClick = { showFilterSheet = true }) {
-                        val activeCount = uiState.currentFilters.activeCount
-                        if (activeCount > 0) {
-                            BadgedBox(badge = { Badge { Text(activeCount.toString()) } }) {
+                    if (!uiState.filtersLocked) {
+                        FloatingActionButton(onClick = { showFilterSheet = true }) {
+                            val activeCount = uiState.currentFilters.activeCount
+                            if (activeCount > 0) {
+                                BadgedBox(badge = { Badge { Text(activeCount.toString()) } }) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_filter_active),
+                                        contentDescription = stringResource(R.string.cd_filter_fab),
+                                    )
+                                }
+                            } else {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.ic_filter_active),
+                                    painter = painterResource(id = R.drawable.ic_filter),
                                     contentDescription = stringResource(R.string.cd_filter_fab),
                                 )
                             }
-                        } else {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_filter),
-                                contentDescription = stringResource(R.string.cd_filter_fab),
-                            )
                         }
                     }
 
@@ -345,6 +361,22 @@ fun LibraryContentScreen(
             onDismiss = { showFilterSheet = false },
         )
     }
+
+    EpisodeOverlayHandler(
+        selectedEpisode = selectedEpisode,
+        watchlistStatus = selectedEpisodeWatchlistStatus,
+        downloadInfo = selectedEpisodeDownloadInfo,
+        canDownload = canDownload,
+        onClearSelection = { viewModel.clearSelectedEpisode() },
+        onToggleFavorite = { viewModel.toggleEpisodeFavorite(it) },
+        onToggleWatchlist = { viewModel.toggleEpisodeWatchlist(it) },
+        onToggleWatched = { viewModel.toggleEpisodeWatched(it) },
+        onNavigateToSeries = { seriesId ->
+            navController.navigate(
+                Destination.createItemDetailRoute(itemId = seriesId, itemType = "Series")
+            )
+        },
+    )
 }
 
 @Composable

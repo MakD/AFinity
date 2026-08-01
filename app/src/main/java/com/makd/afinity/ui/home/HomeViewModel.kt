@@ -863,6 +863,11 @@ constructor(
         navController.navigate(route)
     }
 
+    fun onCustomSectionClick(sectionId: String, navController: NavController) {
+        val route = Destination.createCustomSectionContentRoute(sectionId)
+        navController.navigate(route)
+    }
+
     fun onScreenResumed() {
         if (appDataRepository.lastUserDataChangedAt.value > lastHomeRefreshedAt) {
             viewModelScope.launch {
@@ -918,6 +923,7 @@ sealed interface HomeSection {
         val title: String,
         val items: List<AfinityItem>,
         val cardStyle: CustomSectionCardStyle = CustomSectionCardStyle.PORTRAIT,
+        val customSectionId: String? = null,
     ) : HomeSection
 
     data class Ranked(override val key: String, val items: List<AfinityItem>) : HomeSection
@@ -960,6 +966,7 @@ private fun HomeSectionDescriptor.toHomeSection(content: HomeSectionContent?): H
                                 ?.let {
                                     runCatching { CustomSectionCardStyle.valueOf(it) }.getOrNull()
                                 } ?: CustomSectionCardStyle.PORTRAIT,
+                        customSectionId = customSectionId?.takeIf { supportsFullList },
                     )
             }
     }

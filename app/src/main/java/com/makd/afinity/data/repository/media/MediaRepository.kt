@@ -264,7 +264,8 @@ interface MediaRepository {
         filters: LibraryFilters,
         nameStartsWith: String? = null,
         fields: List<ItemFields>? = null,
-        studioName: String? = null,
+        studioNames: List<String> = emptyList(),
+        includeItemTypes: List<String>? = null,
     ): Flow<PagingData<AfinityItem>>
 
     suspend fun getFilterOptions(

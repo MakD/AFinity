@@ -36,6 +36,7 @@ data class HomeSectionDescriptor(
     val boxSetId: String? = null,
     val customSectionId: String? = null,
     val cardStyle: String? = null,
+    val supportsFullList: Boolean = false,
 )
 
 sealed interface HomeSectionContent {

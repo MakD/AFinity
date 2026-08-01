@@ -31,6 +31,7 @@ fun ItemsRowSection(
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
     cardStyle: CustomSectionCardStyle = CustomSectionCardStyle.PORTRAIT,
+    onViewAllClick: (() -> Unit)? = null,
 ) {
     val isLandscape = cardStyle == CustomSectionCardStyle.LANDSCAPE
     val isSquare = cardStyle == CustomSectionCardStyle.SQUARE
@@ -53,7 +54,7 @@ fun ItemsRowSection(
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + if (hasMetadataLine) 22.dp else 0.dp
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
-        HomeSectionHeader(title = title)
+        HomeSectionHeader(title = title, onViewAllClick = onViewAllClick)
 
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),

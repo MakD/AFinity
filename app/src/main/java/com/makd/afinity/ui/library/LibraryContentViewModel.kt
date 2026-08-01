@@ -12,25 +12,40 @@ import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.resolveChangedItems
+import com.makd.afinity.data.models.CustomHomeSection
+import com.makd.afinity.data.models.CustomSectionItemType
+import com.makd.afinity.data.models.CustomSectionSourceType
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.LibraryFilterOptions
 import com.makd.afinity.data.models.media.LibraryFilters
+import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.repository.AppDataRepository
+import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.repository.download.DownloadRepository
+import com.makd.afinity.data.repository.home.CustomHomeSectionsRepository
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.repository.userdata.UserDataRepository
+import com.makd.afinity.data.repository.watchlist.WatchlistRepository
+import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
+import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -49,12 +64,98 @@ constructor(
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
     private val preferencesRepository: PreferencesRepository,
+    private val customHomeSectionsRepository: CustomHomeSectionsRepository,
+    private val watchlistRepository: WatchlistRepository,
+    private val downloadRepository: DownloadRepository,
+    private val userDataRepository: UserDataRepository,
+    private val itemUserDataDelegate: ItemUserDataDelegate,
+    private val networkMonitor: NetworkConnectivityMonitor,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
+
+    val canDownload: StateFlow<Boolean> =
+        preferencesRepository
+            .getDownloadWifiOnlyFlow()
+            .combine(networkMonitor.isOnWifiFlow) { wifiOnly, onWifi -> !wifiOnly || onWifi }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    private val _selectedEpisode = MutableStateFlow<AfinityEpisode?>(null)
+    val selectedEpisode: StateFlow<AfinityEpisode?> = _selectedEpisode.asStateFlow()
+
+    private val _selectedEpisodeWatchlistStatus = MutableStateFlow(false)
+    val selectedEpisodeWatchlistStatus: StateFlow<Boolean> =
+        _selectedEpisodeWatchlistStatus.asStateFlow()
+
+    private val _selectedEpisodeDownloadInfo = MutableStateFlow<DownloadInfo?>(null)
+    val selectedEpisodeDownloadInfo: StateFlow<DownloadInfo?> =
+        _selectedEpisodeDownloadInfo.asStateFlow()
+
+    fun selectEpisode(episode: AfinityEpisode) {
+        viewModelScope.launch {
+            try {
+                val fullEpisode =
+                    mediaRepository
+                        .getItem(episode.id, fields = FieldSets.ITEM_DETAIL)
+                        ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
+                _selectedEpisode.value = fullEpisode ?: episode
+                _selectedEpisodeWatchlistStatus.value = watchlistRepository.isInWatchlist(episode.id)
+                _selectedEpisodeDownloadInfo.value =
+                    downloadRepository.getDownloadByItemId(episode.id)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load full episode details")
+                _selectedEpisode.value = episode
+            }
+        }
+    }
+
+    fun clearSelectedEpisode() {
+        _selectedEpisode.value = null
+        _selectedEpisodeWatchlistStatus.value = false
+        _selectedEpisodeDownloadInfo.value = null
+    }
+
+    fun toggleEpisodeFavorite(episode: AfinityEpisode) {
+        itemUserDataDelegate.toggleEpisodeFavorite(viewModelScope, episode) {
+            _selectedEpisode.value = episode.copy(favorite = !episode.favorite)
+        }
+    }
+
+    fun toggleEpisodeWatchlist(episode: AfinityEpisode) {
+        val isLiked = _selectedEpisodeWatchlistStatus.value
+        itemUserDataDelegate.toggleWatchlist(
+            scope = viewModelScope,
+            item = episode,
+            updateOptimisticUI = {
+                _selectedEpisodeWatchlistStatus.value = !isLiked
+                _selectedEpisode.value = _selectedEpisode.value?.copy(liked = !isLiked)
+            },
+            revertUI = {
+                _selectedEpisodeWatchlistStatus.value = isLiked
+                _selectedEpisode.value = _selectedEpisode.value?.copy(liked = isLiked)
+            },
+        )
+    }
+
+    fun toggleEpisodeWatched(episode: AfinityEpisode) {
+        viewModelScope.launch {
+            val isNowPlayed = !episode.played
+            _selectedEpisode.value = episode.copy(played = isNowPlayed, playbackPositionTicks = 0)
+            val success =
+                if (episode.played) userDataRepository.markUnwatched(episode.id)
+                else userDataRepository.markWatched(episode.id)
+            if (!success) _selectedEpisode.value = episode
+        }
+    }
 
     private val libraryId: String? = savedStateHandle["libraryId"]
     private val libraryName: String? = savedStateHandle["libraryName"]
     private val studioName: String? = savedStateHandle["studioName"]
+    private val sectionId: String? = savedStateHandle["sectionId"]
+
+    private var customSection: CustomHomeSection? = null
+    private var sectionParentId: UUID? = null
+    private var sectionStudios: List<String> = emptyList()
+    private var sectionItemTypes: List<String>? = null
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -68,6 +169,7 @@ constructor(
                 libraryId = libraryId?.let { UUID.fromString(it) },
                 libraryName = (libraryName ?: studioName ?: "Content").replace("%2F", "/"),
                 isStudioMode = studioName != null,
+                filtersLocked = sectionId != null,
             )
         )
     val uiState: StateFlow<LibraryContentUiState> = _uiState.asStateFlow()
@@ -188,15 +290,60 @@ constructor(
 
         val baseFlow =
             mediaRepository.getItemsPaging(
-                parentId = libraryId?.let { UUID.fromString(it) },
+                parentId = sectionParentId ?: libraryId?.let { UUID.fromString(it) },
                 libraryType = type,
                 sortBy = currentSortBy,
                 sortDescending = currentSortDescending,
                 filters = currentFilters,
                 nameStartsWith = null,
-                studioName = studioName,
+                studioNames = sectionStudios.ifEmpty { listOfNotNull(studioName) },
+                includeItemTypes = sectionItemTypes,
             )
         _pagingData.value = applyUpdatesToPagingFlow(baseFlow)
+    }
+
+    private fun sectionLibraryType(): CollectionType {
+        val types = customSection?.itemTypes.orEmpty()
+        return when (types.singleOrNull()) {
+            CustomSectionItemType.MOVIE -> CollectionType.Movies
+            CustomSectionItemType.SERIES -> CollectionType.TvShows
+            CustomSectionItemType.BOX_SET -> CollectionType.BoxSets
+            else -> CollectionType.Mixed
+        }
+    }
+
+    private suspend fun resolveCustomSection(id: String): CustomHomeSection? {
+        val section = customHomeSectionsRepository.get(id)
+        if (section == null) {
+            Timber.w("Custom section $id no longer exists")
+            return null
+        }
+        customSection = section
+
+        val sourceId =
+            if (section.sourceType.usesItemIds) {
+                runCatching { UUID.fromString(section.primarySourceValue.orEmpty()) }.getOrNull()
+            } else null
+
+        sectionParentId = sourceId
+        sectionStudios =
+            if (section.sourceType == CustomSectionSourceType.STUDIO) section.sourceValues
+            else emptyList()
+        sectionItemTypes = section.includeItemTypes.takeIf { it.isNotEmpty() }
+
+        currentFilters =
+            when (section.sourceType) {
+                CustomSectionSourceType.GENRE ->
+                    section.filters.copy(
+                        genres = section.filters.genres + section.sourceValues
+                    )
+                CustomSectionSourceType.TAG ->
+                    section.filters.copy(tags = section.filters.tags + section.sourceValues)
+                else -> section.filters
+            }
+        currentSortBy = section.sortBy
+        currentSortDescending = section.sortDescending
+        return section
     }
 
     private fun loadLibraryContent() {
@@ -204,15 +351,28 @@ constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
             try {
-                val type = determineLibraryType()
+                val section = sectionId?.let { resolveCustomSection(it) }
+                if (sectionId != null && section == null) {
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isLoading = false,
+                            error = context.getString(R.string.error_content_unavailable_server),
+                        )
+                    return@launch
+                }
+
+                val type = if (section != null) sectionLibraryType() else determineLibraryType()
                 libraryType = type
 
-                currentSortBy = preferencesRepository.getDefaultSortBy()
-                currentSortDescending = preferencesRepository.getSortDescending()
-                currentFilters = loadPersistedFilters()
+                if (section == null) {
+                    currentSortBy = preferencesRepository.getDefaultSortBy()
+                    currentSortDescending = preferencesRepository.getSortDescending()
+                    currentFilters = loadPersistedFilters()
+                }
 
                 _uiState.value =
                     _uiState.value.copy(
+                        libraryName = section?.title ?: _uiState.value.libraryName,
                         libraryType = type,
                         currentSortBy = currentSortBy,
                         currentSortDescending = currentSortDescending,
@@ -221,7 +381,7 @@ constructor(
                     )
 
                 loadItems()
-                loadFilterOptions(type)
+                if (section == null) loadFilterOptions(type)
                 lastLoadedAt = System.currentTimeMillis()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load library content")
@@ -261,6 +421,7 @@ constructor(
     }
 
     fun updateFilters(filters: LibraryFilters) {
+        if (sectionId != null) return
         if (currentFilters != filters) {
             currentFilters = filters
             _uiState.value = _uiState.value.copy(currentFilters = currentFilters)
@@ -329,13 +490,14 @@ constructor(
 
                 val baseFlow =
                     mediaRepository.getItemsPaging(
-                        parentId = libraryId?.let { UUID.fromString(it) },
+                        parentId = sectionParentId ?: libraryId?.let { UUID.fromString(it) },
                         libraryType = type,
                         sortBy = currentSortBy,
                         sortDescending = currentSortDescending,
                         filters = currentFilters,
                         nameStartsWith = letterFilter,
-                        studioName = studioName,
+                        studioNames = sectionStudios.ifEmpty { listOfNotNull(studioName) },
+                        includeItemTypes = sectionItemTypes,
                     )
                 _pagingData.value = applyUpdatesToPagingFlow(baseFlow)
 
@@ -365,4 +527,5 @@ data class LibraryContentUiState(
     val filterOptions: LibraryFilterOptions = LibraryFilterOptions(),
     val isStudioMode: Boolean = false,
     val selectedLetter: String? = null,
+    val filtersLocked: Boolean = false,
 )

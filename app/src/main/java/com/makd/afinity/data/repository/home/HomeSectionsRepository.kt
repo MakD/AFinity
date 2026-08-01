@@ -172,6 +172,7 @@ constructor(
                         title = section.title,
                         customSectionId = section.id,
                         cardStyle = section.effectiveCardStyle.name,
+                        supportsFullList = section.sourceType.supportsFullList,
                     )
                 }
     }

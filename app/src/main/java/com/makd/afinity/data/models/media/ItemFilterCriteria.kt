@@ -23,7 +23,7 @@ data class ItemFilterCriteria(
     val is3d: Boolean? = null,
 )
 
-fun LibraryFilters.toItemFilterCriteria(studioName: String? = null): ItemFilterCriteria =
+fun LibraryFilters.toItemFilterCriteria(studios: List<String> = emptyList()): ItemFilterCriteria =
     ItemFilterCriteria(
         genres = genres.toList(),
         years = years.toList(),
@@ -36,7 +36,7 @@ fun LibraryFilters.toItemFilterCriteria(studioName: String? = null): ItemFilterC
             },
         isLiked = if (watchlist) true else null,
         isResumable = if (resumable) true else null,
-        studios = if (studioName != null) listOf(studioName) else emptyList(),
+        studios = studios,
         officialRatings = officialRatings.toList(),
         tags = tags.toList(),
         videoTypes = buildList {

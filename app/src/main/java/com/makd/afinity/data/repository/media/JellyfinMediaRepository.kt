@@ -396,7 +396,8 @@ constructor(
         filters: LibraryFilters,
         nameStartsWith: String?,
         fields: List<ItemFields>?,
-        studioName: String?,
+        studioNames: List<String>,
+        includeItemTypes: List<String>?,
     ): Flow<PagingData<AfinityItem>> =
         Pager(
                 config =
@@ -411,7 +412,8 @@ constructor(
                     filters = filters,
                     baseUrl = getBaseUrl(),
                     nameStartsWith = nameStartsWith,
-                    studioName = studioName,
+                    studioNames = studioNames,
+                    includeItemTypes = includeItemTypes,
                 )
             }
             .flow

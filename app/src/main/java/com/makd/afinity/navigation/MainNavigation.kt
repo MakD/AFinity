@@ -518,6 +518,43 @@ fun MainNavigation(
                                     }
 
                                     composable(
+                                        route = Destination.CUSTOM_SECTION_CONTENT_ROUTE,
+                                        arguments =
+                                            listOf(
+                                                navArgument("sectionId") {
+                                                    type = NavType.StringType
+                                                }
+                                            ),
+                                    ) {
+                                        LibraryContentScreen(
+                                            onItemClick = { item ->
+                                                val route =
+                                                    Destination.createItemDetailRoute(
+                                                        itemId = item.id.toString(),
+                                                        itemType =
+                                                            when (item) {
+                                                                is AfinityShow -> "Series"
+                                                                is AfinitySeason -> "Season"
+                                                                else -> null
+                                                            },
+                                                        seriesId =
+                                                            (item as? AfinitySeason)
+                                                                ?.seriesId
+                                                                ?.toString(),
+                                                    )
+                                                navController.navigate(route)
+                                            },
+                                            onProfileClick = {
+                                                val route = Destination.createSettingsRoute()
+                                                navController.navigate(route)
+                                            },
+                                            navController = navController,
+                                            modifier = Modifier.fillMaxSize(),
+                                            widthSizeClass = widthSizeClass,
+                                        )
+                                    }
+
+                                    composable(
                                         route = Destination.STUDIO_CONTENT_ROUTE,
                                         arguments =
                                             listOf(

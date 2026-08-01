@@ -666,6 +666,15 @@ fun HomeScreen(
                                                     },
                                                     widthSizeClass = widthSizeClass,
                                                     cardStyle = section.cardStyle,
+                                                    onViewAllClick =
+                                                        section.customSectionId?.let { id ->
+                                                            {
+                                                                viewModel.onCustomSectionClick(
+                                                                    id,
+                                                                    navController,
+                                                                )
+                                                            }
+                                                        },
                                                 )
                                             }
                                         }
