@@ -153,11 +153,18 @@ constructor(
         }
 
     private fun readPref(prefs: Preferences, spec: PrefSpec): JsonPrimitive? =
-        when (spec.type) {
-            PrefType.BOOLEAN -> prefs[booleanPreferencesKey(spec.name)]?.let { JsonPrimitive(it) }
-            PrefType.INT -> prefs[intPreferencesKey(spec.name)]?.let { JsonPrimitive(it) }
-            PrefType.LONG -> prefs[longPreferencesKey(spec.name)]?.let { JsonPrimitive(it) }
-            PrefType.STRING -> prefs[stringPreferencesKey(spec.name)]?.let { JsonPrimitive(it) }
+        try {
+            when (spec.type) {
+                PrefType.BOOLEAN ->
+                    prefs[booleanPreferencesKey(spec.name)]?.let { JsonPrimitive(it) }
+                PrefType.INT -> prefs[intPreferencesKey(spec.name)]?.let { JsonPrimitive(it) }
+                PrefType.LONG -> prefs[longPreferencesKey(spec.name)]?.let { JsonPrimitive(it) }
+                PrefType.STRING ->
+                    prefs[stringPreferencesKey(spec.name)]?.let { JsonPrimitive(it) }
+            }
+        } catch (e: ClassCastException) {
+            Timber.e(e, "Preference ${spec.name} is not a ${spec.type}; skipped from backup")
+            null
         }
 
     private fun writePref(
@@ -165,13 +172,18 @@ constructor(
         spec: PrefSpec,
         value: JsonPrimitive,
     ) {
-        when (spec.type) {
-            PrefType.BOOLEAN ->
-                value.booleanOrNull?.let { prefs[booleanPreferencesKey(spec.name)] = it }
-            PrefType.INT -> value.intOrNull?.let { prefs[intPreferencesKey(spec.name)] = it }
-            PrefType.LONG -> value.longOrNull?.let { prefs[longPreferencesKey(spec.name)] = it }
-            PrefType.STRING ->
-                value.contentOrNull?.let { prefs[stringPreferencesKey(spec.name)] = it }
+        try {
+            when (spec.type) {
+                PrefType.BOOLEAN ->
+                    value.booleanOrNull?.let { prefs[booleanPreferencesKey(spec.name)] = it }
+                PrefType.INT -> value.intOrNull?.let { prefs[intPreferencesKey(spec.name)] = it }
+                PrefType.LONG ->
+                    value.longOrNull?.let { prefs[longPreferencesKey(spec.name)] = it }
+                PrefType.STRING ->
+                    value.contentOrNull?.let { prefs[stringPreferencesKey(spec.name)] = it }
+            }
+        } catch (e: ClassCastException) {
+            Timber.e(e, "Preference ${spec.name} is not a ${spec.type}; skipped from import")
         }
     }
 }
