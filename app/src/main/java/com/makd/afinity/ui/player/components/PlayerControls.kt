@@ -108,6 +108,7 @@ data class AudioStreamOption(
     val displayName: String,
     val isDefault: Boolean,
     val position: Int = 0,
+    val secondaryName: String? = null,
 )
 
 data class SubtitleStreamOption(
@@ -168,17 +169,20 @@ fun PlayerControls(
                             } else {
                                 unknownLang
                             }
-                        val channelStr = formatAudioChannels(stream.channels)
+                        val channelStr = formatAudioChannels(stream)
+                        val profileStr = prettyAudioProfile(stream.profile, stream.codec)
                         val displayName = buildString {
                             append(localizedLang)
                             if (stream.codec.isNotBlank()) append(" • ${stream.codec.uppercase()}")
                             if (channelStr != null) append(" $channelStr")
+                            if (profileStr != null) append(" • $profileStr")
                         }
                         AudioStreamOption(
                             stream = stream,
                             displayName = displayName,
                             isDefault = stream.isDefault,
                             position = index,
+                            secondaryName = trackTitle(stream, null, localizedLang),
                         )
                     } ?: emptyList()
             assertAudioOptions(streams)
@@ -1385,6 +1389,7 @@ private fun TrackPanel(
                                     onSelectTrack(C.TRACK_TYPE_AUDIO, option.position)
                                     onDismiss()
                                 },
+                                secondaryLabel = option.secondaryName,
                             )
                         }
                     }
@@ -1526,7 +1531,7 @@ private fun PauseDetailsOverlay(
                     }
                 }
         }
-    val audioLabel = formatAudioChannels(audioStream?.channels)
+    val audioLabel = formatAudioChannels(audioStream)
 
     val genres =
         when (item) {
@@ -1913,14 +1918,24 @@ private fun formatTime(timeMs: Long): String {
     }
 }
 
-private fun formatAudioChannels(channels: Int?): String? =
+private fun formatAudioChannels(stream: AfinityMediaStream?): String? {
+    val channels = stream?.channels
     when (channels) {
-        1 -> "Mono"
-        2 -> "Stereo"
-        6 -> "5.1"
-        8 -> "7.1"
-        else -> channels?.let { "${it}ch" }
+        1 -> return "Mono"
+        2 -> return "Stereo"
     }
+    stream?.channelLayout?.let { layout ->
+        val base = layout.substringBefore('(').trim()
+        if (base.isNotBlank()) {
+            return when (base.lowercase()) {
+                "mono" -> "Mono"
+                "stereo", "downmix" -> "Stereo"
+                else -> base
+            }
+        }
+    }
+    return channels?.let { "${it}ch" }
+}
 
 private val parentheticalRegex = Regex("""\(([^)]+)\)""")
 
@@ -1962,7 +1977,39 @@ private fun prettySubtitleCodec(codec: String?): String? =
 private fun subtitleFileName(path: String?): String? =
     path?.substringAfterLast('/')?.substringAfterLast('\\')?.takeIf { it.isNotBlank() }
 
-private fun subtitleTrackTitle(
+private fun strippedDisplayTitle(stream: AfinityMediaStream?): String? {
+    val raw = stream?.displayTitle?.takeIf { it.isNotBlank() } ?: return null
+    val noise = buildSet {
+        add(stream.language.lowercase())
+        stream.language.toLocalizedLanguageName()?.let { add(it.lowercase()) }
+        add(stream.codec.lowercase())
+        stream.channelLayout?.let { add(it.lowercase()) }
+        formatAudioChannels(stream)?.let { add(it.lowercase()) }
+        prettySubtitleCodec(stream.codec)?.let { add(it.lowercase()) }
+        addAll(listOf("default", "forced", "external", "undefined", "und"))
+    }
+    return raw.split(" - ")
+        .map { it.trim() }
+        .filter { it.isNotBlank() && it.lowercase() !in noise }
+        .joinToString(" - ")
+        .takeIf { it.isNotBlank() }
+}
+
+private fun prettyAudioProfile(profile: String?, codec: String): String? {
+    val value = profile?.trim()?.takeIf { it.isNotBlank() } ?: return null
+    val lower = value.lowercase()
+    return when {
+        lower.contains("atmos") -> "Atmos"
+        lower.contains("dts:x") || lower.contains("dts-x") -> "DTS:X"
+        lower == "ma" || lower.contains("dts-hd ma") -> "DTS-HD MA"
+        lower == "hra" || lower.contains("dts-hd hra") -> "DTS-HD HR"
+        lower == "lc" -> null
+        lower == codec.lowercase() -> null
+        else -> value
+    }
+}
+
+private fun trackTitle(
     stream: AfinityMediaStream?,
     formatLabel: String?,
     primaryLabel: String,
@@ -1970,6 +2017,7 @@ private fun subtitleTrackTitle(
     val candidate =
         stream?.title?.takeIf { it.isNotBlank() }
             ?: formatLabel?.takeIf { it.isNotBlank() }
+            ?: strippedDisplayTitle(stream)
             ?: return null
     val isRedundant =
         candidate.equals(primaryLabel, ignoreCase = true) ||
@@ -1984,7 +2032,7 @@ private fun subtitleSecondaryLabel(
     formatMimeType: String?,
     primaryLabel: String,
 ): String? {
-    val title = subtitleTrackTitle(stream, formatLabel, primaryLabel)
+    val title = trackTitle(stream, formatLabel, primaryLabel)
     val codec = prettySubtitleCodec(stream?.codec?.takeIf { it.isNotBlank() } ?: formatMimeType)
     return listOfNotNull(title, codec).joinToString(" · ").takeIf { it.isNotBlank() }
 }

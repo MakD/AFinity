@@ -3,8 +3,8 @@ package com.makd.afinity.data.database.entities
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.makd.afinity.data.models.media.AfinityMediaStream
-import java.util.UUID
 import org.jellyfin.sdk.model.api.MediaStreamType
+import java.util.UUID
 
 @Entity(tableName = "mediastreams")
 data class AfinityMediaStreamDto(
@@ -25,6 +25,9 @@ data class AfinityMediaStreamDto(
     val index: Int,
     val channels: Int?,
     val isDefault: Boolean,
+    val isForced: Boolean = false,
+    val isHearingImpaired: Boolean = false,
+    val profile: String? = null,
     val downloadId: Long? = null,
 )
 
@@ -51,5 +54,8 @@ fun AfinityMediaStream.toAfinityMediaStreamDto(
         index = index,
         channels = channels,
         isDefault = isDefault,
+        isForced = isForced,
+        isHearingImpaired = isHearingImpaired,
+        profile = profile,
     )
 }

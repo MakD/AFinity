@@ -68,7 +68,10 @@ fun AfinityMediaStreamDto.toAfinityMediaStream(): AfinityMediaStream {
         width = width,
         videoDoViTitle = videoDoViTitle,
         index = index,
-        channels = null,
-        isDefault = false,
+        channels = channels,
+        isDefault = isDefault,
+        isForced = isForced,
+        isHearingImpaired = isHearingImpaired,
+        profile = profile,
     )
 }

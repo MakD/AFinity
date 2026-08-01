@@ -1376,6 +1376,19 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_60_61 =
+        object : Migration(60, 61) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `mediastreams` ADD COLUMN `isForced` INTEGER NOT NULL DEFAULT 0"
+                )
+                db.execSQL(
+                    "ALTER TABLE `mediastreams` ADD COLUMN `isHearingImpaired` INTEGER NOT NULL DEFAULT 0"
+                )
+                db.execSQL("ALTER TABLE `mediastreams` ADD COLUMN `profile` TEXT")
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1437,5 +1450,6 @@ object DatabaseMigrations {
             MIGRATION_57_58,
             MIGRATION_58_59,
             MIGRATION_59_60,
+            MIGRATION_60_61,
         )
 }
