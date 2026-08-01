@@ -1548,4 +1548,5 @@
     <string name="custom_sections_add_blank_summary">Начать с самого начала</string>
     <string name="custom_sections_preset_range_fmt">Сезонный · %1$s – %2$s</string>
     <string name="home_row_hero_carousel">В центре внимания</string>
+    <string name="discovery_section_spotlights">Баннеры</string>
 </resources>
