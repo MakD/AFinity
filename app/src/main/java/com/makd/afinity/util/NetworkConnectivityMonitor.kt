@@ -48,13 +48,13 @@ constructor(
 
     val networkDropEvents: SharedFlow<Unit> = _networkDropEvents.asSharedFlow()
 
+    private val networks = mutableSetOf<Network>()
+
     private val _isNetworkAvailable = MutableStateFlow(isCurrentlyConnected())
     val isNetworkAvailable: StateFlow<Boolean> = _isNetworkAvailable.asStateFlow()
 
     private val _isOnWifi = MutableStateFlow(isOnWifi())
     val isOnWifiFlow: StateFlow<Boolean> = _isOnWifi.asStateFlow()
-
-    private val networks = mutableSetOf<Network>()
 
     init {
         val networkRequest =
