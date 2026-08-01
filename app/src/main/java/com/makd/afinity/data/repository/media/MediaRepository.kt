@@ -277,6 +277,7 @@ interface MediaRepository {
     suspend fun getFilterOptions(
         parentId: UUID?,
         libraryType: CollectionType,
+        includeItemTypes: List<String> = emptyList(),
     ): LibraryFilterOptions
 
     fun getLibrariesFlow(): Flow<List<AfinityCollection>>

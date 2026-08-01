@@ -100,6 +100,8 @@ import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
 import com.makd.afinity.ui.settings.appearance.AppearanceOptionsScreen
+import com.makd.afinity.ui.settings.backup.BackupBottomSheet
+import com.makd.afinity.ui.settings.backup.BackupScreen
 import com.makd.afinity.ui.settings.downloads.DownloadSettingsScreen
 import com.makd.afinity.ui.settings.home.CustomSectionsScreen
 import com.makd.afinity.ui.settings.player.PlayerOptionsScreen
@@ -138,10 +140,12 @@ fun SettingsScreen(
 
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
+    var showBackupSheet by remember { mutableStateOf(false) }
     var showQuickConnectDialog by remember { mutableStateOf(false) }
     var showSessionSwitcherSheet by remember { mutableStateOf(false) }
     var showControlPanel by remember { mutableStateOf(false) }
     val sessionSwitcherSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val backupSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val playerOffset = LocalPlayerOffset.current
     val controlPanelViewModel: ControlPanelViewModel = hiltViewModel(key = "settings_control_panel")
     val isAdmin by controlPanelViewModel.isAdmin.collectAsStateWithLifecycle()
@@ -208,6 +212,13 @@ fun SettingsScreen(
 
     if (showLanguageDialog) {
         LanguagePickerDialog(onDismiss = { showLanguageDialog = false })
+    }
+
+    if (showBackupSheet) {
+        BackupBottomSheet(
+            onDismiss = { showBackupSheet = false },
+            sheetState = backupSheetState,
+        )
     }
 
     if (showQuickConnectDialog) {
@@ -406,6 +417,24 @@ fun SettingsScreen(
                                                     ListDetailPaneScaffoldRole.Detail,
                                                     SettingsPaneDestination.Downloads,
                                                 )
+                                            }
+                                        },
+                                    )
+                                    SettingsDivider()
+                                    SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_download_arrow),
+                                        title = stringResource(R.string.backup_title),
+                                        subtitle = stringResource(R.string.backup_settings_summary),
+                                        onClick = {
+                                            if (isDualPane) {
+                                                scope.launch {
+                                                    navigator.navigateTo(
+                                                        ListDetailPaneScaffoldRole.Detail,
+                                                        SettingsPaneDestination.Backup,
+                                                    )
+                                                }
+                                            } else {
+                                                showBackupSheet = true
                                             }
                                         },
                                     )
@@ -695,6 +724,8 @@ fun SettingsScreen(
                         CustomSectionsScreen(
                             onBackClick = { scope.launch { navigator.navigateBack() } }
                         )
+                    is SettingsPaneDestination.Backup ->
+                        BackupScreen(onBackClick = { scope.launch { navigator.navigateBack() } })
                     is SettingsPaneDestination.Player ->
                         PlayerOptionsScreen(
                             onBackClick = { scope.launch { navigator.navigateBack() } }

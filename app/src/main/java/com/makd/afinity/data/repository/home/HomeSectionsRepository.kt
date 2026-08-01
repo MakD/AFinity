@@ -249,7 +249,7 @@ constructor(
                             }
                             layoutSessionKey = sk
                             _content.value = emptyMap()
-                            _layout.value = reinterleave(cachedLayout)
+                            _layout.value = reinterleave(cachedLayout.distinctBy { it.key })
                             Timber.d(
                                 "Home layout restored from cache (${cachedLayout.size} sections)"
                             )
@@ -983,6 +983,7 @@ constructor(
         }
 
         val usedPeopleNames = mutableSetOf<String>()
+        val usedPeopleIds = mutableSetOf<UUID>()
 
         fun personDescriptors(
             people: List<PersonWithCount>,
@@ -991,11 +992,15 @@ constructor(
             titleRes: Int,
         ): List<HomeSectionDescriptor> =
             people
-                .filterNot { it.person.name in usedPeopleNames }
+                .distinctBy { it.person.id }
+                .filterNot {
+                    it.person.name in usedPeopleNames || it.person.id in usedPeopleIds
+                }
                 .shuffled()
                 .take(max)
                 .map { personWithCount ->
                     usedPeopleNames.add(personWithCount.person.name)
+                    usedPeopleIds.add(personWithCount.person.id)
                     HomeSectionDescriptor(
                         key = "person_${type.name}_${personWithCount.person.id}",
                         type = type,
@@ -1086,9 +1091,10 @@ constructor(
                 val availablePeople =
                     movieWithPeople.people
                         .filter { it.type == personKind }
-                        .filterNot { it.name in usedPeopleNames }
+                        .filterNot { it.name in usedPeopleNames || it.id in usedPeopleIds }
                 val selectedPerson = availablePeople.take(3).randomOrNull() ?: continue
                 usedPeopleNames.add(selectedPerson.name)
+                usedPeopleIds.add(selectedPerson.id)
 
                 val movieJson = converters.fromAfinityMovie(movieWithPeople) ?: continue
                 personFromMovieDescriptors.add(
@@ -1196,7 +1202,7 @@ constructor(
                 )
             }
 
-        interleave(genreDescriptors, recommendationDescriptors, spotlights)
+        interleave(genreDescriptors, recommendationDescriptors, spotlights).distinctBy { it.key }
     }
 
     private fun reinterleave(

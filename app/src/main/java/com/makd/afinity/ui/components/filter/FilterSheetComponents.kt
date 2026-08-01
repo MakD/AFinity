@@ -209,19 +209,25 @@ fun <T> SearchableChipMultiSelect(
                             }
                         }
                         .padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
             ) {
                 FlowRow(
                     modifier = Modifier.weight(1f),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(0.dp),
                     itemVerticalAlignment = Alignment.CenterVertically,
                 ) {
                     selected.forEach { item ->
                         InputChip(
                             selected = true,
                             onClick = { onRemoveSelected(item) },
-                            label = { Text(selectedLabel(item)) },
+                            label = {
+                                Text(
+                                    text = selectedLabel(item),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
                             trailingIcon = {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_close),
@@ -246,7 +252,7 @@ fun <T> SearchableChipMultiSelect(
                         keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                         modifier =
                             Modifier.widthIn(min = 72.dp)
-                                .heightIn(min = 32.dp)
+                                .heightIn(min = 48.dp)
                                 .focusRequester(focusRequester)
                                 .onFocusChanged { state ->
                                     if (state.isFocused) {

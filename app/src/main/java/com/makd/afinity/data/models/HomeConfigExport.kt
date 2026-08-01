@@ -4,22 +4,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class HomeConfigExport(
-    val format: String = FORMAT,
-    val schemaVersion: Int = SCHEMA_VERSION,
-    val exportedAt: String,
-    val appVersion: String,
-    val hiddenRows: List<String> = emptyList(),
-    val discovery: DiscoveryExport = DiscoveryExport(),
-    val customSections: List<CustomSectionExport> = emptyList(),
-) {
-    companion object {
-        const val FORMAT = "afinity.home"
-        const val SCHEMA_VERSION = 1
-    }
-}
-
-@Serializable
 data class DiscoveryExport(
     val density: String = DiscoveryDensity.default.key,
     val disabled: List<String> = emptyList(),

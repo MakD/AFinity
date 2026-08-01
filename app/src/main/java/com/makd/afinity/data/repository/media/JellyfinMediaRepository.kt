@@ -419,22 +419,34 @@ constructor(
     override suspend fun getFilterOptions(
         parentId: UUID?,
         libraryType: CollectionType,
+        includeItemTypes: List<String>,
     ): LibraryFilterOptions =
         apiCall(LibraryFilterOptions(), "Failed to get filter options") { apiClient, userId ->
-            val includeItemTypes =
-                when (libraryType) {
-                    CollectionType.TvShows -> listOf(BaseItemKind.SERIES)
-                    CollectionType.Movies -> listOf(BaseItemKind.MOVIE)
-                    CollectionType.BoxSets -> listOf(BaseItemKind.BOX_SET)
-                    else -> emptyList()
-                }
+            val requestedTypes =
+                includeItemTypes
+                    .mapNotNull {
+                        try {
+                            BaseItemKind.valueOf(it.uppercase())
+                        } catch (e: Exception) {
+                            Timber.w("Unknown item type dropped from filter query: $it")
+                            null
+                        }
+                    }
+                    .ifEmpty {
+                        when (libraryType) {
+                            CollectionType.TvShows -> listOf(BaseItemKind.SERIES)
+                            CollectionType.Movies -> listOf(BaseItemKind.MOVIE)
+                            CollectionType.BoxSets -> listOf(BaseItemKind.BOX_SET)
+                            else -> emptyList()
+                        }
+                    }
 
             val content =
                 FilterApi(apiClient)
                     .getQueryFiltersLegacy(
                         userId = userId,
                         parentId = parentId,
-                        includeItemTypes = includeItemTypes.ifEmpty { null },
+                        includeItemTypes = requestedTypes.ifEmpty { null },
                     )
                     .content
             LibraryFilterOptions(

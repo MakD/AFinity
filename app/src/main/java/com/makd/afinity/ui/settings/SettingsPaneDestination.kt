@@ -20,6 +20,9 @@ sealed interface SettingsPaneDestination : Parcelable {
     data object ServerManagement : SettingsPaneDestination
 
     @Parcelize
+    data object Backup : SettingsPaneDestination
+
+    @Parcelize
     data object Licenses : SettingsPaneDestination
 
     @Parcelize
