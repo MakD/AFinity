@@ -970,7 +970,7 @@ constructor(
                 }
 
                 is PlayerEvent.SwitchToTrack -> {
-                    switchToTrack(event.trackType, event.index)
+                    switchToTrack(event.trackType, event.index, userInitiated = true)
                     if (event.trackType == C.TRACK_TYPE_TEXT) {
                         updateUiState { it.copy(subtitleUserSelected = true) }
                     } else if (event.trackType == C.TRACK_TYPE_AUDIO && event.index >= 0) {
@@ -2148,7 +2148,11 @@ constructor(
         }
     }
 
-    fun switchToTrack(trackType: @C.TrackType Int, index: Int) {
+    fun switchToTrack(
+        trackType: @C.TrackType Int,
+        index: Int,
+        userInitiated: Boolean = false,
+    ) {
         if (index == -1) {
             player.trackSelectionParameters =
                 player.trackSelectionParameters
@@ -2167,23 +2171,62 @@ constructor(
             val tracksGroups =
                 player.currentTracks.groups.filter { it.type == trackType && it.isSupported }
 
-            if (index < tracksGroups.size) {
-                player.trackSelectionParameters =
-                    player.trackSelectionParameters
-                        .buildUpon()
-                        .setOverrideForType(
-                            TrackSelectionOverride(tracksGroups[index].mediaTrackGroup, 0)
-                        )
-                        .setTrackTypeDisabled(trackType, false)
-                        .apply {
-                            if (trackType == C.TRACK_TYPE_TEXT) {
-                                setIgnoredTextSelectionFlags(0)
+            if (tracksGroups.isEmpty()) {
+                Timber.w("No supported tracks of type $trackType available to select")
+                updateCurrentTrackSelections()
+                return
+            }
+
+            val safeIndex =
+                if (index < tracksGroups.size) {
+                    index
+                } else {
+                    Timber.w(
+                        "Track index $index out of range for type $trackType (${tracksGroups.size} available), falling back to first"
+                    )
+                    0
+                }
+
+            val group = tracksGroups[safeIndex]
+            val language = group.getTrackFormat(0).language?.takeIf { it.isNotBlank() && it != "und" }
+
+            player.trackSelectionParameters =
+                player.trackSelectionParameters
+                    .buildUpon()
+                    .setOverrideForType(TrackSelectionOverride(group.mediaTrackGroup, 0))
+                    .setTrackTypeDisabled(trackType, false)
+                    .apply {
+                        if (trackType == C.TRACK_TYPE_TEXT) {
+                            setIgnoredTextSelectionFlags(0)
+                        }
+                        if (userInitiated && language != null) {
+                            when (trackType) {
+                                C.TRACK_TYPE_AUDIO -> setPreferredAudioLanguage(language)
+                                C.TRACK_TYPE_TEXT -> setPreferredTextLanguage(language)
                             }
                         }
-                        .build()
-            }
+                    }
+                    .build()
         }
         updateCurrentTrackSelections()
+    }
+
+    override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+        super.onMediaItemTransition(mediaItem, reason)
+
+        player.trackSelectionParameters =
+            player.trackSelectionParameters
+                .buildUpon()
+                .clearOverridesOfType(C.TRACK_TYPE_AUDIO)
+                .clearOverridesOfType(C.TRACK_TYPE_TEXT)
+                .build()
+
+        if (pendingAudioTrackPosition == null) {
+            updateUiState { it.copy(audioStreamIndex = null) }
+        }
+        if (pendingSubtitleTrackPosition == null) {
+            updateUiState { it.copy(subtitleStreamIndex = null) }
+        }
     }
 
     private fun autoUpdateSubtitleForAudio(audioPosition: Int) {

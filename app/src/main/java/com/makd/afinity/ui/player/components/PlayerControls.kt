@@ -577,10 +577,7 @@ fun PlayerControls(
             TrackPanel(
                 audioOptions = audioStreamOptions,
                 subtitleOptions = subtitleStreamOptions,
-                currentAudioIndex =
-                    uiState.audioStreamIndex
-                        ?: audioStreamOptions.find { it.isDefault }?.position
-                        ?: 0,
+                currentAudioIndex = uiState.audioStreamIndex ?: -1,
                 currentSubtitleIndex = uiState.subtitleStreamIndex ?: -1,
                 onSelectTrack = { trackType, index ->
                     onPlayerEvent(PlayerEvent.SwitchToTrack(trackType, index))
