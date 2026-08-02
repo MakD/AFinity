@@ -374,6 +374,16 @@ constructor(
         _latestMedia.value = emptyList()
     }
 
+    override fun removeItemFromCache(itemId: String) {
+        val uuid = try { UUID.fromString(itemId) } catch (e: Exception) { null }
+        val matches: (UUID) -> Boolean = { id -> id.toString() == itemId || (uuid != null && id == uuid) }
+
+        _latestMedia.update { list -> list.filterNot { matches(it.id) } }
+        _continueWatching.update { list -> list.filterNot { matches(it.id) } }
+        _nextUp.update { list -> list.filterNot { matches(it.id) || matches(it.seriesId) } }
+    }
+
+
     private val _latestMedia = MutableStateFlow<List<AfinityItem>>(emptyList())
     override val latestMedia: Flow<List<AfinityItem>> = _latestMedia.asStateFlow()
 

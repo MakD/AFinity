@@ -33,6 +33,7 @@ import com.makd.afinity.data.models.jellyseerr.TmdbKeywordSearchResponse
 import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import com.makd.afinity.data.models.jellyseerr.WatchProviderDetails
 import com.makd.afinity.data.models.jellyseerr.WatchProviderRegion
+import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.models.server.AddressCheck
 import com.makd.afinity.data.network.JellyseerrApiService
 import com.makd.afinity.data.repository.JellyseerrRepository
@@ -80,8 +81,10 @@ constructor(
     private val database: AfinityDatabase,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
     private val addressResolver: JellyseerrAddressResolver,
+    private val adminChangeBroadcaster: AdminChangeBroadcaster,
     @ApplicationScope private val repositoryScope: CoroutineScope,
 ) : JellyseerrRepository {
+
 
     private val jellyseerrDao = database.jellyseerrDao()
 
@@ -128,6 +131,15 @@ constructor(
 
     init {
         repositoryScope.launch {
+            adminChangeBroadcaster.itemDeleted.collect { event ->
+                if (isAuthenticated.value) {
+                    deleteMediaAndRequestsForJellyfinItem(event.itemId, event.tmdbId, event.isMovie)
+                }
+            }
+        }
+
+        repositoryScope.launch {
+
             networkConnectivityMonitor.isNetworkAvailable.collect { isAvailable ->
                 if (!isAvailable) return@collect
                 val (serverId, userId) = activeContext ?: return@collect
@@ -707,14 +719,13 @@ constructor(
                         if (response.isSuccessful && response.body() != null) {
                             val baseRequests = response.body()!!.results
 
-                            if (skip == 0 && take >= 20) {
-                                val expiryTime = System.currentTimeMillis() - CACHE_VALIDITY_MS
-                                jellyseerrDao.deleteExpiredRequests(
-                                    expiryTime,
+                            if (skip == 0 && filter == null) {
+                                jellyseerrDao.clearAllRequests(
                                     currentServerId,
                                     currentUserId.toString(),
                                 )
                             }
+
 
                             val existingById =
                                 jellyseerrDao
@@ -879,6 +890,129 @@ constructor(
             }
         }
     }
+
+    override suspend fun deleteMediaAndRequestsForJellyfinItem(
+        jellyfinItemId: String,
+        tmdbId: Int?,
+        isMovie: Boolean?,
+    ): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            val (currentServerId, currentUserId) =
+                activeContext ?: return@withContext Result.failure(Exception("No active session"))
+            try {
+                val api = apiService.get()
+
+                val requestsToDelete = mutableSetOf<Int>()
+                var targetMediaId: Int? = null
+
+                val cleanJellyfinId = jellyfinItemId.replace("-", "").lowercase(Locale.ROOT)
+
+                // 1. Check cached requests in DB
+                try {
+                    val cachedRequests =
+                        jellyseerrDao
+                            .getAllRequests(currentServerId, currentUserId.toString())
+                            .first()
+                    cachedRequests.forEach { reqEntity ->
+                        if (tmdbId != null && reqEntity.tmdbId == tmdbId) {
+                            requestsToDelete.add(reqEntity.id)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Timber.w(e, "Error checking cached requests for deletion")
+                }
+
+
+                // 2. Fetch remote requests list
+                try {
+                    val remoteRequestsRes = api.getRequests(take = 1000)
+                    if (remoteRequestsRes.isSuccessful) {
+                        remoteRequestsRes.body()?.results?.forEach { req ->
+                            val jId = req.media.jellyfinMediaId?.replace("-", "")?.lowercase(Locale.ROOT)
+                            val jId4k = req.media.jellyfinMediaId4k?.replace("-", "")?.lowercase(Locale.ROOT)
+                            if (cleanJellyfinId == jId || cleanJellyfinId == jId4k || (tmdbId != null && req.media.tmdbId == tmdbId)) {
+                                requestsToDelete.add(req.id)
+                                if (req.media.id > 0) {
+                                    targetMediaId = req.media.id
+                                }
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Timber.w(e, "Error fetching remote requests for deletion check")
+                }
+
+                // 3. Lookup mediaDetails if targetMediaId wasn't found from requests but tmdbId is known
+                if (targetMediaId == null && tmdbId != null && isMovie != null) {
+                    try {
+                        val detailsRes = if (isMovie) api.getMovieDetails(tmdbId) else api.getTvDetails(tmdbId)
+                        if (detailsRes.isSuccessful) {
+                            detailsRes.body()?.mediaInfo?.let { mediaInfo ->
+                                if (mediaInfo.id > 0) {
+                                    targetMediaId = mediaInfo.id
+                                }
+                                mediaInfo.requests?.forEach { req ->
+                                    requestsToDelete.add(req.id)
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Timber.w(e, "Error fetching media details for TMDB $tmdbId")
+                    }
+                }
+
+                // 4. Delete requests in Jellyseerr server and local DB
+                requestsToDelete.forEach { requestId ->
+                    try {
+                        api.deleteRequest(requestId)
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to delete request $requestId in Jellyseerr")
+                    }
+                    jellyseerrDao.deleteRequest(
+                        requestId,
+                        currentServerId,
+                        currentUserId.toString(),
+                    )
+                }
+
+                // 5. Delete media in Jellyseerr server
+                targetMediaId?.let { mediaId ->
+                    try {
+                        val mediaDelRes = api.deleteMedia(mediaId)
+                        Timber.d("Delete media $mediaId in Jellyseerr response: ${mediaDelRes.code()}")
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to delete media $mediaId in Jellyseerr")
+                    }
+                }
+
+                // 6. Trigger clear data / cache flush in Jellyseerr server
+                try {
+                    api.flushCache()
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to flush cache in Jellyseerr")
+                }
+                try {
+                    api.runJob("clear-data")
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to run clear-data job in Jellyseerr")
+                }
+                try {
+                    api.runJob("availability-sync")
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to run availability-sync job in Jellyseerr")
+                }
+
+                // 7. Refresh requests
+                getRequests(take = 50, skip = 0)
+
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.e(e, "Error deleting media and requests in Jellyseerr for $jellyfinItemId")
+                Result.failure(e)
+            }
+        }
+    }
+
 
     override suspend fun approveRequest(
         requestId: Int,

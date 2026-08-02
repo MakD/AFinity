@@ -1594,9 +1594,12 @@ constructor(
         onError: (String) -> Unit,
     ) {
         viewModelScope.launch {
+            val item = uiState.value.item
+            val tmdbId = item?.providerIds?.get("Tmdb")?.toIntOrNull()
+            val isMovie = item is AfinityMovie
             val result = adminRepository.deleteItem(targetItemId.toString())
             if (result.isSuccess) {
-                adminChangeBroadcaster.notifyItemChanged(targetItemId.toString())
+                adminChangeBroadcaster.notifyItemDeleted(targetItemId.toString(), tmdbId, isMovie)
                 onSuccess()
             } else {
                 val errorMsg = result.exceptionOrNull()?.localizedMessage ?: "Unknown error"
@@ -1604,6 +1607,7 @@ constructor(
             }
         }
     }
+
 }
 
 data class ItemDetailUiState(

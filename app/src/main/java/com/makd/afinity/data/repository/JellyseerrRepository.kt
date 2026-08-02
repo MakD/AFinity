@@ -121,6 +121,13 @@ interface JellyseerrRepository {
 
     suspend fun deleteRequest(requestId: Int): Result<Unit>
 
+    suspend fun deleteMediaAndRequestsForJellyfinItem(
+        jellyfinItemId: String,
+        tmdbId: Int? = null,
+        isMovie: Boolean? = null,
+    ): Result<Unit>
+
+
     suspend fun approveRequest(
         requestId: Int,
         serverId: Int?,
