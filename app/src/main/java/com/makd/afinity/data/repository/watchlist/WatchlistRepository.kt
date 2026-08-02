@@ -2,6 +2,7 @@ package com.makd.afinity.data.repository.watchlist
 
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
@@ -18,6 +19,8 @@ interface WatchlistRepository {
     suspend fun isInWatchlist(itemId: UUID): Boolean
 
     fun isInWatchlistFlow(itemId: UUID): Flow<Boolean>
+
+    suspend fun getWatchlistItems(): List<AfinityItem>
 
     suspend fun getWatchlistBoxSets(): List<AfinityBoxSet>
 

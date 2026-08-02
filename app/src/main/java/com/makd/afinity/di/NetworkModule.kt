@@ -40,6 +40,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.android.androidDevice
 import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.HttpClientOptions
 import org.jellyfin.sdk.api.okhttp.OkHttpFactory
 import org.jellyfin.sdk.createJellyfin
 import org.jellyfin.sdk.model.ClientInfo
@@ -55,6 +56,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.seconds
 
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class DownloadClient
 
@@ -197,27 +199,23 @@ object NetworkModule {
                 .followSslRedirects(true)
 
         if (BuildConfig.DEBUG) {
-            val loggingInterceptor =
-                HttpLoggingInterceptor { message ->
-                        val sanitizedMessage =
-                            message.replace(
-                                Regex("(?i)(api_key|token|accessToken)=[^&\\s]+"),
-                                "$1=[REDACTED]",
-                            )
-                        if (
-                            sanitizedMessage.contains("ERROR") ||
-                                sanitizedMessage.contains("FAILED")
-                        ) {
-                            Timber.tag("Jellyfin-HTTP").d(sanitizedMessage)
-                        }
-                    }
-                    .apply {
-                        level = HttpLoggingInterceptor.Level.BASIC
-                        redactHeader("Authorization")
-                        redactHeader("Cookie")
-                        redactHeader("X-MediaBrowser-Token")
-                        redactHeader("x-refresh-token")
-                    }
+            val loggingInterceptor = HttpLoggingInterceptor { message ->
+                val sanitizedMessage =
+                    message.replace(
+                        Regex("(?i)(api_key|token|accessToken)=[^&\\s]+"),
+                        "$1=[REDACTED]",
+                    )
+                if (sanitizedMessage.contains("ERROR") || sanitizedMessage.contains("FAILED")) {
+                    Timber.tag("Jellyfin-HTTP").d(sanitizedMessage)
+                }
+            }
+                .apply {
+                    level = HttpLoggingInterceptor.Level.BASIC
+                    redactHeader("Authorization")
+                    redactHeader("Cookie")
+                    redactHeader("X-MediaBrowser-Token")
+                    redactHeader("x-refresh-token")
+                }
             builder.addInterceptor(loggingInterceptor)
         }
 
@@ -310,29 +308,28 @@ object NetworkModule {
                 .followSslRedirects(true)
 
         if (BuildConfig.DEBUG) {
-            val loggingInterceptor =
-                HttpLoggingInterceptor { message ->
-                        val sanitizedMessage =
-                            message.replace(
-                                Regex("(?i)(api_key|token|accessToken)=[^&\\s]+"),
-                                "$1=[REDACTED]",
-                            )
+            val loggingInterceptor = HttpLoggingInterceptor { message ->
+                val sanitizedMessage =
+                    message.replace(
+                        Regex("(?i)(api_key|token|accessToken)=[^&\\s]+"),
+                        "$1=[REDACTED]",
+                    )
 
-                        if (
-                            sanitizedMessage.contains("ERROR") ||
-                                sanitizedMessage.contains("FAILED") ||
-                                sanitizedMessage.contains("-->") ||
-                                sanitizedMessage.contains("<--")
-                        ) {
-                            Timber.tag("Download-HTTP").d(sanitizedMessage)
-                        }
-                    }
-                    .apply {
-                        level = HttpLoggingInterceptor.Level.BASIC
-                        redactHeader("Authorization")
-                        redactHeader("Cookie")
-                        redactHeader("X-MediaBrowser-Token")
-                    }
+                if (
+                    sanitizedMessage.contains("ERROR") ||
+                        sanitizedMessage.contains("FAILED") ||
+                        sanitizedMessage.contains("-->") ||
+                        sanitizedMessage.contains("<--")
+                ) {
+                    Timber.tag("Download-HTTP").d(sanitizedMessage)
+                }
+            }
+                .apply {
+                    level = HttpLoggingInterceptor.Level.BASIC
+                    redactHeader("Authorization")
+                    redactHeader("Cookie")
+                    redactHeader("X-MediaBrowser-Token")
+                }
             builder.addInterceptor(loggingInterceptor)
         }
 
@@ -344,6 +341,13 @@ object NetworkModule {
     fun provideOkHttpFactory(baseOkHttpClient: OkHttpClient): OkHttpFactory {
         return OkHttpFactory(base = baseOkHttpClient)
     }
+
+    val JELLYFIN_HTTP_OPTIONS =
+        HttpClientOptions(
+            connectTimeout = 15.seconds,
+            requestTimeout = 45.seconds,
+            socketTimeout = 30.seconds,
+        )
 
     @Provides
     @Singleton
@@ -365,7 +369,7 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideApiClient(jellyfin: Jellyfin): ApiClient {
-        return jellyfin.createApi()
+        return jellyfin.createApi(httpClientOptions = JELLYFIN_HTTP_OPTIONS)
     }
 
     @Provides
@@ -500,7 +504,9 @@ object NetworkModule {
                     )
 
                 val newUrl =
-                    currentBaseUrl.toHttpUrlOrNull()?.rewriteWithRequestPathAndQuery(originalRequest)
+                    currentBaseUrl
+                        .toHttpUrlOrNull()
+                        ?.rewriteWithRequestPathAndQuery(originalRequest)
                         ?: throw IOException("Failed to build Audiobookshelf URL")
 
                 val token = securePreferencesRepository.getCachedAudiobookshelfToken()

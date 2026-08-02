@@ -11,6 +11,7 @@ import com.makd.afinity.data.repository.server.AddressResolutionResult
 import com.makd.afinity.data.repository.server.ServerAddressResolver
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.di.ApplicationScope
+import com.makd.afinity.di.NetworkModule
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -309,7 +310,11 @@ constructor(
         }
 
         Timber.d("Creating NEW ApiClient for server: $serverId with baseUrl: $serverUrl")
-        val newClient = jellyfin.createApi(baseUrl = serverUrl)
+        val newClient =
+            jellyfin.createApi(
+                baseUrl = serverUrl,
+                httpClientOptions = NetworkModule.JELLYFIN_HTTP_OPTIONS,
+            )
         apiClients[serverId] = newClient
         return newClient
     }

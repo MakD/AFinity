@@ -2,8 +2,10 @@ package com.makd.afinity.data.repository.watchlist
 
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
+import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
@@ -66,6 +68,27 @@ constructor(
 
     override fun isInWatchlistFlow(itemId: UUID): Flow<Boolean> {
         return flow { emit(isInWatchlist(itemId)) }.flowOn(Dispatchers.IO)
+    }
+
+    override suspend fun getWatchlistItems(): List<AfinityItem> {
+        return withContext(Dispatchers.IO) {
+            try {
+                mediaRepository
+                    .getItems(
+                        includeItemTypes =
+                            listOf("MOVIE", "SERIES", "SEASON", "EPISODE", "BOX_SET"),
+                        sortBy = SortBy.DATE_ADDED,
+                        sortDescending = true,
+                        fields = FieldSets.MEDIA_ITEM_CARDS,
+                        criteria = ItemFilterCriteria(isLiked = true),
+                    )
+                    .items
+                    ?.mapNotNull { it.toAfinityItem(mediaRepository.getBaseUrl()) } ?: emptyList()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load watchlist items")
+                emptyList()
+            }
+        }
     }
 
     override suspend fun getWatchlistBoxSets(): List<AfinityBoxSet> {
@@ -171,6 +194,7 @@ constructor(
                     mediaRepository.getItems(
                         limit = 0,
                         criteria = ItemFilterCriteria(isLiked = true),
+                        enableTotalRecordCount = true,
                     )
                 response.totalRecordCount ?: 0
             } catch (e: Exception) {

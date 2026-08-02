@@ -14,23 +14,19 @@ object FieldSets {
 
     val MEDIA_ITEM_CARDS =
         listOf(
-            ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
             ItemFields.CHILD_COUNT,
             ItemFields.RECURSIVE_ITEM_COUNT,
             ItemFields.DATE_CREATED,
-            ItemFields.DATE_LAST_MEDIA_ADDED,
         )
 
-    val CONTINUE_WATCHING = listOf(ItemFields.PRIMARY_IMAGE_ASPECT_RATIO)
+    val CONTINUE_WATCHING = emptyList<ItemFields>()
 
-    val NEXT_UP = listOf(ItemFields.PRIMARY_IMAGE_ASPECT_RATIO)
+    val NEXT_UP = emptyList<ItemFields>()
 
-    val LIBRARY_GRID =
-        listOf(ItemFields.PRIMARY_IMAGE_ASPECT_RATIO, ItemFields.RECURSIVE_ITEM_COUNT)
+    val LIBRARY_GRID = listOf(ItemFields.RECURSIVE_ITEM_COUNT)
 
     val SEARCH_RESULTS =
         listOf(
-            ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
             ItemFields.OVERVIEW,
             ItemFields.RECURSIVE_ITEM_COUNT,
         )
@@ -42,7 +38,6 @@ object FieldSets {
             ItemFields.OVERVIEW,
             ItemFields.GENRES,
             ItemFields.PEOPLE,
-            ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
             ItemFields.MEDIA_SOURCES,
             ItemFields.MEDIA_STREAMS,
             ItemFields.TRICKPLAY,
@@ -60,21 +55,11 @@ object FieldSets {
 
     val SIMILAR_ITEMS = MEDIA_ITEM_CARDS
 
-    val PLAYER =
-        listOf(
-            ItemFields.MEDIA_SOURCES,
-            ItemFields.MEDIA_STREAMS,
-            ItemFields.TRICKPLAY,
-            ItemFields.CHAPTERS,
-            ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
-        )
-
-    val EPISODE_LIST = listOf(ItemFields.OVERVIEW, ItemFields.PRIMARY_IMAGE_ASPECT_RATIO)
+    val EPISODE_LIST = listOf(ItemFields.OVERVIEW)
 
     val SEASON_DETAIL =
         listOf(
             ItemFields.OVERVIEW,
-            ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
             ItemFields.TAGLINES,
             ItemFields.EXTERNAL_URLS,
             ItemFields.PEOPLE,
@@ -83,7 +68,6 @@ object FieldSets {
     val PERSON_DETAIL =
         listOf(
             ItemFields.OVERVIEW,
-            ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
             ItemFields.EXTERNAL_URLS,
             ItemFields.PRODUCTION_LOCATIONS,
         )
@@ -92,31 +76,24 @@ object FieldSets {
 
     val MINIMAL = listOf(ItemFields.CHILD_COUNT, ItemFields.RECURSIVE_ITEM_COUNT)
 
-    val CACHE_CONTINUE_WATCHING =
-        listOf(ItemFields.OVERVIEW, ItemFields.GENRES, ItemFields.PRIMARY_IMAGE_ASPECT_RATIO)
+    val CACHE_CONTINUE_WATCHING = listOf(ItemFields.OVERVIEW, ItemFields.GENRES)
 
     val CACHE_LATEST_MEDIA =
         listOf(
             ItemFields.OVERVIEW,
             ItemFields.GENRES,
-            ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
             ItemFields.CHILD_COUNT,
             ItemFields.RECURSIVE_ITEM_COUNT,
         )
 
-    val CACHE_NEXT_UP =
-        listOf(ItemFields.OVERVIEW, ItemFields.PRIMARY_IMAGE_ASPECT_RATIO, ItemFields.AIR_TIME)
+    val CACHE_NEXT_UP = listOf(ItemFields.OVERVIEW, ItemFields.AIR_TIME)
 
-    val MUSIC_TRACK =
-        listOf(
-            ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
-        )
+    val MUSIC_TRACK = emptyList<ItemFields>()
 
     val MUSIC_ALBUM =
         listOf(
             ItemFields.OVERVIEW,
             ItemFields.GENRES,
-            ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
             ItemFields.CHILD_COUNT,
         )
 
@@ -124,20 +101,14 @@ object FieldSets {
         listOf(
             ItemFields.OVERVIEW,
             ItemFields.GENRES,
-            ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
             ItemFields.CHILD_COUNT,
         )
 
     val MUSIC_PLAYLIST =
         listOf(
             ItemFields.OVERVIEW,
-            ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
             ItemFields.CHILD_COUNT,
         )
 
-    val MUSIC_SEARCH =
-        listOf(
-            ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
-            ItemFields.CHILD_COUNT,
-        )
+    val MUSIC_SEARCH = listOf(ItemFields.CHILD_COUNT)
 }

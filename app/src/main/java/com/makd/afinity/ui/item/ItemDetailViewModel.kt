@@ -73,6 +73,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -170,13 +171,15 @@ constructor(
 
     init {
         viewModelScope.launch {
+            _uiState.first { it.item != null || it.error != null }
+            if (_uiState.value.item == null) return@launch
             try {
                 val boxSets =
                     mediaRepository.getBoxSetsContaining(
                         itemId = itemId,
                         fields = FieldSets.MEDIA_ITEM_CARDS,
                     )
-                _uiState.value = _uiState.value.copy(containingBoxSets = boxSets)
+                _uiState.update { it.copy(containingBoxSets = boxSets) }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load containing BoxSets in init")
             }

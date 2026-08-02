@@ -125,6 +125,7 @@ constructor(
                         enableUserData = true,
                         recursive = true,
                         nameStartsWith = nameStartsWith,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull { dto ->
                 runCatching { dto.toAfinityTrack(baseUrl) }.getOrNull()
@@ -166,6 +167,7 @@ constructor(
                         enableUserData = true,
                         recursive = true,
                         nameStartsWith = nameStartsWith,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull { dto ->
                 runCatching { dto.toAfinityAlbum(baseUrl) }.getOrNull()
@@ -203,6 +205,7 @@ constructor(
                         fields = FieldSets.MUSIC_ARTIST,
                         enableUserData = true,
                         nameStartsWith = nameStartsWith,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull { dto ->
                 runCatching { dto.toAfinityArtist(baseUrl) }.getOrNull()
@@ -246,6 +249,7 @@ constructor(
                         ids = listOf(albumId),
                         fields = FieldSets.MUSIC_ALBUM,
                         enableUserData = true,
+                        enableTotalRecordCount = false,
                     )
                     .content
                     .items
@@ -341,6 +345,7 @@ constructor(
                             fields = FieldSets.MUSIC_TRACK,
                             enableUserData = true,
                             recursive = false,
+                            enableTotalRecordCount = false,
                         )
                         .content
                         .items
@@ -364,11 +369,29 @@ constructor(
                     ids = listOf(artistId),
                     fields = FieldSets.MUSIC_ARTIST,
                     enableUserData = true,
+                    enableTotalRecordCount = false,
                 )
                 .content
                 .items
                 .firstOrNull()
                 ?.let { runCatching { it.toAfinityArtist(baseUrl) }.getOrNull() }
+        }
+
+    override suspend fun getArtistsByIds(artistIds: List<UUID>): List<AfinityArtist> =
+        apiCall(emptyList(), "Failed to fetch artists by ids") { apiClient, userId ->
+            if (artistIds.isEmpty()) return@apiCall emptyList()
+            val baseUrl = getBaseUrlInternal()
+            ItemsApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    ids = artistIds,
+                    fields = FieldSets.MUSIC_ARTIST,
+                    enableUserData = true,
+                    enableTotalRecordCount = false,
+                )
+                .content
+                .items
+                .mapNotNull { runCatching { it.toAfinityArtist(baseUrl) }.getOrNull() }
         }
 
     override suspend fun getArtistAlbums(artistId: UUID, libraryId: UUID?): List<AfinityAlbum> =
@@ -387,6 +410,7 @@ constructor(
                         fields = FieldSets.MUSIC_ALBUM,
                         enableUserData = true,
                         recursive = true,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull { dto ->
                 runCatching { dto.toAfinityAlbum(baseUrl) }.getOrNull()
@@ -414,6 +438,7 @@ constructor(
                         fields = FieldSets.MUSIC_TRACK,
                         enableUserData = true,
                         recursive = true,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull { dto ->
                 runCatching { dto.toAfinityTrack(baseUrl) }.getOrNull()
@@ -436,6 +461,7 @@ constructor(
                         fields = FieldSets.MUSIC_ALBUM,
                         enableUserData = true,
                         recursive = true,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull { dto ->
                 runCatching { dto.toAfinityAlbum(baseUrl) }.getOrNull()
@@ -457,6 +483,7 @@ constructor(
                         fields = FieldSets.MUSIC_PLAYLIST,
                         enableUserData = true,
                         recursive = true,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull { dto ->
                 runCatching { dto.toAfinityPlaylist(baseUrl) }.getOrNull()
@@ -475,6 +502,7 @@ constructor(
                     sortOrder = listOf(SortOrder.ASCENDING),
                     fields = FieldSets.MUSIC_PLAYLIST,
                     enableUserData = true,
+                    enableTotalRecordCount = false,
                     recursive = true,
                 )
                 .content
@@ -491,6 +519,7 @@ constructor(
                     ids = listOf(playlistId),
                     fields = FieldSets.MUSIC_PLAYLIST,
                     enableUserData = true,
+                    enableTotalRecordCount = false,
                 )
                 .content
                 .items
@@ -715,6 +744,7 @@ constructor(
                             enableUserData = true,
                             recursive = true,
                             limit = 40,
+                            enableTotalRecordCount = false,
                         )
                 val items = response.content.items
                 MusicSearchResults(
@@ -766,6 +796,7 @@ constructor(
                         enableUserData = true,
                         recursive = true,
                         limit = limit,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull { dto ->
                 runCatching { dto.toAfinityTrack(baseUrl) }.getOrNull()
@@ -787,6 +818,7 @@ constructor(
                         fields = FieldSets.MUSIC_ALBUM,
                         enableUserData = true,
                         recursive = true,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull { dto ->
                 runCatching { dto.toAfinityAlbum(baseUrl) }.getOrNull()
@@ -881,6 +913,7 @@ constructor(
                         fields = FieldSets.MUSIC_ALBUM,
                         enableUserData = true,
                         recursive = true,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull { dto ->
                 runCatching { dto.toAfinityAlbum(baseUrl) }.getOrNull()
@@ -901,6 +934,7 @@ constructor(
                         limit = limit,
                         fields = FieldSets.MUSIC_ARTIST,
                         enableUserData = true,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull { dto ->
                 runCatching { dto.toAfinityArtist(baseUrl) }.getOrNull()
@@ -919,6 +953,8 @@ constructor(
                         limit = limit,
                         fields = FieldSets.MUSIC_ARTIST,
                         enableUserData = true,
+                        enableTotalRecordCount = false,
+                        imageTypeLimit = 1,
                     )
             response.content.items.mapNotNull { dto ->
                 runCatching { dto.toAfinityArtist(baseUrl) }.getOrNull()
@@ -938,6 +974,7 @@ constructor(
                         limit = limit,
                         fields = FieldSets.MUSIC_ARTIST,
                         enableUserData = true,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull { dto ->
                 runCatching { dto.toAfinityArtist(baseUrl) }.getOrNull()
@@ -959,6 +996,7 @@ constructor(
                         fields = FieldSets.MUSIC_ALBUM,
                         enableUserData = true,
                         recursive = true,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull {
                 runCatching { it.toAfinityAlbum(baseUrl) }.getOrNull()
@@ -979,6 +1017,7 @@ constructor(
                         fields = FieldSets.MUSIC_ALBUM,
                         enableUserData = true,
                         recursive = true,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull {
                 runCatching { it.toAfinityAlbum(baseUrl) }.getOrNull()
@@ -998,6 +1037,7 @@ constructor(
                         limit = limit,
                         fields = FieldSets.MUSIC_TRACK,
                         enableUserData = true,
+                        enableTotalRecordCount = false,
                         recursive = true,
                     )
             response.content.items.mapNotNull {
@@ -1018,6 +1058,7 @@ constructor(
                         limit = limit,
                         fields = FieldSets.MUSIC_ALBUM,
                         enableUserData = true,
+                        enableTotalRecordCount = false,
                         recursive = true,
                     )
             response.content.items.mapNotNull {
@@ -1038,6 +1079,7 @@ constructor(
                         fields = FieldSets.MUSIC_ALBUM,
                         enableUserData = true,
                         recursive = true,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull {
                 runCatching { it.toAfinityAlbum(baseUrl) }.getOrNull()
@@ -1055,6 +1097,7 @@ constructor(
                         limit = limit,
                         fields = FieldSets.MUSIC_ARTIST,
                         enableUserData = true,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull {
                 runCatching { it.toAfinityArtist(baseUrl) }.getOrNull()
@@ -1075,6 +1118,7 @@ constructor(
                         fields = FieldSets.MUSIC_TRACK,
                         enableUserData = true,
                         recursive = true,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull {
                 runCatching { it.toAfinityTrack(baseUrl) }.getOrNull()
@@ -1094,6 +1138,7 @@ constructor(
                         fields = FieldSets.MUSIC_TRACK,
                         enableUserData = true,
                         recursive = true,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull {
                 runCatching { it.toAfinityTrack(baseUrl) }.getOrNull()
@@ -1114,6 +1159,7 @@ constructor(
                         fields = FieldSets.MUSIC_ALBUM,
                         enableUserData = true,
                         recursive = true,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull {
                 runCatching { it.toAfinityAlbum(baseUrl) }.getOrNull()
@@ -1138,6 +1184,7 @@ constructor(
                         fields = FieldSets.MUSIC_ALBUM,
                         enableUserData = true,
                         recursive = true,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull {
                 runCatching { it.toAfinityAlbum(baseUrl) }.getOrNull()
@@ -1159,6 +1206,7 @@ constructor(
                         fields = FieldSets.MUSIC_ALBUM,
                         enableUserData = true,
                         recursive = true,
+                        enableTotalRecordCount = false,
                     )
             response.content.items.mapNotNull {
                 runCatching { it.toAfinityAlbum(baseUrl) }.getOrNull()

@@ -62,6 +62,8 @@ interface MusicRepository {
 
     suspend fun getArtistById(artistId: UUID): AfinityArtist?
 
+    suspend fun getArtistsByIds(artistIds: List<UUID>): List<AfinityArtist>
+
     suspend fun getArtistAlbums(artistId: UUID, libraryId: UUID? = null): List<AfinityAlbum>
 
     suspend fun getArtistTopTracks(artistId: UUID, libraryId: UUID? = null, limit: Int = 10): List<AfinityTrack>

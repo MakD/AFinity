@@ -20,14 +20,18 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.repository.media.MediaRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.PersonKind
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 @Singleton
 class PeopleRepository
@@ -39,6 +43,8 @@ constructor(
 ) {
     private val personCacheTTL = 48.hours.inWholeMilliseconds
     private val peopleCacheTTL = 24.hours.inWholeMilliseconds
+    private val peopleScanTTL = 5.minutes.inWholeMilliseconds
+    private val peopleScanLimit = 250
 
     private val topPeopleDao = database.topPeopleDao()
     private val personSectionDao = database.personSectionDao()
@@ -49,6 +55,43 @@ constructor(
 
     private fun currentUserId(): String =
         sessionManager.currentSession.value?.userId?.toString() ?: ""
+
+    private val scanMutex = Mutex()
+    private var scanCache: Triple<String, Long, List<BaseItemDto>>? = null
+
+    private suspend fun recentItemsWithPeople(): List<BaseItemDto> =
+        scanMutex.withLock {
+            val sessionKey = "${currentServerId()}_${currentUserId()}"
+            scanCache?.let { (key, timestamp, items) ->
+                if (
+                    key == sessionKey &&
+                        System.currentTimeMillis() - timestamp < peopleScanTTL
+                ) {
+                    return items
+                }
+            }
+
+            val items =
+                mediaRepository
+                    .getItems(
+                        includeItemTypes = listOf("Movie", "Series"),
+                        fields = listOf(ItemFields.PEOPLE),
+                        limit = peopleScanLimit,
+                        sortBy = SortBy.DATE_ADDED,
+                        sortDescending = true,
+                    )
+                    .items
+                    .orEmpty()
+
+            if (items.isNotEmpty()) {
+                scanCache = Triple(sessionKey, System.currentTimeMillis(), items)
+            }
+            return items
+        }
+
+    fun invalidatePeopleScan() {
+        scanCache = null
+    }
 
     suspend fun getTopPeople(
         type: PersonKind,
@@ -80,19 +123,9 @@ constructor(
             Timber.d("Fetching top ${type.name}...")
             val baseUrl = mediaRepository.getBaseUrl()
 
-            val scanLimit = 150
             val peopleFrequency = mutableMapOf<String, Pair<AfinityPerson, Int>>()
 
-            val moviesResponse =
-                mediaRepository.getItems(
-                    includeItemTypes = listOf("Movie"),
-                    fields = listOf(ItemFields.PEOPLE),
-                    limit = scanLimit,
-                    sortBy = SortBy.DATE_ADDED,
-                    sortDescending = true,
-                )
-
-            val movies = moviesResponse.items ?: emptyList()
+            val movies = recentItemsWithPeople()
 
             movies.forEach { movieItem ->
                 movieItem.people
@@ -287,6 +320,7 @@ constructor(
     }
 
     suspend fun clearAllData() {
+        invalidatePeopleScan()
         try {
             topPeopleDao.clearAllCache()
             personSectionDao.clearAllCache()

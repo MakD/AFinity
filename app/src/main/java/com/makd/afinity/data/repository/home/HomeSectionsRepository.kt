@@ -49,6 +49,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.PersonKind
@@ -75,6 +76,7 @@ constructor(
 ) {
     private val layoutTTL = 24.hours.inWholeMilliseconds
     private val recentCacheTTL = 6.hours.inWholeMilliseconds
+    private val studiosTTL = 24.hours.inWholeMilliseconds
 
     private val json = Json { ignoreUnknownKeys = true }
     private val converters = AfinityTypeConverters()
@@ -188,6 +190,7 @@ constructor(
                 sortBy.name,
                 sortDescending.toString(),
                 randomOrder.toString(),
+                if (filters.isEmpty) "" else json.encodeToString(filters),
             )
             .joinToString(";")
 
@@ -216,6 +219,60 @@ constructor(
     }
 
     private fun layoutCacheKey(sessionKey: String) = "home_layout_$sessionKey"
+
+    private fun studiosCacheKey(sessionKey: String) = "home_studios_$sessionKey"
+
+    private val studiosMutex = Mutex()
+    private var cachedStudios: List<AfinityStudio>? = null
+
+    private suspend fun studiosPool(force: Boolean): List<AfinityStudio> =
+        studiosMutex.withLock {
+            if (!force) cachedStudios?.let { return it }
+
+            val sk = sessionKey()
+            val baseUrl = mediaRepository.getBaseUrl()
+
+            if (!force && sk != null) {
+                val cached =
+                    homeCacheRepository.getRaw(studiosCacheKey(sk), studiosTTL)?.let { raw ->
+                        runCatching { json.decodeFromString<List<CachedStudio>>(raw) }.getOrNull()
+                    }
+                if (!cached.isNullOrEmpty()) {
+                    val restored =
+                        cached.mapNotNull { it.toStudio() }.map { it.withBaseUrl(baseUrl) }
+                    if (restored.isNotEmpty()) {
+                        cachedStudios = restored
+                        return restored
+                    }
+                }
+            }
+
+            val fetched =
+                try {
+                    mediaRepository.getStudios(
+                        limit = STUDIOS_POOL,
+                        includeItemTypes = POPULAR_STUDIOS_TYPES,
+                    )
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to load studios")
+                    emptyList()
+                }
+
+            if (fetched.isNotEmpty()) {
+                cachedStudios = fetched
+                if (sk != null) {
+                    runCatching {
+                        homeCacheRepository.putRaw(
+                            studiosCacheKey(sk),
+                            json.encodeToString(fetched.map { CachedStudio.from(it) }),
+                        )
+                    }
+                }
+            }
+            return fetched
+        }
 
     private fun contentCacheKey(sessionKey: String, descriptorKey: String) =
         "home_sec_${sessionKey}_$descriptorKey"
@@ -341,16 +398,7 @@ constructor(
         popularStudiosJob =
             scope.launch(Dispatchers.IO) {
                 try {
-                    val studios =
-                        try {
-                            mediaRepository.getStudios(
-                                limit = POPULAR_STUDIOS_POOL,
-                                includeItemTypes = POPULAR_STUDIOS_TYPES,
-                            )
-                        } catch (e: Exception) {
-                            Timber.w(e, "Failed to load studios for home")
-                            emptyList()
-                        }
+                    val studios = studiosPool(force).take(POPULAR_STUDIOS_POOL)
                     _popularStudios.value =
                         if (studios.size < MIN_POPULAR_STUDIOS) emptyList()
                         else presentationOrder(POPULAR_STUDIOS_KEY, studios)
@@ -432,6 +480,7 @@ constructor(
         _layout.value = emptyList()
         _content.value = emptyMap()
         _pinnedLayout.value = emptyList()
+        cachedStudios = null
         customSectionSignatures.clear()
         presentationSeed = System.currentTimeMillis()
         watchAgainJob?.cancel()
@@ -974,17 +1023,7 @@ constructor(
             val writersDeferred = async {
                 peopleRepository.getTopPeople(PersonKind.WRITER, limit = 50, minAppearances = 3)
             }
-            val studiosDeferred = async {
-                try {
-                    mediaRepository.getStudios(
-                        includeItemTypes = POPULAR_STUDIOS_TYPES,
-                        limit = 50,
-                    )
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to load studios for spotlight descriptors")
-                    emptyList()
-                }
-            }
+            val studiosDeferred = async { studiosPool(force = false) }
             val boxSetsDeferred = async {
                 try {
                     mediaRepository
@@ -1418,6 +1457,37 @@ private const val WATCH_AGAIN_KEY = "watch_again"
 private const val WATCH_AGAIN_POOL = 50
 private const val WATCH_AGAIN_MIN_ITEMS = 5
 private const val POPULAR_STUDIOS_KEY = "popular_studios"
+private const val STUDIOS_POOL = 50
+
+@Serializable
+private data class CachedStudio(
+    val id: String,
+    val name: String,
+    val primaryImageUrl: String?,
+    val itemCount: Int,
+) {
+    fun toStudio(): AfinityStudio? =
+        runCatching {
+                AfinityStudio(
+                    id = UUID.fromString(id),
+                    name = name,
+                    primaryImageUrl = primaryImageUrl,
+                    itemCount = itemCount,
+                )
+            }
+            .getOrNull()
+
+    companion object {
+        fun from(studio: AfinityStudio) =
+            CachedStudio(
+                id = studio.id.toString(),
+                name = studio.name,
+                primaryImageUrl = studio.primaryImageUrl,
+                itemCount = studio.itemCount,
+            )
+    }
+}
+
 private const val POPULAR_STUDIOS_POOL = 20
 private const val MIN_POPULAR_STUDIOS = 3
 private val POPULAR_STUDIOS_TYPES = listOf("MOVIE", "SERIES")

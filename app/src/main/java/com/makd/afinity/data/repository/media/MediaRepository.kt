@@ -81,6 +81,7 @@ interface MediaRepository {
         imageTypes: List<String> = emptyList(),
         recursive: Boolean? = null,
         criteria: ItemFilterCriteria = ItemFilterCriteria(),
+        enableTotalRecordCount: Boolean = false,
     ): BaseItemDtoQueryResult
 
     suspend fun getItemsResult(
@@ -97,6 +98,7 @@ interface MediaRepository {
         imageTypes: List<String> = emptyList(),
         recursive: Boolean? = null,
         criteria: ItemFilterCriteria = ItemFilterCriteria(),
+        enableTotalRecordCount: Boolean = false,
     ): Result<BaseItemDtoQueryResult>
 
     suspend fun getItem(itemId: UUID, fields: List<ItemFields>? = null): BaseItemDto?
@@ -183,6 +185,8 @@ interface MediaRepository {
     suspend fun getFavoriteBoxSets(fields: List<ItemFields>? = null): List<AfinityBoxSet>
 
     suspend fun getFavoritePeople(fields: List<ItemFields>? = null): List<AfinityPersonDetail>
+
+    suspend fun getFavoriteMedia(fields: List<ItemFields>? = null): List<AfinityItem>
 
     suspend fun getGenres(
         parentId: UUID? = null,

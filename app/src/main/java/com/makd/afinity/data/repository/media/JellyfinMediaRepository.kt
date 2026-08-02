@@ -541,6 +541,8 @@ constructor(
                         fields = fields ?: FieldSets.CONTINUE_WATCHING,
                         enableImages = true,
                         enableUserData = true,
+                        enableTotalRecordCount = false,
+                        imageTypeLimit = 1,
                     )
                     .content
                     .items
@@ -566,6 +568,7 @@ constructor(
         imageTypes: List<String>,
         recursive: Boolean?,
         criteria: ItemFilterCriteria,
+        enableTotalRecordCount: Boolean,
     ): BaseItemDtoQueryResult =
         getItemsResult(
                 parentId = parentId,
@@ -581,6 +584,7 @@ constructor(
                 imageTypes = imageTypes,
                 recursive = recursive,
                 criteria = criteria,
+                enableTotalRecordCount = enableTotalRecordCount,
             )
             .getOrElse { e ->
                 if (e !is NoActiveSessionException) Timber.e(e, "Failed to get items")
@@ -601,6 +605,7 @@ constructor(
         imageTypes: List<String>,
         recursive: Boolean?,
         criteria: ItemFilterCriteria,
+        enableTotalRecordCount: Boolean,
     ): Result<BaseItemDtoQueryResult> =
         apiInvoker.apiResult { apiClient, userId ->
             val filters = buildList {
@@ -670,6 +675,7 @@ constructor(
                         isHd = criteria.isHd,
                         is4k = criteria.is4k,
                         is3d = criteria.is3d,
+                        enableTotalRecordCount = enableTotalRecordCount,
                         fields = fields ?: FieldSets.LIBRARY_GRID,
                         imageTypes =
                             if (imageTypes.isNotEmpty()) {
@@ -808,6 +814,8 @@ constructor(
                     fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                     enableImages = true,
                     enableUserData = true,
+                    enableTotalRecordCount = false,
+                    imageTypeLimit = 1,
                 )
                 .content
                 .items
@@ -835,6 +843,8 @@ constructor(
                     fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                     enableImages = true,
                     enableUserData = true,
+                    enableTotalRecordCount = false,
+                    imageTypeLimit = 1,
                 )
                 .content
                 .items
@@ -862,6 +872,8 @@ constructor(
                     fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                     enableImages = true,
                     enableUserData = true,
+                    enableTotalRecordCount = false,
+                    imageTypeLimit = 1,
                 )
                 .content
                 .items
@@ -956,6 +968,8 @@ constructor(
                     fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                     enableImages = true,
                     enableUserData = true,
+                    enableTotalRecordCount = false,
+                    imageTypeLimit = 1,
                 )
                 .content
                 .items
@@ -1023,6 +1037,8 @@ constructor(
                     fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                     enableImages = true,
                     enableUserData = true,
+                    enableTotalRecordCount = false,
+                    imageTypeLimit = 1,
                     sortBy = listOf(ItemSortBy.SORT_NAME),
                 )
                 .content
@@ -1041,6 +1057,8 @@ constructor(
                     fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                     enableImages = true,
                     enableUserData = true,
+                    enableTotalRecordCount = false,
+                    imageTypeLimit = 1,
                     sortBy = listOf(ItemSortBy.SORT_NAME),
                 )
                 .content
@@ -1059,6 +1077,8 @@ constructor(
                     fields = fields ?: FieldSets.EPISODE_LIST,
                     enableImages = true,
                     enableUserData = true,
+                    enableTotalRecordCount = false,
+                    imageTypeLimit = 1,
                     sortBy = listOf(ItemSortBy.SORT_NAME),
                 )
                 .content
@@ -1077,6 +1097,8 @@ constructor(
                     fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                     enableImages = true,
                     enableUserData = true,
+                    enableTotalRecordCount = false,
+                    imageTypeLimit = 1,
                     sortBy = listOf(ItemSortBy.SORT_NAME),
                 )
                 .content
@@ -1095,11 +1117,41 @@ constructor(
                     fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                     enableImages = true,
                     enableUserData = true,
+                    enableTotalRecordCount = false,
+                    imageTypeLimit = 1,
                     sortBy = listOf(ItemSortBy.SORT_NAME),
                 )
                 .content
                 .items
                 .map { baseItem -> baseItem.toAfinityBoxSet(getBaseUrl()) }
+        }
+
+    override suspend fun getFavoriteMedia(fields: List<ItemFields>?): List<AfinityItem> =
+        apiCall(emptyList(), "Failed to get favorite media") { apiClient, userId ->
+            val baseUrl = getBaseUrl()
+            ItemsApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    includeItemTypes =
+                        listOf(
+                            BaseItemKind.MOVIE,
+                            BaseItemKind.SERIES,
+                            BaseItemKind.SEASON,
+                            BaseItemKind.EPISODE,
+                            BaseItemKind.BOX_SET,
+                        ),
+                    isFavorite = true,
+                    recursive = true,
+                    fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                    enableImages = true,
+                    enableUserData = true,
+                    enableTotalRecordCount = false,
+                    imageTypeLimit = 1,
+                    sortBy = listOf(ItemSortBy.SORT_NAME),
+                )
+                .content
+                .items
+                .mapNotNull { baseItem -> baseItem.toAfinityItem(baseUrl) }
         }
 
     override suspend fun getFavoritePeople(fields: List<ItemFields>?): List<AfinityPersonDetail> =
@@ -1111,6 +1163,7 @@ constructor(
                     fields = fields ?: listOf(ItemFields.PRIMARY_IMAGE_ASPECT_RATIO),
                     enableImages = true,
                     enableUserData = true,
+                    imageTypeLimit = 1,
                 )
                 .content
                 .items
@@ -1135,6 +1188,8 @@ constructor(
                         enableResumable = enableResumable,
                         enableImages = true,
                         enableUserData = true,
+                        enableTotalRecordCount = false,
+                        imageTypeLimit = 1,
                     )
                     .content
                     .items
@@ -1693,6 +1748,34 @@ constructor(
             }
         }
 
+    private suspend fun episodesForSelection(seriesId: UUID): List<AfinityEpisode> =
+        apiCall(emptyList(), "Failed to scan episodes for series $seriesId") { apiClient, userId ->
+            TvShowsApi(apiClient)
+                .getEpisodes(
+                    seriesId = seriesId,
+                    userId = userId,
+                    isMissing = false,
+                    fields = emptyList(),
+                    enableImages = false,
+                    enableUserData = true,
+                    sortBy = ItemSortBy.SORT_NAME,
+                )
+                .content
+                .items
+                .mapNotNull { baseItem -> baseItem.toAfinityEpisode(getBaseUrl()) }
+                .distinctBy { it.id }
+        }
+
+    private suspend fun withPlaybackSources(episode: AfinityEpisode): AfinityEpisode =
+        try {
+            getItem(episode.id, fields = FieldSets.PLAYABLE_EPISODE)
+                ?.toAfinityEpisode(getBaseUrl())
+                ?: episode
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to hydrate playback sources for episode ${episode.id}")
+            episode
+        }
+
     override suspend fun getEpisodeToPlay(seriesId: UUID): AfinityEpisode? {
         return try {
             Timber.d("Getting episode to play for series: $seriesId")
@@ -1714,36 +1797,20 @@ constructor(
                 Timber.w(e, "NextUp API failed")
             }
             Timber.d("Fallback to manual logic")
-            val seasons = getSeasons(seriesId)
-            if (seasons.isEmpty()) return null
-
-            val sortedSeasons =
-                seasons.sortedWith(compareBy({ it.indexNumber == 0 }, { it.indexNumber }))
-            val episodesBySeason = coroutineScope {
-                sortedSeasons
-                    .map { season ->
-                        season to
-                            async {
-                                getEpisodes(
-                                        season.id,
-                                        seriesId,
-                                        fields = FieldSets.PLAYABLE_EPISODE,
-                                    )
-                                    .filter { !it.missing }
-                                    .sortedBy { it.indexNumber }
-                            }
-                    }
-                    .map { (season, deferred) -> season to deferred.await() }
-            }
+            val episodesBySeason =
+                episodesForSelection(seriesId)
+                    .groupBy { it.parentIndexNumber }
+                    .toSortedMap(compareBy<Int>({ it == 0 }, { it }))
+                    .mapValues { (_, episodes) -> episodes.sortedBy { it.indexNumber } }
 
             var firstEpisodeOfSeries: AfinityEpisode? = null
             for ((_, episodes) in episodesBySeason) {
                 if (episodes.isEmpty()) continue
                 if (firstEpisodeOfSeries == null) firstEpisodeOfSeries = episodes.firstOrNull()
                 val nextEpisode = episodes.firstOrNull { !it.played }
-                if (nextEpisode != null) return nextEpisode
+                if (nextEpisode != null) return withPlaybackSources(nextEpisode)
             }
-            return firstEpisodeOfSeries
+            return firstEpisodeOfSeries?.let { withPlaybackSources(it) }
         } catch (e: Exception) {
             Timber.e(e, "Failed to determine episode to play for series: $seriesId")
             null

@@ -555,16 +555,22 @@ constructor(
                             .distinctBy { it.first }
                             .shuffled()
                             .take(5)
+                    val artistsById =
+                        runCatching {
+                                musicRepository
+                                    .getArtistsByIds(pickedArtists.map { it.first })
+                                    .associateBy { it.id }
+                            }
+                            .getOrDefault(emptyMap())
+
                     val sections =
                         pickedArtists
-                            .map { (artistId, _) ->
+                            .mapNotNull { (artistId, _) -> artistsById[artistId] }
+                            .map { artist ->
                                 async {
                                     runCatching {
-                                        val artist =
-                                            musicRepository.getArtistById(artistId)
-                                                ?: return@runCatching null
                                         val albums =
-                                            musicRepository.getArtistAlbums(artistId).take(12)
+                                            musicRepository.getArtistAlbums(artist.id).take(12)
                                         if (albums.size >= 3) artist to albums else null
                                     }
                                         .getOrNull()

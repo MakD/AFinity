@@ -342,7 +342,7 @@ constructor(
                 }
                 updateProgress(0.5f, context.getString(R.string.loading_phase_fetching))
                 startLiveDataCollectors()
-                performBackgroundNetworkRefresh(cacheKey)
+                performBackgroundNetworkRefresh(cacheKey, reportProgress = true)
                 updateProgress(1f, context.getString(R.string.loading_phase_ready))
                 _isInitialDataLoaded.value = true
                 return
@@ -409,7 +409,13 @@ constructor(
         }
     }
 
-    private suspend fun performBackgroundNetworkRefresh(cacheKey: String) {
+    private suspend fun performBackgroundNetworkRefresh(
+        cacheKey: String,
+        reportProgress: Boolean = false,
+    ) {
+        fun tick(progress: Float, phase: String) {
+            if (reportProgress) updateProgress(progress, phase)
+        }
         try {
             Timber.d("Background network refresh starting")
             coroutineScope {
@@ -422,12 +428,14 @@ constructor(
 
                 val libraries = librariesDeferred.await()
                 _libraries.value = libraries
+                tick(0.65f, context.getString(R.string.loading_phase_processing))
 
                 val homeDataDeferred = async { loadHomeSpecificData(libraries) }
 
                 val (latestMovies, latestTvSeries) = homeDataDeferred.await()
                 _latestMovies.value = latestMovies
                 _latestTvSeries.value = latestTvSeries
+                tick(0.85f, context.getString(R.string.loading_phase_finalizing))
 
                 continueWatchingDeferred.await()
                 nextUpDeferred.await()
@@ -829,11 +837,7 @@ constructor(
     private suspend fun loadFavoritesData() {
         try {
             coroutineScope {
-                val moviesDeferred = async { mediaRepository.getFavoriteMovies() }
-                val showsDeferred = async { mediaRepository.getFavoriteShows() }
-                val seasonsDeferred = async { mediaRepository.getFavoriteSeasons() }
-                val episodesDeferred = async { mediaRepository.getFavoriteEpisodes() }
-                val boxSetsDeferred = async { mediaRepository.getFavoriteBoxSets() }
+                val mediaDeferred = async { mediaRepository.getFavoriteMedia() }
                 val peopleDeferred = async { mediaRepository.getFavoritePeople() }
                 val channelsDeferred = async {
                     try {
@@ -871,13 +875,15 @@ constructor(
                     }
                 }
 
+                val media = mediaDeferred.await()
+
                 _favoritesData.value =
                     FavoritesData(
-                        movies = moviesDeferred.await().sortedBy { it.name },
-                        shows = showsDeferred.await().sortedBy { it.name },
-                        seasons = seasonsDeferred.await().sortedBy { it.name },
-                        episodes = episodesDeferred.await().sortedBy { it.name },
-                        boxSets = boxSetsDeferred.await().sortedBy { it.name },
+                        movies = media.filterIsInstance<AfinityMovie>().sortedBy { it.name },
+                        shows = media.filterIsInstance<AfinityShow>().sortedBy { it.name },
+                        seasons = media.filterIsInstance<AfinitySeason>().sortedBy { it.name },
+                        episodes = media.filterIsInstance<AfinityEpisode>().sortedBy { it.name },
+                        boxSets = media.filterIsInstance<AfinityBoxSet>().sortedBy { it.name },
                         people = peopleDeferred.await().sortedBy { it.name },
                         channels =
                             channelsDeferred.await().sortedBy { it.channelNumber ?: it.name },
@@ -894,22 +900,15 @@ constructor(
 
     private suspend fun loadWatchlistData() {
         try {
-            coroutineScope {
-                val boxSetsDeferred = async { watchlistRepository.getWatchlistBoxSets() }
-                val moviesDeferred = async { watchlistRepository.getWatchlistMovies() }
-                val showsDeferred = async { watchlistRepository.getWatchlistShows() }
-                val seasonsDeferred = async { watchlistRepository.getWatchlistSeasons() }
-                val episodesDeferred = async { watchlistRepository.getWatchlistEpisodes() }
-
-                _watchlistData.value =
-                    WatchlistData(
-                        boxSets = boxSetsDeferred.await().sortedBy { it.name },
-                        movies = moviesDeferred.await().sortedBy { it.name },
-                        shows = showsDeferred.await().sortedBy { it.name },
-                        seasons = seasonsDeferred.await().sortedBy { it.name },
-                        episodes = episodesDeferred.await().sortedBy { it.name },
-                    )
-            }
+            val items = watchlistRepository.getWatchlistItems()
+            _watchlistData.value =
+                WatchlistData(
+                    boxSets = items.filterIsInstance<AfinityBoxSet>().sortedBy { it.name },
+                    movies = items.filterIsInstance<AfinityMovie>().sortedBy { it.name },
+                    shows = items.filterIsInstance<AfinityShow>().sortedBy { it.name },
+                    seasons = items.filterIsInstance<AfinitySeason>().sortedBy { it.name },
+                    episodes = items.filterIsInstance<AfinityEpisode>().sortedBy { it.name },
+                )
         } catch (e: Exception) {
             Timber.e(e, "Failed to load watchlist data")
         }

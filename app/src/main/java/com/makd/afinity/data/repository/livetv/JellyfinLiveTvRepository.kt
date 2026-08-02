@@ -9,8 +9,10 @@ import com.makd.afinity.data.models.livetv.ChannelType
 import com.makd.afinity.data.models.livetv.LiveTvPlaybackInfo
 import com.makd.afinity.data.repository.JellyfinApiInvoker
 import com.makd.afinity.data.repository.userdata.UserDataRepository
+import com.makd.afinity.di.NetworkModule
 import com.makd.afinity.util.MediaCapabilities
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.operations.LiveTvApi
 import org.jellyfin.sdk.api.operations.MediaInfoApi
@@ -36,6 +38,7 @@ import java.time.LocalDateTime
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration
 
 @Singleton
 class JellyfinLiveTvRepository
@@ -44,6 +47,7 @@ constructor(
     private val sessionManager: SessionManager,
     private val userDataRepository: UserDataRepository,
     private val apiInvoker: JellyfinApiInvoker,
+    private val jellyfin: Jellyfin,
 ) : LiveTvRepository {
 
     private fun getBaseUrl(): String = sessionManager.getCurrentApiClient()?.baseUrl ?: ""
@@ -235,126 +239,164 @@ constructor(
                 return@apiCall null
             }
 
-            val mediaInfoApi = MediaInfoApi(apiClient)
-                val videosApi = VideosApi(apiClient)
-                val maxStreamingBitrate = 140_000_000
+            val untimedClient = untimedApiClient(apiClient)
+            val mediaInfoApi = MediaInfoApi(untimedClient)
+            val videosApi = VideosApi(apiClient)
+            val maxStreamingBitrate = 140_000_000
 
-                val playbackInfoDto =
-                    PlaybackInfoDto(
-                        userId = userId,
-                        maxStreamingBitrate = maxStreamingBitrate,
-                        enableDirectPlay = true,
-                        enableDirectStream = true,
-                        enableTranscoding = false,
-                        allowVideoStreamCopy = true,
-                        allowAudioStreamCopy = true,
-                        autoOpenLiveStream = true,
-                        deviceProfile = buildLiveTvDeviceProfile(maxStreamingBitrate),
-                    )
-
-                val playbackResponse =
-                    mediaInfoApi.getPostedPlaybackInfo(itemId = channelId, data = playbackInfoDto)
-                val playbackInfo = playbackResponse.content
-
-                Timber.d(
-                    "PlaybackInfo: playSessionId=${playbackInfo.playSessionId}, mediaSources=${playbackInfo.mediaSources?.size ?: 0}"
+            val playbackInfoDto =
+                PlaybackInfoDto(
+                    userId = userId,
+                    maxStreamingBitrate = maxStreamingBitrate,
+                    enableDirectPlay = true,
+                    enableDirectStream = true,
+                    enableTranscoding = false,
+                    allowVideoStreamCopy = true,
+                    allowAudioStreamCopy = true,
+                    autoOpenLiveStream = false,
+                    deviceProfile = buildLiveTvDeviceProfile(maxStreamingBitrate),
                 )
 
-                val sources = playbackInfo.mediaSources
-                if (sources.isEmpty()) {
-                    Timber.e("PlaybackInfo returned no media sources")
-                    return@apiCall null
-                }
+            val playbackResponse =
+                mediaInfoApi.getPostedPlaybackInfo(itemId = channelId, data = playbackInfoDto)
+            val playbackInfo = playbackResponse.content
 
-                val source =
-                    sources.firstOrNull { it.supportsDirectPlay }
-                        ?: sources.firstOrNull { it.supportsDirectStream }
-                        ?: sources.first()
+            Timber.d(
+                "PlaybackInfo: playSessionId=${playbackInfo.playSessionId}, mediaSources=${playbackInfo.mediaSources?.size ?: 0}"
+            )
 
-                val liveStreamId = source.liveStreamId
-                val mediaSourceId = source.id ?: channelId.toString()
-                val playSessionId =
-                    playbackInfo.playSessionId ?: UUID.randomUUID().toString().replace("-", "")
-                val directStreamPath = source.path
+            val sources = playbackInfo.mediaSources
+            if (sources.isEmpty()) {
+                Timber.e("PlaybackInfo returned no media sources")
+                return@apiCall null
+            }
 
-                Timber.d(
-                    "Source: id=$mediaSourceId, liveStreamId=$liveStreamId, path=$directStreamPath, supportsDirectPlay=${source.supportsDirectPlay}, supportsDirectStream=${source.supportsDirectStream}, transcodingUrl=${source.transcodingUrl}"
-                )
+            val selected =
+                sources.firstOrNull { it.supportsDirectPlay }
+                    ?: sources.firstOrNull { it.supportsDirectStream }
+                    ?: sources.first()
 
-                val playMethod: PlayMethod
-                val streamUrl: String
-                val container: String = source.container ?: "ts"
-
-                val isClientRemote = !isPrivateHost(baseUrl)
-
-                val isStreamLocalIp = isPrivateHost(directStreamPath)
-
-                val mustProxyStream = isClientRemote && isStreamLocalIp
-
-                when {
-                    source.supportsDirectPlay -> {
-                        playMethod = PlayMethod.DIRECT_PLAY
-                        streamUrl =
-                            if (
-                                source.isRemote &&
-                                    !directStreamPath.isNullOrBlank() &&
-                                    !mustProxyStream
-                            ) {
-                                directStreamPath
-                            } else {
-                                videosApi.getVideoStreamUrl(
-                                    itemId = channelId,
-                                    container = container,
-                                    static = true,
-                                    tag = source.eTag,
-                                    mediaSourceId = mediaSourceId,
-                                    liveStreamId = liveStreamId,
-                                    playSessionId = playSessionId,
+            val source =
+                selected.openToken
+                    ?.takeIf { selected.liveStreamId == null }
+                    ?.let { token ->
+                        try {
+                            Timber.d("Opening live stream for channel $channelId")
+                            MediaInfoApi(untimedClient)
+                                .openLiveStream(
+                                    openToken = token,
+                                    userId = userId,
+                                    playSessionId = playbackInfo.playSessionId,
+                                    maxStreamingBitrate = maxStreamingBitrate,
+                                    enableDirectPlay = true,
+                                    enableDirectStream = true,
                                 )
-                            }
-                    }
-                    source.supportsDirectStream && !source.transcodingUrl.isNullOrBlank() -> {
-                        playMethod = PlayMethod.DIRECT_STREAM
-                        streamUrl = source.transcodingUrl!!.toAbsoluteUrl(baseUrl)
-                    }
-                    else -> {
-                        Timber.w("Jellyfin wanted to transcode. FORCING Direct Play anyway.")
-                        playMethod = PlayMethod.DIRECT_PLAY
-
-                        if (
-                            !directStreamPath.isNullOrBlank() &&
-                                directStreamPath.startsWith("http") &&
-                                !mustProxyStream
-                        ) {
-                            streamUrl = directStreamPath
-                        } else {
-                            streamUrl =
-                                videosApi.getVideoStreamUrl(
-                                    itemId = channelId,
-                                    container = container,
-                                    static = true,
-                                    tag = source.eTag,
-                                    mediaSourceId = mediaSourceId,
-                                    liveStreamId = liveStreamId,
-                                    playSessionId = playSessionId,
-                                )
+                                .content
+                                .mediaSource
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to open live stream for channel $channelId")
+                            null
                         }
+                    } ?: selected
+
+            val liveStreamId = source.liveStreamId
+            val mediaSourceId = source.id ?: channelId.toString()
+            val playSessionId =
+                playbackInfo.playSessionId ?: UUID.randomUUID().toString().replace("-", "")
+            val directStreamPath = source.path
+
+            Timber.d(
+                "Source: id=$mediaSourceId, liveStreamId=$liveStreamId, path=$directStreamPath, supportsDirectPlay=${source.supportsDirectPlay}, supportsDirectStream=${source.supportsDirectStream}, transcodingUrl=${source.transcodingUrl}"
+            )
+
+            val playMethod: PlayMethod
+            val streamUrl: String
+            val container: String = source.container ?: "ts"
+
+            val isClientRemote = !isPrivateHost(baseUrl)
+
+            val isStreamLocalIp = isPrivateHost(directStreamPath)
+
+            val mustProxyStream = isClientRemote && isStreamLocalIp
+
+            when {
+                source.supportsDirectPlay -> {
+                    playMethod = PlayMethod.DIRECT_PLAY
+                    streamUrl =
+                        if (
+                            source.isRemote && !directStreamPath.isNullOrBlank() && !mustProxyStream
+                        ) {
+                            directStreamPath
+                        } else {
+                            videosApi.getVideoStreamUrl(
+                                itemId = channelId,
+                                container = container,
+                                static = true,
+                                tag = source.eTag,
+                                mediaSourceId = mediaSourceId,
+                                liveStreamId = liveStreamId,
+                                playSessionId = playSessionId,
+                            )
+                        }
+                }
+                source.supportsDirectStream && !source.transcodingUrl.isNullOrBlank() -> {
+                    playMethod = PlayMethod.DIRECT_STREAM
+                    streamUrl = source.transcodingUrl!!.toAbsoluteUrl(baseUrl)
+                }
+                else -> {
+                    Timber.w("Jellyfin wanted to transcode. FORCING Direct Play anyway.")
+                    playMethod = PlayMethod.DIRECT_PLAY
+
+                    if (
+                        !directStreamPath.isNullOrBlank() &&
+                            directStreamPath.startsWith("http") &&
+                            !mustProxyStream
+                    ) {
+                        streamUrl = directStreamPath
+                    } else {
+                        streamUrl =
+                            videosApi.getVideoStreamUrl(
+                                itemId = channelId,
+                                container = container,
+                                static = true,
+                                tag = source.eTag,
+                                mediaSourceId = mediaSourceId,
+                                liveStreamId = liveStreamId,
+                                playSessionId = playSessionId,
+                            )
                     }
                 }
+            }
 
-                Timber.d("Selected Live TV stream: method=$playMethod, url=$streamUrl")
-                LiveTvPlaybackInfo(
-                    streamUrl = streamUrl,
-                    mediaSourceId = mediaSourceId,
-                    playSessionId = playSessionId,
-                    liveStreamId = liveStreamId,
-                    playMethod = playMethod.serialName,
-                    container = container,
-                )
+            Timber.d("Selected Live TV stream: method=$playMethod, url=$streamUrl")
+            LiveTvPlaybackInfo(
+                streamUrl = streamUrl,
+                mediaSourceId = mediaSourceId,
+                playSessionId = playSessionId,
+                liveStreamId = liveStreamId,
+                playMethod = playMethod.serialName,
+                container = container,
+            )
         }
 
     private fun String.toAbsoluteUrl(baseUrl: String): String =
         if (startsWith("http", ignoreCase = true)) this else "$baseUrl$this"
+
+    private fun untimedApiClient(source: ApiClient): ApiClient =
+        try {
+            jellyfin.createApi(
+                baseUrl = source.baseUrl,
+                accessToken = source.accessToken,
+                httpClientOptions =
+                    NetworkModule.JELLYFIN_HTTP_OPTIONS.copy(
+                        requestTimeout = Duration.ZERO,
+                        socketTimeout = Duration.ZERO,
+                    ),
+            )
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to build untimed Live TV client, falling back to session client")
+            source
+        }
 
     private fun isPrivateHost(url: String?): Boolean {
         val host = url?.toHttpUrlOrNull()?.host ?: return false
@@ -389,10 +431,8 @@ constructor(
 
     override suspend fun hasLiveTvAccess(): Boolean =
         apiCall(false, "Failed to check access for user") { apiClient, userId ->
-            UserViewsApi(apiClient)
-                .getUserViews(userId = userId)
-                .content
-                .items
-                .any { it.collectionType == CollectionType.LIVETV }
+            UserViewsApi(apiClient).getUserViews(userId = userId).content.items.any {
+                it.collectionType == CollectionType.LIVETV
+            }
         }
 }
