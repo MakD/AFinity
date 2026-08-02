@@ -77,6 +77,7 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.repository.CacheKind
+import com.makd.afinity.data.repository.CacheStore
 import com.makd.afinity.data.repository.CacheUsage
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
@@ -116,8 +117,8 @@ fun DownloadSettingsScreen(
                 stringResource(R.string.pref_clear_cache_empty)
             } else {
                 stringResource(
-                    R.string.pref_clear_cache_usage_fmt,
-                    android.text.format.Formatter.formatShortFileSize(context, usage.imageBytes),
+                    R.string.pref_clear_cache_usage_total_fmt,
+                    android.text.format.Formatter.formatShortFileSize(context, usage.totalBytes),
                     usage.metadataEntries,
                 )
             }
@@ -321,6 +322,14 @@ fun DownloadSettingsScreen(
                     onCacheEnabledChange = viewModel::setImageCacheEnabled,
                     onCacheSizeChange = { viewModel.setImageCacheSizeMb(it.toInt()) },
                     modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
+
+            item {
+                VideoCacheSettingsCard(
+                    cacheSizeMb = uiState.videoCacheSizeMb.toFloat(),
+                    onCacheSizeChange = { viewModel.setVideoCacheSizeMb(it.toInt()) },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
 
@@ -1590,14 +1599,111 @@ fun MusicTrackRow(
 }
 
 @Composable
+fun VideoCacheSettingsCard(
+    cacheSizeMb: Float,
+    onCacheSizeChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(28.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                text = stringResource(R.string.pref_video_caching_title),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = stringResource(R.string.pref_video_caching_summary),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            Text(
+                text = stringResource(R.string.pref_image_cache_restart_note),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier.padding(top = 8.dp),
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.pref_image_cache_max_disk),
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                ) {
+                    val formattedSize =
+                        if (cacheSizeMb >= 1024f) {
+                            String.format(
+                                    LocalLocale.current.platformLocale,
+                                    "%.1f GB",
+                                    cacheSizeMb / 1024f,
+                                )
+                                .replace(".0", "")
+                                .replace(",0", "")
+                        } else {
+                            "${cacheSizeMb.toInt()} MB"
+                        }
+
+                    Text(
+                        text = formattedSize,
+                        style =
+                            MaterialTheme.typography.labelMedium.copy(
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold,
+                            ),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Slider(
+                value = cacheSizeMb,
+                onValueChange = onCacheSizeChange,
+                valueRange = 256f..4096f,
+                steps = 6,
+                colors =
+                    SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        activeTickColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
+                        inactiveTickColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                    ),
+            )
+        }
+    }
+}
+
+@Composable
 private fun CacheUsageBreakdown(usage: CacheUsage, context: android.content.Context) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        if (usage.imageBytes > 0L) {
-            CacheUsageRow(
-                label = stringResource(R.string.cache_kind_images),
-                value =
-                    android.text.format.Formatter.formatShortFileSize(context, usage.imageBytes),
-            )
+        CacheStore.entries.forEach { store ->
+            val storeBytes = usage.bytes[store] ?: 0L
+            if (storeBytes > 0L) {
+                CacheUsageRow(
+                    label = stringResource(store.labelRes()),
+                    value =
+                        android.text.format.Formatter.formatShortFileSize(context, storeBytes),
+                )
+            }
         }
         CacheKind.entries.forEach { kind ->
             val count = usage.entries[kind] ?: 0
@@ -1626,6 +1732,14 @@ private fun CacheUsageRow(label: String, value: String) {
         )
     }
 }
+
+private fun CacheStore.labelRes(): Int =
+    when (this) {
+        CacheStore.IMAGES -> R.string.cache_kind_images
+        CacheStore.VIDEO -> R.string.cache_store_video
+        CacheStore.NETWORK -> R.string.cache_store_network
+        CacheStore.PLAYER -> R.string.cache_store_player
+    }
 
 private fun CacheKind.labelRes(): Int =
     when (this) {

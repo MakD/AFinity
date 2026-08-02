@@ -154,6 +154,10 @@ interface PreferencesRepository {
 
     suspend fun getImageCacheSizeMb(): Int
 
+    suspend fun setVideoCacheSizeMb(sizeMb: Int)
+
+    suspend fun getVideoCacheSizeMb(): Int
+
     suspend fun setDynamicColors(enabled: Boolean)
 
     suspend fun getDynamicColors(): Boolean

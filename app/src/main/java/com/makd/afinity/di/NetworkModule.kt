@@ -237,6 +237,7 @@ object NetworkModule {
         return baseOkHttpClient
             .newBuilder()
             .dispatcher(dispatcher)
+            .cache(null)
             .addInterceptor { chain ->
                 val request = chain.request()
                 val session = sessionManager.currentSession.value

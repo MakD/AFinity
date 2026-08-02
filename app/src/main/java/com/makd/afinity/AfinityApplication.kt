@@ -15,6 +15,7 @@ import coil3.request.CachePolicy
 import coil3.request.crossfade
 import coil3.svg.SvgDecoder
 import com.makd.afinity.cast.CastManager
+import com.makd.afinity.data.repository.CacheMaintenance
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.updater.UpdateScheduler
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
@@ -44,6 +45,8 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
     @Inject lateinit var castManager: CastManager
 
     @Inject @ImageClient lateinit var imageOkHttpClient: OkHttpClient
+
+    @Inject lateinit var cacheMaintenance: dagger.Lazy<CacheMaintenance>
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     var ringBufferTree: RingBufferTree? = null
@@ -86,6 +89,11 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
             val checkFrequency = UpdateCheckFrequency.fromHours(frequency)
             updateScheduler.scheduleUpdateChecks(checkFrequency)
             Timber.d("Update scheduler initialized with frequency: ${checkFrequency.displayName}")
+        }
+
+        applicationScope.launch(Dispatchers.IO) {
+            runCatching { cacheMaintenance.get().pruneExpiredData() }
+                .onFailure { Timber.w(it, "Cache pruning failed") }
         }
     }
 

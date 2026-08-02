@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.components
 
+import android.util.LruCache
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -21,6 +22,59 @@ import coil3.request.crossfade
 import coil3.size.Size
 import com.vanniktech.blurhash.BlurHash
 import timber.log.Timber
+
+private const val BLUR_HASH_BASE_SIZE = 32
+private const val BLUR_HASH_MIN_SIZE = 25
+private const val BLUR_HASH_CACHE_ENTRIES = 256
+
+private val blurHashPainterCache = LruCache<String, BitmapPainter>(BLUR_HASH_CACHE_ENTRIES)
+
+private val FILL_WIDTH_BUCKETS = intArrayOf(160, 240, 320, 480, 640, 960, 1280, 1920)
+
+private fun bucketedFillWidth(widthPx: Int): Int =
+    FILL_WIDTH_BUCKETS.firstOrNull { it >= widthPx } ?: widthPx
+
+private fun decodeBlurHashPainter(blurHash: String, width: Int, height: Int): BitmapPainter? =
+    try {
+        BlurHash.decode(blurHash = blurHash, width = width, height = height)
+            ?.asImageBitmap()
+            ?.let { BitmapPainter(it) }
+    } catch (e: Exception) {
+        Timber.w("Failed to decode blur hash: ${e.message}")
+        null
+    }
+
+@Composable
+private fun rememberBlurHashPainter(
+    blurHash: String?,
+    targetWidth: Dp?,
+    targetHeight: Dp?,
+): BitmapPainter? {
+    val decodeSize =
+        remember(targetWidth, targetHeight) {
+            val ratio =
+                if (targetWidth != null && targetHeight != null && targetHeight.value > 0f) {
+                    targetWidth.value / targetHeight.value
+                } else {
+                    1f
+                }
+            val width =
+                if (ratio > 1) BLUR_HASH_BASE_SIZE else (BLUR_HASH_BASE_SIZE * ratio).toInt()
+            val height =
+                if (ratio < 1) BLUR_HASH_BASE_SIZE else (BLUR_HASH_BASE_SIZE / ratio).toInt()
+            width.coerceAtLeast(BLUR_HASH_MIN_SIZE) to height.coerceAtLeast(BLUR_HASH_MIN_SIZE)
+        }
+
+    return remember(blurHash, decodeSize) {
+        if (blurHash.isNullOrBlank()) return@remember null
+
+        val cacheKey = "$blurHash|${decodeSize.first}x${decodeSize.second}"
+        blurHashPainterCache.get(cacheKey)
+            ?: decodeBlurHashPainter(blurHash, decodeSize.first, decodeSize.second)?.also {
+                blurHashPainterCache.put(cacheKey, it)
+            }
+    }
+}
 
 @Composable
 fun AsyncImage(
@@ -65,49 +119,20 @@ fun AsyncImage(
                     targetWidth != null &&
                     imageUrl.contains("/Items/") &&
                     imageUrl.contains("/Images/") &&
-                    !imageUrl.contains("fillWidth")
+                    !imageUrl.contains("fillWidth") &&
+                    !imageUrl.contains("maxWidth")
             ) {
                 val widthPx =
                     with(density) { (targetWidth.toPx() * scaleFactor).toInt() }.coerceAtLeast(50)
                 val separator = if ('?' in imageUrl) "&" else "?"
-                "${imageUrl}${separator}fillWidth=${widthPx}&quality=90"
+                val quality = if (imageUrl.contains("quality=")) "" else "&quality=90"
+                "${imageUrl}${separator}fillWidth=${bucketedFillWidth(widthPx)}$quality"
             } else {
                 imageUrl
             }
         }
 
-    val blurHashPlaceholder =
-        remember(blurHash, targetWidth, targetHeight) {
-            if (!blurHash.isNullOrBlank()) {
-                try {
-                    val ratio =
-                        if (
-                            targetWidth != null && targetHeight != null && targetHeight.value > 0f
-                        ) {
-                            targetWidth.value / targetHeight.value
-                        } else {
-                            1f
-                        }
-
-                    val baseSize = 32
-                    val decodeWidth = if (ratio > 1) baseSize else (baseSize * ratio).toInt()
-                    val decodeHeight = if (ratio < 1) baseSize else (baseSize / ratio).toInt()
-
-                    val bitmap =
-                        BlurHash.decode(
-                            blurHash = blurHash,
-                            width = decodeWidth.coerceAtLeast(25),
-                            height = decodeHeight.coerceAtLeast(25),
-                        )
-                    bitmap?.asImageBitmap()?.let { BitmapPainter(it) }
-                } catch (e: Exception) {
-                    Timber.w("Failed to decode blur hash: ${e.message}")
-                    null
-                }
-            } else {
-                null
-            }
-        }
+    val blurHashPlaceholder = rememberBlurHashPainter(blurHash, targetWidth, targetHeight)
 
     AsyncImage(
         model =
@@ -129,7 +154,7 @@ fun AsyncImage(
                         onLoading?.invoke(false)
                         onSuccess?.invoke()
                     },
-                    onError = { _, result ->
+                    onError = { _, _ ->
                         onLoading?.invoke(false)
                         onError?.invoke()
                     },

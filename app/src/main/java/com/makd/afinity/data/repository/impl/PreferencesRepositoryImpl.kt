@@ -61,6 +61,7 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val APP_FONT = stringPreferencesKey("app_font")
         val IMAGE_CACHE_ENABLED = booleanPreferencesKey("image_cache_enabled")
         val IMAGE_CACHE_SIZE_MB = intPreferencesKey("image_cache_size_mb")
+        val VIDEO_CACHE_SIZE_MB = intPreferencesKey("video_cache_size_mb")
         val PIP_GESTURE_ENABLED = booleanPreferencesKey("pip_gesture_enabled")
         val PIP_BACKGROUND_PLAY = booleanPreferencesKey("pip_background_play")
         val DYNAMIC_COLORS = booleanPreferencesKey("dynamic_colors")
@@ -933,6 +934,14 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
     override suspend fun getImageCacheSizeMb(): Int {
         return dataStore.data.first()[Keys.IMAGE_CACHE_SIZE_MB] ?: 512
+    }
+
+    override suspend fun setVideoCacheSizeMb(sizeMb: Int) {
+        dataStore.edit { preferences -> preferences[Keys.VIDEO_CACHE_SIZE_MB] = sizeMb }
+    }
+
+    override suspend fun getVideoCacheSizeMb(): Int {
+        return dataStore.data.first()[Keys.VIDEO_CACHE_SIZE_MB] ?: 1024
     }
 
     override suspend fun setAppFont(font: String) {

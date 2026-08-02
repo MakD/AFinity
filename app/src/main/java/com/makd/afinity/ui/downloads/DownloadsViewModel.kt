@@ -129,6 +129,7 @@ constructor(
                 val wifiOnly = preferencesRepository.getDownloadOverWifiOnly()
                 val isImageCacheEnabled = preferencesRepository.getImageCacheEnabled()
                 val imageCacheSizeMb = preferencesRepository.getImageCacheSizeMb()
+                val videoCacheSizeMb = preferencesRepository.getVideoCacheSizeMb()
                 val maxConcurrentDownloads = preferencesRepository.getMaxDownloads()
 
                 _uiState.value =
@@ -136,6 +137,7 @@ constructor(
                         downloadOverWifiOnly = wifiOnly,
                         isImageCacheEnabled = isImageCacheEnabled,
                         imageCacheSizeMb = imageCacheSizeMb,
+                        videoCacheSizeMb = videoCacheSizeMb,
                         maxConcurrentDownloads = maxConcurrentDownloads,
                     )
             } catch (e: Exception) {
@@ -184,6 +186,17 @@ constructor(
                 _uiState.value = _uiState.value.copy(imageCacheSizeMb = sizeMb)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to update image cache size preference")
+            }
+        }
+    }
+
+    fun setVideoCacheSizeMb(sizeMb: Int) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setVideoCacheSizeMb(sizeMb)
+                _uiState.value = _uiState.value.copy(videoCacheSizeMb = sizeMb)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to update video cache size preference")
             }
         }
     }
@@ -639,6 +652,7 @@ data class DownloadsUiState(
     val maxConcurrentDownloads: Int = 3,
     val isImageCacheEnabled: Boolean = true,
     val imageCacheSizeMb: Int = 512,
+    val videoCacheSizeMb: Int = 1024,
     val deviceStorageStats: DownloadsViewModel.DeviceStorageStats? = null,
     val volumeStorageStats: List<DownloadsViewModel.VolumeStorageStats> = emptyList(),
     val availableVolumes: List<StorageVolumeInfo> = emptyList(),

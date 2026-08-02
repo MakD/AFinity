@@ -10,9 +10,22 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
 import timber.log.Timber
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
+
+private const val EXO_CACHE_DIR = "exo_media_cache"
+private const val HTTP_CACHE_DIR = "http_cache"
+private const val MPV_CACHE_DIR = "mpv"
+private const val FONTCONFIG_CACHE_DIR = "fontconfig"
+private const val CRASHES_DIR = "crashes"
+private const val AVATARS_DIR = "user_avatars"
+
+private const val ITEM_METADATA_TTL_MS = 30L * 24 * 60 * 60 * 1000
+private const val LIBRARY_CACHE_TTL_MS = 7L * 24 * 60 * 60 * 1000
+private const val MAX_CRASH_FILES = 5
 
 enum class CacheKind {
     HOME_ROWS,
@@ -22,12 +35,29 @@ enum class CacheKind {
     BOX_SETS,
 }
 
-data class CacheUsage(val imageBytes: Long, val entries: Map<CacheKind, Int>) {
+enum class CacheStore {
+    IMAGES,
+    VIDEO,
+    NETWORK,
+    PLAYER,
+}
+
+data class CacheUsage(
+    val bytes: Map<CacheStore, Long>,
+    val entries: Map<CacheKind, Int>,
+) {
+    val totalBytes: Long
+        get() = bytes.values.sum()
+
     val metadataEntries: Int
         get() = entries.values.sum()
 
     val isEmpty: Boolean
-        get() = imageBytes <= 0L && metadataEntries == 0
+        get() = totalBytes <= 0L && metadataEntries == 0
+}
+
+fun interface VideoCacheCleaner {
+    fun clear()
 }
 
 @Singleton
@@ -43,6 +73,8 @@ constructor(
     private val peopleRepository: PeopleRepository,
     private val boxSetCache: BoxSetCache,
     private val appDataRepository: AppDataRepository,
+    private val videoCacheCleaner: VideoCacheCleaner,
+    private val okHttpClient: OkHttpClient,
 ) {
     suspend fun usage(): CacheUsage =
         withContext(Dispatchers.IO) {
@@ -50,6 +82,16 @@ constructor(
                 runCatching { SingletonImageLoader.get(context).diskCache?.size ?: 0L }
                     .onFailure { Timber.w(it, "Failed to read image cache size") }
                     .getOrDefault(0L)
+
+            val bytes =
+                mapOf(
+                    CacheStore.IMAGES to imageBytes,
+                    CacheStore.VIDEO to directorySize(cacheDir(EXO_CACHE_DIR)),
+                    CacheStore.NETWORK to directorySize(cacheDir(HTTP_CACHE_DIR)),
+                    CacheStore.PLAYER to
+                        directorySize(cacheDir(MPV_CACHE_DIR)) +
+                        directorySize(cacheDir(FONTCONFIG_CACHE_DIR)),
+                )
 
             val counters =
                 mapOf<CacheKind, suspend () -> Int>(
@@ -67,7 +109,7 @@ constructor(
                         .getOrDefault(0)
                 }
 
-            CacheUsage(imageBytes = imageBytes, entries = entries)
+            CacheUsage(bytes = bytes, entries = entries)
         }
 
     suspend fun clearCachedData() =
@@ -78,6 +120,18 @@ constructor(
                     loader.memoryCache?.clear()
                 }
                 .onFailure { Timber.e(it, "Failed to clear image cache") }
+
+            runCatching { videoCacheCleaner.clear() }
+                .onFailure { Timber.e(it, "Failed to clear video cache") }
+
+            runCatching { okHttpClient.cache?.evictAll() }
+                .onFailure { Timber.e(it, "Failed to clear network cache") }
+
+            runCatching {
+                    cacheDir(MPV_CACHE_DIR).deleteRecursively()
+                    cacheDir(FONTCONFIG_CACHE_DIR).deleteRecursively()
+                }
+                .onFailure { Timber.e(it, "Failed to clear player cache") }
 
             runCatching { homeCacheRepository.invalidateAll() }
                 .onFailure { Timber.e(it, "Failed to clear home cache") }
@@ -91,9 +145,76 @@ constructor(
                 .onFailure { Timber.e(it, "Failed to invalidate media caches") }
             runCatching { homeSectionsRepository.clearAllData() }
                 .onFailure { Timber.e(it, "Failed to clear home sections") }
+            runCatching { database.itemMetadataCacheDao().clearAll() }
+                .onFailure { Timber.e(it, "Failed to clear item metadata cache") }
+
+            vacuum()
+
             runCatching { appDataRepository.reloadHomeData() }
                 .onFailure { Timber.e(it, "Failed to reload home data") }
 
             homeSectionsRepository.ensureLayout(force = true)
         }
+
+    suspend fun pruneExpiredData() =
+        withContext(Dispatchers.IO) {
+            val now = System.currentTimeMillis()
+
+            runCatching {
+                    database.itemMetadataCacheDao().clearOldCache(now - ITEM_METADATA_TTL_MS)
+                }
+                .onFailure { Timber.w(it, "Failed to prune item metadata cache") }
+
+            runCatching {
+                    database.libraryCacheDao().clearExpiredCache(now - LIBRARY_CACHE_TTL_MS)
+                }
+                .onFailure { Timber.w(it, "Failed to prune library cache") }
+
+            runCatching { pruneCrashFiles() }
+                .onFailure { Timber.w(it, "Failed to prune crash files") }
+
+            runCatching { pruneOrphanedAvatars() }
+                .onFailure { Timber.w(it, "Failed to prune user avatars") }
+        }
+
+    private fun pruneCrashFiles() {
+        val files = File(context.filesDir, CRASHES_DIR).listFiles()?.takeIf { it.isNotEmpty() }
+            ?: return
+        files
+            .sortedByDescending { it.lastModified() }
+            .drop(MAX_CRASH_FILES)
+            .forEach { stale ->
+                if (stale.delete()) Timber.d("Pruned crash file ${stale.name}")
+            }
+    }
+
+    private suspend fun pruneOrphanedAvatars() {
+        val dir = File(context.filesDir, AVATARS_DIR)
+        val files = dir.listFiles()?.takeIf { it.isNotEmpty() } ?: return
+        val knownUserIds = database.userDao().getAllUsers().map { it.id.toString() }.toSet()
+
+        files.forEach { file ->
+            val isTemp = file.name.endsWith(".tmp")
+            val ownerId = file.name.substringBefore('_', missingDelimiterValue = "")
+            val isOrphan = ownerId.isNotEmpty() && ownerId !in knownUserIds
+            if ((isTemp || isOrphan) && file.delete()) {
+                Timber.d("Pruned avatar ${file.name}")
+            }
+        }
+    }
+
+    private fun vacuum() {
+        runCatching { database.openHelper.writableDatabase.execSQL("VACUUM") }
+            .onFailure { Timber.w(it, "Failed to vacuum database") }
+    }
+
+    private fun cacheDir(name: String): File = File(context.cacheDir, name)
+
+    private fun directorySize(dir: File): Long =
+        runCatching {
+                if (!dir.exists()) 0L
+                else dir.walkBottomUp().filter { it.isFile }.sumOf { it.length() }
+            }
+            .onFailure { Timber.w(it, "Failed to size ${dir.name}") }
+            .getOrDefault(0L)
 }
