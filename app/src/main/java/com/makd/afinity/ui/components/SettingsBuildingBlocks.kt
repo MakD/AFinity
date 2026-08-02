@@ -155,7 +155,7 @@ fun SettingsSwitchItem(
 @Composable
 fun AfinitySwitch(
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
+    onCheckedChange: ((Boolean) -> Unit)?,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {

@@ -3,12 +3,17 @@ package com.makd.afinity.ui.theme
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.data.models.CustomSectionCardStyle
 
 object CardDimensions {
 
     const val ASPECT_RATIO_PORTRAIT = 2f / 3f
     const val ASPECT_RATIO_LANDSCAPE = 16f / 9f
     const val ASPECT_RATIO_SQUARE = 1f
+
+    val CardTextSpacing = 8.dp
+    val TitleLine = 20.dp
+    val MetadataLine = 22.dp
 
     private object Values {
         val PortraitCompact = 140.dp
@@ -65,4 +70,25 @@ object CardDimensions {
             }
 
     fun calculateHeight(width: Dp, aspectRatio: Float): Dp = width / aspectRatio
+
+    fun rowHeight(
+        cardWidth: Dp,
+        aspectRatio: Float,
+        titleHeight: Dp = TitleLine,
+        metadataHeight: Dp = MetadataLine,
+    ): Dp = calculateHeight(cardWidth, aspectRatio) + CardTextSpacing + titleHeight + metadataHeight
+
+    fun cardWidthFor(style: CustomSectionCardStyle, widthSizeClass: WindowWidthSizeClass): Dp =
+        when (style) {
+            CustomSectionCardStyle.LANDSCAPE -> widthSizeClass.landscapeWidth
+            CustomSectionCardStyle.SQUARE -> widthSizeClass.squareWidth
+            else -> widthSizeClass.portraitWidth
+        }
+
+    fun aspectRatioFor(style: CustomSectionCardStyle): Float =
+        when (style) {
+            CustomSectionCardStyle.LANDSCAPE -> ASPECT_RATIO_LANDSCAPE
+            CustomSectionCardStyle.SQUARE -> ASPECT_RATIO_SQUARE
+            else -> ASPECT_RATIO_PORTRAIT
+        }
 }

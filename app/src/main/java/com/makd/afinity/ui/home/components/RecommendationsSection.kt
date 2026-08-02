@@ -32,8 +32,7 @@ fun PersonSection(
     modifier: Modifier = Modifier,
 ) {
     val cardWidth = widthSizeClass.portraitWidth
-    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
         val title =
@@ -72,8 +71,7 @@ fun MovieRecommendationSection(
     modifier: Modifier = Modifier,
 ) {
     val cardWidth = widthSizeClass.portraitWidth
-    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
         val title =
@@ -116,8 +114,7 @@ fun PersonFromMovieSection(
     modifier: Modifier = Modifier,
 ) {
     val cardWidth = widthSizeClass.portraitWidth
-    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
         val titleRes =

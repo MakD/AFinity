@@ -195,7 +195,8 @@ constructor(
             .joinToString(";")
 
     private val hydrationMutex = Mutex()
-    private val hydrationInFlight = mutableSetOf<String>()
+    private val hydrationQueue = LinkedHashSet<String>()
+    private var isHydrating = false
     private val renderedItemIds = mutableSetOf<UUID>()
     private val spotlightSeenIds = mutableSetOf<UUID>()
 
@@ -413,38 +414,71 @@ constructor(
     }
 
     fun hydrate(descriptorKey: String) {
-        if (_content.value.containsKey(descriptorKey)) return
+        val layout = _layout.value
+        val list = if (layout.any { it.key == descriptorKey }) layout else _pinnedLayout.value
+        val index = list.indexOfFirst { it.key == descriptorKey }
+        if (index < 0) {
+            enqueueHydration(listOf(descriptorKey))
+            return
+        }
+        enqueueHydration(list.subList(index, minOf(index + HYDRATE_AHEAD, list.size)).map { it.key })
+    }
+
+    private fun enqueueHydration(keys: List<String>) {
         scope.launch(Dispatchers.IO) {
+            val shouldDrain =
+                hydrationMutex.withLock {
+                    hydrationQueue.addAll(keys.filterNot { _content.value.containsKey(it) })
+                    if (isHydrating || hydrationQueue.isEmpty()) {
+                        false
+                    } else {
+                        isHydrating = true
+                        true
+                    }
+                }
+            if (shouldDrain) drainHydrationQueue()
+        }
+    }
+
+    private suspend fun drainHydrationQueue() {
+        while (true) {
+            val descriptorKey =
+                hydrationMutex.withLock {
+                    val next = hydrationQueue.firstOrNull()
+                    if (next == null) isHydrating = false else hydrationQueue.remove(next)
+                    next
+                } ?: break
+
+            if (_content.value.containsKey(descriptorKey)) continue
+
             val descriptor =
                 _layout.value.firstOrNull { it.key == descriptorKey }
                     ?: _pinnedLayout.value.firstOrNull { it.key == descriptorKey }
-                    ?: return@launch
-            val shouldRun = hydrationMutex.withLock {
-                if (
-                    descriptorKey in hydrationInFlight || _content.value.containsKey(descriptorKey)
-                ) {
-                    false
-                } else {
-                    hydrationInFlight.add(descriptorKey)
-                    true
-                }
-            }
-            if (!shouldRun) return@launch
+                    ?: continue
 
             try {
                 val content = hydrateDescriptor(descriptor)
                 if (content != null) {
                     registerRenderedItems(content)
                     _content.update { it + (descriptorKey to content) }
+                    if (content == HomeSectionContent.Empty) pruneEmptyDescriptor(descriptorKey)
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to hydrate home section $descriptorKey")
-            } finally {
-                hydrationMutex.withLock { hydrationInFlight.remove(descriptorKey) }
             }
         }
+    }
+
+    private suspend fun pruneEmptyDescriptor(descriptorKey: String) {
+        val sk = sessionKey() ?: return
+        val current = _layout.value
+        if (current.none { it.key == descriptorKey }) return
+        val pruned = current.filterNot { it.key == descriptorKey }
+        _layout.value = pruned
+        homeCacheRepository.invalidate(contentCacheKey(sk, descriptorKey))
+        homeCacheRepository.putRaw(layoutCacheKey(sk), json.encodeToString(pruned))
     }
 
     fun updateItem(updatedItem: AfinityItem) {
@@ -473,7 +507,8 @@ constructor(
         recentWatchedCache = null
         favoriteMoviesCache = null
         hydrationMutex.withLock {
-            hydrationInFlight.clear()
+            hydrationQueue.clear()
+            isHydrating = false
             renderedItemIds.clear()
             spotlightSeenIds.clear()
         }
@@ -1493,6 +1528,8 @@ private const val MIN_POPULAR_STUDIOS = 3
 private val POPULAR_STUDIOS_TYPES = listOf("MOVIE", "SERIES")
 private const val MIN_CRITICS_RATING = 6.5f
 private const val CRITICS_CHOICE_KEY = "critics_choice"
+
+private const val HYDRATE_AHEAD = 4
 
 private const val ROW_SIZE = 20
 private const val SPOTLIGHT_ROW_SIZE = 10

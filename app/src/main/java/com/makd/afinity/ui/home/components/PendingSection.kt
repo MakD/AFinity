@@ -25,14 +25,14 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import com.makd.afinity.ui.utils.shimmerEffect
 
 @Composable
 fun PendingSection(
     title: String,
-    isSpotlight: Boolean,
+    cardStyle: CustomSectionCardStyle,
     onVisible: () -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
@@ -49,7 +49,7 @@ fun PendingSection(
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
         HomeSectionHeader(title = title)
 
-        if (isSpotlight) {
+        if (cardStyle == CustomSectionCardStyle.SPOTLIGHT) {
             val isLandscape =
                 LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
             val containerSize = LocalWindowInfo.current.containerSize
@@ -74,12 +74,14 @@ fun PendingSection(
                 }
             }
         } else {
-            val cardWidth = widthSizeClass.portraitWidth
-            val cardHeight =
-                CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
-            val fixedRowHeight = cardHeight + 8.dp + 20.dp
+            val cardWidth = CardDimensions.cardWidthFor(cardStyle, widthSizeClass)
+            val aspectRatio = CardDimensions.aspectRatioFor(cardStyle)
 
-            MediaRowSkeleton(cardWidth = cardWidth, height = fixedRowHeight)
+            MediaRowSkeleton(
+                cardWidth = cardWidth,
+                height = CardDimensions.rowHeight(cardWidth, aspectRatio),
+                aspectRatio = aspectRatio,
+            )
         }
     }
 }

@@ -38,8 +38,6 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -54,7 +52,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
@@ -81,6 +78,7 @@ import com.makd.afinity.data.repository.CacheStore
 import com.makd.afinity.data.repository.CacheUsage
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
+import com.makd.afinity.ui.components.AfinitySwitch
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.DownloadListItemRow
 import com.makd.afinity.ui.components.EmptyState
@@ -701,19 +699,7 @@ fun StatusHub(
                         MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Switch(
-                    checked = wifiOnly,
-                    onCheckedChange = onWifiOnlyChanged,
-                    modifier = Modifier.scale(0.8f),
-                    colors =
-                        SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                            checkedTrackColor = MaterialTheme.colorScheme.primary,
-                            uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            uncheckedBorderColor = MaterialTheme.colorScheme.outline,
-                        ),
-                )
+                AfinitySwitch(checked = wifiOnly, onCheckedChange = onWifiOnlyChanged)
             }
         }
     }
@@ -1447,19 +1433,7 @@ fun ImageCacheSettingsCard(
                         modifier = Modifier.padding(top = 4.dp),
                     )
                 }
-                Switch(
-                    checked = isCacheEnabled,
-                    onCheckedChange = onCacheEnabledChange,
-                    modifier = Modifier.scale(0.8f),
-                    colors =
-                        SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                            checkedTrackColor = MaterialTheme.colorScheme.primary,
-                            uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            uncheckedBorderColor = MaterialTheme.colorScheme.outline,
-                        ),
-                )
+                AfinitySwitch(checked = isCacheEnabled, onCheckedChange = onCacheEnabledChange)
             }
 
             Text(
@@ -1542,6 +1516,7 @@ fun ImageCacheSettingsCard(
                                 inactiveTickColor =
                                     MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                             ),
+                        modifier = Modifier.height(24.dp),
                     )
                 }
             }
@@ -1687,6 +1662,7 @@ fun VideoCacheSettingsCard(
                         activeTickColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
                         inactiveTickColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                     ),
+                modifier = Modifier.height(24.dp),
             )
         }
     }

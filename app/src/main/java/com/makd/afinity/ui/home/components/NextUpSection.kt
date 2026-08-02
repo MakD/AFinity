@@ -28,9 +28,7 @@ fun NextUpSection(
     modifier: Modifier = Modifier,
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
-    val cardHeight =
-        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
 
     val scrollState = rememberLazyListState()
 

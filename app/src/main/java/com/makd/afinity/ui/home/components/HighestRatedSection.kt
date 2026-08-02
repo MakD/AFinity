@@ -58,8 +58,7 @@ fun HighestRatedSection(
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val cardWidth = widthSizeClass.portraitWidth
-    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
     Column(modifier = Modifier.padding(horizontal = 14.dp)) {
         HomeSectionHeader(title = stringResource(R.string.home_critics_choice))

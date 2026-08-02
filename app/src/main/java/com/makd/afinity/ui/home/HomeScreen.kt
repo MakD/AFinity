@@ -633,7 +633,7 @@ fun HomeScreen(
                                         is HomeSection.Pending -> {
                                             PendingSection(
                                                 title = section.title,
-                                                isSpotlight = section.isSpotlight,
+                                                cardStyle = section.cardStyle,
                                                 onVisible = {
                                                     viewModel.hydrateSection(section.key)
                                                 },
@@ -696,7 +696,7 @@ fun HomeScreen(
                                         is HomeSection.Pending -> {
                                             PendingSection(
                                                 title = section.title,
-                                                isSpotlight = section.isSpotlight,
+                                                cardStyle = section.cardStyle,
                                                 onVisible = {
                                                     viewModel.hydrateSection(section.key)
                                                 },

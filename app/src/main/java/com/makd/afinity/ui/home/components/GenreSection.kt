@@ -44,9 +44,7 @@ fun GenreSection(
     }
 
     val cardWidth = widthSizeClass.portraitWidth
-    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
-
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
         HomeSectionHeader(title = stringResource(R.string.home_genre_movies_title, genre))

@@ -900,8 +900,11 @@ constructor(
 sealed interface HomeSection {
     val key: String
 
-    data class Pending(override val key: String, val title: String, val isSpotlight: Boolean) :
-        HomeSection
+    data class Pending(
+        override val key: String,
+        val title: String,
+        val cardStyle: CustomSectionCardStyle,
+    ) : HomeSection
 
     data class Person(override val key: String, val section: PersonSection) : HomeSection
 
@@ -941,13 +944,21 @@ private fun HomeSectionDescriptor.toHomeSection(content: HomeSectionContent?): H
                     HomeSection.Pending(
                         key = key,
                         title = title,
-                        isSpotlight =
-                            type == HomeSectionType.SPOTLIGHT_GENRE_MOVIE ||
-                                type == HomeSectionType.SPOTLIGHT_GENRE_SHOW ||
-                                type == HomeSectionType.SPOTLIGHT_STUDIO ||
-                                type == HomeSectionType.SPOTLIGHT_BOXSET ||
-                                (type == HomeSectionType.CUSTOM &&
-                                    cardStyle == CustomSectionCardStyle.SPOTLIGHT.name),
+                        cardStyle =
+                            when (type) {
+                                HomeSectionType.SPOTLIGHT_GENRE_MOVIE,
+                                HomeSectionType.SPOTLIGHT_GENRE_SHOW,
+                                HomeSectionType.SPOTLIGHT_STUDIO,
+                                HomeSectionType.SPOTLIGHT_BOXSET ->
+                                    CustomSectionCardStyle.SPOTLIGHT
+                                HomeSectionType.CUSTOM ->
+                                    cardStyle
+                                        ?.let {
+                                            runCatching { CustomSectionCardStyle.valueOf(it) }
+                                                .getOrNull()
+                                        } ?: CustomSectionCardStyle.PORTRAIT
+                                else -> CustomSectionCardStyle.PORTRAIT
+                            },
                     )
                 HomeSectionContent.Empty -> null
                 is HomeSectionContent.Person -> HomeSection.Person(key, content.section)

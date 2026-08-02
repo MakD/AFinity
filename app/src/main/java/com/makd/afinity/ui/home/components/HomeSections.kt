@@ -71,9 +71,7 @@ fun OptimizedContinueWatchingSection(
     scrollState: LazyListState = rememberLazyListState(),
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
-    val cardHeight =
-        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
 
     Column(modifier = Modifier.padding(horizontal = 14.dp)) {
         HomeSectionHeader(title = stringResource(R.string.home_continue_watching))
@@ -106,8 +104,7 @@ fun OptimizedLatestMoviesSection(
     unavailableItemIds: Set<java.util.UUID> = emptySet(),
 ) {
     val cardWidth = widthSizeClass.portraitWidth
-    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
     Column(modifier = Modifier.padding(horizontal = 14.dp)) {
         HomeSectionHeader(title = title)
@@ -153,9 +150,13 @@ fun LibrariesSection(
     modifier: Modifier = Modifier,
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
-    val cardHeight =
-        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
-    val fixedRowHeight = cardHeight + 8.dp + 24.dp
+    val fixedRowHeight =
+        CardDimensions.rowHeight(
+            cardWidth,
+            CardDimensions.ASPECT_RATIO_LANDSCAPE,
+            titleHeight = 24.dp,
+            metadataHeight = 0.dp,
+        )
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
         HomeSectionHeader(title = stringResource(R.string.libraries_title))
@@ -192,8 +193,7 @@ fun OptimizedLatestTvSeriesSection(
     unavailableItemIds: Set<java.util.UUID> = emptySet(),
 ) {
     val cardWidth = widthSizeClass.portraitWidth
-    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
     Column(modifier = Modifier.padding(horizontal = 14.dp)) {
         HomeSectionHeader(title = title)
@@ -240,9 +240,7 @@ fun UpcomingEpisodesSection(
     title: String = stringResource(R.string.home_upcoming_episodes),
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
-    val cardHeight =
-        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
         HomeSectionHeader(title = title)

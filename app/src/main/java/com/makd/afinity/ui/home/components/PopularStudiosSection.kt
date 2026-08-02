@@ -40,9 +40,13 @@ fun PopularStudiosSection(
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
-    val cardHeight =
-        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
-    val fixedRowHeight = cardHeight + 8.dp
+    val fixedRowHeight =
+        CardDimensions.rowHeight(
+            cardWidth,
+            CardDimensions.ASPECT_RATIO_LANDSCAPE,
+            titleHeight = 0.dp,
+            metadataHeight = 0.dp,
+        )
 
     Column(modifier = Modifier.padding(horizontal = 14.dp)) {
         HomeSectionHeader(title = stringResource(R.string.home_popular_studios))

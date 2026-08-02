@@ -24,7 +24,12 @@ import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.utils.shimmerEffect
 
 @Composable
-fun MediaRowSkeleton(cardWidth: Dp, height: Dp, itemCount: Int = 6) {
+fun MediaRowSkeleton(
+    cardWidth: Dp,
+    height: Dp,
+    itemCount: Int = 6,
+    aspectRatio: Float = CardDimensions.ASPECT_RATIO_PORTRAIT,
+) {
     LazyRow(
         modifier = Modifier.height(height),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -33,8 +38,7 @@ fun MediaRowSkeleton(cardWidth: Dp, height: Dp, itemCount: Int = 6) {
         items(itemCount) {
             Column(modifier = Modifier.width(cardWidth)) {
                 Card(
-                    modifier =
-                        Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
+                    modifier = Modifier.fillMaxWidth().aspectRatio(aspectRatio),
                     shape = RoundedCornerShape(8.dp),
                     colors =
                         CardDefaults.cardColors(

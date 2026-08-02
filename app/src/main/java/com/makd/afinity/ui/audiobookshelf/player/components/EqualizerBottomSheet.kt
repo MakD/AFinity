@@ -24,15 +24,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -49,6 +46,7 @@ import com.makd.afinity.player.common.EQ_MAX_DB
 import com.makd.afinity.player.common.EQ_MIN_DB
 import com.makd.afinity.player.common.EqualizerPreset
 import com.makd.afinity.player.common.EqualizerState
+import com.makd.afinity.ui.components.AfinitySwitch
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -90,19 +88,7 @@ fun EqualizerBottomSheet(
                     letterSpacing = 2.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
-                Switch(
-                    checked = state.isEnabled,
-                    onCheckedChange = onEnabled,
-                    colors =
-                        SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                            checkedTrackColor = MaterialTheme.colorScheme.primary,
-                            uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            uncheckedBorderColor = MaterialTheme.colorScheme.outline,
-                        ),
-                    modifier = Modifier.scale(0.8f),
-                )
+                AfinitySwitch(checked = state.isEnabled, onCheckedChange = onEnabled)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -174,19 +160,9 @@ fun EqualizerBottomSheet(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Switch(
+                    AfinitySwitch(
                         checked = skipSilenceEnabled,
                         onCheckedChange = onSkipSilenceToggle,
-                        colors =
-                            SwitchDefaults.colors(
-                                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                                checkedTrackColor = MaterialTheme.colorScheme.primary,
-                                uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                                uncheckedTrackColor =
-                                    MaterialTheme.colorScheme.surfaceContainerHighest,
-                                uncheckedBorderColor = MaterialTheme.colorScheme.outline,
-                            ),
-                        modifier = Modifier.scale(0.8f),
                     )
                 }
             }
