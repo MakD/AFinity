@@ -81,6 +81,7 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.data.repository.segments.SegmentsRepository
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
+import com.makd.afinity.player.common.TrackMapping
 import com.makd.afinity.player.common.TrackSelection
 import com.makd.afinity.player.mpv.MPVPlayer
 import com.makd.afinity.ui.player.utils.VolumeManager
@@ -114,7 +115,6 @@ import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 
-internal const val EXTERNAL_SUBTITLE_ID_BASE = 128
 private const val MAX_PENDING_TRACK_ATTEMPTS = 10
 
 @UnstableApi
@@ -579,7 +579,7 @@ constructor(
                 .setUsage(C.USAGE_MEDIA)
                 .build()
 
-        val preferredAudioLang = preferencesRepository.getPreferredAudioLanguage()
+        val preferredAudioLang = resolvePreferredAudioLanguage()
 
         val trackSelector = DefaultTrackSelector(context)
         trackSelector.setParameters(
@@ -726,8 +726,8 @@ constructor(
         val vo = preferencesRepository.getMpvVideoOutput()
         val ao = preferencesRepository.getMpvAudioOutput()
         val subs = preferencesRepository.getSubtitlePreferences()
-        val audioLang = preferencesRepository.getPreferredAudioLanguage()
-        val subtitleLang = preferencesRepository.getPreferredSubtitleLanguage()
+        val audioLang = resolvePreferredAudioLanguage()
+        val subtitleLang = resolvePreferredSubtitleLanguage()
         val (mpvHwDec, mpvVideoOutput, mpvAudioOutput, subtitlePrefs, preferredAudioLang) =
             MpvPrefsSnapshot(hwDec.value, vo.value, ao.value, subs, audioLang)
         val preferredSubtitleLang = subtitleLang.ifBlank { audioLang }
@@ -1642,9 +1642,8 @@ constructor(
                     audioStreams = audioStreams,
                     subtitleStreams = subtitleStreams,
                     subtitleMode = resolveSubtitlePlaybackMode(),
-                    preferredAudioLanguage = preferencesRepository.getPreferredAudioLanguage(),
-                    preferredSubtitleLanguage =
-                        preferencesRepository.getPreferredSubtitleLanguage(),
+                    preferredAudioLanguage = resolvePreferredAudioLanguage(),
+                    preferredSubtitleLanguage = resolvePreferredSubtitleLanguage(),
                     requestedAudioStreamIndex = audioStreamIndex,
                     requestedSubtitleStreamIndex = subtitleStreamIndex,
                     serverDefaultAudioStreamIndex = serverSavedAudioIndex,
@@ -1747,7 +1746,7 @@ constructor(
                                             "file://${subtitleFile.absolutePath}".toUri()
                                         )
                                         .setId(
-                                            (EXTERNAL_SUBTITLE_ID_BASE + streamIndex).toString()
+                                            TrackMapping.sideLoadedId(streamIndex)
                                         )
                                         .setLabel(language)
                                         .setMimeType(mimeType)
@@ -1818,7 +1817,7 @@ constructor(
 
                                     MediaItem.SubtitleConfiguration.Builder(subtitleUrl.toUri())
                                         .setId(
-                                            (EXTERNAL_SUBTITLE_ID_BASE + stream.index).toString()
+                                            TrackMapping.sideLoadedId(stream.index)
                                         )
                                         .setLabel(finalLabel)
                                         .setMimeType(mimeType)
@@ -1834,7 +1833,7 @@ constructor(
                     externalSubtitles
                         .mapNotNull { config ->
                             config.id?.toIntOrNull()?.let { id ->
-                                (id - EXTERNAL_SUBTITLE_ID_BASE) to config.uri.toString()
+                                (id - TrackMapping.EXTERNAL_SUBTITLE_ID_BASE) to config.uri.toString()
                             }
                         }
                         .toMap()
@@ -2131,29 +2130,19 @@ constructor(
     private fun orderedAudioGroups(): List<Tracks.Group> =
         player.currentTracks.groups
             .filter { it.type == C.TRACK_TYPE_AUDIO }
-            .sortedBy { group ->
-                val formatId = group.mediaTrackGroup.getFormat(0).id
-                formatId?.toIntOrNull()?.let { "%05d".format(it) } ?: formatId
-            }
+            .sortedBy { TrackMapping.audioSortKey(it.mediaTrackGroup.getFormat(0).id) }
 
     private fun textGroups(): List<Tracks.Group> =
         player.currentTracks.groups.filter { it.type == C.TRACK_TYPE_TEXT }
 
-    private fun embeddedOrdinalOf(streams: List<AfinityMediaStream>, streamIndex: Int): Int? {
-        val stream = streams.firstOrNull { it.index == streamIndex } ?: return null
-        if (stream.isExternal) return null
-        return streams.filter { !it.isExternal }.indexOfFirst { it.index == streamIndex }.takeIf {
-            it >= 0
-        }
-    }
-
     private fun audioGroupForStreamIndex(streamIndex: Int): Tracks.Group? {
-        val ordinal = embeddedOrdinalOf(currentMediaStreams(MediaStreamType.AUDIO), streamIndex)
+        val ordinal =
+            TrackMapping.embeddedOrdinal(currentMediaStreams(MediaStreamType.AUDIO), streamIndex)
         return ordinal?.let { orderedAudioGroups().getOrNull(it) }?.takeIf { it.isSupported }
     }
 
     private fun subtitleGroupForStreamIndex(streamIndex: Int): Tracks.Group? {
-        val sideLoadedId = (EXTERNAL_SUBTITLE_ID_BASE + streamIndex).toString()
+        val sideLoadedId = TrackMapping.sideLoadedId(streamIndex)
         val sideLoadedUri = sideLoadedSubtitleUris[streamIndex]
         val groups = textGroups()
         groups
@@ -2165,34 +2154,36 @@ constructor(
             ?.let {
                 return it.takeIf { group -> group.isSupported }
             }
-        val ordinal = embeddedOrdinalOf(currentMediaStreams(MediaStreamType.SUBTITLE), streamIndex)
+        val ordinal =
+            TrackMapping.embeddedOrdinal(currentMediaStreams(MediaStreamType.SUBTITLE), streamIndex)
         return ordinal?.let { groups.getOrNull(it) }?.takeIf { it.isSupported }
     }
 
     private fun streamIndexForAudioGroup(group: Tracks.Group): Int? {
         val ordinal = orderedAudioGroups().indexOf(group).takeIf { it >= 0 } ?: return null
-        return currentMediaStreams(MediaStreamType.AUDIO)
-            .filter { !it.isExternal }
-            .getOrNull(ordinal)
-            ?.index
+        return TrackMapping.streamIndexAtEmbeddedOrdinal(
+            currentMediaStreams(MediaStreamType.AUDIO),
+            ordinal,
+        )
     }
 
     private fun streamIndexForSubtitleGroup(group: Tracks.Group): Int? {
         val format = group.mediaTrackGroup.getFormat(0)
-        val formatId = format.id?.toIntOrNull()
-        if (formatId != null && formatId >= EXTERNAL_SUBTITLE_ID_BASE) {
-            return formatId - EXTERNAL_SUBTITLE_ID_BASE
+        TrackMapping.streamIndexFromSideLoadedId(format.id)?.let {
+            return it
         }
-        (format.customData as? String)?.let { external ->
-            sideLoadedSubtitleUris.entries.firstOrNull { it.value == external }?.let {
-                return it.key
+        TrackMapping.streamIndexFromExternalUri(
+                format.customData as? String,
+                sideLoadedSubtitleUris,
+            )
+            ?.let {
+                return it
             }
-        }
         val ordinal = textGroups().indexOf(group).takeIf { it >= 0 } ?: return null
-        return currentMediaStreams(MediaStreamType.SUBTITLE)
-            .filter { !it.isExternal }
-            .getOrNull(ordinal)
-            ?.index
+        return TrackMapping.streamIndexAtEmbeddedOrdinal(
+            currentMediaStreams(MediaStreamType.SUBTITLE),
+            ordinal,
+        )
     }
 
     private fun applyPendingTrackSelections() {
@@ -2350,6 +2341,24 @@ constructor(
     private fun resolvePlayDefaultAudioTrack(): Boolean =
         sessionManager.currentSession.value?.userConfiguration?.playDefaultAudioTrack == true
 
+    private suspend fun resolvePreferredAudioLanguage(): String {
+        val local = preferencesRepository.getPreferredAudioLanguage()
+        if (local != TrackSelection.FOLLOW_SERVER_LANGUAGE) return local
+        return sessionManager.currentSession.value
+            ?.userConfiguration
+            ?.audioLanguagePreference
+            .orEmpty()
+    }
+
+    private suspend fun resolvePreferredSubtitleLanguage(): String {
+        val local = preferencesRepository.getPreferredSubtitleLanguage()
+        if (local != TrackSelection.FOLLOW_SERVER_LANGUAGE) return local
+        return sessionManager.currentSession.value
+            ?.userConfiguration
+            ?.subtitleLanguagePreference
+            .orEmpty()
+    }
+
     private fun autoUpdateSubtitleForAudio(audioStreamIndex: Int) {
         if (_uiState.value.subtitleUserSelected) return
 
@@ -2368,9 +2377,8 @@ constructor(
                     audioStreams = audioStreams,
                     subtitleStreams = subtitleStreams,
                     subtitleMode = resolveSubtitlePlaybackMode(),
-                    preferredAudioLanguage = preferencesRepository.getPreferredAudioLanguage(),
-                    preferredSubtitleLanguage =
-                        preferencesRepository.getPreferredSubtitleLanguage(),
+                    preferredAudioLanguage = resolvePreferredAudioLanguage(),
+                    preferredSubtitleLanguage = resolvePreferredSubtitleLanguage(),
                     requestedAudioStreamIndex = audioStreamIndex,
                 )
             val targetSubtitleStreamIndex =

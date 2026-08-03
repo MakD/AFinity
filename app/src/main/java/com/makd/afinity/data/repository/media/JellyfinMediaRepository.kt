@@ -1033,6 +1033,28 @@ constructor(
                 .distinctBy { it.id }
         }
 
+    override suspend fun getSeriesEpisodes(
+        seriesId: UUID,
+        fields: List<ItemFields>?,
+        limit: Int?,
+    ): List<AfinityEpisode> =
+        apiCall(emptyList(), "Failed to get series episodes") { apiClient, userId ->
+            TvShowsApi(apiClient)
+                .getEpisodes(
+                    seriesId = seriesId,
+                    userId = userId,
+                    isMissing = null,
+                    fields = fields ?: FieldSets.EPISODE_LIST,
+                    enableImages = true,
+                    enableUserData = true,
+                    limit = limit,
+                )
+                .content
+                .items
+                .mapNotNull { baseItem -> baseItem.toAfinityEpisode(getBaseUrl()) }
+                .distinctBy { it.id }
+        }
+
     override suspend fun getFavoriteMovies(fields: List<ItemFields>?): List<AfinityMovie> =
         apiCall(emptyList(), "Failed to get favorite movies") { apiClient, userId ->
             ItemsApi(apiClient)
@@ -1834,8 +1856,7 @@ constructor(
             val playableEpisodes = episodes.filter { !it.missing }
             if (playableEpisodes.isEmpty()) return null
 
-            val sortedEpisodes = playableEpisodes.sortedBy { it.indexNumber }
-            sortedEpisodes.firstOrNull { !it.played } ?: sortedEpisodes.firstOrNull()
+            playableEpisodes.firstOrNull { !it.played } ?: playableEpisodes.firstOrNull()
         } catch (e: Exception) {
             Timber.e(e, "Failed to determine episode to play for season: $seasonId")
             null

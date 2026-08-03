@@ -91,10 +91,10 @@ import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.models.syncplay.SyncPlayMemberInfo
+import com.makd.afinity.player.common.TrackMapping
 import com.makd.afinity.ui.components.AfinityBadge
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.livetv.components.LiveBadge
-import com.makd.afinity.ui.player.EXTERNAL_SUBTITLE_ID_BASE
 import com.makd.afinity.ui.player.PlayerViewModel
 import com.makd.afinity.ui.player.toLocalizedLanguageName
 import kotlinx.coroutines.delay
@@ -173,8 +173,8 @@ fun PlayerControls(
                     }
                     .mapIndexedNotNull { ordinal, group ->
                         if (!group.isSupported) return@mapIndexedNotNull null
-                        val stream = embeddedAudioStreams.getOrNull(ordinal)
-                            ?: return@mapIndexedNotNull null
+                        val stream =
+                            embeddedAudioStreams.getOrNull(ordinal) ?: return@mapIndexedNotNull null
                         val localizedLang =
                             if (stream.language.isNotEmpty() && stream.language != "und") {
                                 stream.language.toLocalizedLanguageName()
@@ -237,9 +237,7 @@ fun PlayerControls(
                 .forEachIndexed { index, trackGroup ->
                     val format = trackGroup.mediaTrackGroup.getFormat(0)
                     val sideLoadedIndex =
-                        format.id?.toIntOrNull()?.takeIf { it >= EXTERNAL_SUBTITLE_ID_BASE }?.minus(
-                            EXTERNAL_SUBTITLE_ID_BASE
-                        )
+                        TrackMapping.streamIndexFromSideLoadedId(format.id)
                             ?: (format.customData as? String)?.let { external ->
                                 uiState.sideLoadedSubtitleUris.entries
                                     .firstOrNull { it.value == external }
@@ -252,7 +250,8 @@ fun PlayerControls(
                             embeddedSubtitleStreams.getOrNull(embeddedOrdinal++)
                         }
                     if (!trackGroup.isSupported) return@forEachIndexed
-                    val streamIndex = serverStream?.index ?: sideLoadedIndex ?: return@forEachIndexed
+                    val streamIndex =
+                        serverStream?.index ?: sideLoadedIndex ?: return@forEachIndexed
 
                     val displayName =
                         if (serverStream != null) {
@@ -1958,7 +1957,8 @@ private fun formatAudioChannels(stream: AfinityMediaStream?): String? {
         if (base.isNotBlank()) {
             return when (base.lowercase()) {
                 "mono" -> "Mono"
-                "stereo", "downmix" -> "Stereo"
+                "stereo",
+                "downmix" -> "Stereo"
                 else -> base
             }
         }
@@ -1983,24 +1983,36 @@ private fun assertAudioOptions(options: List<AudioStreamOption>): List<AudioStre
 
 private fun prettySubtitleCodec(codec: String?): String? =
     when (val value = codec?.lowercase()) {
-        null, "" -> null
-        "subrip", "srt", "application/x-subrip" -> "SRT"
-        "ass", "ssa", "text/x-ssa", "text/x-ass" -> "ASS"
-        "webvtt", "vtt", "text/vtt" -> "VTT"
+        null,
+        "" -> null
+        "subrip",
+        "srt",
+        "application/x-subrip" -> "SRT"
+        "ass",
+        "ssa",
+        "text/x-ssa",
+        "text/x-ass" -> "ASS"
+        "webvtt",
+        "vtt",
+        "text/vtt" -> "VTT"
         "pgssub",
         "pgs",
         "hdmv_pgs_subtitle",
         "application/pgs" -> "PGS"
-        "dvdsub", "vobsub", "dvd_subtitle", "application/vobsub" -> "VOBSUB"
-        "dvbsub", "dvb_subtitle", "application/dvbsubs" -> "DVBSUB"
-        "mov_text", "tx3g", "application/x-quicktime-tx3g" -> "TX3G"
-        "application/cea-608", "application/cea-708" -> "CEA"
+        "dvdsub",
+        "vobsub",
+        "dvd_subtitle",
+        "application/vobsub" -> "VOBSUB"
+        "dvbsub",
+        "dvb_subtitle",
+        "application/dvbsubs" -> "DVBSUB"
+        "mov_text",
+        "tx3g",
+        "application/x-quicktime-tx3g" -> "TX3G"
+        "application/cea-608",
+        "application/cea-708" -> "CEA"
         else ->
-            value
-                .substringAfterLast('/')
-                .removePrefix("x-")
-                .takeIf { it.isNotBlank() }
-                ?.uppercase()
+            value.substringAfterLast('/').removePrefix("x-").takeIf { it.isNotBlank() }?.uppercase()
     }
 
 private fun subtitleFileName(path: String?): String? =
@@ -2073,14 +2085,12 @@ private fun assertSubtitleOptions(
     val duplicates =
         options.filter { !it.isNone }.groupBy { it.displayName }.filter { it.value.size > 1 }.keys
 
-    val disambiguated =
-        options.map { opt ->
-            if (opt.isNone || opt.displayName !in duplicates) return@map opt
-            if (!opt.secondaryName.isNullOrBlank()) return@map opt
-            val fallback =
-                subtitleFileName(opt.stream?.path) ?: String.format(trackFmt, opt.index + 1)
-            opt.copy(secondaryName = fallback)
-        }
+    val disambiguated = options.map { opt ->
+        if (opt.isNone || opt.displayName !in duplicates) return@map opt
+        if (!opt.secondaryName.isNullOrBlank()) return@map opt
+        val fallback = subtitleFileName(opt.stream?.path) ?: String.format(trackFmt, opt.index + 1)
+        opt.copy(secondaryName = fallback)
+    }
 
     val stillColliding =
         disambiguated
@@ -2093,8 +2103,7 @@ private fun assertSubtitleOptions(
         if (opt.isNone || (opt.displayName to opt.secondaryName) !in stillColliding) return@map opt
         val track = String.format(trackFmt, opt.index + 1)
         val secondary =
-            listOfNotNull(opt.secondaryName?.takeIf { it.isNotBlank() }, track)
-                .joinToString(" · ")
+            listOfNotNull(opt.secondaryName?.takeIf { it.isNotBlank() }, track).joinToString(" · ")
         opt.copy(secondaryName = secondary)
     }
 }

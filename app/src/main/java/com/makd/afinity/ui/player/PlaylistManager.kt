@@ -89,7 +89,10 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
         return try {
             if (seasonId != null) {
                 Timber.d("Loading episodes for season $seasonId only")
-                val episodes = mediaRepository.getEpisodes(seasonId, startingEpisode.seriesId)
+                val episodes =
+                    mediaRepository.getEpisodes(seasonId, startingEpisode.seriesId).filter {
+                        !it.missing
+                    }
 
                 if (episodes.isEmpty()) {
                     val fallbackQueue = intros.toMutableList().apply { add(startingEpisode) }
@@ -97,17 +100,17 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
                     return true
                 }
 
-                val sortedEpisodes = episodes.sortedBy { it.indexNumber ?: 0 }.toMutableList()
-                var startIndex = sortedEpisodes.indexOfFirst { it.id == startingEpisode.id }
+                val orderedEpisodes = episodes.toMutableList()
+                var startIndex = orderedEpisodes.indexOfFirst { it.id == startingEpisode.id }
 
                 if (startIndex == -1) {
-                    sortedEpisodes.add(0, startingEpisode)
+                    orderedEpisodes.add(0, startingEpisode)
                     startIndex = 0
                 } else {
-                    sortedEpisodes[startIndex] = startingEpisode
+                    orderedEpisodes[startIndex] = startingEpisode
                 }
 
-                val finalQueue = sortedEpisodes.map { it as AfinityItem }.toMutableList()
+                val finalQueue = orderedEpisodes.map { it as AfinityItem }.toMutableList()
                 if (intros.isNotEmpty()) {
                     finalQueue.addAll(startIndex, intros)
                 }
@@ -117,41 +120,11 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
             }
 
             Timber.d("Loading episodes for entire series")
-            val seasons = mediaRepository.getSeasons(startingEpisode.seriesId)
-
-            if (seasons.isEmpty()) {
-                val fallbackQueue = intros.toMutableList().apply { add(startingEpisode) }
-                setQueue(fallbackQueue, 0)
-                return true
-            }
-
-            val allEpisodes = mutableListOf<AfinityEpisode>()
-
-            for (season in seasons.sortedBy { it.indexNumber ?: 0 }) {
-                try {
-                    val episodes =
-                        mediaRepository.getEpisodes(season.id, startingEpisode.seriesId)
-
-                    if (episodes.isNotEmpty()) {
-                        allEpisodes.addAll(episodes.sortedBy { it.indexNumber ?: 0 })
-                    }
-
-                    if (allEpisodes.isNotEmpty()) {
-                        val tempQueue = allEpisodes.map { it as AfinityItem }.toMutableList()
-                        val currentTargetIndex =
-                            tempQueue.indexOfFirst { it.id == startingEpisode.id }
-
-                        if (currentTargetIndex != -1 && intros.isNotEmpty()) {
-                            tempQueue.addAll(currentTargetIndex, intros)
-                            setQueue(tempQueue, currentTargetIndex, contentStart = currentTargetIndex + intros.size)
-                        } else {
-                            setQueue(tempQueue, currentTargetIndex.coerceAtLeast(0))
-                        }
-                    }
-                } catch (_: Exception) {
-                    Timber.w("Failed to load episodes for season ${season.indexNumber}")
-                }
-            }
+            val allEpisodes =
+                mediaRepository
+                    .getSeriesEpisodes(startingEpisode.seriesId)
+                    .filter { !it.missing }
+                    .toMutableList()
 
             if (allEpisodes.isEmpty()) {
                 val fallbackQueue = intros.toMutableList().apply { add(startingEpisode) }

@@ -9,6 +9,7 @@ data class TrackSelectionResult(val audioPosition: Int?, val subtitlePosition: I
 object TrackSelection {
 
     const val NO_SUBTITLE = -1
+    const val FOLLOW_SERVER_LANGUAGE = "server"
 
     private val BIBLIOGRAPHIC_TO_TERMINOLOGIC =
         mapOf(
