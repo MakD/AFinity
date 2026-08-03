@@ -960,8 +960,11 @@ constructor(
                 is PlayerEvent.Seek -> player.seekTo(event.positionMs)
                 is PlayerEvent.SeekRelative -> {
                     showControls()
+                    val duration = player.duration
+                    val target = player.currentPosition.coerceAtLeast(0) + event.deltaMs
                     val newPos =
-                        (player.currentPosition + event.deltaMs).coerceIn(0, player.duration)
+                        if (duration > 0) target.coerceIn(0, duration)
+                        else target.coerceAtLeast(0)
                     player.seekTo(newPos)
                 }
 
@@ -1067,15 +1070,16 @@ constructor(
                 }
 
                 is PlayerEvent.OnSeekBarDragFinished -> {
-                    val finalPos = event.positionMs
-                    player.seekTo(finalPos)
+                    val seekable = _uiState.value.duration > 0
+                    val finalPos = if (seekable) event.positionMs else player.currentPosition
+                    if (seekable) player.seekTo(finalPos)
                     updateUiState {
                         it.copy(
                             isSeeking = false,
                             showTrickplayPreview = false,
                             trickplayPreviewImage = null,
                             trickplayPreviewPosition = 0L,
-                            currentPosition = finalPos,
+                            currentPosition = finalPos.coerceAtLeast(0),
                         )
                     }
                     onSeekBarPreview(0, false)
@@ -2631,6 +2635,7 @@ constructor(
 
     fun onDoubleTapSeek(isForward: Boolean, xFraction: Float) {
         if (sendMpvGestureKeypress(xFraction)) return
+        if (_uiState.value.isLiveChannel) return
 
         val delta = if (isForward) 10000L else -10000L
         handlePlayerEvent(PlayerEvent.SeekRelative(delta))
