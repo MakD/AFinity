@@ -20,6 +20,7 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.MimeTypes
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
@@ -105,6 +106,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.model.api.MediaStreamType
+import org.jellyfin.sdk.model.api.PlayMethod
 import org.jellyfin.sdk.model.api.SubtitlePlaybackMode
 import timber.log.Timber
 import java.util.Locale
@@ -159,6 +161,9 @@ constructor(
 
     private val _closePlayerEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val closePlayerEvent: SharedFlow<Unit> = _closePlayerEvent.asSharedFlow()
+
+    private val _liveStreamFailedEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val liveStreamFailedEvent: SharedFlow<Unit> = _liveStreamFailedEvent.asSharedFlow()
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
@@ -830,6 +835,13 @@ constructor(
 
     override fun onPlaybackStateChanged(playbackState: Int) {
         updatePlayerState()
+    }
+
+    override fun onPlayerError(error: PlaybackException) {
+        Timber.e(error, "Player error")
+        if (currentLivePlaybackInfo?.playMethod == PlayMethod.DIRECT_PLAY.serialName) {
+            _liveStreamFailedEvent.tryEmit(Unit)
+        }
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {

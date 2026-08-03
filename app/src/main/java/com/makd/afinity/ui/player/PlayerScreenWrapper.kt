@@ -54,6 +54,15 @@ fun PlayerScreenWrapper(
         }
     }
 
+    val playerViewModel: PlayerViewModel = hiltViewModel()
+    LaunchedEffect(isLiveChannel) {
+        if (isLiveChannel) {
+            playerViewModel.liveStreamFailedEvent.collect {
+                viewModel.retryLiveChannelWithoutDirectPlay()
+            }
+        }
+    }
+
     val effectiveStreamUrl = if (isLiveChannel) fetchedStreamUrl else liveStreamUrl
 
     when {

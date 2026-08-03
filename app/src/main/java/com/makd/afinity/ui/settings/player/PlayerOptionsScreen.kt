@@ -25,10 +25,11 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -558,60 +559,103 @@ private fun SubtitleModeSelectorItem(
     selectedMode: String,
     onModeSelected: (String) -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var showDialog by remember { mutableStateOf(false) }
+
+    SettingsItem(
+        icon = icon,
+        title = title,
+        subtitle = getSubtitleModeDisplayName(selectedMode),
+        onClick = { showDialog = true },
+        trailing = {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp),
+            )
+        },
+    )
+
+    if (showDialog) {
+        SubtitleModePickerDialog(
+            selectedMode = selectedMode,
+            onSelect = { mode ->
+                onModeSelected(mode)
+                showDialog = false
+            },
+            onDismiss = { showDialog = false },
+        )
+    }
+}
+
+@Composable
+private fun SubtitleModePickerDialog(
+    selectedMode: String,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
     val options = listOf("") + SubtitlePlaybackMode.entries.map { it.serialName }
 
-    Box {
-        SettingsItem(
-            icon = icon,
-            title = title,
-            subtitle = getSubtitleModeDisplayName(selectedMode),
-            onClick = { expanded = true },
-            trailing = {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp),
-                )
-            },
-        )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.pref_subtitle_mode_title)) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                options.forEach { mode ->
+                    val isSelected = mode == selectedMode
 
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
-        ) {
-            options.forEach { mode ->
-                DropdownMenuItem(
-                    text = {
-                        Column(modifier = Modifier.widthIn(max = 280.dp)) {
-                            Text(getSubtitleModeDisplayName(mode))
+                    Row(
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .then(
+                                    if (isSelected)
+                                        Modifier.background(
+                                            MaterialTheme.colorScheme.primaryContainer.copy(
+                                                alpha = 0.3f
+                                            )
+                                        )
+                                    else Modifier
+                                )
+                                .clickable { onSelect(mode) }
+                                .padding(horizontal = 12.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        if (isSelected) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_check),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.size(20.dp))
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = getSubtitleModeDisplayName(mode),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color =
+                                    if (isSelected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurface,
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = getSubtitleModeDescription(mode),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                    },
-                    onClick = {
-                        onModeSelected(mode)
-                        expanded = false
-                    },
-                    leadingIcon =
-                        if (selectedMode == mode) {
-                            {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_check),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            }
-                        } else null,
-                )
+                    }
+                }
             }
-        }
-    }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+    )
 }
 
 @Composable

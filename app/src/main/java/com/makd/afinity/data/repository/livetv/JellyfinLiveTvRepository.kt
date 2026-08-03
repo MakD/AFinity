@@ -11,7 +11,6 @@ import com.makd.afinity.data.repository.JellyfinApiInvoker
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.di.NetworkModule
 import com.makd.afinity.util.MediaCapabilities
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.operations.LiveTvApi
@@ -26,7 +25,9 @@ import org.jellyfin.sdk.model.api.EncodingContext
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.ItemSortBy
+import org.jellyfin.sdk.model.api.MediaProtocol
 import org.jellyfin.sdk.model.api.MediaStreamProtocol
+import org.jellyfin.sdk.model.api.OpenLiveStreamDto
 import org.jellyfin.sdk.model.api.PlayMethod
 import org.jellyfin.sdk.model.api.PlaybackInfoDto
 import org.jellyfin.sdk.model.api.SortOrder
@@ -50,6 +51,11 @@ constructor(
     private val jellyfin: Jellyfin,
 ) : LiveTvRepository {
 
+    private companion object {
+        val MPEGTS_VIDEO_CODECS = listOf("h264", "hevc", "mpeg2video", "mpeg4")
+        val MPEGTS_AUDIO_CODECS = listOf("aac", "ac3", "eac3", "mp3", "mp2")
+    }
+
     private fun getBaseUrl(): String = sessionManager.getCurrentApiClient()?.baseUrl ?: ""
 
     private suspend fun <T> apiCall(
@@ -61,6 +67,15 @@ constructor(
     private fun buildLiveTvDeviceProfile(maxBitrate: Int): DeviceProfile {
         val nativeVideoCodecs = MediaCapabilities.getSupportedVideoCodecs()
         val nativeAudioCodecs = MediaCapabilities.getSupportedAudioCodecs()
+
+        val nativeVideo = nativeVideoCodecs.split(",")
+        val nativeAudio = nativeAudioCodecs.split(",")
+        val hlsVideoCodecs =
+            MPEGTS_VIDEO_CODECS.filter { it in nativeVideo }.joinToString(",").ifEmpty { "h264" }
+        val hlsAudioCodecs =
+            MPEGTS_AUDIO_CODECS.filter { it == "mp2" || it in nativeAudio }
+                .joinToString(",")
+                .ifEmpty { "aac" }
 
         return DeviceProfile(
             name = "AFinity-LiveTV",
@@ -82,8 +97,8 @@ constructor(
                         context = EncodingContext.STREAMING,
                         protocol = MediaStreamProtocol.HLS,
                         container = "ts",
-                        videoCodec = "h264",
-                        audioCodec = "aac",
+                        videoCodec = hlsVideoCodecs,
+                        audioCodec = hlsAudioCodecs,
                         breakOnNonKeyFrames = false,
                         conditions = emptyList(),
                     )
@@ -231,7 +246,10 @@ constructor(
                 ?.map { programDto -> programDto.toAfinityProgram(baseUrl) } ?: emptyList()
         }
 
-    override suspend fun getChannelPlaybackInfo(channelId: UUID): LiveTvPlaybackInfo? =
+    override suspend fun getChannelPlaybackInfo(
+        channelId: UUID,
+        forceDirectPlay: Boolean,
+    ): LiveTvPlaybackInfo? =
         apiCall(null, "Failed to get stream URL for channel: $channelId") { apiClient, userId ->
             val baseUrl = getBaseUrl()
             if (baseUrl.isBlank()) {
@@ -243,6 +261,7 @@ constructor(
             val mediaInfoApi = MediaInfoApi(untimedClient)
             val videosApi = VideosApi(apiClient)
             val maxStreamingBitrate = 140_000_000
+            val deviceProfile = buildLiveTvDeviceProfile(maxStreamingBitrate)
 
             val playbackInfoDto =
                 PlaybackInfoDto(
@@ -250,11 +269,11 @@ constructor(
                     maxStreamingBitrate = maxStreamingBitrate,
                     enableDirectPlay = true,
                     enableDirectStream = true,
-                    enableTranscoding = false,
+                    enableTranscoding = true,
                     allowVideoStreamCopy = true,
                     allowAudioStreamCopy = true,
                     autoOpenLiveStream = false,
-                    deviceProfile = buildLiveTvDeviceProfile(maxStreamingBitrate),
+                    deviceProfile = deviceProfile,
                 )
 
             val playbackResponse =
@@ -284,12 +303,18 @@ constructor(
                             Timber.d("Opening live stream for channel $channelId")
                             MediaInfoApi(untimedClient)
                                 .openLiveStream(
-                                    openToken = token,
-                                    userId = userId,
-                                    playSessionId = playbackInfo.playSessionId,
-                                    maxStreamingBitrate = maxStreamingBitrate,
-                                    enableDirectPlay = true,
-                                    enableDirectStream = true,
+                                    data =
+                                        OpenLiveStreamDto(
+                                            openToken = token,
+                                            userId = userId,
+                                            playSessionId = playbackInfo.playSessionId,
+                                            maxStreamingBitrate = maxStreamingBitrate,
+                                            itemId = channelId,
+                                            enableDirectPlay = true,
+                                            enableDirectStream = true,
+                                            deviceProfile = deviceProfile,
+                                            directPlayProtocols = listOf(MediaProtocol.HTTP),
+                                        )
                                 )
                                 .content
                                 .mediaSource
@@ -311,21 +336,16 @@ constructor(
 
             val playMethod: PlayMethod
             val streamUrl: String
-            val container: String = source.container ?: "ts"
-
-            val isClientRemote = !isPrivateHost(baseUrl)
-
-            val isStreamLocalIp = isPrivateHost(directStreamPath)
-
-            val mustProxyStream = isClientRemote && isStreamLocalIp
+            var container: String = source.container ?: "ts"
 
             when {
-                source.supportsDirectPlay -> {
+                source.supportsDirectPlay || forceDirectPlay -> {
+                    if (!source.supportsDirectPlay) {
+                        Timber.d("Server did not offer direct play, forcing it for $channelId")
+                    }
                     playMethod = PlayMethod.DIRECT_PLAY
                     streamUrl =
-                        if (
-                            source.isRemote && !directStreamPath.isNullOrBlank() && !mustProxyStream
-                        ) {
+                        if (source.isRemote && !directStreamPath.isNullOrBlank()) {
                             directStreamPath
                         } else {
                             videosApi.getVideoStreamUrl(
@@ -341,30 +361,19 @@ constructor(
                 }
                 source.supportsDirectStream && !source.transcodingUrl.isNullOrBlank() -> {
                     playMethod = PlayMethod.DIRECT_STREAM
-                    streamUrl = source.transcodingUrl!!.toAbsoluteUrl(baseUrl)
+                    container = source.transcodingContainer ?: container
+                    streamUrl =
+                        apiClient.createUrl(source.transcodingUrl!!, ignorePathParameters = true)
+                }
+                source.supportsTranscoding && !source.transcodingUrl.isNullOrBlank() -> {
+                    playMethod = PlayMethod.TRANSCODE
+                    container = source.transcodingContainer ?: container
+                    streamUrl =
+                        apiClient.createUrl(source.transcodingUrl!!, ignorePathParameters = true)
                 }
                 else -> {
-                    Timber.w("Jellyfin wanted to transcode. FORCING Direct Play anyway.")
-                    playMethod = PlayMethod.DIRECT_PLAY
-
-                    if (
-                        !directStreamPath.isNullOrBlank() &&
-                            directStreamPath.startsWith("http") &&
-                            !mustProxyStream
-                    ) {
-                        streamUrl = directStreamPath
-                    } else {
-                        streamUrl =
-                            videosApi.getVideoStreamUrl(
-                                itemId = channelId,
-                                container = container,
-                                static = true,
-                                tag = source.eTag,
-                                mediaSourceId = mediaSourceId,
-                                liveStreamId = liveStreamId,
-                                playSessionId = playSessionId,
-                            )
-                    }
+                    Timber.e("No playable stream for channel $channelId")
+                    return@apiCall null
                 }
             }
 
@@ -378,9 +387,6 @@ constructor(
                 container = container,
             )
         }
-
-    private fun String.toAbsoluteUrl(baseUrl: String): String =
-        if (startsWith("http", ignoreCase = true)) this else "$baseUrl$this"
 
     private fun untimedApiClient(source: ApiClient): ApiClient =
         try {
@@ -397,23 +403,6 @@ constructor(
             Timber.w(e, "Failed to build untimed Live TV client, falling back to session client")
             source
         }
-
-    private fun isPrivateHost(url: String?): Boolean {
-        val host = url?.toHttpUrlOrNull()?.host ?: return false
-        if (host.equals("localhost", ignoreCase = true)) return true
-        val octets = host.split(".")
-        if (octets.size != 4) return false
-        val values = octets.map { it.toIntOrNull() ?: return false }
-        if (values.any { it !in 0..255 }) return false
-        return when {
-            values[0] == 10 -> true
-            values[0] == 127 -> true
-            values[0] == 192 && values[1] == 168 -> true
-            values[0] == 172 && values[1] in 16..31 -> true
-            values[0] == 169 && values[1] == 254 -> true
-            else -> false
-        }
-    }
 
     override suspend fun getChannelStreamUrl(channelId: UUID): String? =
         getChannelPlaybackInfo(channelId)?.streamUrl
