@@ -1546,4 +1546,10 @@
     <string name="custom_sections_refine_none">Без дополнительных фильтров</string>
     <string name="custom_sections_refine_summary_fmt">%1$s · %2$d фильтров</string>
     <string name="cache_kind_people">Топ-персоны</string>
+    <string name="pref_clear_cache_usage_total_fmt">%1$s в кэше · %2$d записей</string>
+    <string name="cache_store_video">Кэш видео</string>
+    <string name="cache_store_network">Сетевой кэш</string>
+    <string name="cache_store_player">Данные для плеера</string>
+    <string name="pref_video_caching_title">Кэширование видео</string>
+    <string name="pref_video_caching_summary">Сохранение недавнего видеопотока на диск, чтобы при перемотке и повторном просмотре данные не скачивались заново</string>
 </resources>
