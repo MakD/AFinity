@@ -56,6 +56,7 @@ import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.AfinitySegmentType
@@ -113,7 +114,8 @@ import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 
-private const val EXTERNAL_SUBTITLE_ID_BASE = 128
+internal const val EXTERNAL_SUBTITLE_ID_BASE = 128
+private const val MAX_PENDING_TRACK_ATTEMPTS = 10
 
 @UnstableApi
 @HiltViewModel
@@ -188,8 +190,10 @@ constructor(
 
     private var progressReportingJob: Job? = null
     private var pendingMainItemOptions: MainItemPlaybackOptions? = null
-    private var pendingAudioTrackPosition: Int? = null
-    private var pendingSubtitleTrackPosition: Int? = null
+    private var pendingAudioStreamIndex: Int? = null
+    private var pendingSubtitleStreamIndex: Int? = null
+    private var sideLoadedSubtitleUris: Map<Int, String> = emptyMap()
+    private var pendingTrackResolveAttempts = 0
     private var currentItem: AfinityItem? = null
     val currentPlayingItemId: UUID?
         get() = currentItem?.id
@@ -271,13 +275,8 @@ constructor(
         val source = item.sources.firstOrNull { it.id == sourceId } ?: return
         if (source.type == AfinitySourceType.LOCAL) return
 
-        val audioStreams = source.mediaStreams.filter { it.type == MediaStreamType.AUDIO }
-        val subStreams = source.mediaStreams.filter { it.type == MediaStreamType.SUBTITLE }
-        val jfAudioIndex = state.audioStreamIndex?.let { audioStreams.getOrNull(it)?.index }
-        val jfSubIndex =
-            state.subtitleStreamIndex?.let {
-                if (it < 0) -1 else subStreams.getOrNull(it)?.index
-            }
+        val jfAudioIndex = state.audioStreamIndex
+        val jfSubIndex = state.subtitleStreamIndex
 
         val position = player.currentPosition
         Timber.d("Server URL changed mid-playback, migrating stream at ${position}ms")
@@ -524,19 +523,10 @@ constructor(
                             val source =
                                 item.sources.firstOrNull { it.id == sourceId }
                                     ?: item.sources.firstOrNull()
-                            val audioStreams =
-                                source?.mediaStreams?.filter { it.type == MediaStreamType.AUDIO }
-                            val subStreams =
-                                source?.mediaStreams?.filter { it.type == MediaStreamType.SUBTITLE }
-
-                            val jfAudioIndex =
-                                _uiState.value.audioStreamIndex?.let {
-                                    audioStreams?.getOrNull(it)?.index
-                                }
+                            val jfAudioIndex = _uiState.value.audioStreamIndex
                             val jfSubIndex =
-                                _uiState.value.subtitleStreamIndex?.let {
-                                    subStreams?.getOrNull(it)?.index
-                                } ?: -1
+                                _uiState.value.subtitleStreamIndex
+                                    ?: TrackSelection.NO_SUBTITLE
 
                             val livePlaybackInfo = currentLivePlaybackInfo
                             playbackRepository.reportPlaybackProgress(
@@ -1665,18 +1655,20 @@ constructor(
             val audioPosition = trackSelection.audioPosition
             val subtitlePosition = trackSelection.subtitlePosition
 
-            pendingAudioTrackPosition = audioPosition
-            pendingSubtitleTrackPosition = subtitlePosition
             val targetAudioStreamIndex = audioPosition?.let { audioStreams.getOrNull(it)?.index }
             val targetSubtitleStreamIndex =
                 if (subtitlePosition == TrackSelection.NO_SUBTITLE) TrackSelection.NO_SUBTITLE
                 else subtitleStreams.getOrNull(subtitlePosition)?.index
 
+            pendingAudioStreamIndex = targetAudioStreamIndex
+            pendingSubtitleStreamIndex = targetSubtitleStreamIndex
+            pendingTrackResolveAttempts = 0
+
             updateUiState {
                 it.copy(
                     currentItem = fullItem,
-                    audioStreamIndex = audioPosition,
-                    subtitleStreamIndex = subtitlePosition,
+                    audioStreamIndex = targetAudioStreamIndex,
+                    subtitleStreamIndex = targetSubtitleStreamIndex,
                     subtitleUserSelected = false,
                     availableSources = fullItem.sources,
                     currentMediaSourceId = actualMediaSourceId,
@@ -1742,8 +1734,11 @@ constructor(
                                         subtitleMimeType(subtitleFile.extension)
                                             ?: MimeTypes.TEXT_UNKNOWN
 
-                                    val rawCode =
-                                        subtitleFile.nameWithoutExtension.split("_").firstOrNull()
+                                    val nameParts =
+                                        subtitleFile.nameWithoutExtension.split("_")
+                                    val streamIndex =
+                                        nameParts.getOrNull(1)?.toIntOrNull() ?: subtitleIndex
+                                    val rawCode = nameParts.firstOrNull()
                                     val language =
                                         rawCode.toLocalizedLanguageName()
                                             ?: context.getString(R.string.track_unknown)
@@ -1752,7 +1747,7 @@ constructor(
                                             "file://${subtitleFile.absolutePath}".toUri()
                                         )
                                         .setId(
-                                            (EXTERNAL_SUBTITLE_ID_BASE + subtitleIndex).toString()
+                                            (EXTERNAL_SUBTITLE_ID_BASE + streamIndex).toString()
                                         )
                                         .setLabel(language)
                                         .setMimeType(mimeType)
@@ -1766,18 +1761,32 @@ constructor(
                             emptyList()
                         }
                     } else {
+                        val negotiatedDeliveryUrls =
+                            negotiatedSource
+                                ?.mediaStreams
+                                .orEmpty()
+                                .mapNotNull { stream ->
+                                    stream.deliveryUrl?.takeIf { it.isNotBlank() }?.let {
+                                        stream.index to it
+                                    }
+                                }
+                                .toMap()
+
                         mediaSource.mediaStreams
                             .filter { stream ->
                                 stream.type == MediaStreamType.SUBTITLE && stream.isExternal
                             }
-                            .mapIndexedNotNull { subtitleIndex, stream ->
+                            .mapNotNull { stream ->
                                 try {
                                     val extension = subtitleExtension(stream.codec)
                                     val mimeType =
                                         subtitleMimeType(stream.codec)
                                             ?: MimeTypes.APPLICATION_SUBRIP
                                     val subtitleUrl =
-                                        "${apiClient.baseUrl}/Videos/${fullItem.id}/${actualMediaSourceId}/Subtitles/${stream.index}/Stream.$extension"
+                                        negotiatedDeliveryUrls[stream.index]?.let {
+                                            "${apiClient.baseUrl}$it"
+                                        }
+                                            ?: "${apiClient.baseUrl}/Videos/${fullItem.id}/${actualMediaSourceId}/Subtitles/${stream.index}/Stream.$extension"
                                     val langCode = stream.language ?: "eng"
                                     val localizedLang = langCode.toLocalizedLanguageName()
                                     val finalLabel =
@@ -1809,7 +1818,7 @@ constructor(
 
                                     MediaItem.SubtitleConfiguration.Builder(subtitleUrl.toUri())
                                         .setId(
-                                            (EXTERNAL_SUBTITLE_ID_BASE + subtitleIndex).toString()
+                                            (EXTERNAL_SUBTITLE_ID_BASE + stream.index).toString()
                                         )
                                         .setLabel(finalLabel)
                                         .setMimeType(mimeType)
@@ -1820,6 +1829,16 @@ constructor(
                                 }
                             }
                     }
+
+                sideLoadedSubtitleUris =
+                    externalSubtitles
+                        .mapNotNull { config ->
+                            config.id?.toIntOrNull()?.let { id ->
+                                (id - EXTERNAL_SUBTITLE_ID_BASE) to config.uri.toString()
+                            }
+                        }
+                        .toMap()
+                updateUiState { it.copy(sideLoadedSubtitleUris = sideLoadedSubtitleUris) }
 
                 val mediaItem =
                     MediaItem.Builder()
@@ -2092,7 +2111,7 @@ constructor(
     override fun onTracksChanged(tracks: Tracks) {
         super.onTracksChanged(tracks)
         applyPendingTrackSelections()
-        if (pendingAudioTrackPosition == null && pendingSubtitleTrackPosition == null) {
+        if (pendingAudioStreamIndex == null && pendingSubtitleStreamIndex == null) {
             updateCurrentTrackSelections()
         }
     }
@@ -2100,24 +2119,97 @@ constructor(
     private fun supportedTrackGroups(trackType: @C.TrackType Int): List<Tracks.Group> =
         player.currentTracks.groups.filter { it.type == trackType && it.isSupported }
 
+    private fun currentMediaStreams(type: MediaStreamType): List<AfinityMediaStream> {
+        val state = _uiState.value
+        val item = state.currentItem ?: return emptyList()
+        val source =
+            item.sources.firstOrNull { it.id == state.currentMediaSourceId }
+                ?: item.sources.firstOrNull()
+        return source?.mediaStreams?.filter { it.type == type }.orEmpty()
+    }
+
+    private fun orderedAudioGroups(): List<Tracks.Group> =
+        player.currentTracks.groups
+            .filter { it.type == C.TRACK_TYPE_AUDIO }
+            .sortedBy { group ->
+                val formatId = group.mediaTrackGroup.getFormat(0).id
+                formatId?.toIntOrNull()?.let { "%05d".format(it) } ?: formatId
+            }
+
+    private fun textGroups(): List<Tracks.Group> =
+        player.currentTracks.groups.filter { it.type == C.TRACK_TYPE_TEXT }
+
+    private fun embeddedOrdinalOf(streams: List<AfinityMediaStream>, streamIndex: Int): Int? {
+        val stream = streams.firstOrNull { it.index == streamIndex } ?: return null
+        if (stream.isExternal) return null
+        return streams.filter { !it.isExternal }.indexOfFirst { it.index == streamIndex }.takeIf {
+            it >= 0
+        }
+    }
+
+    private fun audioGroupForStreamIndex(streamIndex: Int): Tracks.Group? {
+        val ordinal = embeddedOrdinalOf(currentMediaStreams(MediaStreamType.AUDIO), streamIndex)
+        return ordinal?.let { orderedAudioGroups().getOrNull(it) }?.takeIf { it.isSupported }
+    }
+
+    private fun subtitleGroupForStreamIndex(streamIndex: Int): Tracks.Group? {
+        val sideLoadedId = (EXTERNAL_SUBTITLE_ID_BASE + streamIndex).toString()
+        val sideLoadedUri = sideLoadedSubtitleUris[streamIndex]
+        val groups = textGroups()
+        groups
+            .firstOrNull { group ->
+                val format = group.mediaTrackGroup.getFormat(0)
+                format.id == sideLoadedId ||
+                    (sideLoadedUri != null && format.customData == sideLoadedUri)
+            }
+            ?.let {
+                return it.takeIf { group -> group.isSupported }
+            }
+        val ordinal = embeddedOrdinalOf(currentMediaStreams(MediaStreamType.SUBTITLE), streamIndex)
+        return ordinal?.let { groups.getOrNull(it) }?.takeIf { it.isSupported }
+    }
+
+    private fun streamIndexForAudioGroup(group: Tracks.Group): Int? {
+        val ordinal = orderedAudioGroups().indexOf(group).takeIf { it >= 0 } ?: return null
+        return currentMediaStreams(MediaStreamType.AUDIO)
+            .filter { !it.isExternal }
+            .getOrNull(ordinal)
+            ?.index
+    }
+
+    private fun streamIndexForSubtitleGroup(group: Tracks.Group): Int? {
+        val format = group.mediaTrackGroup.getFormat(0)
+        val formatId = format.id?.toIntOrNull()
+        if (formatId != null && formatId >= EXTERNAL_SUBTITLE_ID_BASE) {
+            return formatId - EXTERNAL_SUBTITLE_ID_BASE
+        }
+        (format.customData as? String)?.let { external ->
+            sideLoadedSubtitleUris.entries.firstOrNull { it.value == external }?.let {
+                return it.key
+            }
+        }
+        val ordinal = textGroups().indexOf(group).takeIf { it >= 0 } ?: return null
+        return currentMediaStreams(MediaStreamType.SUBTITLE)
+            .filter { !it.isExternal }
+            .getOrNull(ordinal)
+            ?.index
+    }
+
     private fun applyPendingTrackSelections() {
-        val audioPending = pendingAudioTrackPosition
-        val subtitlePending = pendingSubtitleTrackPosition
+        val audioPending = pendingAudioStreamIndex
+        val subtitlePending = pendingSubtitleStreamIndex
         if (audioPending == null && subtitlePending == null) return
 
-        val audioGroup = audioPending?.let {
-            supportedTrackGroups(C.TRACK_TYPE_AUDIO).getOrNull(it)
-        }
+        val audioGroup = audioPending?.let { audioGroupForStreamIndex(it) }
         val disableSubtitles = subtitlePending == TrackSelection.NO_SUBTITLE
         val subtitleGroup =
-            subtitlePending
-                ?.takeIf { it >= 0 }
-                ?.let { supportedTrackGroups(C.TRACK_TYPE_TEXT).getOrNull(it) }
+            subtitlePending?.takeIf { it >= 0 }?.let { subtitleGroupForStreamIndex(it) }
 
         if (audioGroup == null && subtitleGroup == null && !disableSubtitles) {
             Timber.d(
                 "Deferring track selection, tracks not ready (audio=$audioPending, subtitle=$subtitlePending)"
             )
+            abandonUnresolvedPendingTracks()
             return
         }
 
@@ -2143,8 +2235,27 @@ constructor(
                 }
                 .build()
 
-        if (audioGroup != null) pendingAudioTrackPosition = null
-        if (subtitleGroup != null || disableSubtitles) pendingSubtitleTrackPosition = null
+        if (audioGroup != null) pendingAudioStreamIndex = null
+        if (subtitleGroup != null || disableSubtitles) pendingSubtitleStreamIndex = null
+
+        abandonUnresolvedPendingTracks()
+    }
+
+    private fun abandonUnresolvedPendingTracks() {
+        if (pendingAudioStreamIndex == null && pendingSubtitleStreamIndex == null) {
+            pendingTrackResolveAttempts = 0
+            return
+        }
+        pendingTrackResolveAttempts++
+        if (pendingTrackResolveAttempts < MAX_PENDING_TRACK_ATTEMPTS) return
+
+        Timber.w(
+            "Giving up on track selection after $pendingTrackResolveAttempts attempts (audio=$pendingAudioStreamIndex, subtitle=$pendingSubtitleStreamIndex)"
+        )
+        pendingAudioStreamIndex = null
+        pendingSubtitleStreamIndex = null
+        pendingTrackResolveAttempts = 0
+        updateCurrentTrackSelections()
     }
 
     fun switchToTrack(
@@ -2152,8 +2263,8 @@ constructor(
         index: Int,
         userInitiated: Boolean = false,
     ) {
-        if (trackType == C.TRACK_TYPE_AUDIO) pendingAudioTrackPosition = null
-        if (trackType == C.TRACK_TYPE_TEXT) pendingSubtitleTrackPosition = null
+        if (trackType == C.TRACK_TYPE_AUDIO) pendingAudioStreamIndex = null
+        if (trackType == C.TRACK_TYPE_TEXT) pendingSubtitleStreamIndex = null
 
         if (index == -1) {
             player.trackSelectionParameters =
@@ -2170,10 +2281,15 @@ constructor(
                     }
                     .build()
         } else {
-            val group = supportedTrackGroups(trackType).getOrNull(index)
+            val group =
+                when (trackType) {
+                    C.TRACK_TYPE_AUDIO -> audioGroupForStreamIndex(index)
+                    C.TRACK_TYPE_TEXT -> subtitleGroupForStreamIndex(index)
+                    else -> supportedTrackGroups(trackType).getOrNull(index)
+                }
 
             if (group == null) {
-                Timber.w("Track index $index not available for type $trackType")
+                Timber.w("Stream index $index not available for track type $trackType")
                 updateCurrentTrackSelections()
                 return
             }
@@ -2212,10 +2328,10 @@ constructor(
                 .clearOverridesOfType(C.TRACK_TYPE_TEXT)
                 .build()
 
-        if (pendingAudioTrackPosition == null) {
+        if (pendingAudioStreamIndex == null) {
             updateUiState { it.copy(audioStreamIndex = null) }
         }
-        if (pendingSubtitleTrackPosition == null) {
+        if (pendingSubtitleStreamIndex == null) {
             updateUiState { it.copy(subtitleStreamIndex = null) }
         }
     }
@@ -2234,7 +2350,7 @@ constructor(
     private fun resolvePlayDefaultAudioTrack(): Boolean =
         sessionManager.currentSession.value?.userConfiguration?.playDefaultAudioTrack == true
 
-    private fun autoUpdateSubtitleForAudio(audioPosition: Int) {
+    private fun autoUpdateSubtitleForAudio(audioStreamIndex: Int) {
         if (_uiState.value.subtitleUserSelected) return
 
         val sourceId = _uiState.value.currentMediaSourceId ?: return
@@ -2244,7 +2360,7 @@ constructor(
                 ?: return
         val audioStreams = source.mediaStreams.filter { it.type == MediaStreamType.AUDIO }
         val subtitleStreams = source.mediaStreams.filter { it.type == MediaStreamType.SUBTITLE }
-        val requestedAudioStreamIndex = audioStreams.getOrNull(audioPosition)?.index ?: return
+        if (audioStreams.none { it.index == audioStreamIndex }) return
 
         viewModelScope.launch {
             val selection =
@@ -2255,29 +2371,32 @@ constructor(
                     preferredAudioLanguage = preferencesRepository.getPreferredAudioLanguage(),
                     preferredSubtitleLanguage =
                         preferencesRepository.getPreferredSubtitleLanguage(),
-                    requestedAudioStreamIndex = requestedAudioStreamIndex,
+                    requestedAudioStreamIndex = audioStreamIndex,
                 )
-            switchToTrack(C.TRACK_TYPE_TEXT, selection.subtitlePosition)
+            val targetSubtitleStreamIndex =
+                if (selection.subtitlePosition == TrackSelection.NO_SUBTITLE) {
+                    TrackSelection.NO_SUBTITLE
+                } else {
+                    subtitleStreams.getOrNull(selection.subtitlePosition)?.index
+                        ?: TrackSelection.NO_SUBTITLE
+                }
+            switchToTrack(C.TRACK_TYPE_TEXT, targetSubtitleStreamIndex)
         }
     }
 
     private fun updateCurrentTrackSelections() {
-        val currentAudioTrackIndex =
-            player.currentTracks.groups
-                .filter { it.type == C.TRACK_TYPE_AUDIO && it.isSupported }
-                .indexOfFirst { it.isSelected }
-                .takeIf { it != -1 }
+        val currentAudioStreamIndex =
+            orderedAudioGroups().firstOrNull { it.isSelected }?.let { streamIndexForAudioGroup(it) }
 
-        val currentSubtitleTrackIndex =
-            player.currentTracks.groups
-                .filter { it.type == C.TRACK_TYPE_TEXT && it.isSupported }
-                .indexOfFirst { it.isSelected }
-                .takeIf { it != -1 }
+        val selectedTextGroup = textGroups().firstOrNull { it.isSelected }
+        val currentSubtitleStreamIndex =
+            if (selectedTextGroup == null) TrackSelection.NO_SUBTITLE
+            else streamIndexForSubtitleGroup(selectedTextGroup)
 
         updateUiState {
             it.copy(
-                audioStreamIndex = currentAudioTrackIndex,
-                subtitleStreamIndex = currentSubtitleTrackIndex,
+                audioStreamIndex = currentAudioStreamIndex,
+                subtitleStreamIndex = currentSubtitleStreamIndex,
             )
         }
     }
@@ -2293,15 +2412,9 @@ constructor(
                     _uiState.value.currentMediaSourceId ?: item.sources.firstOrNull()?.id ?: ""
                 val source =
                     item.sources.firstOrNull { it.id == sourceId } ?: item.sources.firstOrNull()
-                val audioStreams = source?.mediaStreams?.filter { it.type == MediaStreamType.AUDIO }
-                val subStreams =
-                    source?.mediaStreams?.filter { it.type == MediaStreamType.SUBTITLE }
-
-                val jfAudioIndex =
-                    _uiState.value.audioStreamIndex?.let { audioStreams?.getOrNull(it)?.index }
+                val jfAudioIndex = _uiState.value.audioStreamIndex
                 val jfSubIndex =
-                    _uiState.value.subtitleStreamIndex?.let { subStreams?.getOrNull(it)?.index }
-                        ?: -1
+                    _uiState.value.subtitleStreamIndex ?: TrackSelection.NO_SUBTITLE
 
                 playbackRepository.reportPlaybackStart(
                     itemId = item.id,
@@ -3025,6 +3138,7 @@ constructor(
         val isSeekPreviewActive: Boolean = false,
         val seekPreviewPosition: Long = 0L,
         val playbackSpeed: Float = 1f,
+        val sideLoadedSubtitleUris: Map<Int, String> = emptyMap(),
         val audioStreamIndex: Int? = null,
         val subtitleStreamIndex: Int? = null,
         val subtitleUserSelected: Boolean = false,

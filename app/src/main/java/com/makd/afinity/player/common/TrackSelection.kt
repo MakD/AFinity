@@ -85,6 +85,7 @@ object TrackSelection {
         serverDefaultAudioStreamIndex: Int? = null,
         serverDefaultSubtitleStreamIndex: Int? = null,
         playDefaultAudioTrack: Boolean = false,
+        allowExternalAudio: Boolean = false,
     ): TrackSelectionResult {
         val audioPosition =
             selectAudio(
@@ -93,6 +94,7 @@ object TrackSelection {
                 preferredLanguage = preferredAudioLanguage,
                 serverDefaultStreamIndex = serverDefaultAudioStreamIndex,
                 playDefaultAudioTrack = playDefaultAudioTrack,
+                allowExternal = allowExternalAudio,
             )
 
         val resolvedAudioLanguage =
@@ -134,54 +136,50 @@ object TrackSelection {
         preferredLanguage: String,
         serverDefaultStreamIndex: Int?,
         playDefaultAudioTrack: Boolean,
+        allowExternal: Boolean,
     ): Int? {
-        if (audioStreams.isEmpty()) return null
+        val selectable = audioStreams.withIndex().filter { allowExternal || !it.value.isExternal }
+        if (selectable.isEmpty()) return null
 
         if (requestedStreamIndex != null) {
-            audioStreams
-                .indexOfFirst { it.index == requestedStreamIndex }
-                .takeIf { it >= 0 }
+            selectable
+                .firstOrNull { it.value.index == requestedStreamIndex }
                 ?.let {
-                    return it
+                    return it.index
                 }
         }
 
         val preferred = normalizeLanguage(preferredLanguage)
         if (preferred.isNotEmpty()) {
-            audioStreams
-                .indexOfFirst { matches(it, preferred) && it.isDefault }
-                .takeIf { it >= 0 }
+            selectable
+                .filter { matches(it.value, preferred) }
+                .minByOrNull { audioRank(it.value) }
                 ?.let {
-                    return it
-                }
-            audioStreams
-                .indexOfFirst { matches(it, preferred) }
-                .takeIf { it >= 0 }
-                ?.let {
-                    return it
+                    return it.index
                 }
         }
 
         if (playDefaultAudioTrack && preferred.isEmpty()) {
-            audioStreams
-                .indexOfFirst { it.isDefault }
-                .takeIf { it >= 0 }
+            selectable
+                .firstOrNull { it.value.isDefault }
                 ?.let {
-                    return it
+                    return it.index
                 }
         }
 
         if (serverDefaultStreamIndex != null) {
-            audioStreams
-                .indexOfFirst { it.index == serverDefaultStreamIndex }
-                .takeIf { it >= 0 }
+            selectable
+                .firstOrNull { it.value.index == serverDefaultStreamIndex }
                 ?.let {
-                    return it
+                    return it.index
                 }
         }
 
-        return audioStreams.indexOfFirst { it.isDefault }.takeIf { it >= 0 }
+        return selectable.minByOrNull { audioRank(it.value) }?.index
     }
+
+    private fun audioRank(stream: AfinityMediaStream): Int =
+        (if (stream.isDefault) 0 else 2) + (if (stream.isExternal) 1 else 0)
 
     private fun selectSubtitle(
         subtitleStreams: List<AfinityMediaStream>,
@@ -215,7 +213,8 @@ object TrackSelection {
                             (it.value.isDefault || it.value.isForced) &&
                                 matches(it.value, preferred)
                         }
-                        ?: candidates.firstOrNull { it.value.isDefault || it.value.isForced }
+                        ?: candidates.firstOrNull { it.value.isDefault }
+                        ?: candidates.firstOrNull { it.value.isForced }
 
                 SubtitlePlaybackMode.ONLY_FORCED -> candidates.firstForced(preferred)
 
@@ -223,6 +222,7 @@ object TrackSelection {
                     candidates.firstFull(preferred)
                         ?: candidates.firstOrNull { matches(it.value, preferred) }
                         ?: candidates.firstOrNull { !it.value.isForced && it.value.isDefault }
+                        ?: candidates.firstOrNull { !it.value.isForced }
                         ?: candidates.firstOrNull { it.value.isDefault || it.value.isForced }
                         ?: candidates.firstOrNull()
 
@@ -260,6 +260,7 @@ object TrackSelection {
         language: String
     ): IndexedValue<AfinityMediaStream>? =
         firstOrNull { it.value.isForced && matches(it.value, language) }
+            ?: firstOrNull { it.value.isForced && it.value.isDefault }
             ?: firstOrNull { it.value.isForced }
 
     private fun codecPriority(codec: String): Int =

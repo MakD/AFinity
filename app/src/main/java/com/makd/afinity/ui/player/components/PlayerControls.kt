@@ -94,6 +94,7 @@ import com.makd.afinity.data.models.syncplay.SyncPlayMemberInfo
 import com.makd.afinity.ui.components.AfinityBadge
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.livetv.components.LiveBadge
+import com.makd.afinity.ui.player.EXTERNAL_SUBTITLE_ID_BASE
 import com.makd.afinity.ui.player.PlayerViewModel
 import com.makd.afinity.ui.player.toLocalizedLanguageName
 import kotlinx.coroutines.delay
@@ -152,16 +153,28 @@ fun PlayerControls(
     val unknownLang = stringResource(R.string.track_unknown)
 
     val audioStreamOptions =
-        remember(currentItem, uiState.currentMediaSourceId, unknownLang) {
+        remember(currentItem, uiState.currentMediaSourceId, player.currentTracks, unknownLang) {
             val currentSource =
                 currentItem?.sources?.firstOrNull { it.id == uiState.currentMediaSourceId }
                     ?: currentItem?.sources?.firstOrNull()
 
-            val streams =
+            val embeddedAudioStreams =
                 currentSource
                     ?.mediaStreams
-                    ?.filter { it.type == MediaStreamType.AUDIO }
-                    ?.mapIndexed { index, stream ->
+                    ?.filter { it.type == MediaStreamType.AUDIO && !it.isExternal }
+                    .orEmpty()
+
+            val streams =
+                player.currentTracks.groups
+                    .filter { it.type == C.TRACK_TYPE_AUDIO }
+                    .sortedBy { group ->
+                        val formatId = group.mediaTrackGroup.getFormat(0).id
+                        formatId?.toIntOrNull()?.let { id -> "%05d".format(id) } ?: formatId
+                    }
+                    .mapIndexedNotNull { ordinal, group ->
+                        if (!group.isSupported) return@mapIndexedNotNull null
+                        val stream = embeddedAudioStreams.getOrNull(ordinal)
+                            ?: return@mapIndexedNotNull null
                         val localizedLang =
                             if (stream.language.isNotEmpty() && stream.language != "und") {
                                 stream.language.toLocalizedLanguageName()
@@ -181,10 +194,10 @@ fun PlayerControls(
                             stream = stream,
                             displayName = displayName,
                             isDefault = stream.isDefault,
-                            position = index,
+                            position = stream.index,
                             secondaryName = trackTitle(stream, null, localizedLang),
                         )
-                    } ?: emptyList()
+                    }
             assertAudioOptions(streams)
         }
 
@@ -195,6 +208,7 @@ fun PlayerControls(
         remember(
             currentItem,
             uiState.currentMediaSourceId,
+            uiState.sideLoadedSubtitleUris,
             player.currentTracks,
             noneText,
             trackFmt,
@@ -205,6 +219,7 @@ fun PlayerControls(
             val serverSubtitleStreams =
                 currentSource?.mediaStreams?.filter { it.type == MediaStreamType.SUBTITLE }
                     ?: emptyList()
+            val embeddedSubtitleStreams = serverSubtitleStreams.filter { !it.isExternal }
 
             val options = mutableListOf<SubtitleStreamOption>()
             options.add(
@@ -216,11 +231,28 @@ fun PlayerControls(
                     isNone = true,
                 )
             )
+            var embeddedOrdinal = 0
             player.currentTracks.groups
-                .filter { it.type == C.TRACK_TYPE_TEXT && it.isSupported }
+                .filter { it.type == C.TRACK_TYPE_TEXT }
                 .forEachIndexed { index, trackGroup ->
-                    val serverStream = serverSubtitleStreams.getOrNull(index)
                     val format = trackGroup.mediaTrackGroup.getFormat(0)
+                    val sideLoadedIndex =
+                        format.id?.toIntOrNull()?.takeIf { it >= EXTERNAL_SUBTITLE_ID_BASE }?.minus(
+                            EXTERNAL_SUBTITLE_ID_BASE
+                        )
+                            ?: (format.customData as? String)?.let { external ->
+                                uiState.sideLoadedSubtitleUris.entries
+                                    .firstOrNull { it.value == external }
+                                    ?.key
+                            }
+                    val serverStream =
+                        if (sideLoadedIndex != null) {
+                            serverSubtitleStreams.firstOrNull { it.index == sideLoadedIndex }
+                        } else {
+                            embeddedSubtitleStreams.getOrNull(embeddedOrdinal++)
+                        }
+                    if (!trackGroup.isSupported) return@forEachIndexed
+                    val streamIndex = serverStream?.index ?: sideLoadedIndex ?: return@forEachIndexed
 
                     val displayName =
                         if (serverStream != null) {
@@ -253,7 +285,7 @@ fun PlayerControls(
                             stream = serverStream,
                             displayName = displayName,
                             isDefault = trackGroup.isSelected,
-                            index = index,
+                            index = streamIndex,
                             isNone = false,
                             secondaryName =
                                 subtitleSecondaryLabel(
