@@ -15,6 +15,9 @@ interface HomeCacheDao {
     @Query("SELECT * FROM home_cache WHERE `key` = :key")
     suspend fun get(key: String): HomeCacheEntity?
 
+    @Query("SELECT * FROM home_cache WHERE `key` LIKE :prefix || '%'")
+    suspend fun getByPrefix(prefix: String): List<HomeCacheEntity>
+
     @Query("DELETE FROM home_cache WHERE `key` = :key")
     suspend fun delete(key: String)
 

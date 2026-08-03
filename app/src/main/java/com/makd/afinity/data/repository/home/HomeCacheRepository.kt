@@ -8,6 +8,8 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.withBaseUrl
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import timber.log.Timber
@@ -118,6 +120,74 @@ class HomeCacheRepository @Inject constructor(private val dao: HomeCacheDao) {
 
     suspend fun putRaw(key: String, value: String) {
         dao.upsert(HomeCacheEntity(key, value, System.currentTimeMillis()))
+    }
+
+    suspend fun patchItem(sessionKey: String, updatedItem: AfinityItem) =
+        withContext(Dispatchers.IO) {
+            val itemId = updatedItem.id.toString()
+
+            when (updatedItem) {
+                is AfinityMovie ->
+                    dao.get("latest_movies_$sessionKey")?.let { entity ->
+                        patchEntity(
+                            entity = entity,
+                            itemId = itemId,
+                            decodeId = { converters.toAfinityMovie(it)?.id?.toString() },
+                            encoded = converters.fromAfinityMovie(updatedItem),
+                        )
+                    }
+                is AfinityShow ->
+                    dao.get("latest_shows_$sessionKey")?.let { entity ->
+                        patchEntity(
+                            entity = entity,
+                            itemId = itemId,
+                            decodeId = { converters.toAfinityShow(it)?.id?.toString() },
+                            encoded = converters.fromAfinityShow(updatedItem),
+                        )
+                    }
+                else -> Unit
+            }
+
+            val encodedItem = converters.fromAfinityItem(updatedItem) ?: return@withContext
+            dao.getByPrefix("home_sec_${sessionKey}_").forEach { entity ->
+                patchEntity(
+                    entity = entity,
+                    itemId = itemId,
+                    decodeId = { converters.toAfinityItem(it)?.id?.toString() },
+                    encoded = encodedItem,
+                )
+            }
+        }
+
+    private suspend fun patchEntity(
+        entity: HomeCacheEntity,
+        itemId: String,
+        decodeId: (String) -> String?,
+        encoded: String?,
+    ) {
+        if (encoded == null) return
+        if (!entity.json.contains(itemId)) return
+        val wrapper =
+            try {
+                json.decodeFromString<StringList>(entity.json)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to decode home cache row for patch: key=${entity.key}")
+                return
+            }
+        var changed = false
+        val patched =
+            wrapper.items.map { raw ->
+                if (decodeId(raw) == itemId) {
+                    changed = true
+                    encoded
+                } else raw
+            }
+        if (!changed) return
+        try {
+            dao.upsert(entity.copy(json = json.encodeToString(StringList(patched))))
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to persist patched home cache row: key=${entity.key}")
+        }
     }
 
     suspend fun invalidate(key: String) = dao.delete(key)

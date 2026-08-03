@@ -21,6 +21,7 @@ import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.ItemFilterCriteria
+import com.makd.afinity.data.models.media.withPatchedImages
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityPlaylist
@@ -779,6 +780,28 @@ constructor(
         }
     }
 
+    suspend fun applyAdminItemChange(itemId: UUID) {
+        val updatedItem =
+            try {
+                mediaRepository.getItemById(itemId)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to fetch item $itemId after admin change")
+                null
+            } ?: return
+
+        updateItemInCaches(updatedItem)
+        mediaRepository.patchItemImages(updatedItem)
+        _heroCarouselItems.update { it.withPatchedImages(updatedItem) }
+
+        val session = sessionManager.currentSession.value ?: return
+        if (session.serverId.isBlank()) return
+        try {
+            homeCacheRepository.patchItem("${session.serverId}_${session.userId}", updatedItem)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to patch persisted home cache for $itemId")
+        }
+    }
+
     suspend fun updateItemInCaches(updatedItem: AfinityItem) {
         genreRepository.updateItemInCaches(updatedItem)
         peopleRepository.updateItemInCaches(updatedItem)
@@ -786,26 +809,22 @@ constructor(
 
         when (updatedItem) {
             is AfinityMovie -> {
-                _latestMovies.update { list ->
-                    if (updatedItem.played) list.filter { it.id != updatedItem.id }
-                    else list.map { if (it.id == updatedItem.id) updatedItem else it }
-                }
+                _latestMovies.update { it.patchedOrPruned(updatedItem) }
                 _separateMovieLibrarySections.update { sections ->
-                    sections.map { (lib, movies) ->
-                        if (updatedItem.played) lib to movies.filter { it.id != updatedItem.id }
-                        else lib to movies.map { if (it.id == updatedItem.id) updatedItem else it }
+                    if (sections.none { (_, movies) -> movies.any { it.id == updatedItem.id } }) {
+                        sections
+                    } else {
+                        sections.map { (lib, movies) -> lib to movies.patchedOrPruned(updatedItem) }
                     }
                 }
             }
             is AfinityShow -> {
-                _latestTvSeries.update { list ->
-                    if (updatedItem.played) list.filter { it.id != updatedItem.id }
-                    else list.map { if (it.id == updatedItem.id) updatedItem else it }
-                }
+                _latestTvSeries.update { it.patchedOrPruned(updatedItem) }
                 _separateTvLibrarySections.update { sections ->
-                    sections.map { (lib, shows) ->
-                        if (updatedItem.played) lib to shows.filter { it.id != updatedItem.id }
-                        else lib to shows.map { if (it.id == updatedItem.id) updatedItem else it }
+                    if (sections.none { (_, shows) -> shows.any { it.id == updatedItem.id } }) {
+                        sections
+                    } else {
+                        sections.map { (lib, shows) -> lib to shows.patchedOrPruned(updatedItem) }
                     }
                 }
             }
@@ -917,6 +936,13 @@ constructor(
     private fun <T : AfinityItem> List<T>.upserted(item: T, present: Boolean): List<T> =
         if (present) (filterNot { it.id == item.id } + item).sortedBy { it.name }
         else filterNot { it.id == item.id }
+
+    private fun <T : AfinityItem> List<T>.patchedOrPruned(item: T): List<T> =
+        when {
+            none { it.id == item.id } -> this
+            item.played -> filter { it.id != item.id }
+            else -> map { if (it.id == item.id) item else it }
+        }
 
     private fun <T : AfinityItem> List<T>.replacedWith(item: T): List<T> =
         if (none { it.id == item.id }) this else map { if (it.id == item.id) item else it }

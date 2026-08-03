@@ -22,6 +22,50 @@ data class AfinityImages(
     val showLogoImageBlurHash: String? = null,
 )
 
+fun AfinityItem.withImages(newImages: AfinityImages): AfinityItem =
+    when (this) {
+        is AfinityMovie -> copy(images = newImages)
+        is AfinityShow -> copy(images = newImages)
+        is AfinityEpisode -> copy(images = newImages)
+        is AfinitySeason -> copy(images = newImages)
+        is AfinityBoxSet -> copy(images = newImages)
+        is AfinityVideo -> copy(images = newImages)
+        else -> this
+    }
+
+fun AfinityImages.withShowImagesFrom(showImages: AfinityImages): AfinityImages =
+    copy(
+        showPrimary = showImages.primary,
+        showBackdrop = showImages.backdrop,
+        showThumb = showImages.thumb,
+        showLogo = showImages.logo,
+        showPrimaryImageBlurHash = showImages.primaryImageBlurHash,
+        showBackdropImageBlurHash = showImages.backdropImageBlurHash,
+        showThumbImageBlurHash = showImages.thumbImageBlurHash,
+        showLogoImageBlurHash = showImages.logoImageBlurHash,
+    )
+
+fun AfinityItem.patchedImagesFrom(source: AfinityItem): AfinityItem =
+    when {
+        id == source.id -> if (images == source.images) this else withImages(source.images)
+        source is AfinityShow && this is AfinityEpisode && seriesId == source.id -> {
+            val merged = images.withShowImagesFrom(source.images)
+            if (merged == images) this else copy(images = merged)
+        }
+        else -> this
+    }
+
+fun <T : AfinityItem> List<T>.withPatchedImages(source: AfinityItem): List<T> {
+    var changed = false
+    val patched =
+        map { item ->
+            @Suppress("UNCHECKED_CAST") val next = item.patchedImagesFrom(source) as T
+            if (next !== item) changed = true
+            next
+        }
+    return if (changed) patched else this
+}
+
 fun AfinityImages.withBaseUrl(newBaseUrl: String): AfinityImages {
     val base = newBaseUrl.trimEnd('/').toUri()
     fun Uri?.patch(): Uri? =

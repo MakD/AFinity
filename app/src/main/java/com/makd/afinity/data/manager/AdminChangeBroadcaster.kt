@@ -1,17 +1,37 @@
 package com.makd.afinity.data.manager
 
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
+enum class AdminChangeKind {
+    IMAGES,
+    METADATA,
+    DELETED,
+}
+
+data class AdminChange(val itemId: String, val kind: AdminChangeKind)
+
 @Singleton
 class AdminChangeBroadcaster @Inject constructor() {
-    private val _itemChanged = MutableSharedFlow<String>(extraBufferCapacity = 1)
-    val itemChanged: SharedFlow<String> = _itemChanged.asSharedFlow()
+    private val _changes = MutableSharedFlow<AdminChange>(extraBufferCapacity = 8)
+    val changes: SharedFlow<AdminChange> = _changes.asSharedFlow()
+
+    val itemChanged: Flow<String> = _changes.map { it.itemId }
 
     fun notifyItemChanged(itemId: String) {
-        _itemChanged.tryEmit(itemId)
+        _changes.tryEmit(AdminChange(itemId, AdminChangeKind.METADATA))
+    }
+
+    fun notifyImagesChanged(itemId: String) {
+        _changes.tryEmit(AdminChange(itemId, AdminChangeKind.IMAGES))
+    }
+
+    fun notifyItemDeleted(itemId: String) {
+        _changes.tryEmit(AdminChange(itemId, AdminChangeKind.DELETED))
     }
 }

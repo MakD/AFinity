@@ -32,6 +32,7 @@ import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.models.media.LibraryFilterOptions
 import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.data.models.media.toAfinityCollection
+import com.makd.afinity.data.models.media.withPatchedImages
 import com.makd.afinity.data.models.omdb.OmdbApiResult
 import com.makd.afinity.data.network.MdbListApiService
 import com.makd.afinity.data.network.OmdbApiService
@@ -359,6 +360,12 @@ constructor(
 
     private val _libraries = MutableStateFlow<List<AfinityCollection>>(emptyList())
     override val libraries: Flow<List<AfinityCollection>> = _libraries.asStateFlow()
+
+    override fun patchItemImages(updatedItem: AfinityItem) {
+        _continueWatching.update { it.withPatchedImages(updatedItem) }
+        _latestMedia.update { it.withPatchedImages(updatedItem) }
+        _nextUp.update { it.withPatchedImages(updatedItem) }
+    }
 
     override fun clearPlaybackCaches() {
         Timber.d("Clearing in-memory playback caches")

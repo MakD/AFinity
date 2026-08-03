@@ -351,7 +351,7 @@ constructor(
                     type = type,
                     imageUrl = imageUrl,
                 )
-                adminChangeBroadcaster.notifyItemChanged(itemId)
+                adminChangeBroadcaster.notifyImagesChanged(itemId)
                 Result.success(Unit)
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to download remote image for $itemId")
@@ -394,7 +394,7 @@ constructor(
                     imageType = type,
                     data = FileInfo(content = base64Data, mediaType = normalizedMime),
                 )
-                adminChangeBroadcaster.notifyItemChanged(itemId)
+                adminChangeBroadcaster.notifyImagesChanged(itemId)
                 Result.success(Unit)
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to upload image for $itemId")
@@ -429,7 +429,7 @@ constructor(
                     imageType = type,
                     imageIndex = imageIndex,
                 )
-                adminChangeBroadcaster.notifyItemChanged(itemId)
+                adminChangeBroadcaster.notifyImagesChanged(itemId)
                 Result.success(Unit)
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to delete image for $itemId")
@@ -486,7 +486,7 @@ constructor(
                             IllegalStateException("No API client")
                         )
                 LibraryApi(apiClient).deleteItem(itemId = UUID.fromString(itemId))
-                adminChangeBroadcaster.notifyItemChanged(itemId)
+                adminChangeBroadcaster.notifyItemDeleted(itemId)
                 Result.success(Unit)
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to delete item $itemId")

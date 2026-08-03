@@ -12,6 +12,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
+import com.makd.afinity.data.manager.AdminChangeKind
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackStateManager
@@ -208,8 +209,19 @@ constructor(
         }
 
         viewModelScope.launch {
-            adminChangeBroadcaster.itemChanged.collect {
-                appDataRepository.refreshPlaybackSections()
+            adminChangeBroadcaster.changes.collect { change ->
+                val changedId =
+                    try {
+                        UUID.fromString(change.itemId)
+                    } catch (_: IllegalArgumentException) {
+                        null
+                    }
+                if (changedId != null && change.kind != AdminChangeKind.DELETED) {
+                    appDataRepository.applyAdminItemChange(changedId)
+                }
+                if (change.kind != AdminChangeKind.IMAGES) {
+                    appDataRepository.refreshPlaybackSections()
+                }
             }
         }
 
