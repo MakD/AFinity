@@ -385,6 +385,12 @@ constructor(
         }
 
         viewModelScope.launch {
+            preferencesRepository.getSubtitleModeOverrideFlow().collect { mode ->
+                _uiState.value = _uiState.value.copy(subtitleModeOverride = mode)
+            }
+        }
+
+        viewModelScope.launch {
             preferencesRepository.getCastHevcEnabledFlow().collect {
                 _uiState.value = _uiState.value.copy(castHevcEnabled = it)
             }
@@ -715,6 +721,17 @@ constructor(
                 Timber.d("Preferred subtitle language set to: $language")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set preferred subtitle language")
+            }
+        }
+    }
+
+    fun setSubtitleModeOverride(mode: String) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setSubtitleModeOverride(mode)
+                Timber.d("Subtitle mode override set to: $mode")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set subtitle mode override")
             }
         }
     }
@@ -1134,6 +1151,7 @@ data class SettingsUiState(
     val mpvHdrPeakDetection: Boolean = true,
     val preferredAudioLanguage: String = "",
     val preferredSubtitleLanguage: String = "",
+    val subtitleModeOverride: String = "",
     val castHevcEnabled: Boolean = false,
     val castMaxBitrate: Int = 16_000_000,
     val bufferSizeMb: Int = 64,

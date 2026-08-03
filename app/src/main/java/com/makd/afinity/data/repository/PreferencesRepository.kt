@@ -134,6 +134,12 @@ interface PreferencesRepository {
 
     fun getPreferredSubtitleLanguageFlow(): Flow<String>
 
+    suspend fun setSubtitleModeOverride(mode: String)
+
+    suspend fun getSubtitleModeOverride(): String
+
+    fun getSubtitleModeOverrideFlow(): Flow<String>
+
     suspend fun setThemeMode(mode: String)
 
     suspend fun getThemeMode(): String

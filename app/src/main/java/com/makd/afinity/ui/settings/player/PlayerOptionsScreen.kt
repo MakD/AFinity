@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -100,6 +101,7 @@ import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jellyfin.sdk.model.api.SubtitlePlaybackMode
 import java.io.File
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -343,6 +345,15 @@ fun PlayerOptionsScreen(
                         onLanguageSelected = viewModel::setPreferredSubtitleLanguage,
                         icon = painterResource(id = R.drawable.ic_subtitles),
                     )
+
+                    SettingsDivider()
+
+                    SubtitleModeSelectorItem(
+                        icon = painterResource(id = R.drawable.ic_subtitles),
+                        title = stringResource(R.string.pref_subtitle_mode_title),
+                        selectedMode = uiState.subtitleModeOverride,
+                        onModeSelected = viewModel::setSubtitleModeOverride,
+                    )
                 }
             }
 
@@ -539,6 +550,91 @@ private fun SkipModeSelectorItem(
         }
     }
 }
+
+@Composable
+private fun SubtitleModeSelectorItem(
+    icon: Painter,
+    title: String,
+    selectedMode: String,
+    onModeSelected: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val options = listOf("") + SubtitlePlaybackMode.entries.map { it.serialName }
+
+    Box {
+        SettingsItem(
+            icon = icon,
+            title = title,
+            subtitle = getSubtitleModeDisplayName(selectedMode),
+            onClick = { expanded = true },
+            trailing = {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp),
+                )
+            },
+        )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        ) {
+            options.forEach { mode ->
+                DropdownMenuItem(
+                    text = {
+                        Column(modifier = Modifier.widthIn(max = 280.dp)) {
+                            Text(getSubtitleModeDisplayName(mode))
+                            Text(
+                                text = getSubtitleModeDescription(mode),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    },
+                    onClick = {
+                        onModeSelected(mode)
+                        expanded = false
+                    },
+                    leadingIcon =
+                        if (selectedMode == mode) {
+                            {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_check),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else null,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun getSubtitleModeDisplayName(mode: String): String =
+    when (SubtitlePlaybackMode.fromNameOrNull(mode)) {
+        SubtitlePlaybackMode.DEFAULT -> stringResource(R.string.subtitle_mode_default)
+        SubtitlePlaybackMode.ALWAYS -> stringResource(R.string.subtitle_mode_always)
+        SubtitlePlaybackMode.SMART -> stringResource(R.string.subtitle_mode_smart)
+        SubtitlePlaybackMode.ONLY_FORCED -> stringResource(R.string.subtitle_mode_only_forced)
+        SubtitlePlaybackMode.NONE -> stringResource(R.string.subtitle_mode_none)
+        null -> stringResource(R.string.subtitle_mode_follow_server)
+    }
+
+@Composable
+private fun getSubtitleModeDescription(mode: String): String =
+    when (SubtitlePlaybackMode.fromNameOrNull(mode)) {
+        SubtitlePlaybackMode.DEFAULT -> stringResource(R.string.subtitle_mode_default_hint)
+        SubtitlePlaybackMode.ALWAYS -> stringResource(R.string.subtitle_mode_always_hint)
+        SubtitlePlaybackMode.SMART -> stringResource(R.string.subtitle_mode_smart_hint)
+        SubtitlePlaybackMode.ONLY_FORCED -> stringResource(R.string.subtitle_mode_only_forced_hint)
+        SubtitlePlaybackMode.NONE -> stringResource(R.string.subtitle_mode_none_hint)
+        null -> stringResource(R.string.subtitle_mode_follow_server_hint)
+    }
 
 @Composable
 private fun getSkipModeDisplayName(mode: SkipMode): String =

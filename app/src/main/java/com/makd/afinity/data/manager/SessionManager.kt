@@ -29,6 +29,7 @@ import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.okhttp.OkHttpFactory
 import org.jellyfin.sdk.api.operations.UserApi
+import org.jellyfin.sdk.model.api.UserConfiguration
 import timber.log.Timber
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -44,6 +45,7 @@ data class Session(
     val user: User? = null,
     val server: Server? = null,
     val isAdmin: Boolean? = null,
+    val userConfiguration: UserConfiguration? = null,
 )
 
 @Singleton
@@ -204,7 +206,11 @@ constructor(
                         val current = _currentSession.value
                         if (current?.serverId == serverId && current.userId == userId) {
                             _currentSession.value =
-                                current.copy(isAdmin = isAdmin, user = refreshedUser)
+                                current.copy(
+                                    isAdmin = isAdmin,
+                                    user = refreshedUser,
+                                    userConfiguration = userDto.configuration,
+                                )
                         }
                         Timber.d("Admin status refreshed from policy: isAdmin=$isAdmin")
                     } catch (e: Exception) {
