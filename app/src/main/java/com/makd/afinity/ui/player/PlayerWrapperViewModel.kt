@@ -50,8 +50,23 @@ constructor(
     private val _streamError = MutableStateFlow<String?>(null)
     val streamError: StateFlow<String?> = _streamError.asStateFlow()
 
+    private var liveChannelRequest: Pair<UUID, String>? = null
+    private var liveDirectPlayFailed = false
+
+    fun retryLiveChannelWithoutDirectPlay() {
+        val (channelId, channelName) = liveChannelRequest ?: return
+        if (liveDirectPlayFailed) return
+        liveDirectPlayFailed = true
+        Timber.w("Live direct play failed for $channelId, retrying without it")
+        loadLiveChannel(channelId, channelName)
+    }
+
     fun loadLiveChannel(channelId: UUID, channelName: String) {
         viewModelScope.launch {
+            if (liveChannelRequest?.first != channelId) {
+                liveDirectPlayFailed = false
+            }
+            liveChannelRequest = channelId to channelName
             _isLoading.value = true
             _streamError.value = null
             Timber.d("PlayerWrapperViewModel: Loading live channel $channelId ($channelName)")
@@ -78,7 +93,10 @@ constructor(
                 }
 
                 val playbackInfoDeferred = viewModelScope.async {
-                    liveTvRepository.getChannelPlaybackInfo(channelId)
+                    liveTvRepository.getChannelPlaybackInfo(
+                        channelId = channelId,
+                        forceDirectPlay = !liveDirectPlayFailed,
+                    )
                 }
 
                 val channel = channelDeferred.await()

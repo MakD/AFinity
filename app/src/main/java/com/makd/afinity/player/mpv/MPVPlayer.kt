@@ -1207,6 +1207,7 @@ class MPVPlayer(
                             (if (json.optBoolean("forced")) C.SELECTION_FLAG_FORCED else 0)
                     )
                     .setCodecs(json.optNullableString("codec"))
+                    .setCustomData(json.optNullableString("external-filename"))
                     .build()
 
             val format =

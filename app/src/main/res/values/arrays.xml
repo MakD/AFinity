@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string-array name="languages">
+        <item>@string/subtitle_mode_follow_server</item>
         <item>None</item>
         <item>Afar</item>
         <item>Abkhazian</item>
@@ -188,6 +189,7 @@
     </string-array>
 
     <string-array name="language_values">
+        <item>server</item>
         <item></item>
         <item>aar</item>
         <item>abk</item>

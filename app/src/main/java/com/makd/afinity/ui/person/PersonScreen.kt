@@ -59,8 +59,29 @@ fun PersonScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         when {
-            uiState.isLoading -> {
-                FullScreenLoading()
+            uiState.person != null -> {
+                PersonDetailContent(
+                    person = uiState.person!!,
+                    movies = uiState.movies,
+                    shows = uiState.shows,
+                    onItemClick = { item ->
+                        val route =
+                            Destination.createItemDetailRoute(
+                                itemId = item.id.toString(),
+                                itemType =
+                                    when (item) {
+                                        is AfinityShow -> "Series"
+                                        is AfinitySeason -> "Season"
+                                        else -> null
+                                    },
+                                seriesId = (item as? AfinitySeason)?.seriesId?.toString(),
+                            )
+                        navController.navigate(route)
+                    },
+                    onToggleFavorite = { viewModel.toggleFavorite() },
+                    widthSizeClass = widthSizeClass,
+                    lazyListState = lazyListState,
+                )
             }
 
             uiState.error != null -> {
@@ -85,29 +106,8 @@ fun PersonScreen(
                 }
             }
 
-            uiState.person != null -> {
-                PersonDetailContent(
-                    person = uiState.person!!,
-                    movies = uiState.movies,
-                    shows = uiState.shows,
-                    onItemClick = { item ->
-                        val route =
-                            Destination.createItemDetailRoute(
-                                itemId = item.id.toString(),
-                                itemType =
-                                    when (item) {
-                                        is AfinityShow -> "Series"
-                                        is AfinitySeason -> "Season"
-                                        else -> null
-                                    },
-                                seriesId = (item as? AfinitySeason)?.seriesId?.toString(),
-                            )
-                        navController.navigate(route)
-                    },
-                    onToggleFavorite = { viewModel.toggleFavorite() },
-                    widthSizeClass = widthSizeClass,
-                    lazyListState = lazyListState,
-                )
+            else -> {
+                FullScreenLoading()
             }
         }
 

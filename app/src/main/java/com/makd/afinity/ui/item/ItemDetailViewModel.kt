@@ -1576,6 +1576,7 @@ constructor(
     private fun getNextEpisodeOffline(show: AfinityShow): AfinityEpisode? {
         val allEpisodes =
             show.seasons
+                .filter { it.indexNumber > 0 }
                 .sortedBy { it.indexNumber }
                 .flatMap { season -> season.episodes.sortedBy { it.indexNumber } }
         return allEpisodes.firstOrNull { it.playbackPositionTicks > 0 && !it.played }

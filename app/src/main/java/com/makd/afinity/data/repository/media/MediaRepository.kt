@@ -176,6 +176,12 @@ interface MediaRepository {
         limit: Int? = null,
     ): List<AfinityEpisode>
 
+    suspend fun getSeriesEpisodes(
+        seriesId: UUID,
+        fields: List<ItemFields>? = null,
+        limit: Int? = null,
+    ): List<AfinityEpisode>
+
     suspend fun getFavoriteShows(fields: List<ItemFields>? = null): List<AfinityShow>
 
     suspend fun getFavoriteMovies(fields: List<ItemFields>? = null): List<AfinityMovie>
@@ -236,6 +242,11 @@ interface MediaRepository {
     ): List<AfinityItem>
 
     suspend fun getPerson(personId: UUID): AfinityPersonDetail?
+
+    suspend fun getPersonWithoutRefresh(
+        personId: UUID,
+        fields: List<ItemFields>? = null,
+    ): AfinityPersonDetail?
 
     suspend fun getPersonItems(
         personId: UUID,

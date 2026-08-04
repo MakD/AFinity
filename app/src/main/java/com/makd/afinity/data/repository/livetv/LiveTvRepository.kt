@@ -44,7 +44,10 @@ interface LiveTvRepository {
         limit: Int = 20,
     ): List<AfinityProgram>
 
-    suspend fun getChannelPlaybackInfo(channelId: UUID): LiveTvPlaybackInfo?
+    suspend fun getChannelPlaybackInfo(
+        channelId: UUID,
+        forceDirectPlay: Boolean = true,
+    ): LiveTvPlaybackInfo?
 
     suspend fun getChannelStreamUrl(channelId: UUID): String?
 

@@ -828,6 +828,21 @@
     <string name="pref_preferred_subtitle_language_title">Preferred Subtitle Language</string>
     <string name="pref_preferred_subtitle_language_summary">Auto-select subtitle track by language</string>
     <string name="pref_language_search_hint">Search languages…</string>
+    <string name="pref_subtitle_mode_title">Subtitle Mode</string>
+    <string name="subtitle_mode_follow_server">Follow server setting</string>
+    <string name="pref_prefer_sdh_title">Prefer SDH subtitles</string>
+    <string name="pref_prefer_sdh_summary">Auto-select hearing-impaired subtitles</string>
+    <string name="subtitle_mode_default">Default</string>
+    <string name="subtitle_mode_always">Always play</string>
+    <string name="subtitle_mode_smart">Only for foreign audio</string>
+    <string name="subtitle_mode_only_forced">Only forced subtitles</string>
+    <string name="subtitle_mode_none">None</string>
+    <string name="subtitle_mode_follow_server_hint">Use the subtitle mode configured for your account on the Jellyfin server.</string>
+    <string name="subtitle_mode_default_hint">Subtitles are loaded based on the default and forced flags in the embedded metadata. Language preferences are considered when multiple options are available.</string>
+    <string name="subtitle_mode_always_hint">Subtitles are loaded for every item, matching your preferred language when possible.</string>
+    <string name="subtitle_mode_smart_hint">Full subtitles are loaded when the audio isn\'t in your preferred language. Otherwise, only forced subtitles are loaded.</string>
+    <string name="subtitle_mode_only_forced_hint">Only subtitles marked as forced will be loaded — usually just on-screen text and foreign dialogue, not the full script.</string>
+    <string name="subtitle_mode_none_hint">Subtitles will not be loaded by default. They can still be turned on manually during playback.</string>
     <string name="pref_autoplay_title">Auto-play</string>
     <string name="pref_autoplay_summary">Automatically play next episode</string>
 

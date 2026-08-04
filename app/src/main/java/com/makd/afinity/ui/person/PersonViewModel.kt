@@ -18,6 +18,8 @@ import com.makd.afinity.data.repository.userdata.UserDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -120,6 +122,7 @@ constructor(
     }
 
     private fun loadPersonDetails() {
+        val personId = personId
         if (personId == null) {
             _uiState.update {
                 it.copy(
@@ -132,47 +135,70 @@ constructor(
 
         viewModelScope.launch {
             try {
-                _uiState.update { it.copy(isLoading = true, error = null) }
+                _uiState.update { it.copy(isLoading = it.person == null, error = null) }
 
-                val person = mediaRepository.getPerson(personId)
-                if (person == null) {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = context.getString(R.string.error_person_not_found),
+                coroutineScope {
+                    val storedDeferred = async { mediaRepository.getPersonWithoutRefresh(personId) }
+                    val itemsDeferred = async {
+                        mediaRepository.getPersonItems(
+                            personId = personId,
+                            includeItemTypes = listOf("Movie", "Series"),
                         )
                     }
-                    return@launch
+                    val refreshedDeferred = async { mediaRepository.getPerson(personId) }
+
+                    storedDeferred.await()?.let { stored ->
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                person = currentState.person ?: stored,
+                                isLoading = false,
+                            )
+                        }
+                    }
+
+                    val personItems = itemsDeferred.await()
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            movies = personItems.filterIsInstance<AfinityMovie>(),
+                            shows = personItems.filterIsInstance<AfinityShow>(),
+                        )
+                    }
+
+                    val person = refreshedDeferred.await() ?: _uiState.value.person
+                    if (person == null) {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                error = context.getString(R.string.error_person_not_found),
+                            )
+                        }
+                        return@coroutineScope
+                    }
+
+                    _uiState.update { it.copy(person = person, isLoading = false) }
+                    lastLoadedAt = System.currentTimeMillis()
+
+                    if (person.hasIncompleteMetadata()) {
+                        val rechecked = mediaRepository.getPersonWithoutRefresh(personId)
+                        if (rechecked != null && rechecked.isRicherThan(person)) {
+                            _uiState.update { it.copy(person = rechecked) }
+                        }
+                    }
                 }
-
-                val personItems =
-                    mediaRepository.getPersonItems(
-                        personId = personId,
-                        includeItemTypes = listOf("Movie", "Series"),
-                    )
-
-                val movies = personItems.filterIsInstance<AfinityMovie>()
-                val shows = personItems.filterIsInstance<AfinityShow>()
-
-                _uiState.update { currentState ->
-                    currentState.copy(
-                        person = person,
-                        movies = movies,
-                        shows = shows,
-                        isLoading = false,
-                    )
-                }
-                lastLoadedAt = System.currentTimeMillis()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load person details: $personId")
                 _uiState.update { currentState ->
                     currentState.copy(
                         isLoading = false,
                         error =
-                            context.getString(
-                                R.string.error_failed_load_person_fmt,
-                                e.message ?: "",
-                            ),
+                            if (currentState.person != null) {
+                                null
+                            } else {
+                                context.getString(
+                                    R.string.error_failed_load_person_fmt,
+                                    e.message ?: "",
+                                )
+                            },
                     )
                 }
             }
@@ -218,6 +244,15 @@ constructor(
         loadPersonDetails()
     }
 }
+
+private fun AfinityPersonDetail.hasIncompleteMetadata(): Boolean =
+    overview.isBlank() || images.primary == null
+
+private fun AfinityPersonDetail.isRicherThan(other: AfinityPersonDetail): Boolean =
+    overview.length > other.overview.length ||
+        (images.primary != null && other.images.primary == null) ||
+        (premiereDate != null && other.premiereDate == null) ||
+        (externalUrls?.size ?: 0) > (other.externalUrls?.size ?: 0)
 
 data class PersonUiState(
     val person: AfinityPersonDetail? = null,

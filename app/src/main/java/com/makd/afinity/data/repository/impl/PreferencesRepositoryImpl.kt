@@ -26,6 +26,7 @@ import com.makd.afinity.data.models.player.SubtitleVerticalPosition
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.di.AppPreferences
+import com.makd.afinity.player.common.TrackSelection
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
@@ -124,6 +125,8 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
         val PREFERRED_AUDIO_LANGUAGE = stringPreferencesKey("preferred_audio_language")
         val PREFERRED_SUBTITLE_LANGUAGE = stringPreferencesKey("preferred_subtitle_language")
+        val SUBTITLE_MODE_OVERRIDE = stringPreferencesKey("subtitle_mode_override")
+        val PREFER_SDH_SUBTITLES = booleanPreferencesKey("prefer_sdh_subtitles")
 
         val NOTIFICATION_PERMISSION_DECLINED =
             booleanPreferencesKey("notification_permission_declined")
@@ -682,12 +685,13 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
     }
 
     override suspend fun getPreferredAudioLanguage(): String {
-        return dataStore.data.first()[Keys.PREFERRED_AUDIO_LANGUAGE] ?: ""
+        return dataStore.data.first()[Keys.PREFERRED_AUDIO_LANGUAGE]
+            ?: TrackSelection.FOLLOW_SERVER_LANGUAGE
     }
 
     override fun getPreferredAudioLanguageFlow(): Flow<String> {
         return dataStore.data.map { preferences ->
-            preferences[Keys.PREFERRED_AUDIO_LANGUAGE] ?: ""
+            preferences[Keys.PREFERRED_AUDIO_LANGUAGE] ?: TrackSelection.FOLLOW_SERVER_LANGUAGE
         }
     }
 
@@ -696,13 +700,38 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
     }
 
     override suspend fun getPreferredSubtitleLanguage(): String {
-        return dataStore.data.first()[Keys.PREFERRED_SUBTITLE_LANGUAGE] ?: ""
+        return dataStore.data.first()[Keys.PREFERRED_SUBTITLE_LANGUAGE]
+            ?: TrackSelection.FOLLOW_SERVER_LANGUAGE
     }
 
     override fun getPreferredSubtitleLanguageFlow(): Flow<String> {
         return dataStore.data.map { preferences ->
-            preferences[Keys.PREFERRED_SUBTITLE_LANGUAGE] ?: ""
+            preferences[Keys.PREFERRED_SUBTITLE_LANGUAGE] ?: TrackSelection.FOLLOW_SERVER_LANGUAGE
         }
+    }
+
+    override suspend fun setSubtitleModeOverride(mode: String) {
+        dataStore.edit { preferences -> preferences[Keys.SUBTITLE_MODE_OVERRIDE] = mode }
+    }
+
+    override suspend fun getSubtitleModeOverride(): String {
+        return dataStore.data.first()[Keys.SUBTITLE_MODE_OVERRIDE] ?: ""
+    }
+
+    override fun getSubtitleModeOverrideFlow(): Flow<String> {
+        return dataStore.data.map { preferences -> preferences[Keys.SUBTITLE_MODE_OVERRIDE] ?: "" }
+    }
+
+    override suspend fun setPreferSdhSubtitles(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.PREFER_SDH_SUBTITLES] = enabled }
+    }
+
+    override suspend fun getPreferSdhSubtitles(): Boolean {
+        return dataStore.data.first()[Keys.PREFER_SDH_SUBTITLES] ?: false
+    }
+
+    override fun getPreferSdhSubtitlesFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences -> preferences[Keys.PREFER_SDH_SUBTITLES] ?: false }
     }
 
     override suspend fun setPipGestureEnabled(enabled: Boolean) {

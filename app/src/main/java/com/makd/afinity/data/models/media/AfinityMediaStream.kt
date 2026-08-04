@@ -49,6 +49,7 @@ fun MediaStream.toAfinityMediaStream(baseUrl: String): AfinityMediaStream {
         channels = channels,
         isDefault = isDefault,
         isForced = isForced,
+        isHearingImpaired = isHearingImpaired,
         profile = profile,
     )
 }

@@ -26,8 +26,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -100,6 +102,7 @@ import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jellyfin.sdk.model.api.SubtitlePlaybackMode
 import java.io.File
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -343,6 +346,25 @@ fun PlayerOptionsScreen(
                         onLanguageSelected = viewModel::setPreferredSubtitleLanguage,
                         icon = painterResource(id = R.drawable.ic_subtitles),
                     )
+
+                    SettingsDivider()
+
+                    SubtitleModeSelectorItem(
+                        icon = painterResource(id = R.drawable.ic_subtitles_settings),
+                        title = stringResource(R.string.pref_subtitle_mode_title),
+                        selectedMode = uiState.subtitleModeOverride,
+                        onModeSelected = viewModel::setSubtitleModeOverride,
+                    )
+
+                    SettingsDivider()
+
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_subtitles),
+                        title = stringResource(R.string.pref_prefer_sdh_title),
+                        subtitle = stringResource(R.string.pref_prefer_sdh_summary),
+                        checked = uiState.preferSdhSubtitles,
+                        onCheckedChange = viewModel::togglePreferSdhSubtitles,
+                    )
                 }
             }
 
@@ -539,6 +561,134 @@ private fun SkipModeSelectorItem(
         }
     }
 }
+
+@Composable
+private fun SubtitleModeSelectorItem(
+    icon: Painter,
+    title: String,
+    selectedMode: String,
+    onModeSelected: (String) -> Unit,
+) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    SettingsItem(
+        icon = icon,
+        title = title,
+        subtitle = getSubtitleModeDisplayName(selectedMode),
+        onClick = { showDialog = true },
+        trailing = {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp),
+            )
+        },
+    )
+
+    if (showDialog) {
+        SubtitleModePickerDialog(
+            selectedMode = selectedMode,
+            onSelect = { mode ->
+                onModeSelected(mode)
+                showDialog = false
+            },
+            onDismiss = { showDialog = false },
+        )
+    }
+}
+
+@Composable
+private fun SubtitleModePickerDialog(
+    selectedMode: String,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val options = listOf("") + SubtitlePlaybackMode.entries.map { it.serialName }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.pref_subtitle_mode_title)) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                options.forEach { mode ->
+                    val isSelected = mode == selectedMode
+
+                    Row(
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .then(
+                                    if (isSelected)
+                                        Modifier.background(
+                                            MaterialTheme.colorScheme.primaryContainer.copy(
+                                                alpha = 0.3f
+                                            )
+                                        )
+                                    else Modifier
+                                )
+                                .clickable { onSelect(mode) }
+                                .padding(horizontal = 12.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        if (isSelected) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_check),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.size(20.dp))
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = getSubtitleModeDisplayName(mode),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color =
+                                    if (isSelected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurface,
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = getSubtitleModeDescription(mode),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun getSubtitleModeDisplayName(mode: String): String =
+    when (SubtitlePlaybackMode.fromNameOrNull(mode)) {
+        SubtitlePlaybackMode.DEFAULT -> stringResource(R.string.subtitle_mode_default)
+        SubtitlePlaybackMode.ALWAYS -> stringResource(R.string.subtitle_mode_always)
+        SubtitlePlaybackMode.SMART -> stringResource(R.string.subtitle_mode_smart)
+        SubtitlePlaybackMode.ONLY_FORCED -> stringResource(R.string.subtitle_mode_only_forced)
+        SubtitlePlaybackMode.NONE -> stringResource(R.string.subtitle_mode_none)
+        null -> stringResource(R.string.subtitle_mode_follow_server)
+    }
+
+@Composable
+private fun getSubtitleModeDescription(mode: String): String =
+    when (SubtitlePlaybackMode.fromNameOrNull(mode)) {
+        SubtitlePlaybackMode.DEFAULT -> stringResource(R.string.subtitle_mode_default_hint)
+        SubtitlePlaybackMode.ALWAYS -> stringResource(R.string.subtitle_mode_always_hint)
+        SubtitlePlaybackMode.SMART -> stringResource(R.string.subtitle_mode_smart_hint)
+        SubtitlePlaybackMode.ONLY_FORCED -> stringResource(R.string.subtitle_mode_only_forced_hint)
+        SubtitlePlaybackMode.NONE -> stringResource(R.string.subtitle_mode_none_hint)
+        null -> stringResource(R.string.subtitle_mode_follow_server_hint)
+    }
 
 @Composable
 private fun getSkipModeDisplayName(mode: SkipMode): String =

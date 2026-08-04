@@ -1033,6 +1033,28 @@ constructor(
                 .distinctBy { it.id }
         }
 
+    override suspend fun getSeriesEpisodes(
+        seriesId: UUID,
+        fields: List<ItemFields>?,
+        limit: Int?,
+    ): List<AfinityEpisode> =
+        apiCall(emptyList(), "Failed to get series episodes") { apiClient, userId ->
+            TvShowsApi(apiClient)
+                .getEpisodes(
+                    seriesId = seriesId,
+                    userId = userId,
+                    isMissing = null,
+                    fields = fields ?: FieldSets.EPISODE_LIST,
+                    enableImages = true,
+                    enableUserData = true,
+                    limit = limit,
+                )
+                .content
+                .items
+                .mapNotNull { baseItem -> baseItem.toAfinityEpisode(getBaseUrl()) }
+                .distinctBy { it.id }
+        }
+
     override suspend fun getFavoriteMovies(fields: List<ItemFields>?): List<AfinityMovie> =
         apiCall(emptyList(), "Failed to get favorite movies") { apiClient, userId ->
             ItemsApi(apiClient)
@@ -1290,6 +1312,28 @@ constructor(
                 .getItem(itemId = personId, userId = userId)
                 .content
                 .toAfinityPersonDetail(getBaseUrl())
+        }
+
+    override suspend fun getPersonWithoutRefresh(
+        personId: UUID,
+        fields: List<ItemFields>?,
+    ): AfinityPersonDetail? =
+        apiCall(null, "Failed to get stored person for ID: $personId") { apiClient, userId ->
+            ItemsApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    ids = listOf(personId),
+                    fields = fields ?: FieldSets.PERSON_DETAIL,
+                    enableImages = true,
+                    enableUserData = true,
+                    imageTypeLimit = 1,
+                    enableTotalRecordCount = false,
+                    limit = 1,
+                )
+                .content
+                .items
+                .firstOrNull()
+                ?.toAfinityPersonDetail(getBaseUrl())
         }
 
     override suspend fun getPersonItems(
@@ -1834,8 +1878,7 @@ constructor(
             val playableEpisodes = episodes.filter { !it.missing }
             if (playableEpisodes.isEmpty()) return null
 
-            val sortedEpisodes = playableEpisodes.sortedBy { it.indexNumber }
-            sortedEpisodes.firstOrNull { !it.played } ?: sortedEpisodes.firstOrNull()
+            playableEpisodes.firstOrNull { !it.played } ?: playableEpisodes.firstOrNull()
         } catch (e: Exception) {
             Timber.e(e, "Failed to determine episode to play for season: $seasonId")
             null

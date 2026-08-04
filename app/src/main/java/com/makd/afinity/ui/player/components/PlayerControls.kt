@@ -91,6 +91,7 @@ import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.models.syncplay.SyncPlayMemberInfo
+import com.makd.afinity.player.common.TrackMapping
 import com.makd.afinity.ui.components.AfinityBadge
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.livetv.components.LiveBadge
@@ -152,16 +153,28 @@ fun PlayerControls(
     val unknownLang = stringResource(R.string.track_unknown)
 
     val audioStreamOptions =
-        remember(currentItem, uiState.currentMediaSourceId, unknownLang) {
+        remember(currentItem, uiState.currentMediaSourceId, player.currentTracks, unknownLang) {
             val currentSource =
                 currentItem?.sources?.firstOrNull { it.id == uiState.currentMediaSourceId }
                     ?: currentItem?.sources?.firstOrNull()
 
-            val streams =
+            val embeddedAudioStreams =
                 currentSource
                     ?.mediaStreams
-                    ?.filter { it.type == MediaStreamType.AUDIO }
-                    ?.mapIndexed { index, stream ->
+                    ?.filter { it.type == MediaStreamType.AUDIO && !it.isExternal }
+                    .orEmpty()
+
+            val streams =
+                player.currentTracks.groups
+                    .filter { it.type == C.TRACK_TYPE_AUDIO }
+                    .sortedBy { group ->
+                        val formatId = group.mediaTrackGroup.getFormat(0).id
+                        formatId?.toIntOrNull()?.let { id -> "%05d".format(id) } ?: formatId
+                    }
+                    .mapIndexedNotNull { ordinal, group ->
+                        if (!group.isSupported) return@mapIndexedNotNull null
+                        val stream =
+                            embeddedAudioStreams.getOrNull(ordinal) ?: return@mapIndexedNotNull null
                         val localizedLang =
                             if (stream.language.isNotEmpty() && stream.language != "und") {
                                 stream.language.toLocalizedLanguageName()
@@ -181,10 +194,10 @@ fun PlayerControls(
                             stream = stream,
                             displayName = displayName,
                             isDefault = stream.isDefault,
-                            position = index,
+                            position = stream.index,
                             secondaryName = trackTitle(stream, null, localizedLang),
                         )
-                    } ?: emptyList()
+                    }
             assertAudioOptions(streams)
         }
 
@@ -195,6 +208,7 @@ fun PlayerControls(
         remember(
             currentItem,
             uiState.currentMediaSourceId,
+            uiState.sideLoadedSubtitleUris,
             player.currentTracks,
             noneText,
             trackFmt,
@@ -205,6 +219,7 @@ fun PlayerControls(
             val serverSubtitleStreams =
                 currentSource?.mediaStreams?.filter { it.type == MediaStreamType.SUBTITLE }
                     ?: emptyList()
+            val embeddedSubtitleStreams = serverSubtitleStreams.filter { !it.isExternal }
 
             val options = mutableListOf<SubtitleStreamOption>()
             options.add(
@@ -216,11 +231,27 @@ fun PlayerControls(
                     isNone = true,
                 )
             )
+            var embeddedOrdinal = 0
             player.currentTracks.groups
-                .filter { it.type == C.TRACK_TYPE_TEXT && it.isSupported }
+                .filter { it.type == C.TRACK_TYPE_TEXT }
                 .forEachIndexed { index, trackGroup ->
-                    val serverStream = serverSubtitleStreams.getOrNull(index)
                     val format = trackGroup.mediaTrackGroup.getFormat(0)
+                    val sideLoadedIndex =
+                        TrackMapping.streamIndexFromSideLoadedId(format.id)
+                            ?: (format.customData as? String)?.let { external ->
+                                uiState.sideLoadedSubtitleUris.entries
+                                    .firstOrNull { it.value == external }
+                                    ?.key
+                            }
+                    val serverStream =
+                        if (sideLoadedIndex != null) {
+                            serverSubtitleStreams.firstOrNull { it.index == sideLoadedIndex }
+                        } else {
+                            embeddedSubtitleStreams.getOrNull(embeddedOrdinal++)
+                        }
+                    if (!trackGroup.isSupported) return@forEachIndexed
+                    val streamIndex =
+                        serverStream?.index ?: sideLoadedIndex ?: return@forEachIndexed
 
                     val displayName =
                         if (serverStream != null) {
@@ -253,7 +284,7 @@ fun PlayerControls(
                             stream = serverStream,
                             displayName = displayName,
                             isDefault = trackGroup.isSelected,
-                            index = index,
+                            index = streamIndex,
                             isNone = false,
                             secondaryName =
                                 subtitleSecondaryLabel(
@@ -1926,7 +1957,8 @@ private fun formatAudioChannels(stream: AfinityMediaStream?): String? {
         if (base.isNotBlank()) {
             return when (base.lowercase()) {
                 "mono" -> "Mono"
-                "stereo", "downmix" -> "Stereo"
+                "stereo",
+                "downmix" -> "Stereo"
                 else -> base
             }
         }
@@ -1951,24 +1983,36 @@ private fun assertAudioOptions(options: List<AudioStreamOption>): List<AudioStre
 
 private fun prettySubtitleCodec(codec: String?): String? =
     when (val value = codec?.lowercase()) {
-        null, "" -> null
-        "subrip", "srt", "application/x-subrip" -> "SRT"
-        "ass", "ssa", "text/x-ssa", "text/x-ass" -> "ASS"
-        "webvtt", "vtt", "text/vtt" -> "VTT"
+        null,
+        "" -> null
+        "subrip",
+        "srt",
+        "application/x-subrip" -> "SRT"
+        "ass",
+        "ssa",
+        "text/x-ssa",
+        "text/x-ass" -> "ASS"
+        "webvtt",
+        "vtt",
+        "text/vtt" -> "VTT"
         "pgssub",
         "pgs",
         "hdmv_pgs_subtitle",
         "application/pgs" -> "PGS"
-        "dvdsub", "vobsub", "dvd_subtitle", "application/vobsub" -> "VOBSUB"
-        "dvbsub", "dvb_subtitle", "application/dvbsubs" -> "DVBSUB"
-        "mov_text", "tx3g", "application/x-quicktime-tx3g" -> "TX3G"
-        "application/cea-608", "application/cea-708" -> "CEA"
+        "dvdsub",
+        "vobsub",
+        "dvd_subtitle",
+        "application/vobsub" -> "VOBSUB"
+        "dvbsub",
+        "dvb_subtitle",
+        "application/dvbsubs" -> "DVBSUB"
+        "mov_text",
+        "tx3g",
+        "application/x-quicktime-tx3g" -> "TX3G"
+        "application/cea-608",
+        "application/cea-708" -> "CEA"
         else ->
-            value
-                .substringAfterLast('/')
-                .removePrefix("x-")
-                .takeIf { it.isNotBlank() }
-                ?.uppercase()
+            value.substringAfterLast('/').removePrefix("x-").takeIf { it.isNotBlank() }?.uppercase()
     }
 
 private fun subtitleFileName(path: String?): String? =
@@ -2041,14 +2085,12 @@ private fun assertSubtitleOptions(
     val duplicates =
         options.filter { !it.isNone }.groupBy { it.displayName }.filter { it.value.size > 1 }.keys
 
-    val disambiguated =
-        options.map { opt ->
-            if (opt.isNone || opt.displayName !in duplicates) return@map opt
-            if (!opt.secondaryName.isNullOrBlank()) return@map opt
-            val fallback =
-                subtitleFileName(opt.stream?.path) ?: String.format(trackFmt, opt.index + 1)
-            opt.copy(secondaryName = fallback)
-        }
+    val disambiguated = options.map { opt ->
+        if (opt.isNone || opt.displayName !in duplicates) return@map opt
+        if (!opt.secondaryName.isNullOrBlank()) return@map opt
+        val fallback = subtitleFileName(opt.stream?.path) ?: String.format(trackFmt, opt.index + 1)
+        opt.copy(secondaryName = fallback)
+    }
 
     val stillColliding =
         disambiguated
@@ -2061,8 +2103,7 @@ private fun assertSubtitleOptions(
         if (opt.isNone || (opt.displayName to opt.secondaryName) !in stillColliding) return@map opt
         val track = String.format(trackFmt, opt.index + 1)
         val secondary =
-            listOfNotNull(opt.secondaryName?.takeIf { it.isNotBlank() }, track)
-                .joinToString(" · ")
+            listOfNotNull(opt.secondaryName?.takeIf { it.isNotBlank() }, track).joinToString(" · ")
         opt.copy(secondaryName = secondary)
     }
 }
