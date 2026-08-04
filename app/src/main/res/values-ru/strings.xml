@@ -2,12 +2,12 @@
 <resources>
     <string name="splash_powered_by">Работает на Jellyfin</string>
     <string name="splash_progress_fmt">%1$d%%</string>
-    <string name="splash_status_authenticating">Аутентификация...</string>
+    <string name="splash_status_authenticating">Аутентификация…</string>
     <string name="loading_phase_offline">Готово (Оффлайн-режим)</string>
     <string name="loading_phase_connecting">Подключение к серверу…</string>
     <string name="loading_phase_fetching">Загрузка контента…</string>
     <string name="loading_phase_processing">Обработка библиотек…</string>
-    <string name="loading_phase_finalizing">Подготовка начального экрана…</string>
+    <string name="loading_phase_finalizing">Подготовка главного экрана…</string>
     <string name="loading_phase_ready">Готово!</string>
     <string name="login_connect_to_jellyfin">Подключиться к Jellyfin</string>
     <string name="login_welcome_back">С возвращением</string>
@@ -1413,7 +1413,7 @@
     <string name="custom_sections_title">Разделы на главном экране</string>
     <string name="custom_sections_group_always">Отображаются всегда</string>
     <string name="custom_sections_always_caption">Основные ряды, необходимые каждому клиенту Jellyfin. Их нельзя отключить.</string>
-    <string name="custom_sections_always_on">Всегда включен</string>
+    <string name="custom_sections_always_on">Всегда включено</string>
     <string name="custom_sections_group_rows">Встроенные ряды</string>
     <string name="custom_sections_rows_caption">Отображаются первыми, в этом порядке. Отключите те, что вы не используете.</string>
     <string name="custom_sections_yours_caption">Ваши собственные ряды, отображаются перед сгенерированными. Перетащите для изменения порядка, нажмите для редактирования.</string>
@@ -1529,4 +1529,27 @@
     <string name="custom_sections_preset_range_fmt">Сезонный · %1$s – %2$s</string>
     <string name="home_row_hero_carousel">В центре внимания</string>
     <string name="discovery_section_spotlights">Баннеры</string>
+    <string name="pref_clear_cache">Очистить данные кэша</string>
+    <string name="pref_clear_cache_summary">Будут повторно запрошены ряды, жанры и списки изображений</string>
+    <string name="pref_clear_cache_usage_fmt">Изображения: %1$s · %2$d записей в кэше</string>
+    <string name="pref_clear_cache_empty">Кэш пуст</string>
+    <string name="cache_kind_images">Изображения</string>
+    <string name="cache_kind_home_rows">Ряды на главном экране</string>
+    <string name="cache_kind_genres">Жанры</string>
+    <string name="cache_kind_person_details">Подробности о персонах</string>
+    <string name="cache_kind_box_sets">Коллекции</string>
+    <string name="cache_entries_fmt">%1$d записей</string>
+    <string name="pref_clear_cache_confirm">Очистить данные кэша?</string>
+    <string name="pref_clear_cache_message">Загрузки, настройки и ваши индивидуальные разделы не будут затронуты. Ряды на главном экране будут созданы заново при следующей загрузке.</string>
+    <string name="pref_clear_cache_done">Данные кэша очищены</string>
+    <string name="custom_sections_field_refine">Уточнения</string>
+    <string name="custom_sections_refine_none">Без дополнительных фильтров</string>
+    <string name="custom_sections_refine_summary_fmt">%1$s · %2$d фильтров</string>
+    <string name="cache_kind_people">Топ-персоны</string>
+    <string name="pref_clear_cache_usage_total_fmt">%1$s в кэше · %2$d записей</string>
+    <string name="cache_store_video">Кэш видео</string>
+    <string name="cache_store_network">Сетевой кэш</string>
+    <string name="cache_store_player">Данные для плеера</string>
+    <string name="pref_video_caching_title">Кэширование видео</string>
+    <string name="pref_video_caching_summary">Сохранение недавнего видеопотока на диск, чтобы при перемотке и повторном просмотре данные не скачивались заново</string>
 </resources>
