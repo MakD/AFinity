@@ -243,6 +243,11 @@ interface MediaRepository {
 
     suspend fun getPerson(personId: UUID): AfinityPersonDetail?
 
+    suspend fun getPersonWithoutRefresh(
+        personId: UUID,
+        fields: List<ItemFields>? = null,
+    ): AfinityPersonDetail?
+
     suspend fun getPersonItems(
         personId: UUID,
         includeItemTypes: List<String> = emptyList(),

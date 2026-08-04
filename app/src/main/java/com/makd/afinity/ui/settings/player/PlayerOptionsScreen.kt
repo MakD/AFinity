@@ -350,7 +350,7 @@ fun PlayerOptionsScreen(
                     SettingsDivider()
 
                     SubtitleModeSelectorItem(
-                        icon = painterResource(id = R.drawable.ic_subtitles),
+                        icon = painterResource(id = R.drawable.ic_subtitles_settings),
                         title = stringResource(R.string.pref_subtitle_mode_title),
                         selectedMode = uiState.subtitleModeOverride,
                         onModeSelected = viewModel::setSubtitleModeOverride,
