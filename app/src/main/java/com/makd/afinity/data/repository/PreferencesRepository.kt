@@ -140,6 +140,12 @@ interface PreferencesRepository {
 
     fun getSubtitleModeOverrideFlow(): Flow<String>
 
+    suspend fun setPreferSdhSubtitles(enabled: Boolean)
+
+    suspend fun getPreferSdhSubtitles(): Boolean
+
+    fun getPreferSdhSubtitlesFlow(): Flow<Boolean>
+
     suspend fun setThemeMode(mode: String)
 
     suspend fun getThemeMode(): String

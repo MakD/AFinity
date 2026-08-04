@@ -1644,6 +1644,7 @@ constructor(
                     subtitleMode = resolveSubtitlePlaybackMode(),
                     preferredAudioLanguage = resolvePreferredAudioLanguage(),
                     preferredSubtitleLanguage = resolvePreferredSubtitleLanguage(),
+                    preferHearingImpaired = preferencesRepository.getPreferSdhSubtitles(),
                     requestedAudioStreamIndex = audioStreamIndex,
                     requestedSubtitleStreamIndex = subtitleStreamIndex,
                     serverDefaultAudioStreamIndex = serverSavedAudioIndex,
@@ -2379,6 +2380,7 @@ constructor(
                     subtitleMode = resolveSubtitlePlaybackMode(),
                     preferredAudioLanguage = resolvePreferredAudioLanguage(),
                     preferredSubtitleLanguage = resolvePreferredSubtitleLanguage(),
+                    preferHearingImpaired = preferencesRepository.getPreferSdhSubtitles(),
                     requestedAudioStreamIndex = audioStreamIndex,
                 )
             val targetSubtitleStreamIndex =

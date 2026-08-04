@@ -87,6 +87,7 @@ object TrackSelection {
         serverDefaultSubtitleStreamIndex: Int? = null,
         playDefaultAudioTrack: Boolean = false,
         allowExternalAudio: Boolean = false,
+        preferHearingImpaired: Boolean = false,
     ): TrackSelectionResult {
         val audioPosition =
             selectAudio(
@@ -126,6 +127,7 @@ object TrackSelection {
                 preferredLanguage = subtitleLanguage,
                 audioIsForeign = audioIsForeign,
                 serverDefaultStreamIndex = serverDefaultSubtitleStreamIndex,
+                preferHearingImpaired = preferHearingImpaired,
             )
 
         return TrackSelectionResult(audioPosition, subtitlePosition)
@@ -189,6 +191,7 @@ object TrackSelection {
         preferredLanguage: String,
         audioIsForeign: Boolean,
         serverDefaultStreamIndex: Int?,
+        preferHearingImpaired: Boolean,
     ): Int {
         if (requestedStreamIndex != null) {
             if (requestedStreamIndex < 0) return NO_SUBTITLE
@@ -220,16 +223,16 @@ object TrackSelection {
                 SubtitlePlaybackMode.ONLY_FORCED -> candidates.firstForced(preferred)
 
                 SubtitlePlaybackMode.ALWAYS ->
-                    candidates.firstFull(preferred)
+                    candidates.firstFull(preferred, preferHearingImpaired)
                         ?: candidates.firstOrNull { matches(it.value, preferred) }
                         ?: candidates.firstOrNull { !it.value.isForced && it.value.isDefault }
-                        ?: candidates.firstOrNull { !it.value.isForced }
+                        ?: candidates.firstFull("", preferHearingImpaired)
                         ?: candidates.firstOrNull { it.value.isDefault || it.value.isForced }
                         ?: candidates.firstOrNull()
 
                 SubtitlePlaybackMode.SMART ->
                     if (audioIsForeign) {
-                        candidates.firstFull(preferred)
+                        candidates.firstFull(preferred, preferHearingImpaired)
                             ?: candidates.firstOrNull { matches(it.value, preferred) }
                             ?: candidates.firstForced(preferred)
                     } else {
@@ -252,10 +255,17 @@ object TrackSelection {
             )
 
     private fun List<IndexedValue<AfinityMediaStream>>.firstFull(
-        language: String
+        language: String,
+        preferHearingImpaired: Boolean,
     ): IndexedValue<AfinityMediaStream>? =
-        firstOrNull { !it.value.isForced && it.value.isDefault && matches(it.value, language) }
-            ?: firstOrNull { !it.value.isForced && matches(it.value, language) }
+        filter { !it.value.isForced && matches(it.value, language) }
+            .sortedWith(
+                compareByDescending<IndexedValue<AfinityMediaStream>> {
+                        it.value.isHearingImpaired == preferHearingImpaired
+                    }
+                    .thenByDescending { it.value.isDefault }
+            )
+            .firstOrNull()
 
     private fun List<IndexedValue<AfinityMediaStream>>.firstForced(
         language: String

@@ -355,6 +355,16 @@ fun PlayerOptionsScreen(
                         selectedMode = uiState.subtitleModeOverride,
                         onModeSelected = viewModel::setSubtitleModeOverride,
                     )
+
+                    SettingsDivider()
+
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_subtitles),
+                        title = stringResource(R.string.pref_prefer_sdh_title),
+                        subtitle = stringResource(R.string.pref_prefer_sdh_summary),
+                        checked = uiState.preferSdhSubtitles,
+                        onCheckedChange = viewModel::togglePreferSdhSubtitles,
+                    )
                 }
             }
 

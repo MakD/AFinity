@@ -126,6 +126,7 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val PREFERRED_AUDIO_LANGUAGE = stringPreferencesKey("preferred_audio_language")
         val PREFERRED_SUBTITLE_LANGUAGE = stringPreferencesKey("preferred_subtitle_language")
         val SUBTITLE_MODE_OVERRIDE = stringPreferencesKey("subtitle_mode_override")
+        val PREFER_SDH_SUBTITLES = booleanPreferencesKey("prefer_sdh_subtitles")
 
         val NOTIFICATION_PERMISSION_DECLINED =
             booleanPreferencesKey("notification_permission_declined")
@@ -719,6 +720,18 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
     override fun getSubtitleModeOverrideFlow(): Flow<String> {
         return dataStore.data.map { preferences -> preferences[Keys.SUBTITLE_MODE_OVERRIDE] ?: "" }
+    }
+
+    override suspend fun setPreferSdhSubtitles(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.PREFER_SDH_SUBTITLES] = enabled }
+    }
+
+    override suspend fun getPreferSdhSubtitles(): Boolean {
+        return dataStore.data.first()[Keys.PREFER_SDH_SUBTITLES] ?: false
+    }
+
+    override fun getPreferSdhSubtitlesFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences -> preferences[Keys.PREFER_SDH_SUBTITLES] ?: false }
     }
 
     override suspend fun setPipGestureEnabled(enabled: Boolean) {

@@ -391,6 +391,12 @@ constructor(
         }
 
         viewModelScope.launch {
+            preferencesRepository.getPreferSdhSubtitlesFlow().collect { enabled ->
+                _uiState.value = _uiState.value.copy(preferSdhSubtitles = enabled)
+            }
+        }
+
+        viewModelScope.launch {
             preferencesRepository.getCastHevcEnabledFlow().collect {
                 _uiState.value = _uiState.value.copy(castHevcEnabled = it)
             }
@@ -721,6 +727,16 @@ constructor(
                 Timber.d("Preferred subtitle language set to: $language")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set preferred subtitle language")
+            }
+        }
+    }
+
+    fun togglePreferSdhSubtitles(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setPreferSdhSubtitles(enabled)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set SDH subtitle preference")
             }
         }
     }
@@ -1152,6 +1168,7 @@ data class SettingsUiState(
     val preferredAudioLanguage: String = "",
     val preferredSubtitleLanguage: String = "",
     val subtitleModeOverride: String = "",
+    val preferSdhSubtitles: Boolean = false,
     val castHevcEnabled: Boolean = false,
     val castMaxBitrate: Int = 16_000_000,
     val bufferSizeMb: Int = 64,
