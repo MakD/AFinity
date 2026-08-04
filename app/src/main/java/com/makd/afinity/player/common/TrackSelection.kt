@@ -61,6 +61,17 @@ object TrackSelection {
         return aliases.toList()
     }
 
+    fun resolveSubtitleMode(
+        override: String,
+        serverMode: SubtitlePlaybackMode?,
+    ): SubtitlePlaybackMode =
+        override.takeIf { it.isNotBlank() }?.let { SubtitlePlaybackMode.fromNameOrNull(it) }
+            ?: serverMode
+            ?: SubtitlePlaybackMode.SMART
+
+    fun usesHearingImpairedPreference(mode: SubtitlePlaybackMode): Boolean =
+        mode == SubtitlePlaybackMode.ALWAYS || mode == SubtitlePlaybackMode.SMART
+
     fun normalizeLanguage(code: String?): String {
         val base =
             code.orEmpty().trim().substringBefore('-').substringBefore('_').lowercase(Locale.ROOT)

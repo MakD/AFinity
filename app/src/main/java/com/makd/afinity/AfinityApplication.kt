@@ -20,6 +20,7 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.updater.UpdateScheduler
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import com.makd.afinity.di.ImageClient
+import com.makd.afinity.ui.components.IMAGE_CROSSFADE_MILLIS
 import com.makd.afinity.util.logging.CrashFileExporter
 import com.makd.afinity.util.logging.RingBufferTree
 import dagger.hilt.android.HiltAndroidApp
@@ -130,7 +131,7 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
             }
             .memoryCachePolicy(CachePolicy.ENABLED)
             .networkCachePolicy(CachePolicy.ENABLED)
-            .crossfade(true)
+            .crossfade(IMAGE_CROSSFADE_MILLIS)
             .build()
     }
 }

@@ -113,7 +113,13 @@ fun HeroCarousel(
     val pagerState =
         rememberPagerState(initialPage = adjustedStart, pageCount = { infinitePageCount })
 
-    HeroCarouselAutoScrollAndPrefetch(pagerState, items, isScrolling, fillWidthPx = screenWidthPx)
+    HeroCarouselAutoScrollAndPrefetch(
+        pagerState = pagerState,
+        items = items,
+        isScrolling = isScrolling,
+        fillWidthPx = screenWidthPx,
+        fillHeightPx = with(density) { heroHeight.toPx().toInt() },
+    )
 
     val currentItem by remember { derivedStateOf { items[pagerState.currentPage % items.size] } }
     val contentAlpha by remember {
@@ -164,6 +170,7 @@ private fun HeroCarouselAutoScrollAndPrefetch(
     items: List<AfinityItem>,
     isScrolling: Boolean,
     fillWidthPx: Int,
+    fillHeightPx: Int,
 ) {
     val context = LocalContext.current
     val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
@@ -204,18 +211,11 @@ private fun HeroCarouselAutoScrollAndPrefetch(
             val item = items[index]
             val rawUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl
             if (rawUrl != null) {
-                val url =
-                    if (
-                        rawUrl.contains("/Items/") &&
-                            rawUrl.contains("/Images/") &&
-                            !rawUrl.contains("fillWidth")
-                    ) {
-                        val sep = if ('?' in rawUrl) "&" else "?"
-                        "${rawUrl}${sep}fillWidth=${fillWidthPx.coerceAtLeast(50)}&quality=90"
-                    } else {
-                        rawUrl
-                    }
-                val request = ImageRequest.Builder(context).data(url).build()
+                val request =
+                    ImageRequest.Builder(context)
+                        .data(optimizedImageUrl(rawUrl, fillWidthPx))
+                        .size(fillWidthPx, fillHeightPx)
+                        .build()
                 context.imageLoader.enqueue(request)
             }
         }

@@ -92,6 +92,7 @@ fun HeroSection(item: AfinityItem) {
             blurHash = current?.second,
             targetWidth = screenWidth,
             targetHeight = heroHeight,
+            useLowResPlaceholder = true,
             onError = {
                 if (urlIndex < fallbackChain.lastIndex) {
                     urlIndex++

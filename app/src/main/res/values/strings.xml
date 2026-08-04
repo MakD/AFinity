@@ -832,6 +832,7 @@
     <string name="subtitle_mode_follow_server">Follow server setting</string>
     <string name="pref_prefer_sdh_title">Prefer SDH subtitles</string>
     <string name="pref_prefer_sdh_summary">Auto-select hearing-impaired subtitles</string>
+    <string name="pref_prefer_sdh_unavailable">Only used with Always play or Only for foreign audio</string>
     <string name="subtitle_mode_default">Default</string>
     <string name="subtitle_mode_always">Always play</string>
     <string name="subtitle_mode_smart">Only for foreign audio</string>

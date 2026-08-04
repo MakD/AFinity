@@ -361,9 +361,15 @@ fun PlayerOptionsScreen(
                     SettingsSwitchItem(
                         icon = painterResource(id = R.drawable.ic_subtitles),
                         title = stringResource(R.string.pref_prefer_sdh_title),
-                        subtitle = stringResource(R.string.pref_prefer_sdh_summary),
+                        subtitle =
+                            if (uiState.sdhPreferenceApplies) {
+                                stringResource(R.string.pref_prefer_sdh_summary)
+                            } else {
+                                stringResource(R.string.pref_prefer_sdh_unavailable)
+                            },
                         checked = uiState.preferSdhSubtitles,
                         onCheckedChange = viewModel::togglePreferSdhSubtitles,
+                        enabled = uiState.sdhPreferenceApplies,
                     )
                 }
             }

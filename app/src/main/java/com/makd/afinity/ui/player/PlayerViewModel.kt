@@ -2332,16 +2332,11 @@ constructor(
         }
     }
 
-    private suspend fun resolveSubtitlePlaybackMode(): SubtitlePlaybackMode {
-        val override = preferencesRepository.getSubtitleModeOverride()
-        if (override.isNotBlank()) {
-            SubtitlePlaybackMode.fromNameOrNull(override)?.let {
-                return it
-            }
-        }
-        return sessionManager.currentSession.value?.userConfiguration?.subtitleMode
-            ?: SubtitlePlaybackMode.SMART
-    }
+    private suspend fun resolveSubtitlePlaybackMode(): SubtitlePlaybackMode =
+        TrackSelection.resolveSubtitleMode(
+            override = preferencesRepository.getSubtitleModeOverride(),
+            serverMode = sessionManager.currentSession.value?.userConfiguration?.subtitleMode,
+        )
 
     private fun resolvePlayDefaultAudioTrack(): Boolean =
         sessionManager.currentSession.value?.userConfiguration?.playDefaultAudioTrack == true

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.player.AssRenderMode
 import com.makd.afinity.data.models.player.MpvAudioOutput
@@ -28,6 +29,7 @@ import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
+import com.makd.afinity.player.common.TrackSelection
 import com.makd.afinity.ui.settings.servers.ServerWithUserCount
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import com.makd.afinity.util.logging.LogExporter
@@ -56,6 +58,7 @@ constructor(
     private val appDataRepository: AppDataRepository,
     private val serverRepository: ServerRepository,
     private val databaseRepository: DatabaseRepository,
+    private val sessionManager: SessionManager,
     private val offlineModeManager: OfflineModeManager,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
     private val jellyseerrRepository: JellyseerrRepository,
@@ -65,7 +68,6 @@ constructor(
     private val mdbListApiService: MdbListApiService,
     private val omdbApiService: OmdbApiService,
 ) : ViewModel() {
-
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -385,9 +387,24 @@ constructor(
         }
 
         viewModelScope.launch {
-            preferencesRepository.getSubtitleModeOverrideFlow().collect { mode ->
-                _uiState.value = _uiState.value.copy(subtitleModeOverride = mode)
-            }
+            combine(
+                    preferencesRepository.getSubtitleModeOverrideFlow(),
+                    sessionManager.currentSession,
+                ) { override, session ->
+                    override to
+                        TrackSelection.resolveSubtitleMode(
+                            override = override,
+                            serverMode = session?.userConfiguration?.subtitleMode,
+                        )
+                }
+                .collect { (override, effectiveMode) ->
+                    _uiState.value =
+                        _uiState.value.copy(
+                            subtitleModeOverride = override,
+                            sdhPreferenceApplies =
+                                TrackSelection.usesHearingImpairedPreference(effectiveMode),
+                        )
+                }
         }
 
         viewModelScope.launch {
@@ -1062,36 +1079,43 @@ constructor(
     fun authorizeQuickConnect(code: String) {
         viewModelScope.launch {
             try {
-                _uiState.value = _uiState.value.copy(
-                    isAuthorizingQuickConnect = true,
-                    quickConnectAuthError = null,
-                    quickConnectAuthSuccess = false,
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        isAuthorizingQuickConnect = true,
+                        quickConnectAuthError = null,
+                        quickConnectAuthSuccess = false,
+                    )
                 val authorized = authRepository.authorizeQuickConnect(code)
-                _uiState.value = _uiState.value.copy(
-                    isAuthorizingQuickConnect = false,
-                    quickConnectAuthSuccess = authorized,
-                    quickConnectAuthError = if (!authorized)
-                        context.getString(R.string.error_quickconnect_invalid_code)
-                    else null,
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        isAuthorizingQuickConnect = false,
+                        quickConnectAuthSuccess = authorized,
+                        quickConnectAuthError =
+                            if (!authorized)
+                                context.getString(R.string.error_quickconnect_invalid_code)
+                            else null,
+                    )
             } catch (e: Exception) {
                 Timber.e(e, "QuickConnect authorization failed")
-                _uiState.value = _uiState.value.copy(
-                    isAuthorizingQuickConnect = false,
-                    quickConnectAuthError = context.getString(
-                        R.string.error_quickconnect_failed_fmt, e.message
-                    ),
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        isAuthorizingQuickConnect = false,
+                        quickConnectAuthError =
+                            context.getString(
+                                R.string.error_quickconnect_failed_fmt,
+                                e.message,
+                            ),
+                    )
             }
         }
     }
 
     fun clearQuickConnectAuthState() {
-        _uiState.value = _uiState.value.copy(
-            quickConnectAuthSuccess = false,
-            quickConnectAuthError = null,
-        )
+        _uiState.value =
+            _uiState.value.copy(
+                quickConnectAuthSuccess = false,
+                quickConnectAuthError = null,
+            )
     }
 
     fun clearError() {
@@ -1169,6 +1193,7 @@ data class SettingsUiState(
     val preferredSubtitleLanguage: String = "",
     val subtitleModeOverride: String = "",
     val preferSdhSubtitles: Boolean = false,
+    val sdhPreferenceApplies: Boolean = true,
     val castHevcEnabled: Boolean = false,
     val castMaxBitrate: Int = 16_000_000,
     val bufferSizeMb: Int = 64,
