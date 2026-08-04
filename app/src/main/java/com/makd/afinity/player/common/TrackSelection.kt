@@ -195,9 +195,12 @@ object TrackSelection {
     ): Int {
         if (requestedStreamIndex != null) {
             if (requestedStreamIndex < 0) return NO_SUBTITLE
-            return subtitleStreams
+            subtitleStreams
                 .indexOfFirst { it.index == requestedStreamIndex }
-                .takeIf { it >= 0 } ?: NO_SUBTITLE
+                .takeIf { it >= 0 }
+                ?.let {
+                    return it
+                }
         }
 
         if (subtitleStreams.isEmpty() || mode == SubtitlePlaybackMode.NONE) return NO_SUBTITLE

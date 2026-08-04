@@ -1637,6 +1637,8 @@ constructor(
             val subtitleStreams =
                 mediaSource.mediaStreams.filter { it.type == MediaStreamType.SUBTITLE }
 
+            val isResuming = startPositionMs > 0
+
             val trackSelection =
                 TrackSelection.select(
                     audioStreams = audioStreams,
@@ -1645,8 +1647,10 @@ constructor(
                     preferredAudioLanguage = resolvePreferredAudioLanguage(),
                     preferredSubtitleLanguage = resolvePreferredSubtitleLanguage(),
                     preferHearingImpaired = preferencesRepository.getPreferSdhSubtitles(),
-                    requestedAudioStreamIndex = audioStreamIndex,
-                    requestedSubtitleStreamIndex = subtitleStreamIndex,
+                    requestedAudioStreamIndex =
+                        audioStreamIndex ?: serverSavedAudioIndex.takeIf { isResuming },
+                    requestedSubtitleStreamIndex =
+                        subtitleStreamIndex ?: serverSavedSubtitleIndex.takeIf { isResuming },
                     serverDefaultAudioStreamIndex = serverSavedAudioIndex,
                     serverDefaultSubtitleStreamIndex = serverSavedSubtitleIndex,
                     playDefaultAudioTrack = resolvePlayDefaultAudioTrack(),
