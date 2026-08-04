@@ -210,7 +210,7 @@
     <string name="custom_sections_field_limit">Item limit</string>
     <string name="custom_sections_field_sort">Sort</string>
     <string name="custom_sections_field_card_style">Card style</string>
-    <string name="custom_sections_card_style_locked_fmt">%1$s — set automatically for this kind of row</string>
+    <string name="custom_sections_card_style_locked_fmt">%1$s (set automatically for this kind of row)</string>
     <string name="custom_sections_field_refine">Refine</string>
     <string name="custom_sections_refine_none">No extra filters</string>
     <string name="custom_sections_refine_summary_fmt">%1$s · %2$d filters</string>
@@ -785,8 +785,8 @@
     <string name="storage_unavailable_volume">Unavailable storage</string>
     <string name="storage_unavailable_badge">Unavailable</string>
     <string name="storage_unavailable_used_fmt">%1$s used • storage not connected</string>
-    <string name="download_unavailable_label">Unavailable — %1$s removed</string>
-    <string name="download_unavailable_indicator">Downloaded — storage unavailable</string>
+    <string name="download_unavailable_label">Unavailable: %1$s removed</string>
+    <string name="download_unavailable_indicator">Downloaded: storage unavailable</string>
     <string name="download_unavailable_delete_title">Storage unavailable</string>
     <string name="download_unavailable_delete_message">This download is on storage that isn\'t connected, so its files can\'t be deleted right now. Remove it from the list anyway? The files will remain on the storage if you reconnect it.</string>
     <string name="download_unavailable_delete_confirm">Remove from list</string>
@@ -802,7 +802,7 @@
     <string name="cd_pause_download">Pause download</string>
     <string name="cd_resume_download">Resume download</string>
     <string name="cd_cancel_download">Cancel download</string>
-    <string name="cd_queued_tap_cancel">Queued — tap to cancel</string>
+    <string name="cd_queued_tap_cancel">Queued, tap to cancel</string>
     <string name="cd_delete_download">Delete download</string>
     <string name="cd_status_failed">Failed</string>
     <string name="cd_status_completed">Completed</string>
@@ -841,7 +841,7 @@
     <string name="subtitle_mode_default_hint">Subtitles are loaded based on the default and forced flags in the embedded metadata. Language preferences are considered when multiple options are available.</string>
     <string name="subtitle_mode_always_hint">Subtitles are loaded for every item, matching your preferred language when possible.</string>
     <string name="subtitle_mode_smart_hint">Full subtitles are loaded when the audio isn\'t in your preferred language. Otherwise, only forced subtitles are loaded.</string>
-    <string name="subtitle_mode_only_forced_hint">Only subtitles marked as forced will be loaded — usually just on-screen text and foreign dialogue, not the full script.</string>
+    <string name="subtitle_mode_only_forced_hint">Only subtitles marked as forced will be loaded. Usually just on-screen text and foreign dialogue, not the full script.</string>
     <string name="subtitle_mode_none_hint">Subtitles will not be loaded by default. They can still be turned on manually during playback.</string>
     <string name="pref_autoplay_title">Auto-play</string>
     <string name="pref_autoplay_summary">Automatically play next episode</string>
@@ -1001,9 +1001,9 @@
     <string name="btn_install_restart">Install &amp; Restart</string>
     <string name="btn_validate">Validate</string>
     <string name="update_console_status_hashing">hashing downloaded file…</string>
-    <string name="update_console_status_match">MATCH — authentic build, safe to install</string>
-    <string name="update_console_status_mismatch">MISMATCH — file deleted, download again</string>
-    <string name="update_console_status_error">ERROR — could not read file, download again</string>
+    <string name="update_console_status_match">MATCH: authentic build, safe to install</string>
+    <string name="update_console_status_mismatch">MISMATCH: file deleted, download again</string>
+    <string name="update_console_status_error">ERROR: could not read file, download again</string>
     <string name="action_not_now">Not Now</string>
 
     <string name="pref_group_updates">Updates</string>
@@ -1288,7 +1288,7 @@
     <string name="cd_abs_open_podcast">Open podcast</string>
     <string name="cd_abs_view_series">View series</string>
     <string name="cd_abs_play_episode">Play episode</string>
-    <string name="cd_abs_downloaded_delete">Downloaded — tap to delete</string>
+    <string name="cd_abs_downloaded_delete">Downloaded, tap to delete</string>
     <string name="cd_abs_download_episode">Download episode</string>
     <string name="cd_abs_download">Download</string>
     <string name="cd_abs_minimize">Minimize</string>
