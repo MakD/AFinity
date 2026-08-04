@@ -839,9 +839,9 @@
     <string name="subtitle_mode_none">None</string>
     <string name="subtitle_mode_follow_server_hint">Use the subtitle mode configured for your account on the Jellyfin server.</string>
     <string name="subtitle_mode_default_hint">Subtitles are loaded based on the default and forced flags in the embedded metadata. Language preferences are considered when multiple options are available.</string>
-    <string name="subtitle_mode_always_hint">Subtitles matching the language preference will be loaded regardless of the audio language.</string>
-    <string name="subtitle_mode_smart_hint">Subtitles matching the language preference will be loaded when the audio is in a foreign language.</string>
-    <string name="subtitle_mode_only_forced_hint">Only subtitles marked as forced will be loaded.</string>
+    <string name="subtitle_mode_always_hint">Subtitles are loaded for every item, matching your preferred language when possible.</string>
+    <string name="subtitle_mode_smart_hint">Full subtitles are loaded when the audio isn\'t in your preferred language. Otherwise, only forced subtitles are loaded.</string>
+    <string name="subtitle_mode_only_forced_hint">Only subtitles marked as forced will be loaded — usually just on-screen text and foreign dialogue, not the full script.</string>
     <string name="subtitle_mode_none_hint">Subtitles will not be loaded by default. They can still be turned on manually during playback.</string>
     <string name="pref_autoplay_title">Auto-play</string>
     <string name="pref_autoplay_summary">Automatically play next episode</string>
