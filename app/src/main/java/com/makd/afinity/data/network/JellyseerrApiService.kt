@@ -82,6 +82,16 @@ interface JellyseerrApiService {
     @DELETE("api/v1/request/{requestId}")
     suspend fun deleteRequest(@Path("requestId") requestId: Int): Response<Unit>
 
+    @DELETE("api/v1/media/{mediaId}")
+    suspend fun deleteMedia(@Path("mediaId") mediaId: Int): Response<Unit>
+
+    @POST("api/v1/settings/cache/flush")
+    suspend fun flushCache(): Response<Unit>
+
+    @POST("api/v1/settings/jobs/{jobId}/run")
+    suspend fun runJob(@Path("jobId") jobId: String): Response<Unit>
+
+
     @POST("api/v1/request/{requestId}/approve")
     suspend fun approveRequest(
         @Path("requestId") requestId: Int,

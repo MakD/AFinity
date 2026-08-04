@@ -47,6 +47,8 @@ interface MediaRepository {
 
     fun patchItemImages(updatedItem: AfinityItem)
 
+    fun removeItemFromCache(itemId: String)
+
     suspend fun invalidateItemCache(itemId: UUID)
 
     suspend fun refreshItemUserData(itemId: UUID, fields: List<ItemFields>? = null): AfinityItem?

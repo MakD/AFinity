@@ -25,6 +25,7 @@ import com.makd.afinity.data.models.jellyseerr.SonarrSeries
 import com.makd.afinity.data.models.jellyseerr.Studio
 import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import com.makd.afinity.data.models.jellyseerr.hasPermission
+import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.util.GenreDuotoneColorGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -51,7 +52,9 @@ class RequestsViewModel
 constructor(
     @param:ApplicationContext private val context: Context,
     private val jellyseerrRepository: JellyseerrRepository,
+    private val adminChangeBroadcaster: AdminChangeBroadcaster,
 ) : ViewModel() {
+
 
     private val _uiState =
         MutableStateFlow(RequestsUiState(isLoading = true, isLoadingDiscover = true))
@@ -156,7 +159,16 @@ constructor(
                 }
         }
         observeRequestEvents()
+        viewModelScope.launch {
+            adminChangeBroadcaster.itemDeleted.collect {
+                jellyfinIdCache.clear()
+                fetchingIds.clear()
+                loadRequests()
+                loadDiscoverContent()
+            }
+        }
     }
+
 
     private fun loadCurrentUser() {
         viewModelScope.launch {

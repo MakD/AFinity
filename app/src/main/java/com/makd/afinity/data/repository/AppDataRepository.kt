@@ -2,7 +2,9 @@ package com.makd.afinity.data.repository
 
 import android.content.Context
 import com.makd.afinity.R
+import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
+
 import com.makd.afinity.data.manager.MediaRefreshBus
 import com.makd.afinity.data.manager.RefreshTrigger
 import com.makd.afinity.data.manager.SessionManager
@@ -88,6 +90,7 @@ constructor(
     private val musicRepository: MusicRepository,
     private val homeCacheRepository: HomeCacheRepository,
     private val homeSectionsRepository: HomeSectionsRepository,
+    private val adminChangeBroadcaster: AdminChangeBroadcaster,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
     private var liveDataJob: Job? = null
@@ -159,7 +162,44 @@ constructor(
                     }
                 }
         }
+
+        scope.launch {
+            adminChangeBroadcaster.itemDeleted.collect { event ->
+                onItemDeleted(event.itemId)
+            }
+        }
     }
+
+    fun onItemDeleted(itemId: String) {
+        scope.launch {
+            try {
+                homeCacheRepository.invalidateAll()
+                mediaRepository.removeItemFromCache(itemId)
+                mediaRepository.invalidateAllCaches()
+
+                val uuid = try { UUID.fromString(itemId) } catch (e: Exception) { null }
+                val matches: (UUID) -> Boolean = { id -> id.toString() == itemId || (uuid != null && id == uuid) }
+
+                _latestMovies.update { list -> list.filterNot { matches(it.id) } }
+                _latestTvSeries.update { list -> list.filterNot { matches(it.id) } }
+                _heroCarouselItems.update { list -> list.filterNot { matches(it.id) } }
+                _separateMovieLibrarySections.update { list ->
+                    list.map { (col, movies) -> col to movies.filterNot { matches(it.id) } }
+                }
+                _separateTvLibrarySections.update { list ->
+                    list.map { (col, shows) -> col to shows.filterNot { matches(it.id) } }
+                }
+
+                homeSectionsRepository.removeItem(itemId)
+                mediaChangeManager.notifyLibraryContentChanged("item_deleted")
+
+                reloadHomeData()
+            } catch (e: Exception) {
+                Timber.e(e, "Error handling onItemDeleted for $itemId")
+            }
+        }
+    }
+
 
     private val _latestMovies = MutableStateFlow<List<AfinityMovie>>(emptyList())
     val latestMovies: StateFlow<List<AfinityMovie>> = _latestMovies.asStateFlow()

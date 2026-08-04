@@ -501,6 +501,68 @@ constructor(
         }
     }
 
+    fun removeItem(itemId: String) {
+        val uuid = try { UUID.fromString(itemId) } catch (e: Exception) { null }
+        val matches: (UUID) -> Boolean = { id -> id.toString() == itemId || (uuid != null && id == uuid) }
+
+        _watchAgain.update { items -> items.filterNot { matches(it.id) } }
+        _criticsChoice.update { items -> items.filterNot { matches(it.id) } }
+        _content.update { map ->
+            var changed = false
+            val patched = map.mapValues { (_, content) ->
+                val newContent = removeContent(content, matches)
+                if (newContent !== content) changed = true
+                newContent
+            }
+            if (changed) patched else map
+        }
+    }
+
+    private fun removeContent(
+        content: HomeSectionContent,
+        matches: (UUID) -> Boolean,
+    ): HomeSectionContent {
+        fun filterItems(items: List<AfinityItem>): List<AfinityItem>? {
+            if (items.none { matches(it.id) }) return null
+            return items.filterNot { matches(it.id) }
+        }
+
+        return when (content) {
+            is HomeSectionContent.Person -> {
+                filterItems(content.section.items)?.let {
+                    HomeSectionContent.Person(content.section.copy(items = it))
+                } ?: content
+            }
+            is HomeSectionContent.Movie -> {
+                if (content.section.recommendedItems.any { matches(it.id) }) {
+                    HomeSectionContent.Movie(
+                        content.section.copy(
+                            recommendedItems = content.section.recommendedItems.filterNot { matches(it.id) }
+                        )
+                    )
+                } else {
+                    content
+                }
+            }
+            is HomeSectionContent.PersonFromMovie -> {
+                filterItems(content.section.items)?.let {
+                    HomeSectionContent.PersonFromMovie(content.section.copy(items = it))
+                } ?: content
+            }
+            is HomeSectionContent.Spotlight -> {
+                filterItems(content.items)?.let { HomeSectionContent.Spotlight(it) } ?: content
+            }
+            is HomeSectionContent.Items -> {
+                filterItems(content.items)?.let { HomeSectionContent.Items(it) } ?: content
+            }
+            is HomeSectionContent.RankedItems -> {
+                filterItems(content.items)?.let { HomeSectionContent.RankedItems(it) } ?: content
+            }
+            HomeSectionContent.Empty -> content
+        }
+    }
+
+
     suspend fun clearAllData() {
         buildJob?.cancel()
         layoutSessionKey = null
