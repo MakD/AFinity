@@ -262,8 +262,14 @@ object NetworkModule {
     @Provides
     @Singleton
     @GitHubClient
-    fun provideGitHubOkHttpClient(): OkHttpClient =
+    fun provideGitHubOkHttpClient(@ApplicationContext context: Context): OkHttpClient =
         OkHttpClient.Builder()
+            .cache(
+                Cache(
+                    directory = File(context.cacheDir, "github_http_cache"),
+                    maxSize = 1L * 1024L * 1024L,
+                )
+            )
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .callTimeout(45, TimeUnit.SECONDS)

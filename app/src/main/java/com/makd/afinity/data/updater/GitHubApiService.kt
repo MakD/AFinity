@@ -24,7 +24,7 @@ constructor(@param:GitHubClient private val okHttpClient: OkHttpClient) {
         private const val GITHUB_LATEST_URL =
             "https://api.github.com/repos/MakD/AFinity/releases/latest"
         private const val GITHUB_RELEASES_URL =
-            "https://api.github.com/repos/MakD/AFinity/releases"
+            "https://api.github.com/repos/MakD/AFinity/releases?per_page=10"
         private const val USER_AGENT = "AFinity-Android-App"
     }
 
