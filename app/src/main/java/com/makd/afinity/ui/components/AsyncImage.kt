@@ -51,6 +51,10 @@ internal fun optimizedImageUrl(imageUrl: String?, widthPx: Int): String? {
     return "${imageUrl}${separator}fillWidth=${bucketedFillWidth(widthPx.coerceAtLeast(50))}$quality"
 }
 
+private fun snapBlurHashDimension(value: Int): Int =
+    if (value >= (BLUR_HASH_MIN_SIZE + BLUR_HASH_BASE_SIZE) / 2) BLUR_HASH_BASE_SIZE
+    else BLUR_HASH_MIN_SIZE
+
 private fun decodeBlurHashBitmap(blurHash: String, width: Int, height: Int): ImageBitmap? =
     try {
         BlurHash.decode(blurHash = blurHash, width = width, height = height)?.asImageBitmap()
@@ -74,10 +78,12 @@ private fun rememberBlurHashPainter(
                     1f
                 }
             val width =
-                if (ratio > 1) BLUR_HASH_BASE_SIZE else (BLUR_HASH_BASE_SIZE * ratio).toInt()
+                if (ratio > 1) BLUR_HASH_BASE_SIZE
+                else snapBlurHashDimension((BLUR_HASH_BASE_SIZE * ratio).toInt())
             val height =
-                if (ratio < 1) BLUR_HASH_BASE_SIZE else (BLUR_HASH_BASE_SIZE / ratio).toInt()
-            width.coerceAtLeast(BLUR_HASH_MIN_SIZE) to height.coerceAtLeast(BLUR_HASH_MIN_SIZE)
+                if (ratio < 1) BLUR_HASH_BASE_SIZE
+                else snapBlurHashDimension((BLUR_HASH_BASE_SIZE / ratio).toInt())
+            width to height
         }
 
     return remember(blurHash, decodeSize) {
