@@ -9,6 +9,8 @@ import com.makd.afinity.data.database.entities.ShowGenreCacheEntity
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.GenreType
+import com.makd.afinity.data.models.common.CollectionType
+import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
@@ -17,10 +19,12 @@ import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.repository.media.MediaRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -56,6 +60,35 @@ constructor(
 
     private fun currentUserId(): String =
         sessionManager.currentSession.value?.userId?.toString() ?: ""
+
+    private suspend fun videoLibraries(): List<AfinityCollection> =
+        mediaRepository.libraries.first().ifEmpty { mediaRepository.getLibraries() }
+
+    private suspend fun genresForLibraryType(type: CollectionType): List<String> {
+        val itemTypes =
+            when (type) {
+                CollectionType.Movies -> listOf("MOVIE")
+                CollectionType.TvShows -> listOf("SERIES")
+                else -> emptyList()
+            }
+
+        return coroutineScope {
+            videoLibraries()
+                .filter { it.type == type }
+                .map { library ->
+                    async {
+                        mediaRepository.getGenres(
+                            parentId = library.id,
+                            includeItemTypes = itemTypes,
+                        )
+                    }
+                }
+                .awaitAll()
+                .flatten()
+                .distinct()
+                .sorted()
+        }
+    }
 
     suspend fun loadCombinedGenres() {
         withContext(Dispatchers.IO) {
@@ -96,12 +129,7 @@ constructor(
                 if (isFresh) return
             }
 
-            val genres =
-                mediaRepository.getGenres(
-                    parentId = null,
-                    limit = null,
-                    includeItemTypes = listOf("MOVIE"),
-                )
+            val genres = genresForLibraryType(CollectionType.Movies)
 
             val timestamp = System.currentTimeMillis()
             val genreEntities = genres.map { genreName ->
@@ -132,12 +160,7 @@ constructor(
                 if (isFresh) return
             }
 
-            val genres =
-                mediaRepository.getGenres(
-                    parentId = null,
-                    limit = null,
-                    includeItemTypes = listOf("SERIES"),
-                )
+            val genres = genresForLibraryType(CollectionType.TvShows)
 
             val timestamp = System.currentTimeMillis()
             val genreEntities = genres.map { genreName ->

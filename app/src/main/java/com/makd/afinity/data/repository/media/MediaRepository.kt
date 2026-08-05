@@ -86,6 +86,7 @@ interface MediaRepository {
         recursive: Boolean? = null,
         criteria: ItemFilterCriteria = ItemFilterCriteria(),
         enableTotalRecordCount: Boolean = false,
+        enableImageTypes: List<String> = emptyList(),
     ): BaseItemDtoQueryResult
 
     suspend fun getItemsResult(
@@ -103,6 +104,7 @@ interface MediaRepository {
         recursive: Boolean? = null,
         criteria: ItemFilterCriteria = ItemFilterCriteria(),
         enableTotalRecordCount: Boolean = false,
+        enableImageTypes: List<String> = emptyList(),
     ): Result<BaseItemDtoQueryResult>
 
     suspend fun getItem(itemId: UUID, fields: List<ItemFields>? = null): BaseItemDto?

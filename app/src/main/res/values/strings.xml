@@ -1150,6 +1150,9 @@
     <string name="watchlist_section_header_fmt">%1$s (%2$d)</string>
 
     <string name="section_movies">Movies</string>
+    <string name="section_music">Music</string>
+    <string name="filter_all_libraries">All libraries</string>
+    <string name="filter_all_audiobooks">All audiobooks</string>
     <string name="section_boxset">Box Sets</string>
     <string name="section_tv_shows">TV Shows</string>
     <string name="section_seasons">Seasons</string>

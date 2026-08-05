@@ -586,6 +586,7 @@ constructor(
         recursive: Boolean?,
         criteria: ItemFilterCriteria,
         enableTotalRecordCount: Boolean,
+        enableImageTypes: List<String>,
     ): BaseItemDtoQueryResult =
         getItemsResult(
                 parentId = parentId,
@@ -602,6 +603,7 @@ constructor(
                 recursive = recursive,
                 criteria = criteria,
                 enableTotalRecordCount = enableTotalRecordCount,
+                enableImageTypes = enableImageTypes,
             )
             .getOrElse { e ->
                 if (e !is NoActiveSessionException) Timber.e(e, "Failed to get items")
@@ -623,6 +625,7 @@ constructor(
         recursive: Boolean?,
         criteria: ItemFilterCriteria,
         enableTotalRecordCount: Boolean,
+        enableImageTypes: List<String>,
     ): Result<BaseItemDtoQueryResult> =
         apiInvoker.apiResult { apiClient, userId ->
             val filters = buildList {
@@ -708,6 +711,17 @@ constructor(
                             },
                         hasOverview = criteria.hasOverview,
                         enableImages = true,
+                        enableImageTypes =
+                            enableImageTypes
+                                .mapNotNull {
+                                    try {
+                                        ImageType.valueOf(it.uppercase())
+                                    } catch (e: Exception) {
+                                        null
+                                    }
+                                }
+                                .ifEmpty { null },
+                        imageTypeLimit = if (enableImageTypes.isNotEmpty()) 1 else null,
                         enableUserData = true,
                     )
                 .content

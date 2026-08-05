@@ -4,9 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.resolveChangedItems
+import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.common.CollectionType
-import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
@@ -51,6 +51,7 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -120,9 +121,11 @@ constructor(
         _selectedEpisodeDownloadInfo.asStateFlow()
 
     private var searchJob: Job? = null
+    private var episodeSearchJob: Job? = null
     private var jellyseerrSearchJob: Job? = null
     private var audiobookshelfSearchJob: Job? = null
     private var musicSearchJob: Job? = null
+    private var genresJob: Job? = null
 
     private val searchQueryFlow = MutableSharedFlow<String>(extraBufferCapacity = 1)
     private val pendingItemUpdates = mutableMapOf<UUID, AfinityItem>()
@@ -133,16 +136,7 @@ constructor(
         viewModelScope.launch {
             searchQueryFlow.debounce(300).distinctUntilChanged().collectLatest { query ->
                 if (query.length >= 2) {
-                    when {
-                        _uiState.value.isJellyseerrSearchMode -> performJellyseerrSearch()
-                        _uiState.value.isAudiobookshelfSearchMode -> performAudiobookshelfSearch()
-                        else -> {
-                            launch { performSearch() }
-                            launch { performAudiobookshelfSearch() }
-                            launch { performJellyseerrSearch() }
-                            launch { performMusicSearch() }
-                        }
-                    }
+                    runSearchForCurrentFilter()
                 }
             }
         }
@@ -168,6 +162,20 @@ constructor(
         }
 
         viewModelScope.launch {
+            audiobookshelfRepository.getLibrariesFlow().collect { libraries ->
+                _uiState.update { state ->
+                    state.copy(
+                        audiobookshelfLibraries = libraries,
+                        selectedAudiobookshelfLibraryId =
+                            state.selectedAudiobookshelfLibraryId?.takeIf { selected ->
+                                libraries.any { it.id == selected }
+                            },
+                    )
+                }
+            }
+        }
+
+        viewModelScope.launch {
             searchResultsUpdateTrigger.debounce(300L).collect {
                 if (pendingItemUpdates.isEmpty()) return@collect
 
@@ -178,8 +186,21 @@ constructor(
                     pendingItemUpdates[item.id]?.also { hasChanges = true } ?: item
                 }
 
-                if (hasChanges) {
-                    _uiState.update { it.copy(searchResults = newResults) }
+                var hasEpisodeChanges = false
+                val newEpisodes = _uiState.value.episodeResults.map { episode ->
+                    (pendingItemUpdates[episode.id] as? AfinityEpisode)?.also {
+                        hasEpisodeChanges = true
+                    } ?: episode
+                }
+
+                if (hasChanges || hasEpisodeChanges) {
+                    _uiState.update {
+                        it.copy(
+                            searchResults = if (hasChanges) newResults else it.searchResults,
+                            episodeResults =
+                                if (hasEpisodeChanges) newEpisodes else it.episodeResults,
+                        )
+                    }
                     Timber.d("Applied ${pendingItemUpdates.size} background search updates.")
                 }
                 pendingItemUpdates.clear()
@@ -306,6 +327,7 @@ constructor(
 
     private fun cancelAllSearchJobs() {
         searchJob?.cancel()
+        episodeSearchJob?.cancel()
         jellyseerrSearchJob?.cancel()
         audiobookshelfSearchJob?.cancel()
         musicSearchJob?.cancel()
@@ -318,18 +340,46 @@ constructor(
     }
 
     fun loadGenres() {
-        viewModelScope.launch {
+        genresJob?.cancel()
+        genresJob = viewModelScope.launch {
             try {
-                val selectedLibraryId = _uiState.value.selectedLibrary?.id
+                val selectedLibrary = _uiState.value.selectedLibrary
+                val targetLibraries =
+                    if (selectedLibrary != null) {
+                        listOf(selectedLibrary)
+                    } else {
+                        _uiState.value.libraries.filter {
+                            it.type == CollectionType.Movies ||
+                                it.type == CollectionType.TvShows ||
+                                it.type == CollectionType.BoxSets
+                        }
+                    }
+
+                if (targetLibraries.isEmpty()) {
+                    _uiState.value = _uiState.value.copy(genres = emptyList())
+                    return@launch
+                }
+
                 val genres =
-                    mediaRepository.getGenres(
-                        parentId = selectedLibraryId,
-                        limit = 100,
-                        includeItemTypes = listOf("MOVIE", "SERIES", "BOX_SET"),
-                    )
+                    targetLibraries
+                        .map { library ->
+                            async {
+                                mediaRepository.getGenres(
+                                    parentId = library.id,
+                                    includeItemTypes = library.type.genreItemTypes(),
+                                )
+                            }
+                        }
+                        .awaitAll()
+                        .flatten()
+                        .distinct()
+                        .sorted()
+
                 _uiState.value = _uiState.value.copy(genres = genres)
-                Timber.d("Loaded ${genres.size} genres from API")
+                Timber.d("Loaded ${genres.size} genres from ${targetLibraries.size} libraries")
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
+
                 Timber.e(e, "Failed to load genres")
                 _uiState.value = _uiState.value.copy(genres = emptyList())
             }
@@ -385,10 +435,12 @@ constructor(
             _uiState.value =
                 _uiState.value.copy(
                     searchResults = emptyList(),
+                    episodeResults = emptyList(),
                     jellyseerrSearchResults = emptyList(),
                     audiobookshelfSearchResults = emptyList(),
                     musicSearchResults = null,
                     isSearching = false,
+                    isEpisodeSearching = false,
                     isAudiobookshelfSearching = false,
                     isJellyseerrSearching = false,
                     isMusicSearching = false,
@@ -399,19 +451,20 @@ constructor(
     fun selectLibrary(library: AfinityCollection?) {
         searchJob?.cancel()
 
+        episodeSearchJob?.cancel()
+
         _uiState.value =
             _uiState.value.copy(
                 selectedLibrary = library,
-                isAudiobookshelfSearchMode = false,
+                selectedFilter = resolveFilterFor(library, _uiState.value.selectedFilter),
                 audiobookshelfSearchResults = emptyList(),
                 searchResults = emptyList(),
+                episodeResults = emptyList(),
             )
 
         loadGenres()
 
-        if (_uiState.value.searchQuery.isNotEmpty()) {
-            performSearch()
-        }
+        runSearchNow()
     }
 
     fun performSearch() {
@@ -422,11 +475,17 @@ constructor(
 
         val selectedLibrary = _uiState.value.selectedLibrary
         val itemTypes =
-            when (selectedLibrary?.type) {
-                CollectionType.Movies -> listOf("MOVIE", "BOX_SET")
-                CollectionType.TvShows -> listOf("SERIES", "EPISODE")
-                CollectionType.BoxSets -> listOf("BOX_SET")
-                else -> listOf("MOVIE", "SERIES", "EPISODE", "BOX_SET")
+            when (_uiState.value.selectedFilter) {
+                SearchFilter.MOVIES -> listOf("MOVIE")
+                SearchFilter.TV_SHOWS -> listOf("SERIES")
+                SearchFilter.BOX_SETS -> listOf("BOX_SET")
+                else ->
+                    when (selectedLibrary?.type) {
+                        CollectionType.Movies -> listOf("MOVIE", "BOX_SET")
+                        CollectionType.TvShows -> listOf("SERIES")
+                        CollectionType.BoxSets -> listOf("BOX_SET")
+                        else -> listOf("MOVIE", "SERIES", "BOX_SET")
+                    }
             }
 
         searchJob = viewModelScope.launch {
@@ -438,15 +497,15 @@ constructor(
                         searchTerm = query,
                         includeItemTypes = itemTypes,
                         limit = 50,
-                        sortBy = SortBy.NAME,
-                        sortDescending = false,
                         fields = FieldSets.SEARCH_RESULTS,
+                        enableImageTypes = listOf("PRIMARY"),
                     )
 
                 val afinityItems =
                     withContext(Dispatchers.Default) {
                         yield()
 
+                        val baseUrl = mediaRepository.getBaseUrl()
                         val mappedItems =
                             results.items
                                 ?.filter {
@@ -455,12 +514,10 @@ constructor(
                                 }
                                 ?.mapNotNull { baseItemDto ->
                                     try {
-                                        val item =
-                                            baseItemDto.toAfinityItem(mediaRepository.getBaseUrl())
+                                        val item = baseItemDto.toAfinityItem(baseUrl)
                                         when (item) {
                                             is AfinityMovie,
                                             is AfinityShow,
-                                            is AfinityEpisode,
                                             is AfinityBoxSet -> item
                                             else -> null
                                         }
@@ -472,16 +529,7 @@ constructor(
 
                         yield()
 
-                        mappedItems.sortedBy { item ->
-                            val name = item.name.lowercase()
-                            val queryLower = query.lowercase()
-                            when {
-                                name == queryLower -> 0
-                                name.startsWith(queryLower) -> 1
-                                name.contains(queryLower) -> 2
-                                else -> 3
-                            }
-                        }
+                        mappedItems.sortedByRelevance(query)
                     }
 
                 _uiState.value =
@@ -499,6 +547,97 @@ constructor(
         }
     }
 
+    fun performEpisodeSearch() {
+        val query = _uiState.value.searchQuery.trim()
+        if (query.isEmpty()) return
+
+        val selectedLibrary = _uiState.value.selectedLibrary
+        if (selectedLibrary != null && selectedLibrary.type != CollectionType.TvShows) {
+            _uiState.update { it.copy(episodeResults = emptyList(), isEpisodeSearching = false) }
+            return
+        }
+
+        episodeSearchJob?.cancel()
+        episodeSearchJob = viewModelScope.launch {
+            try {
+                _uiState.update { it.copy(isEpisodeSearching = true) }
+                val results =
+                    mediaRepository.getItems(
+                        parentId = selectedLibrary?.id,
+                        searchTerm = query,
+                        includeItemTypes = listOf("EPISODE"),
+                        limit = 20,
+                        fields = FieldSets.SEARCH_RESULTS,
+                        enableImageTypes = listOf("PRIMARY"),
+                    )
+
+                val episodes =
+                    withContext(Dispatchers.Default) {
+                        yield()
+
+                        val baseUrl = mediaRepository.getBaseUrl()
+                        results.items
+                            ?.filter {
+                                it.locationType != org.jellyfin.sdk.model.api.LocationType.VIRTUAL
+                            }
+                            ?.mapNotNull { baseItemDto ->
+                                runCatching { baseItemDto.toAfinityItem(baseUrl) }.getOrNull()
+                                    as? AfinityEpisode
+                            }
+                            ?.sortedByRelevance(query) ?: emptyList()
+                    }
+
+                _uiState.update { it.copy(episodeResults = episodes, isEpisodeSearching = false) }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+
+                Timber.e(e, "Failed to search episodes")
+                _uiState.update {
+                    it.copy(episodeResults = emptyList(), isEpisodeSearching = false)
+                }
+            }
+        }
+    }
+
+    private fun resolveFilterFor(
+        library: AfinityCollection?,
+        current: SearchFilter,
+    ): SearchFilter {
+        val allowed =
+            when (library?.type) {
+                CollectionType.Movies ->
+                    listOf(SearchFilter.ALL, SearchFilter.MOVIES, SearchFilter.BOX_SETS)
+                CollectionType.TvShows ->
+                    listOf(SearchFilter.ALL, SearchFilter.TV_SHOWS, SearchFilter.EPISODES)
+                CollectionType.BoxSets -> listOf(SearchFilter.ALL, SearchFilter.BOX_SETS)
+                CollectionType.Music -> listOf(SearchFilter.MUSIC)
+                else -> SearchFilter.entries
+            }
+
+        return if (current in allowed) current else allowed.first()
+    }
+
+    private fun CollectionType?.genreItemTypes(): List<String> =
+        when (this) {
+            CollectionType.Movies -> listOf("MOVIE", "BOX_SET")
+            CollectionType.TvShows -> listOf("SERIES")
+            CollectionType.BoxSets -> listOf("BOX_SET")
+            else -> listOf("MOVIE", "SERIES", "BOX_SET")
+        }
+
+    private fun <T : AfinityItem> List<T>.sortedByRelevance(query: String): List<T> {
+        val queryLower = query.lowercase()
+        return sortedBy { item ->
+            val name = item.name.lowercase()
+            when {
+                name == queryLower -> 0
+                name.startsWith(queryLower) -> 1
+                name.contains(queryLower) -> 2
+                else -> 3
+            }
+        }
+    }
+
     fun clearSearch() {
         cancelAllSearchJobs()
         _uiState.value =
@@ -506,6 +645,8 @@ constructor(
                 searchQuery = "",
                 searchResults = emptyList(),
                 isSearching = false,
+                episodeResults = emptyList(),
+                isEpisodeSearching = false,
                 jellyseerrSearchResults = emptyList(),
                 isJellyseerrSearching = false,
                 audiobookshelfSearchResults = emptyList(),
@@ -533,26 +674,6 @@ constructor(
                 _uiState.update { it.copy(musicSearchResults = null, isMusicSearching = false) }
                 Timber.e(e, "Music search failed")
             }
-        }
-    }
-
-    fun selectJellyseerrSearchMode() {
-        cancelAllSearchJobs()
-        _uiState.update {
-            it.copy(
-                isJellyseerrSearchMode = true,
-                isAudiobookshelfSearchMode = false,
-                selectedLibrary = null,
-                audiobookshelfSearchResults = emptyList(),
-                searchResults = emptyList(),
-                jellyseerrSearchResults = emptyList(),
-            )
-        }
-
-        loadCurrentUser()
-
-        if (_uiState.value.searchQuery.isNotEmpty()) {
-            performJellyseerrSearch()
         }
     }
 
@@ -638,36 +759,76 @@ constructor(
         _uiState.update { it.copy(selectedTvdbId = candidate.tvdbId) }
     }
 
-    fun selectJellyfinSearchMode() {
-        cancelAllSearchJobs()
-        _uiState.update {
-            it.copy(isJellyseerrSearchMode = false, isAudiobookshelfSearchMode = false)
-        }
+    fun selectFilter(filter: SearchFilter) {
+        if (_uiState.value.selectedFilter == filter) return
 
-        if (_uiState.value.searchQuery.isNotEmpty()) {
-            performSearch()
-            performAudiobookshelfSearch()
-            performJellyseerrSearch()
-        }
-    }
-
-    fun selectAudiobookshelfSearchMode() {
         cancelAllSearchJobs()
         _uiState.update {
             it.copy(
-                isAudiobookshelfSearchMode = true,
-                isJellyseerrSearchMode = false,
-                selectedLibrary = null,
-                jellyseerrSearchResults = emptyList(),
+                selectedFilter = filter,
+                selectedLibrary =
+                    if (filter == SearchFilter.REQUEST || filter == SearchFilter.AUDIOBOOKS) null
+                    else it.selectedLibrary,
                 searchResults = emptyList(),
+                episodeResults = emptyList(),
+                jellyseerrSearchResults = emptyList(),
                 audiobookshelfSearchResults = emptyList(),
+                musicSearchResults = null,
+                isSearching = false,
+                isEpisodeSearching = false,
+                isJellyseerrSearching = false,
+                isAudiobookshelfSearching = false,
+                isMusicSearching = false,
             )
         }
 
-        loadAudiobookshelfGenres()
+        when (filter) {
+            SearchFilter.REQUEST -> loadCurrentUser()
+            SearchFilter.AUDIOBOOKS -> loadAudiobookshelfGenres()
+            else -> loadGenres()
+        }
 
-        if (_uiState.value.searchQuery.isNotEmpty()) {
-            performAudiobookshelfSearch()
+        runSearchNow()
+    }
+
+    fun selectAudiobookshelfLibrary(libraryId: String?) {
+        if (_uiState.value.selectedAudiobookshelfLibraryId == libraryId) return
+
+        audiobookshelfSearchJob?.cancel()
+        _uiState.update {
+            it.copy(
+                selectedAudiobookshelfLibraryId = libraryId,
+                audiobookshelfSearchResults = emptyList(),
+                isAudiobookshelfSearching = false,
+            )
+        }
+
+        runSearchNow()
+    }
+
+    fun runSearchNow() {
+        if (_uiState.value.searchQuery.trim().length < 2) return
+
+        viewModelScope.launch { runSearchForCurrentFilter() }
+    }
+
+    private suspend fun runSearchForCurrentFilter() = coroutineScope {
+        when (_uiState.value.selectedFilter) {
+            SearchFilter.REQUEST -> performJellyseerrSearch()
+            SearchFilter.AUDIOBOOKS -> performAudiobookshelfSearch()
+            SearchFilter.MUSIC -> performMusicSearch()
+            SearchFilter.EPISODES -> performEpisodeSearch()
+            SearchFilter.MOVIES,
+            SearchFilter.TV_SHOWS,
+            SearchFilter.BOX_SETS -> performSearch()
+            SearchFilter.ALL -> {
+                performSearch()
+                searchJob?.join()
+                launch { performEpisodeSearch() }
+                launch { performAudiobookshelfSearch() }
+                launch { performJellyseerrSearch() }
+                launch { performMusicSearch() }
+            }
         }
     }
 
@@ -689,16 +850,26 @@ constructor(
                         audiobookshelfRepository.refreshLibraries().getOrDefault(emptyList())
                 }
 
+                val isFocused = _uiState.value.selectedFilter == SearchFilter.AUDIOBOOKS
+                val scopedId = _uiState.value.selectedAudiobookshelfLibraryId
+                val targetLibraries =
+                    if (isFocused && scopedId != null) {
+                        libraries.filter { it.id == scopedId }.ifEmpty { libraries }
+                    } else {
+                        libraries
+                    }
+                val limit = if (isFocused) 12 else 6
+
                 Timber.d(
-                    "Searching ${libraries.size} libraries: ${libraries.map { "${it.name}(${it.id})" }}"
+                    "Searching ${targetLibraries.size} libraries (limit $limit): ${targetLibraries.map { it.name }}"
                 )
 
                 val results =
-                    libraries
+                    targetLibraries
                         .map { library ->
                             async {
                                 audiobookshelfRepository
-                                    .searchLibrary(library.id, query)
+                                    .searchLibrary(library.id, query, limit)
                                     .onSuccess { response ->
                                         Timber.d(
                                             "Library '${library.name}': ${response.book?.size ?: 0} books, ${response.podcast?.size ?: 0} podcasts"
@@ -1205,6 +1376,17 @@ constructor(
             _uiState.update { it.copy(searchResults = mutableResults) }
             Timber.d("Updated search result: ${updatedItem.name}")
         }
+
+        if (updatedItem is AfinityEpisode) {
+            val currentEpisodes = _uiState.value.episodeResults
+            val episodeIndex = currentEpisodes.indexOfFirst { it.id == updatedItem.id }
+
+            if (episodeIndex != -1) {
+                val mutableEpisodes = currentEpisodes.toMutableList()
+                mutableEpisodes[episodeIndex] = updatedItem
+                _uiState.update { it.copy(episodeResults = mutableEpisodes) }
+            }
+        }
     }
 }
 
@@ -1212,14 +1394,17 @@ data class SearchUiState(
     val searchQuery: String = "",
     val searchResults: List<AfinityItem> = emptyList(),
     val isSearching: Boolean = false,
+    val episodeResults: List<AfinityEpisode> = emptyList(),
+    val isEpisodeSearching: Boolean = false,
     val libraries: List<AfinityCollection> = emptyList(),
     val selectedLibrary: AfinityCollection? = null,
+    val selectedFilter: SearchFilter = SearchFilter.ALL,
+    val audiobookshelfLibraries: List<Library> = emptyList(),
+    val selectedAudiobookshelfLibraryId: String? = null,
     val genres: List<String> = emptyList(),
     val audiobookshelfGenres: List<String> = emptyList(),
-    val isJellyseerrSearchMode: Boolean = false,
     val jellyseerrSearchResults: List<SearchResultItem> = emptyList(),
     val isJellyseerrSearching: Boolean = false,
-    val isAudiobookshelfSearchMode: Boolean = false,
     val audiobookshelfSearchResults: List<LibraryItem> = emptyList(),
     val isAudiobookshelfSearching: Boolean = false,
     val audiobookshelfServerUrl: String? = null,
@@ -1249,7 +1434,24 @@ data class SearchUiState(
     val selectedRequestUser: JellyseerrUser? = null,
     val tvdbCandidates: List<SonarrSeries> = emptyList(),
     val selectedTvdbId: Int? = null,
-)
+) {
+    val isJellyseerrSearchMode: Boolean
+        get() = selectedFilter == SearchFilter.REQUEST
+
+    val isAudiobookshelfSearchMode: Boolean
+        get() = selectedFilter == SearchFilter.AUDIOBOOKS
+}
+
+enum class SearchFilter {
+    ALL,
+    MOVIES,
+    TV_SHOWS,
+    EPISODES,
+    BOX_SETS,
+    MUSIC,
+    REQUEST,
+    AUDIOBOOKS,
+}
 
 data class PendingRequestSearch(
     val tmdbId: Int,

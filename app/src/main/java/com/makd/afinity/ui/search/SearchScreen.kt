@@ -34,9 +34,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -79,6 +82,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
+import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.coverUrl
 import com.makd.afinity.data.models.common.CollectionType
@@ -177,14 +181,7 @@ fun SearchScreen(
             focusRequester = focusRequester,
             onSearch = {
                 keyboardController?.hide()
-                when {
-                    uiState.isJellyseerrSearchMode -> viewModel.performJellyseerrSearch()
-                    uiState.isAudiobookshelfSearchMode -> viewModel.performAudiobookshelfSearch()
-                    else -> {
-                        viewModel.performSearch()
-                        viewModel.performAudiobookshelfSearch()
-                    }
-                }
+                viewModel.runSearchNow()
             },
         )
 
@@ -193,17 +190,17 @@ fun SearchScreen(
                 isJellyseerrAuthenticated ||
                 isAudiobookshelfAuthenticated
         ) {
-            HorizontalLibraryFilters(
+            SearchFilterRow(
                 libraries = uiState.libraries,
                 selectedLibrary = uiState.selectedLibrary,
+                selectedFilter = uiState.selectedFilter,
+                audiobookshelfLibraries = uiState.audiobookshelfLibraries,
+                selectedAudiobookshelfLibraryId = uiState.selectedAudiobookshelfLibraryId,
                 isJellyseerrAuthenticated = isJellyseerrAuthenticated,
-                isJellyseerrSearchMode = uiState.isJellyseerrSearchMode,
                 isAudiobookshelfAuthenticated = isAudiobookshelfAuthenticated,
-                isAudiobookshelfSearchMode = uiState.isAudiobookshelfSearchMode,
                 onLibrarySelected = viewModel::selectLibrary,
-                onJellyseerrSearchSelected = viewModel::selectJellyseerrSearchMode,
-                onJellyfinSearchSelected = viewModel::selectJellyfinSearchMode,
-                onAudiobookshelfSearchSelected = viewModel::selectAudiobookshelfSearchMode,
+                onAudiobookshelfLibrarySelected = viewModel::selectAudiobookshelfLibrary,
+                onFilterSelected = viewModel::selectFilter,
             )
         }
 
@@ -214,12 +211,19 @@ fun SearchScreen(
                     uiState.selectedLibrary == null
             val allLoading =
                 if (isAllMode) {
-                    uiState.isSearching &&
-                        uiState.isAudiobookshelfSearching &&
+                    (uiState.isSearching ||
+                        uiState.isEpisodeSearching ||
+                        uiState.isAudiobookshelfSearching ||
+                        uiState.isJellyseerrSearching ||
+                        uiState.isMusicSearching) &&
                         uiState.searchResults.isEmpty() &&
-                        uiState.audiobookshelfSearchResults.isEmpty()
+                        uiState.episodeResults.isEmpty() &&
+                        uiState.audiobookshelfSearchResults.isEmpty() &&
+                        uiState.jellyseerrSearchResults.isEmpty() &&
+                        uiState.musicSearchResults == null
                 } else {
                     uiState.isSearching ||
+                        uiState.isEpisodeSearching ||
                         uiState.isJellyseerrSearching ||
                         uiState.isAudiobookshelfSearching
                 }
@@ -298,11 +302,14 @@ fun SearchScreen(
 
                 isAllMode &&
                     (uiState.searchResults.isNotEmpty() ||
+                        uiState.episodeResults.isNotEmpty() ||
                         uiState.audiobookshelfSearchResults.isNotEmpty() ||
                         uiState.jellyseerrSearchResults.isNotEmpty() ||
                         uiState.musicSearchResults != null) -> {
                     CombinedSearchResultsContent(
                         jellyfinResults = uiState.searchResults,
+                        episodeResults = uiState.episodeResults,
+                        isEpisodeSearching = uiState.isEpisodeSearching,
                         audiobookshelfResults = uiState.audiobookshelfSearchResults,
                         jellyseerrResults = uiState.jellyseerrSearchResults,
                         musicResults = uiState.musicSearchResults,
@@ -327,9 +334,13 @@ fun SearchScreen(
                     )
                 }
 
-                uiState.searchResults.isNotEmpty() -> {
+                uiState.searchResults.isNotEmpty() || uiState.episodeResults.isNotEmpty() -> {
+                    val scopedResults =
+                        remember(uiState.searchResults, uiState.episodeResults) {
+                            uiState.searchResults + uiState.episodeResults
+                        }
                     SearchResultsContent(
-                        results = uiState.searchResults,
+                        results = scopedResults,
                         onItemClick = onItemClick,
                         onEpisodeClick = { episode -> viewModel.selectEpisode(episode) },
                     )
@@ -370,8 +381,7 @@ fun SearchScreen(
                 canSelectSeasons = uiState.publicSettings?.partialRequestsEnabled ?: true,
                 quota =
                     uiState.userQuota?.let {
-                        if (uiState.pendingRequest!!.mediaType == MediaType.TV) it.tv
-                        else it.movie
+                        if (uiState.pendingRequest!!.mediaType == MediaType.TV) it.tv else it.movie
                     },
                 existingStatus = uiState.pendingRequest!!.existingStatus,
                 isLoading = uiState.isCreatingRequest,
@@ -521,74 +531,194 @@ private fun SearchTopBar(
     }
 }
 
+private data class ScopeOption(val id: String, val name: String)
+
 @Composable
-private fun HorizontalLibraryFilters(
+private fun SearchFilterRow(
     libraries: List<AfinityCollection>,
     selectedLibrary: AfinityCollection?,
+    selectedFilter: SearchFilter,
+    audiobookshelfLibraries: List<Library>,
+    selectedAudiobookshelfLibraryId: String?,
     isJellyseerrAuthenticated: Boolean,
-    isJellyseerrSearchMode: Boolean,
     isAudiobookshelfAuthenticated: Boolean,
-    isAudiobookshelfSearchMode: Boolean,
     onLibrarySelected: (AfinityCollection?) -> Unit,
-    onJellyseerrSearchSelected: () -> Unit,
-    onJellyfinSearchSelected: () -> Unit,
-    onAudiobookshelfSearchSelected: () -> Unit,
+    onAudiobookshelfLibrarySelected: (String?) -> Unit,
+    onFilterSelected: (SearchFilter) -> Unit,
 ) {
+    val hasMusicLibrary = remember(libraries) { libraries.any { it.type == CollectionType.Music } }
+
+    val isAudiobooksScope = selectedFilter == SearchFilter.AUDIOBOOKS
+
+    val scopeOptions =
+        remember(libraries, audiobookshelfLibraries, isAudiobooksScope, selectedFilter) {
+            when {
+                selectedFilter == SearchFilter.REQUEST -> emptyList()
+                isAudiobooksScope -> audiobookshelfLibraries.map { ScopeOption(it.id, it.name) }
+                else -> libraries.map { ScopeOption(it.id.toString(), it.name) }
+            }
+        }
+
+    val scopeAllLabel =
+        if (isAudiobooksScope) R.string.filter_all_audiobooks else R.string.filter_all_libraries
+
+    val scopeSelectedId =
+        if (isAudiobooksScope) selectedAudiobookshelfLibraryId else selectedLibrary?.id?.toString()
+
+    val onScopeSelected: (String?) -> Unit = { id ->
+        if (isAudiobooksScope) {
+            onAudiobookshelfLibrarySelected(id)
+        } else {
+            onLibrarySelected(libraries.firstOrNull { it.id.toString() == id })
+        }
+    }
+
+    val chips =
+        remember(
+            selectedLibrary,
+            hasMusicLibrary,
+            isJellyseerrAuthenticated,
+            isAudiobookshelfAuthenticated,
+        ) {
+            buildList {
+                add(SearchFilter.ALL to R.string.filter_all)
+                when (selectedLibrary?.type) {
+                    CollectionType.Movies -> {
+                        add(SearchFilter.MOVIES to R.string.section_movies)
+                        add(SearchFilter.BOX_SETS to R.string.section_boxset)
+                    }
+                    CollectionType.TvShows -> {
+                        add(SearchFilter.TV_SHOWS to R.string.section_tv_shows)
+                        add(SearchFilter.EPISODES to R.string.section_episodes)
+                    }
+                    CollectionType.BoxSets -> add(SearchFilter.BOX_SETS to R.string.section_boxset)
+                    CollectionType.Music -> add(SearchFilter.MUSIC to R.string.section_music)
+                    else -> {
+                        if (isJellyseerrAuthenticated) {
+                            add(SearchFilter.REQUEST to R.string.filter_request)
+                        }
+                        if (isAudiobookshelfAuthenticated) {
+                            add(SearchFilter.AUDIOBOOKS to R.string.filter_audiobooks)
+                        }
+                        add(SearchFilter.MOVIES to R.string.section_movies)
+                        add(SearchFilter.TV_SHOWS to R.string.section_tv_shows)
+                        add(SearchFilter.EPISODES to R.string.section_episodes)
+                        add(SearchFilter.BOX_SETS to R.string.section_boxset)
+                        if (hasMusicLibrary) add(SearchFilter.MUSIC to R.string.section_music)
+                    }
+                }
+            }
+        }
+
     LazyRow(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(horizontal = 4.dp),
     ) {
-        item {
-            LibraryFilterChip(
-                text = stringResource(R.string.filter_all),
-                isSelected =
-                    !isJellyseerrSearchMode &&
-                        !isAudiobookshelfSearchMode &&
-                        selectedLibrary == null,
-                onClick = {
-                    onJellyfinSearchSelected()
-                    onLibrarySelected(null)
-                },
-                showCheckIcon = true,
-            )
-        }
-
-        if (isJellyseerrAuthenticated) {
-            item {
-                LibraryFilterChip(
-                    text = stringResource(R.string.filter_request),
-                    isSelected = isJellyseerrSearchMode,
-                    onClick = onJellyseerrSearchSelected,
-                    showCheckIcon = false,
+        if (scopeOptions.size > 1) {
+            item(key = "library_scope") {
+                ScopeChip(
+                    allLabel = stringResource(scopeAllLabel),
+                    options = scopeOptions,
+                    selectedId = scopeSelectedId,
+                    onSelect = onScopeSelected,
                 )
             }
         }
 
-        if (isAudiobookshelfAuthenticated) {
-            item {
-                LibraryFilterChip(
-                    text = stringResource(R.string.filter_audiobooks),
-                    isSelected = isAudiobookshelfSearchMode,
-                    onClick = onAudiobookshelfSearchSelected,
-                    showCheckIcon = false,
+        items(chips, key = { it.first.name }) { (filter, labelRes) ->
+            LibraryFilterChip(
+                text = stringResource(labelRes),
+                isSelected = selectedFilter == filter,
+                onClick = { onFilterSelected(filter) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScopeChip(
+    allLabel: String,
+    options: List<ScopeOption>,
+    selectedId: String?,
+    onSelect: (String?) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedName = options.firstOrNull { it.id == selectedId }?.name
+
+    Box {
+        FilterChip(
+            onClick = { expanded = true },
+            label = {
+                Text(
+                    text = selectedName ?: allLabel,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            },
+            selected = selectedName != null,
+            trailingIcon = {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+            },
+            shape = RoundedCornerShape(20.dp),
+            colors =
+                FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    selectedTrailingIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                ),
+            border =
+                FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = selectedName != null,
+                    borderColor = MaterialTheme.colorScheme.outlineVariant,
+                    selectedBorderColor = Color.Transparent,
+                ),
+        )
+
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(allLabel) },
+                onClick = {
+                    expanded = false
+                    onSelect(null)
+                },
+                trailingIcon = {
+                    if (selectedId == null) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_check),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                },
+            )
+
+            HorizontalDivider()
+
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option.name) },
+                    onClick = {
+                        expanded = false
+                        onSelect(option.id)
+                    },
+                    trailingIcon = {
+                        if (selectedId == option.id) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_check),
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    },
                 )
             }
-        }
-
-        items(libraries, key = { it.id }) { library ->
-            LibraryFilterChip(
-                text = library.name,
-                isSelected =
-                    !isJellyseerrSearchMode &&
-                        !isAudiobookshelfSearchMode &&
-                        selectedLibrary?.id == library.id,
-                onClick = {
-                    onJellyfinSearchSelected()
-                    onLibrarySelected(library)
-                },
-                showCheckIcon = false,
-            )
         }
     }
 }
@@ -667,12 +797,7 @@ private fun SearchResultsContent(
 }
 
 @Composable
-private fun LibraryFilterChip(
-    text: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    showCheckIcon: Boolean = false,
-) {
+private fun LibraryFilterChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
     FilterChip(
         onClick = onClick,
         label = {
@@ -684,22 +809,18 @@ private fun LibraryFilterChip(
             )
         },
         selected = isSelected,
-        leadingIcon =
-            if (isSelected && showCheckIcon) {
-                {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_check),
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                    )
-                }
-            } else null,
         shape = RoundedCornerShape(20.dp),
         colors =
             FilterChipDefaults.filterChipColors(
-                selectedContainerColor = MaterialTheme.colorScheme.primary,
-                selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary,
+                selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ),
+        border =
+            FilterChipDefaults.filterChipBorder(
+                enabled = true,
+                selected = isSelected,
+                borderColor = MaterialTheme.colorScheme.outlineVariant,
+                selectedBorderColor = Color.Transparent,
             ),
     )
 }
@@ -1336,8 +1457,8 @@ private fun SearchSectionHeader(title: String, isLoading: Boolean = false) {
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.primary,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (isLoading) {
             CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
@@ -1348,6 +1469,8 @@ private fun SearchSectionHeader(title: String, isLoading: Boolean = false) {
 @Composable
 private fun CombinedSearchResultsContent(
     jellyfinResults: List<AfinityItem>,
+    episodeResults: List<AfinityEpisode>,
+    isEpisodeSearching: Boolean,
     audiobookshelfResults: List<LibraryItem>,
     jellyseerrResults: List<SearchResultItem>,
     musicResults: MusicSearchResults?,
@@ -1369,7 +1492,6 @@ private fun CombinedSearchResultsContent(
         remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityBoxSet>() }
     val movies = remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityMovie>() }
     val shows = remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityShow>() }
-    val episodes = remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityEpisode>() }
     val playerOffset = LocalPlayerOffset.current
 
     LazyColumn(
@@ -1378,31 +1500,36 @@ private fun CombinedSearchResultsContent(
             PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp + playerOffset),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        if (collections.isNotEmpty()) {
-            item { SearchSectionHeader(stringResource(R.string.media_type_collection) + "s") }
-            items(collections, key = { "collection_${it.id}" }) { item ->
-                SearchResultItem(item = item, onClick = { onItemClick(item) })
-            }
-        }
-
         if (movies.isNotEmpty()) {
-            item { SearchSectionHeader(stringResource(R.string.media_type_movie) + "s") }
+            item { SearchSectionHeader(stringResource(R.string.section_movies)) }
             items(movies, key = { "movie_${it.id}" }) { item ->
                 SearchResultItem(item = item, onClick = { onItemClick(item) })
             }
         }
 
         if (shows.isNotEmpty()) {
-            item { SearchSectionHeader(stringResource(R.string.media_type_tv_show) + "s") }
+            item { SearchSectionHeader(stringResource(R.string.section_tv_shows)) }
             items(shows, key = { "show_${it.id}" }) { item ->
                 SearchResultItem(item = item, onClick = { onItemClick(item) })
             }
         }
 
-        if (episodes.isNotEmpty()) {
-            item { SearchSectionHeader(stringResource(R.string.media_type_episode) + "s") }
-            items(episodes, key = { "episode_${it.id}" }) { item ->
+        if (episodeResults.isNotEmpty() || isEpisodeSearching) {
+            item {
+                SearchSectionHeader(
+                    stringResource(R.string.section_episodes),
+                    isLoading = isEpisodeSearching,
+                )
+            }
+            items(episodeResults, key = { "episode_${it.id}" }) { item ->
                 SearchResultItem(item = item, onClick = { onEpisodeClick(item) })
+            }
+        }
+
+        if (collections.isNotEmpty()) {
+            item { SearchSectionHeader(stringResource(R.string.section_boxset)) }
+            items(collections, key = { "collection_${it.id}" }) { item ->
+                SearchResultItem(item = item, onClick = { onItemClick(item) })
             }
         }
 
@@ -1444,13 +1571,18 @@ private fun CombinedSearchResultsContent(
                 musicAlbums.isNotEmpty() ||
                 musicArtists.isNotEmpty()
         ) {
-            item { SearchSectionHeader("Music", isLoading = isMusicSearching) }
+            item {
+                SearchSectionHeader(
+                    stringResource(R.string.section_music),
+                    isLoading = isMusicSearching,
+                )
+            }
         }
 
         if (musicTracks.isNotEmpty()) {
             item {
                 Text(
-                    "Tracks",
+                    stringResource(R.string.music_tab_tracks),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
@@ -1470,7 +1602,7 @@ private fun CombinedSearchResultsContent(
         if (musicAlbums.isNotEmpty()) {
             item {
                 Text(
-                    "Albums",
+                    stringResource(R.string.music_tab_albums),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
@@ -1518,7 +1650,7 @@ private fun CombinedSearchResultsContent(
         if (musicArtists.isNotEmpty()) {
             item {
                 Text(
-                    "Artists",
+                    stringResource(R.string.music_tab_artists),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
@@ -1582,7 +1714,7 @@ private fun MusicSearchResultsContent(
         contentPadding = PaddingValues(bottom = 16.dp + playerOffset),
     ) {
         if (results.tracks.isNotEmpty()) {
-            item { SearchSectionHeader("Tracks") }
+            item { SearchSectionHeader(stringResource(R.string.music_tab_tracks)) }
             itemsIndexed(results.tracks, key = { _, t -> "search_track_${t.id}" }) { _, track ->
                 MusicTrackRow(
                     track = track,
@@ -1597,7 +1729,7 @@ private fun MusicSearchResultsContent(
         }
 
         if (results.albums.isNotEmpty()) {
-            item { SearchSectionHeader("Albums") }
+            item { SearchSectionHeader(stringResource(R.string.music_tab_albums)) }
             items(results.albums, key = { "search_album_${it.id}" }) { album ->
                 Row(
                     modifier =
@@ -1633,7 +1765,7 @@ private fun MusicSearchResultsContent(
         }
 
         if (results.artists.isNotEmpty()) {
-            item { SearchSectionHeader("Artists") }
+            item { SearchSectionHeader(stringResource(R.string.music_tab_artists)) }
             items(results.artists, key = { "search_artist_${it.id}" }) { artist ->
                 Row(
                     modifier =
@@ -1661,7 +1793,7 @@ private fun MusicSearchResultsContent(
         }
 
         if (results.playlists.isNotEmpty()) {
-            item { SearchSectionHeader("Playlists") }
+            item { SearchSectionHeader(stringResource(R.string.music_tab_playlists)) }
             items(results.playlists, key = { "search_playlist_${it.id}" }) { playlist ->
                 Row(
                     modifier =
