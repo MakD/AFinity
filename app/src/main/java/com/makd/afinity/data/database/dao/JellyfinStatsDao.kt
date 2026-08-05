@@ -14,4 +14,9 @@ interface JellyfinStatsDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertStats(stats: JellyfinStatsCacheEntity)
+
+    @Query("DELETE FROM jellyfin_stats_cache") suspend fun clearAll()
+
+    @Query("SELECT (SELECT COUNT(*) FROM jellyfin_stats_cache)")
+    suspend fun cachedEntryCount(): Int
 }

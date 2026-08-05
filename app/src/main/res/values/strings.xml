@@ -158,6 +158,9 @@
     <string name="cache_kind_person_details">Person details</string>
     <string name="cache_kind_box_sets">Collections</string>
     <string name="cache_entries_fmt">%1$d entries</string>
+    <string name="cache_section_jellyfin_metadata">Jellyfin metadata</string>
+    <string name="cache_section_jellyseerr">Jellyseerr requests</string>
+    <string name="cache_section_audiobookshelf">Audiobookshelf data</string>
     <string name="pref_clear_cache_confirm">Clear cached data?</string>
     <string name="pref_clear_cache_message">Downloads, settings and your custom sections are not affected. Home rows will rebuild the next time they load.</string>
     <string name="pref_clear_cache_done">Cached data cleared</string>

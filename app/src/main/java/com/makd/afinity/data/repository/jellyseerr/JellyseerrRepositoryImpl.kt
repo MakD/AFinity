@@ -323,6 +323,10 @@ constructor(
         Timber.d("Jellyseerr Context Switched. Authenticated: ${_isAuthenticated.value}")
     }
 
+    override fun clearCachedSettings() {
+        cachedPublicSettings = null
+    }
+
     override fun clearActiveSession() {
         activeContext = null
         cachedPublicSettings = null

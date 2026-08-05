@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -73,8 +74,7 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
-import com.makd.afinity.data.repository.CacheKind
-import com.makd.afinity.data.repository.CacheStore
+import com.makd.afinity.data.repository.CacheSection
 import com.makd.afinity.data.repository.CacheUsage
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
@@ -123,6 +123,7 @@ fun DownloadSettingsScreen(
         } ?: stringResource(R.string.pref_clear_cache_summary)
 
     val cacheClearedMessage = stringResource(R.string.pref_clear_cache_done)
+    var selectedSections by remember { mutableStateOf(CacheSection.entries.toSet()) }
     if (showClearCacheDialog) {
         AlertDialog(
             onDismissRequest = { if (!isClearingCache) showClearCacheDialog = false },
@@ -130,18 +131,28 @@ fun DownloadSettingsScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(text = stringResource(R.string.pref_clear_cache_message))
-                    cacheUsage?.let { usage -> CacheUsageBreakdown(usage = usage, context = context) }
+                    CacheSectionPicker(
+                        usage = cacheUsage,
+                        selected = selectedSections,
+                        enabled = !isClearingCache,
+                        onToggle = { section ->
+                            selectedSections =
+                                if (section in selectedSections) selectedSections - section
+                                else selectedSections + section
+                        },
+                        context = context,
+                    )
                 }
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.clearCachedData {
+                        viewModel.clearCachedData(selectedSections) {
                             showClearCacheDialog = false
                             scope.launch { snackbarHostState.showSnackbar(cacheClearedMessage) }
                         }
                     },
-                    enabled = !isClearingCache,
+                    enabled = !isClearingCache && selectedSections.isNotEmpty(),
                 ) {
                     Text(text = stringResource(R.string.pref_clear_cache))
                 }
@@ -1669,59 +1680,63 @@ fun VideoCacheSettingsCard(
 }
 
 @Composable
-private fun CacheUsageBreakdown(usage: CacheUsage, context: android.content.Context) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        CacheStore.entries.forEach { store ->
-            val storeBytes = usage.bytes[store] ?: 0L
-            if (storeBytes > 0L) {
-                CacheUsageRow(
-                    label = stringResource(store.labelRes()),
-                    value =
-                        android.text.format.Formatter.formatShortFileSize(context, storeBytes),
+private fun CacheSectionPicker(
+    usage: CacheUsage?,
+    selected: Set<CacheSection>,
+    enabled: Boolean,
+    onToggle: (CacheSection) -> Unit,
+    context: android.content.Context,
+) {
+    Column {
+        CacheSection.entries.forEach { section ->
+            val bytes = section.stores.sumOf { usage?.bytes?.get(it) ?: 0L }
+            val entries = section.kinds.sumOf { usage?.entries?.get(it) ?: 0 }
+            if (bytes <= 0L && entries <= 0) return@forEach
+
+            val value =
+                if (bytes > 0L) {
+                    android.text.format.Formatter.formatShortFileSize(context, bytes)
+                } else {
+                    stringResource(R.string.cache_entries_fmt, entries)
+                }
+
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .clickable(enabled = enabled) { onToggle(section) }
+                        .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Checkbox(
+                    checked = section in selected,
+                    onCheckedChange = { onToggle(section) },
+                    enabled = enabled,
+                    modifier = Modifier.size(24.dp),
                 )
-            }
-        }
-        CacheKind.entries.forEach { kind ->
-            val count = usage.entries[kind] ?: 0
-            if (count > 0) {
-                CacheUsageRow(
-                    label = stringResource(kind.labelRes()),
-                    value = stringResource(R.string.cache_entries_fmt, count),
+                Text(
+                    text = stringResource(section.labelRes()),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
     }
 }
 
-@Composable
-private fun CacheUsageRow(label: String, value: String) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-    }
-}
-
-private fun CacheStore.labelRes(): Int =
+private fun CacheSection.labelRes(): Int =
     when (this) {
-        CacheStore.IMAGES -> R.string.cache_kind_images
-        CacheStore.VIDEO -> R.string.cache_store_video
-        CacheStore.NETWORK -> R.string.cache_store_network
-        CacheStore.PLAYER -> R.string.cache_store_player
-    }
-
-private fun CacheKind.labelRes(): Int =
-    when (this) {
-        CacheKind.HOME_ROWS -> R.string.cache_kind_home_rows
-        CacheKind.GENRES -> R.string.cache_kind_genres
-        CacheKind.PEOPLE -> R.string.cache_kind_people
-        CacheKind.PERSON_DETAILS -> R.string.cache_kind_person_details
-        CacheKind.BOX_SETS -> R.string.cache_kind_box_sets
+        CacheSection.IMAGES -> R.string.cache_kind_images
+        CacheSection.VIDEO -> R.string.cache_store_video
+        CacheSection.NETWORK -> R.string.cache_store_network
+        CacheSection.PLAYER -> R.string.cache_store_player
+        CacheSection.JELLYFIN_METADATA -> R.string.cache_section_jellyfin_metadata
+        CacheSection.JELLYSEERR -> R.string.cache_section_jellyseerr
+        CacheSection.AUDIOBOOKSHELF -> R.string.cache_section_audiobookshelf
     }

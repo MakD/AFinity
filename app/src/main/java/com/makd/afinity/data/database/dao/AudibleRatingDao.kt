@@ -21,4 +21,9 @@ interface AudibleRatingDao {
         "DELETE FROM audible_ratings WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
     )
     suspend fun deleteAllRatings(serverId: String, userId: String)
+
+    @Query("DELETE FROM audible_ratings") suspend fun clearAll()
+
+    @Query("SELECT (SELECT COUNT(*) FROM audible_ratings)")
+    suspend fun cachedEntryCount(): Int
 }

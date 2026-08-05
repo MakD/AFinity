@@ -3,6 +3,7 @@ package com.makd.afinity.data.repository
 import android.content.Context
 import coil3.SingletonImageLoader
 import com.makd.afinity.data.database.AfinityDatabase
+import com.makd.afinity.di.GitHubClient
 import com.makd.afinity.data.repository.home.HomeCacheRepository
 import com.makd.afinity.data.repository.home.HomeSectionsRepository
 import com.makd.afinity.data.repository.media.BoxSetCache
@@ -33,6 +34,11 @@ enum class CacheKind {
     PEOPLE,
     PERSON_DETAILS,
     BOX_SETS,
+    ITEM_METADATA,
+    JELLYFIN_STATS,
+    JELLYSEERR_REQUESTS,
+    AUDIOBOOKSHELF,
+    AUDIBLE_RATINGS,
 }
 
 enum class CacheStore {
@@ -40,6 +46,44 @@ enum class CacheStore {
     VIDEO,
     NETWORK,
     PLAYER,
+}
+
+enum class CacheSection {
+    IMAGES,
+    VIDEO,
+    NETWORK,
+    PLAYER,
+    JELLYFIN_METADATA,
+    JELLYSEERR,
+    AUDIOBOOKSHELF;
+
+    val stores: Set<CacheStore>
+        get() =
+            when (this) {
+                IMAGES -> setOf(CacheStore.IMAGES)
+                VIDEO -> setOf(CacheStore.VIDEO)
+                NETWORK -> setOf(CacheStore.NETWORK)
+                PLAYER -> setOf(CacheStore.PLAYER)
+                else -> emptySet()
+            }
+
+    val kinds: Set<CacheKind>
+        get() =
+            when (this) {
+                JELLYFIN_METADATA ->
+                    setOf(
+                        CacheKind.HOME_ROWS,
+                        CacheKind.GENRES,
+                        CacheKind.PEOPLE,
+                        CacheKind.PERSON_DETAILS,
+                        CacheKind.BOX_SETS,
+                        CacheKind.ITEM_METADATA,
+                        CacheKind.JELLYFIN_STATS,
+                    )
+                JELLYSEERR -> setOf(CacheKind.JELLYSEERR_REQUESTS)
+                AUDIOBOOKSHELF -> setOf(CacheKind.AUDIOBOOKSHELF, CacheKind.AUDIBLE_RATINGS)
+                else -> emptySet()
+            }
 }
 
 data class CacheUsage(
@@ -75,6 +119,9 @@ constructor(
     private val appDataRepository: AppDataRepository,
     private val videoCacheCleaner: VideoCacheCleaner,
     private val okHttpClient: OkHttpClient,
+    @param:GitHubClient private val gitHubOkHttpClient: OkHttpClient,
+    private val jellyseerrRepository: JellyseerrRepository,
+    private val audiobookshelfRepository: AudiobookshelfRepository,
 ) {
     suspend fun usage(): CacheUsage =
         withContext(Dispatchers.IO) {
@@ -100,6 +147,17 @@ constructor(
                     CacheKind.PEOPLE to { database.topPeopleDao().cachedEntryCount() },
                     CacheKind.PERSON_DETAILS to { database.personSectionDao().cachedEntryCount() },
                     CacheKind.BOX_SETS to { database.boxSetCacheDao().cachedEntryCount() },
+                    CacheKind.JELLYSEERR_REQUESTS to {
+                        database.jellyseerrDao().cachedEntryCount()
+                    },
+                    CacheKind.AUDIOBOOKSHELF to {
+                        database.audiobookshelfDao().cachedEntryCount()
+                    },
+                    CacheKind.ITEM_METADATA to {
+                        database.itemMetadataCacheDao().cachedEntryCount()
+                    },
+                    CacheKind.JELLYFIN_STATS to { database.jellyfinStatsDao().cachedEntryCount() },
+                    CacheKind.AUDIBLE_RATINGS to { database.audibleRatingDao().cachedEntryCount() },
                 )
 
             val entries =
@@ -112,46 +170,84 @@ constructor(
             CacheUsage(bytes = bytes, entries = entries)
         }
 
-    suspend fun clearCachedData() =
+    suspend fun clearCachedData(
+        sections: Set<CacheSection> = CacheSection.entries.toSet()
+    ) =
         withContext(Dispatchers.IO) {
-            runCatching {
-                    val loader = SingletonImageLoader.get(context)
-                    loader.diskCache?.clear()
-                    loader.memoryCache?.clear()
-                }
-                .onFailure { Timber.e(it, "Failed to clear image cache") }
+            if (CacheSection.IMAGES in sections) {
+                runCatching {
+                        val loader = SingletonImageLoader.get(context)
+                        loader.diskCache?.clear()
+                        loader.memoryCache?.clear()
+                    }
+                    .onFailure { Timber.e(it, "Failed to clear image cache") }
+            }
 
-            runCatching { videoCacheCleaner.clear() }
-                .onFailure { Timber.e(it, "Failed to clear video cache") }
+            if (CacheSection.VIDEO in sections) {
+                runCatching { videoCacheCleaner.clear() }
+                    .onFailure { Timber.e(it, "Failed to clear video cache") }
+            }
 
-            runCatching { okHttpClient.cache?.evictAll() }
-                .onFailure { Timber.e(it, "Failed to clear network cache") }
+            if (CacheSection.NETWORK in sections) {
+                runCatching { okHttpClient.cache?.evictAll() }
+                    .onFailure { Timber.e(it, "Failed to clear network cache") }
+                runCatching { gitHubOkHttpClient.cache?.evictAll() }
+                    .onFailure { Timber.e(it, "Failed to clear GitHub network cache") }
+            }
 
-            runCatching {
-                    cacheDir(MPV_CACHE_DIR).deleteRecursively()
-                    cacheDir(FONTCONFIG_CACHE_DIR).deleteRecursively()
-                }
-                .onFailure { Timber.e(it, "Failed to clear player cache") }
+            if (CacheSection.PLAYER in sections) {
+                runCatching {
+                        cacheDir(MPV_CACHE_DIR).deleteRecursively()
+                        cacheDir(FONTCONFIG_CACHE_DIR).deleteRecursively()
+                    }
+                    .onFailure { Timber.e(it, "Failed to clear player cache") }
+            }
 
-            runCatching { homeCacheRepository.invalidateAll() }
-                .onFailure { Timber.e(it, "Failed to clear home cache") }
-            runCatching { genreRepository.clearAllData() }
-                .onFailure { Timber.e(it, "Failed to clear genre cache") }
-            runCatching { peopleRepository.clearAllData() }
-                .onFailure { Timber.e(it, "Failed to clear people cache") }
-            runCatching { boxSetCache.clear() }
-                .onFailure { Timber.e(it, "Failed to clear boxset cache") }
-            runCatching { mediaRepository.invalidateAllCaches() }
-                .onFailure { Timber.e(it, "Failed to invalidate media caches") }
-            runCatching { homeSectionsRepository.clearAllData() }
-                .onFailure { Timber.e(it, "Failed to clear home sections") }
-            runCatching { database.itemMetadataCacheDao().clearAll() }
-                .onFailure { Timber.e(it, "Failed to clear item metadata cache") }
+            if (CacheSection.JELLYFIN_METADATA in sections) {
+                runCatching { homeCacheRepository.invalidateAll() }
+                    .onFailure { Timber.e(it, "Failed to clear home cache") }
+                runCatching { genreRepository.clearAllData() }
+                    .onFailure { Timber.e(it, "Failed to clear genre cache") }
+                runCatching { peopleRepository.clearAllData() }
+                    .onFailure { Timber.e(it, "Failed to clear people cache") }
+                runCatching { boxSetCache.clear() }
+                    .onFailure { Timber.e(it, "Failed to clear boxset cache") }
+                runCatching { mediaRepository.invalidateAllCaches() }
+                    .onFailure { Timber.e(it, "Failed to invalidate media caches") }
+                runCatching { homeSectionsRepository.clearAllData() }
+                    .onFailure { Timber.e(it, "Failed to clear home sections") }
+                runCatching { database.itemMetadataCacheDao().clearAll() }
+                    .onFailure { Timber.e(it, "Failed to clear item metadata cache") }
+                runCatching { database.jellyfinStatsDao().clearAll() }
+                    .onFailure { Timber.e(it, "Failed to clear Jellyfin stats cache") }
+            }
+
+            if (CacheSection.JELLYSEERR in sections) {
+                runCatching { database.jellyseerrDao().deleteAllRequests() }
+                    .onFailure { Timber.e(it, "Failed to clear Jellyseerr requests") }
+                runCatching { jellyseerrRepository.clearCachedSettings() }
+                    .onFailure { Timber.e(it, "Failed to clear Jellyseerr settings cache") }
+            }
+
+            if (CacheSection.AUDIOBOOKSHELF in sections) {
+                runCatching {
+                        database.audiobookshelfDao().deleteAllEpisodes()
+                        database.audiobookshelfDao().deleteAllItems()
+                        database.audiobookshelfDao().deleteAllLibraries()
+                    }
+                    .onFailure { Timber.e(it, "Failed to clear Audiobookshelf cache") }
+                runCatching { database.audibleRatingDao().clearAll() }
+                    .onFailure { Timber.e(it, "Failed to clear Audible ratings cache") }
+                runCatching { audiobookshelfRepository.clearPersonalizedCache() }
+                    .onFailure { Timber.e(it, "Failed to clear Audiobookshelf shelves") }
+            }
 
             vacuum()
 
-            runCatching { appDataRepository.reloadHomeData() }
-                .onFailure { Timber.e(it, "Failed to reload home data") }
+            if (CacheSection.JELLYFIN_METADATA in sections) {
+                runCatching { appDataRepository.reloadHomeData() }
+                    .onFailure { Timber.e(it, "Failed to reload home data") }
+            }
 
             homeSectionsRepository.ensureLayout(force = true)
         }

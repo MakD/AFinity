@@ -39,6 +39,8 @@ interface JellyseerrRepository {
 
     fun clearActiveSession()
 
+    fun clearCachedSettings()
+
     val currentSessionId: StateFlow<String?>
 
     suspend fun login(

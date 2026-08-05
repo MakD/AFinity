@@ -27,6 +27,7 @@ import com.makd.afinity.data.models.audiobookshelf.LocalSessionData
 import com.makd.afinity.data.models.audiobookshelf.LoginRequest
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.MediaProgressSyncData
+import com.makd.afinity.data.models.audiobookshelf.PersonalizedSection
 import com.makd.afinity.data.models.audiobookshelf.PersonalizedView
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSessionRequest
@@ -277,6 +278,7 @@ constructor(
         Timber.d("Switching Audiobookshelf context to Server: $serverId, User: $userId")
         _isAuthenticated.value = false
         _currentConfig.value = null
+        clearPersonalizedCache()
         activeContext = serverId to userId
         _currentSessionId.value = "${serverId}_$userId"
 
@@ -326,13 +328,20 @@ constructor(
         Timber.d("Audiobookshelf Context Switched. Authenticated: ${_isAuthenticated.value}")
     }
 
+    @Volatile override var cachedGenreSections: List<PersonalizedSection> = emptyList()
+
+    override fun clearPersonalizedCache() {
+        _personalizedCache.value = emptyMap()
+        cachedGenreSections = emptyList()
+    }
+
     override fun clearActiveSession() {
         activeContext = null
         _currentSessionId.value = null
         securePreferencesRepository.clearActiveAudiobookshelfCache()
         _isAuthenticated.value = false
         _currentConfig.value = null
-        _personalizedCache.value = emptyMap()
+        clearPersonalizedCache()
         pendingServerUrl = null
         Timber.d("Audiobookshelf active session cleared")
     }

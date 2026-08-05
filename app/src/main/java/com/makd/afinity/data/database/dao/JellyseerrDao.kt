@@ -53,6 +53,12 @@ interface JellyseerrDao {
     )
     suspend fun clearAllRequests(serverId: String, userId: String)
 
+    @Query("DELETE FROM jellyseerr_requests")
+    suspend fun deleteAllRequests()
+
+    @Query("SELECT (SELECT COUNT(*) FROM jellyseerr_requests)")
+    suspend fun cachedEntryCount(): Int
+
     @Query(
         "DELETE FROM jellyseerr_requests WHERE cachedAt < :expiryTime AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
     )

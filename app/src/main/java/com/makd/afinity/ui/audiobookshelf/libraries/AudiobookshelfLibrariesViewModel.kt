@@ -6,6 +6,7 @@ import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
+import com.makd.afinity.data.models.audiobookshelf.PersonalizedSection
 import com.makd.afinity.data.models.audiobookshelf.PersonalizedView
 import com.makd.afinity.data.models.audiobookshelf.mediaProgressKey
 import com.makd.afinity.data.repository.AudiobookshelfConfig
@@ -37,14 +38,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import timber.log.Timber
 import javax.inject.Inject
-
-data class PersonalizedSection(
-    val id: String,
-    val label: String,
-    val items: List<LibraryItem>,
-    val series: List<AudiobookshelfSeries> = emptyList(),
-)
-
 
 @HiltViewModel
 class AudiobookshelfLibrariesViewModel
@@ -113,7 +106,7 @@ constructor(
                 if (sessionId != cachedSessionId) {
                     _personalizedSections.value = emptyList()
                     _genreSections.value = emptyList()
-                    cachedGenreSections = emptyList()
+                    audiobookshelfRepository.cachedGenreSections = emptyList()
                     lastFullRefreshAt = 0L
                     cachedSessionId = sessionId
                 }
@@ -197,8 +190,9 @@ constructor(
                     _uiState.update { it.copy(isRefreshing = false) }
                 }
 
-                if (cachedGenreSections.isNotEmpty()) {
-                    _genreSections.value = cachedGenreSections
+                val cachedGenres = audiobookshelfRepository.cachedGenreSections
+                if (cachedGenres.isNotEmpty()) {
+                    _genreSections.value = cachedGenres
                 }
 
                 val cooldownMs =
@@ -217,10 +211,10 @@ constructor(
                 }
                 _uiState.update { it.copy(isRefreshing = false) }
 
-                if (cachedGenreSections.isEmpty()) {
+                if (audiobookshelfRepository.cachedGenreSections.isEmpty()) {
                     launch(Dispatchers.IO) {
                         val genres = fetchGenreSections(activeLibraries)
-                        cachedGenreSections = genres
+                        audiobookshelfRepository.cachedGenreSections = genres
                         _genreSections.value = genres
                     }
                 }
@@ -421,7 +415,6 @@ constructor(
         private const val FULL_REFRESH_COOLDOWN_MS = 30_000L
         private const val SOCKET_CONNECTED_COOLDOWN_MS = 5 * 60_000L
         @Volatile private var lastFullRefreshAt = 0L
-        @Volatile private var cachedGenreSections: List<PersonalizedSection> = emptyList()
         @Volatile private var cachedSessionId: String? = null
     }
 

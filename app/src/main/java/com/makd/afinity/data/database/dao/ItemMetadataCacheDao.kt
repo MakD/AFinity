@@ -20,4 +20,7 @@ interface ItemMetadataCacheDao {
     suspend fun clearOldCache(timestampLimit: Long)
 
     @Query("DELETE FROM item_metadata_cache") suspend fun clearAll()
+
+    @Query("SELECT (SELECT COUNT(*) FROM item_metadata_cache)")
+    suspend fun cachedEntryCount(): Int
 }

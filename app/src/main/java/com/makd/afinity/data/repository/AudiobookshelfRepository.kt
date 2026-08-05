@@ -9,6 +9,7 @@ import com.makd.afinity.data.models.audiobookshelf.LibraryStats
 import com.makd.afinity.data.models.audiobookshelf.ListeningSessionsResponse
 import com.makd.afinity.data.models.audiobookshelf.ListeningStats
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
+import com.makd.afinity.data.models.audiobookshelf.PersonalizedSection
 import com.makd.afinity.data.models.audiobookshelf.PersonalizedView
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
 import com.makd.afinity.data.models.audiobookshelf.SearchResponse
@@ -28,6 +29,10 @@ interface AudiobookshelfRepository {
     suspend fun setActiveJellyfinSession(serverId: String, userId: UUID)
 
     fun clearActiveSession()
+
+    fun clearPersonalizedCache()
+
+    var cachedGenreSections: List<PersonalizedSection>
 
     val currentSessionId: StateFlow<String?>
 

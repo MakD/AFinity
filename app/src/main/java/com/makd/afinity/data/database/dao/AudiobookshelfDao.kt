@@ -169,6 +169,17 @@ interface AudiobookshelfDao {
     ): Long?
 
     @Query(
+        "SELECT (SELECT COUNT(*) FROM audiobookshelf_items) + (SELECT COUNT(*) FROM audiobookshelf_libraries) + (SELECT COUNT(*) FROM audiobookshelf_episodes)"
+    )
+    suspend fun cachedEntryCount(): Int
+
+    @Query("DELETE FROM audiobookshelf_items") suspend fun deleteAllItems()
+
+    @Query("DELETE FROM audiobookshelf_episodes") suspend fun deleteAllEpisodes()
+
+    @Query("DELETE FROM audiobookshelf_libraries") suspend fun deleteAllLibraries()
+
+    @Query(
         "DELETE FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
     )
     suspend fun deleteAllItems(serverId: String, userId: String)

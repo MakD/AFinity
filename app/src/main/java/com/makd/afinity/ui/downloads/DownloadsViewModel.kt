@@ -11,6 +11,7 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.repository.CacheMaintenance
+import com.makd.afinity.data.repository.CacheSection
 import com.makd.afinity.data.repository.CacheUsage
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsDownloadRepository
@@ -61,12 +62,15 @@ constructor(
         }
     }
 
-    fun clearCachedData(onDone: () -> Unit = {}) {
-        if (_isClearingCache.value) return
+    fun clearCachedData(
+        sections: Set<CacheSection> = CacheSection.entries.toSet(),
+        onDone: () -> Unit = {},
+    ) {
+        if (_isClearingCache.value || sections.isEmpty()) return
         viewModelScope.launch {
             _isClearingCache.value = true
             try {
-                cacheMaintenance.clearCachedData()
+                cacheMaintenance.clearCachedData(sections)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to clear cached data")
             } finally {
