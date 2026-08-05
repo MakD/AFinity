@@ -5,6 +5,7 @@ import com.makd.afinity.data.database.entities.JellyseerrAddressEntity
 import com.makd.afinity.data.database.entities.JellyseerrConfigEntity
 import com.makd.afinity.data.database.entities.JellyseerrDiscoverFilterEntity
 import com.makd.afinity.data.database.entities.JellyseerrRequestEntity
+import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.models.jellyseerr.CollectionDetails
 import com.makd.afinity.data.models.jellyseerr.CreateRequestBody
 import com.makd.afinity.data.models.jellyseerr.DiscoverFilterOptions
@@ -33,7 +34,6 @@ import com.makd.afinity.data.models.jellyseerr.TmdbKeywordSearchResponse
 import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import com.makd.afinity.data.models.jellyseerr.WatchProviderDetails
 import com.makd.afinity.data.models.jellyseerr.WatchProviderRegion
-import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.models.server.AddressCheck
 import com.makd.afinity.data.network.JellyseerrApiService
 import com.makd.afinity.data.repository.JellyseerrRepository
@@ -44,8 +44,6 @@ import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Lazy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -84,7 +82,6 @@ constructor(
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     @ApplicationScope private val repositoryScope: CoroutineScope,
 ) : JellyseerrRepository {
-
 
     private val jellyseerrDao = database.jellyseerrDao()
 
@@ -139,7 +136,6 @@ constructor(
         }
 
         repositoryScope.launch {
-
             networkConnectivityMonitor.isNetworkAvailable.collect { isAvailable ->
                 if (!isAvailable) return@collect
                 val (serverId, userId) = activeContext ?: return@collect
@@ -717,15 +713,8 @@ constructor(
                     try {
                         val response = apiService.get().getRequests(take, skip, filter)
                         if (response.isSuccessful && response.body() != null) {
-                            val baseRequests = response.body()!!.results
-
-                            if (skip == 0 && filter == null) {
-                                jellyseerrDao.clearAllRequests(
-                                    currentServerId,
-                                    currentUserId.toString(),
-                                )
-                            }
-
+                            val body = response.body()!!
+                            val baseRequests = body.results
 
                             val existingById =
                                 jellyseerrDao
@@ -733,101 +722,52 @@ constructor(
                                     .first()
                                     .associateBy { it.id }
 
-                            jellyseerrDao.insertRequests(
-                                baseRequests.map { request ->
-                                    val base =
-                                        request.toEntity(currentServerId, currentUserId.toString())
-                                    val existing = existingById[base.id]
-                                    if (existing == null) base
-                                    else
-                                        base.copy(
-                                            title =
-                                                base.title.takeUnless { it == "Unknown" }
-                                                    ?: existing.title,
-                                            mediaTitle = base.mediaTitle ?: existing.mediaTitle,
-                                            mediaName = base.mediaName ?: existing.mediaName,
-                                            posterPath = base.posterPath ?: existing.posterPath,
-                                            mediaBackdropPath =
-                                                base.mediaBackdropPath
-                                                    ?: existing.mediaBackdropPath,
-                                            mediaReleaseDate =
-                                                base.mediaReleaseDate ?: existing.mediaReleaseDate,
-                                            mediaFirstAirDate =
-                                                base.mediaFirstAirDate
-                                                    ?: existing.mediaFirstAirDate,
-                                            requestedByName =
-                                                base.requestedByName ?: existing.requestedByName,
-                                            requestedByAvatar =
-                                                base.requestedByAvatar
-                                                    ?: existing.requestedByAvatar,
-                                        )
-                                }
-                            )
-                            repositoryScope.launch {
-                                val enrichedEntities =
-                                    baseRequests
-                                        .map { request ->
-                                            async {
-                                                try {
-                                                    val tmdbId =
-                                                        request.media.tmdbId ?: return@async null
-                                                    val detailsResponse =
-                                                        when (request.media.mediaType.lowercase()) {
-                                                            "movie" ->
-                                                                apiService
-                                                                    .get()
-                                                                    .getMovieDetails(tmdbId)
-                                                            "tv" ->
-                                                                apiService
-                                                                    .get()
-                                                                    .getTvDetails(tmdbId)
-                                                            else -> null
-                                                        }
-                                                    if (
-                                                        detailsResponse?.isSuccessful == true &&
-                                                            detailsResponse.body() != null
-                                                    ) {
-                                                        val details = detailsResponse.body()!!
-                                                        request
-                                                            .copy(
-                                                                media =
-                                                                    request.media.copy(
-                                                                        title = details.title,
-                                                                        name = details.name,
-                                                                        posterPath =
-                                                                            details.posterPath,
-                                                                        backdropPath =
-                                                                            details.backdropPath,
-                                                                        releaseDate =
-                                                                            details.releaseDate,
-                                                                        firstAirDate =
-                                                                            details.firstAirDate,
-                                                                    )
-                                                            )
-                                                            .toEntity(
-                                                                currentServerId,
-                                                                currentUserId.toString(),
-                                                            )
-                                                    } else null
-                                                } catch (e: Exception) {
-                                                    Timber.w(
-                                                        e,
-                                                        "Failed to enrich request ${request.id}",
-                                                    )
-                                                    null
-                                                }
-                                            }
-                                        }
-                                        .awaitAll()
-                                        .filterNotNull()
+                            val mergedEntities = baseRequests.map { request ->
+                                val base =
+                                    request.toEntity(currentServerId, currentUserId.toString())
+                                val existing = existingById[base.id]
+                                if (existing == null) base
+                                else
+                                    base.copy(
+                                        title =
+                                            base.title.takeUnless { it == "Unknown" }
+                                                ?: existing.title,
+                                        mediaTitle = base.mediaTitle ?: existing.mediaTitle,
+                                        mediaName = base.mediaName ?: existing.mediaName,
+                                        posterPath = base.posterPath ?: existing.posterPath,
+                                        mediaBackdropPath =
+                                            base.mediaBackdropPath ?: existing.mediaBackdropPath,
+                                        mediaReleaseDate =
+                                            base.mediaReleaseDate ?: existing.mediaReleaseDate,
+                                        mediaFirstAirDate =
+                                            base.mediaFirstAirDate ?: existing.mediaFirstAirDate,
+                                        requestedByName =
+                                            base.requestedByName ?: existing.requestedByName,
+                                        requestedByAvatar =
+                                            base.requestedByAvatar ?: existing.requestedByAvatar,
+                                        mediaAddedAt = base.mediaAddedAt ?: existing.mediaAddedAt,
+                                        jellyfinMediaId =
+                                            base.jellyfinMediaId ?: existing.jellyfinMediaId,
+                                    )
+                            }
 
-                                if (enrichedEntities.isNotEmpty()) {
-                                    try {
-                                        jellyseerrDao.insertRequests(enrichedEntities)
-                                    } catch (e: Exception) {
-                                        Timber.e(e, "Failed to batch-cache enriched requests")
+                            jellyseerrDao.insertRequests(mergedEntities)
+
+                            if (
+                                skip == 0 &&
+                                    filter == null &&
+                                    baseRequests.size >= body.pageInfo.results
+                            ) {
+                                val fetchedIds = mergedEntities.map { it.id }.toSet()
+                                existingById.keys
+                                    .filterNot { it in fetchedIds }
+                                    .forEach { staleId ->
+                                        jellyseerrDao.deleteRequest(
+                                            staleId,
+                                            currentServerId,
+                                            currentUserId.toString(),
+                                        )
                                     }
-                                }
                             }
 
                             return@withContext Result.success(baseRequests)
@@ -848,6 +788,55 @@ constructor(
                 Timber.e(e, "Failed to get Jellyseerr requests")
                 Result.failure(e)
             }
+        }
+    }
+
+    private val enrichingRequestIds = java.util.concurrent.ConcurrentHashMap<Int, Boolean>()
+
+    override suspend fun enrichRequestIfNeeded(request: JellyseerrRequest) {
+        val (currentServerId, currentUserId) = activeContext ?: return
+        val tmdbId = request.media.tmdbId ?: return
+        if (!networkConnectivityMonitor.isCurrentlyConnected()) return
+        if (enrichingRequestIds.putIfAbsent(request.id, true) != null) return
+
+        try {
+            val cached =
+                jellyseerrDao.getRequestById(
+                    request.id,
+                    currentServerId,
+                    currentUserId.toString(),
+                )
+            if (cached != null && cached.posterPath != null && cached.title != "Unknown") return
+
+            val detailsResponse =
+                when (request.media.mediaType.lowercase()) {
+                    "movie" -> apiService.get().getMovieDetails(tmdbId)
+                    "tv" -> apiService.get().getTvDetails(tmdbId)
+                    else -> null
+                }
+
+            if (detailsResponse?.isSuccessful == true && detailsResponse.body() != null) {
+                val details = detailsResponse.body()!!
+                val enriched =
+                    request
+                        .copy(
+                            media =
+                                request.media.copy(
+                                    title = details.title,
+                                    name = details.name,
+                                    posterPath = details.posterPath,
+                                    backdropPath = details.backdropPath,
+                                    releaseDate = details.releaseDate,
+                                    firstAirDate = details.firstAirDate,
+                                )
+                        )
+                        .toEntity(currentServerId, currentUserId.toString())
+                jellyseerrDao.insertRequest(enriched)
+            }
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to enrich request ${request.id}")
+        } finally {
+            enrichingRequestIds.remove(request.id)
         }
     }
 
@@ -922,15 +911,22 @@ constructor(
                     Timber.w(e, "Error checking cached requests for deletion")
                 }
 
-
                 // 2. Fetch remote requests list
                 try {
                     val remoteRequestsRes = api.getRequests(take = 1000)
                     if (remoteRequestsRes.isSuccessful) {
                         remoteRequestsRes.body()?.results?.forEach { req ->
-                            val jId = req.media.jellyfinMediaId?.replace("-", "")?.lowercase(Locale.ROOT)
-                            val jId4k = req.media.jellyfinMediaId4k?.replace("-", "")?.lowercase(Locale.ROOT)
-                            if (cleanJellyfinId == jId || cleanJellyfinId == jId4k || (tmdbId != null && req.media.tmdbId == tmdbId)) {
+                            val jId =
+                                req.media.jellyfinMediaId?.replace("-", "")?.lowercase(Locale.ROOT)
+                            val jId4k =
+                                req.media.jellyfinMediaId4k
+                                    ?.replace("-", "")
+                                    ?.lowercase(Locale.ROOT)
+                            if (
+                                cleanJellyfinId == jId ||
+                                    cleanJellyfinId == jId4k ||
+                                    (tmdbId != null && req.media.tmdbId == tmdbId)
+                            ) {
                                 requestsToDelete.add(req.id)
                                 if (req.media.id > 0) {
                                     targetMediaId = req.media.id
@@ -942,10 +938,12 @@ constructor(
                     Timber.w(e, "Error fetching remote requests for deletion check")
                 }
 
-                // 3. Lookup mediaDetails if targetMediaId wasn't found from requests but tmdbId is known
+                // 3. Lookup mediaDetails if targetMediaId wasn't found from requests but tmdbId is
+                // known
                 if (targetMediaId == null && tmdbId != null && isMovie != null) {
                     try {
-                        val detailsRes = if (isMovie) api.getMovieDetails(tmdbId) else api.getTvDetails(tmdbId)
+                        val detailsRes =
+                            if (isMovie) api.getMovieDetails(tmdbId) else api.getTvDetails(tmdbId)
                         if (detailsRes.isSuccessful) {
                             detailsRes.body()?.mediaInfo?.let { mediaInfo ->
                                 if (mediaInfo.id > 0) {
@@ -979,7 +977,9 @@ constructor(
                 targetMediaId?.let { mediaId ->
                     try {
                         val mediaDelRes = api.deleteMedia(mediaId)
-                        Timber.d("Delete media $mediaId in Jellyseerr response: ${mediaDelRes.code()}")
+                        Timber.d(
+                            "Delete media $mediaId in Jellyseerr response: ${mediaDelRes.code()}"
+                        )
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to delete media $mediaId in Jellyseerr")
                     }
@@ -1012,7 +1012,6 @@ constructor(
             }
         }
     }
-
 
     override suspend fun approveRequest(
         requestId: Int,
@@ -1755,6 +1754,15 @@ constructor(
                 } catch (e: Exception) {
                     System.currentTimeMillis()
                 },
+            mediaAddedAt =
+                media.mediaAddedAt?.let {
+                    try {
+                        dateFormat.parse(it)?.time
+                    } catch (e: Exception) {
+                        null
+                    }
+                },
+            jellyfinMediaId = media.jellyfinMediaId,
             requestedByName = requestedBy.displayName,
             requestedByAvatar = requestedBy.avatar,
             mediaTitle = media.title,
@@ -1797,7 +1805,8 @@ constructor(
                     tvdbId = tvdbId,
                     status = mediaStatus,
                     status4k = mediaStatus4k,
-                    mediaAddedAt = null,
+                    mediaAddedAt = mediaAddedAt?.let { dateFormat.format(Date(it)) },
+                    jellyfinMediaId = jellyfinMediaId,
                     title = mediaTitle,
                     name = mediaName,
                     posterPath = posterPath,

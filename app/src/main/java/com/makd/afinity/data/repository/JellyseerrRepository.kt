@@ -110,12 +110,14 @@ interface JellyseerrRepository {
     ): Result<ServiceDetailsResponse>
 
     suspend fun getRequests(
-        take: Int = 20,
+        take: Int = 100,
         skip: Int = 0,
         filter: String? = null,
     ): Result<List<JellyseerrRequest>>
 
     fun observeRequests(): Flow<List<JellyseerrRequest>>
+
+    suspend fun enrichRequestIfNeeded(request: JellyseerrRequest)
 
     suspend fun getRequestById(requestId: Int): Result<JellyseerrRequest>
 

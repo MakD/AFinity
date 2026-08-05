@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
+import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.models.jellyseerr.DiscoverSlider
 import com.makd.afinity.data.models.jellyseerr.GenreSliderItem
 import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
@@ -25,7 +26,6 @@ import com.makd.afinity.data.models.jellyseerr.SonarrSeries
 import com.makd.afinity.data.models.jellyseerr.Studio
 import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import com.makd.afinity.data.models.jellyseerr.hasPermission
-import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.util.GenreDuotoneColorGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -54,7 +54,6 @@ constructor(
     private val jellyseerrRepository: JellyseerrRepository,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
 ) : ViewModel() {
-
 
     private val _uiState =
         MutableStateFlow(RequestsUiState(isLoading = true, isLoadingDiscover = true))
@@ -85,9 +84,10 @@ constructor(
         val tmdbId = request.media.tmdbId ?: return
         val mediaType = request.getMediaType() ?: MediaType.MOVIE
         val mappedType = if (mediaType == MediaType.TV) "Series" else "Movie"
-        val cached = jellyfinIdCache[tmdbId]
-        if (cached != null) {
-            viewModelScope.launch { _navigateToItem.emit(cached to mappedType) }
+        val known = request.media.getJellyfinItemId() ?: jellyfinIdCache[tmdbId]
+        if (known != null) {
+            jellyfinIdCache[tmdbId] = known
+            viewModelScope.launch { _navigateToItem.emit(known to mappedType) }
             return
         }
         viewModelScope.launch {
@@ -108,6 +108,10 @@ constructor(
             val s = MediaStatus.fromValue(statusValue)
             if (s != MediaStatus.AVAILABLE && s != MediaStatus.PARTIALLY_AVAILABLE) return@forEach
             val tmdbId = req.media.tmdbId ?: return@forEach
+            req.media.getJellyfinItemId()?.let { id ->
+                jellyfinIdCache[tmdbId] = id
+                return@forEach
+            }
             if (!fetchingIds.add(tmdbId)) return@forEach
             val mediaType = req.getMediaType() ?: MediaType.MOVIE
             viewModelScope.launch {
@@ -168,7 +172,6 @@ constructor(
             }
         }
     }
-
 
     private fun loadCurrentUser() {
         viewModelScope.launch {
@@ -293,6 +296,10 @@ constructor(
         }
     }
 
+    fun onRequestVisible(request: JellyseerrRequest) {
+        viewModelScope.launch { jellyseerrRepository.enrichRequestIfNeeded(request) }
+    }
+
     fun loadRequests() {
         viewModelScope.launch {
             try {
@@ -334,7 +341,11 @@ constructor(
                             _uiState.update {
                                 it.copy(
                                     isDeletingRequest = false,
-                                    error = context.getString(R.string.error_request_fail_delete_fmt, error.message ?: ""),
+                                    error =
+                                        context.getString(
+                                            R.string.error_request_fail_delete_fmt,
+                                            error.message ?: "",
+                                        ),
                                 )
                             }
                         },
@@ -404,7 +415,11 @@ constructor(
                             _uiState.update {
                                 it.copy(
                                     isProcessingRequest = false,
-                                    error = context.getString(R.string.error_request_fail_approve_fmt, error.message ?: ""),
+                                    error =
+                                        context.getString(
+                                            R.string.error_request_fail_approve_fmt,
+                                            error.message ?: "",
+                                        ),
                                 )
                             }
                         },
@@ -461,7 +476,11 @@ constructor(
                             _uiState.update {
                                 it.copy(
                                     isProcessingRequest = false,
-                                    error = context.getString(R.string.error_request_update_failed_fmt, error.message ?: ""),
+                                    error =
+                                        context.getString(
+                                            R.string.error_request_update_failed_fmt,
+                                            error.message ?: "",
+                                        ),
                                 )
                             }
                         },
@@ -499,7 +518,11 @@ constructor(
                             _uiState.update {
                                 it.copy(
                                     isProcessingRequest = false,
-                                    error = context.getString(R.string.error_request_fail_decline_fmt, error.message ?: ""),
+                                    error =
+                                        context.getString(
+                                            R.string.error_request_fail_decline_fmt,
+                                            error.message ?: "",
+                                        ),
                                 )
                             }
                         },
@@ -798,8 +821,7 @@ constructor(
                     languageProfileId =
                         state.selectedLanguageProfile?.id.takeIf { mediaType == MediaType.TV },
                     tags = state.selectedTagIds.takeIf { state.availableTags.isNotEmpty() },
-                    userId =
-                        state.selectedRequestUser?.id?.takeIf { it != _currentUser.value?.id },
+                    userId = state.selectedRequestUser?.id?.takeIf { it != _currentUser.value?.id },
                 )
                 .fold(
                     onSuccess = {

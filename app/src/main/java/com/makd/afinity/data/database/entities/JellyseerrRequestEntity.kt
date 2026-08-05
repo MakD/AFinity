@@ -33,4 +33,6 @@ data class JellyseerrRequestEntity(
     val profileId: Int? = null,
     val rootFolder: String? = null,
     val seasonsJson: String? = null,
+    val mediaAddedAt: Long? = null,
+    val jellyfinMediaId: String? = null,
 )

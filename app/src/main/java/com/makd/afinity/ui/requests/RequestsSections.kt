@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +46,7 @@ fun MyRequestsSection(
     onRequestClick: (JellyseerrRequest) -> Unit,
     onApprove: (Int) -> Unit,
     onDecline: (Int) -> Unit,
+    onRequestVisible: (JellyseerrRequest) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
 ) {
@@ -62,6 +64,7 @@ fun MyRequestsSection(
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(items = requests, key = { request -> "request_${request.id}" }) { request ->
+                LaunchedEffect(request.id) { onRequestVisible(request) }
                 RequestCard(
                     request = request,
                     baseUrl = baseUrl,
@@ -80,6 +83,7 @@ fun MyRequestsSection(
 fun AvailableRequestsSection(
     requests: List<JellyseerrRequest>,
     onRequestClick: (JellyseerrRequest) -> Unit,
+    onRequestVisible: (JellyseerrRequest) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
 ) {
@@ -97,6 +101,7 @@ fun AvailableRequestsSection(
         ) {
             items(items = requests, key = { request -> "available_request_${request.id}" }) {
                 request ->
+                LaunchedEffect(request.id) { onRequestVisible(request) }
                 AvailableRequestCard(
                     request = request,
                     onClick = { onRequestClick(request) },

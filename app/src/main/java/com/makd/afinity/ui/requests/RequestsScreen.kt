@@ -126,8 +126,14 @@ fun RequestsScreen(
                             RequestStatus.fromValue(req.status) != RequestStatus.COMPLETED
                         }
                     val availableRequests =
-                        uiState.requests.filter { req ->
-                            RequestStatus.fromValue(req.status) == RequestStatus.COMPLETED
+                        remember(uiState.requests) {
+                            uiState.requests
+                                .filter { req ->
+                                    RequestStatus.fromValue(req.status) == RequestStatus.COMPLETED
+                                }
+                                .sortedByDescending { req ->
+                                    req.media.mediaAddedAt ?: req.updatedAt
+                                }
                         }
 
                     LazyColumn(
@@ -148,6 +154,7 @@ fun RequestsScreen(
                                     },
                                     onApprove = { viewModel.approveRequest(it) },
                                     onDecline = { viewModel.declineRequest(it) },
+                                    onRequestVisible = viewModel::onRequestVisible,
                                     widthSizeClass = widthSizeClass,
                                 )
                             }
@@ -158,6 +165,7 @@ fun RequestsScreen(
                                 AvailableRequestsSection(
                                     requests = availableRequests,
                                     onRequestClick = { viewModel.resolveAndNavigate(it) },
+                                    onRequestVisible = viewModel::onRequestVisible,
                                     widthSizeClass = widthSizeClass,
                                 )
                             }

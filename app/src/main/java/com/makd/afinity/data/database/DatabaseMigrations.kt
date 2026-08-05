@@ -1396,6 +1396,14 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_62_63 =
+        object : Migration(62, 63) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `jellyseerr_requests` ADD COLUMN `mediaAddedAt` INTEGER")
+                db.execSQL("ALTER TABLE `jellyseerr_requests` ADD COLUMN `jellyfinMediaId` TEXT")
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1459,5 +1467,6 @@ object DatabaseMigrations {
             MIGRATION_59_60,
             MIGRATION_60_61,
             MIGRATION_61_62,
+            MIGRATION_62_63,
         )
 }
