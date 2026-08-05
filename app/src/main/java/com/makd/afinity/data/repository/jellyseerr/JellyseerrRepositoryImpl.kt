@@ -805,8 +805,8 @@ constructor(
                     request.id,
                     currentServerId,
                     currentUserId.toString(),
-                )
-            if (cached != null && cached.posterPath != null && cached.title != "Unknown") return
+                ) ?: return
+            if (cached.posterPath != null && cached.title != "Unknown") return
 
             val detailsResponse =
                 when (request.media.mediaType.lowercase()) {
@@ -816,6 +816,7 @@ constructor(
                 }
 
             if (detailsResponse?.isSuccessful == true && detailsResponse.body() != null) {
+                if (activeContext != (currentServerId to currentUserId)) return
                 val details = detailsResponse.body()!!
                 val enriched =
                     request
