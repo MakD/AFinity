@@ -182,6 +182,7 @@ constructor(
 
     companion object {
         private const val CACHE_VALIDITY_MS = 5 * 60 * 1000L
+        private const val LIBRARY_ITEMS_TTL_MS = 15 * 60 * 1000L
     }
 
     override suspend fun verifyServer(url: String): Boolean {
@@ -649,6 +650,7 @@ constructor(
         libraryId: String,
         limit: Int,
         page: Int,
+        force: Boolean,
     ): Result<List<LibraryItem>> {
         return withContext(Dispatchers.IO) {
             val (currentServerId, currentUserId) =
@@ -657,6 +659,22 @@ constructor(
             try {
                 if (!networkConnectivityMonitor.isCurrentlyConnected()) {
                     return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                if (!force) {
+                    val oldestCachedAt =
+                        audiobookshelfDao.getOldestCachedAtForLibrary(
+                            currentServerId,
+                            currentUserId.toString(),
+                            libraryId,
+                        )
+                    if (
+                        oldestCachedAt != null &&
+                            System.currentTimeMillis() - oldestCachedAt < LIBRARY_ITEMS_TTL_MS
+                    ) {
+                        Timber.d("Library $libraryId cache is fresh, skipping refresh")
+                        return@withContext Result.success(emptyList())
+                    }
                 }
 
                 val refreshStartedAt = System.currentTimeMillis()
@@ -850,10 +868,12 @@ constructor(
         }
     }
 
-    override suspend fun searchLibrary(libraryId: String, query: String): Result<SearchResponse> {
-        return absResult("Search failed") { api ->
-            api.search(libraryId, query, limit = 25)
-        }
+    override suspend fun searchLibrary(
+        libraryId: String,
+        query: String,
+        limit: Int,
+    ): Result<SearchResponse> {
+        return absResult("Search failed") { api -> api.search(libraryId, query, limit = limit) }
     }
 
     override fun getSeriesPages(
@@ -1010,35 +1030,32 @@ constructor(
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
-                val response = apiService.get().getItemsInProgress()
-
-                if (response.isSuccessful && response.body() != null) {
-                    val items = response.body()!!.libraryItems
-                    val progressList = items.mapNotNull { it.userMediaProgress }
-                    items.forEach { item ->
-                        upsertItemPreservingEpisodeCount(
-                            item,
-                            currentServerId,
-                            currentUserId.toString(),
-                        )
-                        item.userMediaProgress?.let { progress -> cacheProgress(progress) }
+                val meResponse = apiService.get().getMe()
+                val progressList =
+                    if (meResponse.isSuccessful && meResponse.body() != null) {
+                        val progress = meResponse.body()!!.mediaProgress.orEmpty()
+                        progress.forEach { cacheProgress(it) }
+                        progress
+                    } else {
+                        emptyList()
                     }
 
-                    try {
-                        val meResponse = apiService.get().getMe()
-                        if (meResponse.isSuccessful && meResponse.body() != null) {
-                            meResponse.body()!!.mediaProgress?.forEach { progress ->
-                                cacheProgress(progress)
-                            }
+                try {
+                    val response = apiService.get().getItemsInProgress()
+                    if (response.isSuccessful && response.body() != null) {
+                        response.body()!!.libraryItems.forEach { item ->
+                            upsertItemPreservingEpisodeCount(
+                                item,
+                                currentServerId,
+                                currentUserId.toString(),
+                            )
                         }
-                    } catch (e: Exception) {
-                        Timber.w(e, "Failed to fetch user progress for episodes")
                     }
-
-                    Result.success(progressList)
-                } else {
-                    Result.failure(Exception("Failed to fetch progress: ${response.message()}"))
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to refresh in-progress item metadata")
                 }
+
+                Result.success(progressList)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh progress")
                 Result.failure(e)

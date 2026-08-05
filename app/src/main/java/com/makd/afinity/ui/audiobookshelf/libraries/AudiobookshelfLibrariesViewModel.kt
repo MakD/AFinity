@@ -45,7 +45,6 @@ data class PersonalizedSection(
     val series: List<AudiobookshelfSeries> = emptyList(),
 )
 
-private data class LibraryViews(val views: List<PersonalizedView>, val isFull: Boolean)
 
 @HiltViewModel
 class AudiobookshelfLibrariesViewModel
@@ -214,10 +213,7 @@ constructor(
                     refreshContinueListening(activeLibraries)
                 } else {
                     lastFullRefreshAt = System.currentTimeMillis()
-                    fetchPersonalizedIncrementally(
-                        libraryList = activeLibraries,
-                        quickFirst = !hasCachedSections,
-                    )
+                    fetchPersonalizedIncrementally(libraryList = activeLibraries)
                 }
                 _uiState.update { it.copy(isRefreshing = false) }
 
@@ -235,20 +231,17 @@ constructor(
     }
 
     private suspend fun fetchPersonalizedIncrementally(
-        libraryList: List<Library>,
-        quickFirst: Boolean,
+        libraryList: List<Library>
     ) = coroutineScope {
         val stateMutex = Mutex()
-        val viewsByLibrary = mutableMapOf<String, LibraryViews>()
+        val viewsByLibrary = mutableMapOf<String, List<PersonalizedView>>()
 
-        suspend fun record(libraryId: String, views: List<PersonalizedView>, isFull: Boolean) {
+        suspend fun record(libraryId: String, views: List<PersonalizedView>) {
             stateMutex.withLock {
-                val existing = viewsByLibrary[libraryId]
-                if (!isFull && existing?.isFull == true) return@withLock
-                viewsByLibrary[libraryId] = LibraryViews(views, isFull)
+                viewsByLibrary[libraryId] = views
                 val ordered = linkedMapOf<String, List<PersonalizedView>>()
                 for (library in libraryList) {
-                    viewsByLibrary[library.id]?.let { ordered[library.id] = it.views }
+                    viewsByLibrary[library.id]?.let { ordered[library.id] = it }
                 }
                 val sections = buildSectionsFromViews(ordered)
                 if (sections.isNotEmpty()) {
@@ -258,25 +251,11 @@ constructor(
             }
         }
 
-        if (quickFirst) {
-            libraryList.forEach { library ->
-                launch(Dispatchers.IO) {
-                    audiobookshelfRepository
-                        .getPersonalized(
-                            libraryId = library.id,
-                            shelves = listOf(CONTINUE_LISTENING_SHELF),
-                            limit = 10,
-                        )
-                        .onSuccess { views -> record(library.id, views, isFull = false) }
-                }
-            }
-        }
-
         libraryList.forEach { library ->
             launch(Dispatchers.IO) {
                 audiobookshelfRepository
                     .getPersonalized(library.id)
-                    .onSuccess { views -> record(library.id, views, isFull = true) }
+                    .onSuccess { views -> record(library.id, views) }
                     .onFailure { error ->
                         Timber.e(
                             error,
@@ -293,11 +272,7 @@ constructor(
                 .map { library ->
                     async(Dispatchers.IO) {
                         audiobookshelfRepository
-                            .getPersonalized(
-                                libraryId = library.id,
-                                shelves = listOf(CONTINUE_LISTENING_SHELF),
-                                limit = 10,
-                            )
+                            .getPersonalized(libraryId = library.id)
                             .getOrNull()
                             ?.let { library.id to it }
                     }
@@ -445,7 +420,6 @@ constructor(
     companion object {
         private const val FULL_REFRESH_COOLDOWN_MS = 30_000L
         private const val SOCKET_CONNECTED_COOLDOWN_MS = 5 * 60_000L
-        private const val CONTINUE_LISTENING_SHELF = "continue-listening"
         @Volatile private var lastFullRefreshAt = 0L
         @Volatile private var cachedGenreSections: List<PersonalizedSection> = emptyList()
         @Volatile private var cachedSessionId: String? = null

@@ -67,6 +67,7 @@ interface AudiobookshelfRepository {
         libraryId: String,
         limit: Int = 50,
         page: Int = 0,
+        force: Boolean = false,
     ): Result<List<LibraryItem>>
 
     suspend fun getItemDetails(itemId: String): Result<LibraryItem>
@@ -74,9 +75,13 @@ interface AudiobookshelfRepository {
     /** Reads title/author/coverUrl from Room cache only — no network call. */
     suspend fun getCachedItemMetadata(itemId: String): Triple<String, String?, String?>?
 
-    suspend fun searchLibrary(libraryId: String, query: String): Result<SearchResponse>
+    suspend fun searchLibrary(
+        libraryId: String,
+        query: String,
+        limit: Int = 6,
+    ): Result<SearchResponse>
 
-    fun getSeriesPages(libraryId: String, limit: Int = 100): Flow<List<AudiobookshelfSeries>>
+    fun getSeriesPages(libraryId: String, limit: Int = 20): Flow<List<AudiobookshelfSeries>>
 
     suspend fun getSeriesItems(
         libraryId: String,
@@ -89,7 +94,7 @@ interface AudiobookshelfRepository {
     suspend fun getPersonalized(
         libraryId: String,
         shelves: List<String>? = null,
-        limit: Int = 15,
+        limit: Int = 10,
     ): Result<List<PersonalizedView>>
 
     fun getInProgressItemsFlow(): Flow<List<ItemWithProgress>>

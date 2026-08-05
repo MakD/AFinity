@@ -160,6 +160,15 @@ interface AudiobookshelfDao {
     )
 
     @Query(
+        "SELECT MIN(cachedAt) FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryId = :libraryId"
+    )
+    suspend fun getOldestCachedAtForLibrary(
+        serverId: String,
+        userId: String,
+        libraryId: String,
+    ): Long?
+
+    @Query(
         "DELETE FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
     )
     suspend fun deleteAllItems(serverId: String, userId: String)

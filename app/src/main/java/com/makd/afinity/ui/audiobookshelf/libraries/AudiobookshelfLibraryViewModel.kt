@@ -7,6 +7,8 @@ import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.repository.AudiobookshelfConfig
 import com.makd.afinity.data.repository.AudiobookshelfRepository
+import com.makd.afinity.data.websocket.AudiobookshelfSocketManager
+import com.makd.afinity.data.websocket.WebSocketState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +29,7 @@ class AudiobookshelfLibraryViewModel
 constructor(
     savedStateHandle: SavedStateHandle,
     private val audiobookshelfRepository: AudiobookshelfRepository,
+    private val socketManager: AudiobookshelfSocketManager,
 ) : ViewModel() {
 
     val libraryId: String = checkNotNull(savedStateHandle["libraryId"])
@@ -78,9 +81,12 @@ constructor(
 
     init {
         viewModelScope.launch(Dispatchers.Default) {
-            audiobookshelfRepository.refreshLibraryItems(libraryId).onFailure { error ->
-                Timber.e(error, "Failed to load items for library $libraryId")
-            }
+            val socketLive = socketManager.connectionState.value == WebSocketState.CONNECTED
+            audiobookshelfRepository
+                .refreshLibraryItems(libraryId, force = !socketLive)
+                .onFailure { error ->
+                    Timber.e(error, "Failed to load items for library $libraryId")
+                }
             _isRefreshing.value = false
         }
     }
