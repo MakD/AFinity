@@ -401,7 +401,7 @@
     <string name="cd_pause_download">Приостановить скачивание</string>
     <string name="cd_resume_download">Продолжить скачивание</string>
     <string name="cd_cancel_download">Отменить скачивание</string>
-    <string name="cd_queued_tap_cancel">В очереди — коснитесь для отмены</string>
+    <string name="cd_queued_tap_cancel">В очереди, нажмите для отмены</string>
     <string name="cd_delete_download">Удалить скачивание</string>
     <string name="cd_status_failed">Ошибка</string>
     <string name="cd_status_completed">Завершено</string>
@@ -656,7 +656,7 @@
     <string name="cd_abs_open_podcast">Открыть подкаст</string>
     <string name="cd_abs_view_series">Просмотреть серию</string>
     <string name="cd_abs_play_episode">Воспроизвести выпуск</string>
-    <string name="cd_abs_downloaded_delete">Загружено — нажмите для удаления</string>
+    <string name="cd_abs_downloaded_delete">Загружено, нажмите для удаления</string>
     <string name="cd_abs_download_episode">Скачать выпуск</string>
     <string name="cd_abs_download">Скачать</string>
     <string name="cd_abs_minimize">Свернуть</string>
@@ -1001,8 +1001,8 @@
     <string name="download_unavailable_delete_confirm">Удалить из списка</string>
     <string name="download_unavailable_delete_message">Эта загрузка находится в неподключенном хранилище, а потому удалить файлы на данный момент нельзя. Все равно удалить ее из списка? Файлы останутся в хранилище при переподключении.</string>
     <string name="download_unavailable_delete_title">Хранилище недоступно</string>
-    <string name="download_unavailable_indicator">Загружено — хранилище недоступно</string>
-    <string name="download_unavailable_label">Недоступно — %1$s удалено</string>
+    <string name="download_unavailable_indicator">Загружено: хранилище недоступно</string>
+    <string name="download_unavailable_label">Недоступно: хранилище «%1$s» извлечено</string>
     <string name="storage_unavailable_used_fmt">%1$s использовано • хранилище не подключено</string>
     <string name="storage_unavailable_badge">Недоступно</string>
     <string name="storage_unavailable_volume">Недоступное хранилище</string>
@@ -1141,9 +1141,9 @@
     <string name="playback_stats_value_sample_rate_fmt">%1$s Гц</string>
     <string name="btn_validate">Проверить</string>
     <string name="update_console_status_hashing">расчет хэш-суммы загруженного файла…</string>
-    <string name="update_console_status_match">СОВПАДАЕТ — подлинная сборка, можно устанавливать</string>
-    <string name="update_console_status_mismatch">НЕ СОВПАДАЕТ — файл удален, скачайте еще раз</string>
-    <string name="update_console_status_error">ОШИБКА — не удалось прочитать файл, скачайте еще раз</string>
+    <string name="update_console_status_match">СОВПАДАЕТ: подлинная сборка, можно устанавливать</string>
+    <string name="update_console_status_mismatch">НЕ СОВПАДАЕТ: файл удален, скачайте еще раз</string>
+    <string name="update_console_status_error">ОШИБКА: не удалось прочитать файл, скачайте еще раз</string>
     <string name="build_nightly">Ночная сборка</string>
     <string name="section_ratings">Оценки</string>
     <string name="pref_cast_max_bitrate_auto">Авто (тест сети)</string>
@@ -1463,7 +1463,7 @@
     <string name="custom_sections_field_limit">Лимит элементов</string>
     <string name="custom_sections_field_sort">Сортировка</string>
     <string name="custom_sections_field_card_style">Стиль карточек</string>
-    <string name="custom_sections_card_style_locked_fmt">%1$s — установлено автоматически для этого типа ряда</string>
+    <string name="custom_sections_card_style_locked_fmt">%1$s (установлено автоматически для этого типа ряда)</string>
     <string name="custom_sections_group_content">Контент</string>
     <string name="custom_sections_group_display">Отображение</string>
     <string name="custom_sections_group_schedule">Расписание</string>
@@ -1507,7 +1507,7 @@
     <string name="backup_import_summary">Восстановить настройки из файла</string>
     <string name="backup_import_title">Импорт настроек</string>
     <string name="backup_apply">Применить</string>
-    <string name="backup_import_from_fmt">Из AFinity %1$s. Выберите, что применить.</string>
+    <string name="backup_import_from_fmt">Из AFinity %1$s. Выберите, что следует применить.</string>
     <string name="backup_import_skipped">Пропущено, нет на сервере</string>
     <string name="backup_import_done">Настройки импортированы</string>
     <string name="backup_import_done_message">Для применения некоторых изменений может понадобиться перезапуск приложения.</string>
@@ -1552,4 +1552,20 @@
     <string name="cache_store_player">Данные для плеера</string>
     <string name="pref_video_caching_title">Кэширование видео</string>
     <string name="pref_video_caching_summary">Сохранение недавнего видеопотока на диск, чтобы при перемотке и повторном просмотре данные не скачивались заново</string>
+    <string name="pref_subtitle_mode_title">Режим субтитров</string>
+    <string name="subtitle_mode_follow_server">Следовать настройкам сервера</string>
+    <string name="pref_prefer_sdh_title">Предпочитать SDH-субтитры</string>
+    <string name="pref_prefer_sdh_summary">Автоматически выбирать субтитры для слабослышащих</string>
+    <string name="pref_prefer_sdh_unavailable">Только для режимов \"Воспроизводить всегда\" или \"Только для иностранных языков\"</string>
+    <string name="subtitle_mode_default">По умолчанию</string>
+    <string name="subtitle_mode_always">Воспроизводить всегда</string>
+    <string name="subtitle_mode_smart">Только для иностранных языков</string>
+    <string name="subtitle_mode_only_forced">Только форсированные</string>
+    <string name="subtitle_mode_none">Ничего</string>
+    <string name="subtitle_mode_follow_server_hint">Использовать режим субтитров из вашего аккаунта на сервере Jellyfin.</string>
+    <string name="subtitle_mode_default_hint">Субтитры загружаются на основе меток «по умолчанию» и «форсированные» из встроенных метаданных. Учитываются языковые предпочтения при наличии нескольких вариантов.</string>
+    <string name="subtitle_mode_always_hint">Субтитры загружаются всегда, по возможности соответствуя вашим настройкам языка.</string>
+    <string name="subtitle_mode_smart_hint">Загружаются полные субтитры, если аудио на иностранном языке. Иначе, загружаются только форсированные субтитры.</string>
+    <string name="subtitle_mode_only_forced_hint">Загружаются только субтитры с меткой «форсированные». Обычно, это только текст на экране и иностранные диалоги, не весь сценарий.</string>
+    <string name="subtitle_mode_none_hint">Субтитры не будут загружаться по умолчанию. Их все еще можно включить вручную во время просмотра.</string>
 </resources>
