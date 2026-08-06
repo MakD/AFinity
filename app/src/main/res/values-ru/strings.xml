@@ -1568,4 +1568,10 @@
     <string name="subtitle_mode_smart_hint">Загружаются полные субтитры, если аудио на иностранном языке. Иначе, загружаются только форсированные субтитры.</string>
     <string name="subtitle_mode_only_forced_hint">Загружаются только субтитры с меткой «форсированные». Обычно, это только текст на экране и иностранные диалоги, не весь сценарий.</string>
     <string name="subtitle_mode_none_hint">Субтитры не будут загружаться по умолчанию. Их все еще можно включить вручную во время просмотра.</string>
+    <string name="cache_section_jellyfin_metadata">Метаданные Jellyfin</string>
+    <string name="cache_section_jellyseerr">Запросы для Jellyseer</string>
+    <string name="cache_section_audiobookshelf">Данные Audiobookshelf</string>
+    <string name="section_music">Музыка</string>
+    <string name="filter_all_libraries">Все библиотеки</string>
+    <string name="filter_all_audiobooks">Все аудиокниги</string>
 </resources>
