@@ -38,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -69,9 +70,12 @@ import androidx.navigation.NavController
 import androidx.paging.PagingData
 import com.makd.afinity.R
 import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
+import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
+import com.makd.afinity.data.models.extensions.showBackdropBlurHash
 import com.makd.afinity.data.models.extensions.showBackdropImageUrl
 import com.makd.afinity.data.models.extensions.showLogoImageUrl
 import com.makd.afinity.data.models.mdblist.MdbListRating
@@ -549,21 +553,40 @@ private fun LandscapeItemDetailContent(
 
     MaterialTheme(colorScheme = landscapeColorScheme) {
         Box(modifier = Modifier.fillMaxSize()) {
-            val backdropUrl =
-                if (item is AfinitySeason) {
-                    item.images.backdropImageUrl
-                        ?: item.images.showBackdropImageUrl
-                        ?: item.images.primaryImageUrl
-                } else {
-                    item.images.backdropImageUrl ?: item.images.primaryImageUrl
+            val backdropChain =
+                remember(item.id) {
+                    if (item is AfinitySeason) {
+                        listOfNotNull(
+                            item.images.backdropImageUrl?.let { it to item.images.backdropBlurHash },
+                            item.images.showBackdropImageUrl?.let {
+                                it to item.images.showBackdropBlurHash
+                            },
+                            item.images.primaryImageUrl?.let { it to item.images.primaryBlurHash },
+                        )
+                    } else {
+                        listOfNotNull(
+                            item.images.backdropImageUrl?.let { it to item.images.backdropBlurHash },
+                            item.images.primaryImageUrl?.let { it to item.images.primaryBlurHash },
+                        )
+                    }
                 }
 
-            if (backdropUrl != null) {
+            var backdropIndex by remember(item.id) { mutableIntStateOf(0) }
+            val backdrop = backdropChain.getOrNull(backdropIndex)
+
+            if (backdrop != null) {
                 AsyncImage(
-                    imageUrl = backdropUrl,
+                    imageUrl = backdrop.first,
                     contentDescription = stringResource(R.string.cd_backdrop_fmt, item.name),
+                    blurHash = backdrop.second,
                     targetWidth = 1920.dp,
                     targetHeight = 1080.dp,
+                    useLowResPlaceholder = true,
+                    onError = {
+                        if (backdropIndex < backdropChain.lastIndex) {
+                            backdropIndex++
+                        }
+                    },
                     modifier = Modifier.fillMaxSize().blur(0.dp),
                     contentScale = ContentScale.Crop,
                     alignment = Alignment.Center,
