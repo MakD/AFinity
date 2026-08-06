@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +17,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.carousel.CarouselDefaults
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
@@ -25,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -45,6 +48,8 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.focalAlpha
+import com.makd.afinity.ui.theme.CardDimensions
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,159 +68,179 @@ fun SpotlightCarousel(
         configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     val containerSize = LocalWindowInfo.current.containerSize
     val density = LocalDensity.current
-    val containerWidth = with(density) { containerSize.width.toDp() }
-    val containerHeight = with(density) { containerSize.height.toDp() }
-    val preferredItemWidth = containerWidth * if (isLandscape) 0.58f else 0.82f
-    val carouselHeight = if (isLandscape) containerHeight * 0.62f else 220.dp
+    val windowWidth = with(density) { containerSize.width.toDp() }
+    val windowHeight = with(density) { containerSize.height.toDp() }
     val state = rememberCarouselState { items.size }
 
     Column(modifier = modifier) {
         HomeSectionHeader(title = title, startPadding = 14.dp)
-        HorizontalMultiBrowseCarousel(
-            state = state,
-            preferredItemWidth = preferredItemWidth,
-            modifier = Modifier.height(carouselHeight).padding(horizontal = 14.dp),
-            itemSpacing = 8.dp,
-        ) { index ->
-            val item = items[index]
-            Box(
-                modifier =
-                    Modifier.height(carouselHeight)
-                        .maskClip(MaterialTheme.shapes.extraLarge)
-                        .clickable { onItemClick(item) }
-            ) {
-                AsyncImage(
-                    imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl,
-                    contentDescription = item.name,
-                    blurHash = item.images.backdropBlurHash ?: item.images.primaryBlurHash,
-                    targetWidth = preferredItemWidth,
-                    targetHeight = carouselHeight,
-                    modifier =
-                        Modifier.fillMaxSize().clip(MaterialTheme.shapes.extraLarge).drawWithCache {
-                            val gradient =
-                                Brush.verticalGradient(
-                                    colors =
-                                        listOf(
-                                            Color.Transparent,
-                                            Color.Black.copy(alpha = 0.72f),
-                                        ),
-                                    startY = size.height * 0.45f,
-                                    endY = size.height,
-                                )
-                            onDrawWithContent {
-                                drawContent()
-                                drawRect(Color.Black.copy(alpha = 0.4f))
-                                drawRect(gradient)
-                            }
-                        },
-                    contentScale = ContentScale.Crop,
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
+            val itemSize =
+                CardDimensions.carouselItemSize(
+                    availableWidth = maxWidth,
+                    windowHeight = windowHeight,
+                    isLandscape = isLandscape,
+                    widthFraction = if (isLandscape) 0.58f else 0.88f,
+                    aspectRatio = CardDimensions.spotlightAspectRatio(isLandscape),
+                    maxHeight = CardDimensions.spotlightMaxHeight(windowWidth),
                 )
 
-                Row(
+            HorizontalMultiBrowseCarousel(
+                state = state,
+                preferredItemWidth = itemSize.width,
+                modifier = Modifier.height(itemSize.height),
+                itemSpacing = 12.dp,
+                maxSmallItemWidth = CarouselDefaults.MinSmallItemSize,
+            ) { index ->
+                val item = items[index]
+
+                Box(
                     modifier =
-                        Modifier.align(Alignment.BottomStart)
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                        Modifier.height(itemSize.height)
+                            .maskClip(MaterialTheme.shapes.extraLarge)
+                            .clickable { onItemClick(item) }
                 ) {
-                    val logoUrl =
-                        item.images.logoImageUrlWithTransparency ?: item.images.showLogoImageUrl
-                    val imdbRating =
-                        when (item) {
-                            is AfinityMovie -> item.communityRating
-                            is AfinityShow -> item.communityRating
-                            else -> null
-                        }
-                    val rtRating = (item as? AfinityMovie)?.criticRating
+                    AsyncImage(
+                        imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl,
+                        contentDescription = item.name,
+                        blurHash = item.images.backdropBlurHash ?: item.images.primaryBlurHash,
+                        targetWidth = itemSize.width,
+                        targetHeight = itemSize.height,
+                        modifier =
+                            Modifier.fillMaxSize()
+                                .clip(MaterialTheme.shapes.extraLarge)
+                                .drawWithCache {
+                                    val gradient =
+                                        Brush.verticalGradient(
+                                            colors =
+                                                listOf(
+                                                    Color.Transparent,
+                                                    Color.Black.copy(alpha = 0.72f),
+                                                ),
+                                            startY = size.height * 0.45f,
+                                            endY = size.height,
+                                        )
+                                    onDrawWithContent {
+                                        drawContent()
+                                        drawRect(Color.Black.copy(alpha = 0.4f))
+                                        drawRect(gradient)
+                                    }
+                                },
+                        contentScale = ContentScale.Crop,
+                    )
 
-                    Column(
-                        modifier = Modifier.weight(1f).padding(end = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    Row(
+                        modifier =
+                            Modifier.align(Alignment.BottomStart)
+                                .fillMaxWidth()
+                                .graphicsLayer { alpha = carouselItemDrawInfo.focalAlpha }
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.Bottom,
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        if (logoUrl != null) {
-                            AsyncImage(
-                                imageUrl = logoUrl,
-                                contentDescription = item.name,
-                                blurHash = null,
-                                modifier = Modifier.fillMaxWidth().height(56.dp),
-                                contentScale = ContentScale.Fit,
-                                alignment = Alignment.CenterStart,
-                                targetWidth = containerWidth,
-                                targetHeight = 56.dp,
-                            )
-                        } else {
-                            Text(
-                                text = item.name,
-                                style =
-                                    MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                color = Color.White,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
+                        val logoUrl =
+                            item.images.logoImageUrlWithTransparency
+                                ?: item.images.showLogoImageUrl
+                        val imdbRating =
+                            when (item) {
+                                is AfinityMovie -> item.communityRating
+                                is AfinityShow -> item.communityRating
+                                else -> null
+                            }
+                        val rtRating = (item as? AfinityMovie)?.criticRating
 
-                        if (LocalShowRatings.current && (imdbRating != null || rtRating != null)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        Column(
+                            modifier = Modifier.weight(1f).padding(end = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            if (logoUrl != null) {
+                                AsyncImage(
+                                    imageUrl = logoUrl,
+                                    contentDescription = item.name,
+                                    blurHash = null,
+                                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                                    contentScale = ContentScale.Fit,
+                                    alignment = Alignment.CenterStart,
+                                    targetWidth = itemSize.width,
+                                    targetHeight = 56.dp,
+                                )
+                            } else {
+                                Text(
+                                    text = item.name,
+                                    style =
+                                        MaterialTheme.typography.titleMedium.copy(
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                    color = Color.White,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+
+                            if (
+                                LocalShowRatings.current &&
+                                    (imdbRating != null || rtRating != null)
                             ) {
-                                imdbRating?.let { rating ->
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_imdb_logo),
-                                        contentDescription = null,
-                                        tint = Color.Unspecified,
-                                        modifier = Modifier.size(18.dp),
-                                    )
-                                    Text(
-                                        text = String.format(Locale.US, "%.1f", rating),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = Color.White,
-                                    )
-                                }
-                                if (imdbRating != null && rtRating != null) {
-                                    Text(
-                                        text = "•",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = Color.White.copy(alpha = 0.6f),
-                                    )
-                                }
-                                rtRating?.let { rt ->
-                                    Icon(
-                                        painter =
-                                            painterResource(
-                                                if (rt > 60) R.drawable.ic_rotten_tomato_fresh
-                                                else R.drawable.ic_rotten_tomato_rotten
-                                            ),
-                                        contentDescription = null,
-                                        tint = Color.Unspecified,
-                                        modifier = Modifier.size(14.dp),
-                                    )
-                                    Text(
-                                        text = "${rt.toInt()}%",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = Color.White,
-                                    )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                ) {
+                                    imdbRating?.let { rating ->
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_imdb_logo),
+                                            contentDescription = null,
+                                            tint = Color.Unspecified,
+                                            modifier = Modifier.size(18.dp),
+                                        )
+                                        Text(
+                                            text = String.format(Locale.US, "%.1f", rating),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Color.White,
+                                        )
+                                    }
+                                    if (imdbRating != null && rtRating != null) {
+                                        Text(
+                                            text = "•",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Color.White.copy(alpha = 0.6f),
+                                        )
+                                    }
+                                    rtRating?.let { rt ->
+                                        Icon(
+                                            painter =
+                                                painterResource(
+                                                    if (rt > 60)
+                                                        R.drawable.ic_rotten_tomato_fresh
+                                                    else R.drawable.ic_rotten_tomato_rotten
+                                                ),
+                                            contentDescription = null,
+                                            tint = Color.Unspecified,
+                                            modifier = Modifier.size(14.dp),
+                                        )
+                                        Text(
+                                            text = "${rt.toInt()}%",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Color.White,
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    Box(
-                        modifier =
-                            Modifier.size(40.dp)
-                                .background(MaterialTheme.colorScheme.primary, CircleShape)
-                                .clickable { onPlayClick(item) },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_player_play_filled),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(20.dp),
-                        )
+                        Box(
+                            modifier =
+                                Modifier.size(40.dp)
+                                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+                                    .clickable { onPlayClick(item) },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_player_play_filled),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
                     }
                 }
             }

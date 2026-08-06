@@ -10,6 +10,10 @@ object CardDimensions {
     const val ASPECT_RATIO_PORTRAIT = 2f / 3f
     const val ASPECT_RATIO_LANDSCAPE = 16f / 9f
     const val ASPECT_RATIO_SQUARE = 1f
+    const val ASPECT_RATIO_SPOTLIGHT = 1.85f
+    const val ASPECT_RATIO_SPOTLIGHT_PORTRAIT = 1.5f
+
+    private const val LANDSCAPE_HEIGHT_FRACTION = 0.4f
 
     val CardTextSpacing = 8.dp
     val TitleLine = 20.dp
@@ -31,7 +35,13 @@ object CardDimensions {
         val GridCompact = 140.dp
         val GridMedium = 160.dp
         val GridExpanded = 180.dp
+
+        val SpotlightCompact = 230.dp
+        val SpotlightMedium = 270.dp
+        val SpotlightExpanded = 330.dp
     }
+
+    data class CarouselItemSize(val width: Dp, val height: Dp)
 
     val WindowWidthSizeClass.portraitWidth: Dp
         get() =
@@ -68,6 +78,31 @@ object CardDimensions {
                 WindowWidthSizeClass.Expanded -> Values.GridExpanded
                 else -> Values.GridCompact
             }
+
+    fun spotlightAspectRatio(isLandscape: Boolean): Float =
+        if (isLandscape) ASPECT_RATIO_SPOTLIGHT else ASPECT_RATIO_SPOTLIGHT_PORTRAIT
+
+    fun spotlightMaxHeight(windowWidth: Dp): Dp =
+        when {
+            windowWidth < 600.dp -> Values.SpotlightCompact
+            windowWidth < 840.dp -> Values.SpotlightMedium
+            else -> Values.SpotlightExpanded
+        }
+
+    fun carouselItemSize(
+        availableWidth: Dp,
+        windowHeight: Dp,
+        isLandscape: Boolean,
+        widthFraction: Float,
+        aspectRatio: Float,
+        maxHeight: Dp,
+    ): CarouselItemSize {
+        val heightCap =
+            if (isLandscape) minOf(maxHeight, windowHeight * LANDSCAPE_HEIGHT_FRACTION)
+            else maxHeight
+        val width = (availableWidth * widthFraction).coerceAtMost(heightCap * aspectRatio)
+        return CarouselItemSize(width = width, height = width / aspectRatio)
+    }
 
     fun calculateHeight(width: Dp, aspectRatio: Float): Dp = width / aspectRatio
 

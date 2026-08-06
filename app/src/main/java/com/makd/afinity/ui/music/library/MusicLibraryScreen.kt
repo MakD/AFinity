@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -43,6 +44,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.carousel.CarouselDefaults
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
@@ -60,9 +62,12 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -92,6 +97,7 @@ import com.makd.afinity.ui.components.AlphabetScroller
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.SectionRowHeader
+import com.makd.afinity.ui.components.focalAlpha
 import com.makd.afinity.ui.home.components.ArtistAlbumsCarousel
 import com.makd.afinity.ui.home.components.LatestAlbumsSection
 import com.makd.afinity.ui.home.components.MostPlayedAlbumsSection
@@ -1015,39 +1021,61 @@ private fun MadeForYouCarousel(
 
         val configuration = LocalConfiguration.current
         val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        val preferredItemWidth =
-            (configuration.screenWidthDp * if (isLandscape) 0.58f else 0.82f).dp
-        val carouselHeight = if (isLandscape) (configuration.screenHeightDp * 0.45f).dp else 220.dp
+        val containerSize = LocalWindowInfo.current.containerSize
+        val density = LocalDensity.current
+        val windowWidth = with(density) { containerSize.width.toDp() }
+        val windowHeight = with(density) { containerSize.height.toDp() }
         val state = rememberCarouselState { items.size }
 
-        HorizontalMultiBrowseCarousel(
-            state = state,
-            preferredItemWidth = preferredItemWidth,
-            modifier = Modifier.height(carouselHeight).padding(horizontal = 16.dp),
-            itemSpacing = 8.dp,
-        ) { index ->
-            Box(
-                modifier =
-                    Modifier.height(carouselHeight)
-                        .maskClip(MaterialTheme.shapes.extraLarge)
-                        .clip(MaterialTheme.shapes.extraLarge)
-            ) {
-                when (val item = items[index]) {
-                    is MadeForYouItem.TrackMix -> {
-                        MusicTracksCard(
-                            title = item.title,
-                            subtitle = item.subtitle,
-                            tracks = item.tracks,
-                            onPlay = { onPlayMix(item.tracks) },
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
-                    is MadeForYouItem.AlbumItem -> {
-                        HeroDiscoverCard(
-                            album = item.album,
-                            onAlbumClick = { onAlbumClick(item.album) },
-                            modifier = Modifier.fillMaxSize(),
-                        )
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+            val itemSize =
+                CardDimensions.carouselItemSize(
+                    availableWidth = maxWidth,
+                    windowHeight = windowHeight,
+                    isLandscape = isLandscape,
+                    widthFraction = if (isLandscape) 0.58f else 0.88f,
+                    aspectRatio = CardDimensions.spotlightAspectRatio(isLandscape),
+                    maxHeight = CardDimensions.spotlightMaxHeight(windowWidth),
+                )
+
+            HorizontalMultiBrowseCarousel(
+                state = state,
+                preferredItemWidth = itemSize.width,
+                modifier = Modifier.height(itemSize.height),
+                itemSpacing = 12.dp,
+                maxSmallItemWidth = CarouselDefaults.MinSmallItemSize,
+            ) { index ->
+                val contentAlpha = { carouselItemDrawInfo.focalAlpha }
+
+                Box(
+                    modifier =
+                        Modifier.height(itemSize.height)
+                            .maskClip(MaterialTheme.shapes.extraLarge)
+                            .clip(MaterialTheme.shapes.extraLarge)
+                ) {
+                    when (val item = items[index]) {
+                        is MadeForYouItem.TrackMix -> {
+                            MusicTracksCard(
+                                title = item.title,
+                                subtitle = item.subtitle,
+                                tracks = item.tracks,
+                                onPlay = { onPlayMix(item.tracks) },
+                                cardWidth = itemSize.width,
+                                cardHeight = itemSize.height,
+                                contentAlpha = contentAlpha,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+                        is MadeForYouItem.AlbumItem -> {
+                            HeroDiscoverCard(
+                                album = item.album,
+                                onAlbumClick = { onAlbumClick(item.album) },
+                                cardWidth = itemSize.width,
+                                cardHeight = itemSize.height,
+                                contentAlpha = contentAlpha,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
                     }
                 }
             }
@@ -1060,23 +1088,23 @@ private fun MusicTracksCard(
     title: String,
     tracks: List<AfinityTrack>,
     onPlay: () -> Unit,
+    cardWidth: Dp,
+    cardHeight: Dp,
+    contentAlpha: () -> Float,
     modifier: Modifier = Modifier,
     subtitle: String = "${tracks.size} tracks",
 ) {
     val imageUrl = tracks.firstOrNull()?.images?.primary?.toString()
     val blurHash = tracks.firstOrNull()?.images?.primaryImageBlurHash
-    Box(
-        modifier =
-            modifier.height(220.dp).clip(RoundedCornerShape(16.dp)).clickable(onClick = onPlay)
-    ) {
+    Box(modifier = modifier.clip(RoundedCornerShape(16.dp)).clickable(onClick = onPlay)) {
         AsyncImage(
             imageUrl = imageUrl,
             contentDescription = title,
             blurHash = blurHash,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
-            targetWidth = LocalConfiguration.current.screenWidthDp.dp,
-            targetHeight = 220.dp,
+            targetWidth = cardWidth,
+            targetHeight = cardHeight,
         )
         Box(
             modifier =
@@ -1098,6 +1126,7 @@ private fun MusicTracksCard(
                 modifier =
                     Modifier.align(Alignment.BottomStart)
                         .fillMaxWidth()
+                        .graphicsLayer { alpha = contentAlpha() }
                         .padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1143,20 +1172,21 @@ private fun MusicTracksCard(
 private fun HeroDiscoverCard(
     album: AfinityAlbum,
     onAlbumClick: (AfinityAlbum) -> Unit,
+    cardWidth: Dp,
+    cardHeight: Dp,
+    contentAlpha: () -> Float,
     modifier: Modifier = Modifier,
 ) {
     Box(
         modifier =
-            modifier.height(220.dp).clip(RoundedCornerShape(16.dp)).clickable {
-                onAlbumClick(album)
-            }
+            modifier.clip(RoundedCornerShape(16.dp)).clickable { onAlbumClick(album) }
     ) {
         AsyncImage(
             imageUrl = album.images.primary?.toString(),
             contentDescription = album.name,
             blurHash = album.images.primaryImageBlurHash,
-            targetWidth = 300.dp,
-            targetHeight = 220.dp,
+            targetWidth = cardWidth,
+            targetHeight = cardHeight,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
         )
@@ -1170,7 +1200,12 @@ private fun HeroDiscoverCard(
                         )
                     )
         )
-        Column(modifier = Modifier.align(Alignment.BottomStart).padding(16.dp)) {
+        Column(
+            modifier =
+                Modifier.align(Alignment.BottomStart)
+                    .graphicsLayer { alpha = contentAlpha() }
+                    .padding(16.dp)
+        ) {
             Text(
                 text = album.name,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),

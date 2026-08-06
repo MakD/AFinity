@@ -1,9 +1,9 @@
 package com.makd.afinity.ui.home.components
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -23,18 +23,21 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.carousel.CarouselDefaults
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,8 +50,10 @@ import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.SectionRowHeader
+import com.makd.afinity.ui.components.focalAlpha
 import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.music.components.MusicPlaylistCard
+import com.makd.afinity.ui.theme.CardDimensions
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,84 +71,92 @@ private fun MusicCarouselSection(
     val configuration = LocalConfiguration.current
     val isLandscape =
         configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-    val portraitWidth = ((configuration.screenWidthDp - 92) / 3f).dp
-    val preferredItemWidth =
-        if (isLandscape) (configuration.screenWidthDp * 0.25f).dp else portraitWidth
-    val carouselHeight = if (isLandscape) (configuration.screenHeightDp * 0.50f).dp else 195.dp
+    val containerSize = LocalWindowInfo.current.containerSize
+    val density = LocalDensity.current
+    val windowWidth = with(density) { containerSize.width.toDp() }
+    val windowHeight = with(density) { containerSize.height.toDp() }
     val state = rememberCarouselState { count }
 
     Column(modifier = modifier) {
         HomeSectionHeader(title = title, startPadding = 14.dp, bottomPadding = 12.dp)
-        HorizontalMultiBrowseCarousel(
-            state = state,
-            preferredItemWidth = preferredItemWidth,
-            modifier = Modifier.height(carouselHeight).padding(horizontal = 14.dp),
-            itemSpacing = 8.dp,
-        ) { index ->
-            Box(
-                modifier =
-                    Modifier.height(carouselHeight)
-                        .maskClip(MaterialTheme.shapes.extraLarge)
-                        .clickable { onItemClick(index) }
-            ) {
-                val textAlpha by
-                    animateFloatAsState(
-                        targetValue = if (index == state.currentItem) 1f else 0f,
-                        label = "carousel_text_alpha",
-                    )
-
-                AsyncImage(
-                    imageUrl = imageUrl(index),
-                    contentDescription = itemTitle(index),
-                    targetWidth = carouselHeight,
-                    targetHeight = carouselHeight,
-                    modifier =
-                        Modifier.fillMaxSize().clip(MaterialTheme.shapes.extraLarge).drawWithCache {
-                            val gradient =
-                                Brush.verticalGradient(
-                                    colors =
-                                        listOf(
-                                            Color.Transparent,
-                                            Color.Black.copy(alpha = 0.72f),
-                                        ),
-                                    startY = size.height * 0.45f,
-                                    endY = size.height,
-                                )
-                            onDrawWithContent {
-                                drawContent()
-                                drawRect(
-                                    color = Color.Black.copy(alpha = 0.4f),
-                                    alpha = textAlpha,
-                                )
-                                drawRect(brush = gradient, alpha = textAlpha)
-                            }
-                        },
-                    contentScale = ContentScale.Crop,
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
+            val itemSize =
+                CardDimensions.carouselItemSize(
+                    availableWidth = maxWidth,
+                    windowHeight = windowHeight,
+                    isLandscape = isLandscape,
+                    widthFraction = 0.48f,
+                    aspectRatio = CardDimensions.ASPECT_RATIO_SQUARE,
+                    maxHeight = CardDimensions.spotlightMaxHeight(windowWidth),
                 )
 
-                Column(
+            HorizontalMultiBrowseCarousel(
+                state = state,
+                preferredItemWidth = itemSize.width,
+                modifier = Modifier.height(itemSize.height),
+                itemSpacing = 12.dp,
+            ) { index ->
+                Box(
                     modifier =
-                        Modifier.align(Alignment.BottomStart)
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                        Modifier.height(itemSize.height)
+                            .maskClip(MaterialTheme.shapes.extraLarge)
+                            .clickable { onItemClick(index) }
                 ) {
-                    Text(
-                        text = itemTitle(index),
-                        style =
-                            MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = Color.White,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                    AsyncImage(
+                        imageUrl = imageUrl(index),
+                        contentDescription = itemTitle(index),
+                        targetWidth = itemSize.width,
+                        targetHeight = itemSize.height,
+                        modifier =
+                            Modifier.fillMaxSize()
+                                .clip(MaterialTheme.shapes.extraLarge)
+                                .drawWithCache {
+                                    val gradient =
+                                        Brush.verticalGradient(
+                                            colors =
+                                                listOf(
+                                                    Color.Transparent,
+                                                    Color.Black.copy(alpha = 0.72f),
+                                                ),
+                                            startY = size.height * 0.45f,
+                                            endY = size.height,
+                                        )
+                                    onDrawWithContent {
+                                        drawContent()
+                                        drawRect(Color.Black.copy(alpha = 0.4f))
+                                        drawRect(gradient)
+                                    }
+                                },
+                        contentScale = ContentScale.Crop,
                     )
-                    val sub = itemSubtitle(index)
-                    if (!sub.isNullOrEmpty()) {
+
+                    Column(
+                        modifier =
+                            Modifier.align(Alignment.BottomStart)
+                                .graphicsLayer { alpha = carouselItemDrawInfo.focalAlpha }
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
                         Text(
-                            text = sub,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.85f),
+                            text = itemTitle(index),
+                            style =
+                                MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                            color = Color.White,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
+                        val sub = itemSubtitle(index)
+                        if (!sub.isNullOrEmpty()) {
+                            Text(
+                                text = sub,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.85f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
                 }
             }
@@ -397,10 +410,10 @@ fun ArtistAlbumsCarousel(
     val configuration = LocalConfiguration.current
     val isLandscape =
         configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-    val portraitWidth = (configuration.screenWidthDp - 76).dp
-    val preferredItemWidth =
-        if (isLandscape) (configuration.screenWidthDp * 0.58f).dp else portraitWidth
-    val carouselHeight = if (isLandscape) (configuration.screenHeightDp * 0.55f).dp else 200.dp
+    val containerSize = LocalWindowInfo.current.containerSize
+    val density = LocalDensity.current
+    val windowWidth = with(density) { containerSize.width.toDp() }
+    val windowHeight = with(density) { containerSize.height.toDp() }
     val state = rememberCarouselState { albums.size }
 
     Column(modifier = modifier) {
@@ -409,85 +422,102 @@ fun ArtistAlbumsCarousel(
             startPadding = 14.dp,
             bottomPadding = 12.dp,
         )
-        HorizontalMultiBrowseCarousel(
-            state = state,
-            preferredItemWidth = preferredItemWidth,
-            modifier = Modifier.height(carouselHeight).padding(horizontal = 14.dp),
-            itemSpacing = 8.dp,
-        ) { index ->
-            val album = albums[index]
-            Box(
-                modifier =
-                    Modifier.height(carouselHeight)
-                        .maskClip(MaterialTheme.shapes.extraLarge)
-                        .clickable { onAlbumClick(album) }
-            ) {
-                AsyncImage(
-                    imageUrl = (album.images.backdrop ?: album.images.primary)?.toString(),
-                    contentDescription = album.name,
-                    targetWidth = preferredItemWidth,
-                    targetHeight = carouselHeight,
-                    modifier =
-                        Modifier.fillMaxSize().clip(MaterialTheme.shapes.extraLarge).drawWithCache {
-                            val gradient =
-                                Brush.verticalGradient(
-                                    colors =
-                                        listOf(
-                                            Color.Transparent,
-                                            Color.Black.copy(alpha = 0.72f),
-                                        ),
-                                    startY = size.height * 0.45f,
-                                    endY = size.height,
-                                )
-                            onDrawWithContent {
-                                drawContent()
-                                drawRect(Color.Black.copy(alpha = 0.4f))
-                                drawRect(gradient)
-                            }
-                        },
-                    contentScale = ContentScale.Crop,
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
+            val itemSize =
+                CardDimensions.carouselItemSize(
+                    availableWidth = maxWidth,
+                    windowHeight = windowHeight,
+                    isLandscape = isLandscape,
+                    widthFraction = if (isLandscape) 0.58f else 0.88f,
+                    aspectRatio = CardDimensions.spotlightAspectRatio(isLandscape),
+                    maxHeight = CardDimensions.spotlightMaxHeight(windowWidth),
                 )
 
-                Column(
+            HorizontalMultiBrowseCarousel(
+                state = state,
+                preferredItemWidth = itemSize.width,
+                modifier = Modifier.height(itemSize.height),
+                itemSpacing = 12.dp,
+                maxSmallItemWidth = CarouselDefaults.MinSmallItemSize,
+            ) { index ->
+                val album = albums[index]
+
+                Box(
                     modifier =
-                        Modifier.align(Alignment.BottomStart)
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                        Modifier.height(itemSize.height)
+                            .maskClip(MaterialTheme.shapes.extraLarge)
+                            .clickable { onAlbumClick(album) }
                 ) {
-                    val logoUrl = artist.images.logo?.toString()
-                    if (logoUrl != null) {
-                        AsyncImage(
-                            imageUrl = logoUrl,
-                            contentDescription = artist.name,
-                            blurHash = null,
-                            modifier = Modifier.fillMaxWidth().height(48.dp),
-                            contentScale = ContentScale.Fit,
-                            alignment = Alignment.CenterStart,
-                            targetWidth = LocalConfiguration.current.screenWidthDp.dp,
-                            targetHeight = 48.dp,
-                        )
-                    } else {
+                    AsyncImage(
+                        imageUrl = (album.images.backdrop ?: album.images.primary)?.toString(),
+                        contentDescription = album.name,
+                        targetWidth = itemSize.width,
+                        targetHeight = itemSize.height,
+                        modifier =
+                            Modifier.fillMaxSize()
+                                .clip(MaterialTheme.shapes.extraLarge)
+                                .drawWithCache {
+                                    val gradient =
+                                        Brush.verticalGradient(
+                                            colors =
+                                                listOf(
+                                                    Color.Transparent,
+                                                    Color.Black.copy(alpha = 0.72f),
+                                                ),
+                                            startY = size.height * 0.45f,
+                                            endY = size.height,
+                                        )
+                                    onDrawWithContent {
+                                        drawContent()
+                                        drawRect(Color.Black.copy(alpha = 0.4f))
+                                        drawRect(gradient)
+                                    }
+                                },
+                        contentScale = ContentScale.Crop,
+                    )
+
+                    Column(
+                        modifier =
+                            Modifier.align(Alignment.BottomStart)
+                                .fillMaxWidth()
+                                .graphicsLayer { alpha = carouselItemDrawInfo.focalAlpha }
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        val logoUrl = artist.images.logo?.toString()
+                        if (logoUrl != null) {
+                            AsyncImage(
+                                imageUrl = logoUrl,
+                                contentDescription = artist.name,
+                                blurHash = null,
+                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                                contentScale = ContentScale.Fit,
+                                alignment = Alignment.CenterStart,
+                                targetWidth = itemSize.width,
+                                targetHeight = 48.dp,
+                            )
+                        } else {
+                            Text(
+                                text = artist.name,
+                                style =
+                                    MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                color = Color.White,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                         Text(
-                            text = artist.name,
-                            style =
-                                MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                            color = Color.White,
+                            text =
+                                listOfNotNull(album.name, album.productionYear?.toString())
+                                    .joinToString(" · "),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.85f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
-                    Text(
-                        text =
-                            listOfNotNull(album.name, album.productionYear?.toString())
-                                .joinToString(" · "),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.85f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
                 }
             }
         }

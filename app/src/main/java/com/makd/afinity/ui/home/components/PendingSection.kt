@@ -3,6 +3,7 @@ package com.makd.afinity.ui.home.components
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -56,21 +57,30 @@ fun PendingSection(
             val density = LocalDensity.current
             val containerWidth = with(density) { containerSize.width.toDp() }
             val containerHeight = with(density) { containerSize.height.toDp() }
-            val itemWidth = containerWidth * if (isLandscape) 0.58f else 0.82f
-            val carouselHeight = if (isLandscape) containerHeight * 0.62f else 220.dp
-
-            Row(
-                modifier = Modifier.fillMaxWidth().height(carouselHeight).clipToBounds(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                repeat(2) {
-                    Box(
-                        modifier =
-                            Modifier.width(itemWidth)
-                                .fillMaxHeight()
-                                .clip(MaterialTheme.shapes.extraLarge)
-                                .shimmerEffect()
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                val itemSize =
+                    CardDimensions.carouselItemSize(
+                        availableWidth = maxWidth,
+                        windowHeight = containerHeight,
+                        isLandscape = isLandscape,
+                        widthFraction = if (isLandscape) 0.58f else 0.88f,
+                        aspectRatio = CardDimensions.spotlightAspectRatio(isLandscape),
+                        maxHeight = CardDimensions.spotlightMaxHeight(containerWidth),
                     )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().height(itemSize.height).clipToBounds(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    repeat(2) {
+                        Box(
+                            modifier =
+                                Modifier.width(itemSize.width)
+                                    .fillMaxHeight()
+                                    .clip(MaterialTheme.shapes.extraLarge)
+                                    .shimmerEffect()
+                        )
+                    }
                 }
             }
         } else {
