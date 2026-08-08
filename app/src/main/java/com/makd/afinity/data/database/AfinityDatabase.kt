@@ -126,7 +126,7 @@ import com.makd.afinity.data.models.user.User
             CustomHomeSectionEntity::class,
             HomeLayoutPreferenceEntity::class,
         ],
-    version = 63,
+    version = 64,
     exportSchema = false,
 )
 @TypeConverters(AfinityTypeConverters::class)

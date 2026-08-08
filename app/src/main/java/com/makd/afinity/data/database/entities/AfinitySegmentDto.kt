@@ -1,24 +1,11 @@
 package com.makd.afinity.data.database.entities
 
 import androidx.room.Entity
-import androidx.room.ForeignKey
 import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.AfinitySegmentType
 import java.util.UUID
 
-@Entity(
-    tableName = "segments",
-    primaryKeys = ["itemId", "type"],
-    foreignKeys =
-        [
-            ForeignKey(
-                entity = AfinityEpisodeDto::class,
-                parentColumns = arrayOf("id"),
-                childColumns = arrayOf("itemId"),
-                onDelete = ForeignKey.CASCADE,
-            )
-        ],
-)
+@Entity(tableName = "segments", primaryKeys = ["itemId", "type"])
 data class AfinitySegmentDto(
     val itemId: UUID,
     val type: AfinitySegmentType,
