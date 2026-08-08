@@ -646,7 +646,7 @@
     <string name="home_upcoming_episodes">Episode Mendatang</string>
     <string name="meta_parts_fmt">%1$d Bagian</string>
     <string name="section_available_requests">Permintaan Tersedia</string>
-    <string name="cd_queued_tap_cancel">Dalam antrean — ketuk untuk membatalkan</string>
+    <string name="cd_queued_tap_cancel">Dalam antrean, ketuk untuk membatalkan</string>
     <string name="skip_mode_button">Tampilkan tombol</string>
     <string name="skip_mode_auto_skip">Lewati otomatis</string>
     <string name="skip_mode_disabled">Dinonaktifkan</string>
@@ -695,7 +695,7 @@
     <string name="cd_abs_open_podcast">Buka podcast</string>
     <string name="cd_abs_view_series">Lihat seri</string>
     <string name="cd_abs_play_episode">Putar episode</string>
-    <string name="cd_abs_downloaded_delete">Diunduh — ketuk untuk menghapus</string>
+    <string name="cd_abs_downloaded_delete">Diunduh, ketuk untuk menghapus</string>
     <string name="cd_abs_download_episode">Unduh episode</string>
     <string name="cd_abs_download">Unduh</string>
     <string name="cd_abs_minimize">Perkecil</string>
@@ -995,8 +995,8 @@
     <string name="storage_unavailable_volume">Penyimpanan tidak tersedia</string>
     <string name="storage_unavailable_badge">Tidak tersedia</string>
     <string name="storage_unavailable_used_fmt">"%1$s digunakan -  penyimpanan tidak terhubung"</string>
-    <string name="download_unavailable_label">Tidak tersedia — %1$s telah dilepas</string>
-    <string name="download_unavailable_indicator">Diunduh — penyimpanan tidak tersedia</string>
+    <string name="download_unavailable_label">Tidak tersedia: %1$s dihapus</string>
+    <string name="download_unavailable_indicator">Diunduh: penyimpanan tidak tersedia</string>
     <string name="download_unavailable_delete_title">Penyimpanan tidak tersedia</string>
     <string name="download_unavailable_delete_message">Unduhan ini ada di penyimpanan yang tidak terhubung, jadi file-filenya tidak bisa dihapus sekarang. Tetap hapus dari daftar? File-file tersebut akan tetap ada di penyimpanan jika Anda menghubungkannya kembali.</string>
     <string name="download_unavailable_delete_confirm">Hapus dari daftar</string>
@@ -1193,9 +1193,9 @@
     <string name="pref_libraries_in_drawer_summary">Tampilkan daftar pustaka Anda di menu navigasi, bukan di layar beranda</string>
     <string name="btn_validate">Validasi</string>
     <string name="update_console_status_hashing">sedang membuat hash file yang diunduh…</string>
-    <string name="update_console_status_match">COCOK — build autentik, aman untuk diinstal</string>
-    <string name="update_console_status_mismatch">TIDAK COCOK — file dihapus, unduh lagi</string>
-    <string name="update_console_status_error">ERROR — file tidak dapat dibaca, unduh lagi</string>
+    <string name="update_console_status_match">COCOK: build autentik, aman untuk diinstal</string>
+    <string name="update_console_status_mismatch">TIDAK COCOK: file dihapus, unduh kembali</string>
+    <string name="update_console_status_error">KESALAHAN: tidak dapat membaca file, unduh kembali</string>
     <string name="section_ratings">Rating</string>
     <string name="request_all_seasons_note">Semua season akan diminta</string>
     <string name="request_quota_movie_label">Batas permintaan film</string>
@@ -1447,7 +1447,7 @@
     <string name="custom_sections_field_limit">Batas item</string>
     <string name="custom_sections_field_sort">Urutkan</string>
     <string name="custom_sections_field_card_style">Gaya kartu</string>
-    <string name="custom_sections_card_style_locked_fmt">%1$s — diatur secara otomatis untuk jenis baris ini</string>
+    <string name="custom_sections_card_style_locked_fmt">%1$s (diatur secara otomatis untuk jenis baris ini)</string>
     <string name="custom_sections_field_refine">Persempit</string>
     <string name="custom_sections_refine_none">Tidak ada filter tambahan</string>
     <string name="custom_sections_refine_summary_fmt">%1$s · %2$d filter</string>
@@ -1552,4 +1552,26 @@
     <string name="unverified_address_title">Tidak dapat mengonfirmasi server ini</string>
     <string name="unverified_address_message">Kami berhasil menghubungi server di %1$s, tetapi tidak dapat memastikan bahwa server tersebut sama dengan server yang sedang Anda gunakan untuk masuk. Tetap tambahkan?</string>
     <string name="unverified_address_confirm">Tetap tambahkan</string>
+    <string name="cache_section_jellyfin_metadata">Metadata Jellyfin</string>
+    <string name="cache_section_jellyseerr">Permintaan Jellyseerr</string>
+    <string name="cache_section_audiobookshelf">Data Audiobookshelf</string>
+    <string name="pref_subtitle_mode_title">Mode Subtitle</string>
+    <string name="subtitle_mode_follow_server">Ikuti pengaturan server</string>
+    <string name="pref_prefer_sdh_title">Utamakan subtitle SDH</string>
+    <string name="pref_prefer_sdh_summary">Pilih subtitle untuk tunarungu secara otomatis</string>
+    <string name="pref_prefer_sdh_unavailable">Hanya digunakan dengan Selalu putar atau Hanya untuk audio berbahasa asing</string>
+    <string name="subtitle_mode_default">Default</string>
+    <string name="subtitle_mode_always">Selalu putar</string>
+    <string name="subtitle_mode_smart">Hanya untuk audio berbahasa asing</string>
+    <string name="subtitle_mode_only_forced">Hanya subtitle paksa</string>
+    <string name="subtitle_mode_none">Tidak ada</string>
+    <string name="subtitle_mode_follow_server_hint">Gunakan mode subtitle yang dikonfigurasi untuk akun Anda di server Jellyfin.</string>
+    <string name="subtitle_mode_default_hint">Subtitle dimuat berdasarkan penanda default dan paksa dalam metadata tersemat. Preferensi bahasa dipertimbangkan saat tersedia beberapa pilihan.</string>
+    <string name="subtitle_mode_always_hint">Subtitle dimuat untuk setiap item, dengan menyesuaikan bahasa pilihan Anda jika memungkinkan.</string>
+    <string name="subtitle_mode_smart_hint">Subtitle lengkap dimuat ketika audio tidak menggunakan bahasa pilihan Anda. Jika tidak, hanya subtitle paksa yang dimuat.</string>
+    <string name="subtitle_mode_only_forced_hint">Hanya subtitle yang ditandai sebagai paksa yang akan dimuat. Biasanya hanya teks di layar dan dialog berbahasa asing, bukan seluruh naskah.</string>
+    <string name="subtitle_mode_none_hint">Subtitle tidak akan dimuat secara default. Subtitle tetap dapat diaktifkan secara manual saat pemutaran.</string>
+    <string name="section_music">Musik</string>
+    <string name="filter_all_libraries">Semua pustaka</string>
+    <string name="filter_all_audiobooks">Semua buku audio</string>
 </resources>
