@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -41,7 +40,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -52,9 +50,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil3.request.ImageRequest
-import coil3.request.crossfade
-import coil3.svg.SvgDecoder
 import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.LanguageProfile
@@ -987,25 +982,6 @@ private fun MetadataDot() {
 }
 
 @Composable
-internal fun CircleFlagIcon(
-    url: String,
-    modifier: Modifier = Modifier,
-    size: androidx.compose.ui.unit.Dp = 14.dp,
-) {
-    coil3.compose.AsyncImage(
-        model =
-            ImageRequest.Builder(LocalContext.current)
-                .data(url)
-                .decoderFactory(SvgDecoder.Factory())
-                .crossfade(true)
-                .build(),
-        contentDescription = "Flag",
-        modifier = modifier.size(size).clip(CircleShape),
-        contentScale = ContentScale.Crop,
-    )
-}
-
-@Composable
 fun <T> MinimalSelectionTile(
     label: String,
     selectedText: String,
@@ -1298,83 +1274,6 @@ fun SeparatedFlowRow(
         }
     }
 }
-
-internal fun getAutoFlagUrl(langCode: String): String? {
-    if (langCode.isBlank()) return null
-    val resolvedCode =
-        if (langCode.length > 3) {
-            Locale.getAvailableLocales()
-                .firstOrNull {
-                    it.displayLanguage.equals(langCode, ignoreCase = true) ||
-                        it.getDisplayLanguage(Locale.ENGLISH).equals(langCode, ignoreCase = true)
-                }
-                ?.language ?: langCode
-        } else {
-            langCode
-        }
-
-    val manualMapping =
-        when (resolvedCode.lowercase()) {
-            "en" -> "us"
-            "hi" -> "in"
-            "ja" -> "jp"
-            "ko" -> "kr"
-            "zh" -> "cn"
-            "es" -> "es"
-            "fr" -> "fr"
-            "it" -> "it"
-            "de" -> "de"
-            "ru" -> "ru"
-            "pt" -> "br"
-            "tr" -> "tr"
-            "th" -> "th"
-            "id" -> "id"
-            "tl" -> "ph"
-            "vi" -> "vn"
-            "pl" -> "pl"
-            "uk" -> "ua"
-            "ta" -> "in"
-            "te" -> "in"
-            "ml" -> "in"
-            "kn" -> "in"
-            "pa" -> "in"
-            "mr" -> "in"
-            "bn" -> "in"
-            "sv" -> "se"
-            "da" -> "dk"
-            "no" -> "no"
-            "fi" -> "fi"
-            "is" -> "is"
-            "nl" -> "nl"
-            "cs" -> "cz"
-            "hu" -> "hu"
-            "el" -> "gr"
-            "he" -> "il"
-            "ar" -> "sa"
-            "fa" -> "ir"
-            else -> null
-        }
-
-    val countryCode =
-        manualMapping
-            ?: run {
-                val locale = Locale.forLanguageTag(resolvedCode)
-                locale.country.ifBlank {
-                    Locale.getAvailableLocales()
-                        .firstOrNull { it.language == resolvedCode && it.country.isNotBlank() }
-                        ?.country
-                }
-            }
-
-    return if (!countryCode.isNullOrBlank()) {
-        circleFlagAsset(countryCode)
-    } else {
-        null
-    }
-}
-
-internal fun circleFlagAsset(code: String): String =
-    "file:///android_asset/flags/${code.lowercase()}.svg"
 
 private fun formatReleaseDate(dateString: String): String {
     if (dateString.isBlank()) return ""
