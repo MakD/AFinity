@@ -222,6 +222,19 @@ constructor(
                 if (change.kind != AdminChangeKind.IMAGES) {
                     appDataRepository.refreshPlaybackSections()
                 }
+                if (change.kind == AdminChangeKind.METADATA) {
+                    homeSectionsRepository.refreshCustomSections(
+                        "admin metadata edit",
+                        HomeSectionsRepository.ADMIN_REFRESH_DEBOUNCE_MS,
+                    )
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            mediaChangeManager.libraryMetadataChanges.collect { event ->
+                if (offlineModeManager.isOffline.first()) return@collect
+                homeSectionsRepository.refreshCustomSections(event.reason)
             }
         }
 

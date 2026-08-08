@@ -222,6 +222,8 @@ object NetworkModule {
         return builder.build()
     }
 
+    private val imageUserAgent = "AFinity/${BuildConfig.VERSION_NAME} (Android; Coil)"
+
     @Provides
     @Singleton
     @ImageClient
@@ -238,6 +240,14 @@ object NetworkModule {
             .newBuilder()
             .dispatcher(dispatcher)
             .cache(null)
+            .addInterceptor { chain ->
+                chain.proceed(
+                    chain.request()
+                        .newBuilder()
+                        .header("User-Agent", imageUserAgent)
+                        .build()
+                )
+            }
             .addInterceptor { chain ->
                 val request = chain.request()
                 val session = sessionManager.currentSession.value

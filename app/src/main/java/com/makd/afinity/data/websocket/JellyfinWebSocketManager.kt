@@ -259,10 +259,15 @@ constructor(
         )
         val hasStructuralChange =
             !update?.itemsAdded.isNullOrEmpty() || !update?.itemsRemoved.isNullOrEmpty()
-        if (!hasStructuralChange) return
+        if (hasStructuralChange) {
+            mediaRefreshBus.emit(RefreshTrigger.LIBRARY_CHANGED)
+            mediaChangeManager.notifyLibraryContentChanged("library changed websocket event")
+            return
+        }
 
-        mediaRefreshBus.emit(RefreshTrigger.LIBRARY_CHANGED)
-        mediaChangeManager.notifyLibraryContentChanged("library changed websocket event")
+        if (!update?.itemsUpdated.isNullOrEmpty()) {
+            mediaChangeManager.notifyLibraryMetadataChanged("library items updated websocket event")
+        }
     }
 
     private suspend fun subscribeToTaskChanges(apiClient: ApiClient) {

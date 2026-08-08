@@ -39,6 +39,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -113,6 +114,8 @@ constructor(
     private var watchAgainJob: Job? = null
 
     private var popularStudiosJob: Job? = null
+
+    private var customRefreshJob: Job? = null
 
     private val customSectionSignatures = mutableMapOf<String, String>()
 
@@ -196,6 +199,7 @@ constructor(
 
     private val hydrationMutex = Mutex()
     private val hydrationQueue = LinkedHashSet<String>()
+    private val hydrationRefreshKeys = mutableSetOf<String>()
     private var isHydrating = false
     private val renderedItemIds = mutableSetOf<UUID>()
     private val spotlightSeenIds = mutableSetOf<UUID>()
@@ -307,7 +311,7 @@ constructor(
                                 spotlightSeenIds.clear()
                             }
                             layoutSessionKey = sk
-                            _content.value = emptyMap()
+                            retainPinnedContent()
                             _layout.value = reinterleave(cachedLayout.distinctBy { it.key })
                             Timber.d(
                                 "Home layout restored from cache (${cachedLayout.size} sections)"
@@ -329,10 +333,11 @@ constructor(
                         spotlightSeenIds.clear()
                     }
                     layoutSessionKey = sk
-                    _content.value = emptyMap()
+                    retainPinnedContent()
                     _layout.value = fresh
                     homeCacheRepository.putRaw(layoutCacheKey(sk), json.encodeToString(fresh))
                     oldKeys.forEach { homeCacheRepository.invalidate(contentCacheKey(sk, it)) }
+                    if (force) refreshPinnedSections("home layout rebuild")
                     Timber.d("Built fresh home layout (${fresh.size} sections)")
                 } catch (e: CancellationException) {
                     throw e
@@ -351,7 +356,7 @@ constructor(
         criticsChoiceJob =
             scope.launch(Dispatchers.IO) {
                 try {
-                    val items = loadCriticsChoiceItems()
+                    val items = loadCriticsChoiceItems(bypassCache = force)
                     if (items.isNotEmpty()) {
                         hydrationMutex.withLock { renderedItemIds.addAll(items.map { it.id }) }
                     }
@@ -375,7 +380,12 @@ constructor(
         watchAgainJob =
             scope.launch(Dispatchers.IO) {
                 try {
-                    val items = presentationSample(WATCH_AGAIN_KEY, loadWatchAgainItems(), ROW_SIZE)
+                    val items =
+                        presentationSample(
+                            WATCH_AGAIN_KEY,
+                            loadWatchAgainItems(bypassCache = force),
+                            ROW_SIZE,
+                        )
                     if (items.isNotEmpty()) {
                         hydrationMutex.withLock { renderedItemIds.addAll(items.map { it.id }) }
                     }
@@ -424,11 +434,16 @@ constructor(
         enqueueHydration(list.subList(index, minOf(index + HYDRATE_AHEAD, list.size)).map { it.key })
     }
 
-    private fun enqueueHydration(keys: List<String>) {
+    private fun enqueueHydration(keys: List<String>, refresh: Boolean = false) {
         scope.launch(Dispatchers.IO) {
             val shouldDrain =
                 hydrationMutex.withLock {
-                    hydrationQueue.addAll(keys.filterNot { _content.value.containsKey(it) })
+                    if (refresh) {
+                        hydrationRefreshKeys.addAll(keys)
+                        hydrationQueue.addAll(keys)
+                    } else {
+                        hydrationQueue.addAll(keys.filterNot { _content.value.containsKey(it) })
+                    }
                     if (isHydrating || hydrationQueue.isEmpty()) {
                         false
                     } else {
@@ -442,14 +457,20 @@ constructor(
 
     private suspend fun drainHydrationQueue() {
         while (true) {
-            val descriptorKey =
+            val next =
                 hydrationMutex.withLock {
-                    val next = hydrationQueue.firstOrNull()
-                    if (next == null) isHydrating = false else hydrationQueue.remove(next)
-                    next
+                    val key = hydrationQueue.firstOrNull()
+                    if (key == null) {
+                        isHydrating = false
+                        null
+                    } else {
+                        hydrationQueue.remove(key)
+                        key to hydrationRefreshKeys.remove(key)
+                    }
                 } ?: break
+            val (descriptorKey, isRefresh) = next
 
-            if (_content.value.containsKey(descriptorKey)) continue
+            if (!isRefresh && _content.value.containsKey(descriptorKey)) continue
 
             val descriptor =
                 _layout.value.firstOrNull { it.key == descriptorKey }
@@ -457,7 +478,7 @@ constructor(
                     ?: continue
 
             try {
-                val content = hydrateDescriptor(descriptor)
+                val content = hydrateDescriptor(descriptor, bypassCache = isRefresh)
                 if (content != null) {
                     registerRenderedItems(content)
                     _content.update { it + (descriptorKey to content) }
@@ -479,6 +500,47 @@ constructor(
         _layout.value = pruned
         homeCacheRepository.invalidate(contentCacheKey(sk, descriptorKey))
         homeCacheRepository.putRaw(layoutCacheKey(sk), json.encodeToString(pruned))
+    }
+
+    private fun retainPinnedContent() {
+        val pinnedKeys = _pinnedLayout.value.map { it.key }.toSet()
+        _content.update { map ->
+            when {
+                map.isEmpty() -> map
+                pinnedKeys.isEmpty() -> emptyMap()
+                map.keys.all { it in pinnedKeys } -> map
+                else -> map.filterKeys { it in pinnedKeys }
+            }
+        }
+    }
+
+    fun refreshCustomSections(
+        reason: String,
+        debounceMs: Long = LIBRARY_REFRESH_DEBOUNCE_MS,
+    ) {
+        if (_pinnedLayout.value.isEmpty()) return
+        customRefreshJob?.cancel()
+        customRefreshJob =
+            scope.launch {
+                delay(debounceMs)
+                if (sessionKey() == null) return@launch
+                refreshPinnedSections(reason)
+            }
+    }
+
+    private fun refreshPinnedSections(reason: String) {
+        val keys = _pinnedLayout.value.map { it.key }
+        if (keys.isEmpty()) return
+        val (rendered, offScreen) = keys.partition { _content.value.containsKey(it) }
+        Timber.d(
+            "Refreshing pinned home sections ($reason): ${rendered.size} on screen, ${offScreen.size} deferred"
+        )
+        if (offScreen.isNotEmpty()) {
+            scope.launch(Dispatchers.IO) {
+                hydrationMutex.withLock { hydrationRefreshKeys.addAll(offScreen) }
+            }
+        }
+        if (rendered.isNotEmpty()) enqueueHydration(rendered, refresh = true)
     }
 
     fun updateItem(updatedItem: AfinityItem) {
@@ -565,11 +627,13 @@ constructor(
 
     suspend fun clearAllData() {
         buildJob?.cancel()
+        customRefreshJob?.cancel()
         layoutSessionKey = null
         recentWatchedCache = null
         favoriteMoviesCache = null
         hydrationMutex.withLock {
             hydrationQueue.clear()
+            hydrationRefreshKeys.clear()
             isHydrating = false
             renderedItemIds.clear()
             spotlightSeenIds.clear()
@@ -659,7 +723,10 @@ constructor(
         }
     }
 
-    private suspend fun hydrateDescriptor(descriptor: HomeSectionDescriptor): HomeSectionContent? {
+    private suspend fun hydrateDescriptor(
+        descriptor: HomeSectionDescriptor,
+        bypassCache: Boolean = false,
+    ): HomeSectionContent? {
         return when (descriptor.type) {
             HomeSectionType.STARRING,
             HomeSectionType.DIRECTED_BY,
@@ -678,9 +745,9 @@ constructor(
                 )
             HomeSectionType.WRITER_FROM_MOVIE ->
                 hydratePersonFromMovie(descriptor, PersonKind.WRITER, PersonSectionType.WRITTEN_BY)
-            HomeSectionType.WATCH_AGAIN -> hydrateWatchAgain(descriptor)
-            HomeSectionType.CRITICS_CHOICE -> hydrateCriticsChoice(descriptor)
-            HomeSectionType.CUSTOM -> hydrateCustomSection(descriptor)
+            HomeSectionType.WATCH_AGAIN -> hydrateWatchAgain(descriptor, bypassCache)
+            HomeSectionType.CRITICS_CHOICE -> hydrateCriticsChoice(descriptor, bypassCache)
+            HomeSectionType.CUSTOM -> hydrateCustomSection(descriptor, bypassCache)
             HomeSectionType.SPOTLIGHT_GENRE_MOVIE,
             HomeSectionType.SPOTLIGHT_GENRE_SHOW,
             HomeSectionType.SPOTLIGHT_STUDIO,
@@ -754,19 +821,29 @@ constructor(
         )
     }
 
-    private suspend fun hydrateWatchAgain(descriptor: HomeSectionDescriptor): HomeSectionContent {
+    private suspend fun hydrateWatchAgain(
+        descriptor: HomeSectionDescriptor,
+        bypassCache: Boolean = false,
+    ): HomeSectionContent {
         val items =
-            presentationSample(descriptor.key, loadWatchAgainItems(descriptor.key), ROW_SIZE)
+            presentationSample(
+                descriptor.key,
+                loadWatchAgainItems(descriptor.key, bypassCache),
+                ROW_SIZE,
+            )
         return if (items.isEmpty()) HomeSectionContent.Empty else HomeSectionContent.Items(items)
     }
 
     private suspend fun loadWatchAgainItems(
-        descriptorKey: String = WATCH_AGAIN_KEY
+        descriptorKey: String = WATCH_AGAIN_KEY,
+        bypassCache: Boolean = false,
     ): List<AfinityItem> {
         val sk = sessionKey() ?: return emptyList()
         val cacheKey = contentCacheKey(sk, descriptorKey)
         val baseUrl = mediaRepository.getBaseUrl()
-        val cachedItems = homeCacheRepository.getItems(cacheKey, baseUrl, recentCacheTTL)
+        val cachedItems =
+            if (bypassCache) null
+            else homeCacheRepository.getItems(cacheKey, baseUrl, recentCacheTTL)
         if (!cachedItems.isNullOrEmpty()) {
             return if (cachedItems.size < WATCH_AGAIN_MIN_ITEMS) emptyList() else cachedItems
         }
@@ -835,20 +912,23 @@ constructor(
     }
 
     private suspend fun hydrateCriticsChoice(
-        descriptor: HomeSectionDescriptor
+        descriptor: HomeSectionDescriptor,
+        bypassCache: Boolean = false,
     ): HomeSectionContent {
-        val items = loadCriticsChoiceItems(descriptor.key)
+        val items = loadCriticsChoiceItems(descriptor.key, bypassCache)
         return if (items.isEmpty()) HomeSectionContent.Empty
         else HomeSectionContent.RankedItems(items)
     }
 
     private suspend fun loadCriticsChoiceItems(
-        descriptorKey: String = CRITICS_CHOICE_KEY
+        descriptorKey: String = CRITICS_CHOICE_KEY,
+        bypassCache: Boolean = false,
     ): List<AfinityItem> {
         val sk = sessionKey() ?: return emptyList()
         val cacheKey = contentCacheKey(sk, descriptorKey)
         val cachedItems =
-            homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
+            if (bypassCache) null
+            else homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
         if (!cachedItems.isNullOrEmpty()) {
             return rankByRating(presentationSample(descriptorKey, cachedItems, CRITICS_ROW_SIZE))
         }
@@ -901,7 +981,8 @@ constructor(
         }
 
     private suspend fun hydrateCustomSection(
-        descriptor: HomeSectionDescriptor
+        descriptor: HomeSectionDescriptor,
+        bypassCache: Boolean = false,
     ): HomeSectionContent {
         val sectionId = descriptor.customSectionId ?: return HomeSectionContent.Empty
         val section = customHomeSectionsRepository.get(sectionId) ?: return HomeSectionContent.Empty
@@ -910,7 +991,7 @@ constructor(
         val cacheKey = contentCacheKey(sk, descriptor.key)
         val baseUrl = mediaRepository.getBaseUrl()
 
-        if (!section.randomOrder) {
+        if (!section.randomOrder && !bypassCache) {
             val cachedItems = homeCacheRepository.getItems(cacheKey, baseUrl, recentCacheTTL)
             if (!cachedItems.isNullOrEmpty()) {
                 return HomeSectionContent.Items(cachedItems.take(section.itemLimit))
@@ -1547,6 +1628,11 @@ constructor(
             Timber.e(e, "Failed to get random recently watched movie")
             return null
         }
+    }
+
+    companion object {
+        const val ADMIN_REFRESH_DEBOUNCE_MS = 400L
+        const val LIBRARY_REFRESH_DEBOUNCE_MS = 2_000L
     }
 }
 

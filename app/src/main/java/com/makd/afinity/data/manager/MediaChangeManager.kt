@@ -35,8 +35,16 @@ constructor(
         MutableSharedFlow<LibraryContentChangeEvent>(extraBufferCapacity = 16)
     val libraryContentChanges = _libraryContentChanges.asSharedFlow()
 
+    private val _libraryMetadataChanges =
+        MutableSharedFlow<LibraryContentChangeEvent>(extraBufferCapacity = 16)
+    val libraryMetadataChanges = _libraryMetadataChanges.asSharedFlow()
+
     fun notifyLibraryContentChanged(reason: String) {
         scope.launch { _libraryContentChanges.emit(LibraryContentChangeEvent(reason)) }
+    }
+
+    fun notifyLibraryMetadataChanged(reason: String) {
+        scope.launch { _libraryMetadataChanges.emit(LibraryContentChangeEvent(reason)) }
     }
 
     fun notifyItemChanged(

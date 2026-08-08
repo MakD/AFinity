@@ -98,6 +98,8 @@ constructor(
     private val _uiState = MutableStateFlow(CustomSectionsUiState())
     val uiState: StateFlow<CustomSectionsUiState> = _uiState.asStateFlow()
 
+    private var cachedFilterOptions: LibraryFilterOptions? = null
+
     init {
         viewModelScope.launch {
             customHomeSectionsRepository.sections.collect { sections ->
@@ -173,6 +175,7 @@ constructor(
         val state = _uiState.value.stateFor(sourceType)
         if (state == SourceLoadState.LOADING) return
         if (!force && state == SourceLoadState.LOADED) return
+        if (force) cachedFilterOptions = null
         loadSourcesFor(sourceType)
     }
 
@@ -231,9 +234,11 @@ constructor(
                         Timber.w(e, "Failed to load genres for custom sections")
                     }
                 }
-                genreRepository.combinedGenres.value
-                    .map { SourceOption(it.name, it.name) }
-                    .distinctBy { it.value }
+                val indexed = genreRepository.combinedGenres.value.map { it.name }
+                val fromItems = filterOptionsOrLoad()?.genres.orEmpty()
+                (indexed + fromItems)
+                    .map { SourceOption(it, it) }
+                    .distinctBy { it.value.lowercase() }
                     .sortedBy { it.label }
             }
             CustomSectionSourceType.STUDIO ->
@@ -250,8 +255,7 @@ constructor(
             CustomSectionSourceType.COLLECTION -> loadItemOptions("BOX_SET")
             CustomSectionSourceType.PLAYLIST -> loadItemOptions("PLAYLIST")
             CustomSectionSourceType.TAG ->
-                mergedFilterOptions()?.let { merged ->
-                    _uiState.update { state -> state.copy(filterOptions = merged) }
+                filterOptionsOrLoad()?.let { merged ->
                     merged.tags.map { SourceOption(it, it) }
                 }
             CustomSectionSourceType.LIBRARY ->
@@ -272,6 +276,13 @@ constructor(
                         }
                 }
         }
+
+    private suspend fun filterOptionsOrLoad(): LibraryFilterOptions? =
+        cachedFilterOptions
+            ?: mergedFilterOptions()?.also { merged ->
+                cachedFilterOptions = merged
+                _uiState.update { state -> state.copy(filterOptions = merged) }
+            }
 
     private suspend fun mergedFilterOptions(): LibraryFilterOptions? =
         withContext(Dispatchers.IO) {
