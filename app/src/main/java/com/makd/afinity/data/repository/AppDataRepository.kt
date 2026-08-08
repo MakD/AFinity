@@ -511,8 +511,8 @@ constructor(
                     .filter { it == RefreshTrigger.USER_DATA_CHANGED }
                     .debounce(1_500L)
                     .collect {
-                        Timber.d("Bus: user data changed — refreshing live sections")
-                        refreshLiveSections()
+                        Timber.d("Bus: user data changed — refreshing playback sections")
+                        refreshPlaybackSections()
                     }
             }
 
