@@ -44,6 +44,7 @@
     <string name="cd_offline_mode">Offline Mode</string>
     <string name="cd_local_connection">Local Connection</string>
     <string name="cd_tailscale_connection">Tailscale Connection</string>
+    <string name="cd_vpn_connection">VPN Connection</string>
     <string name="cd_remote_connection">Remote Connection</string>
     <string name="cd_retry_connection">Retry connection</string>
     <string name="connection_retry">Retry</string>
@@ -65,6 +66,7 @@
     <string name="cd_switch_account">Switch account</string>
     <string name="connection_label_local">Local</string>
     <string name="connection_label_tailscale">Tailscale</string>
+    <string name="connection_label_vpn">VPN</string>
     <string name="connection_label_remote">Remote</string>
     <string name="connection_label_offline">Offline</string>
     <string name="drawer_admin_badge">Admin</string>
@@ -1392,9 +1394,6 @@
     <string name="section_download_music">MUSIC</string>
 
     <!--Server Management-->
-    <string name="address_type_local">Local</string>
-    <string name="address_type_tailscale">Tailscale</string>
-    <string name="address_type_remote">Remote</string>
     <string name="server_version_fmt">v%1$s</string>
     <string name="server_manage_connections">Manage Connections</string>
     <string name="server_active_connection">Active Connection</string>
@@ -1758,9 +1757,6 @@
     <string name="services_hub_address_service_seerr">Seerr</string>
     <string name="services_hub_address_service_abs">Audiobookshelf server</string>
     <string name="services_hub_address_service_jellyfin">server</string>
-    <string name="services_hub_address_type_local">Local</string>
-    <string name="services_hub_address_type_tailscale">Tailscale</string>
-    <string name="services_hub_address_type_remote">Remote</string>
     <string name="services_hub_address_primary">PRIMARY</string>
     <string name="services_hub_add_address_placeholder">Add another address…</string>
     <string name="services_hub_action_verify">Verify</string>

@@ -364,11 +364,3 @@ fun AppNavigationDrawerContent(
     }
 }
 
-@Composable
-private fun connectionLabel(connectionType: ConnectionType): String =
-    when (connectionType) {
-        ConnectionType.LOCAL -> stringResource(R.string.connection_label_local)
-        ConnectionType.TAILSCALE -> stringResource(R.string.connection_label_tailscale)
-        ConnectionType.REMOTE -> stringResource(R.string.connection_label_remote)
-        ConnectionType.OFFLINE -> stringResource(R.string.connection_label_offline)
-    }

@@ -41,6 +41,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
+import com.makd.afinity.data.models.server.ConnectionType
+import com.makd.afinity.ui.components.connectionIndicatorColor
+import com.makd.afinity.ui.components.connectionLabel
+import com.makd.afinity.ui.components.connectionTypeIcon
 
 @Composable
 fun ServerCard(
@@ -99,27 +103,10 @@ fun ServerCard(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(top = 2.dp),
                     ) {
-                        val (connIcon, connColor, connText) =
-                            when (serverWithCount.currentConnectionType) {
-                                AddressType.LOCAL ->
-                                    Triple(
-                                        R.drawable.ic_wifi,
-                                        LocalColor,
-                                        stringResource(R.string.address_type_local),
-                                    )
-                                AddressType.TAILSCALE ->
-                                    Triple(
-                                        R.drawable.ic_security,
-                                        TailscaleColor,
-                                        stringResource(R.string.address_type_tailscale),
-                                    )
-                                AddressType.REMOTE ->
-                                    Triple(
-                                        R.drawable.ic_link,
-                                        RemoteColor,
-                                        stringResource(R.string.address_type_remote),
-                                    )
-                            }
+                        val connectionType = serverWithCount.currentConnectionType
+                        val connIcon = connectionTypeIcon(connectionType)
+                        val connColor = connectionIndicatorColor(connectionType)
+                        val connText = connectionLabel(connectionType)
                         val mutedColor =
                             MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                         Icon(
@@ -216,14 +203,14 @@ fun ServerCard(
                         label = stringResource(R.string.service_label_seerr),
                         activeColor = JellyseerrColor,
                         addressType =
-                            serverWithCount.jellyseerrConnectionType ?: AddressType.REMOTE,
+                            serverWithCount.jellyseerrConnectionType ?: ConnectionType.REMOTE,
                         isActive = status.jellyseerrConfigured,
                     )
                     ServiceChip(
                         label = stringResource(R.string.service_label_abs),
                         activeColor = AudiobookshelfColor,
                         addressType =
-                            serverWithCount.audiobookshelfConnectionType ?: AddressType.REMOTE,
+                            serverWithCount.audiobookshelfConnectionType ?: ConnectionType.REMOTE,
                         isActive = status.audiobookshelfConfigured,
                     )
                     Spacer(modifier = Modifier.width(2.dp))
@@ -275,15 +262,10 @@ fun ServerCard(
 private fun ServiceChip(
     label: String,
     activeColor: Color,
-    addressType: AddressType,
+    addressType: ConnectionType,
     isActive: Boolean,
 ) {
-    val connIcon =
-        when (addressType) {
-            AddressType.LOCAL -> R.drawable.ic_wifi
-            AddressType.TAILSCALE -> R.drawable.ic_security
-            AddressType.REMOTE -> R.drawable.ic_link
-        }
+    val connIcon = connectionTypeIcon(addressType)
     val contentColor =
         if (isActive) activeColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
     val bgColor =

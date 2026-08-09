@@ -61,17 +61,17 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.connectionIndicatorColor
+import com.makd.afinity.ui.components.connectionLabel
 import com.makd.afinity.ui.settings.SettingsViewModel
 import com.makd.afinity.ui.settings.servers.AudiobookshelfColor
 import com.makd.afinity.ui.settings.servers.CancelColor
 import com.makd.afinity.ui.settings.servers.JellyseerrColor
-import com.makd.afinity.ui.settings.servers.LocalColor
-import com.makd.afinity.ui.settings.servers.RemoteColor
 import com.makd.afinity.ui.settings.servers.SaveColor
 import com.makd.afinity.ui.settings.servers.ServerManagementViewModel
 import com.makd.afinity.ui.settings.servers.ServerWithUserCount
-import com.makd.afinity.ui.settings.servers.TailscaleColor
 import com.makd.afinity.ui.settings.servers.components.UnverifiedAddressDialog
 import com.makd.afinity.ui.settings.servers.mdblistColor
 import com.makd.afinity.ui.settings.servers.tmdbColor
@@ -89,15 +89,37 @@ private enum class EditorKind {
     RATINGS,
 }
 
-private fun addressTypeColor(url: String): Color =
-    when {
-        isLocalAddress(url) -> LocalColor
-        isTailscaleAddress(url) -> TailscaleColor
-        else -> RemoteColor
+private fun liveConnectionTypes(server: ServerWithUserCount?): Map<String, ConnectionType> =
+    buildMap {
+        if (server == null || !server.isActiveServer) return@buildMap
+        if (server.currentConnectionUrl.isNotBlank()) {
+            put(server.currentConnectionUrl, server.currentConnectionType)
+        }
+        val seerrUrl = server.jellyseerrConnectionUrl
+        val seerrType = server.jellyseerrConnectionType
+        if (seerrUrl != null && seerrType != null) put(seerrUrl, seerrType)
+        val absUrl = server.audiobookshelfConnectionUrl
+        val absType = server.audiobookshelfConnectionType
+        if (absUrl != null && absType != null) put(absUrl, absType)
     }
 
-private fun addressTypeDots(urls: List<String>): List<Color> =
-    urls.map(::addressTypeColor).distinct()
+private fun connectionTypeOf(
+    url: String,
+    liveTypes: Map<String, ConnectionType> = emptyMap(),
+): ConnectionType =
+    liveTypes[url]
+        ?: when {
+            isTailscaleAddress(url) -> ConnectionType.TAILSCALE
+            isLocalAddress(url) -> ConnectionType.LOCAL
+            else -> ConnectionType.REMOTE
+        }
+
+@Composable
+private fun addressTypeDots(
+    urls: List<String>,
+    liveTypes: Map<String, ConnectionType>,
+): List<Color> =
+    urls.map { connectionIndicatorColor(connectionTypeOf(it, liveTypes)) }.distinct()
 
 private fun maskKey(key: String): String =
     if (key.length <= 3) "*".repeat(key.length)
@@ -132,17 +154,27 @@ fun ServicesHubScreen(
     val ratingsCount = listOf(tmdbKey, mdbKey, omdbKey).count { it.isNotBlank() }
 
     val dimDot = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
+    val liveTypes = liveConnectionTypes(currentServer)
     val seerrDots =
         if (seerrConnected)
-            addressTypeDots(currentServer?.jellyseerrAddresses.orEmpty().map { it.address })
+            addressTypeDots(
+                currentServer?.jellyseerrAddresses.orEmpty().map { it.address },
+                liveTypes,
+            )
         else emptyList()
     val absDots =
         if (absConnected)
-            addressTypeDots(currentServer?.audiobookshelfAddresses.orEmpty().map { it.address })
+            addressTypeDots(
+                currentServer?.audiobookshelfAddresses.orEmpty().map { it.address },
+                liveTypes,
+            )
         else emptyList()
     val remoteDots =
         currentServer?.let { s ->
-            addressTypeDots((listOf(s.server.address) + s.addresses.map { it.address }).distinct())
+            addressTypeDots(
+                (listOf(s.server.address) + s.addresses.map { it.address }).distinct(),
+                liveTypes,
+            )
         } ?: emptyList()
     val ratingsDots =
         listOf(
@@ -596,6 +628,7 @@ private fun EditorContent(
     remoteError: String?,
     modifier: Modifier = Modifier,
 ) {
+    val liveTypes = liveConnectionTypes(server)
     Column(
         modifier =
             modifier
@@ -614,6 +647,7 @@ private fun EditorContent(
                             isPrimary = false,
                             onSetPrimary = null,
                             onDelete = { smViewModel.deleteJellyseerrAddress(addr.id) },
+                            liveTypes = liveTypes,
                         )
                     }
                     AddAddressBar(
@@ -633,6 +667,7 @@ private fun EditorContent(
                             isPrimary = false,
                             onSetPrimary = null,
                             onDelete = { smViewModel.deleteAudiobookshelfAddress(addr.id) },
+                            liveTypes = liveTypes,
                         )
                     }
                     AddAddressBar(
@@ -652,6 +687,7 @@ private fun EditorContent(
                         isPrimary = true,
                         onSetPrimary = null,
                         onDelete = null,
+                        liveTypes = liveTypes,
                     )
                     server.addresses
                         .filter { it.address != primary }
@@ -663,6 +699,7 @@ private fun EditorContent(
                                     smViewModel.setPrimaryAddress(server.server.id, addr.address)
                                 },
                                 onDelete = { smViewModel.deleteAddress(addr.id) },
+                                liveTypes = liveTypes,
                             )
                         }
                     AddAddressBar(
@@ -691,14 +728,11 @@ private fun AddressRow(
     isPrimary: Boolean,
     onSetPrimary: (() -> Unit)?,
     onDelete: (() -> Unit)?,
+    liveTypes: Map<String, ConnectionType>,
 ) {
-    val (typeColor, typeLabelRes) =
-        when {
-            isLocalAddress(url) -> LocalColor to R.string.services_hub_address_type_local
-            isTailscaleAddress(url) ->
-                TailscaleColor to R.string.services_hub_address_type_tailscale
-            else -> RemoteColor to R.string.services_hub_address_type_remote
-        }
+    val connectionType = connectionTypeOf(url, liveTypes)
+    val typeColor = connectionIndicatorColor(connectionType)
+    val typeLabel = connectionLabel(connectionType)
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -720,7 +754,7 @@ private fun AddressRow(
                     maxLines = 1,
                 )
                 Text(
-                    text = stringResource(typeLabelRes),
+                    text = typeLabel,
                     style = MaterialTheme.typography.labelSmall,
                     color = typeColor,
                 )

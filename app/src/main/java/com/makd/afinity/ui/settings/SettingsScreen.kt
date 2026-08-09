@@ -99,6 +99,8 @@ import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
+import com.makd.afinity.ui.components.connectionIndicatorColor
+import com.makd.afinity.ui.components.connectionLabel
 import com.makd.afinity.ui.settings.appearance.AppearanceOptionsScreen
 import com.makd.afinity.ui.settings.backup.BackupBottomSheet
 import com.makd.afinity.ui.settings.backup.BackupScreen
@@ -903,6 +905,12 @@ fun ProfileHeader(
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
+                    VerticalDivider(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = connectionLabel(connectionType),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = connectionIndicatorColor(connectionType),
+                    )
                 }
             }
             if (isAdmin && onControlPanelClick != null) {
@@ -1255,4 +1263,3 @@ private fun LanguageOption(name: String, isSelected: Boolean, onClick: () -> Uni
         )
     }
 }
-

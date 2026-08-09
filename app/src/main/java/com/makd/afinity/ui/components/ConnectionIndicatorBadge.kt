@@ -24,14 +24,26 @@ fun connectionIndicatorColor(connectionType: ConnectionType): Color =
     when (connectionType) {
         ConnectionType.LOCAL -> Color(0xFF4CAF50)
         ConnectionType.TAILSCALE -> Color(0xFF2196F3)
+        ConnectionType.VPN -> Color(0xFF2196F3)
         ConnectionType.REMOTE -> Color(0xFFFF9800)
         ConnectionType.OFFLINE -> Color(0xFFF44336)
     }
 
-private fun connectionIndicatorIcon(connectionType: ConnectionType): Int =
+@Composable
+fun connectionLabel(connectionType: ConnectionType): String =
+    when (connectionType) {
+        ConnectionType.LOCAL -> stringResource(R.string.connection_label_local)
+        ConnectionType.TAILSCALE -> stringResource(R.string.connection_label_tailscale)
+        ConnectionType.VPN -> stringResource(R.string.connection_label_vpn)
+        ConnectionType.REMOTE -> stringResource(R.string.connection_label_remote)
+        ConnectionType.OFFLINE -> stringResource(R.string.connection_label_offline)
+    }
+
+fun connectionTypeIcon(connectionType: ConnectionType): Int =
     when (connectionType) {
         ConnectionType.LOCAL -> R.drawable.ic_wifi
         ConnectionType.TAILSCALE -> R.drawable.ic_security
+        ConnectionType.VPN -> R.drawable.ic_security
         ConnectionType.REMOTE -> R.drawable.ic_link
         ConnectionType.OFFLINE -> R.drawable.ic_cloud_off
     }
@@ -41,6 +53,7 @@ private fun connectionIndicatorContentDescription(connectionType: ConnectionType
     when (connectionType) {
         ConnectionType.LOCAL -> stringResource(R.string.cd_local_connection)
         ConnectionType.TAILSCALE -> stringResource(R.string.cd_tailscale_connection)
+        ConnectionType.VPN -> stringResource(R.string.cd_vpn_connection)
         ConnectionType.REMOTE -> stringResource(R.string.cd_remote_connection)
         ConnectionType.OFFLINE -> stringResource(R.string.cd_offline_mode)
     }
@@ -66,7 +79,7 @@ fun ConnectionIndicatorBadge(
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            painter = painterResource(id = connectionIndicatorIcon(connectionType)),
+            painter = painterResource(id = connectionTypeIcon(connectionType)),
             contentDescription = connectionIndicatorContentDescription(connectionType),
             tint = Color.White,
             modifier = Modifier.size(iconSize),

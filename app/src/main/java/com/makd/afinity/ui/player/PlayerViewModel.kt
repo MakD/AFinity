@@ -1400,6 +1400,7 @@ constructor(
         when (offlineModeManager.connectionType.value) {
             ConnectionType.LOCAL -> "LAN"
             ConnectionType.TAILSCALE -> "Tailscale"
+            ConnectionType.VPN -> "VPN"
             ConnectionType.REMOTE -> "WAN"
             ConnectionType.OFFLINE -> "Offline"
         }

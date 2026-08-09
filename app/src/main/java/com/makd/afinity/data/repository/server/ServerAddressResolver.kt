@@ -2,6 +2,7 @@ package com.makd.afinity.data.repository.server
 
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.util.NetworkConnectivityMonitor
+import com.makd.afinity.util.NetworkLocality
 import com.makd.afinity.util.probeAddresses
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -20,6 +21,7 @@ constructor(
     private val databaseRepository: DatabaseRepository,
     private val serverRepository: ServerRepository,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
+    private val networkLocality: NetworkLocality,
 ) {
 
     suspend fun resolveAddress(serverId: String): AddressResolutionResult =
@@ -48,6 +50,7 @@ constructor(
                 addresses = addressesToTry,
                 preferLocal = networkConnectivityMonitor.isOnLocalNetwork(),
                 logTag = "Jellyfin",
+                networkLocality = networkLocality,
                 validator = validator,
             )
 

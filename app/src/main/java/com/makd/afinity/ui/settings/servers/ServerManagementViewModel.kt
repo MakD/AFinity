@@ -14,6 +14,7 @@ import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.ListeningStats
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.server.AddressCheck
+import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.server.ServerAddress
 import com.makd.afinity.data.repository.AudiobookshelfRepository
@@ -22,6 +23,8 @@ import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.server.ServerRepository
+import com.makd.afinity.util.Locality
+import com.makd.afinity.util.NetworkLocality
 import com.makd.afinity.util.isLocalAddress
 import com.makd.afinity.util.isTailscaleAddress
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -70,12 +73,6 @@ data class PendingAddress(
     val userId: String,
     val url: String,
 )
-
-enum class AddressType {
-    LOCAL,
-    TAILSCALE,
-    REMOTE,
-}
 
 data class ServiceStatus(
     val jellyseerrConfigured: Boolean = false,
@@ -134,16 +131,16 @@ data class ServerWithUserCount(
     val currentUserId: String? = null,
     val currentUserServiceStatus: ServiceStatus = ServiceStatus(),
     val userServices: List<UserServiceInfo> = emptyList(),
-    val addressType: AddressType = AddressType.REMOTE,
+    val addressType: ConnectionType = ConnectionType.REMOTE,
     val currentConnectionUrl: String = "",
-    val currentConnectionType: AddressType = AddressType.REMOTE,
+    val currentConnectionType: ConnectionType = ConnectionType.REMOTE,
     val isActiveServer: Boolean = false,
     val jellyseerrAddresses: List<JellyseerrAddressEntity> = emptyList(),
     val audiobookshelfAddresses: List<AudiobookshelfAddressEntity> = emptyList(),
     val jellyseerrConnectionUrl: String? = null,
-    val jellyseerrConnectionType: AddressType? = null,
+    val jellyseerrConnectionType: ConnectionType? = null,
     val audiobookshelfConnectionUrl: String? = null,
-    val audiobookshelfConnectionType: AddressType? = null,
+    val audiobookshelfConnectionType: ConnectionType? = null,
 )
 
 @HiltViewModel
@@ -161,6 +158,7 @@ constructor(
     private val jellyseerrRepositoryProvider: Provider<JellyseerrRepository>,
     private val audiobookshelfRepositoryProvider: Provider<AudiobookshelfRepository>,
     private val jellyfinRepositoryProvider: Provider<JellyfinRepository>,
+    private val networkLocality: NetworkLocality,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ServerManagementState())
@@ -194,11 +192,21 @@ constructor(
         }
     }
 
-    private fun classifyAddress(address: String): AddressType {
+    private fun classifyAddress(address: String): ConnectionType {
         return when {
-            isLocalAddress(address) -> AddressType.LOCAL
-            isTailscaleAddress(address) -> AddressType.TAILSCALE
-            else -> AddressType.REMOTE
+            isTailscaleAddress(address) -> ConnectionType.TAILSCALE
+            isLocalAddress(address) -> ConnectionType.LOCAL
+            else -> ConnectionType.REMOTE
+        }
+    }
+
+    private suspend fun resolveLiveAddress(address: String): ConnectionType {
+        return when (networkLocality.resolve(address)) {
+            Locality.ON_LINK -> ConnectionType.LOCAL
+            Locality.TAILSCALE -> ConnectionType.TAILSCALE
+            Locality.TUNNELLED -> ConnectionType.VPN
+            Locality.PUBLIC -> ConnectionType.REMOTE
+            Locality.UNKNOWN -> classifyAddress(address)
         }
     }
 
@@ -838,14 +846,16 @@ constructor(
                 userServices = userServicesList,
                 addressType = classifyAddress(server.address),
                 currentConnectionUrl = connectionUrl,
-                currentConnectionType = classifyAddress(connectionUrl),
+                currentConnectionType =
+                    if (isActive) offlineModeManager.connectionType.value
+                    else classifyAddress(connectionUrl),
                 isActiveServer = isActive,
                 jellyseerrAddresses = allJellyseerrAddresses,
                 audiobookshelfAddresses = allAudiobookshelfAddresses,
                 jellyseerrConnectionUrl = jellyseerrUrl,
-                jellyseerrConnectionType = jellyseerrUrl?.let { classifyAddress(it) },
+                jellyseerrConnectionType = jellyseerrUrl?.let { resolveLiveAddress(it) },
                 audiobookshelfConnectionUrl = audiobookshelfUrl,
-                audiobookshelfConnectionType = audiobookshelfUrl?.let { classifyAddress(it) },
+                audiobookshelfConnectionType = audiobookshelfUrl?.let { resolveLiveAddress(it) },
             )
         }
 

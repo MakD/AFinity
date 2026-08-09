@@ -2,6 +2,7 @@ package com.makd.afinity.data.repository.audiobookshelf
 
 import com.makd.afinity.data.database.dao.AudiobookshelfDao
 import com.makd.afinity.util.NetworkConnectivityMonitor
+import com.makd.afinity.util.NetworkLocality
 import com.makd.afinity.util.probeAddresses
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -24,6 +25,7 @@ class AudiobookshelfAddressResolver
 constructor(
     private val audiobookshelfDao: AudiobookshelfDao,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
+    private val networkLocality: NetworkLocality,
 ) {
 
     private val pingClient = OkHttpClient.Builder()
@@ -47,6 +49,7 @@ constructor(
                 addresses = addressesToTry,
                 preferLocal = networkConnectivityMonitor.isOnLocalNetwork(),
                 logTag = "Audiobookshelf",
+                networkLocality = networkLocality,
                 validator = { address -> pingService(address) },
             )
 

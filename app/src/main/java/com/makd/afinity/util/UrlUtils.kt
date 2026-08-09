@@ -1,6 +1,6 @@
 package com.makd.afinity.util
 
-private fun extractHost(url: String): String {
+internal fun extractHost(url: String): String {
     val authority =
         url.trim()
             .lowercase()
@@ -33,6 +33,7 @@ fun isLocalAddress(url: String): Boolean {
 fun isTailscaleAddress(url: String): Boolean {
     val host = extractHost(url)
     if (host.endsWith(".ts.net")) return true
+    if (host.startsWith("fd7a:115c:a1e0")) return true
     if (!host.startsWith("100.")) return false
     val secondOctet = host.removePrefix("100.").substringBefore(".").toIntOrNull() ?: return false
     return secondOctet in 64..127
