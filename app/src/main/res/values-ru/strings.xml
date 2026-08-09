@@ -1568,4 +1568,6 @@
     <string name="section_music">Музыка</string>
     <string name="filter_all_libraries">Все библиотеки</string>
     <string name="filter_all_audiobooks">Все аудиокниги</string>
+    <string name="cd_vpn_connection">Подключение через VPN</string>
+    <string name="connection_label_vpn">VPN</string>
 </resources>
