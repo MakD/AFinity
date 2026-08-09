@@ -842,9 +842,6 @@
     <string name="section_download_audiobooks">AUDIOBOOKI</string>
     <string name="section_download_podcasts">PODCASTY</string>
     <string name="section_download_music">MUZYKA</string>
-    <string name="address_type_local">Lokalne</string>
-    <string name="address_type_tailscale">Tailscale</string>
-    <string name="address_type_remote">Zdalne</string>
     <string name="server_version_fmt">v%1$s</string>
     <string name="server_manage_connections">Zarządzaj połączeniami</string>
     <string name="server_active_connection">Aktywne połączenie</string>

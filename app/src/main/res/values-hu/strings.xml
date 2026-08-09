@@ -1300,12 +1300,6 @@
     <string name="action_clear_key">Kulcs törlése</string>
     <string name="section_storage_cache">TÁROLÁS ÉS GYORSÍTÓTÁR</string>
     <string name="section_videos">VIDEÓK</string>
-    <string name="address_type_local">Helyi</string>
-    <string name="services_hub_address_type_local">Helyi</string>
-    <string name="address_type_tailscale">Tailscale</string>
-    <string name="services_hub_address_type_tailscale">Tailscale</string>
-    <string name="address_type_remote">Távoli</string>
-    <string name="services_hub_address_type_remote">Távoli</string>
     <string name="server_manage_connections">Kapcsolatok kezelése</string>
     <string name="server_active_connection">Aktív kapcsolat</string>
     <string name="server_default_proxy">Alapértelmezett (proxy)</string>

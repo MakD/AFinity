@@ -710,9 +710,6 @@
     <string name="section_videos">ВИДЕО</string>
     <string name="section_download_audiobooks">АУДИОКНИГИ</string>
     <string name="section_download_podcasts">ПОДКАСТЫ</string>
-    <string name="address_type_local">Локально</string>
-    <string name="address_type_tailscale">Tailscale</string>
-    <string name="address_type_remote">Удалённо</string>
     <string name="server_version_fmt">v%1$s</string>
     <string name="server_manage_connections">Управление соединениями</string>
     <string name="server_active_connection">Активные соединения</string>
@@ -1354,9 +1351,6 @@
     <string name="services_hub_address_service_seerr">серверу Seerr</string>
     <string name="services_hub_address_service_abs">серверу Audiobookshelf</string>
     <string name="services_hub_address_service_jellyfin">серверу</string>
-    <string name="services_hub_address_type_local">Локальный</string>
-    <string name="services_hub_address_type_tailscale">Tailscale</string>
-    <string name="services_hub_address_type_remote">Удаленный</string>
     <string name="services_hub_address_primary">ОСНОВНОЙ</string>
     <string name="services_hub_add_address_placeholder">Добавить еще один адрес…</string>
     <string name="services_hub_action_verify">Проверить</string>

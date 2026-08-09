@@ -835,9 +835,6 @@
     <string name="section_videos">வீடியோக்கள்</string>
     <string name="section_download_audiobooks">ஆடியோ புத்தகங்கள்</string>
     <string name="section_download_podcasts">பாட்காச்ட்கள்</string>
-    <string name="address_type_local">உள்ளக</string>
-    <string name="address_type_tailscale">டெயில்ச்கேல்</string>
-    <string name="address_type_remote">ரிமோட்</string>
     <string name="server_version_fmt">v%1$s</string>
     <string name="server_manage_connections">இணைப்புகளை நிர்வகிக்கவும்</string>
     <string name="server_active_connection">செயலில் இணைப்பு</string>

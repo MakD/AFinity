@@ -754,9 +754,6 @@
     <string name="section_videos">Videor</string>
     <string name="section_download_audiobooks">Ljudböcker</string>
     <string name="section_download_podcasts">Poddar</string>
-    <string name="address_type_local">Lokal</string>
-    <string name="address_type_tailscale">Tailscale</string>
-    <string name="address_type_remote">Fjärr</string>
     <string name="server_version_fmt">v%1$s</string>
     <string name="server_manage_connections">Hantera anslutningar</string>
     <string name="server_active_connection">Aktiv anslutning</string>
