@@ -1209,9 +1209,6 @@
     <string name="section_download_audiobooks">LUISTERBOEKEN</string>
     <string name="section_download_podcasts">PODCASTS</string>
     <string name="section_download_music">MUZIEK</string>
-    <string name="address_type_local">Lokaal</string>
-    <string name="address_type_tailscale">Tailscale</string>
-    <string name="address_type_remote">Op afstand</string>
     <string name="server_version_fmt">v%1$s</string>
     <string name="server_manage_connections">Verbindingen beheren</string>
     <string name="server_active_connection">Actieve verbinding</string>
@@ -1533,9 +1530,6 @@
     <string name="services_hub_address_service_seerr">Seerr</string>
     <string name="services_hub_address_service_abs">Audiobookshelf-server</string>
     <string name="services_hub_address_service_jellyfin">server</string>
-    <string name="services_hub_address_type_local">Lokaal</string>
-    <string name="services_hub_address_type_tailscale">Tailscale</string>
-    <string name="services_hub_address_type_remote">Op afstand</string>
     <string name="services_hub_address_primary">PRIMAIR</string>
     <string name="services_hub_add_address_placeholder">Nog een adres toevoegen…</string>
     <string name="services_hub_action_verify">Verifiëren</string>

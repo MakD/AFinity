@@ -752,9 +752,6 @@
     <string name="section_videos">VIDEO</string>
     <string name="section_download_audiobooks">BUKU AUDIO</string>
     <string name="section_download_podcasts">PODCAST</string>
-    <string name="address_type_local">Lokal</string>
-    <string name="address_type_tailscale">Tailscale</string>
-    <string name="address_type_remote">Jarak Jauh</string>
     <string name="server_version_fmt">v%1$s</string>
     <string name="server_manage_connections">Kelola Koneksi</string>
     <string name="server_active_connection">Koneksi Aktif</string>
@@ -1532,9 +1529,6 @@
     <string name="services_hub_address_service_seerr">Seerr</string>
     <string name="services_hub_address_service_abs">Server Audiobookshelf</string>
     <string name="services_hub_address_service_jellyfin">server</string>
-    <string name="services_hub_address_type_local">Lokal</string>
-    <string name="services_hub_address_type_tailscale">Tailscale</string>
-    <string name="services_hub_address_type_remote">Jarak jauh</string>
     <string name="services_hub_address_primary">UTAMA</string>
     <string name="services_hub_add_address_placeholder">Tambahkan alamat lain…</string>
     <string name="services_hub_action_verify">Verifikasi</string>

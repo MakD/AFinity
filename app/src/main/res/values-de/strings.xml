@@ -750,9 +750,6 @@
     <string name="section_videos">VIDEOS</string>
     <string name="section_download_audiobooks">AUDIOBOOKS</string>
     <string name="section_download_podcasts">PODCASTS</string>
-    <string name="address_type_local">Lokal</string>
-    <string name="address_type_tailscale">Tailscale</string>
-    <string name="address_type_remote">Fernzugriff</string>
     <string name="server_version_fmt">v%1$s</string>
     <string name="server_manage_connections">Verbindungen verwalten</string>
     <string name="server_active_connection">Aktive Verbindungen</string>
