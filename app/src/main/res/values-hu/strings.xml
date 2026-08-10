@@ -1568,4 +1568,6 @@
     <string name="unverified_address_title">Nem sikerült megerősíteni ezt a szervert</string>
     <string name="unverified_address_message">Elértük a %1$s szervert, de nem tudtuk ellenőrizni, hogy ez ugyanaz-e, amelyiken be vagy jelentkezve. Akarod mégis hozzáadni?</string>
     <string name="unverified_address_confirm">Hozzáadás mégis</string>
+    <string name="cd_vpn_connection">VPN kapcsolat</string>
+    <string name="connection_label_vpn">VPN</string>
 </resources>
