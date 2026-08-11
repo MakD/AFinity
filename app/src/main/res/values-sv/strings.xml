@@ -107,7 +107,6 @@
     <string name="extra_type_short">Kortfilm</string>
     <string name="boxset_items_in_collection">I samlingen</string>
     <string name="episode_season_episode_fmt">S%1$d:E%2$s • %3$s</string>
-    <string name="episode_duration_format">%1$d min</string>
     <string name="episode_play">Spela</string>
     <string name="episode_resume">Fortsätt titta</string>
     <string name="cd_air_date">Sändningsdatum</string>
@@ -224,8 +223,6 @@
     <string name="player_up_next">Nästa</string>
     <string name="player_season_fmt">Säsong %1$d</string>
     <string name="player_season_episode_fmt">Säsong %1$d: Avsnitt %2$s</string>
-    <string name="time_minutes_short">%1$d min</string>
-    <string name="time_seconds_short">%1$d s</string>
     <string name="cd_close">Stäng</string>
     <string name="playing_intro_text">Spelar intro…</string>
     <string name="player_speed_title_fmt">Hastighet %1$.2fx</string>

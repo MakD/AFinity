@@ -107,7 +107,6 @@
     <string name="extra_type_short">Krótka historia</string>
     <string name="boxset_items_in_collection">Elementy w kolekcji</string>
     <string name="episode_season_episode_fmt">S%1$d:E%2$s • %3$s</string>
-    <string name="episode_duration_format">%1$dm</string>
     <string name="episode_play">Odtwórz</string>
     <string name="episode_resume">Wznów</string>
     <string name="episode_upcoming">NADCHODZĄCE</string>
@@ -227,8 +226,6 @@
     <string name="player_up_next">Następnie</string>
     <string name="player_season_fmt">Sezon %1$d</string>
     <string name="player_season_episode_fmt">Sezon %1$d : Odcinek %2$s</string>
-    <string name="time_minutes_short">%1$dm</string>
-    <string name="time_seconds_short">%1$ds</string>
     <string name="cd_close">Zamknij</string>
     <string name="playing_intro_text">Odtwarzanie wstępu…</string>
     <string name="player_speed_title_fmt">Obecna prędkość %1$.2fx</string>

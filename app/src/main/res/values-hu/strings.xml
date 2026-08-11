@@ -288,7 +288,6 @@
     <string name="extra_type_short">Rövidfilm</string>
     <string name="boxset_items_in_collection">Gyűjtemény elemei</string>
     <string name="episode_season_episode_fmt">É%1$d:E%2$s • %3$s</string>
-    <string name="episode_duration_format">%1$dp</string>
     <string name="episode_play">Lejátszás</string>
     <string name="episode_resume">Folytatás</string>
     <string name="episode_upcoming">KÖZELGŐ</string>
@@ -496,8 +495,6 @@
     <string name="player_season_fmt">%1$d évad</string>
     <string name="season_n_fmt">%1$d évad</string>
     <string name="player_season_episode_fmt">%1$d évad: %2$s rész</string>
-    <string name="time_minutes_short">%1$dp</string>
-    <string name="time_seconds_short">%1$dmp</string>
     <string name="pause_screen_delay_seconds_fmt">%1$dmp</string>
     <string name="cd_close">Bezárás</string>
     <string name="action_close">Bezárás</string>

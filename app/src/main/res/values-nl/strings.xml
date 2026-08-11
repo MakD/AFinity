@@ -101,7 +101,6 @@
     <string name="extra_type_short">Korte film</string>
     <string name="boxset_items_in_collection">Items in deze collectie</string>
     <string name="episode_season_episode_fmt">S%1$d:E%2$s • %3$s</string>
-    <string name="episode_duration_format">%1$d m</string>
     <string name="episode_play">Afspelen</string>
     <string name="episode_resume">Hervatten</string>
     <string name="cd_air_date">Uitzenddatum</string>
@@ -217,8 +216,6 @@
     <string name="player_up_next">Volgende</string>
     <string name="player_season_fmt">Seizoen %1$d</string>
     <string name="player_season_episode_fmt">Seizoen %1$d : Aflevering %2$s</string>
-    <string name="time_minutes_short">%1$d m</string>
-    <string name="time_seconds_short">%1$d s</string>
     <string name="cd_close">Sluiten</string>
     <string name="player_speed_title_fmt">Huidige snelheid %1$.2fx</string>
     <string name="player_speed_value_fmt">%.2f</string>

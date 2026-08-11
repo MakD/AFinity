@@ -290,7 +290,6 @@
     <string name="meta_runtime_hours_minutes">%1$dh %2$dm</string>
     <string name="meta_runtime_minutes">%1$dm</string>
     <string name="episode_season_episode_fmt">S%1$d:E%2$s • %3$s</string>
-    <string name="episode_duration_format">%1$dm</string>
     <string name="cd_toggle_watched">Changer le statut de visionnage</string>
     <string name="file_size_mb">%d MB</string>
     <string name="cd_collapse">Réduire</string>
@@ -303,8 +302,6 @@
     <string name="livetv_guide_date_fmt">EEE, MMM d</string>
     <string name="livetv_guide_time_range_fmt">%1$d :00 - %2$d :00</string>
     <string name="person_date_fmt">MMMM d, yyyy</string>
-    <string name="time_minutes_short">%1$dm</string>
-    <string name="time_seconds_short">%1$ds</string>
     <string name="player_speed_value_fmt">%.2f</string>
     <string name="player_episode_header_fmt">S%1$s :E%2$s : %3$s</string>
     <string name="audio_channel_fmt">(%1$dch)</string>

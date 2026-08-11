@@ -104,7 +104,6 @@
     <string name="extra_type_short">Короткометражный фильм</string>
     <string name="boxset_items_in_collection">Элементы в коллекции</string>
     <string name="episode_season_episode_fmt">Сезон %1$d, эпизод %2$s • %3$s</string>
-    <string name="episode_duration_format">%1$d мин</string>
     <string name="episode_play">Воспроизвести</string>
     <string name="episode_resume">Продолжить</string>
     <string name="cd_air_date">Дата выхода в эфир</string>
@@ -223,8 +222,6 @@
     <string name="player_up_next">Далее</string>
     <string name="player_season_fmt">Сезон %1$d</string>
     <string name="player_season_episode_fmt">Сезон %1$d : Эпизод %2$s</string>
-    <string name="time_minutes_short">%1$d мин</string>
-    <string name="time_seconds_short">%1$d сек</string>
     <string name="cd_close">Закрыть</string>
     <string name="play_error_missing_source">Воспроизводимый элемент не найден на сервере</string>
     <string name="playing_intro_text">Воспроизведение вступления…</string>
