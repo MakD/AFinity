@@ -107,7 +107,6 @@
     <string name="extra_type_short">குறுக்கு</string>
     <string name="boxset_items_in_collection">சேகரிப்பில் உள்ள பொருட்கள்</string>
     <string name="episode_season_episode_fmt">S%1$d:E%2$s • %3$s</string>
-    <string name="episode_duration_format">%1$dm</string>
     <string name="episode_play">விளையாடு</string>
     <string name="episode_resume">ரெச்யூம்</string>
     <string name="episode_upcoming">வரவிருக்கிறது</string>
@@ -227,8 +226,6 @@
     <string name="player_up_next">அடுத்தது</string>
     <string name="player_season_fmt">சீசன் %1$d</string>
     <string name="player_season_episode_fmt">சீசன் %1$d : எபிசோட் %2$s</string>
-    <string name="time_minutes_short">%1$dm</string>
-    <string name="time_seconds_short">%1$ds</string>
     <string name="cd_close">மூடு</string>
     <string name="playing_intro_text">அறிமுகம் விளையாடுகிறது…</string>
     <string name="player_speed_title_fmt">தற்போதைய விரைவு %1$.2fx</string>

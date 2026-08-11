@@ -94,7 +94,6 @@
     <string name="extra_type_short">Cortometraggio</string>
     <string name="boxset_items_in_collection">Elementi nella collezione</string>
     <string name="episode_season_episode_fmt">S%1$d:E%2$s • %3$s</string>
-    <string name="episode_duration_format">%1$dm</string>
     <string name="episode_play">Play</string>
     <string name="episode_resume">Riprendere</string>
     <string name="cd_air_date">Messa in Onda</string>
@@ -232,8 +231,6 @@
     <string name="livetv_count_fmt">%1$d nessun canale trovato</string>
     <string name="livetv_guide_date_fmt">EEE, MMM d</string>
     <string name="player_up_next">Avanti</string>
-    <string name="time_minutes_short">%1$dm</string>
-    <string name="time_seconds_short">%1$ds</string>
     <string name="cd_close">Chiudi</string>
     <string name="playing_intro_text">Riproduzione Introduzione…</string>
     <string name="player_speed_title_fmt">Velocità attuale %1$.2fx</string>

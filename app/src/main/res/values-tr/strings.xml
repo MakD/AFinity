@@ -107,7 +107,6 @@
     <string name="extra_type_short">Ek</string>
     <string name="boxset_items_in_collection">Kolleksiyondaki öğeler</string>
     <string name="episode_season_episode_fmt">S%1$d:B%2$s•%3$s</string>
-    <string name="episode_duration_format">%1$dd</string>
     <string name="episode_play">Oynat</string>
     <string name="episode_resume">Kaldığı yerden devam et</string>
     <string name="cd_air_date">Yayın tarihi</string>
@@ -225,8 +224,6 @@
     <string name="player_up_next">Sıradaki</string>
     <string name="player_season_fmt">Sezon %1$d</string>
     <string name="player_season_episode_fmt">%1$d Sezon : %2$s Bölüm</string>
-    <string name="time_minutes_short">%1$dd</string>
-    <string name="time_seconds_short">%1$dsn</string>
     <string name="cd_close">Kapat</string>
     <string name="playing_intro_text">Giriş sekansı oynatılıyor…</string>
     <string name="player_speed_title_fmt">Şu anki hız %1$.2fx</string>

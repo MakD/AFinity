@@ -104,7 +104,6 @@
     <string name="extra_type_short">Короткометражный фильм</string>
     <string name="boxset_items_in_collection">Элементы в коллекции</string>
     <string name="episode_season_episode_fmt">Сезон %1$d, эпизод %2$s • %3$s</string>
-    <string name="episode_duration_format">%1$d мин</string>
     <string name="episode_play">Воспроизвести</string>
     <string name="episode_resume">Продолжить</string>
     <string name="cd_air_date">Дата выхода в эфир</string>
@@ -223,8 +222,6 @@
     <string name="player_up_next">Далее</string>
     <string name="player_season_fmt">Сезон %1$d</string>
     <string name="player_season_episode_fmt">Сезон %1$d : Эпизод %2$s</string>
-    <string name="time_minutes_short">%1$d мин</string>
-    <string name="time_seconds_short">%1$d сек</string>
     <string name="cd_close">Закрыть</string>
     <string name="play_error_missing_source">Воспроизводимый элемент не найден на сервере</string>
     <string name="playing_intro_text">Воспроизведение вступления…</string>
@@ -1570,4 +1567,50 @@
     <string name="filter_all_audiobooks">Все аудиокниги</string>
     <string name="cd_vpn_connection">Подключение через VPN</string>
     <string name="connection_label_vpn">VPN</string>
+    <string name="playlist_entry_episode_fmt">С%1$dЭ%2$d</string>
+    <string name="playlist_entry_kind_movie">Фильм</string>
+    <string name="playlist_empty_message">Этот плейлист пуст.</string>
+    <plurals name="playlist_item_count">
+        <item quantity="one">%1$d элемент</item>
+        <item quantity="few">%1$d элемента</item>
+        <item quantity="many">%1$d элементов</item>
+        <item quantity="other">%1$d элементов</item>
+    </plurals>
+    <string name="playlist_play_choice_title">Воспроизвести музыку или видео?</string>
+    <string name="playlist_play_choice_message">Этот плейлист содержит %1$s и %2$s.</string>
+    <plurals name="playlist_choice_songs">
+        <item quantity="one">%1$d песню</item>
+        <item quantity="few">%1$d песни</item>
+        <item quantity="many">%1$d песен</item>
+        <item quantity="other">%1$d песен</item>
+    </plurals>
+    <plurals name="playlist_choice_videos">
+        <item quantity="one">%1$d видео</item>
+        <item quantity="few">%1$d видео</item>
+        <item quantity="many">%1$d видео</item>
+        <item quantity="other">%1$d видео</item>
+    </plurals>
+    <string name="playlist_play_music">Включить музыку</string>
+    <string name="playlist_play_videos">Включить видео</string>
+    <plurals name="music_playlist_song_count">
+        <item quantity="one">%1$d песня</item>
+        <item quantity="few">%1$d песни</item>
+        <item quantity="many">%1$d песен</item>
+        <item quantity="other">%1$d песен</item>
+    </plurals>
+    <plurals name="music_playlist_hidden_videos">
+        <item quantity="one">скрыт %1$d видео-элемент</item>
+        <item quantity="few">скрыто %1$d видео-элемента</item>
+        <item quantity="many">скрыто %1$d видео-элементов</item>
+        <item quantity="other">скрыто %1$d видео-элементов</item>
+    </plurals>
+    <string name="music_playlist_video_only_title">В этом плейлисте нет музыки</string>
+    <plurals name="music_playlist_video_only_message">
+        <item quantity="one">В плейлисте содержится %1$d видео-элемент, который нельзя здесь воспроизвести.</item>
+        <item quantity="few">В плейлисте содержатся %1$d видео-элемента, которые нельзя здесь воспроизвести.</item>
+        <item quantity="many">В плейлисте содержатся %1$d видео-элементов, которые нельзя здесь воспроизвести.</item>
+        <item quantity="other">В плейлисте содержатся %1$d видео-элементов, которые нельзя здесь воспроизвести.</item>
+    </plurals>
+    <string name="music_playlist_empty_title">Этот плейлист пуст</string>
+    <string name="music_playlist_empty_message">Добавьте песни, чтобы начать прослушивание.</string>
 </resources>
