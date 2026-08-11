@@ -1531,14 +1531,13 @@
     <!--Admin - Refresh Metadata Dialog-->
     <string name="admin_refresh_title">Refresh Metadata</string>
     <string name="admin_refresh_mode_label">Refresh mode</string>
-    <string name="admin_refresh_mode_default">Default</string>
-    <string name="admin_refresh_mode_default_desc">Fill missing data only</string>
-    <string name="admin_refresh_mode_validate">Validate</string>
-    <string name="admin_refresh_mode_validate_desc">Check and correct all fields</string>
-    <string name="admin_refresh_mode_full">Full</string>
-    <string name="admin_refresh_mode_full_desc">Replace everything from providers</string>
+    <string name="admin_refresh_mode_scan">Scan for new and updated files</string>
+    <string name="admin_refresh_mode_scan_desc">Re-reads the files on disk. Only goes online if something changed.</string>
+    <string name="admin_refresh_mode_missing">Search for missing metadata</string>
+    <string name="admin_refresh_mode_missing_desc">Asks your providers for anything that\'s blank. Existing details are kept.</string>
+    <string name="admin_refresh_mode_replace">Replace all metadata</string>
+    <string name="admin_refresh_mode_replace_desc">Re-downloads everything and overwrites what\'s there. Manual edits will be lost.</string>
     <string name="admin_refresh_replace_images">Replace existing images</string>
-    <string name="admin_refresh_replace_metadata">Replace all metadata</string>
     <string name="admin_btn_refresh">Refresh</string>
 
     <!--Admin - Edit Metadata Screen-->

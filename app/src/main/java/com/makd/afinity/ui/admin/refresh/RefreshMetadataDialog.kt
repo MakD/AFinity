@@ -53,26 +53,26 @@ fun RefreshMetadataDialog(
                 )
                 Column(modifier = Modifier.selectableGroup()) {
                     RefreshModeOption(
-                        label = stringResource(R.string.admin_refresh_mode_default),
-                        description = stringResource(R.string.admin_refresh_mode_default_desc),
-                        selected = uiState.mode == RefreshMode.Default,
-                        onSelect = { viewModel.setMode(RefreshMode.Default) },
+                        label = stringResource(R.string.admin_refresh_mode_scan),
+                        description = stringResource(R.string.admin_refresh_mode_scan_desc),
+                        selected = uiState.mode == RefreshMode.Scan,
+                        onSelect = { viewModel.setMode(RefreshMode.Scan) },
                     )
                     RefreshModeOption(
-                        label = stringResource(R.string.admin_refresh_mode_validate),
-                        description = stringResource(R.string.admin_refresh_mode_validate_desc),
-                        selected = uiState.mode == RefreshMode.Validate,
-                        onSelect = { viewModel.setMode(RefreshMode.Validate) },
+                        label = stringResource(R.string.admin_refresh_mode_missing),
+                        description = stringResource(R.string.admin_refresh_mode_missing_desc),
+                        selected = uiState.mode == RefreshMode.Missing,
+                        onSelect = { viewModel.setMode(RefreshMode.Missing) },
                     )
                     RefreshModeOption(
-                        label = stringResource(R.string.admin_refresh_mode_full),
-                        description = stringResource(R.string.admin_refresh_mode_full_desc),
-                        selected = uiState.mode == RefreshMode.Full,
-                        onSelect = { viewModel.setMode(RefreshMode.Full) },
+                        label = stringResource(R.string.admin_refresh_mode_replace),
+                        description = stringResource(R.string.admin_refresh_mode_replace_desc),
+                        selected = uiState.mode == RefreshMode.ReplaceAll,
+                        onSelect = { viewModel.setMode(RefreshMode.ReplaceAll) },
                     )
                 }
 
-                if (uiState.mode != RefreshMode.Default) {
+                if (uiState.mode != RefreshMode.Scan) {
                     HorizontalDivider()
                     Spacer(modifier = Modifier.height(4.dp))
 
@@ -81,14 +81,6 @@ fun RefreshMetadataDialog(
                         checked = uiState.replaceImages,
                         onToggle = { viewModel.toggleReplaceImages() },
                     )
-
-                    if (uiState.mode == RefreshMode.Full) {
-                        SwitchRow(
-                            label = stringResource(R.string.admin_refresh_replace_metadata),
-                            checked = uiState.replaceMetadata,
-                            onToggle = { viewModel.toggleReplaceMetadata() },
-                        )
-                    }
                 }
 
                 uiState.error?.let { error ->

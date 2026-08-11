@@ -12,12 +12,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class RefreshMode { Default, Validate, Full }
+enum class RefreshMode { Scan, Missing, ReplaceAll }
 
 data class RefreshUiState(
-    val mode: RefreshMode = RefreshMode.Default,
+    val mode: RefreshMode = RefreshMode.Scan,
     val replaceImages: Boolean = false,
-    val replaceMetadata: Boolean = false,
     val refreshing: Boolean = false,
     val done: Boolean = false,
     val error: String? = null,
@@ -40,16 +39,14 @@ constructor(
 
     fun toggleReplaceImages() = _uiState.update { it.copy(replaceImages = !it.replaceImages) }
 
-    fun toggleReplaceMetadata() = _uiState.update { it.copy(replaceMetadata = !it.replaceMetadata) }
-
     fun refresh() {
         val state = _uiState.value
         viewModelScope.launch {
             _uiState.update { it.copy(refreshing = true, error = null) }
             val (metaMode, imageMode, replaceMeta, replaceImages) = when (state.mode) {
-                RefreshMode.Default -> RefreshParams("Default", "Default", false, false)
-                RefreshMode.Validate -> RefreshParams("ValidationOnly", "ValidationOnly", false, state.replaceImages)
-                RefreshMode.Full -> RefreshParams("FullRefresh", "FullRefresh", state.replaceMetadata, state.replaceImages)
+                RefreshMode.Scan -> RefreshParams("Default", "Default", false, false)
+                RefreshMode.Missing -> RefreshParams("FullRefresh", "FullRefresh", false, state.replaceImages)
+                RefreshMode.ReplaceAll -> RefreshParams("FullRefresh", "FullRefresh", true, state.replaceImages)
             }
             val result = adminRepository.refreshItem(
                 itemId = itemId,
