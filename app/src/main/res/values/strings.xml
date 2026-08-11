@@ -289,7 +289,6 @@
     <string name="boxset_items_in_collection">Items in Collection</string>
 
     <string name="episode_season_episode_fmt">S%1$d:E%2$s • %3$s</string>
-    <string name="episode_duration_format">%1$dm</string>
     <string name="episode_play">Play</string>
     <string name="episode_resume">Resume</string>
     <string name="episode_upcoming">UPCOMING</string>
@@ -503,8 +502,6 @@
     <string name="player_up_next">Up Next</string>
     <string name="player_season_fmt">Season %1$d</string>
     <string name="player_season_episode_fmt">Season %1$d : Episode %2$s</string>
-    <string name="time_minutes_short">%1$dm</string>
-    <string name="time_seconds_short">%1$ds</string>
     <string name="cd_close">Close</string>
     <string name="playing_intro_text">Playing Intro…</string>
 

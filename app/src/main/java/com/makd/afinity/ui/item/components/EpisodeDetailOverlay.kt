@@ -62,6 +62,7 @@ import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FavoriteToggleButton
 import com.makd.afinity.ui.components.WatchedToggleButton
 import com.makd.afinity.ui.components.WatchlistToggleButton
+import com.makd.afinity.ui.components.formatRuntimeTicks
 import com.makd.afinity.ui.item.components.shared.AdminAction
 import com.makd.afinity.ui.item.components.shared.MediaLanguageFlagsSection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
@@ -252,9 +253,8 @@ fun EpisodeDetailOverlay(
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(16.dp),
                         )
-                        val minutes = (episode.runtimeTicks / 600000000).toInt()
                         Text(
-                            text = stringResource(R.string.episode_duration_format, minutes),
+                            text = formatRuntimeTicks(episode.runtimeTicks),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -475,7 +475,10 @@ fun EpisodeDetailOverlay(
                         }
                     }
 
-                    WatchlistToggleButton(isInWatchlist = isInWatchlist, onClick = onToggleWatchlist)
+                    WatchlistToggleButton(
+                        isInWatchlist = isInWatchlist,
+                        onClick = onToggleWatchlist,
+                    )
 
                     FavoriteToggleButton(isFavorite = episode.favorite, onClick = onToggleFavorite)
 

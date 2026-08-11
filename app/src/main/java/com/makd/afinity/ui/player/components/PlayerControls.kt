@@ -94,6 +94,7 @@ import com.makd.afinity.data.models.syncplay.SyncPlayMemberInfo
 import com.makd.afinity.player.common.TrackMapping
 import com.makd.afinity.ui.components.AfinityBadge
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.formatRuntimeTicks
 import com.makd.afinity.ui.livetv.components.LiveBadge
 import com.makd.afinity.ui.player.PlayerViewModel
 import com.makd.afinity.ui.player.toLocalizedLanguageName
@@ -1579,7 +1580,8 @@ private fun PauseDetailsOverlay(
             is AfinityShow -> item.officialRating
             else -> null
         }
-    val runtimeText = formatRuntime(item.runtimeTicks)
+    val runtimeText =
+        if (item.runtimeTicks > 0L) formatRuntimeTicks(item.runtimeTicks) else null
     val overview = item.overview.takeIf { it.isNotBlank() }
     val people =
         when (item) {
@@ -1922,15 +1924,6 @@ private fun CastRow(person: AfinityPerson) {
             }
         }
     }
-}
-
-private fun formatRuntime(ticks: Long): String? {
-    if (ticks <= 0L) return null
-    val totalMinutes = (ticks / 10_000_000L / 60L).toInt()
-    if (totalMinutes <= 0) return null
-    val h = totalMinutes / 60
-    val m = totalMinutes % 60
-    return if (h > 0) "${h}h ${m}m" else "${m}m"
 }
 
 private fun formatTime(timeMs: Long): String {

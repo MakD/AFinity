@@ -254,9 +254,8 @@ fun EpisodeListCard(
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     item.runtimeTicks?.let { ticks ->
-                        val minutes = (ticks / 600000000).toInt()
                         Text(
-                            text = "${minutes}min",
+                            text = formatRuntimeTicks(ticks),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.align(Alignment.CenterVertically),

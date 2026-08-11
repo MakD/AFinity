@@ -87,6 +87,7 @@ import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.downloads.DownloadsViewModel
 import kotlinx.coroutines.launch
 import java.util.UUID
+import kotlin.math.ceil
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -925,7 +926,7 @@ fun CompletedDownloadRow(
 ) {
     val isEpisode = download.itemType.equals("Episode", ignoreCase = true)
 
-    val runtimeMinutes = (download.runtimeTicks ?: 0L) / 10000000 / 60
+    val runtimeMinutes = ceil((download.runtimeTicks ?: 0L) / 600_000_000.0).toInt()
     val runtimeStr = if (runtimeMinutes > 0) "${runtimeMinutes}m • " else ""
 
     val subtitleText = buildString {

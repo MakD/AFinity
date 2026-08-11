@@ -43,6 +43,8 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
+import com.makd.afinity.ui.components.formatRuntimeTicks
+import com.makd.afinity.ui.components.ticksToTotalMinutes
 import org.jellyfin.sdk.model.api.MediaStreamType
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -228,8 +230,9 @@ fun MetadataRow(
             if (isSingleMedia && item.playbackPositionTicks > 0 && stableRuntimeTicks > 0) {
                 val progress = item.playbackPositionTicks.toFloat() / stableRuntimeTicks.toFloat()
                 val remainingTicks = stableRuntimeTicks - item.playbackPositionTicks
-                val remainingHours = (remainingTicks / 10_000_000 / 3600).toInt()
-                val remainingMinutes = ((remainingTicks / 10_000_000 % 3600) / 60).toInt()
+                val remainingTotalMinutes = ticksToTotalMinutes(remainingTicks)
+                val remainingHours = remainingTotalMinutes / 60
+                val remainingMinutes = remainingTotalMinutes % 60
 
                 val remainingText =
                     if (remainingHours > 0) {
@@ -279,14 +282,9 @@ fun MetadataRow(
                     needsSeparator = true
                 }
                 if (actualTotalChildTicks > 0) {
-                    val hours = (actualTotalChildTicks / 10_000_000L / 3600L).toInt()
-                    val minutes = ((actualTotalChildTicks / 10_000_000L % 3600L) / 60L).toInt()
                     if (needsSeparator) MetadataDot()
                     Text(
-                        text =
-                            if (hours > 0)
-                                stringResource(R.string.meta_runtime_hours_minutes, hours, minutes)
-                            else stringResource(R.string.meta_runtime_minutes, minutes),
+                        text = formatRuntimeTicks(actualTotalChildTicks),
                         style =
                             MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = FontWeight.SemiBold
@@ -352,12 +350,7 @@ fun MetadataRow(
                     val displayTicks = if (unplayedTicks > 0) unplayedTicks else totalTicks
 
                     if (displayTicks > 0) {
-                        val hours = (totalTicks / 10_000_000L / 3600L).toInt()
-                        val minutes = ((totalTicks / 10_000_000L % 3600L) / 60L).toInt()
-                        val runtimeText =
-                            if (hours > 0)
-                                stringResource(R.string.meta_runtime_hours_minutes, hours, minutes)
-                            else stringResource(R.string.meta_runtime_minutes, minutes)
+                        val runtimeText = formatRuntimeTicks(totalTicks)
                         if (needsSeparator) MetadataDot()
                         Text(
                             text = runtimeText,
@@ -372,12 +365,7 @@ fun MetadataRow(
                 }
 
                 isSingleMedia && stableRuntimeTicks > 0 -> {
-                    val hours = (stableRuntimeTicks / 10_000_000 / 3600).toInt()
-                    val minutes = ((stableRuntimeTicks / 10_000_000 % 3600) / 60).toInt()
-                    val runtimeText =
-                        if (hours > 0)
-                            stringResource(R.string.meta_runtime_hours_minutes, hours, minutes)
-                        else stringResource(R.string.meta_runtime_minutes, minutes)
+                    val runtimeText = formatRuntimeTicks(stableRuntimeTicks)
                     if (needsSeparator) MetadataDot()
                     Text(
                         text = runtimeText,

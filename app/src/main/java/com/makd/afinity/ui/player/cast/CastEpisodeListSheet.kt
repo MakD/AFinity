@@ -33,7 +33,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,6 +60,7 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.formatRuntimeTicks
 import java.util.Locale
 import java.util.UUID
 
@@ -212,18 +212,8 @@ private fun CastEpisodeCard(
                     shape = RoundedCornerShape(4.dp),
                     modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp),
                 ) {
-                    val minutesFmt = stringResource(R.string.time_minutes_short)
-                    val secondsFmt = stringResource(R.string.time_seconds_short)
-                    val runtimeText =
-                        remember(episode.runtimeTicks) {
-                            val totalSeconds = episode.runtimeTicks / 10000000
-                            val minutes = totalSeconds / 60
-                            val seconds = totalSeconds % 60
-                            if (minutes > 0) String.format(minutesFmt, minutes)
-                            else String.format(secondsFmt, seconds)
-                        }
                     Text(
-                        text = runtimeText,
+                        text = formatRuntimeTicks(episode.runtimeTicks),
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.White,
                         fontSize = 10.sp,
