@@ -12,12 +12,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -127,20 +129,21 @@ fun AddEditServerScreen(
         modifier = modifier.fillMaxSize(),
     ) { paddingValues ->
         val layoutDirection = LocalLayoutDirection.current
+        val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
         val customPadding =
             PaddingValues(
                 top = paddingValues.calculateTopPadding(),
                 start = paddingValues.calculateStartPadding(layoutDirection),
                 end = paddingValues.calculateEndPadding(layoutDirection),
-                bottom = max(paddingValues.calculateBottomPadding(), playerOffset),
+                bottom =
+                    max(max(paddingValues.calculateBottomPadding(), playerOffset), imeBottom),
             )
         Column(
             modifier =
                 Modifier.fillMaxSize()
                     .padding(customPadding)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp)
-                    .imePadding(),
+                    .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(modifier = Modifier.height(24.dp))

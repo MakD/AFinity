@@ -253,10 +253,10 @@ private fun GeneralTab(
     Column(
         modifier =
             Modifier.fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
                 .imePadding()
-                .navigationBarsPadding(),
+                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         SleekTextField(
@@ -334,7 +334,7 @@ private fun PeopleTab(
     var newPersonType by remember { mutableStateOf("Actor") }
     var newPersonRole by remember { mutableStateOf("") }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().imePadding()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -504,10 +504,10 @@ private fun AdvancedTab(
     Column(
         modifier =
             Modifier.fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
                 .imePadding()
-                .navigationBarsPadding(),
+                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         SleekTextField(
