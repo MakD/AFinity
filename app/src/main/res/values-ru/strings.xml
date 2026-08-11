@@ -920,14 +920,7 @@
     <string name="admin_action_refresh_metadata">Обновить метаданные</string>
     <string name="admin_refresh_title">Обновить метаданные</string>
     <string name="admin_refresh_mode_label">Режим обновления</string>
-    <string name="admin_refresh_mode_default">По умолчанию</string>
-    <string name="admin_refresh_mode_default_desc">Заполнить отсутствующие данные</string>
-    <string name="admin_refresh_mode_validate">Исправление</string>
-    <string name="admin_refresh_mode_validate_desc">Проверить и исправить все данные</string>
-    <string name="admin_refresh_mode_full">Полный</string>
-    <string name="admin_refresh_mode_full_desc">Заменить все через провайдера данных</string>
     <string name="admin_refresh_replace_images">Замена имеющихся изображений</string>
-    <string name="admin_refresh_replace_metadata">Замена всех метаданных</string>
     <string name="admin_btn_refresh">Обновить</string>
     <string name="admin_edit_metadata_title">Править метаданные</string>
     <string name="admin_save_changes">Сохранить изменения</string>

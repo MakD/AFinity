@@ -917,13 +917,7 @@
     <string name="admin_action_refresh_metadata">Üstveriyi Yenile</string>
     <string name="admin_refresh_title">Üstveriyi Yenile</string>
     <string name="admin_refresh_mode_label">Yenileme modu</string>
-    <string name="admin_refresh_mode_default">Varsayılan</string>
-    <string name="admin_refresh_mode_default_desc">Ancak boş veriyi doldurun</string>
-    <string name="admin_refresh_mode_validate">Doğrula</string>
-    <string name="admin_refresh_mode_validate_desc">Tüm alanları kontrol edin ve düzeltin</string>
-    <string name="admin_refresh_mode_full_desc">Sağlayıcılardan gelen her şeyi değiştirin</string>
     <string name="admin_refresh_replace_images">Varolan resimleri değiştir</string>
-    <string name="admin_refresh_replace_metadata">Tüm metadatayı değiştir</string>
     <string name="admin_btn_refresh">Yenile</string>
     <string name="admin_edit_metadata_title">Metadatayı Düzenle</string>
     <string name="admin_save_changes">Değişiklikleri Kaydet</string>
@@ -980,7 +974,6 @@
     <string name="request_fulfillment_details">Talep Yerine Getirme Detayları</string>
     <string name="pref_omdb_api_key_title">OMDb API Anahtarı</string>
     <string name="pref_omdb_config_title">OMDb Yapılandırması</string>
-    <string name="admin_refresh_mode_full">Tam</string>
     <string name="admin_image_type_backdrop">Arka Plan</string>
     <string name="section_storage_locations">DEPOLAMA YERLERİ</string>
     <string name="storage_used_on_volume_fmt">%1$s bu sunucuda kullanıldı</string>
