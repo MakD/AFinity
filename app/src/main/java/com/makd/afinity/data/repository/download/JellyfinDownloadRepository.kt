@@ -18,6 +18,7 @@ import com.makd.afinity.data.models.extensions.toAfinityTrack
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySourceType
+import com.makd.afinity.data.models.media.PlaylistEntry
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.media.MediaRepository
@@ -834,20 +835,25 @@ constructor(
     override suspend fun startPlaylistDownload(playlistId: UUID, volumeId: String?): Result<Int> =
         withContext(Dispatchers.IO) {
             return@withContext try {
-                val tracks = musicRepository.getPlaylistTracks(playlistId)
+                val entries = mediaRepository.getPlaylistEntries(playlistId).entries
                 var started = 0
                 val playlistIdStr = playlistId.toString()
-                for (track in tracks) {
-                    startDownload(track.id, "", volumeId, playlistIdStr)
+                for (entry in entries) {
+                    val entryName =
+                        when (entry) {
+                            is PlaylistEntry.Audio -> entry.track.name
+                            is PlaylistEntry.Video -> entry.item.name
+                        }
+                    startDownload(entry.id, "", volumeId, playlistIdStr)
                         .onSuccess { started++ }
                         .onFailure { error ->
                             if (error is VolumeUnavailableException)
                                 return@withContext Result.failure(error)
-                            Timber.w(error, "Skipping track ${track.name}: ${error.message}")
+                            Timber.w(error, "Skipping $entryName: ${error.message}")
                         }
                 }
                 Timber.i(
-                    "Playlist download queued $started/${tracks.size} tracks for playlist $playlistId"
+                    "Playlist download queued $started/${entries.size} items for playlist $playlistId"
                 )
                 Result.success(started)
             } catch (e: Exception) {

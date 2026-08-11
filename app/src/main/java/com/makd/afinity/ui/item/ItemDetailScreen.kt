@@ -87,6 +87,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
+import com.makd.afinity.data.models.media.AfinityVideoPlaylist
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
@@ -112,6 +113,7 @@ import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.item.components.shared.PrimaryPlaybackButton
 import com.makd.afinity.ui.item.components.shared.SimilarItemsSection
 import com.makd.afinity.ui.item.components.shared.VideoQualitySelection
+import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.utils.IntentUtils
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
@@ -119,6 +121,7 @@ import com.makd.afinity.ui.utils.verticalLayoutOffset
 import com.makd.afinity.util.rememberPreferencesRepository
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.MediaStreamType
+import org.jellyfin.sdk.model.api.MediaType
 import timber.log.Timber
 import java.util.UUID
 
@@ -535,6 +538,7 @@ private fun LandscapeItemDetailContent(
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
     var showRefreshDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showAddToPlaylist by remember { mutableStateOf(false) }
     val density = LocalDensity.current
     val statusBarHeight = WindowInsets.statusBars.getTop(density)
     val displayCutoutLeft = WindowInsets.displayCutout.getLeft(density, LayoutDirection.Ltr)
@@ -639,7 +643,7 @@ private fun LandscapeItemDetailContent(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            if (item !is AfinityBoxSet && item.canPlay) {
+                            if (item !is AfinityBoxSet && item !is AfinityVideoPlaylist && item.canPlay) {
                                 Box(modifier = Modifier.widthIn(max = 200.dp)) {
                                     PrimaryPlaybackButton(
                                         item = item,
@@ -683,6 +687,15 @@ private fun LandscapeItemDetailContent(
                                 downloadUnavailable = uiState.downloadUnavailable,
                                 isAdmin = isAdmin,
                                 onDownloadLongClick = { viewModel.onDownloadLongClick() },
+                                onAddToPlaylist =
+                                    if (
+                                        item is AfinityMovie ||
+                                            item is AfinityEpisode ||
+                                            item is AfinityShow ||
+                                            item is AfinitySeason
+                                    )
+                                        ({ showAddToPlaylist = true })
+                                    else null,
                                 onAdminAction = { action ->
                                     when (action) {
                                         AdminAction.EditMetadata ->
@@ -718,6 +731,16 @@ private fun LandscapeItemDetailContent(
                                 RefreshMetadataDialog(
                                     itemId = item.id.toString(),
                                     onDismiss = { showRefreshDialog = false },
+                                )
+                            }
+
+                            if (showAddToPlaylist) {
+                                AddToPlaylistDialog(
+                                    trackIds = listOf(item.id),
+                                    viewModel = hiltViewModel(),
+                                    mediaType = MediaType.VIDEO,
+                                    onDismiss = { showAddToPlaylist = false },
+                                    onResult = {},
                                 )
                             }
 
@@ -807,6 +830,7 @@ private fun PortraitItemDetailContent(
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
     var showRefreshDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showAddToPlaylist by remember { mutableStateOf(false) }
     val playerOffset = LocalPlayerOffset.current
 
     LazyColumn(
@@ -842,7 +866,7 @@ private fun PortraitItemDetailContent(
                     selectedSourceId = selectedMediaSource?.id,
                 )
 
-                if (item !is AfinityBoxSet && item.canPlay) {
+                if (item !is AfinityBoxSet && item !is AfinityVideoPlaylist && item.canPlay) {
                     PrimaryPlaybackButton(
                         item = item,
                         nextEpisode = nextEpisode,
@@ -874,6 +898,15 @@ private fun PortraitItemDetailContent(
                     downloadUnavailable = uiState.downloadUnavailable,
                     isAdmin = isAdmin,
                     onDownloadLongClick = { viewModel.onDownloadLongClick() },
+                    onAddToPlaylist =
+                        if (
+                            item is AfinityMovie ||
+                                item is AfinityEpisode ||
+                                item is AfinityShow ||
+                                item is AfinitySeason
+                        )
+                            ({ showAddToPlaylist = true })
+                        else null,
                     onAdminAction = { action ->
                         when (action) {
                             AdminAction.EditMetadata ->
@@ -904,6 +937,16 @@ private fun PortraitItemDetailContent(
                     RefreshMetadataDialog(
                         itemId = item.id.toString(),
                         onDismiss = { showRefreshDialog = false },
+                    )
+                }
+
+                if (showAddToPlaylist) {
+                    AddToPlaylistDialog(
+                        trackIds = listOf(item.id),
+                        viewModel = hiltViewModel(),
+                        mediaType = MediaType.VIDEO,
+                        onDismiss = { showAddToPlaylist = false },
+                        onResult = {},
                     )
                 }
 
@@ -1120,7 +1163,7 @@ private fun TypeSpecificContent(
             )
     }
 
-    if (item !is AfinityBoxSet && similarItems.isNotEmpty()) {
+    if (item !is AfinityBoxSet && item !is AfinityVideoPlaylist && similarItems.isNotEmpty()) {
         SimilarItemsSection(
             items = similarItems,
             onItemClick = { sim ->

@@ -5,6 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
+import androidx.paging.PagingSource
 import androidx.paging.cachedIn
 import androidx.paging.filter
 import androidx.paging.map
@@ -156,6 +157,7 @@ constructor(
     private var sectionParentId: UUID? = null
     private var sectionStudios: List<String> = emptyList()
     private var sectionItemTypes: List<String>? = null
+    private var currentLibraryPagingSource: PagingSource<Int, AfinityItem>? = null
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -249,6 +251,13 @@ constructor(
         }
 
         viewModelScope.launch {
+            mediaChangeManager.libraryContentChanges.collect { event ->
+                Timber.d("Library content changed (${event.reason}) — refreshing ${libraryName}")
+                currentLibraryPagingSource?.invalidate() ?: loadItems()
+            }
+        }
+
+        viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
                 val resolved = event.resolveChangedItems(mediaRepository)
                 if (resolved.isNotEmpty()) {
@@ -298,6 +307,7 @@ constructor(
                 nameStartsWith = null,
                 studioNames = sectionStudios.ifEmpty { listOfNotNull(studioName) },
                 includeItemTypes = sectionItemTypes,
+                onSourceCreated = { source -> currentLibraryPagingSource = source },
             )
         _pagingData.value = applyUpdatesToPagingFlow(baseFlow)
     }
@@ -498,6 +508,7 @@ constructor(
                         nameStartsWith = letterFilter,
                         studioNames = sectionStudios.ifEmpty { listOfNotNull(studioName) },
                         includeItemTypes = sectionItemTypes,
+                        onSourceCreated = { source -> currentLibraryPagingSource = source },
                     )
                 _pagingData.value = applyUpdatesToPagingFlow(baseFlow)
 

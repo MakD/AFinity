@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.jellyfin.sdk.model.api.MediaType
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -74,11 +75,17 @@ class AddToPlaylistViewModel @Inject constructor(
         }
     }
 
-    fun createPlaylist(name: String, trackIds: List<UUID>, isPublic: Boolean) {
+    fun createPlaylist(
+        name: String,
+        trackIds: List<UUID>,
+        isPublic: Boolean,
+        mediaType: MediaType = MediaType.AUDIO,
+    ) {
         viewModelScope.launch {
             _state.update { it.copy(isSubmitting = true) }
             try {
-                val created = musicRepository.createPlaylist(name, trackIds, isPublic)
+                val created =
+                    musicRepository.createPlaylist(name, trackIds, isPublic, mediaType)
                 if (created != null) {
                     _state.update { state ->
                         state.copy(

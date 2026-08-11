@@ -5,9 +5,10 @@ import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityChannel
 import com.makd.afinity.data.models.extensions.toAfinityFolder
 import com.makd.afinity.data.models.extensions.toAfinityVideo
-import java.util.UUID
+import com.makd.afinity.data.models.extensions.toAfinityVideoPlaylist
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import java.util.UUID
 
 interface AfinityItem {
     val id: UUID
@@ -39,6 +40,7 @@ suspend fun BaseItemDto.toAfinityItem(
         BaseItemKind.SEASON -> toAfinitySeason(baseUrl)
         BaseItemKind.SERIES -> toAfinityShow(baseUrl)
         BaseItemKind.BOX_SET -> toAfinityBoxSet(baseUrl)
+        BaseItemKind.PLAYLIST -> toAfinityVideoPlaylist(baseUrl)
         BaseItemKind.FOLDER -> toAfinityFolder(baseUrl)
         BaseItemKind.VIDEO -> toAfinityVideo(baseUrl)
         BaseItemKind.TV_CHANNEL -> toAfinityChannel(baseUrl)

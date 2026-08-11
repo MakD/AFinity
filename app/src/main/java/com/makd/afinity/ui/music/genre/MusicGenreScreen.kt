@@ -35,7 +35,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -78,6 +77,7 @@ import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.music.components.MusicArtistCard
+import com.makd.afinity.ui.music.components.MusicDetailActionRow
 import com.makd.afinity.ui.music.components.MusicHeroBackground
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
@@ -120,91 +120,54 @@ fun MusicGenreScreen(
         )
 
     val actionRow: @Composable () -> Unit = {
-        Row(
+        MusicDetailActionRow(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+            playbackEnabled = uiState.tracks.isNotEmpty(),
+            onShuffle = {
+                startMusicService(context)
+                playerViewModel.playQueue(uiState.tracks.shuffled(), 0)
+            },
+            onPlay = {
+                startMusicService(context)
+                playerViewModel.playQueue(uiState.tracks, 0)
+            },
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                val genreId = viewModel.genreId
-                if (genreId != null) {
+            val genreId = viewModel.genreId
+            if (genreId != null) {
+                IconButton(
+                    enabled = !isOffline,
+                    onClick = {
+                        startMusicService(context)
+                        playerViewModel.playInstantMix(genreId)
+                    },
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_compass),
+                        contentDescription = stringResource(R.string.cd_music_instant_mix),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(26.dp),
+                    )
+                }
+                val firstTrack = uiState.tracks.firstOrNull()
+                if (firstTrack != null) {
                     IconButton(
                         enabled = !isOffline,
                         onClick = {
-                            startMusicService(context)
-                            playerViewModel.playInstantMix(genreId)
+                            radioSeed =
+                                RadioSeed(
+                                    trackId = firstTrack.id,
+                                    albumId = firstTrack.albumId,
+                                    sourceTracks = uiState.tracks,
+                                )
                         },
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_compass),
-                            contentDescription = stringResource(R.string.cd_music_instant_mix),
+                            painter = painterResource(R.drawable.ic_radio),
+                            contentDescription = stringResource(R.string.cd_music_start_radio),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(26.dp),
                         )
                     }
-                    val firstTrack = uiState.tracks.firstOrNull()
-                    if (firstTrack != null) {
-                        IconButton(
-                            enabled = !isOffline,
-                            onClick = {
-                                radioSeed =
-                                    RadioSeed(
-                                        trackId = firstTrack.id,
-                                        albumId = firstTrack.albumId,
-                                        sourceTracks = uiState.tracks,
-                                    )
-                            },
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_radio),
-                                contentDescription = stringResource(R.string.cd_music_start_radio),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(26.dp),
-                            )
-                        }
-                    }
-                }
-            }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(end = 8.dp),
-            ) {
-                IconButton(
-                    onClick = {
-                        if (uiState.tracks.isNotEmpty()) {
-                            startMusicService(context)
-                            playerViewModel.playQueue(uiState.tracks.shuffled(), 0)
-                        }
-                    }
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_arrows_shuffle),
-                        contentDescription = stringResource(R.string.cd_music_shuffle),
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(28.dp),
-                    )
-                }
-                FloatingActionButton(
-                    onClick = {
-                        if (uiState.tracks.isNotEmpty()) {
-                            startMusicService(context)
-                            playerViewModel.playQueue(uiState.tracks, 0)
-                        }
-                    },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    shape = CircleShape,
-                    modifier = Modifier.size(56.dp),
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_player_play_filled),
-                        contentDescription = stringResource(R.string.cd_play),
-                        modifier = Modifier.size(26.dp),
-                    )
                 }
             }
         }

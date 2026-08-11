@@ -5,6 +5,7 @@ import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityLyricLine
 import com.makd.afinity.data.models.music.AfinityMusicGenre
 import com.makd.afinity.data.models.music.AfinityPlaylist
+import com.makd.afinity.data.models.music.AfinityPlaylistContents
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicFilterOptions
 import com.makd.afinity.data.models.music.MusicFilters
@@ -12,6 +13,7 @@ import com.makd.afinity.data.models.music.MusicSearchResults
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemSortBy
+import org.jellyfin.sdk.model.api.MediaType
 import org.jellyfin.sdk.model.api.SortOrder
 import java.util.UUID
 
@@ -80,9 +82,14 @@ interface MusicRepository {
 
     suspend fun getPlaylistById(playlistId: UUID): AfinityPlaylist?
 
-    suspend fun getPlaylistTracks(playlistId: UUID): List<AfinityTrack>
+    suspend fun getPlaylistContents(playlistId: UUID): AfinityPlaylistContents
 
-    suspend fun createPlaylist(name: String, trackIds: List<UUID>, isPublic: Boolean): AfinityPlaylist?
+    suspend fun createPlaylist(
+        name: String,
+        trackIds: List<UUID>,
+        isPublic: Boolean,
+        mediaType: MediaType = MediaType.AUDIO,
+    ): AfinityPlaylist?
 
     suspend fun addTracksToPlaylist(playlistId: UUID, trackIds: List<UUID>)
 

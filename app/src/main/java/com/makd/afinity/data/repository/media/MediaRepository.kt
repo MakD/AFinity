@@ -1,6 +1,7 @@
 package com.makd.afinity.data.repository.media
 
 import androidx.paging.PagingData
+import androidx.paging.PagingSource
 import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
@@ -17,6 +18,7 @@ import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.models.media.LibraryFilterOptions
 import com.makd.afinity.data.models.media.LibraryFilters
+import com.makd.afinity.data.models.music.AfinityPlaylistContents
 import com.makd.afinity.data.models.omdb.OmdbApiResult
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -65,7 +67,6 @@ interface MediaRepository {
         groupItems: Boolean = true,
     ): List<AfinityItem>
 
-
     suspend fun getContinueWatching(
         limit: Int = 16,
         fields: List<ItemFields>? = null,
@@ -113,6 +114,17 @@ interface MediaRepository {
         playlistId: UUID,
         fields: List<ItemFields>? = null,
     ): List<BaseItemDto>
+
+    suspend fun getPlaylistEntries(
+        playlistId: UUID,
+        fields: List<ItemFields>? = null,
+    ): AfinityPlaylistContents
+
+    suspend fun movePlaylistItem(
+        playlistId: UUID,
+        playlistItemId: String,
+        newIndex: Int,
+    ): Boolean
 
     suspend fun getItemById(itemId: UUID): AfinityItem?
 
@@ -287,6 +299,7 @@ interface MediaRepository {
         fields: List<ItemFields>? = null,
         studioNames: List<String> = emptyList(),
         includeItemTypes: List<String>? = null,
+        onSourceCreated: ((PagingSource<Int, AfinityItem>) -> Unit)? = null,
     ): Flow<PagingData<AfinityItem>>
 
     suspend fun getFilterOptions(

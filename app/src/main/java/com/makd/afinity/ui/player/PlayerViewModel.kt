@@ -2559,6 +2559,7 @@ constructor(
         startPositionMs: Long,
         seasonId: UUID? = null,
         shuffle: Boolean = false,
+        playlistId: UUID? = null,
     ) {
 
         val targetSource =
@@ -2586,13 +2587,32 @@ constructor(
             }
         }
         viewModelScope.launch {
-            playlistManager.initializePlaylist(item, seasonId, startPositionMs)
+            playlistManager.initializePlaylist(item, seasonId, startPositionMs, playlistId)
             if (shuffle) {
                 playlistManager.shuffleQueue()
             }
             val firstItem = playlistManager.getCurrentItem() ?: item
+            val queueState = playlistManager.playlistState.value
+            val isOnIntro = queueState.contentStartIndex > queueState.currentIndex
 
-            if (firstItem.id != item.id) {
+            if (firstItem.id != item.id && !isOnIntro) {
+                pendingMainItemOptions = null
+                updateUiState { it.copy(isPlayingIntro = false) }
+                Timber.d("Queue reordered, playing queue head: ${firstItem.name}")
+                suppressNextControlShow = false
+                handlePlayerEvent(
+                    PlayerEvent.LoadMedia(
+                        item = firstItem,
+                        mediaSourceId = firstItem.sources.firstOrNull()?.id ?: "",
+                        audioStreamIndex = null,
+                        subtitleStreamIndex = null,
+                        startPositionMs =
+                            if (firstItem.playbackPositionTicks > 0)
+                                firstItem.playbackPositionTicks / 10000
+                            else 0L,
+                    )
+                )
+            } else if (firstItem.id != item.id) {
                 pendingMainItemOptions =
                     MainItemPlaybackOptions(
                         itemId = item.id,

@@ -1678,7 +1678,42 @@
     <!-- Fallbacks -->
     <string name="music_fallback_album">Album</string>
     <string name="music_fallback_playlist">Playlist</string>
+    <!-- Playlist entries -->
+    <string name="playlist_entry_episode_fmt">S%1$dE%2$d</string>
+    <string name="playlist_entry_kind_movie">Movie</string>
+    <string name="playlist_empty_message">This playlist is empty.</string>
+    <plurals name="playlist_item_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <string name="playlist_play_choice_title">Play music or videos?</string>
+    <string name="playlist_play_choice_message">This playlist has %1$s and %2$s.</string>
+    <plurals name="playlist_choice_songs">
+        <item quantity="one">%1$d song</item>
+        <item quantity="other">%1$d songs</item>
+    </plurals>
+    <plurals name="playlist_choice_videos">
+        <item quantity="one">%1$d video</item>
+        <item quantity="other">%1$d videos</item>
+    </plurals>
+    <string name="playlist_play_music">Play music</string>
+    <string name="playlist_play_videos">Play videos</string>
     <!-- Playlist -->
+    <plurals name="music_playlist_song_count">
+        <item quantity="one">%1$d song</item>
+        <item quantity="other">%1$d songs</item>
+    </plurals>
+    <plurals name="music_playlist_hidden_videos">
+        <item quantity="one">%1$d video item hidden</item>
+        <item quantity="other">%1$d video items hidden</item>
+    </plurals>
+    <string name="music_playlist_video_only_title">No music in this playlist</string>
+    <plurals name="music_playlist_video_only_message">
+        <item quantity="one">This playlist holds %1$d video item, which can\'t be played here.</item>
+        <item quantity="other">This playlist holds %1$d video items, which can\'t be played here.</item>
+    </plurals>
+    <string name="music_playlist_empty_title">This playlist is empty</string>
+    <string name="music_playlist_empty_message">Add songs to it to start listening.</string>
     <string name="music_delete_playlist_title">Delete Playlist</string>
     <string name="music_new_playlist_title">New Playlist</string>
     <string name="music_new_playlist_name_label">Playlist name</string>

@@ -35,17 +35,22 @@ import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinityVideoPlaylist
 import com.makd.afinity.navigation.LocalShowRatings
+import com.makd.afinity.ui.theme.CardDimensions
 import java.util.Locale
 
 @Composable
 fun MediaItemGridCard(item: AfinityItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val ratingScale = rememberRatingMetadataScale()
+    val aspectRatio =
+        if (item is AfinityVideoPlaylist) CardDimensions.ASPECT_RATIO_SQUARE
+        else CardDimensions.ASPECT_RATIO_PORTRAIT
 
     Column(modifier = modifier.fillMaxWidth()) {
         Card(
             onClick = onClick,
-            modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f),
+            modifier = Modifier.fillMaxWidth().aspectRatio(aspectRatio),
             shape = RoundedCornerShape(12.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
@@ -55,7 +60,7 @@ fun MediaItemGridCard(item: AfinityItem, onClick: () -> Unit, modifier: Modifier
                     contentDescription = item.name,
                     blurHash = item.images.primaryBlurHash,
                     targetWidth = 160.dp,
-                    targetHeight = 240.dp,
+                    targetHeight = 160.dp / aspectRatio,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                 )
@@ -89,6 +94,18 @@ fun MediaItemGridCard(item: AfinityItem, onClick: () -> Unit, modifier: Modifier
                                         ),
                                 modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
                             )
+                        }
+                    }
+
+                    item is AfinityVideoPlaylist -> {
+                        val displayCount = item.itemCount
+                        displayCount?.let { count ->
+                            if (count > 0) {
+                                MediaCountBadge(
+                                    text = "$count",
+                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                                )
+                            }
                         }
                     }
 

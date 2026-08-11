@@ -44,6 +44,7 @@ class JellyfinItemsPagingSource(
                         CollectionType.TvShows -> listOf("SERIES")
                         CollectionType.Movies -> listOf("MOVIE")
                         CollectionType.BoxSets -> listOf("BOX_SET")
+                        CollectionType.Playlists -> listOf("PLAYLIST")
                         else -> listOf("MOVIE", "SERIES", "BOX_SET", "FOLDER")
                     }
 

@@ -1,6 +1,7 @@
 package com.makd.afinity.data.repository.music
 
 import androidx.core.net.toUri
+import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.extensions.toAfinityAlbum
@@ -8,11 +9,13 @@ import com.makd.afinity.data.models.extensions.toAfinityArtist
 import com.makd.afinity.data.models.extensions.toAfinityPlaylist
 import com.makd.afinity.data.models.extensions.toAfinityTrack
 import com.makd.afinity.data.models.media.AfinityImages
+import com.makd.afinity.data.models.media.PlaylistEntry
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityLyricLine
 import com.makd.afinity.data.models.music.AfinityMusicGenre
 import com.makd.afinity.data.models.music.AfinityPlaylist
+import com.makd.afinity.data.models.music.AfinityPlaylistContents
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicFilterOptions
 import com.makd.afinity.data.models.music.MusicFilters
@@ -46,6 +49,7 @@ import org.jellyfin.sdk.api.operations.UserLibraryApi
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ItemSortBy
+import org.jellyfin.sdk.model.api.MediaType
 import org.jellyfin.sdk.model.api.SortOrder
 import timber.log.Timber
 import java.util.UUID
@@ -59,6 +63,7 @@ constructor(
     private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
     private val apiInvoker: JellyfinApiInvoker,
+    private val mediaChangeManager: MediaChangeManager,
 ) : MusicRepository {
 
     private val playlistsRefreshTrigger = MutableStateFlow(0)
@@ -527,26 +532,45 @@ constructor(
                 ?.let { runCatching { it.toAfinityPlaylist(baseUrl) }.getOrNull() }
         }
 
-    override suspend fun getPlaylistTracks(playlistId: UUID): List<AfinityTrack> =
-        apiCall(emptyList(), "Failed to fetch tracks for playlist: $playlistId") { apiClient, userId
-            ->
+    override suspend fun getPlaylistContents(playlistId: UUID): AfinityPlaylistContents =
+        apiCall(AfinityPlaylistContents(), "Failed to fetch contents for playlist: $playlistId") {
+            apiClient,
+            userId ->
             val baseUrl = getBaseUrlInternal()
-            PlaylistsApi(apiClient)
-                .getPlaylistItems(
-                    playlistId = playlistId,
-                    userId = userId,
-                    fields = FieldSets.MUSIC_TRACK,
-                    enableUserData = true,
-                )
-                .content
-                .items
-                .mapNotNull { dto -> runCatching { dto.toAfinityTrack(baseUrl) }.getOrNull() }
+            val items =
+                PlaylistsApi(apiClient)
+                    .getPlaylistItems(
+                        playlistId = playlistId,
+                        userId = userId,
+                        fields = FieldSets.MUSIC_TRACK,
+                        enableUserData = true,
+                    )
+                    .content
+                    .items
+            val entries =
+                items
+                    .filter { it.mediaType == MediaType.AUDIO }
+                    .mapNotNull { dto ->
+                        runCatching {
+                                PlaylistEntry.Audio(
+                                    playlistItemId = dto.playlistItemId,
+                                    track = dto.toAfinityTrack(baseUrl),
+                                )
+                            }
+                            .getOrNull()
+                    }
+            AfinityPlaylistContents(
+                entries = entries,
+                audioCount = entries.size,
+                videoCount = items.count { it.mediaType == MediaType.VIDEO },
+            )
         }
 
     override suspend fun createPlaylist(
         name: String,
         trackIds: List<UUID>,
         isPublic: Boolean,
+        mediaType: MediaType,
     ): AfinityPlaylist? =
         apiCall(null, "Failed to create playlist: $name") { apiClient, userId ->
             val result =
@@ -556,7 +580,7 @@ constructor(
                                 name = name,
                                 ids = emptyList(),
                                 userId = userId,
-                                mediaType = org.jellyfin.sdk.model.api.MediaType.AUDIO,
+                                mediaType = mediaType,
                                 users = emptyList(),
                                 isPublic = isPublic,
                             )
@@ -584,6 +608,7 @@ constructor(
                 }
 
                 invalidatePlaylistsCache()
+                mediaChangeManager.notifyLibraryContentChanged("playlist_created")
 
                 AfinityPlaylist(
                     id = playlistId,
@@ -607,6 +632,8 @@ constructor(
                         ids = trackIds,
                         userId = userId,
                     )
+                invalidatePlaylistsCache()
+                mediaChangeManager.notifyLibraryContentChanged("playlist_items_added")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to add tracks to playlist $playlistId")
                 throw e
@@ -622,6 +649,8 @@ constructor(
                         playlistId = playlistId.toString(),
                         entryIds = entryIds,
                     )
+                invalidatePlaylistsCache()
+                mediaChangeManager.notifyLibraryContentChanged("playlist_items_removed")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to remove tracks from playlist $playlistId")
                 throw e
@@ -636,6 +665,7 @@ constructor(
                     .LibraryApi(apiClient)
                     .deleteItem(itemId = playlistId)
                 invalidatePlaylistsCache()
+                mediaChangeManager.notifyLibraryContentChanged("playlist_deleted")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to delete playlist $playlistId")
                 throw e

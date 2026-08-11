@@ -24,6 +24,7 @@ import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.extensions.toAfinitySeason
+import com.makd.afinity.data.models.extensions.toAfinityVideoPlaylist
 import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.mdblist.MdbListRatingBadges
 import com.makd.afinity.data.models.mdblist.MdbListRatingsResult
@@ -59,6 +60,7 @@ import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -78,6 +80,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import org.jellyfin.sdk.model.api.BaseItemKind
 import timber.log.Timber
 import java.util.UUID
@@ -596,6 +600,8 @@ constructor(
                             baseItemDto.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
                         BaseItemKind.BOX_SET ->
                             baseItemDto.toAfinityBoxSet(mediaRepository.getBaseUrl())
+                        BaseItemKind.PLAYLIST ->
+                            baseItemDto.toAfinityVideoPlaylist(mediaRepository.getBaseUrl())
                         BaseItemKind.SEASON -> {
                             val season = baseItemDto.toAfinitySeason(mediaRepository.getBaseUrl())
                             if (season.runtimeTicks == 0L) {
@@ -671,21 +677,29 @@ constructor(
                         sortBy = SortBy.RELEASE_DATE,
                         fields = FieldSets.MINIMAL,
                     )
+                val baseUrl = mediaRepository.getBaseUrl()
+                val converted =
+                    withContext(Dispatchers.Default) {
+                        yield()
+                        response.items.mapNotNull { it.toAfinityItem(baseUrl) }
+                    }
+                val seriesIdsNeedingRuntime =
+                    converted
+                        .filterIsInstance<AfinitySeason>()
+                        .filter { it.runtimeTicks == 0L }
+                        .map { it.seriesId }
+                        .distinct()
+                val seriesRuntimes =
+                    if (seriesIdsNeedingRuntime.isEmpty()) emptyMap()
+                    else
+                        mediaRepository
+                            .getItemsByIds(seriesIdsNeedingRuntime, FieldSets.MINIMAL)
+                            .associate { it.id to it.runtimeTicks }
                 val items =
-                    response.items.mapNotNull { baseItem ->
-                        val item = baseItem.toAfinityItem(mediaRepository.getBaseUrl())
-                        if (item is AfinitySeason && item.runtimeTicks == 0L) {
-                            try {
-                                val series =
-                                    mediaRepository.getItem(
-                                        item.seriesId,
-                                        fields = FieldSets.MINIMAL,
-                                    )
-                                item.copy(runtimeTicks = series?.runTimeTicks ?: 0L)
-                            } catch (_: Exception) {
-                                item
-                            }
-                        } else item
+                    converted.map { item ->
+                        if (item is AfinitySeason && item.runtimeTicks == 0L)
+                            item.copy(runtimeTicks = seriesRuntimes[item.seriesId] ?: 0L)
+                        else item
                     }
                 _uiState.value = _uiState.value.copy(boxSetItems = items)
             } catch (e: Exception) {
@@ -719,6 +733,10 @@ constructor(
                                     baseItemDto.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
                                 BaseItemKind.BOX_SET ->
                                     baseItemDto.toAfinityBoxSet(mediaRepository.getBaseUrl())
+                                BaseItemKind.PLAYLIST ->
+                                    baseItemDto.toAfinityVideoPlaylist(
+                                        mediaRepository.getBaseUrl()
+                                    )
                                 BaseItemKind.SEASON -> {
                                     val season =
                                         baseItemDto.toAfinitySeason(mediaRepository.getBaseUrl())
@@ -930,6 +948,7 @@ constructor(
                     }
                 }
             }
+            "PLAYLIST" -> {}
             else -> {
                 viewModelScope.launch {
                     try {

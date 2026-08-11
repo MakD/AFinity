@@ -128,6 +128,7 @@ fun MusicAlbumScreen(
     val actionButtonsContent: @Composable () -> Unit = {
         MusicDetailActionRow(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            playbackEnabled = uiState.tracks.isNotEmpty(),
             onShuffle = {
                 startMusicService(context)
                 val shuffled = uiState.tracks.shuffled()

@@ -23,6 +23,7 @@ fun MusicDetailActionRow(
     onShuffle: () -> Unit,
     onPlay: () -> Unit,
     modifier: Modifier = Modifier,
+    playbackEnabled: Boolean = true,
     leadingActions: @Composable RowScope.() -> Unit,
 ) {
     Row(
@@ -41,19 +42,25 @@ fun MusicDetailActionRow(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(end = 8.dp),
         ) {
-            IconButton(onClick = onShuffle) {
+            IconButton(onClick = onShuffle, enabled = playbackEnabled) {
                 Icon(
                     painter = painterResource(R.drawable.ic_arrows_shuffle),
                     contentDescription = stringResource(R.string.cd_music_shuffle),
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint =
+                        if (playbackEnabled) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
                     modifier = Modifier.size(28.dp),
                 )
             }
 
             FloatingActionButton(
-                onClick = onPlay,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
+                onClick = { if (playbackEnabled) onPlay() },
+                containerColor =
+                    if (playbackEnabled) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.surfaceContainerHighest,
+                contentColor =
+                    if (playbackEnabled) MaterialTheme.colorScheme.onPrimary
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
                 shape = CircleShape,
                 modifier = Modifier.size(56.dp),
             ) {

@@ -228,6 +228,7 @@ constructor(
     }
 
     fun playQueue(tracks: List<AfinityTrack>, startIndex: Int = 0) {
+        if (tracks.isEmpty()) return
         radioManager.stopRadio()
         queueManager.loadQueue(tracks, startIndex)
     }
