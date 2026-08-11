@@ -123,6 +123,7 @@ class PlayerActivity : AppCompatActivity() {
         val startPositionMs = intent.getLongExtra("startPositionMs", 0L)
         val seasonId = intent.getStringExtra("seasonId")?.let { UUID.fromString(it) }
         val shuffle = intent.getBooleanExtra("shuffle", false)
+        val playlistId = intent.getStringExtra("playlistId")?.let { UUID.fromString(it) }
         val isLiveChannel = intent.getBooleanExtra("isLiveChannel", false)
         val channelName = intent.getStringExtra("channelName")
         val liveStreamUrl = intent.getStringExtra("liveStreamUrl")
@@ -166,6 +167,7 @@ class PlayerActivity : AppCompatActivity() {
                     startPositionMs = startPositionMs,
                     seasonId = seasonId,
                     shuffle = shuffle,
+                    playlistId = playlistId,
                     isLiveChannel = isLiveChannel,
                     channelName = channelName,
                     liveStreamUrl = liveStreamUrl,

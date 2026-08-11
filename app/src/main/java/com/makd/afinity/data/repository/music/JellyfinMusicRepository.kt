@@ -8,11 +8,13 @@ import com.makd.afinity.data.models.extensions.toAfinityArtist
 import com.makd.afinity.data.models.extensions.toAfinityPlaylist
 import com.makd.afinity.data.models.extensions.toAfinityTrack
 import com.makd.afinity.data.models.media.AfinityImages
+import com.makd.afinity.data.models.media.PlaylistEntry
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityLyricLine
 import com.makd.afinity.data.models.music.AfinityMusicGenre
 import com.makd.afinity.data.models.music.AfinityPlaylist
+import com.makd.afinity.data.models.music.AfinityPlaylistContents
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicFilterOptions
 import com.makd.afinity.data.models.music.MusicFilters
@@ -46,6 +48,7 @@ import org.jellyfin.sdk.api.operations.UserLibraryApi
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ItemSortBy
+import org.jellyfin.sdk.model.api.MediaType
 import org.jellyfin.sdk.model.api.SortOrder
 import timber.log.Timber
 import java.util.UUID
@@ -527,20 +530,38 @@ constructor(
                 ?.let { runCatching { it.toAfinityPlaylist(baseUrl) }.getOrNull() }
         }
 
-    override suspend fun getPlaylistTracks(playlistId: UUID): List<AfinityTrack> =
-        apiCall(emptyList(), "Failed to fetch tracks for playlist: $playlistId") { apiClient, userId
-            ->
+    override suspend fun getPlaylistContents(playlistId: UUID): AfinityPlaylistContents =
+        apiCall(AfinityPlaylistContents(), "Failed to fetch contents for playlist: $playlistId") {
+            apiClient,
+            userId ->
             val baseUrl = getBaseUrlInternal()
-            PlaylistsApi(apiClient)
-                .getPlaylistItems(
-                    playlistId = playlistId,
-                    userId = userId,
-                    fields = FieldSets.MUSIC_TRACK,
-                    enableUserData = true,
-                )
-                .content
-                .items
-                .mapNotNull { dto -> runCatching { dto.toAfinityTrack(baseUrl) }.getOrNull() }
+            val items =
+                PlaylistsApi(apiClient)
+                    .getPlaylistItems(
+                        playlistId = playlistId,
+                        userId = userId,
+                        fields = FieldSets.MUSIC_TRACK,
+                        enableUserData = true,
+                    )
+                    .content
+                    .items
+            val entries =
+                items
+                    .filter { it.mediaType == MediaType.AUDIO }
+                    .mapNotNull { dto ->
+                        runCatching {
+                                PlaylistEntry.Audio(
+                                    playlistItemId = dto.playlistItemId,
+                                    track = dto.toAfinityTrack(baseUrl),
+                                )
+                            }
+                            .getOrNull()
+                    }
+            AfinityPlaylistContents(
+                entries = entries,
+                audioCount = entries.size,
+                videoCount = items.count { it.mediaType == MediaType.VIDEO },
+            )
         }
 
     override suspend fun createPlaylist(

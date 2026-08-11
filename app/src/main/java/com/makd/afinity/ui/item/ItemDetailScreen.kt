@@ -87,6 +87,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
+import com.makd.afinity.data.models.media.AfinityVideoPlaylist
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
@@ -639,7 +640,7 @@ private fun LandscapeItemDetailContent(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            if (item !is AfinityBoxSet && item.canPlay) {
+                            if (item !is AfinityBoxSet && item !is AfinityVideoPlaylist && item.canPlay) {
                                 Box(modifier = Modifier.widthIn(max = 200.dp)) {
                                     PrimaryPlaybackButton(
                                         item = item,
@@ -842,7 +843,7 @@ private fun PortraitItemDetailContent(
                     selectedSourceId = selectedMediaSource?.id,
                 )
 
-                if (item !is AfinityBoxSet && item.canPlay) {
+                if (item !is AfinityBoxSet && item !is AfinityVideoPlaylist && item.canPlay) {
                     PrimaryPlaybackButton(
                         item = item,
                         nextEpisode = nextEpisode,
@@ -1120,7 +1121,7 @@ private fun TypeSpecificContent(
             )
     }
 
-    if (item !is AfinityBoxSet && similarItems.isNotEmpty()) {
+    if (item !is AfinityBoxSet && item !is AfinityVideoPlaylist && similarItems.isNotEmpty()) {
         SimilarItemsSection(
             items = similarItems,
             onItemClick = { sim ->

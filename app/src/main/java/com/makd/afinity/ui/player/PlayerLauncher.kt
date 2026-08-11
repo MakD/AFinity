@@ -3,8 +3,8 @@ package com.makd.afinity.ui.player
 import android.content.Context
 import android.content.Intent
 import androidx.media3.common.util.UnstableApi
-import java.util.UUID
 import timber.log.Timber
+import java.util.UUID
 
 object PlayerLauncher {
 
@@ -18,6 +18,7 @@ object PlayerLauncher {
         startPositionMs: Long = 0L,
         seasonId: UUID? = null,
         shuffle: Boolean = false,
+        playlistId: UUID? = null,
     ) {
         Timber.d(
             "PlayerLauncher: Launching player for item $itemId, seasonId=$seasonId, shuffle=$shuffle"
@@ -30,6 +31,7 @@ object PlayerLauncher {
                 audioStreamIndex?.let { putExtra("audioStreamIndex", it) }
                 subtitleStreamIndex?.let { putExtra("subtitleStreamIndex", it) }
                 putExtra("startPositionMs", startPositionMs)
+                playlistId?.let { putExtra("playlistId", it.toString()) }
                 seasonId?.let { putExtra("seasonId", it.toString()) }
                 putExtra("shuffle", shuffle)
 

@@ -41,6 +41,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinityVideoPlaylist
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.theme.CardDimensions
 import java.util.Locale
@@ -74,11 +75,13 @@ fun MediaItemCard(
     aspectRatio: Float = CardDimensions.ASPECT_RATIO_PORTRAIT,
 ) {
     val ratingScale = rememberRatingMetadataScale()
+    val effectiveAspectRatio =
+        if (item is AfinityVideoPlaylist) CardDimensions.ASPECT_RATIO_SQUARE else aspectRatio
 
     Column(modifier = modifier.width(cardWidth)) {
         Card(
             onClick = onClick,
-            modifier = Modifier.fillMaxWidth().aspectRatio(aspectRatio),
+            modifier = Modifier.fillMaxWidth().aspectRatio(effectiveAspectRatio),
             colors =
                 CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -89,7 +92,7 @@ fun MediaItemCard(
                     contentDescription = item.name,
                     blurHash = item.images.primaryBlurHash ?: item.images.backdropBlurHash,
                     targetWidth = cardWidth,
-                    targetHeight = cardWidth / aspectRatio,
+                    targetHeight = cardWidth / effectiveAspectRatio,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize().alpha(if (isUnavailable) 0.4f else 1f),
                 )
@@ -135,6 +138,18 @@ fun MediaItemCard(
                             if (count > 0) {
                                 MediaCountBadge(
                                     text = if (count > 99) "99+ EP" else "$count EP",
+                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                                )
+                            }
+                        }
+                    }
+
+                    item is AfinityVideoPlaylist -> {
+                        val displayCount = item.itemCount
+                        displayCount?.let { count ->
+                            if (count > 0) {
+                                MediaCountBadge(
+                                    text = "$count",
                                     modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
                                 )
                             }

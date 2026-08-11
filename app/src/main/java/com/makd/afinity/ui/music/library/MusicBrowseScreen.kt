@@ -170,7 +170,7 @@ fun MusicBrowseScreen(
                     playlists = uiState.playlists,
                     onPlaylistClick = { playlist ->
                         navController.navigate(
-                            Destination.createMusicPlaylistRoute(playlist.id.toString())
+                            Destination.createMusicPlaylistRoute(playlist.id.toString(), audioOnly = true)
                         )
                     },
                     modifier = Modifier.fillMaxSize().padding(innerPadding),

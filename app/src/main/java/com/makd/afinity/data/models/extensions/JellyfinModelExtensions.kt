@@ -21,6 +21,7 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityVideo
+import com.makd.afinity.data.models.media.AfinityVideoPlaylist
 import com.makd.afinity.data.models.media.toAfinityExternalUrl
 import com.makd.afinity.data.models.media.toAfinityTrickplayInfo
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -41,6 +42,7 @@ fun BaseItemDto.toAfinityItem(baseUrl: String): AfinityItem? {
         BaseItemKind.SEASON -> toAfinitySeason(baseUrl)
         BaseItemKind.SERIES -> toAfinityShow(baseUrl)
         BaseItemKind.BOX_SET -> toAfinityBoxSet(baseUrl)
+        BaseItemKind.PLAYLIST -> toAfinityVideoPlaylist(baseUrl)
         BaseItemKind.FOLDER -> toAfinityFolder(baseUrl)
         BaseItemKind.VIDEO -> toAfinityVideo(baseUrl)
         else -> null
@@ -297,6 +299,30 @@ fun BaseItemDto.toAfinityBoxSet(baseUrl: String): AfinityBoxSet {
         communityRating = communityRating,
         officialRating = officialRating,
         people = people?.map { it.toAfinityPerson(baseUrl) } ?: emptyList(),
+        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
+        externalUrls = toAfinityExternalUrls(),
+        liked = userData?.likes == true,
+    )
+}
+
+fun BaseItemDto.toAfinityVideoPlaylist(baseUrl: String): AfinityVideoPlaylist {
+    return AfinityVideoPlaylist(
+        id = id,
+        name = name.orEmpty(),
+        originalTitle = originalTitle,
+        overview = overview.orEmpty(),
+        played = userData?.played == true,
+        favorite = userData?.isFavorite == true,
+        canPlay = playAccess != PlayAccess.NONE,
+        canDownload = canDownload == true,
+        runtimeTicks = runTimeTicks ?: 0,
+        playbackPositionTicks = userData?.playbackPositionTicks ?: 0,
+        unplayedItemCount = userData?.unplayedItemCount,
+        images = toAfinityImages(baseUrl),
+        chapters = toAfinityChapters(),
+        items = emptyList(),
+        itemCount = childCount,
+        genres = genres ?: emptyList(),
         providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
         externalUrls = toAfinityExternalUrls(),
         liked = userData?.likes == true,

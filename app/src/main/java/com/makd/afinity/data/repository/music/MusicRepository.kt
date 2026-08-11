@@ -5,6 +5,7 @@ import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityLyricLine
 import com.makd.afinity.data.models.music.AfinityMusicGenre
 import com.makd.afinity.data.models.music.AfinityPlaylist
+import com.makd.afinity.data.models.music.AfinityPlaylistContents
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicFilterOptions
 import com.makd.afinity.data.models.music.MusicFilters
@@ -80,7 +81,7 @@ interface MusicRepository {
 
     suspend fun getPlaylistById(playlistId: UUID): AfinityPlaylist?
 
-    suspend fun getPlaylistTracks(playlistId: UUID): List<AfinityTrack>
+    suspend fun getPlaylistContents(playlistId: UUID): AfinityPlaylistContents
 
     suspend fun createPlaylist(name: String, trackIds: List<UUID>, isPublic: Boolean): AfinityPlaylist?
 

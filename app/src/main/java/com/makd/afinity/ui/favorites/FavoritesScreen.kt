@@ -379,7 +379,8 @@ fun FavoritesScreen(
                                         onPlaylistClick = { playlist ->
                                             navController.navigate(
                                                 Destination.createMusicPlaylistRoute(
-                                                    playlist.id.toString()
+                                                    playlist.id.toString(),
+                                                    audioOnly = true,
                                                 )
                                             )
                                         },

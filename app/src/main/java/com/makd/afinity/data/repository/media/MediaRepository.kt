@@ -17,6 +17,7 @@ import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.models.media.LibraryFilterOptions
 import com.makd.afinity.data.models.media.LibraryFilters
+import com.makd.afinity.data.models.music.AfinityPlaylistContents
 import com.makd.afinity.data.models.omdb.OmdbApiResult
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -65,7 +66,6 @@ interface MediaRepository {
         groupItems: Boolean = true,
     ): List<AfinityItem>
 
-
     suspend fun getContinueWatching(
         limit: Int = 16,
         fields: List<ItemFields>? = null,
@@ -113,6 +113,17 @@ interface MediaRepository {
         playlistId: UUID,
         fields: List<ItemFields>? = null,
     ): List<BaseItemDto>
+
+    suspend fun getPlaylistEntries(
+        playlistId: UUID,
+        fields: List<ItemFields>? = null,
+    ): AfinityPlaylistContents
+
+    suspend fun movePlaylistItem(
+        playlistId: UUID,
+        playlistItemId: String,
+        newIndex: Int,
+    ): Boolean
 
     suspend fun getItemById(itemId: UUID): AfinityItem?
 

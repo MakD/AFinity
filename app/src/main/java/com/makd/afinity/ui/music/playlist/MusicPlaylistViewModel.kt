@@ -5,15 +5,21 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.PlaylistEntry
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.AppDataRepository
+import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.download.DownloadRepository
+import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -23,20 +29,60 @@ import javax.inject.Inject
 
 data class PlaylistArtistEntry(val name: String, val imageUrl: String?)
 
+data class VideoPlaybackRequest(
+    val itemId: UUID,
+    val mediaSourceId: String,
+    val startPositionMs: Long,
+    val playlistId: UUID,
+    val shuffle: Boolean,
+)
+
+private fun AfinityPlaylist.withEntryTotals(entries: List<PlaylistEntry>): AfinityPlaylist =
+    copy(
+        songCount = entries.size,
+        runtimeTicks =
+            entries.sumOf {
+                when (it) {
+                    is PlaylistEntry.Audio -> it.track.runtimeTicks
+                    is PlaylistEntry.Video -> it.item.runtimeTicks
+                }
+            },
+    )
+
+private fun List<PlaylistEntry>.withFavorite(trackId: UUID, favorite: Boolean): List<PlaylistEntry> =
+    map { entry ->
+        if (entry is PlaylistEntry.Audio && entry.track.id == trackId)
+            entry.copy(track = entry.track.copy(favorite = favorite))
+        else entry
+    }
+
 data class MusicPlaylistUiState(
     val playlist: AfinityPlaylist? = null,
-    val tracks: List<AfinityTrack> = emptyList(),
+    val entries: List<PlaylistEntry> = emptyList(),
     val artistEntries: List<PlaylistArtistEntry> = emptyList(),
+    val audioCount: Int = 0,
+    val videoCount: Int = 0,
+    val audioOnly: Boolean = false,
     val isLoading: Boolean = true,
     val error: String? = null,
     val deleted: Boolean = false,
     val playlistDownloadInfo: DownloadInfo? = null,
     val trackDownloadInfos: Map<UUID, DownloadInfo> = emptyMap(),
-)
+) {
+    val tracks: List<AfinityTrack>
+        get() = entries.filterIsInstance<PlaylistEntry.Audio>().map { it.track }
+
+    val hiddenItemCount: Int
+        get() = if (audioOnly) videoCount else 0
+
+    val isMixed: Boolean
+        get() = !audioOnly && audioCount > 0 && videoCount > 0
+}
 
 @HiltViewModel
 class MusicPlaylistViewModel @Inject constructor(
     private val musicRepository: MusicRepository,
+    private val mediaRepository: MediaRepository,
     private val downloadRepository: DownloadRepository,
     private val appDataRepository: AppDataRepository,
     savedStateHandle: SavedStateHandle,
@@ -44,7 +90,12 @@ class MusicPlaylistViewModel @Inject constructor(
 
     val playlistId: UUID = UUID.fromString(savedStateHandle.get<String>("playlistId")!!)
 
-    private val _uiState = MutableStateFlow(MusicPlaylistUiState())
+    private val audioOnly: Boolean = savedStateHandle.get<String>("audioOnly")?.toBoolean() == true
+
+    private val _uiState = MutableStateFlow(MusicPlaylistUiState(audioOnly = audioOnly))
+
+    private val _videoPlaybackRequests = MutableSharedFlow<VideoPlaybackRequest>()
+    val videoPlaybackRequests = _videoPlaybackRequests.asSharedFlow()
     val uiState: StateFlow<MusicPlaylistUiState> = _uiState.asStateFlow()
 
     init {
@@ -53,14 +104,14 @@ class MusicPlaylistViewModel @Inject constructor(
     }
 
     fun toggleTrackFavorite(trackId: UUID) {
-        val tracks = _uiState.value.tracks
-        val track = tracks.find { it.id == trackId } ?: return
+        val currentEntries = _uiState.value.entries
+        val track = _uiState.value.tracks.find { it.id == trackId } ?: return
         val newFavorite = !track.favorite
-        _uiState.update { it.copy(tracks = tracks.map { t -> if (t.id == trackId) t.copy(favorite = newFavorite) else t }) }
+        _uiState.update { it.copy(entries = currentEntries.withFavorite(trackId, newFavorite)) }
         viewModelScope.launch {
             runCatching { musicRepository.setFavorite(trackId, newFavorite) }
                 .onSuccess { appDataRepository.updateTrackFavoriteStatus(track, newFavorite) }
-                .onFailure { _uiState.update { it.copy(tracks = tracks) } }
+                .onFailure { _uiState.update { it.copy(entries = currentEntries) } }
         }
     }
 
@@ -77,13 +128,61 @@ class MusicPlaylistViewModel @Inject constructor(
         }
     }
 
-    fun removeTrack(track: AfinityTrack) {
-        val entryId = track.playlistItemId ?: return
-        val currentTracks = _uiState.value.tracks
-        _uiState.update { it.copy(tracks = currentTracks.filterNot { t -> t.id == track.id }) }
+    fun removeEntry(entry: PlaylistEntry) {
+        val entryId = entry.playlistItemId ?: return
+        val currentEntries = _uiState.value.entries
+        val remaining = currentEntries.filterNot { it.playlistItemId == entryId }
+        _uiState.update { state ->
+            state.copy(
+                entries = remaining,
+                audioCount = remaining.count { it is PlaylistEntry.Audio },
+                videoCount =
+                    if (state.audioOnly) state.videoCount
+                    else remaining.count { it is PlaylistEntry.Video },
+                playlist = state.playlist?.withEntryTotals(remaining),
+            )
+        }
         viewModelScope.launch {
             runCatching { musicRepository.removeTracksFromPlaylist(playlistId, listOf(entryId)) }
-                .onFailure { _uiState.update { it.copy(tracks = currentTracks) } }
+                .onFailure {
+                    _uiState.update { state ->
+                        state.copy(
+                            entries = currentEntries,
+                            audioCount = currentEntries.count { it is PlaylistEntry.Audio },
+                            videoCount =
+                                if (state.audioOnly) state.videoCount
+                                else currentEntries.count { it is PlaylistEntry.Video },
+                            playlist = state.playlist?.withEntryTotals(currentEntries),
+                        )
+                    }
+                }
+        }
+    }
+
+    fun playVideoEntry(item: AfinityItem, shuffle: Boolean = false) {
+        viewModelScope.launch {
+            val sourceId =
+                item.sources.firstOrNull()?.id
+                    ?: mediaRepository
+                        .getItem(item.id, FieldSets.PLAYABLE_EPISODE)
+                        ?.mediaSources
+                        ?.firstOrNull()
+                        ?.id
+            if (sourceId == null) {
+                Timber.w("Playlist entry has no playable source: ${item.name}")
+                return@launch
+            }
+            _videoPlaybackRequests.emit(
+                VideoPlaybackRequest(
+                    itemId = item.id,
+                    mediaSourceId = sourceId,
+                    startPositionMs =
+                        if (item.playbackPositionTicks > 0) item.playbackPositionTicks / 10000
+                        else 0L,
+                    playlistId = playlistId,
+                    shuffle = shuffle,
+                )
+            )
         }
     }
 
@@ -181,14 +280,17 @@ class MusicPlaylistViewModel @Inject constructor(
     fun reload() {
         viewModelScope.launch {
             try {
-                val tracksDeferred = async { musicRepository.getPlaylistTracks(playlistId) }
+                val contentsDeferred = async { mediaRepository.getPlaylistEntries(playlistId) }
                 val playlistDeferred = async { musicRepository.getPlaylistById(playlistId) }
-                val tracks = tracksDeferred.await()
+                val contents = contentsDeferred.await()
+                val entries = contents.entries.applyLens()
                 _uiState.update {
                     it.copy(
-                        playlist = playlistDeferred.await(),
-                        tracks = tracks,
-                        artistEntries = buildArtistEntries(tracks),
+                        playlist = playlistDeferred.await()?.withEntryTotals(entries),
+                        entries = entries,
+                        audioCount = contents.audioCount,
+                        videoCount = contents.videoCount,
+                        artistEntries = buildArtistEntries(entries),
                     )
                 }
             } catch (e: Exception) {
@@ -202,13 +304,16 @@ class MusicPlaylistViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
             try {
                 val playlistDeferred = async { musicRepository.getPlaylistById(playlistId) }
-                val tracksDeferred = async { musicRepository.getPlaylistTracks(playlistId) }
-                val tracks = tracksDeferred.await()
+                val contentsDeferred = async { mediaRepository.getPlaylistEntries(playlistId) }
+                val contents = contentsDeferred.await()
+                val entries = contents.entries.applyLens()
                 _uiState.update {
                     it.copy(
-                        playlist = playlistDeferred.await(),
-                        tracks = tracks,
-                        artistEntries = buildArtistEntries(tracks),
+                        playlist = playlistDeferred.await()?.withEntryTotals(entries),
+                        entries = entries,
+                        audioCount = contents.audioCount,
+                        videoCount = contents.videoCount,
+                        artistEntries = buildArtistEntries(entries),
                         isLoading = false,
                     )
                 }
@@ -220,9 +325,16 @@ class MusicPlaylistViewModel @Inject constructor(
         }
     }
 
-    private suspend fun buildArtistEntries(tracks: List<AfinityTrack>): List<PlaylistArtistEntry> {
+    private fun List<PlaylistEntry>.applyLens(): List<PlaylistEntry> =
+        if (audioOnly) filterIsInstance<PlaylistEntry.Audio>() else this
+
+    private suspend fun buildArtistEntries(
+        entries: List<PlaylistEntry>
+    ): List<PlaylistArtistEntry> {
         val baseUrl = musicRepository.getBaseUrl()
-        return tracks
+        return entries
+            .filterIsInstance<PlaylistEntry.Audio>()
+            .map { it.track }
             .filter { it.artistId != null && it.artist != null }
             .groupBy { it.artistId }
             .entries

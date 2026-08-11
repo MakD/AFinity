@@ -54,6 +54,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -64,11 +65,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.data.models.media.PlaylistEntry
 import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.item.components.DownloadProgressIndicator
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
@@ -78,9 +81,11 @@ import com.makd.afinity.ui.music.components.MusicDetailActionRow
 import com.makd.afinity.ui.music.components.MusicHeroBackground
 import com.makd.afinity.ui.music.components.MusicHomeTopAppBar
 import com.makd.afinity.ui.music.components.MusicTrackRow
+import com.makd.afinity.ui.music.components.PlaylistVideoRow
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
+import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -108,8 +113,44 @@ fun MusicPlaylistScreen(
     var radioSeed by remember { mutableStateOf<RadioSeed?>(null) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
+    var playChoiceShuffle by remember { mutableStateOf<Boolean?>(null) }
+
     LaunchedEffect(uiState.deleted) {
         if (uiState.deleted) navController.popBackStack()
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.videoPlaybackRequests.collect { request ->
+            PlayerLauncher.launch(
+                context = context,
+                itemId = request.itemId,
+                mediaSourceId = request.mediaSourceId,
+                startPositionMs = request.startPositionMs,
+                playlistId = request.playlistId,
+                shuffle = request.shuffle,
+            )
+        }
+    }
+
+    fun playMusic(shuffle: Boolean) {
+        val tracks = uiState.tracks
+        if (tracks.isEmpty()) return
+        startMusicService(context)
+        playerViewModel.playQueue(if (shuffle) tracks.shuffled() else tracks, 0)
+    }
+
+    fun playVideos(shuffle: Boolean) {
+        val videos = uiState.entries.filterIsInstance<PlaylistEntry.Video>()
+        if (videos.isEmpty()) return
+        viewModel.playVideoEntry(videos.first().item, shuffle = shuffle)
+    }
+
+    val onPlayRequest: (Boolean) -> Unit = { shuffle ->
+        when {
+            uiState.isMixed -> playChoiceShuffle = shuffle
+            uiState.tracks.isNotEmpty() -> playMusic(shuffle)
+            else -> playVideos(shuffle)
+        }
     }
 
     if (uiState.isLoading) {
@@ -177,15 +218,11 @@ fun MusicPlaylistScreen(
                         modifier = Modifier.padding(horizontal = 20.dp),
                     )
 
-                    val count = uiState.playlist?.songCount ?: uiState.tracks.size
-                    if (count > 0) {
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = "$count songs",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    PlaylistCountLabel(
+                        count = uiState.playlist?.songCount ?: uiState.entries.size,
+                        hiddenItemCount = uiState.hiddenItemCount,
+                        audioOnly = uiState.audioOnly,
+                    )
 
                     if (uiState.artistEntries.isNotEmpty()) {
                         Spacer(Modifier.height(8.dp))
@@ -211,14 +248,9 @@ fun MusicPlaylistScreen(
                             modifier =
                                 Modifier.fillMaxWidth()
                                     .padding(horizontal = 12.dp, vertical = 8.dp),
-                            onShuffle = {
-                                startMusicService(context)
-                                playerViewModel.playQueue(uiState.tracks.shuffled(), 0)
-                            },
-                            onPlay = {
-                                startMusicService(context)
-                                playerViewModel.playQueue(uiState.tracks, 0)
-                            },
+                            playbackEnabled = uiState.entries.isNotEmpty(),
+                            onShuffle = { onPlayRequest(true) },
+                            onPlay = { onPlayRequest(false) },
                         ) {
                             IconButton(onClick = { viewModel.toggleFavorite() }) {
                                 Icon(
@@ -294,50 +326,71 @@ fun MusicPlaylistScreen(
                         }
                     }
 
-                    itemsIndexed(uiState.tracks, key = { _, track -> track.id }) { index, track ->
-                        MusicTrackRow(
-                            track = track,
-                            isPlaying = track.id == playbackState.currentTrack?.id,
-                            showAlbumArt = true,
-                            onClick = {
-                                startMusicService(context)
-                                playerViewModel.playQueue(uiState.tracks, index)
-                            },
-                            onInstantMix =
-                                if (isOffline) null
-                                else
-                                    ({
+                    if (uiState.entries.isEmpty()) {
+                        item {
+                            PlaylistEmptyState(
+                                hiddenItemCount = uiState.hiddenItemCount,
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                            )
+                        }
+                    }
+
+                    itemsIndexed(uiState.entries, key = { _, entry -> entry.id.toString() }) {
+                        _,
+                        entry ->
+                        when (entry) {
+                            is PlaylistEntry.Video ->
+                                PlaylistVideoRow(
+                                    item = entry.item,
+                                    onClick = { viewModel.playVideoEntry(entry.item) },
+                                    onRemoveFromPlaylist = { viewModel.removeEntry(entry) },
+                                )
+                            is PlaylistEntry.Audio -> {
+                                val track = entry.track
+                                MusicTrackRow(
+                                    track = track,
+                                    isPlaying = track.id == playbackState.currentTrack?.id,
+                                    showAlbumArt = true,
+                                    onClick = {
+                                        startMusicService(context)
+                                        playerViewModel.playQueue(
+                                            uiState.tracks,
+                                            uiState.tracks
+                                                .indexOfFirst { it.id == track.id }
+                                                .coerceAtLeast(0),
+                                        )
+                                    },
+                                    onInstantMix = {
                                         startMusicService(context)
                                         playerViewModel.playInstantMix(track.id)
-                                    }),
-                            onStartRadio =
-                                if (isOffline) null
-                                else
-                                    ({
-                                        radioSeed =
-                                            RadioSeed(
-                                                trackId = track.id,
-                                                albumId = track.albumId,
-                                                sourceTracks = uiState.tracks,
-                                            )
-                                    }),
-                            onAddNext = { playerViewModel.addNext(listOf(track)) },
-                            onAddLast = { playerViewModel.addLast(listOf(track)) },
-                            onFavorite = { viewModel.toggleTrackFavorite(track.id) },
-                            onAddToPlaylist =
-                                if (isOffline) null
-                                else
-                                    ({
+                                    },
+                                    onStartRadio =
+                                        if (isOffline) null
+                                        else
+                                            ({
+                                                radioSeed =
+                                                    RadioSeed(
+                                                        trackId = track.id,
+                                                        albumId = track.albumId,
+                                                        sourceTracks = uiState.tracks,
+                                                    )
+                                            }),
+                                    onAddNext = { playerViewModel.addNext(listOf(track)) },
+                                    onAddLast = { playerViewModel.addLast(listOf(track)) },
+                                    onFavorite = { viewModel.toggleTrackFavorite(track.id) },
+                                    onAddToPlaylist = {
                                         addToPlaylistTrackIds = listOf(track.id)
                                         addToPlaylistViewModel.reset()
                                         showAddToPlaylist = true
-                                    }),
-                            onRemoveFromPlaylist = { viewModel.removeTrack(track) },
-                            onDownload = { viewModel.downloadTrack(track.id) },
-                            isDownloaded =
-                                uiState.trackDownloadInfos[track.id]?.status ==
-                                    DownloadStatus.COMPLETED,
-                        )
+                                    },
+                                    onRemoveFromPlaylist = { viewModel.removeEntry(entry) },
+                                    onDownload = { viewModel.downloadTrack(track.id) },
+                                    isDownloaded =
+                                        uiState.trackDownloadInfos[track.id]?.status ==
+                                            DownloadStatus.COMPLETED,
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -408,15 +461,11 @@ fun MusicPlaylistScreen(
                             overflow = TextOverflow.Ellipsis,
                         )
 
-                        val count = uiState.playlist?.songCount ?: uiState.tracks.size
-                        if (count > 0) {
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = "$count songs",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                        PlaylistCountLabel(
+                            count = uiState.playlist?.songCount ?: uiState.entries.size,
+                            hiddenItemCount = uiState.hiddenItemCount,
+                            audioOnly = uiState.audioOnly,
+                        )
                     }
                 }
 
@@ -433,14 +482,9 @@ fun MusicPlaylistScreen(
                     MusicDetailActionRow(
                         modifier =
                             Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                        onShuffle = {
-                            startMusicService(context)
-                            playerViewModel.playQueue(uiState.tracks.shuffled(), 0)
-                        },
-                        onPlay = {
-                            startMusicService(context)
-                            playerViewModel.playQueue(uiState.tracks, 0)
-                        },
+                        playbackEnabled = uiState.entries.isNotEmpty(),
+                        onShuffle = { onPlayRequest(true) },
+                        onPlay = { onPlayRequest(false) },
                     ) {
                         IconButton(onClick = { viewModel.toggleFavorite() }) {
                             Icon(
@@ -516,44 +560,71 @@ fun MusicPlaylistScreen(
                     }
                 }
 
-                itemsIndexed(uiState.tracks, key = { _, track -> track.id }) { index, track ->
-                    MusicTrackRow(
-                        track = track,
-                        isPlaying = track.id == playbackState.currentTrack?.id,
-                        showAlbumArt = true,
-                        onClick = {
-                            startMusicService(context)
-                            playerViewModel.playQueue(uiState.tracks, index)
-                        },
-                        onInstantMix = {
-                            startMusicService(context)
-                            playerViewModel.playInstantMix(track.id)
-                        },
-                        onStartRadio =
-                            if (isOffline) null
-                            else
-                                ({
-                                    radioSeed =
-                                        RadioSeed(
-                                            trackId = track.id,
-                                            albumId = track.albumId,
-                                            sourceTracks = uiState.tracks,
-                                        )
-                                }),
-                        onAddNext = { playerViewModel.addNext(listOf(track)) },
-                        onAddLast = { playerViewModel.addLast(listOf(track)) },
-                        onFavorite = { viewModel.toggleTrackFavorite(track.id) },
-                        onAddToPlaylist = {
-                            addToPlaylistTrackIds = listOf(track.id)
-                            addToPlaylistViewModel.reset()
-                            showAddToPlaylist = true
-                        },
-                        onRemoveFromPlaylist = { viewModel.removeTrack(track) },
-                        onDownload = { viewModel.downloadTrack(track.id) },
-                        isDownloaded =
-                            uiState.trackDownloadInfos[track.id]?.status ==
-                                DownloadStatus.COMPLETED,
-                    )
+                if (uiState.entries.isEmpty()) {
+                    item {
+                        PlaylistEmptyState(
+                            hiddenItemCount = uiState.hiddenItemCount,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                        )
+                    }
+                }
+
+                itemsIndexed(uiState.entries, key = { _, entry -> entry.id.toString() }) {
+                    _,
+                    entry ->
+                    when (entry) {
+                        is PlaylistEntry.Video ->
+                            PlaylistVideoRow(
+                                item = entry.item,
+                                onClick = { viewModel.playVideoEntry(entry.item) },
+                                onRemoveFromPlaylist = { viewModel.removeEntry(entry) },
+                            )
+                        is PlaylistEntry.Audio -> {
+                            val track = entry.track
+                            MusicTrackRow(
+                                track = track,
+                                isPlaying = track.id == playbackState.currentTrack?.id,
+                                showAlbumArt = true,
+                                onClick = {
+                                    startMusicService(context)
+                                    playerViewModel.playQueue(
+                                        uiState.tracks,
+                                        uiState.tracks
+                                            .indexOfFirst { it.id == track.id }
+                                            .coerceAtLeast(0),
+                                    )
+                                },
+                                onInstantMix = {
+                                    startMusicService(context)
+                                    playerViewModel.playInstantMix(track.id)
+                                },
+                                onStartRadio =
+                                    if (isOffline) null
+                                    else
+                                        ({
+                                            radioSeed =
+                                                RadioSeed(
+                                                    trackId = track.id,
+                                                    albumId = track.albumId,
+                                                    sourceTracks = uiState.tracks,
+                                                )
+                                        }),
+                                onAddNext = { playerViewModel.addNext(listOf(track)) },
+                                onAddLast = { playerViewModel.addLast(listOf(track)) },
+                                onFavorite = { viewModel.toggleTrackFavorite(track.id) },
+                                onAddToPlaylist = {
+                                    addToPlaylistTrackIds = listOf(track.id)
+                                    addToPlaylistViewModel.reset()
+                                    showAddToPlaylist = true
+                                },
+                                onRemoveFromPlaylist = { viewModel.removeEntry(entry) },
+                                onDownload = { viewModel.downloadTrack(track.id) },
+                                isDownloaded =
+                                    uiState.trackDownloadInfos[track.id]?.status ==
+                                        DownloadStatus.COMPLETED,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -604,6 +675,50 @@ fun MusicPlaylistScreen(
                         else -> null
                     }
                 message?.let { scope.launch { snackbarHostState.showSnackbar(it) } }
+            },
+        )
+    }
+
+    playChoiceShuffle?.let { shuffle ->
+        AlertDialog(
+            onDismissRequest = { playChoiceShuffle = null },
+            title = { Text(stringResource(R.string.playlist_play_choice_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.playlist_play_choice_message,
+                        pluralStringResource(
+                            R.plurals.playlist_choice_songs,
+                            uiState.audioCount,
+                            uiState.audioCount,
+                        ),
+                        pluralStringResource(
+                            R.plurals.playlist_choice_videos,
+                            uiState.videoCount,
+                            uiState.videoCount,
+                        ),
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        playChoiceShuffle = null
+                        playMusic(shuffle)
+                    }
+                ) {
+                    Text(stringResource(R.string.playlist_play_music))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        playChoiceShuffle = null
+                        playVideos(shuffle)
+                    }
+                ) {
+                    Text(stringResource(R.string.playlist_play_videos))
+                }
             },
         )
     }
@@ -698,4 +813,57 @@ private fun PlaylistArtistsRow(
             overflow = TextOverflow.Ellipsis,
         )
     }
+}
+
+@Composable
+private fun PlaylistCountLabel(count: Int, hiddenItemCount: Int, audioOnly: Boolean) {
+    if (count <= 0 && hiddenItemCount <= 0) return
+    val songs =
+        if (audioOnly) pluralStringResource(R.plurals.music_playlist_song_count, count, count)
+        else pluralStringResource(R.plurals.playlist_item_count, count, count)
+    val label =
+        if (hiddenItemCount > 0) {
+            val hidden =
+                pluralStringResource(
+                    R.plurals.music_playlist_hidden_videos,
+                    hiddenItemCount,
+                    hiddenItemCount,
+                )
+            "$songs · $hidden"
+        } else {
+            songs
+        }
+    Spacer(Modifier.height(4.dp))
+    Text(
+        text = label,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun PlaylistEmptyState(hiddenItemCount: Int, modifier: Modifier = Modifier) {
+    val videoOnly = hiddenItemCount > 0
+    EmptyState(
+        icon =
+            painterResource(
+                if (videoOnly) R.drawable.ic_music_video else R.drawable.ic_music_playlist
+            ),
+        title =
+            stringResource(
+                if (videoOnly) R.string.music_playlist_video_only_title
+                else R.string.music_playlist_empty_title
+            ),
+        message =
+            if (videoOnly)
+                pluralStringResource(
+                    R.plurals.music_playlist_video_only_message,
+                    hiddenItemCount,
+                    hiddenItemCount,
+                )
+            else stringResource(R.string.music_playlist_empty_message),
+        modifier = modifier,
+        badgeSize = 96.dp,
+        iconSize = 44.dp,
+    )
 }

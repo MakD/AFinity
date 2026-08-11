@@ -834,7 +834,7 @@ constructor(
     override suspend fun startPlaylistDownload(playlistId: UUID, volumeId: String?): Result<Int> =
         withContext(Dispatchers.IO) {
             return@withContext try {
-                val tracks = musicRepository.getPlaylistTracks(playlistId)
+                val tracks = musicRepository.getPlaylistContents(playlistId).tracks
                 var started = 0
                 val playlistIdStr = playlistId.toString()
                 for (track in tracks) {

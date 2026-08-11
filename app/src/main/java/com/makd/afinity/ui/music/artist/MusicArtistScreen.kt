@@ -202,17 +202,14 @@ fun MusicArtistScreen(
                         MusicDetailActionRow(
                             modifier =
                                 Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                            playbackEnabled = uiState.topTracks.isNotEmpty(),
                             onShuffle = {
-                                if (uiState.topTracks.isNotEmpty()) {
-                                    startMusicService(context)
-                                    playerViewModel.playQueue(uiState.topTracks.shuffled(), 0)
-                                }
+                                startMusicService(context)
+                                playerViewModel.playQueue(uiState.topTracks.shuffled(), 0)
                             },
                             onPlay = {
-                                if (uiState.topTracks.isNotEmpty()) {
-                                    startMusicService(context)
-                                    playerViewModel.playQueue(uiState.topTracks, 0)
-                                }
+                                startMusicService(context)
+                                playerViewModel.playQueue(uiState.topTracks, 0)
                             },
                         ) {
                             IconButton(onClick = { viewModel.toggleFavorite() }) {
@@ -629,17 +626,14 @@ fun MusicArtistScreen(
                         MusicDetailActionRow(
                             modifier =
                                 Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                            playbackEnabled = uiState.topTracks.isNotEmpty(),
                             onShuffle = {
-                                if (uiState.topTracks.isNotEmpty()) {
-                                    startMusicService(context)
-                                    playerViewModel.playQueue(uiState.topTracks.shuffled(), 0)
-                                }
+                                startMusicService(context)
+                                playerViewModel.playQueue(uiState.topTracks.shuffled(), 0)
                             },
                             onPlay = {
-                                if (uiState.topTracks.isNotEmpty()) {
-                                    startMusicService(context)
-                                    playerViewModel.playQueue(uiState.topTracks, 0)
-                                }
+                                startMusicService(context)
+                                playerViewModel.playQueue(uiState.topTracks, 0)
                             },
                         ) {
                             IconButton(onClick = { viewModel.toggleFavorite() }) {

@@ -2,6 +2,8 @@ package com.makd.afinity.ui.player
 
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.PlaylistEntry
+import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,13 +30,18 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
     private var currentQueue: MutableList<AfinityItem> = mutableListOf()
     private var currentIndex: Int = -1
     private var currentSeriesId: UUID? = null
+    private var isJellyfinPlaylistQueue: Boolean = false
     private var contentStartIndex: Int = 0
 
     suspend fun initializePlaylist(
         startingItem: AfinityItem,
         seasonId: UUID? = null,
         startPositionMs: Long = 0L,
+        playlistId: UUID? = null,
     ): Boolean {
+        if (playlistId != null) {
+            return initializeJellyfinPlaylistQueue(startingItem, playlistId)
+        }
         if (
             startingItem is AfinityEpisode &&
                 currentSeriesId == startingItem.seriesId &&
@@ -66,11 +73,13 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
                 when (startingItem) {
                     is AfinityEpisode -> {
                         currentSeriesId = startingItem.seriesId
+                        isJellyfinPlaylistQueue = false
                         initializeEpisodeQueue(startingItem, seasonId, intros)
                     }
 
                     else -> {
                         currentSeriesId = null
+                        isJellyfinPlaylistQueue = false
                         initializeSingleItemQueue(startingItem, intros)
                     }
                 }
@@ -78,6 +87,33 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
         } catch (e: Exception) {
             Timber.e(e, "Failed to initialize playlist")
             false
+        }
+    }
+
+    private suspend fun initializeJellyfinPlaylistQueue(
+        startingItem: AfinityItem,
+        playlistId: UUID,
+    ): Boolean {
+        return try {
+            currentSeriesId = null
+            isJellyfinPlaylistQueue = true
+            val videoItems =
+                mediaRepository
+                    .getPlaylistEntries(playlistId, fields = FieldSets.PLAYABLE_EPISODE)
+                    .entries
+                    .filterIsInstance<PlaylistEntry.Video>()
+                    .map { it.item }
+
+            if (videoItems.isEmpty()) {
+                return initializeSingleItemQueue(startingItem, emptyList())
+            }
+
+            val startIndex = videoItems.indexOfFirst { it.id == startingItem.id }.coerceAtLeast(0)
+            setQueue(videoItems, startIndex)
+            true
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to initialize playlist queue for $playlistId")
+            initializeSingleItemQueue(startingItem, emptyList())
         }
     }
 
@@ -264,6 +300,7 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
         currentQueue.clear()
         currentIndex = -1
         currentSeriesId = null
+        isJellyfinPlaylistQueue = false
         contentStartIndex = 0
         updatePlaylistState()
         Timber.d("Queue cleared")
@@ -276,6 +313,15 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
     fun shuffleQueue() {
         if (currentQueue.size <= 1) {
             Timber.d("Queue has ${currentQueue.size} items, no shuffle needed")
+            return
+        }
+
+        if (isJellyfinPlaylistQueue) {
+            currentQueue.shuffle()
+            currentIndex = 0
+            contentStartIndex = 0
+            updatePlaylistState()
+            Timber.d("Playlist queue pure shuffled (${currentQueue.size} items)")
             return
         }
 

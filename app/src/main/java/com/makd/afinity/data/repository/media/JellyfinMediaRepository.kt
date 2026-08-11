@@ -16,6 +16,7 @@ import com.makd.afinity.data.models.extensions.toAfinityMovie
 import com.makd.afinity.data.models.extensions.toAfinityPersonDetail
 import com.makd.afinity.data.models.extensions.toAfinitySeason
 import com.makd.afinity.data.models.extensions.toAfinityShow
+import com.makd.afinity.data.models.extensions.toAfinityTrack
 import com.makd.afinity.data.models.extensions.toAfinityVideo
 import com.makd.afinity.data.models.mdblist.MdbListRatingBadges
 import com.makd.afinity.data.models.mdblist.MdbListRatingsResult
@@ -31,8 +32,10 @@ import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.models.media.LibraryFilterOptions
 import com.makd.afinity.data.models.media.LibraryFilters
+import com.makd.afinity.data.models.media.PlaylistEntry
 import com.makd.afinity.data.models.media.toAfinityCollection
 import com.makd.afinity.data.models.media.withPatchedImages
+import com.makd.afinity.data.models.music.AfinityPlaylistContents
 import com.makd.afinity.data.models.omdb.OmdbApiResult
 import com.makd.afinity.data.network.MdbListApiService
 import com.makd.afinity.data.network.OmdbApiService
@@ -59,6 +62,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.operations.FilterApi
 import org.jellyfin.sdk.api.operations.GenresApi
@@ -79,6 +83,7 @@ import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ItemSortBy
+import org.jellyfin.sdk.model.api.MediaType
 import org.jellyfin.sdk.model.api.SeriesStatus
 import org.jellyfin.sdk.model.api.SortOrder
 import org.jellyfin.sdk.model.api.VideoType
@@ -375,14 +380,20 @@ constructor(
     }
 
     override fun removeItemFromCache(itemId: String) {
-        val uuid = try { UUID.fromString(itemId) } catch (e: Exception) { null }
-        val matches: (UUID) -> Boolean = { id -> id.toString() == itemId || (uuid != null && id == uuid) }
+        val uuid =
+            try {
+                UUID.fromString(itemId)
+            } catch (e: Exception) {
+                null
+            }
+        val matches: (UUID) -> Boolean = { id ->
+            id.toString() == itemId || (uuid != null && id == uuid)
+        }
 
         _latestMedia.update { list -> list.filterNot { matches(it.id) } }
         _continueWatching.update { list -> list.filterNot { matches(it.id) } }
         _nextUp.update { list -> list.filterNot { matches(it.id) || matches(it.seriesId) } }
     }
-
 
     private val _latestMedia = MutableStateFlow<List<AfinityItem>>(emptyList())
     override val latestMedia: Flow<List<AfinityItem>> = _latestMedia.asStateFlow()
@@ -449,42 +460,41 @@ constructor(
         parentId: UUID?,
         libraryType: CollectionType,
         includeItemTypes: List<String>,
-    ): Result<LibraryFilterOptions> =
-        apiInvoker.apiResult { apiClient, userId ->
-            val requestedTypes =
-                includeItemTypes
-                    .mapNotNull {
-                        try {
-                            BaseItemKind.valueOf(it.uppercase())
-                        } catch (e: Exception) {
-                            Timber.w("Unknown item type dropped from filter query: $it")
-                            null
-                        }
+    ): Result<LibraryFilterOptions> = apiInvoker.apiResult { apiClient, userId ->
+        val requestedTypes =
+            includeItemTypes
+                .mapNotNull {
+                    try {
+                        BaseItemKind.valueOf(it.uppercase())
+                    } catch (e: Exception) {
+                        Timber.w("Unknown item type dropped from filter query: $it")
+                        null
                     }
-                    .ifEmpty {
-                        when (libraryType) {
-                            CollectionType.TvShows -> listOf(BaseItemKind.SERIES)
-                            CollectionType.Movies -> listOf(BaseItemKind.MOVIE)
-                            CollectionType.BoxSets -> listOf(BaseItemKind.BOX_SET)
-                            else -> emptyList()
-                        }
+                }
+                .ifEmpty {
+                    when (libraryType) {
+                        CollectionType.TvShows -> listOf(BaseItemKind.SERIES)
+                        CollectionType.Movies -> listOf(BaseItemKind.MOVIE)
+                        CollectionType.BoxSets -> listOf(BaseItemKind.BOX_SET)
+                        else -> emptyList()
                     }
+                }
 
-            val content =
-                FilterApi(apiClient)
-                    .getQueryFiltersLegacy(
-                        userId = userId,
-                        parentId = parentId,
-                        includeItemTypes = requestedTypes.ifEmpty { null },
-                    )
-                    .content
-            LibraryFilterOptions(
-                genres = content.genres.orEmpty(),
-                tags = content.tags.orEmpty(),
-                officialRatings = content.officialRatings.orEmpty(),
-                years = content.years.orEmpty().sortedDescending(),
-            )
-        }
+        val content =
+            FilterApi(apiClient)
+                .getQueryFiltersLegacy(
+                    userId = userId,
+                    parentId = parentId,
+                    includeItemTypes = requestedTypes.ifEmpty { null },
+                )
+                .content
+        LibraryFilterOptions(
+            genres = content.genres.orEmpty(),
+            tags = content.tags.orEmpty(),
+            officialRatings = content.officialRatings.orEmpty(),
+            years = content.years.orEmpty().sortedDescending(),
+        )
+    }
 
     override suspend fun getLibraries(): List<AfinityCollection> =
         getLibrariesResult().getOrElse { e ->
@@ -626,106 +636,104 @@ constructor(
         criteria: ItemFilterCriteria,
         enableTotalRecordCount: Boolean,
         enableImageTypes: List<String>,
-    ): Result<BaseItemDtoQueryResult> =
-        apiInvoker.apiResult { apiClient, userId ->
-            val filters = buildList {
-                if (criteria.isLiked == true) add(ItemFilter.LIKES)
-                if (criteria.isResumable == true) add(ItemFilter.IS_RESUMABLE)
-            }
-
-            ItemsApi(apiClient)
-                .getItems(
-                        userId = userId,
-                        parentId = parentId,
-                        limit = limit,
-                        startIndex = startIndex,
-                        searchTerm = searchTerm,
-                        sortBy = listOf(sortBy.toJellyfinSortBy()),
-                        sortOrder =
-                            if (sortDescending) listOf(SortOrder.DESCENDING)
-                            else listOf(SortOrder.ASCENDING),
-                        includeItemTypes =
-                            includeItemTypes
-                                .mapNotNull {
-                                    try {
-                                        BaseItemKind.valueOf(it.uppercase())
-                                    } catch (e: Exception) {
-                                        Timber.w("Unknown item type dropped from filter: $it")
-                                        null
-                                    }
-                                }
-                                .ifEmpty { null },
-                        recursive =
-                            recursive
-                                ?: if (parentId == null) true
-                                else if (
-                                    includeItemTypes.size == 1 &&
-                                        (includeItemTypes.contains("SERIES") ||
-                                            includeItemTypes.contains("BOX_SET"))
-                                )
-                                    true
-                                else if (searchTerm != null) true else null,
-                        collapseBoxSetItems =
-                            if (includeItemTypes.size == 1 && includeItemTypes.contains("SERIES"))
-                                false
-                            else null,
-                        genres = criteria.genres,
-                        years = criteria.years,
-                        isFavorite = criteria.isFavorite,
-                        isPlayed = criteria.isPlayed,
-                        isMissing = false,
-                        filters = filters.ifEmpty { null },
-                        nameStartsWith = nameStartsWith,
-                        studios = criteria.studios.ifEmpty { null },
-                        officialRatings = criteria.officialRatings.ifEmpty { null },
-                        tags = criteria.tags.ifEmpty { null },
-                        videoTypes =
-                            criteria.videoTypes
-                                .mapNotNull { VideoType.fromNameOrNull(it) }
-                                .ifEmpty { null },
-                        seriesStatus =
-                            criteria.seriesStatuses
-                                .mapNotNull { SeriesStatus.fromNameOrNull(it) }
-                                .ifEmpty { null },
-                        hasSubtitles = criteria.hasSubtitles,
-                        hasTrailer = criteria.hasTrailer,
-                        hasSpecialFeature = criteria.hasSpecialFeature,
-                        hasThemeSong = criteria.hasThemeSong,
-                        hasThemeVideo = criteria.hasThemeVideo,
-                        isHd = criteria.isHd,
-                        is4k = criteria.is4k,
-                        is3d = criteria.is3d,
-                        enableTotalRecordCount = enableTotalRecordCount,
-                        fields = fields ?: FieldSets.LIBRARY_GRID,
-                        imageTypes =
-                            if (imageTypes.isNotEmpty()) {
-                                imageTypes.mapNotNull {
-                                    try {
-                                        ImageType.valueOf(it.uppercase())
-                                    } catch (e: Exception) {
-                                        null
-                                    }
-                                }
-                            } else {
-                                null
-                            },
-                        hasOverview = criteria.hasOverview,
-                        enableImages = true,
-                        enableImageTypes =
-                            enableImageTypes
-                                .mapNotNull {
-                                    try {
-                                        ImageType.valueOf(it.uppercase())
-                                    } catch (e: Exception) {
-                                        null
-                                    }
-                                }
-                                .ifEmpty { null },
-                        imageTypeLimit = if (enableImageTypes.isNotEmpty()) 1 else null,
-                        enableUserData = true,
-                    )
-                .content
+    ): Result<BaseItemDtoQueryResult> = apiInvoker.apiResult { apiClient, userId ->
+        val filters = buildList {
+            if (criteria.isLiked == true) add(ItemFilter.LIKES)
+            if (criteria.isResumable == true) add(ItemFilter.IS_RESUMABLE)
         }
+
+        ItemsApi(apiClient)
+            .getItems(
+                userId = userId,
+                parentId = parentId,
+                limit = limit,
+                startIndex = startIndex,
+                searchTerm = searchTerm,
+                sortBy = listOf(sortBy.toJellyfinSortBy()),
+                sortOrder =
+                    if (sortDescending) listOf(SortOrder.DESCENDING)
+                    else listOf(SortOrder.ASCENDING),
+                includeItemTypes =
+                    includeItemTypes
+                        .mapNotNull {
+                            try {
+                                BaseItemKind.valueOf(it.uppercase())
+                            } catch (e: Exception) {
+                                Timber.w("Unknown item type dropped from filter: $it")
+                                null
+                            }
+                        }
+                        .ifEmpty { null },
+                recursive =
+                    recursive
+                        ?: if (parentId == null) true
+                        else if (
+                            includeItemTypes.size == 1 &&
+                                (includeItemTypes.contains("SERIES") ||
+                                    includeItemTypes.contains("BOX_SET"))
+                        )
+                            true
+                        else if (searchTerm != null) true else null,
+                collapseBoxSetItems =
+                    if (includeItemTypes.size == 1 && includeItemTypes.contains("SERIES")) false
+                    else null,
+                genres = criteria.genres,
+                years = criteria.years,
+                isFavorite = criteria.isFavorite,
+                isPlayed = criteria.isPlayed,
+                isMissing = false,
+                filters = filters.ifEmpty { null },
+                nameStartsWith = nameStartsWith,
+                studios = criteria.studios.ifEmpty { null },
+                officialRatings = criteria.officialRatings.ifEmpty { null },
+                tags = criteria.tags.ifEmpty { null },
+                videoTypes =
+                    criteria.videoTypes
+                        .mapNotNull { VideoType.fromNameOrNull(it) }
+                        .ifEmpty { null },
+                seriesStatus =
+                    criteria.seriesStatuses
+                        .mapNotNull { SeriesStatus.fromNameOrNull(it) }
+                        .ifEmpty { null },
+                hasSubtitles = criteria.hasSubtitles,
+                hasTrailer = criteria.hasTrailer,
+                hasSpecialFeature = criteria.hasSpecialFeature,
+                hasThemeSong = criteria.hasThemeSong,
+                hasThemeVideo = criteria.hasThemeVideo,
+                isHd = criteria.isHd,
+                is4k = criteria.is4k,
+                is3d = criteria.is3d,
+                enableTotalRecordCount = enableTotalRecordCount,
+                fields = fields ?: FieldSets.LIBRARY_GRID,
+                imageTypes =
+                    if (imageTypes.isNotEmpty()) {
+                        imageTypes.mapNotNull {
+                            try {
+                                ImageType.valueOf(it.uppercase())
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+                    } else {
+                        null
+                    },
+                hasOverview = criteria.hasOverview,
+                enableImages = true,
+                enableImageTypes =
+                    enableImageTypes
+                        .mapNotNull {
+                            try {
+                                ImageType.valueOf(it.uppercase())
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+                        .ifEmpty { null },
+                imageTypeLimit = if (enableImageTypes.isNotEmpty()) 1 else null,
+                enableUserData = true,
+            )
+            .content
+    }
 
     override suspend fun getPlaylistItems(
         playlistId: UUID,
@@ -742,6 +750,38 @@ constructor(
                 .content
                 .items
         }
+
+    override suspend fun getPlaylistEntries(
+        playlistId: UUID,
+        fields: List<ItemFields>?,
+    ): AfinityPlaylistContents {
+        val baseUrl = getBaseUrl()
+        val items = getPlaylistItems(playlistId, fields = fields ?: FieldSets.MINIMAL)
+        return withContext(Dispatchers.Default) {
+            yield()
+            val entries = items.mapNotNull { dto ->
+                when (dto.mediaType) {
+                    MediaType.AUDIO -> runCatching {
+                            PlaylistEntry.Audio(
+                                playlistItemId = dto.playlistItemId,
+                                track = dto.toAfinityTrack(baseUrl),
+                            )
+                        }
+                            .getOrNull()
+                    MediaType.VIDEO ->
+                        dto.toAfinityItem(baseUrl)?.let {
+                            PlaylistEntry.Video(playlistItemId = dto.playlistItemId, item = it)
+                        }
+                    else -> null
+                }
+            }
+            AfinityPlaylistContents(
+                entries = entries,
+                audioCount = entries.count { it is PlaylistEntry.Audio },
+                videoCount = entries.count { it is PlaylistEntry.Video },
+            )
+        }
+    }
 
     override suspend fun getItem(itemId: UUID, fields: List<ItemFields>?): BaseItemDto? =
         apiCall(null, "Failed to get item with id: $itemId") { apiClient, userId ->
@@ -1034,9 +1074,7 @@ constructor(
     ): List<AfinityEpisode> =
         apiCall(emptyList(), "Failed to get episodes") { apiClient, userId ->
             val actualSeriesId =
-                seriesId
-                    ?: getItem(seasonId)?.seriesId
-                    ?: return@apiCall emptyList()
+                seriesId ?: getItem(seasonId)?.seriesId ?: return@apiCall emptyList()
 
             TvShowsApi(apiClient)
                 .getEpisodes(
@@ -1496,11 +1534,11 @@ constructor(
         requireImages: Boolean,
         minItemCount: Int,
     ): List<AfinityStudio> =
-        getStudiosResult(includeItemTypes, parentId, limit, requireImages, minItemCount).getOrElse {
-            e ->
-            if (e !is NoActiveSessionException) Timber.e(e, "Failed to get studios")
-            emptyList()
-        }
+        getStudiosResult(includeItemTypes, parentId, limit, requireImages, minItemCount)
+            .getOrElse { e ->
+                if (e !is NoActiveSessionException) Timber.e(e, "Failed to get studios")
+                emptyList()
+            }
 
     override suspend fun getStudiosResult(
         includeItemTypes: List<String>,
@@ -1508,61 +1546,59 @@ constructor(
         limit: Int?,
         requireImages: Boolean,
         minItemCount: Int,
-    ): Result<List<AfinityStudio>> =
-        apiInvoker.apiResult { apiClient, userId ->
-            val response =
-                StudiosApi(apiClient)
-                    .getStudios(
-                        userId = userId,
-                        parentId = parentId,
-                        includeItemTypes =
-                            includeItemTypes
-                                .mapNotNull {
-                                    try {
-                                        BaseItemKind.valueOf(it.uppercase())
-                                    } catch (e: Exception) {
-                                        Timber.w("Unknown item type dropped from studio query: $it")
-                                        null
-                                    }
+    ): Result<List<AfinityStudio>> = apiInvoker.apiResult { apiClient, userId ->
+        val response =
+            StudiosApi(apiClient)
+                .getStudios(
+                    userId = userId,
+                    parentId = parentId,
+                    includeItemTypes =
+                        includeItemTypes
+                            .mapNotNull {
+                                try {
+                                    BaseItemKind.valueOf(it.uppercase())
+                                } catch (e: Exception) {
+                                    Timber.w("Unknown item type dropped from studio query: $it")
+                                    null
                                 }
-                                .ifEmpty { null },
-                        enableImages = true,
-                        imageTypeLimit = 1,
-                        enableImageTypes = listOf(ImageType.THUMB),
-                    )
-
-            Timber.d("Fetched ${response.content.items.size} studios server-wide")
-
-            response.content.items
-                .mapNotNull { studioDto ->
-                        val id: UUID = studioDto.id
-                        val name =
-                            studioDto.name?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-                        val childCount = studioDto.childCount ?: 0
-                        val thumbImageUrl =
-                            studioDto.imageTags?.get(ImageType.THUMB)?.let { tag ->
-                                getBaseUrl()
-                                    .toUri()
-                                    .buildUpon()
-                                    .appendEncodedPath("Items/$id/Images/Thumb")
-                                    .appendQueryParameter("tag", tag)
-                                    .build()
-                                    .toString()
                             }
-                        AfinityStudio(
-                            id = id,
-                            name = name,
-                            primaryImageUrl = thumbImageUrl,
-                            itemCount = childCount,
-                        )
+                            .ifEmpty { null },
+                    enableImages = true,
+                    imageTypeLimit = 1,
+                    enableImageTypes = listOf(ImageType.THUMB),
+                )
+
+        Timber.d("Fetched ${response.content.items.size} studios server-wide")
+
+        response.content.items
+            .mapNotNull { studioDto ->
+                val id: UUID = studioDto.id
+                val name = studioDto.name?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                val childCount = studioDto.childCount ?: 0
+                val thumbImageUrl =
+                    studioDto.imageTags?.get(ImageType.THUMB)?.let { tag ->
+                        getBaseUrl()
+                            .toUri()
+                            .buildUpon()
+                            .appendEncodedPath("Items/$id/Images/Thumb")
+                            .appendQueryParameter("tag", tag)
+                            .build()
+                            .toString()
                     }
-                    .filter {
-                        it.itemCount >= minItemCount && (!requireImages || it.primaryImageUrl != null)
-                    }
-                    .sortedByDescending { it.itemCount }
-                    .take(limit ?: 15)
-                    .also { Timber.d("Returning ${it.size} studios after filtering") }
-        }
+                AfinityStudio(
+                    id = id,
+                    name = name,
+                    primaryImageUrl = thumbImageUrl,
+                    itemCount = childCount,
+                )
+            }
+            .filter {
+                it.itemCount >= minItemCount && (!requireImages || it.primaryImageUrl != null)
+            }
+            .sortedByDescending { it.itemCount }
+            .take(limit ?: 15)
+            .also { Timber.d("Returning ${it.size} studios after filtering") }
+    }
 
     override suspend fun ensureBoxSetCacheBuilt() =
         withContext(Dispatchers.IO) {
@@ -1593,65 +1629,65 @@ constructor(
             val itemsApi = ItemsApi(apiClient)
             val baseUrl = getBaseUrl()
 
-                val boxSetsResponse =
-                    itemsApi.getItems(
-                        userId = userId,
-                        includeItemTypes = listOf(BaseItemKind.BOX_SET),
-                        recursive = true,
-                        fields = FieldSets.MEDIA_ITEM_CARDS,
-                        enableImages = true,
-                        enableUserData = false,
-                    )
-
-                val qualifying =
-                    boxSetsResponse.content.items
-                        .filter { (it.childCount ?: 0) >= minChildCount }
-                        .shuffled()
-                        .take(maxBoxSets)
-
-                Timber.d(
-                    "BoxSet spotlight: ${qualifying.size} qualifying sets (min $minChildCount children)"
+            val boxSetsResponse =
+                itemsApi.getItems(
+                    userId = userId,
+                    includeItemTypes = listOf(BaseItemKind.BOX_SET),
+                    recursive = true,
+                    fields = FieldSets.MEDIA_ITEM_CARDS,
+                    enableImages = true,
+                    enableUserData = false,
                 )
 
-                val semaphore = Semaphore(5)
-                coroutineScope {
-                    qualifying
-                        .map { boxSetDto ->
-                            async {
-                                semaphore.withPermit {
-                                    try {
-                                        val childrenResponse =
-                                            itemsApi.getItems(
-                                                userId = userId,
-                                                parentId = boxSetDto.id,
-                                                recursive = false,
-                                                fields = FieldSets.MEDIA_ITEM_CARDS,
-                                                enableImages = true,
-                                                enableUserData = false,
-                                                sortBy = listOf(ItemSortBy.PRODUCTION_YEAR),
-                                            )
-                                        val children =
-                                            childrenResponse.content.items.mapNotNull {
-                                                it.toAfinityItem(baseUrl)
-                                            }
-                                        if (children.size >= minChildCount) {
-                                            boxSetDto.toAfinityBoxSet(baseUrl) to children
-                                        } else {
-                                            null
-                                        }
-                                    } catch (e: Exception) {
-                                        Timber.w(
-                                            e,
-                                            "Failed to fetch children for BoxSet spotlight: ${boxSetDto.name}",
+            val qualifying =
+                boxSetsResponse.content.items
+                    .filter { (it.childCount ?: 0) >= minChildCount }
+                    .shuffled()
+                    .take(maxBoxSets)
+
+            Timber.d(
+                "BoxSet spotlight: ${qualifying.size} qualifying sets (min $minChildCount children)"
+            )
+
+            val semaphore = Semaphore(5)
+            coroutineScope {
+                qualifying
+                    .map { boxSetDto ->
+                        async {
+                            semaphore.withPermit {
+                                try {
+                                    val childrenResponse =
+                                        itemsApi.getItems(
+                                            userId = userId,
+                                            parentId = boxSetDto.id,
+                                            recursive = false,
+                                            fields = FieldSets.MEDIA_ITEM_CARDS,
+                                            enableImages = true,
+                                            enableUserData = false,
+                                            sortBy = listOf(ItemSortBy.PRODUCTION_YEAR),
                                         )
+                                    val children =
+                                        childrenResponse.content.items.mapNotNull {
+                                            it.toAfinityItem(baseUrl)
+                                        }
+                                    if (children.size >= minChildCount) {
+                                        boxSetDto.toAfinityBoxSet(baseUrl) to children
+                                    } else {
                                         null
                                     }
+                                } catch (e: Exception) {
+                                    Timber.w(
+                                        e,
+                                        "Failed to fetch children for BoxSet spotlight: ${boxSetDto.name}",
+                                    )
+                                    null
                                 }
                             }
                         }
-                        .awaitAll()
-                        .filterNotNull()
-                }
+                    }
+                    .awaitAll()
+                    .filterNotNull()
+            }
         }
 
     private suspend fun fetchAllBoxSetsWithChildren(): List<BoxSetWithChildren> {
@@ -1843,8 +1879,7 @@ constructor(
 
     private suspend fun withPlaybackSources(episode: AfinityEpisode): AfinityEpisode =
         try {
-            getItem(episode.id, fields = FieldSets.PLAYABLE_EPISODE)
-                ?.toAfinityEpisode(getBaseUrl())
+            getItem(episode.id, fields = FieldSets.PLAYABLE_EPISODE)?.toAfinityEpisode(getBaseUrl())
                 ?: episode
         } catch (e: Exception) {
             Timber.w(e, "Failed to hydrate playback sources for episode ${episode.id}")
@@ -1862,8 +1897,9 @@ constructor(
                         fields = FieldSets.PLAYABLE_EPISODE,
                         enableResumable = true,
                     )
-                val playableNextUp =
-                    nextUpEpisodes.filter { !it.missing && it.parentIndexNumber != 0 }
+                val playableNextUp = nextUpEpisodes.filter {
+                    !it.missing && it.parentIndexNumber != 0
+                }
                 if (playableNextUp.isNotEmpty()) {
                     Timber.d("Found NextUp episode: ${playableNextUp.first().name}")
                     return playableNextUp.first()
