@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -53,6 +54,7 @@ fun ActionButtonsRow(
     isAdmin: Boolean = false,
     onAdminAction: (AdminAction) -> Unit = {},
     onDownloadLongClick: (() -> Unit)? = null,
+    onAddToPlaylist: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -110,13 +112,15 @@ fun ActionButtonsRow(
             onDownloadLongClick = onDownloadLongClick,
         )
 
-        if (isAdmin) {
+        if (isAdmin || onAddToPlaylist != null) {
             var menuExpanded by remember { mutableStateOf(false) }
             Box {
                 IconButton(onClick = { menuExpanded = true }) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_options),
-                        contentDescription = stringResource(R.string.cd_admin_manage),
+                        contentDescription =
+                            if (isAdmin) stringResource(R.string.cd_admin_manage)
+                            else stringResource(R.string.cd_music_more_options),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(28.dp),
                     )
@@ -125,6 +129,27 @@ fun ActionButtonsRow(
                     expanded = menuExpanded,
                     onDismissRequest = { menuExpanded = false },
                 ) {
+                    if (onAddToPlaylist != null) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(stringResource(R.string.cd_music_add_to_playlist))
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_playlist),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onAddToPlaylist()
+                            },
+                        )
+                        if (isAdmin) HorizontalDivider()
+                    }
+
+                    if (isAdmin) {
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.admin_action_edit_metadata)) },
                         leadingIcon = {
@@ -201,6 +226,7 @@ fun ActionButtonsRow(
                             onAdminAction(AdminAction.Delete)
                         },
                     )
+                    }
                 }
             }
         }

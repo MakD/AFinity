@@ -1,6 +1,7 @@
 package com.makd.afinity.data.repository.media
 
 import androidx.paging.PagingData
+import androidx.paging.PagingSource
 import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
@@ -298,6 +299,7 @@ interface MediaRepository {
         fields: List<ItemFields>? = null,
         studioNames: List<String> = emptyList(),
         includeItemTypes: List<String>? = null,
+        onSourceCreated: ((PagingSource<Int, AfinityItem>) -> Unit)? = null,
     ): Flow<PagingData<AfinityItem>>
 
     suspend fun getFilterOptions(

@@ -1,4 +1,4 @@
-package com.makd.afinity.ui.music.playlist
+package com.makd.afinity.ui.playlist
 
 import android.content.res.Configuration
 import androidx.compose.animation.animateColorAsState
@@ -81,19 +81,20 @@ import com.makd.afinity.ui.music.components.MusicDetailActionRow
 import com.makd.afinity.ui.music.components.MusicHeroBackground
 import com.makd.afinity.ui.music.components.MusicHomeTopAppBar
 import com.makd.afinity.ui.music.components.MusicTrackRow
-import com.makd.afinity.ui.music.components.PlaylistVideoRow
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 import kotlinx.coroutines.launch
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 import java.util.UUID
 
 @Composable
-fun MusicPlaylistScreen(
+fun PlaylistScreen(
     navController: NavController,
-    viewModel: MusicPlaylistViewModel = hiltViewModel(),
+    viewModel: PlaylistViewModel = hiltViewModel(),
     playerViewModel: MusicPlayerViewModel = hiltViewModel(),
     addToPlaylistViewModel: AddToPlaylistViewModel = hiltViewModel(),
 ) {
@@ -114,6 +115,16 @@ fun MusicPlaylistScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     var playChoiceShuffle by remember { mutableStateOf<Boolean?>(null) }
+    var draggedKey by remember { mutableStateOf<String?>(null) }
+    val reorderState =
+        rememberReorderableLazyListState(lazyListState) { from, to ->
+            val fromKey = from.key as? String
+            val toKey = to.key as? String
+            if (fromKey != null && toKey != null) {
+                draggedKey = fromKey
+                viewModel.moveEntry(fromKey, toKey)
+            }
+        }
 
     LaunchedEffect(uiState.deleted) {
         if (uiState.deleted) navController.popBackStack()
@@ -335,60 +346,74 @@ fun MusicPlaylistScreen(
                         }
                     }
 
-                    itemsIndexed(uiState.entries, key = { _, entry -> entry.id.toString() }) {
-                        _,
-                        entry ->
-                        when (entry) {
-                            is PlaylistEntry.Video ->
-                                PlaylistVideoRow(
-                                    item = entry.item,
-                                    onClick = { viewModel.playVideoEntry(entry.item) },
-                                    onRemoveFromPlaylist = { viewModel.removeEntry(entry) },
+                    itemsIndexed(
+                        uiState.entries,
+                        key = { _, entry -> entry.playlistItemId ?: entry.id.toString() },
+                    ) { _, entry ->
+                        val entryKey = entry.playlistItemId ?: entry.id.toString()
+                        ReorderableItem(reorderState, key = entryKey) { isDragging ->
+                            val dragModifier =
+                                Modifier.longPressDraggableHandle(
+                                    enabled = uiState.canReorder,
+                                    onDragStopped = {
+                                        draggedKey?.let { viewModel.commitEntryMove(it) }
+                                        draggedKey = null
+                                    },
                                 )
-                            is PlaylistEntry.Audio -> {
-                                val track = entry.track
-                                MusicTrackRow(
-                                    track = track,
-                                    isPlaying = track.id == playbackState.currentTrack?.id,
-                                    showAlbumArt = true,
-                                    onClick = {
-                                        startMusicService(context)
-                                        playerViewModel.playQueue(
-                                            uiState.tracks,
-                                            uiState.tracks
-                                                .indexOfFirst { it.id == track.id }
-                                                .coerceAtLeast(0),
-                                        )
-                                    },
-                                    onInstantMix = {
-                                        startMusicService(context)
-                                        playerViewModel.playInstantMix(track.id)
-                                    },
-                                    onStartRadio =
-                                        if (isOffline) null
-                                        else
-                                            ({
-                                                radioSeed =
-                                                    RadioSeed(
-                                                        trackId = track.id,
-                                                        albumId = track.albumId,
-                                                        sourceTracks = uiState.tracks,
-                                                    )
-                                            }),
-                                    onAddNext = { playerViewModel.addNext(listOf(track)) },
-                                    onAddLast = { playerViewModel.addLast(listOf(track)) },
-                                    onFavorite = { viewModel.toggleTrackFavorite(track.id) },
-                                    onAddToPlaylist = {
-                                        addToPlaylistTrackIds = listOf(track.id)
-                                        addToPlaylistViewModel.reset()
-                                        showAddToPlaylist = true
-                                    },
-                                    onRemoveFromPlaylist = { viewModel.removeEntry(entry) },
-                                    onDownload = { viewModel.downloadTrack(track.id) },
-                                    isDownloaded =
-                                        uiState.trackDownloadInfos[track.id]?.status ==
-                                            DownloadStatus.COMPLETED,
-                                )
+                            when (entry) {
+                                is PlaylistEntry.Video ->
+                                    PlaylistVideoRow(
+                                        item = entry.item,
+                                        onClick = { viewModel.playVideoEntry(entry.item) },
+                                        onRemoveFromPlaylist = { viewModel.removeEntry(entry) },
+                                        modifier = dragModifier,
+                                    )
+                                is PlaylistEntry.Audio -> {
+                                    val track = entry.track
+                                    MusicTrackRow(
+                                        track = track,
+                                        isPlaying = track.id == playbackState.currentTrack?.id,
+                                        showAlbumArt = true,
+                                        onClick = {
+                                            startMusicService(context)
+                                            playerViewModel.playQueue(
+                                                uiState.tracks,
+                                                uiState.tracks
+                                                    .indexOfFirst { it.id == track.id }
+                                                    .coerceAtLeast(0),
+                                            )
+                                        },
+                                        onInstantMix = {
+                                            startMusicService(context)
+                                            playerViewModel.playInstantMix(track.id)
+                                        },
+                                        onStartRadio =
+                                            if (isOffline) null
+                                            else
+                                                ({
+                                                    radioSeed =
+                                                        RadioSeed(
+                                                            trackId = track.id,
+                                                            albumId = track.albumId,
+                                                            sourceTracks = uiState.tracks,
+                                                        )
+                                                }),
+                                        onAddNext = { playerViewModel.addNext(listOf(track)) },
+                                        onAddLast = { playerViewModel.addLast(listOf(track)) },
+                                        onFavorite = { viewModel.toggleTrackFavorite(track.id) },
+                                        onAddToPlaylist = {
+                                            addToPlaylistTrackIds = listOf(track.id)
+                                            addToPlaylistViewModel.reset()
+                                            showAddToPlaylist = true
+                                        },
+                                        onRemoveFromPlaylist = { viewModel.removeEntry(entry) },
+                                        onDownload = { viewModel.downloadTrack(track.id) },
+                                        isDownloaded =
+                                            uiState.trackDownloadInfos[track.id]?.status ==
+                                                DownloadStatus.COMPLETED,
+                                        modifier = dragModifier,
+                                    )
+                                }
                             }
                         }
                     }
@@ -569,60 +594,74 @@ fun MusicPlaylistScreen(
                     }
                 }
 
-                itemsIndexed(uiState.entries, key = { _, entry -> entry.id.toString() }) {
-                    _,
-                    entry ->
-                    when (entry) {
-                        is PlaylistEntry.Video ->
-                            PlaylistVideoRow(
-                                item = entry.item,
-                                onClick = { viewModel.playVideoEntry(entry.item) },
-                                onRemoveFromPlaylist = { viewModel.removeEntry(entry) },
+                itemsIndexed(
+                    uiState.entries,
+                    key = { _, entry -> entry.playlistItemId ?: entry.id.toString() },
+                ) { _, entry ->
+                    val entryKey = entry.playlistItemId ?: entry.id.toString()
+                    ReorderableItem(reorderState, key = entryKey) { isDragging ->
+                        val dragModifier =
+                            Modifier.longPressDraggableHandle(
+                                enabled = uiState.canReorder,
+                                onDragStopped = {
+                                    draggedKey?.let { viewModel.commitEntryMove(it) }
+                                    draggedKey = null
+                                },
                             )
-                        is PlaylistEntry.Audio -> {
-                            val track = entry.track
-                            MusicTrackRow(
-                                track = track,
-                                isPlaying = track.id == playbackState.currentTrack?.id,
-                                showAlbumArt = true,
-                                onClick = {
-                                    startMusicService(context)
-                                    playerViewModel.playQueue(
-                                        uiState.tracks,
-                                        uiState.tracks
-                                            .indexOfFirst { it.id == track.id }
-                                            .coerceAtLeast(0),
-                                    )
-                                },
-                                onInstantMix = {
-                                    startMusicService(context)
-                                    playerViewModel.playInstantMix(track.id)
-                                },
-                                onStartRadio =
-                                    if (isOffline) null
-                                    else
-                                        ({
-                                            radioSeed =
-                                                RadioSeed(
-                                                    trackId = track.id,
-                                                    albumId = track.albumId,
-                                                    sourceTracks = uiState.tracks,
-                                                )
-                                        }),
-                                onAddNext = { playerViewModel.addNext(listOf(track)) },
-                                onAddLast = { playerViewModel.addLast(listOf(track)) },
-                                onFavorite = { viewModel.toggleTrackFavorite(track.id) },
-                                onAddToPlaylist = {
-                                    addToPlaylistTrackIds = listOf(track.id)
-                                    addToPlaylistViewModel.reset()
-                                    showAddToPlaylist = true
-                                },
-                                onRemoveFromPlaylist = { viewModel.removeEntry(entry) },
-                                onDownload = { viewModel.downloadTrack(track.id) },
-                                isDownloaded =
-                                    uiState.trackDownloadInfos[track.id]?.status ==
-                                        DownloadStatus.COMPLETED,
-                            )
+                        when (entry) {
+                            is PlaylistEntry.Video ->
+                                PlaylistVideoRow(
+                                    item = entry.item,
+                                    onClick = { viewModel.playVideoEntry(entry.item) },
+                                    onRemoveFromPlaylist = { viewModel.removeEntry(entry) },
+                                    modifier = dragModifier,
+                                )
+                            is PlaylistEntry.Audio -> {
+                                val track = entry.track
+                                MusicTrackRow(
+                                    track = track,
+                                    isPlaying = track.id == playbackState.currentTrack?.id,
+                                    showAlbumArt = true,
+                                    onClick = {
+                                        startMusicService(context)
+                                        playerViewModel.playQueue(
+                                            uiState.tracks,
+                                            uiState.tracks
+                                                .indexOfFirst { it.id == track.id }
+                                                .coerceAtLeast(0),
+                                        )
+                                    },
+                                    onInstantMix = {
+                                        startMusicService(context)
+                                        playerViewModel.playInstantMix(track.id)
+                                    },
+                                    onStartRadio =
+                                        if (isOffline) null
+                                        else
+                                            ({
+                                                radioSeed =
+                                                    RadioSeed(
+                                                        trackId = track.id,
+                                                        albumId = track.albumId,
+                                                        sourceTracks = uiState.tracks,
+                                                    )
+                                            }),
+                                    onAddNext = { playerViewModel.addNext(listOf(track)) },
+                                    onAddLast = { playerViewModel.addLast(listOf(track)) },
+                                    onFavorite = { viewModel.toggleTrackFavorite(track.id) },
+                                    onAddToPlaylist = {
+                                        addToPlaylistTrackIds = listOf(track.id)
+                                        addToPlaylistViewModel.reset()
+                                        showAddToPlaylist = true
+                                    },
+                                    onRemoveFromPlaylist = { viewModel.removeEntry(entry) },
+                                    onDownload = { viewModel.downloadTrack(track.id) },
+                                    isDownloaded =
+                                        uiState.trackDownloadInfos[track.id]?.status ==
+                                            DownloadStatus.COMPLETED,
+                                    modifier = dragModifier,
+                                )
+                            }
                         }
                     }
                 }

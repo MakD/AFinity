@@ -94,12 +94,12 @@ import com.makd.afinity.ui.music.library.LibraryFilter
 import com.makd.afinity.ui.music.library.MusicBrowseScreen
 import com.makd.afinity.ui.music.library.MusicLibraryScreen
 import com.makd.afinity.ui.music.player.MusicPlayerScreen
-import com.makd.afinity.ui.music.playlist.MusicPlaylistScreen
 import com.makd.afinity.ui.onboarding.ServicesHubScreen
 import com.makd.afinity.ui.person.PersonScreen
 import com.makd.afinity.ui.player.AudioMiniPlayer
 import com.makd.afinity.ui.player.AudioMiniPlayerState
 import com.makd.afinity.ui.player.PlayerLauncher
+import com.makd.afinity.ui.playlist.PlaylistScreen
 import com.makd.afinity.ui.requests.FilterParams
 import com.makd.afinity.ui.requests.FilterType
 import com.makd.afinity.ui.requests.FilteredMediaScreen
@@ -1017,10 +1017,7 @@ fun MainNavigation(
                                             },
                                             onMusicPlaylistClick = { playlistId ->
                                                 navController.navigate(
-                                                    Destination.createMusicPlaylistRoute(
-                                                        playlistId,
-                                                        audioOnly = true,
-                                                    )
+                                                    Destination.createPlaylistRoute(playlistId)
                                                 )
                                             },
                                             modifier = Modifier.fillMaxSize(),
@@ -1287,7 +1284,7 @@ fun MainNavigation(
                                     }
 
                                     composable(
-                                        route = Destination.MUSIC_PLAYLIST_ROUTE,
+                                        route = Destination.PLAYLIST_ROUTE,
                                         arguments =
                                             listOf(
                                                 navArgument("playlistId") {
@@ -1299,7 +1296,7 @@ fun MainNavigation(
                                                 },
                                             ),
                                     ) {
-                                        MusicPlaylistScreen(navController = navController)
+                                        PlaylistScreen(navController = navController)
                                     }
 
                                     composable(
@@ -1671,7 +1668,7 @@ fun MainNavigation(
 
 private fun NavController.navigateToItem(item: AfinityItem) {
     if (item is AfinityVideoPlaylist) {
-        navigate(Destination.createMusicPlaylistRoute(item.id.toString()))
+        navigate(Destination.createPlaylistRoute(item.id.toString()))
         return
     }
     navigate(

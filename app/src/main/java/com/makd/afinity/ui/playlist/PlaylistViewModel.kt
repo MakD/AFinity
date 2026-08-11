@@ -1,4 +1,4 @@
-package com.makd.afinity.ui.music.playlist
+package com.makd.afinity.ui.playlist
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -56,7 +56,7 @@ private fun List<PlaylistEntry>.withFavorite(trackId: UUID, favorite: Boolean): 
         else entry
     }
 
-data class MusicPlaylistUiState(
+data class PlaylistUiState(
     val playlist: AfinityPlaylist? = null,
     val entries: List<PlaylistEntry> = emptyList(),
     val artistEntries: List<PlaylistArtistEntry> = emptyList(),
@@ -77,10 +77,13 @@ data class MusicPlaylistUiState(
 
     val isMixed: Boolean
         get() = !audioOnly && audioCount > 0 && videoCount > 0
+
+    val canReorder: Boolean
+        get() = entries.size == audioCount + videoCount && entries.all { it.playlistItemId != null }
 }
 
 @HiltViewModel
-class MusicPlaylistViewModel @Inject constructor(
+class PlaylistViewModel @Inject constructor(
     private val musicRepository: MusicRepository,
     private val mediaRepository: MediaRepository,
     private val downloadRepository: DownloadRepository,
@@ -92,11 +95,11 @@ class MusicPlaylistViewModel @Inject constructor(
 
     private val audioOnly: Boolean = savedStateHandle.get<String>("audioOnly")?.toBoolean() == true
 
-    private val _uiState = MutableStateFlow(MusicPlaylistUiState(audioOnly = audioOnly))
+    private val _uiState = MutableStateFlow(PlaylistUiState(audioOnly = audioOnly))
 
     private val _videoPlaybackRequests = MutableSharedFlow<VideoPlaybackRequest>()
     val videoPlaybackRequests = _videoPlaybackRequests.asSharedFlow()
-    val uiState: StateFlow<MusicPlaylistUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<PlaylistUiState> = _uiState.asStateFlow()
 
     init {
         load()
@@ -156,6 +159,28 @@ class MusicPlaylistViewModel @Inject constructor(
                         )
                     }
                 }
+        }
+    }
+
+    fun moveEntry(fromKey: String, toKey: String) {
+        val current = _uiState.value.entries
+        val from = current.indexOfFirst { it.playlistItemId == fromKey }
+        val to = current.indexOfFirst { it.playlistItemId == toKey }
+        if (from == -1 || to == -1 || from == to) return
+        _uiState.update {
+            it.copy(entries = current.toMutableList().apply { add(to, removeAt(from)) })
+        }
+    }
+
+    fun commitEntryMove(movedKey: String) {
+        val newIndex = _uiState.value.entries.indexOfFirst { it.playlistItemId == movedKey }
+        if (newIndex == -1) return
+        viewModelScope.launch {
+            val moved = mediaRepository.movePlaylistItem(playlistId, movedKey, newIndex)
+            if (!moved) {
+                Timber.w("Move rejected by server, reloading playlist $playlistId")
+                reload()
+            }
         }
     }
 
@@ -221,14 +246,14 @@ class MusicPlaylistViewModel @Inject constructor(
     }
 
     private fun updateDownloadState(allDownloads: List<DownloadInfo>) {
-        val playlistTrackIds = _uiState.value.tracks.map { it.id }.toSet()
-        val audioDownloads = allDownloads.filter { it.itemType == "Audio" }
-        val playlistDownloads = audioDownloads.filter { it.itemId in playlistTrackIds }
-        val totalTracks = _uiState.value.tracks.size
+        val entries = _uiState.value.entries
+        val entryIds = entries.map { it.id }.toSet()
+        val playlistDownloads = allDownloads.filter { it.itemId in entryIds }
         _uiState.update {
             it.copy(
-                playlistDownloadInfo = aggregatePlaylistDownloadInfo(playlistDownloads, totalTracks),
-                trackDownloadInfos = audioDownloads.associateBy { it.itemId },
+                playlistDownloadInfo =
+                    aggregatePlaylistDownloadInfo(playlistDownloads, entries.size),
+                trackDownloadInfos = playlistDownloads.associateBy { info -> info.itemId },
             )
         }
     }

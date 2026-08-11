@@ -51,6 +51,7 @@ import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.ui.components.AfinitySwitch
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AsyncImage
+import org.jellyfin.sdk.model.api.MediaType
 import java.util.UUID
 
 private enum class DialogScreen {
@@ -64,6 +65,7 @@ fun AddToPlaylistDialog(
     viewModel: AddToPlaylistViewModel,
     onDismiss: () -> Unit,
     onResult: (AddToPlaylistResult) -> Unit,
+    mediaType: MediaType = MediaType.AUDIO,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var screen by remember { mutableStateOf(DialogScreen.List) }
@@ -97,7 +99,7 @@ fun AddToPlaylistDialog(
                 isLoading = state.isSubmitting,
                 onDismiss = { screen = DialogScreen.List },
                 onCreate = { name, isPublic ->
-                    viewModel.createPlaylist(name, trackIds, isPublic)
+                    viewModel.createPlaylist(name, trackIds, isPublic, mediaType)
                 },
             )
     }

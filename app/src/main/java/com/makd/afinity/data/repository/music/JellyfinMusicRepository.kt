@@ -1,6 +1,7 @@
 package com.makd.afinity.data.repository.music
 
 import androidx.core.net.toUri
+import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.extensions.toAfinityAlbum
@@ -62,6 +63,7 @@ constructor(
     private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
     private val apiInvoker: JellyfinApiInvoker,
+    private val mediaChangeManager: MediaChangeManager,
 ) : MusicRepository {
 
     private val playlistsRefreshTrigger = MutableStateFlow(0)
@@ -568,6 +570,7 @@ constructor(
         name: String,
         trackIds: List<UUID>,
         isPublic: Boolean,
+        mediaType: MediaType,
     ): AfinityPlaylist? =
         apiCall(null, "Failed to create playlist: $name") { apiClient, userId ->
             val result =
@@ -577,7 +580,7 @@ constructor(
                                 name = name,
                                 ids = emptyList(),
                                 userId = userId,
-                                mediaType = org.jellyfin.sdk.model.api.MediaType.AUDIO,
+                                mediaType = mediaType,
                                 users = emptyList(),
                                 isPublic = isPublic,
                             )
@@ -605,6 +608,7 @@ constructor(
                 }
 
                 invalidatePlaylistsCache()
+                mediaChangeManager.notifyLibraryContentChanged("playlist_created")
 
                 AfinityPlaylist(
                     id = playlistId,
@@ -628,6 +632,8 @@ constructor(
                         ids = trackIds,
                         userId = userId,
                     )
+                invalidatePlaylistsCache()
+                mediaChangeManager.notifyLibraryContentChanged("playlist_items_added")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to add tracks to playlist $playlistId")
                 throw e
@@ -643,6 +649,8 @@ constructor(
                         playlistId = playlistId.toString(),
                         entryIds = entryIds,
                     )
+                invalidatePlaylistsCache()
+                mediaChangeManager.notifyLibraryContentChanged("playlist_items_removed")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to remove tracks from playlist $playlistId")
                 throw e
@@ -657,6 +665,7 @@ constructor(
                     .LibraryApi(apiClient)
                     .deleteItem(itemId = playlistId)
                 invalidatePlaylistsCache()
+                mediaChangeManager.notifyLibraryContentChanged("playlist_deleted")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to delete playlist $playlistId")
                 throw e

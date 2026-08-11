@@ -5,6 +5,7 @@ import androidx.core.net.toUri
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import androidx.paging.PagingSource
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.common.CollectionType
@@ -426,6 +427,7 @@ constructor(
         fields: List<ItemFields>?,
         studioNames: List<String>,
         includeItemTypes: List<String>?,
+        onSourceCreated: ((PagingSource<Int, AfinityItem>) -> Unit)?,
     ): Flow<PagingData<AfinityItem>> =
         Pager(
                 config =
@@ -443,6 +445,7 @@ constructor(
                     studioNames = studioNames,
                     includeItemTypes = includeItemTypes,
                 )
+                    .also { source -> onSourceCreated?.invoke(source) }
             }
             .flow
 
@@ -782,6 +785,22 @@ constructor(
             )
         }
     }
+
+    override suspend fun movePlaylistItem(
+        playlistId: UUID,
+        playlistItemId: String,
+        newIndex: Int,
+    ): Boolean =
+        apiCall(false, "Failed to move item $playlistItemId in playlist $playlistId") { apiClient, _
+            ->
+            PlaylistsApi(apiClient)
+                .moveItem(
+                    playlistId = playlistId.toString(),
+                    itemId = playlistItemId,
+                    newIndex = newIndex,
+                )
+            true
+        }
 
     override suspend fun getItem(itemId: UUID, fields: List<ItemFields>?): BaseItemDto? =
         apiCall(null, "Failed to get item with id: $itemId") { apiClient, userId ->

@@ -1,4 +1,4 @@
-package com.makd.afinity.ui.music.components
+package com.makd.afinity.ui.playlist
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
