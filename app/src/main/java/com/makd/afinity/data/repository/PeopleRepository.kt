@@ -19,6 +19,7 @@ import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.util.ItemIds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -39,6 +40,7 @@ class PeopleRepository
 constructor(
     private val mediaRepository: MediaRepository,
     private val sessionManager: SessionManager,
+    private val deletedItemsRepository: DeletedItemsRepository,
     database: AfinityDatabase,
 ) {
     private val personCacheTTL = 48.hours.inWholeMilliseconds
@@ -194,6 +196,7 @@ constructor(
     suspend fun getPersonSection(
         personWithCount: PersonWithCount,
         sectionType: PersonSectionType,
+        bypassCache: Boolean = false,
     ): PersonSection? {
         try {
             val serverId = currentServerId()
@@ -201,7 +204,9 @@ constructor(
             val person = personWithCount.person
             val cacheKey = "${person.name}_${sectionType.name}"
 
-            val cached = personSectionDao.getCachedSection(cacheKey, serverId, userId)
+            val cached =
+                if (bypassCache) null
+                else personSectionDao.getCachedSection(cacheKey, serverId, userId)
             val currentTime = System.currentTimeMillis()
 
             if (
@@ -220,7 +225,7 @@ constructor(
                         json.decodeFromString<CachedPersonWithCount>(cached.personData),
                         baseUrl,
                     )
-                val cachedItems =
+                val decodedItems =
                     json.decodeFromString<List<String>>(cached.itemsData).mapNotNull { itemJson ->
                         when (val item = afinityTypeConverters.toAfinityItem(itemJson)) {
                             is AfinityMovie -> item.copy(images = item.images.withBaseUrl(baseUrl))
@@ -230,6 +235,8 @@ constructor(
                             else -> item
                         }
                     }
+                val cachedItems =
+                    deletedItemsRepository.retainAlive(decodedItems) { it.id.toString() }
 
                 return PersonSection(
                     person = cachedPersonData.person,
@@ -250,6 +257,7 @@ constructor(
 
             val selectedItems =
                 filteredItems.filter { it is AfinityMovie || it is AfinityShow }.shuffled().take(20)
+            deletedItemsRepository.unmark(selectedItems.map { it.id.toString() })
 
             val section =
                 PersonSection(
@@ -278,6 +286,33 @@ constructor(
         } catch (e: Exception) {
             Timber.e(e, "Failed to get person section for ${personWithCount.person.name}")
             return null
+        }
+    }
+
+    suspend fun removeItem(itemId: String) {
+        val normalized = ItemIds.normalize(itemId) ?: return
+        withContext(Dispatchers.IO) {
+            try {
+                val serverId = currentServerId()
+                val userId = currentUserId()
+                val allSections = personSectionDao.getAllCachedSections(serverId, userId)
+                for (section in allSections) {
+                    val itemStrings = json.decodeFromString<List<String>>(section.itemsData)
+                    val retained =
+                        itemStrings.filterNot { itemJson ->
+                            val existing = afinityTypeConverters.toAfinityItem(itemJson)
+                            existing != null &&
+                                ItemIds.normalize(existing.id.toString()) == normalized
+                        }
+                    if (retained.size != itemStrings.size) {
+                        personSectionDao.insertSection(
+                            section.copy(itemsData = json.encodeToString(retained))
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to remove $itemId from person section caches")
+            }
         }
     }
 

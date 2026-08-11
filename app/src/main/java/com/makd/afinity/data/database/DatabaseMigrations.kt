@@ -1425,6 +1425,19 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_64_65 =
+        object : Migration(64, 65) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `deleted_items` (" +
+                        "`itemId` TEXT NOT NULL, " +
+                        "`serverId` TEXT NOT NULL, " +
+                        "`deletedAt` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`itemId`))"
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1490,5 +1503,6 @@ object DatabaseMigrations {
             MIGRATION_61_62,
             MIGRATION_62_63,
             MIGRATION_63_64,
+            MIGRATION_64_65,
         )
 }

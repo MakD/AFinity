@@ -477,7 +477,11 @@ constructor(
             }
         }
 
-    override suspend fun deleteItem(itemId: String): Result<Unit> =
+    override suspend fun deleteItem(
+        itemId: String,
+        tmdbId: Int?,
+        isMovie: Boolean?,
+    ): Result<Unit> =
         withContext(Dispatchers.IO) {
             try {
                 val apiClient =
@@ -486,7 +490,7 @@ constructor(
                             IllegalStateException("No API client")
                         )
                 LibraryApi(apiClient).deleteItem(itemId = UUID.fromString(itemId))
-                adminChangeBroadcaster.notifyItemDeleted(itemId)
+                adminChangeBroadcaster.notifyItemDeleted(itemId, tmdbId, isMovie)
                 Result.success(Unit)
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to delete item $itemId")

@@ -8,6 +8,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.withBaseUrl
+import com.makd.afinity.data.repository.DeletedItemsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -19,7 +20,12 @@ import javax.inject.Singleton
 @Serializable private data class StringList(val items: List<String>)
 
 @Singleton
-class HomeCacheRepository @Inject constructor(private val dao: HomeCacheDao) {
+class HomeCacheRepository
+@Inject
+constructor(
+    private val dao: HomeCacheDao,
+    private val deletedItemsRepository: DeletedItemsRepository,
+) {
     private val json = Json { ignoreUnknownKeys = true }
     private val converters = AfinityTypeConverters()
 
@@ -44,7 +50,8 @@ class HomeCacheRepository @Inject constructor(private val dao: HomeCacheDao) {
         }
         return try {
             val wrapper = json.decodeFromString<StringList>(entity.json)
-            wrapper.items.mapNotNull { converters.toAfinityItem(it)?.rebase(baseUrl) }
+            val items = wrapper.items.mapNotNull { converters.toAfinityItem(it)?.rebase(baseUrl) }
+            deletedItemsRepository.retainAlive(items) { it.id.toString() }
         } catch (e: Exception) {
             Timber.e(e, "Failed to deserialize AfinityItem list for key=$key")
             null
@@ -54,6 +61,7 @@ class HomeCacheRepository @Inject constructor(private val dao: HomeCacheDao) {
     suspend fun putItems(key: String, items: List<AfinityItem>) {
         if (items.isEmpty()) return
         try {
+            deletedItemsRepository.unmark(items.map { it.id.toString() })
             val strings = items.mapNotNull { converters.fromAfinityItem(it) }
             val jsonStr = json.encodeToString(StringList(strings))
             dao.upsert(HomeCacheEntity(key, jsonStr, System.currentTimeMillis()))
@@ -66,9 +74,11 @@ class HomeCacheRepository @Inject constructor(private val dao: HomeCacheDao) {
         val entity = dao.get(key) ?: return null
         return try {
             val wrapper = json.decodeFromString<StringList>(entity.json)
-            wrapper.items.mapNotNull {
-                converters.toAfinityMovie(it)?.rebase(baseUrl) as? AfinityMovie
-            }
+            val movies =
+                wrapper.items.mapNotNull {
+                    converters.toAfinityMovie(it)?.rebase(baseUrl) as? AfinityMovie
+                }
+            deletedItemsRepository.retainAlive(movies) { it.id.toString() }
         } catch (e: Exception) {
             Timber.e(e, "Failed to deserialize AfinityMovie list for key=$key")
             null
@@ -78,6 +88,7 @@ class HomeCacheRepository @Inject constructor(private val dao: HomeCacheDao) {
     suspend fun putLatestMovies(key: String, movies: List<AfinityMovie>) {
         if (movies.isEmpty()) return
         try {
+            deletedItemsRepository.unmark(movies.map { it.id.toString() })
             val strings = movies.mapNotNull { converters.fromAfinityMovie(it) }
             val jsonStr = json.encodeToString(StringList(strings))
             dao.upsert(HomeCacheEntity(key, jsonStr, System.currentTimeMillis()))
@@ -90,9 +101,11 @@ class HomeCacheRepository @Inject constructor(private val dao: HomeCacheDao) {
         val entity = dao.get(key) ?: return null
         return try {
             val wrapper = json.decodeFromString<StringList>(entity.json)
-            wrapper.items.mapNotNull {
-                converters.toAfinityShow(it)?.rebase(baseUrl) as? AfinityShow
-            }
+            val shows =
+                wrapper.items.mapNotNull {
+                    converters.toAfinityShow(it)?.rebase(baseUrl) as? AfinityShow
+                }
+            deletedItemsRepository.retainAlive(shows) { it.id.toString() }
         } catch (e: Exception) {
             Timber.e(e, "Failed to deserialize AfinityShow list for key=$key")
             null
@@ -102,6 +115,7 @@ class HomeCacheRepository @Inject constructor(private val dao: HomeCacheDao) {
     suspend fun putLatestShows(key: String, shows: List<AfinityShow>) {
         if (shows.isEmpty()) return
         try {
+            deletedItemsRepository.unmark(shows.map { it.id.toString() })
             val strings = shows.mapNotNull { converters.fromAfinityShow(it) }
             val jsonStr = json.encodeToString(StringList(strings))
             dao.upsert(HomeCacheEntity(key, jsonStr, System.currentTimeMillis()))

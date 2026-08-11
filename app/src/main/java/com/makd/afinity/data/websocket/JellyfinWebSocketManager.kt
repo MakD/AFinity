@@ -257,9 +257,12 @@ constructor(
         Timber.d(
             "Library changed - added=${update?.itemsAdded?.size ?: 0}, updated=${update?.itemsUpdated?.size ?: 0}, removed=${update?.itemsRemoved?.size ?: 0}"
         )
-        val hasStructuralChange =
-            !update?.itemsAdded.isNullOrEmpty() || !update?.itemsRemoved.isNullOrEmpty()
+        val removed = update?.itemsRemoved.orEmpty()
+        val added = update?.itemsAdded.orEmpty()
+        val hasStructuralChange = added.isNotEmpty() || removed.isNotEmpty()
         if (hasStructuralChange) {
+            if (removed.isNotEmpty()) mediaChangeManager.notifyItemsRemoved(removed)
+            if (added.isNotEmpty()) mediaChangeManager.notifyItemsAdded(added)
             mediaRefreshBus.emit(RefreshTrigger.LIBRARY_CHANGED)
             mediaChangeManager.notifyLibraryContentChanged("library changed websocket event")
             return

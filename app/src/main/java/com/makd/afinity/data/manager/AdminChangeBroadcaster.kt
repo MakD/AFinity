@@ -40,10 +40,6 @@ class AdminChangeBroadcaster @Inject constructor() {
         _changes.tryEmit(AdminChange(itemId, AdminChangeKind.IMAGES))
     }
 
-    fun notifyItemDeleted(itemId: String) {
-        _changes.tryEmit(AdminChange(itemId, AdminChangeKind.DELETED))
-    }
-
     fun notifyItemDeleted(itemId: String, tmdbId: Int? = null, isMovie: Boolean? = null) {
         _changes.tryEmit(AdminChange(itemId, AdminChangeKind.DELETED))
         _itemDeleted.tryEmit(ItemDeletedEvent(itemId, tmdbId, isMovie))

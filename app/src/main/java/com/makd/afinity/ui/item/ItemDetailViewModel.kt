@@ -1617,9 +1617,8 @@ constructor(
             val item = uiState.value.item
             val tmdbId = item?.providerIds?.get("Tmdb")?.toIntOrNull()
             val isMovie = item is AfinityMovie
-            val result = adminRepository.deleteItem(targetItemId.toString())
+            val result = adminRepository.deleteItem(targetItemId.toString(), tmdbId, isMovie)
             if (result.isSuccess) {
-                adminChangeBroadcaster.notifyItemDeleted(targetItemId.toString(), tmdbId, isMovie)
                 onSuccess()
             } else {
                 val errorMsg = result.exceptionOrNull()?.localizedMessage ?: "Unknown error"

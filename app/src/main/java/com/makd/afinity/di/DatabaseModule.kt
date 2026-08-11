@@ -6,6 +6,7 @@ import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.database.DatabaseMigrations
 import com.makd.afinity.data.database.dao.BoxSetCacheDao
 import com.makd.afinity.data.database.dao.CustomHomeSectionDao
+import com.makd.afinity.data.database.dao.DeletedItemDao
 import com.makd.afinity.data.database.dao.EpisodeDao
 import com.makd.afinity.data.database.dao.GenreCacheDao
 import com.makd.afinity.data.database.dao.HomeCacheDao
@@ -181,5 +182,10 @@ object DatabaseModule {
     @Provides
     fun provideHomeLayoutPreferenceDao(database: AfinityDatabase): HomeLayoutPreferenceDao {
         return database.homeLayoutPreferenceDao()
+    }
+
+    @Provides
+    fun provideDeletedItemDao(database: AfinityDatabase): DeletedItemDao {
+        return database.deletedItemDao()
     }
 }

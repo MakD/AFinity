@@ -68,6 +68,10 @@ interface AdminRepository {
         replaceAllImages: Boolean,
     ): Result<Unit>
 
-    suspend fun deleteItem(itemId: String): Result<Unit>
+    suspend fun deleteItem(
+        itemId: String,
+        tmdbId: Int? = null,
+        isMovie: Boolean? = null,
+    ): Result<Unit>
 }
 

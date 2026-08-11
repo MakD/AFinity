@@ -17,6 +17,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.util.ItemIds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration.Companion.hours
@@ -38,6 +40,7 @@ class GenreRepository
 constructor(
     private val mediaRepository: MediaRepository,
     private val sessionManager: SessionManager,
+    private val deletedItemsRepository: DeletedItemsRepository,
     database: AfinityDatabase,
 ) {
     private val genreCacheTTL = 12.hours.inWholeMilliseconds
@@ -191,11 +194,13 @@ constructor(
                     genreCacheDao.getCachedMoviesForGenre(genre, serverId, userId)
                 if (cachedMovieEntities.isNotEmpty()) {
                     val currentBaseUrl = mediaRepository.getBaseUrl()
-                    val cachedMovies = cachedMovieEntities.mapNotNull { entity ->
+                    val decodedMovies = cachedMovieEntities.mapNotNull { entity ->
                         afinityTypeConverters.toAfinityMovie(entity.movieData)?.let { movie ->
                             movie.copy(images = movie.images.withBaseUrl(currentBaseUrl))
                         }
                     }
+                    val cachedMovies =
+                        deletedItemsRepository.retainAlive(decodedMovies) { it.id.toString() }
 
                     if (cachedMovies.isNotEmpty()) {
                         _genreMovies.update { it + (genre to cachedMovies) }
@@ -219,6 +224,7 @@ constructor(
                     mediaRepository.getMoviesByGenre(genre = genre, limit = limit, shuffle = true)
 
                 if (movies.isNotEmpty()) {
+                    deletedItemsRepository.unmark(movies.map { it.id.toString() })
                     val timestamp = System.currentTimeMillis()
                     val movieEntities = movies.mapIndexed { index, movie ->
                         GenreMovieCacheEntity(
@@ -260,11 +266,13 @@ constructor(
                         )
                     val currentBaseUrl = mediaRepository.getBaseUrl()
 
-                    val fallbackMovies = fallbackEntities.mapNotNull { entity ->
+                    val decodedFallback = fallbackEntities.mapNotNull { entity ->
                         afinityTypeConverters.toAfinityMovie(entity.movieData)?.let { movie ->
                             movie.copy(images = movie.images.withBaseUrl(currentBaseUrl))
                         }
                     }
+                    val fallbackMovies =
+                        deletedItemsRepository.retainAlive(decodedFallback) { it.id.toString() }
                     if (fallbackMovies.isNotEmpty()) {
                         _genreMovies.update { it + (genre to fallbackMovies) }
                     }
@@ -286,11 +294,13 @@ constructor(
             val cachedShowEntities = genreCacheDao.getCachedShowsForGenre(genre, serverId, userId)
             if (cachedShowEntities.isNotEmpty()) {
                 val currentBaseUrl = mediaRepository.getBaseUrl()
-                val cachedShows = cachedShowEntities.mapNotNull { entity ->
+                val decodedShows = cachedShowEntities.mapNotNull { entity ->
                     afinityTypeConverters.toAfinityShow(entity.showData)?.let { show ->
                         show.copy(images = show.images.withBaseUrl(currentBaseUrl))
                     }
                 }
+                val cachedShows =
+                    deletedItemsRepository.retainAlive(decodedShows) { it.id.toString() }
 
                 if (cachedShows.isNotEmpty()) {
                     _genreShows.update { it + (genre to cachedShows) }
@@ -313,6 +323,7 @@ constructor(
                 mediaRepository.getShowsByGenre(genre = genre, limit = limit, shuffle = true)
 
             if (shows.isNotEmpty()) {
+                deletedItemsRepository.unmark(shows.map { it.id.toString() })
                 val timestamp = System.currentTimeMillis()
                 val showEntities = shows.mapIndexed { index, show ->
                     GenreShowCacheEntity(
@@ -344,16 +355,44 @@ constructor(
                     genreCacheDao.getCachedShowsForGenre(genre, currentServerId(), currentUserId())
                 val currentBaseUrl = mediaRepository.getBaseUrl()
 
-                val fallbackShows = fallbackEntities.mapNotNull { entity ->
+                val decodedFallback = fallbackEntities.mapNotNull { entity ->
                     afinityTypeConverters.toAfinityShow(entity.showData)?.let { show ->
                         show.copy(images = show.images.withBaseUrl(currentBaseUrl))
                     }
                 }
+                val fallbackShows =
+                    deletedItemsRepository.retainAlive(decodedFallback) { it.id.toString() }
                 if (fallbackShows.isNotEmpty()) {
                     _genreShows.update { it + (genre to fallbackShows) }
                 }
             } catch (cacheError: Exception) {
                 /* Ignore */
+            }
+        }
+    }
+
+    suspend fun removeItem(itemId: String) {
+        val normalized = ItemIds.normalize(itemId) ?: return
+        val canonical = ItemIds.canonical(itemId) ?: return
+        val matches: (UUID) -> Boolean = { id -> ItemIds.normalize(id.toString()) == normalized }
+
+        _genreMovies.update { currentMap ->
+            if (currentMap.values.none { list -> list.any { matches(it.id) } }) currentMap
+            else currentMap.mapValues { (_, movies) -> movies.filterNot { matches(it.id) } }
+        }
+        _genreShows.update { currentMap ->
+            if (currentMap.values.none { list -> list.any { matches(it.id) } }) currentMap
+            else currentMap.mapValues { (_, shows) -> shows.filterNot { matches(it.id) } }
+        }
+
+        withContext(Dispatchers.IO) {
+            try {
+                val serverId = currentServerId()
+                val userId = currentUserId()
+                genreCacheDao.deleteCachedMovie(canonical, serverId, userId)
+                genreCacheDao.deleteCachedShow(canonical, serverId, userId)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to remove $itemId from genre caches")
             }
         }
     }

@@ -172,6 +172,12 @@ interface GenreCacheDao {
     @Query("SELECT MIN(lastFetchedTimestamp) FROM show_genre_cache WHERE serverId = :serverId AND userId = :userId")
     suspend fun getOldestShowCacheTimestamp(serverId: String, userId: String): Long?
 
+    @Query("DELETE FROM genre_movie_cache WHERE movieId = :itemId AND serverId = :serverId AND userId = :userId")
+    suspend fun deleteCachedMovie(itemId: String, serverId: String, userId: String)
+
+    @Query("DELETE FROM genre_show_cache WHERE showId = :itemId AND serverId = :serverId AND userId = :userId")
+    suspend fun deleteCachedShow(itemId: String, serverId: String, userId: String)
+
     @Query("UPDATE genre_movie_cache SET movieData = :newData WHERE movieId = :itemId AND serverId = :serverId AND userId = :userId")
     suspend fun updateCachedMovieData(itemId: String, serverId: String, userId: String, newData: String)
 

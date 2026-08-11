@@ -39,6 +39,22 @@ constructor(
         MutableSharedFlow<LibraryContentChangeEvent>(extraBufferCapacity = 16)
     val libraryMetadataChanges = _libraryMetadataChanges.asSharedFlow()
 
+    private val _itemsRemoved = MutableSharedFlow<List<String>>(extraBufferCapacity = 16)
+    val itemsRemoved = _itemsRemoved.asSharedFlow()
+
+    private val _itemsAdded = MutableSharedFlow<List<String>>(extraBufferCapacity = 16)
+    val itemsAdded = _itemsAdded.asSharedFlow()
+
+    fun notifyItemsRemoved(itemIds: List<String>) {
+        if (itemIds.isEmpty()) return
+        scope.launch { _itemsRemoved.emit(itemIds) }
+    }
+
+    fun notifyItemsAdded(itemIds: List<String>) {
+        if (itemIds.isEmpty()) return
+        scope.launch { _itemsAdded.emit(itemIds) }
+    }
+
     fun notifyLibraryContentChanged(reason: String) {
         scope.launch { _libraryContentChanges.emit(LibraryContentChangeEvent(reason)) }
     }

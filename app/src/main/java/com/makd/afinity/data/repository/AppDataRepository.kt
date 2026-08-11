@@ -36,6 +36,7 @@ import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.di.ApplicationScope
+import com.makd.afinity.util.ItemIds
 import com.makd.afinity.util.JellyfinImageUrlBuilder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -91,6 +92,7 @@ constructor(
     private val homeCacheRepository: HomeCacheRepository,
     private val homeSectionsRepository: HomeSectionsRepository,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
+    private val deletedItemsRepository: DeletedItemsRepository,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
     private var liveDataJob: Job? = null
@@ -168,17 +170,49 @@ constructor(
                 onItemDeleted(event.itemId)
             }
         }
+
+        scope.launch {
+            mediaChangeManager.itemsRemoved.collect { itemIds ->
+                onItemsDeleted(itemIds, notifyLibraryChange = false)
+            }
+        }
+
+        scope.launch {
+            mediaChangeManager.itemsAdded.collect { itemIds ->
+                deletedItemsRepository.unmark(itemIds)
+            }
+        }
     }
 
     fun onItemDeleted(itemId: String) {
+        onItemsDeleted(listOf(itemId))
+    }
+
+    fun onItemsDeleted(rawItemIds: List<String>, notifyLibraryChange: Boolean = true) {
+        val itemIds = rawItemIds.mapNotNull { ItemIds.canonical(it) }.distinct()
+        if (itemIds.isEmpty()) return
         scope.launch {
             try {
-                homeCacheRepository.invalidateAll()
-                mediaRepository.removeItemFromCache(itemId)
-                mediaRepository.invalidateAllCaches()
+                deletedItemsRepository.mark(
+                    itemIds,
+                    sessionManager.currentSession.value?.serverId.orEmpty(),
+                )
 
-                val uuid = try { UUID.fromString(itemId) } catch (e: Exception) { null }
-                val matches: (UUID) -> Boolean = { id -> id.toString() == itemId || (uuid != null && id == uuid) }
+                homeCacheRepository.invalidateAll()
+
+                val normalized = itemIds.mapNotNull { ItemIds.normalize(it) }.toSet()
+                val matches: (UUID) -> Boolean = { id ->
+                    ItemIds.normalize(id.toString()) in normalized
+                }
+
+                itemIds.forEach { itemId ->
+                    mediaRepository.removeItemFromCache(itemId)
+                    homeSectionsRepository.removeItem(itemId)
+                    genreRepository.removeItem(itemId)
+                    peopleRepository.removeItem(itemId)
+                }
+
+                mediaRepository.invalidateAllCaches()
 
                 _latestMovies.update { list -> list.filterNot { matches(it.id) } }
                 _latestTvSeries.update { list -> list.filterNot { matches(it.id) } }
@@ -190,12 +224,13 @@ constructor(
                     list.map { (col, shows) -> col to shows.filterNot { matches(it.id) } }
                 }
 
-                homeSectionsRepository.removeItem(itemId)
-                mediaChangeManager.notifyLibraryContentChanged("item_deleted")
+                if (notifyLibraryChange) {
+                    mediaChangeManager.notifyLibraryContentChanged("item_deleted")
+                }
 
                 reloadHomeData()
             } catch (e: Exception) {
-                Timber.e(e, "Error handling onItemDeleted for $itemId")
+                Timber.e(e, "Error handling deletion of ${itemIds.size} item(s)")
             }
         }
     }
@@ -1111,6 +1146,7 @@ constructor(
         try {
             peopleRepository.clearAllData()
             genreRepository.clearAllData()
+            deletedItemsRepository.clear()
         } catch (e: Exception) {
             Timber.e(e, "Failed to clear database caches")
         }

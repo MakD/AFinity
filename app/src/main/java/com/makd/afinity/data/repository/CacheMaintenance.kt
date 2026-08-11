@@ -3,11 +3,11 @@ package com.makd.afinity.data.repository
 import android.content.Context
 import coil3.SingletonImageLoader
 import com.makd.afinity.data.database.AfinityDatabase
-import com.makd.afinity.di.GitHubClient
 import com.makd.afinity.data.repository.home.HomeCacheRepository
 import com.makd.afinity.data.repository.home.HomeSectionsRepository
 import com.makd.afinity.data.repository.media.BoxSetCache
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.di.GitHubClient
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -122,13 +122,13 @@ constructor(
     @param:GitHubClient private val gitHubOkHttpClient: OkHttpClient,
     private val jellyseerrRepository: JellyseerrRepository,
     private val audiobookshelfRepository: AudiobookshelfRepository,
+    private val deletedItemsRepository: DeletedItemsRepository,
 ) {
     suspend fun usage(): CacheUsage =
         withContext(Dispatchers.IO) {
-            val imageBytes =
-                runCatching { SingletonImageLoader.get(context).diskCache?.size ?: 0L }
-                    .onFailure { Timber.w(it, "Failed to read image cache size") }
-                    .getOrDefault(0L)
+            val imageBytes = runCatching {
+                SingletonImageLoader.get(context).diskCache?.size ?: 0L
+            }.onFailure { Timber.w(it, "Failed to read image cache size") }.getOrDefault(0L)
 
             val bytes =
                 mapOf(
@@ -137,7 +137,7 @@ constructor(
                     CacheStore.NETWORK to directorySize(cacheDir(HTTP_CACHE_DIR)),
                     CacheStore.PLAYER to
                         directorySize(cacheDir(MPV_CACHE_DIR)) +
-                        directorySize(cacheDir(FONTCONFIG_CACHE_DIR)),
+                            directorySize(cacheDir(FONTCONFIG_CACHE_DIR)),
                 )
 
             val counters =
@@ -147,39 +147,39 @@ constructor(
                     CacheKind.PEOPLE to { database.topPeopleDao().cachedEntryCount() },
                     CacheKind.PERSON_DETAILS to { database.personSectionDao().cachedEntryCount() },
                     CacheKind.BOX_SETS to { database.boxSetCacheDao().cachedEntryCount() },
-                    CacheKind.JELLYSEERR_REQUESTS to {
-                        database.jellyseerrDao().cachedEntryCount()
-                    },
-                    CacheKind.AUDIOBOOKSHELF to {
-                        database.audiobookshelfDao().cachedEntryCount()
-                    },
-                    CacheKind.ITEM_METADATA to {
-                        database.itemMetadataCacheDao().cachedEntryCount()
-                    },
+                    CacheKind.JELLYSEERR_REQUESTS to
+                        {
+                            database.jellyseerrDao().cachedEntryCount()
+                        },
+                    CacheKind.AUDIOBOOKSHELF to
+                        {
+                            database.audiobookshelfDao().cachedEntryCount()
+                        },
+                    CacheKind.ITEM_METADATA to
+                        {
+                            database.itemMetadataCacheDao().cachedEntryCount()
+                        },
                     CacheKind.JELLYFIN_STATS to { database.jellyfinStatsDao().cachedEntryCount() },
                     CacheKind.AUDIBLE_RATINGS to { database.audibleRatingDao().cachedEntryCount() },
                 )
 
-            val entries =
-                counters.mapValues { (kind, count) ->
-                    runCatching { count() }
-                        .onFailure { Timber.w(it, "Failed to count cached entries for $kind") }
-                        .getOrDefault(0)
-                }
+            val entries = counters.mapValues { (kind, count) ->
+                runCatching { count() }
+                    .onFailure { Timber.w(it, "Failed to count cached entries for $kind") }
+                    .getOrDefault(0)
+            }
 
             CacheUsage(bytes = bytes, entries = entries)
         }
 
-    suspend fun clearCachedData(
-        sections: Set<CacheSection> = CacheSection.entries.toSet()
-    ) =
+    suspend fun clearCachedData(sections: Set<CacheSection> = CacheSection.entries.toSet()) =
         withContext(Dispatchers.IO) {
             if (CacheSection.IMAGES in sections) {
                 runCatching {
-                        val loader = SingletonImageLoader.get(context)
-                        loader.diskCache?.clear()
-                        loader.memoryCache?.clear()
-                    }
+                    val loader = SingletonImageLoader.get(context)
+                    loader.diskCache?.clear()
+                    loader.memoryCache?.clear()
+                }
                     .onFailure { Timber.e(it, "Failed to clear image cache") }
             }
 
@@ -197,9 +197,9 @@ constructor(
 
             if (CacheSection.PLAYER in sections) {
                 runCatching {
-                        cacheDir(MPV_CACHE_DIR).deleteRecursively()
-                        cacheDir(FONTCONFIG_CACHE_DIR).deleteRecursively()
-                    }
+                    cacheDir(MPV_CACHE_DIR).deleteRecursively()
+                    cacheDir(FONTCONFIG_CACHE_DIR).deleteRecursively()
+                }
                     .onFailure { Timber.e(it, "Failed to clear player cache") }
             }
 
@@ -220,6 +220,8 @@ constructor(
                     .onFailure { Timber.e(it, "Failed to clear item metadata cache") }
                 runCatching { database.jellyfinStatsDao().clearAll() }
                     .onFailure { Timber.e(it, "Failed to clear Jellyfin stats cache") }
+                runCatching { deletedItemsRepository.clear() }
+                    .onFailure { Timber.e(it, "Failed to clear deleted item tombstones") }
             }
 
             if (CacheSection.JELLYSEERR in sections) {
@@ -231,10 +233,10 @@ constructor(
 
             if (CacheSection.AUDIOBOOKSHELF in sections) {
                 runCatching {
-                        database.audiobookshelfDao().deleteAllEpisodes()
-                        database.audiobookshelfDao().deleteAllItems()
-                        database.audiobookshelfDao().deleteAllLibraries()
-                    }
+                    database.audiobookshelfDao().deleteAllEpisodes()
+                    database.audiobookshelfDao().deleteAllItems()
+                    database.audiobookshelfDao().deleteAllLibraries()
+                }
                     .onFailure { Timber.e(it, "Failed to clear Audiobookshelf cache") }
                 runCatching { database.audibleRatingDao().clearAll() }
                     .onFailure { Timber.e(it, "Failed to clear Audible ratings cache") }
@@ -257,14 +259,17 @@ constructor(
             val now = System.currentTimeMillis()
 
             runCatching {
-                    database.itemMetadataCacheDao().clearOldCache(now - ITEM_METADATA_TTL_MS)
-                }
+                database.itemMetadataCacheDao().clearOldCache(now - ITEM_METADATA_TTL_MS)
+            }
                 .onFailure { Timber.w(it, "Failed to prune item metadata cache") }
 
             runCatching {
-                    database.libraryCacheDao().clearExpiredCache(now - LIBRARY_CACHE_TTL_MS)
-                }
+                database.libraryCacheDao().clearExpiredCache(now - LIBRARY_CACHE_TTL_MS)
+            }
                 .onFailure { Timber.w(it, "Failed to prune library cache") }
+
+            runCatching { deletedItemsRepository.prune() }
+                .onFailure { Timber.w(it, "Failed to prune deleted item tombstones") }
 
             runCatching { pruneCrashFiles() }
                 .onFailure { Timber.w(it, "Failed to prune crash files") }
@@ -274,8 +279,8 @@ constructor(
         }
 
     private fun pruneCrashFiles() {
-        val files = File(context.filesDir, CRASHES_DIR).listFiles()?.takeIf { it.isNotEmpty() }
-            ?: return
+        val files =
+            File(context.filesDir, CRASHES_DIR).listFiles()?.takeIf { it.isNotEmpty() } ?: return
         files
             .sortedByDescending { it.lastModified() }
             .drop(MAX_CRASH_FILES)
@@ -306,11 +311,9 @@ constructor(
 
     private fun cacheDir(name: String): File = File(context.cacheDir, name)
 
-    private fun directorySize(dir: File): Long =
-        runCatching {
-                if (!dir.exists()) 0L
-                else dir.walkBottomUp().filter { it.isFile }.sumOf { it.length() }
-            }
-            .onFailure { Timber.w(it, "Failed to size ${dir.name}") }
-            .getOrDefault(0L)
+    private fun directorySize(dir: File): Long = runCatching {
+        if (!dir.exists()) 0L else dir.walkBottomUp().filter { it.isFile }.sumOf { it.length() }
+    }
+        .onFailure { Timber.w(it, "Failed to size ${dir.name}") }
+        .getOrDefault(0L)
 }

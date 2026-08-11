@@ -334,9 +334,9 @@ constructor(
                     }
                     layoutSessionKey = sk
                     retainPinnedContent()
+                    oldKeys.forEach { homeCacheRepository.invalidate(contentCacheKey(sk, it)) }
                     _layout.value = fresh
                     homeCacheRepository.putRaw(layoutCacheKey(sk), json.encodeToString(fresh))
-                    oldKeys.forEach { homeCacheRepository.invalidate(contentCacheKey(sk, it)) }
                     if (force) refreshPinnedSections("home layout rebuild")
                     Timber.d("Built fresh home layout (${fresh.size} sections)")
                 } catch (e: CancellationException) {
@@ -730,35 +730,55 @@ constructor(
         return when (descriptor.type) {
             HomeSectionType.STARRING,
             HomeSectionType.DIRECTED_BY,
-            HomeSectionType.WRITTEN_BY -> hydratePersonSection(descriptor)
+            HomeSectionType.WRITTEN_BY -> hydratePersonSection(descriptor, bypassCache)
             HomeSectionType.BECAUSE_YOU_WATCHED ->
-                hydrateSimilarToReference(descriptor, MovieSectionType.BECAUSE_YOU_WATCHED)
+                hydrateSimilarToReference(
+                    descriptor,
+                    MovieSectionType.BECAUSE_YOU_WATCHED,
+                    bypassCache,
+                )
             HomeSectionType.BECAUSE_YOU_LIKED ->
-                hydrateSimilarToReference(descriptor, MovieSectionType.BECAUSE_YOU_LIKED)
+                hydrateSimilarToReference(
+                    descriptor,
+                    MovieSectionType.BECAUSE_YOU_LIKED,
+                    bypassCache,
+                )
             HomeSectionType.ACTOR_FROM_MOVIE ->
-                hydratePersonFromMovie(descriptor, PersonKind.ACTOR, PersonSectionType.STARRING)
+                hydratePersonFromMovie(
+                    descriptor,
+                    PersonKind.ACTOR,
+                    PersonSectionType.STARRING,
+                    bypassCache,
+                )
             HomeSectionType.DIRECTOR_FROM_MOVIE ->
                 hydratePersonFromMovie(
                     descriptor,
                     PersonKind.DIRECTOR,
                     PersonSectionType.DIRECTED_BY,
+                    bypassCache,
                 )
             HomeSectionType.WRITER_FROM_MOVIE ->
-                hydratePersonFromMovie(descriptor, PersonKind.WRITER, PersonSectionType.WRITTEN_BY)
+                hydratePersonFromMovie(
+                    descriptor,
+                    PersonKind.WRITER,
+                    PersonSectionType.WRITTEN_BY,
+                    bypassCache,
+                )
             HomeSectionType.WATCH_AGAIN -> hydrateWatchAgain(descriptor, bypassCache)
             HomeSectionType.CRITICS_CHOICE -> hydrateCriticsChoice(descriptor, bypassCache)
             HomeSectionType.CUSTOM -> hydrateCustomSection(descriptor, bypassCache)
             HomeSectionType.SPOTLIGHT_GENRE_MOVIE,
             HomeSectionType.SPOTLIGHT_GENRE_SHOW,
             HomeSectionType.SPOTLIGHT_STUDIO,
-            HomeSectionType.SPOTLIGHT_BOXSET -> hydrateSpotlight(descriptor)
+            HomeSectionType.SPOTLIGHT_BOXSET -> hydrateSpotlight(descriptor, bypassCache)
             HomeSectionType.GENRE_MOVIE,
             HomeSectionType.GENRE_SHOW -> null
         }
     }
 
     private suspend fun hydratePersonSection(
-        descriptor: HomeSectionDescriptor
+        descriptor: HomeSectionDescriptor,
+        bypassCache: Boolean = false,
     ): HomeSectionContent {
         val cachedPerson = descriptor.person ?: return HomeSectionContent.Empty
         val personWithCount = PersonWithCount.fromCached(cachedPerson, mediaRepository.getBaseUrl())
@@ -769,7 +789,7 @@ constructor(
                 else -> PersonSectionType.STARRING
             }
         val section =
-            peopleRepository.getPersonSection(personWithCount, sectionType)
+            peopleRepository.getPersonSection(personWithCount, sectionType, bypassCache)
                 ?: return HomeSectionContent.Empty
         return HomeSectionContent.Person(
             section.copy(items = presentationOrder(descriptor.key, section.items))
@@ -784,6 +804,7 @@ constructor(
     private suspend fun hydrateSimilarToReference(
         descriptor: HomeSectionDescriptor,
         sectionType: MovieSectionType,
+        bypassCache: Boolean = false,
     ): HomeSectionContent {
         val referenceMovie =
             decodeReferenceMovie(descriptor.referenceMovieJson) ?: return HomeSectionContent.Empty
@@ -791,9 +812,11 @@ constructor(
         val sk = sessionKey() ?: return HomeSectionContent.Empty
         val cacheKey = contentCacheKey(sk, descriptor.key)
         val cachedItems =
-            homeCacheRepository
-                .getItems(cacheKey, mediaRepository.getBaseUrl())
-                ?.filterIsInstance<AfinityMovie>()
+            if (bypassCache) null
+            else
+                homeCacheRepository
+                    .getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
+                    ?.filterIsInstance<AfinityMovie>()
         if (!cachedItems.isNullOrEmpty()) {
             return HomeSectionContent.Movie(
                 MovieSection(
@@ -1078,6 +1101,7 @@ constructor(
         descriptor: HomeSectionDescriptor,
         personKind: PersonKind,
         sectionType: PersonSectionType,
+        bypassCache: Boolean = false,
     ): HomeSectionContent {
         val cachedPerson = descriptor.person ?: return HomeSectionContent.Empty
         val person = PersonWithCount.fromCached(cachedPerson, mediaRepository.getBaseUrl()).person
@@ -1087,7 +1111,8 @@ constructor(
         val sk = sessionKey() ?: return HomeSectionContent.Empty
         val cacheKey = contentCacheKey(sk, descriptor.key)
         val cachedItems =
-            homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
+            if (bypassCache) null
+            else homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
         if (!cachedItems.isNullOrEmpty()) {
             return HomeSectionContent.PersonFromMovie(
                 PersonFromMovieSection(
@@ -1126,11 +1151,15 @@ constructor(
         )
     }
 
-    private suspend fun hydrateSpotlight(descriptor: HomeSectionDescriptor): HomeSectionContent {
+    private suspend fun hydrateSpotlight(
+        descriptor: HomeSectionDescriptor,
+        bypassCache: Boolean = false,
+    ): HomeSectionContent {
         val sk = sessionKey() ?: return HomeSectionContent.Empty
         val cacheKey = contentCacheKey(sk, descriptor.key)
         val cachedItems =
-            homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
+            if (bypassCache) null
+            else homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
         if (!cachedItems.isNullOrEmpty()) {
             return HomeSectionContent.Spotlight(
                 presentationSample(descriptor.key, cachedItems, SPOTLIGHT_ROW_SIZE)
