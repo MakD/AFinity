@@ -564,7 +564,6 @@
     <string name="player_version_default_label">Alapértelmezett</string>
     <string name="storage_default_badge">Alapértelmezett</string>
     <string name="subtitle_mode_default">Alapértelmezett</string>
-    <string name="admin_refresh_mode_default">Alapértelmezett</string>
     <string name="version_dialog_subtitle">Válaszd ki, melyik verziót szeretnéd lejátszani</string>
     <string name="cd_version_selector">Verzióválasztó</string>
     <string name="player_episode_header_fmt">%1$sÉ:%2$sE: %3$s</string>
@@ -983,7 +982,6 @@
     <string name="update_status_downloading">Letöltés…</string>
     <string name="btn_install_restart">Telepítés és újraindítás</string>
     <string name="btn_validate">Ellenőrzés</string>
-    <string name="admin_refresh_mode_validate">Ellenőrzés</string>
     <string name="update_console_status_hashing">letöltött fájl hashelése…</string>
     <string name="update_console_status_match">EGYEZÉS: hiteles, biztonságosan telepíthető</string>
     <string name="update_console_status_mismatch">ELTÉRÉS: fájl törölve, letöltés újra</string>
@@ -1401,12 +1399,7 @@
     <string name="admin_delete_error">%1$s elem törlése sikertelen</string>
     <string name="admin_refresh_title">Metaadatok frissítése</string>
     <string name="admin_refresh_mode_label">Frissítési mód</string>
-    <string name="admin_refresh_mode_default_desc">Csak a hiányzó adatokat töltse ki</string>
-    <string name="admin_refresh_mode_validate_desc">Ellenőrizze és javítsa ki az összes mezőt</string>
-    <string name="admin_refresh_mode_full">Teljes</string>
-    <string name="admin_refresh_mode_full_desc">Cseréljen ki mindent a szolgáltatóktól</string>
     <string name="admin_refresh_replace_images">Meglévő képek cseréje</string>
-    <string name="admin_refresh_replace_metadata">Az összes metaadat cseréje</string>
     <string name="admin_btn_refresh">Frissítés</string>
     <string name="admin_edit_metadata_title">Metaadatok szerkesztése</string>
     <string name="admin_saving">Mentés…</string>

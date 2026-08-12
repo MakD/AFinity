@@ -954,14 +954,7 @@
     <string name="admin_action_refresh_metadata">Odśwież metadane</string>
     <string name="admin_refresh_title">Odśwież metadane</string>
     <string name="admin_refresh_mode_label">Tryb odświeżania</string>
-    <string name="admin_refresh_mode_default">Domyślny</string>
-    <string name="admin_refresh_mode_default_desc">Wypełnij tylko brakujące dane</string>
-    <string name="admin_refresh_mode_validate">Waliduj</string>
-    <string name="admin_refresh_mode_validate_desc">Sprawdź i popraw wszystkie pola</string>
-    <string name="admin_refresh_mode_full">Pełny</string>
-    <string name="admin_refresh_mode_full_desc">Zastąp wszystko od dostawców</string>
     <string name="admin_refresh_replace_images">Zastąp istniejące obrazy</string>
-    <string name="admin_refresh_replace_metadata">Zastąp wszystkie metadane</string>
     <string name="admin_btn_refresh">Odśwież</string>
     <string name="admin_edit_metadata_title">Edytuj metadane</string>
     <string name="admin_save_changes">Zapisz zmiany</string>

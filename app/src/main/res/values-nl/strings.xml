@@ -1326,14 +1326,7 @@
     <string name="admin_delete_error">Kan item niet verwijderen: %1$s</string>
     <string name="admin_refresh_title">Metadata vernieuwen</string>
     <string name="admin_refresh_mode_label">Vernieuwingsmodus</string>
-    <string name="admin_refresh_mode_default">Standaard</string>
-    <string name="admin_refresh_mode_default_desc">Alleen ontbrekende gegevens aanvullen</string>
-    <string name="admin_refresh_mode_validate">Valideren</string>
-    <string name="admin_refresh_mode_validate_desc">Alle velden controleren en corrigeren</string>
-    <string name="admin_refresh_mode_full">Volledig</string>
-    <string name="admin_refresh_mode_full_desc">Alles vervangen vanaf providers</string>
     <string name="admin_refresh_replace_images">Bestaande afbeeldingen vervangen</string>
-    <string name="admin_refresh_replace_metadata">Alle metadata vervangen</string>
     <string name="admin_btn_refresh">Vernieuwen</string>
     <string name="admin_edit_metadata_title">Metadata bewerken</string>
     <string name="admin_save_changes">Wijzigingen opslaan</string>
