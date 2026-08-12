@@ -13,10 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
-import com.makd.afinity.ui.components.hasCardMetadata
 import com.makd.afinity.ui.theme.CardDimensions
 
 @Composable
@@ -33,15 +31,7 @@ fun ItemsRowSection(
     val isLandscape = cardStyle == CustomSectionCardStyle.LANDSCAPE
     val cardWidth = CardDimensions.cardWidthFor(cardStyle, widthSizeClass)
     val aspectRatio = CardDimensions.aspectRatioFor(cardStyle)
-    val showRatings = LocalShowRatings.current
-    val hasMetadataLine =
-        isLandscape || items.any { it.hasCardMetadata(showRatings) }
-    val fixedRowHeight =
-        CardDimensions.rowHeight(
-            cardWidth,
-            aspectRatio,
-            metadataHeight = if (hasMetadataLine) CardDimensions.MetadataLine else 0.dp,
-        )
+    val fixedRowHeight = CardDimensions.rowHeight(cardWidth, aspectRatio)
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
         HomeSectionHeader(title = title, onViewAllClick = onViewAllClick)

@@ -9,14 +9,13 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -39,7 +38,6 @@ fun MediaRowSkeleton(
             Column(modifier = Modifier.width(cardWidth)) {
                 Card(
                     modifier = Modifier.fillMaxWidth().aspectRatio(aspectRatio),
-                    shape = RoundedCornerShape(8.dp),
                     colors =
                         CardDefaults.cardColors(
                             containerColor =
@@ -50,15 +48,21 @@ fun MediaRowSkeleton(
                     Box(modifier = Modifier.fillMaxSize().shimmerEffect())
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(CardDimensions.CardTextSpacing))
 
                 Box(
-                    modifier =
-                        Modifier.width(cardWidth * 0.8f)
-                            .height(14.dp)
-                            .padding(horizontal = 4.dp)
-                            .shimmerEffect()
-                )
+                    modifier = Modifier.fillMaxWidth().height(CardDimensions.TitleLine),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Box(modifier = Modifier.fillMaxWidth(0.8f).height(14.dp).shimmerEffect())
+                }
+
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(CardDimensions.MetadataLine),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Box(modifier = Modifier.fillMaxWidth(0.45f).height(12.dp).shimmerEffect())
+                }
             }
         }
     }

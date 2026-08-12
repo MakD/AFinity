@@ -618,7 +618,21 @@ fun HomeScreen(
                                 key = { section -> section.key },
                                 contentType = { section -> section::class },
                             ) { section ->
-                                Box(modifier = baseModifier.padding(top = 24.dp)) {
+                                val hideSection =
+                                    section is HomeSection.Genre &&
+                                        when (section.genreItem.type) {
+                                            GenreType.MOVIE ->
+                                                uiState.genreMovies[section.genreItem.name]
+                                                    ?.isEmpty() == true
+                                            GenreType.SHOW ->
+                                                uiState.genreShows[section.genreItem.name]
+                                                    ?.isEmpty() == true
+                                        }
+                                Box(
+                                    modifier =
+                                        if (hideSection) Modifier
+                                        else baseModifier.padding(top = 24.dp)
+                                ) {
                                     when (section) {
                                         is HomeSection.Pending -> {
                                             PendingSection(
@@ -692,10 +706,10 @@ fun HomeScreen(
                                                             uiState.genreMovies[
                                                                     section.genreItem.name]
                                                                 ?: emptyList(),
-                                                        isLoading =
-                                                            uiState.genreLoadingStates[
-                                                                    section.genreItem.name]
-                                                                ?: false,
+                                                        loaded =
+                                                            uiState.genreMovies.containsKey(
+                                                                section.genreItem.name
+                                                            ),
                                                         onVisible = {
                                                             if (
                                                                 uiState.genreMovies[
@@ -719,10 +733,10 @@ fun HomeScreen(
                                                             uiState.genreShows[
                                                                     section.genreItem.name]
                                                                 ?: emptyList(),
-                                                        isLoading =
-                                                            uiState.genreLoadingStates[
-                                                                    section.genreItem.name]
-                                                                ?: false,
+                                                        loaded =
+                                                            uiState.genreShows.containsKey(
+                                                                section.genreItem.name
+                                                            ),
                                                         onVisible = {
                                                             if (
                                                                 uiState.genreShows[

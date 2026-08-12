@@ -28,7 +28,7 @@ import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 fun ShowGenreSection(
     genre: String,
     shows: List<AfinityShow>,
-    isLoading: Boolean,
+    loaded: Boolean,
     onVisible: () -> Unit,
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
@@ -43,15 +43,17 @@ fun ShowGenreSection(
         }
     }
 
+    if (loaded && shows.isEmpty()) return
+
     val cardWidth = widthSizeClass.portraitWidth
     val fixedRowHeight = CardDimensions.rowHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
         HomeSectionHeader(title = stringResource(R.string.home_genre_shows_title, genre))
 
-        if (isLoading && shows.isEmpty()) {
+        if (!loaded) {
             MediaRowSkeleton(cardWidth = cardWidth, height = fixedRowHeight)
-        } else if (shows.isNotEmpty()) {
+        } else {
             LazyRow(
                 modifier = Modifier.height(fixedRowHeight),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
