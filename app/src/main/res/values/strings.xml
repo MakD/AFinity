@@ -1660,6 +1660,7 @@
     <string name="music_mix_surprise_me">Surprise Me</string>
     <string name="music_mix_random">Random Mix</string>
     <string name="music_mix_radio">Radio</string>
+    <string name="music_mix_radio_title_fmt">%1$s Radio</string>
     <string name="music_mix_instant_mix_genre_fmt">%1$s Songs</string>
     <!-- Player -->
     <string name="music_player_now_playing">NOW PLAYING</string>

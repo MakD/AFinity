@@ -14,11 +14,14 @@ import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.data.models.extensions.toRecentlyPlayedAlbums
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityMusicGenre
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
+import com.makd.afinity.data.models.music.MadeForYouMixKind
+import com.makd.afinity.data.models.music.MadeForYouSlot
 import com.makd.afinity.data.models.music.MusicBrowsePrefs
 import com.makd.afinity.data.models.music.MusicFilterOptions
 import com.makd.afinity.data.models.music.MusicFilters
@@ -29,9 +32,12 @@ import com.makd.afinity.data.paging.MusicTracksPagingSource
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
+import com.makd.afinity.data.repository.music.MadeForYouCache
 import com.makd.afinity.data.repository.music.MusicRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -44,6 +50,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -51,6 +58,7 @@ import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 import timber.log.Timber
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 
 enum class MusicSortField(@StringRes val labelRes: Int, val sortBy: ItemSortBy) {
@@ -94,13 +102,6 @@ val TRACK_SORT_FIELDS =
         MusicSortField.Random,
     )
 
-data class MadeForYouSnapshot(
-    val randomTracks: List<AfinityTrack>,
-    val radioSections: List<Pair<String, List<AfinityTrack>>>,
-    val songsByGenreSections: List<Pair<String, List<AfinityTrack>>>,
-    val randomAlbums: List<AfinityAlbum>,
-)
-
 data class MusicLibraryUiState(
     val playlists: List<AfinityPlaylist> = emptyList(),
     val isLoadingPlaylists: Boolean = false,
@@ -114,9 +115,7 @@ data class MusicLibraryUiState(
     val musicGenreSections: List<Pair<String, List<AfinityAlbum>>> = emptyList(),
     val randomAlbums: List<AfinityAlbum> = emptyList(),
     val randomArtists: List<AfinityArtist> = emptyList(),
-    val songsByGenreSections: List<Pair<String, List<AfinityTrack>>> = emptyList(),
     val albumsByDecade: Pair<Int, List<AfinityAlbum>>? = null,
-    val randomTracks: List<AfinityTrack> = emptyList(),
     val topRatedAlbums: List<AfinityAlbum> = emptyList(),
     val homePlaylists: List<AfinityPlaylist> = emptyList(),
     val isLoadingHome: Boolean = false,
@@ -124,9 +123,8 @@ data class MusicLibraryUiState(
     val favoriteArtists: List<AfinityArtist> = emptyList(),
     val topTracksSections: List<Pair<String, List<AfinityTrack>>> = emptyList(),
     val newGenreReleases: List<Pair<String, List<AfinityAlbum>>> = emptyList(),
-    val radioSections: List<Pair<String, List<AfinityTrack>>> = emptyList(),
     val homeRowOrder: List<Int> = generateHomeRowOrder(),
-    val madeForYouSnapshot: MadeForYouSnapshot? = null,
+    val madeForYouSlots: List<MadeForYouSlot> = emptyList(),
     val trackFavoriteOverrides: Map<UUID, Boolean> = emptyMap(),
 )
 
@@ -155,6 +153,23 @@ private const val PAGE_SIZE = 50
 private const val PREFETCH_DISTANCE = 20
 private const val MAX_PLAY_ALL_TRACKS = 5000
 
+private const val MFY_ALBUM_SLOTS = 9
+private const val MFY_RADIO_SLOTS = 3
+private const val MFY_GENRE_SLOTS = 2
+private const val MFY_MIX_SLOTS = 1 + MFY_RADIO_SLOTS + MFY_GENRE_SLOTS
+private const val MFY_ALBUM_FETCH = MFY_ALBUM_SLOTS + MFY_MIX_SLOTS
+private const val MFY_MIX_TRACKS = 25
+private const val MFY_GENRE_TRACKS = 15
+private const val MFY_CACHE_MAX_AGE_MS = 24L * 60L * 60L * 1000L
+private const val RECENT_TRACKS_FETCH = 40
+private const val RECENT_TRACKS_DISPLAY = 20
+
+private const val SLOT_SURPRISE = "mfy_surprise"
+
+private fun radioSlotId(index: Int) = "mfy_radio_$index"
+
+private fun genreSlotId(index: Int) = "mfy_genre_$index"
+
 private data class AlbumQuery(
     val field: MusicSortField,
     val descending: Boolean,
@@ -171,6 +186,7 @@ constructor(
     private val downloadRepository: DownloadRepository,
     private val preferencesRepository: PreferencesRepository,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
+    private val madeForYouCache: MadeForYouCache,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -189,6 +205,9 @@ constructor(
 
     private val _uiState = MutableStateFlow(MusicLibraryUiState())
     val uiState: StateFlow<MusicLibraryUiState> = _uiState.asStateFlow()
+
+    private var madeForYouReserve: List<AfinityAlbum> = emptyList()
+    @Volatile private var madeForYouServedFromCache = false
 
     private val _trackDownloadInfos = MutableStateFlow<Map<UUID, DownloadInfo>>(emptyMap())
     val trackDownloadInfos: StateFlow<Map<UUID, DownloadInfo>> = _trackDownloadInfos.asStateFlow()
@@ -316,7 +335,10 @@ constructor(
     init {
         loadPersistedPrefs()
         observePlaylists()
-        viewModelScope.launch { loadMusicHomeSections() }
+        viewModelScope.launch {
+            loadMadeForYouFromCache()
+            loadMusicHomeSections()
+        }
         observeDownloads()
         loadAlbumFilterOptions()
         viewModelScope.launch {
@@ -462,17 +484,175 @@ constructor(
         }
     }
 
-    private fun updateMadeForYouSnapshot() {
+    private fun buildMadeForYouLayout(albums: List<AfinityAlbum>): List<MadeForYouSlot> {
+        val placed = albums.take(MFY_ALBUM_SLOTS)
+        val total = placed.size + MFY_MIX_SLOTS
+        val mixPositions = (0 until MFY_MIX_SLOTS).map { it * total / MFY_MIX_SLOTS }.toSet()
+        val mixIds =
+            listOf(SLOT_SURPRISE) +
+                List(MFY_RADIO_SLOTS) { radioSlotId(it) } +
+                List(MFY_GENRE_SLOTS) { genreSlotId(it) }
+
+        var mixIndex = 0
+        var albumIndex = 0
+        return (0 until total).map { position ->
+            if (position in mixPositions && mixIndex < mixIds.size) {
+                MadeForYouSlot.Pending(mixIds[mixIndex++])
+            } else {
+                MadeForYouSlot.Album("mfy_album_$albumIndex", placed[albumIndex++])
+            }
+        }
+    }
+
+    private fun resolveMadeForYouSlot(
+        slotId: String,
+        kind: MadeForYouMixKind,
+        seedName: String?,
+        tracks: List<AfinityTrack>,
+    ) {
+        if (tracks.isEmpty()) return
         _uiState.update { state ->
-            state.copy(
-                madeForYouSnapshot =
-                    MadeForYouSnapshot(
-                        randomTracks = state.randomTracks,
-                        radioSections = state.radioSections,
-                        songsByGenreSections = state.songsByGenreSections,
-                        randomAlbums = state.randomAlbums,
-                    )
-            )
+            val index = state.madeForYouSlots.indexOfFirst { it.slotId == slotId }
+            if (index < 0 || state.madeForYouSlots[index] !is MadeForYouSlot.Pending) {
+                return@update state
+            }
+            val updated = state.madeForYouSlots.toMutableList()
+            updated[index] = MadeForYouSlot.Mix(slotId, kind, seedName, tracks)
+            state.copy(madeForYouSlots = updated)
+        }
+    }
+
+    private fun backfillMadeForYouSlots() {
+        _uiState.update { state ->
+            if (state.madeForYouSlots.none { it is MadeForYouSlot.Pending }) return@update state
+            val reserve = ArrayDeque(madeForYouReserve)
+            val filled =
+                state.madeForYouSlots.mapNotNull { slot ->
+                    if (slot !is MadeForYouSlot.Pending) {
+                        slot
+                    } else {
+                        reserve.removeFirstOrNull()?.let { MadeForYouSlot.Album(slot.slotId, it) }
+                    }
+                }
+            state.copy(madeForYouSlots = filled)
+        }
+    }
+
+    private suspend fun loadMadeForYouFromCache() {
+        if (_uiState.value.madeForYouSlots.isNotEmpty()) return
+        val cached = madeForYouCache.get(libraryId, MFY_CACHE_MAX_AGE_MS) ?: return
+        if (_uiState.value.madeForYouSlots.isNotEmpty()) return
+        madeForYouServedFromCache = true
+        _uiState.update { it.copy(madeForYouSlots = cached) }
+    }
+
+    private suspend fun persistMadeForYouLayout(slots: List<MadeForYouSlot>) {
+        if (slots.none { it is MadeForYouSlot.Mix }) return
+        madeForYouCache.put(libraryId, slots)
+    }
+
+    private suspend fun loadMadeForYou(
+        randomAlbumsJob: Deferred<List<AfinityAlbum>>,
+        randomTracksJob: Deferred<List<AfinityTrack>>,
+        mostPlayedJob: Deferred<List<AfinityAlbum>>,
+        genresJob: Deferred<List<AfinityMusicGenre>>,
+    ) = coroutineScope {
+        val albums = randomAlbumsJob.await()
+        madeForYouReserve = albums.drop(MFY_ALBUM_SLOTS)
+
+        val layout = buildMadeForYouLayout(albums)
+        val liveSlots =
+            if (madeForYouServedFromCache) {
+                layout
+            } else {
+                _uiState.update { it.copy(madeForYouSlots = layout) }
+                layout
+            }
+
+        val pendingIds = liveSlots.filterIsInstance<MadeForYouSlot.Pending>().map { it.slotId }
+        val resolved = ConcurrentHashMap<String, MadeForYouSlot>()
+
+        fun record(
+            slotId: String,
+            kind: MadeForYouMixKind,
+            seed: String?,
+            tracks: List<AfinityTrack>,
+        ) {
+            if (tracks.isEmpty()) return
+            resolved[slotId] = MadeForYouSlot.Mix(slotId, kind, seed, tracks)
+            if (!madeForYouServedFromCache) {
+                resolveMadeForYouSlot(slotId, kind, seed, tracks)
+            }
+        }
+
+        val fills = mutableListOf<Job>()
+
+        if (SLOT_SURPRISE in pendingIds) {
+            fills += launch {
+                record(SLOT_SURPRISE, MadeForYouMixKind.Random, null, randomTracksJob.await())
+            }
+        }
+
+        fills += launch {
+            val seeds = mostPlayedJob.await().take(MFY_RADIO_SLOTS)
+            seeds
+                .mapIndexed { index, album ->
+                    launch {
+                        val slotId = radioSlotId(index)
+                        if (slotId !in pendingIds) return@launch
+                        val tracks = runCatching {
+                            musicRepository.getInstantMix(album.id, MFY_MIX_TRACKS)
+                        }
+                            .getOrDefault(emptyList())
+                        record(
+                            slotId,
+                            MadeForYouMixKind.AlbumRadio,
+                            album.artist ?: album.name,
+                            tracks,
+                        )
+                    }
+                }
+                .joinAll()
+        }
+
+        fills += launch {
+            val seeds = genresJob.await().shuffled().take(MFY_GENRE_SLOTS)
+            seeds
+                .mapIndexed { index, genre ->
+                    launch {
+                        val slotId = genreSlotId(index)
+                        if (slotId !in pendingIds) return@launch
+                        val tracks = runCatching {
+                            musicRepository.getTracksByGenre(
+                                genre.name,
+                                MFY_GENRE_TRACKS,
+                            )
+                        }
+                            .getOrDefault(emptyList())
+                        record(slotId, MadeForYouMixKind.GenreSongs, genre.name, tracks)
+                    }
+                }
+                .joinAll()
+        }
+
+        fills.joinAll()
+
+        if (!madeForYouServedFromCache) {
+            backfillMadeForYouSlots()
+            persistMadeForYouLayout(_uiState.value.madeForYouSlots)
+        } else {
+            val reserve = ArrayDeque(madeForYouReserve)
+            val revalidated = liveSlots.mapNotNull { slot ->
+                when (slot) {
+                    is MadeForYouSlot.Pending ->
+                        resolved[slot.slotId]
+                            ?: reserve.removeFirstOrNull()?.let {
+                                MadeForYouSlot.Album(slot.slotId, it)
+                            }
+                    else -> slot
+                }
+            }
+            persistMadeForYouLayout(revalidated)
         }
     }
 
@@ -483,17 +663,9 @@ constructor(
 
         _uiState.update { it.copy(isLoadingHome = true) }
 
-        val seedRecentTracks: List<AfinityTrack>
-        val seedRecentAlbums: List<AfinityAlbum>
-        val seedGenres: List<AfinityMusicGenre>
-
         coroutineScope {
             val recentTracksJob = async {
-                runCatching { musicRepository.getRecentlyPlayedTracks(limit = 20) }
-                    .getOrDefault(emptyList())
-            }
-            val recentPlayedJob = async {
-                runCatching { musicRepository.getRecentlyPlayedAlbums(limit = 15) }
+                runCatching { musicRepository.getRecentlyPlayedTracks(limit = RECENT_TRACKS_FETCH) }
                     .getOrDefault(emptyList())
             }
             val newestJob = async {
@@ -508,40 +680,35 @@ constructor(
                 runCatching { musicRepository.getMusicGenres(limit = 20) }.getOrDefault(emptyList())
             }
             val randomAlbumsJob = async {
-                runCatching { musicRepository.getRandomAlbums(limit = 15) }
+                runCatching { musicRepository.getRandomAlbums(limit = MFY_ALBUM_FETCH) }
                     .getOrDefault(emptyList())
             }
             val randomTracksJob = async {
-                runCatching { musicRepository.getRandomTracks(limit = 15) }
+                runCatching { musicRepository.getRandomTracks(limit = MFY_MIX_TRACKS) }
                     .getOrDefault(emptyList())
             }
 
-            seedRecentTracks = recentTracksJob.await()
-            seedRecentAlbums = recentPlayedJob.await()
-            seedGenres = genresJob.await()
+            launch { loadMadeForYou(randomAlbumsJob, randomTracksJob, mostPlayedJob, genresJob) }
+
+            launch {
+                val albums = randomAlbumsJob.await()
+                if (albums.isNotEmpty()) _uiState.update { it.copy(randomAlbums = albums) }
+            }
+
+            val recentTracks = recentTracksJob.await()
+            val seedRecentTracks = recentTracks.take(RECENT_TRACKS_DISPLAY)
+            val seedRecentAlbums = recentTracks.toRecentlyPlayedAlbums(15)
+            val seedGenres = genresJob.await()
 
             if (seedRecentTracks.isNotEmpty())
                 _uiState.update { it.copy(recentlyPlayedTracks = seedRecentTracks) }
-            val recentPlayed = recentPlayedJob.await()
-            if (recentPlayed.isNotEmpty())
-                _uiState.update { it.copy(recentlyPlayedAlbums = recentPlayed) }
+            if (seedRecentAlbums.isNotEmpty())
+                _uiState.update { it.copy(recentlyPlayedAlbums = seedRecentAlbums) }
             val newest = newestJob.await()
             if (newest.isNotEmpty()) _uiState.update { it.copy(latestAlbums = newest) }
             val mostPlayed = mostPlayedJob.await()
             if (mostPlayed.isNotEmpty()) _uiState.update { it.copy(mostPlayedAlbums = mostPlayed) }
-            val randomAlbums = randomAlbumsJob.await()
-            if (randomAlbums.isNotEmpty()) {
-                _uiState.update { it.copy(randomAlbums = randomAlbums) }
-                updateMadeForYouSnapshot()
-            }
-            val randomTracks = randomTracksJob.await()
-            if (randomTracks.isNotEmpty()) {
-                _uiState.update { it.copy(randomTracks = randomTracks) }
-                updateMadeForYouSnapshot()
-            }
-        }
 
-        coroutineScope {
             launch {
                 try {
                     val artistsFromAlbums = seedRecentAlbums.mapNotNull { a ->
@@ -555,13 +722,12 @@ constructor(
                             .distinctBy { it.first }
                             .shuffled()
                             .take(5)
-                    val artistsById =
-                        runCatching {
-                                musicRepository
-                                    .getArtistsByIds(pickedArtists.map { it.first })
-                                    .associateBy { it.id }
-                            }
-                            .getOrDefault(emptyMap())
+                    val artistsById = runCatching {
+                        musicRepository
+                            .getArtistsByIds(pickedArtists.map { it.first })
+                            .associateBy { it.id }
+                    }
+                        .getOrDefault(emptyMap())
 
                     val sections =
                         pickedArtists
@@ -618,32 +784,6 @@ constructor(
                 runCatching {
                     val a = musicRepository.getRandomArtists(limit = 20)
                     if (a.isNotEmpty()) _uiState.update { it.copy(randomArtists = a) }
-                }
-            }
-            launch {
-                try {
-                    val sections =
-                        seedGenres
-                            .shuffled()
-                            .take(2)
-                            .map { genre ->
-                                async {
-                                    runCatching {
-                                        val tracks =
-                                            musicRepository.getTracksByGenre(genre.name, limit = 15)
-                                        if (tracks.isNotEmpty()) genre.name to tracks else null
-                                    }
-                                        .getOrNull()
-                                }
-                            }
-                            .awaitAll()
-                            .filterNotNull()
-                    if (sections.isNotEmpty()) {
-                        _uiState.update { it.copy(songsByGenreSections = sections) }
-                        updateMadeForYouSnapshot()
-                    }
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to load songs by genre")
                 }
             }
             launch {
@@ -750,40 +890,6 @@ constructor(
                         _uiState.update { it.copy(newGenreReleases = sections) }
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load new genre releases")
-                }
-            }
-            launch {
-                try {
-                    val sections = mutableListOf<Pair<String, List<AfinityTrack>>>()
-                    val recentSeed =
-                        seedRecentAlbums.firstOrNull()
-                            ?: _uiState.value.mostPlayedAlbums.firstOrNull()
-                            ?: _uiState.value.latestAlbums.firstOrNull()
-                    if (recentSeed != null) {
-                        val tracks = musicRepository.getInstantMix(recentSeed.id, limit = 25)
-                        if (tracks.isNotEmpty())
-                            sections.add("${recentSeed.artist ?: recentSeed.name} Radio" to tracks)
-                    }
-                    seedGenres.take(2).forEach { genre ->
-                        runCatching {
-                            val genreAlbum =
-                                musicRepository
-                                    .getAlbumsByGenre(genre.name, limit = 5)
-                                    .randomOrNull()
-                            if (genreAlbum != null) {
-                                val tracks =
-                                    musicRepository.getInstantMix(genreAlbum.id, limit = 25)
-                                if (tracks.isNotEmpty())
-                                    sections.add("${genre.name} Radio" to tracks)
-                            }
-                        }
-                    }
-                    if (sections.isNotEmpty()) {
-                        _uiState.update { it.copy(radioSections = sections) }
-                        updateMadeForYouSnapshot()
-                    }
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to load radio sections")
                 }
             }
         }

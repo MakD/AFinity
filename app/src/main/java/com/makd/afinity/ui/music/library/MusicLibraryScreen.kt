@@ -88,6 +88,8 @@ import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityMusicGenre
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
+import com.makd.afinity.data.models.music.MadeForYouMixKind
+import com.makd.afinity.data.models.music.MadeForYouSlot
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.player.AudioService
@@ -109,6 +111,7 @@ import com.makd.afinity.ui.music.components.MusicGenreCard
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.theme.CardDimensions
+import com.makd.afinity.ui.utils.shimmerEffect
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -504,13 +507,6 @@ private fun TrackPlayShuffleRow(onPlayAll: () -> Unit, onShuffleAll: () -> Unit)
     }
 }
 
-private sealed class MadeForYouItem {
-    data class TrackMix(val title: String, val subtitle: String, val tracks: List<AfinityTrack>) :
-        MadeForYouItem()
-
-    data class AlbumItem(val album: AfinityAlbum) : MadeForYouItem()
-}
-
 @Composable
 private fun MusicHomeContent(
     uiState: MusicLibraryUiState,
@@ -529,7 +525,8 @@ private fun MusicHomeContent(
     modifier: Modifier = Modifier,
 ) {
     val isEmpty =
-        uiState.recentlyPlayedTracks.isEmpty() &&
+        uiState.madeForYouSlots.isEmpty() &&
+            uiState.recentlyPlayedTracks.isEmpty() &&
             uiState.recentlyPlayedAlbums.isEmpty() &&
             uiState.latestAlbums.isEmpty() &&
             uiState.mostPlayedAlbums.isEmpty() &&
@@ -558,45 +555,6 @@ private fun MusicHomeContent(
             repeat(3) { add(HomeRow.Radio(it)) }
         }
     }
-
-    val surpriseMeLabel = stringResource(R.string.music_mix_surprise_me)
-    val randomMixLabel = stringResource(R.string.music_mix_random)
-    val radioLabel = stringResource(R.string.music_mix_radio)
-    val instantMixLabel = stringResource(R.string.music_action_instant_mix)
-    val songsFmt = stringResource(R.string.music_mix_instant_mix_genre_fmt)
-
-    val madeForYouItems =
-        remember(uiState.madeForYouSnapshot) {
-            val snapshot = uiState.madeForYouSnapshot ?: return@remember emptyList()
-
-            val randomMix =
-                if (snapshot.randomTracks.isNotEmpty()) {
-                    listOf(
-                        MadeForYouItem.TrackMix(
-                            surpriseMeLabel,
-                            randomMixLabel,
-                            snapshot.randomTracks,
-                        )
-                    )
-                } else {
-                    emptyList()
-                }
-
-            val others = buildList {
-                snapshot.radioSections.forEach { (title, tracks) ->
-                    add(MadeForYouItem.TrackMix(title, radioLabel, tracks))
-                }
-                snapshot.songsByGenreSections.forEach { (genre, tracks) ->
-                    add(MadeForYouItem.TrackMix(songsFmt.format(genre), instantMixLabel, tracks))
-                }
-                snapshot.randomAlbums.forEach { album ->
-                    add(MadeForYouItem.AlbumItem(album))
-                }
-            }
-                .shuffled()
-
-            randomMix + others
-        }
 
     val shuffledRows =
         uiState.homeRowOrder
@@ -632,11 +590,11 @@ private fun MusicHomeContent(
     ) {
         item(key = "top_spacer") { Spacer(Modifier.height(16.dp)) }
 
-        if (madeForYouItems.isNotEmpty()) {
+        if (uiState.madeForYouSlots.isNotEmpty()) {
             item(key = "made_for_you_carousel") {
                 MadeForYouCarousel(
                     title = stringResource(R.string.music_section_made_for_you),
-                    items = madeForYouItems,
+                    slots = uiState.madeForYouSlots,
                     onPlayMix = onQueuePlay,
                     onAlbumClick = onAlbumClick,
                     modifier = Modifier.padding(bottom = 28.dp),
@@ -1001,16 +959,36 @@ private fun LibraryShortcutCard(
     }
 }
 
+@Composable
+private fun madeForYouTitle(slot: MadeForYouSlot.Mix): String =
+    when (slot.kind) {
+        MadeForYouMixKind.Random -> stringResource(R.string.music_mix_surprise_me)
+        MadeForYouMixKind.AlbumRadio ->
+            slot.seedName?.let { stringResource(R.string.music_mix_radio_title_fmt, it) }
+                ?: stringResource(R.string.music_mix_radio)
+        MadeForYouMixKind.GenreSongs ->
+            slot.seedName?.let { stringResource(R.string.music_mix_instant_mix_genre_fmt, it) }
+                ?: stringResource(R.string.music_action_instant_mix)
+    }
+
+@Composable
+private fun madeForYouSubtitle(kind: MadeForYouMixKind): String =
+    when (kind) {
+        MadeForYouMixKind.Random -> stringResource(R.string.music_mix_random)
+        MadeForYouMixKind.AlbumRadio -> stringResource(R.string.music_mix_radio)
+        MadeForYouMixKind.GenreSongs -> stringResource(R.string.music_action_instant_mix)
+    }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MadeForYouCarousel(
     title: String,
-    items: List<MadeForYouItem>,
+    slots: List<MadeForYouSlot>,
     onPlayMix: (List<AfinityTrack>) -> Unit,
     onAlbumClick: (AfinityAlbum) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (items.isEmpty()) return
+    if (slots.isEmpty()) return
     Column(modifier = modifier) {
         Text(
             text = title,
@@ -1025,7 +1003,7 @@ private fun MadeForYouCarousel(
         val density = LocalDensity.current
         val windowWidth = with(density) { containerSize.width.toDp() }
         val windowHeight = with(density) { containerSize.height.toDp() }
-        val state = rememberCarouselState { items.size }
+        val state = rememberCarouselState { slots.size }
 
         BoxWithConstraints(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             val itemSize =
@@ -1053,28 +1031,31 @@ private fun MadeForYouCarousel(
                             .maskClip(MaterialTheme.shapes.extraLarge)
                             .clip(MaterialTheme.shapes.extraLarge)
                 ) {
-                    when (val item = items[index]) {
-                        is MadeForYouItem.TrackMix -> {
+                    when (val slot = slots[index]) {
+                        is MadeForYouSlot.Mix -> {
                             MusicTracksCard(
-                                title = item.title,
-                                subtitle = item.subtitle,
-                                tracks = item.tracks,
-                                onPlay = { onPlayMix(item.tracks) },
+                                title = madeForYouTitle(slot),
+                                subtitle = madeForYouSubtitle(slot.kind),
+                                tracks = slot.tracks,
+                                onPlay = { onPlayMix(slot.tracks) },
                                 cardWidth = itemSize.width,
                                 cardHeight = itemSize.height,
                                 contentAlpha = contentAlpha,
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }
-                        is MadeForYouItem.AlbumItem -> {
+                        is MadeForYouSlot.Album -> {
                             HeroDiscoverCard(
-                                album = item.album,
-                                onAlbumClick = { onAlbumClick(item.album) },
+                                album = slot.album,
+                                onAlbumClick = { onAlbumClick(slot.album) },
                                 cardWidth = itemSize.width,
                                 cardHeight = itemSize.height,
                                 contentAlpha = contentAlpha,
                                 modifier = Modifier.fillMaxSize(),
                             )
+                        }
+                        is MadeForYouSlot.Pending -> {
+                            Box(modifier = Modifier.fillMaxSize().shimmerEffect())
                         }
                     }
                 }
@@ -1086,13 +1067,13 @@ private fun MadeForYouCarousel(
 @Composable
 private fun MusicTracksCard(
     title: String,
+    subtitle: String,
     tracks: List<AfinityTrack>,
     onPlay: () -> Unit,
     cardWidth: Dp,
     cardHeight: Dp,
     contentAlpha: () -> Float,
     modifier: Modifier = Modifier,
-    subtitle: String = "${tracks.size} tracks",
 ) {
     val imageUrl = tracks.firstOrNull()?.images?.primary?.toString()
     val blurHash = tracks.firstOrNull()?.images?.primaryImageBlurHash

@@ -8,6 +8,7 @@ import com.makd.afinity.data.models.extensions.toAfinityAlbum
 import com.makd.afinity.data.models.extensions.toAfinityArtist
 import com.makd.afinity.data.models.extensions.toAfinityPlaylist
 import com.makd.afinity.data.models.extensions.toAfinityTrack
+import com.makd.afinity.data.models.extensions.toRecentlyPlayedAlbums
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.PlaylistEntry
 import com.makd.afinity.data.models.music.AfinityAlbum
@@ -1012,26 +1013,7 @@ constructor(
         }
 
     override suspend fun getRecentlyPlayedAlbums(limit: Int): List<AfinityAlbum> =
-        apiCall(emptyList(), "Failed to fetch recently played albums") { apiClient, userId ->
-            val baseUrl = getBaseUrlInternal()
-            val response =
-                ItemsApi(apiClient)
-                    .getItems(
-                        userId = userId,
-                        includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
-                        filters = listOf(ItemFilter.IS_PLAYED),
-                        sortBy = listOf(ItemSortBy.DATE_PLAYED),
-                        sortOrder = listOf(SortOrder.DESCENDING),
-                        limit = limit,
-                        fields = FieldSets.MUSIC_ALBUM,
-                        enableUserData = true,
-                        recursive = true,
-                        enableTotalRecordCount = false,
-                    )
-            response.content.items.mapNotNull {
-                runCatching { it.toAfinityAlbum(baseUrl) }.getOrNull()
-            }
-        }
+        getRecentlyPlayedTracks(limit = limit * 3).toRecentlyPlayedAlbums(limit)
 
     override suspend fun getMostPlayedAlbums(limit: Int): List<AfinityAlbum> =
         apiCall(emptyList(), "Failed to fetch most played albums") { apiClient, userId ->
