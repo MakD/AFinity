@@ -13,7 +13,7 @@ import com.makd.afinity.data.models.livetv.AfinityProgram
 
 @Composable
 fun ProgramProgressBar(program: AfinityProgram, modifier: Modifier = Modifier) {
-    val progress = program.getProgressPercent() / 100f
+    val progress = program.getProgressPercent(rememberCurrentTime()) / 100f
 
     LinearProgressIndicator(
         progress = { progress },

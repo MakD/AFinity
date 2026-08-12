@@ -25,6 +25,8 @@ object FieldSets {
 
     val LIBRARY_GRID = listOf(ItemFields.RECURSIVE_ITEM_COUNT)
 
+    val PLAYLIST_GRID = listOf(ItemFields.CHILD_COUNT)
+
     val SEARCH_RESULTS =
         listOf(
             ItemFields.OVERVIEW,

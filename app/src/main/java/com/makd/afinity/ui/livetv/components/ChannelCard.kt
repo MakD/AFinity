@@ -140,11 +140,13 @@ fun ChannelCard(
                     )
                 }
 
-                if (showProgramOverlays && currentProgram?.isCurrentlyAiring() == true) {
+                val isAiring = currentProgram?.isCurrentlyAiring(rememberCurrentTime()) == true
+
+                if (showProgramOverlays && isAiring) {
                     Box(modifier = Modifier.align(Alignment.TopStart).padding(6.dp)) { LiveBadge() }
                 }
 
-                if (showProgramOverlays && currentProgram?.isCurrentlyAiring() == true) {
+                if (showProgramOverlays && isAiring) {
                     Box(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()) {
                         ProgramProgressBar(program = currentProgram)
                     }

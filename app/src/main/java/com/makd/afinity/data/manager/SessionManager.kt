@@ -45,6 +45,7 @@ data class Session(
     val user: User? = null,
     val server: Server? = null,
     val isAdmin: Boolean? = null,
+    val canAccessLiveTv: Boolean? = null,
     val userConfiguration: UserConfiguration? = null,
 )
 
@@ -173,6 +174,7 @@ constructor(
                         user = user,
                         server = server,
                         isAdmin = user?.isAdmin == true,
+                        canAccessLiveTv = user?.canAccessLiveTv,
                     )
 
                 securePrefsRepository.saveActiveSession(serverId, userId, resolvedUrl)
@@ -192,8 +194,9 @@ constructor(
                     try {
                         val userDto = UserApi(apiClient).getCurrentUser().content
                         val isAdmin = userDto.policy?.isAdministrator == true
+                        val canAccessLiveTv = userDto.policy?.enableLiveTvAccess
                         val refreshedUser =
-                            user?.copy(isAdmin = isAdmin)
+                            user?.copy(isAdmin = isAdmin, canAccessLiveTv = canAccessLiveTv)
                                 ?: User(
                                     id = userDto.id,
                                     name = userDto.name ?: "",
@@ -201,6 +204,7 @@ constructor(
                                     accessToken = accessToken,
                                     primaryImageTag = userDto.primaryImageTag,
                                     isAdmin = isAdmin,
+                                    canAccessLiveTv = canAccessLiveTv,
                                 )
                         databaseRepository.insertUser(refreshedUser)
                         val current = _currentSession.value
@@ -208,6 +212,7 @@ constructor(
                             _currentSession.value =
                                 current.copy(
                                     isAdmin = isAdmin,
+                                    canAccessLiveTv = canAccessLiveTv,
                                     user = refreshedUser,
                                     userConfiguration = userDto.configuration,
                                 )

@@ -49,6 +49,7 @@ constructor(
 
     private var refreshJob: Job? = null
     private var isScreenVisible = false
+    private val lastTabLoadAt = mutableMapOf<LiveTvTab, Long>()
 
     private val tabSwitchTrigger = MutableSharedFlow<LiveTvTab>(extraBufferCapacity = 1)
 
@@ -138,6 +139,7 @@ constructor(
 
     fun loadCategorizedPrograms() {
         viewModelScope.launch {
+            lastTabLoadAt[LiveTvTab.HOME] = System.currentTimeMillis()
             try {
                 _uiState.update { it.copy(isCategoriesLoading = true) }
                 val channels = allChannelsCache.ifEmpty {
@@ -236,6 +238,7 @@ constructor(
 
     fun loadEpgData() {
         viewModelScope.launch {
+            lastTabLoadAt[LiveTvTab.GUIDE] = System.currentTimeMillis()
             try {
                 if (_uiState.value.epgPrograms.isEmpty()) {
                     _uiState.update { it.copy(isEpgLoading = true) }
@@ -324,13 +327,16 @@ constructor(
         refreshJob?.cancel()
         refreshJob = viewModelScope.launch {
             while (isActive && isScreenVisible) {
-                delay(60_000L)
-                refreshCurrentTabData(_uiState.value.selectedTab)
+                delay(REFRESH_INTERVAL_MS)
+                refreshCurrentTabData(_uiState.value.selectedTab, force = true)
             }
         }
     }
 
-    private suspend fun refreshCurrentTabData(tab: LiveTvTab) {
+    private suspend fun refreshCurrentTabData(tab: LiveTvTab, force: Boolean = false) {
+        val age = System.currentTimeMillis() - (lastTabLoadAt[tab] ?: 0L)
+        if (!force && age < REFRESH_INTERVAL_MS) return
+        lastTabLoadAt[tab] = System.currentTimeMillis()
         try {
             when (tab) {
                 LiveTvTab.HOME -> loadCategorizedPrograms()
@@ -393,5 +399,9 @@ constructor(
     override fun onCleared() {
         super.onCleared()
         refreshJob?.cancel()
+    }
+
+    companion object {
+        private const val REFRESH_INTERVAL_MS = 60_000L
     }
 }

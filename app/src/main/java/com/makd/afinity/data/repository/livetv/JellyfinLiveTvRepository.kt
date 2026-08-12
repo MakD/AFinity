@@ -418,10 +418,12 @@ constructor(
             true
         }
 
-    override suspend fun hasLiveTvAccess(): Boolean =
-        apiCall(false, "Failed to check access for user") { apiClient, userId ->
+    override suspend fun hasLiveTvAccess(): Boolean {
+        sessionManager.currentSession.value?.canAccessLiveTv?.let { return it }
+        return apiCall(false, "Failed to check access for user") { apiClient, userId ->
             UserViewsApi(apiClient).getUserViews(userId = userId).content.items.any {
                 it.collectionType == CollectionType.LIVETV
             }
         }
+    }
 }

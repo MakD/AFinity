@@ -563,7 +563,7 @@ constructor(
         val layout = buildMadeForYouLayout(albums)
         val liveSlots =
             if (madeForYouServedFromCache) {
-                layout
+                _uiState.value.madeForYouSlots
             } else {
                 _uiState.update { it.copy(madeForYouSlots = layout) }
                 layout
@@ -640,7 +640,7 @@ constructor(
         if (!madeForYouServedFromCache) {
             backfillMadeForYouSlots()
             persistMadeForYouLayout(_uiState.value.madeForYouSlots)
-        } else {
+        } else if (resolved.isNotEmpty()) {
             val reserve = ArrayDeque(madeForYouReserve)
             val revalidated = liveSlots.mapNotNull { slot ->
                 when (slot) {

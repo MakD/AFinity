@@ -186,13 +186,13 @@ constructor(
 
         viewModelScope.launch {
             appDataRepository.latestMovies.collect { latestMovies ->
-                _uiState.update { it.copy(latestMovies = latestMovies) }
+                _uiState.update { it.copy(latestMovies = latestMovies.unplayedForDisplay()) }
             }
         }
 
         viewModelScope.launch {
             appDataRepository.latestTvSeries.collect { latestTvSeries ->
-                _uiState.update { it.copy(latestTvSeries = latestTvSeries) }
+                _uiState.update { it.copy(latestTvSeries = latestTvSeries.unplayedForDisplay()) }
             }
         }
 
@@ -240,7 +240,9 @@ constructor(
 
         viewModelScope.launch {
             appDataRepository.separateMovieLibrarySections.collect { sections ->
-                _uiState.update { it.copy(separateMovieLibrarySections = sections) }
+                _uiState.update {
+                    it.copy(separateMovieLibrarySections = sectionsForDisplay(sections))
+                }
             }
         }
 
@@ -252,7 +254,9 @@ constructor(
 
         viewModelScope.launch {
             appDataRepository.separateTvLibrarySections.collect { sections ->
-                _uiState.update { it.copy(separateTvLibrarySections = sections) }
+                _uiState.update {
+                    it.copy(separateTvLibrarySections = sectionsForDisplay(sections))
+                }
             }
         }
 
@@ -488,6 +492,17 @@ constructor(
             }
         }
     }
+
+    private fun <T : AfinityItem> List<T>.unplayedForDisplay(): List<T> =
+        filter { !it.played }.take(AppDataRepository.LATEST_DISPLAYED)
+
+    private fun <T : AfinityItem> sectionsForDisplay(
+        sections: List<Pair<AfinityCollection, List<T>>>
+    ): List<Pair<AfinityCollection, List<T>>> =
+        sections.mapNotNull { (library, items) ->
+            val visible = items.unplayedForDisplay()
+            if (visible.isEmpty()) null else library to visible
+        }
 
     private fun patchUiStateItem(updatedItem: AfinityItem) {
         _uiState.update { state ->

@@ -1,5 +1,6 @@
 package com.makd.afinity.data.models.extensions
 
+import android.net.Uri
 import androidx.core.net.toUri
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.AfinityProgram
@@ -27,6 +28,7 @@ import com.makd.afinity.data.models.media.toAfinityTrickplayInfo
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.BaseItemPerson
+import org.jellyfin.sdk.model.api.ImageFormat
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.LocationType
 import org.jellyfin.sdk.model.api.PlayAccess
@@ -318,7 +320,7 @@ fun BaseItemDto.toAfinityVideoPlaylist(baseUrl: String): AfinityVideoPlaylist {
         runtimeTicks = runTimeTicks ?: 0,
         playbackPositionTicks = userData?.playbackPositionTicks ?: 0,
         unplayedItemCount = userData?.unplayedItemCount,
-        images = toAfinityImages(baseUrl),
+        images = toAfinityImages(baseUrl, ImageFormat.JPG),
         chapters = toAfinityChapters(),
         items = emptyList(),
         itemCount = childCount,
@@ -357,8 +359,11 @@ fun BaseItemDto.toAfinityPersonDetail(baseUrl: String): AfinityPersonDetail {
     )
 }
 
-fun BaseItemDto.toAfinityImages(baseUrl: String): AfinityImages {
+fun BaseItemDto.toAfinityImages(baseUrl: String, imageFormat: ImageFormat? = null): AfinityImages {
     val baseUri = baseUrl.toUri()
+
+    fun Uri.Builder.withFormat(): Uri.Builder =
+        if (imageFormat == null) this else appendQueryParameter("format", imageFormat.serialName)
 
     return AfinityImages(
         primary =
@@ -367,6 +372,7 @@ fun BaseItemDto.toAfinityImages(baseUrl: String): AfinityImages {
                     .buildUpon()
                     .appendEncodedPath("Items/$id/Images/Primary")
                     .appendQueryParameter("tag", tag)
+                    .withFormat()
                     .build()
             },
         thumb =
@@ -375,6 +381,7 @@ fun BaseItemDto.toAfinityImages(baseUrl: String): AfinityImages {
                     .buildUpon()
                     .appendEncodedPath("Items/$id/Images/Thumb")
                     .appendQueryParameter("tag", tag)
+                    .withFormat()
                     .build()
             },
         backdrop =
@@ -383,6 +390,7 @@ fun BaseItemDto.toAfinityImages(baseUrl: String): AfinityImages {
                     .buildUpon()
                     .appendEncodedPath("Items/$id/Images/Backdrop/0")
                     .appendQueryParameter("tag", tag)
+                    .withFormat()
                     .build()
             },
         logo =

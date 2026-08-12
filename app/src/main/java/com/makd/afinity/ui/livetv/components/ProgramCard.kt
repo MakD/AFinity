@@ -47,7 +47,7 @@ fun ProgramCard(
 
     val program = programWithChannel.program
     val channel = programWithChannel.channel
-    val isLive = program.isCurrentlyAiring()
+    val isLive = program.isCurrentlyAiring(rememberCurrentTime())
 
     Column(modifier = modifier.width(cardWidth)) {
         Card(

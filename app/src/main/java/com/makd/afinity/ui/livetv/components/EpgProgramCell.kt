@@ -41,7 +41,7 @@ fun EpgProgramCell(
 ) {
     val timePattern = stringResource(R.string.livetv_time_pattern)
     val timeFormatter = DateTimeFormatter.ofPattern(timePattern)
-    val isLive = program.isCurrentlyAiring()
+    val isLive = program.isCurrentlyAiring(rememberCurrentTime())
 
     val programStart = program.startDate ?: return
     val programEnd = program.endDate ?: return

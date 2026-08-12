@@ -7,6 +7,7 @@ import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.ImageFormat
 import org.jellyfin.sdk.model.api.ImageType
 import java.util.UUID
 
@@ -121,6 +122,6 @@ fun BaseItemDto.toAfinityPlaylist(baseUrl: String): AfinityPlaylist {
         songCount = childCount,
         runtimeTicks = runTimeTicks ?: 0L,
         favorite = userData?.isFavorite == true,
-        images = toAfinityImages(baseUrl),
+        images = toAfinityImages(baseUrl, ImageFormat.JPG),
     )
 }

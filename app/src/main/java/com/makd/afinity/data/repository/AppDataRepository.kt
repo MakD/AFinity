@@ -761,31 +761,28 @@ constructor(
             _separateMovieLibrarySections.value =
                 movieResults
                     .filter { it.second.isNotEmpty() }
-                    .map { (library, movies) -> library to movies.filter { !it.played }.take(15) }
+                    .map { (library, movies) -> library to movies.take(LATEST_RETAINED) }
 
             _separateTvLibrarySections.value =
                 showResults
                     .filter { it.second.isNotEmpty() }
-                    .map { (library, shows) -> library to shows.filter { !it.played }.take(15) }
+                    .map { (library, shows) -> library to shows.take(LATEST_RETAINED) }
 
-            val allMoviesIncludingWatched = movieResults.flatMap { it.second }
-            val allSeriesIncludingWatched = showResults.flatMap { it.second }
-
-            val allLatestMovies = allMoviesIncludingWatched.filter { !it.played }
-            val allLatestSeries = allSeriesIncludingWatched.filter { !it.played }
+            val allLatestMovies = movieResults.flatMap { it.second }
+            val allLatestSeries = showResults.flatMap { it.second }
 
             val latestMovies =
                 if (useJellyfinDefault) {
-                    allLatestMovies.sortedByDescending { it.dateCreated }.take(15)
+                    allLatestMovies.sortedByDescending { it.dateCreated }.take(LATEST_RETAINED)
                 } else {
-                    allLatestMovies.sortedByDescending { it.premiereDate }.take(15)
+                    allLatestMovies.sortedByDescending { it.premiereDate }.take(LATEST_RETAINED)
                 }
 
             val latestTvSeries =
                 if (useJellyfinDefault) {
-                    allLatestSeries.take(15)
+                    allLatestSeries.take(LATEST_RETAINED)
                 } else {
-                    allLatestSeries.sortedByDescending { it.premiereDate }.take(15)
+                    allLatestSeries.sortedByDescending { it.premiereDate }.take(LATEST_RETAINED)
                 }
 
             Pair(latestMovies, latestTvSeries)
@@ -867,14 +864,6 @@ constructor(
         updateItemInCaches(updatedItem)
         mediaRepository.patchItemImages(updatedItem)
         _heroCarouselItems.update { it.withPatchedImages(updatedItem) }
-
-        val session = sessionManager.currentSession.value ?: return
-        if (session.serverId.isBlank()) return
-        try {
-            homeCacheRepository.patchItem("${session.serverId}_${session.userId}", updatedItem)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to patch persisted home cache for $itemId")
-        }
     }
 
     suspend fun updateItemInCaches(updatedItem: AfinityItem) {
@@ -884,22 +873,22 @@ constructor(
 
         when (updatedItem) {
             is AfinityMovie -> {
-                _latestMovies.update { it.patchedOrPruned(updatedItem) }
+                _latestMovies.update { it.replacedWith(updatedItem) }
                 _separateMovieLibrarySections.update { sections ->
                     if (sections.none { (_, movies) -> movies.any { it.id == updatedItem.id } }) {
                         sections
                     } else {
-                        sections.map { (lib, movies) -> lib to movies.patchedOrPruned(updatedItem) }
+                        sections.map { (lib, movies) -> lib to movies.replacedWith(updatedItem) }
                     }
                 }
             }
             is AfinityShow -> {
-                _latestTvSeries.update { it.patchedOrPruned(updatedItem) }
+                _latestTvSeries.update { it.replacedWith(updatedItem) }
                 _separateTvLibrarySections.update { sections ->
                     if (sections.none { (_, shows) -> shows.any { it.id == updatedItem.id } }) {
                         sections
                     } else {
-                        sections.map { (lib, shows) -> lib to shows.patchedOrPruned(updatedItem) }
+                        sections.map { (lib, shows) -> lib to shows.replacedWith(updatedItem) }
                     }
                 }
             }
@@ -925,6 +914,14 @@ constructor(
                 is AfinityBoxSet -> data.copy(boxSets = data.boxSets.replacedWith(updatedItem))
                 else -> data
             }
+        }
+
+        val session = sessionManager.currentSession.value ?: return
+        if (session.serverId.isBlank()) return
+        try {
+            homeCacheRepository.patchItem("${session.serverId}_${session.userId}", updatedItem)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to patch persisted home cache for ${updatedItem.id}")
         }
     }
 
@@ -1011,13 +1008,6 @@ constructor(
     private fun <T : AfinityItem> List<T>.upserted(item: T, present: Boolean): List<T> =
         if (present) (filterNot { it.id == item.id } + item).sortedBy { it.name }
         else filterNot { it.id == item.id }
-
-    private fun <T : AfinityItem> List<T>.patchedOrPruned(item: T): List<T> =
-        when {
-            none { it.id == item.id } -> this
-            item.played -> filter { it.id != item.id }
-            else -> map { if (it.id == item.id) item else it }
-        }
 
     private fun <T : AfinityItem> List<T>.replacedWith(item: T): List<T> =
         if (none { it.id == item.id }) this else map { if (it.id == item.id) item else it }
@@ -1150,6 +1140,11 @@ constructor(
         } catch (e: Exception) {
             Timber.e(e, "Failed to clear database caches")
         }
+    }
+
+    companion object {
+        const val LATEST_RETAINED = 25
+        const val LATEST_DISPLAYED = 15
     }
 }
 

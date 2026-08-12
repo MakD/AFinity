@@ -165,7 +165,7 @@ object NetworkModule {
                 )
                 .apply {
                     maxRequests = 45
-                    maxRequestsPerHost = 10
+                    maxRequestsPerHost = 6
                 }
 
         val connectionPool =
@@ -205,9 +205,7 @@ object NetworkModule {
                         Regex("(?i)(api_key|token|accessToken)=[^&\\s]+"),
                         "$1=[REDACTED]",
                     )
-                if (sanitizedMessage.contains("ERROR") || sanitizedMessage.contains("FAILED")) {
-                    Timber.tag("Jellyfin-HTTP").d(sanitizedMessage)
-                }
+                Timber.tag("Jellyfin-HTTP").d(sanitizedMessage)
             }
                 .apply {
                     level = HttpLoggingInterceptor.Level.BASIC
@@ -233,8 +231,8 @@ object NetworkModule {
     ): OkHttpClient {
         val dispatcher =
             Dispatcher().apply {
-                maxRequests = 64
-                maxRequestsPerHost = 16
+                maxRequests = 16
+                maxRequestsPerHost = 4
             }
         return baseOkHttpClient
             .newBuilder()

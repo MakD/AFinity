@@ -29,9 +29,8 @@ data class AfinityProgram(
             return java.time.Duration.between(startDate, endDate).toMinutes()
         }
 
-    fun getProgressPercent(): Float {
+    fun getProgressPercent(now: LocalDateTime = LocalDateTime.now()): Float {
         if (startDate == null || endDate == null) return 0f
-        val now = LocalDateTime.now()
         if (now.isBefore(startDate)) return 0f
         if (now.isAfter(endDate)) return 100f
         val totalDuration = java.time.Duration.between(startDate, endDate).toMillis()
@@ -39,9 +38,8 @@ data class AfinityProgram(
         return (elapsed.toFloat() / totalDuration.toFloat() * 100f).coerceIn(0f, 100f)
     }
 
-    fun isCurrentlyAiring(): Boolean {
+    fun isCurrentlyAiring(now: LocalDateTime = LocalDateTime.now()): Boolean {
         if (startDate == null || endDate == null) return false
-        val now = LocalDateTime.now()
         return now.isAfter(startDate) && now.isBefore(endDate)
     }
 }

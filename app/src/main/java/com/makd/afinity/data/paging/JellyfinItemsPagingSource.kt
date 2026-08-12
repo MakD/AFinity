@@ -8,6 +8,7 @@ import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.data.models.media.toItemFilterCriteria
+import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
 import timber.log.Timber
 import java.util.UUID
@@ -60,6 +61,9 @@ class JellyfinItemsPagingSource(
                         nameStartsWith = nameStartsWith,
                         recursive = true,
                         criteria = filters.toItemFilterCriteria(studioNames),
+                        fields =
+                            if (libraryType == CollectionType.Playlists) FieldSets.PLAYLIST_GRID
+                            else null,
                     )
                     .getOrThrow()
 
