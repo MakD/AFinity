@@ -8,6 +8,7 @@ import com.makd.afinity.data.models.livetv.AfinityProgram
 import com.makd.afinity.data.models.livetv.ChannelType
 import com.makd.afinity.data.models.livetv.LiveTvPlaybackInfo
 import com.makd.afinity.data.repository.JellyfinApiInvoker
+import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.di.NetworkModule
 import com.makd.afinity.util.MediaCapabilities
@@ -46,6 +47,7 @@ class JellyfinLiveTvRepository
 @Inject
 constructor(
     private val sessionManager: SessionManager,
+    private val mediaRepository: MediaRepository,
     private val userDataRepository: UserDataRepository,
     private val apiInvoker: JellyfinApiInvoker,
     private val jellyfin: Jellyfin,
@@ -419,7 +421,8 @@ constructor(
         }
 
     override suspend fun hasLiveTvAccess(): Boolean {
-        sessionManager.currentSession.value?.canAccessLiveTv?.let { return it }
+        if (sessionManager.currentSession.value?.canAccessLiveTv == false) return false
+        mediaRepository.hasLiveTvLibrary.value?.let { return it }
         return apiCall(false, "Failed to check access for user") { apiClient, userId ->
             UserViewsApi(apiClient).getUserViews(userId = userId).content.items.any {
                 it.collectionType == CollectionType.LIVETV

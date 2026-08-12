@@ -56,6 +56,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -307,6 +308,9 @@ constructor(
     private val _libraries = MutableStateFlow<List<AfinityCollection>>(emptyList())
     override val libraries: Flow<List<AfinityCollection>> = _libraries.asStateFlow()
 
+    private val _hasLiveTvLibrary = MutableStateFlow<Boolean?>(null)
+    override val hasLiveTvLibrary: StateFlow<Boolean?> = _hasLiveTvLibrary.asStateFlow()
+
     override fun patchItemImages(updatedItem: AfinityItem) {
         _continueWatching.update { it.withPatchedImages(updatedItem) }
         _nextUp.update { it.withPatchedImages(updatedItem) }
@@ -368,17 +372,17 @@ constructor(
                     PagingConfig(pageSize = 50, enablePlaceholders = false, initialLoadSize = 50)
             ) {
                 JellyfinItemsPagingSource(
-                    mediaRepository = this,
-                    parentId = parentId,
-                    libraryType = libraryType,
-                    sortBy = sortBy,
-                    sortDescending = sortDescending,
-                    filters = filters,
-                    baseUrl = getBaseUrl(),
-                    nameStartsWith = nameStartsWith,
-                    studioNames = studioNames,
-                    includeItemTypes = includeItemTypes,
-                )
+                        mediaRepository = this,
+                        parentId = parentId,
+                        libraryType = libraryType,
+                        sortBy = sortBy,
+                        sortDescending = sortDescending,
+                        filters = filters,
+                        baseUrl = getBaseUrl(),
+                        nameStartsWith = nameStartsWith,
+                        studioNames = studioNames,
+                        includeItemTypes = includeItemTypes,
+                    )
                     .also { source -> onSourceCreated?.invoke(source) }
             }
             .flow
@@ -441,11 +445,14 @@ constructor(
 
     override suspend fun getLibrariesResult(): Result<List<AfinityCollection>> =
         apiInvoker.apiResult { apiClient, userId ->
+            val views = UserViewsApi(apiClient).getUserViews(userId = userId).content.items
+
+            _hasLiveTvLibrary.value = views.any {
+                it.collectionType == org.jellyfin.sdk.model.api.CollectionType.LIVETV
+            }
+
             val libraries =
-                UserViewsApi(apiClient)
-                    .getUserViews(userId = userId)
-                    .content
-                    .items
+                views
                     .filter {
                         it.collectionType != org.jellyfin.sdk.model.api.CollectionType.LIVETV
                     }
@@ -1871,7 +1878,7 @@ constructor(
             val episodesBySeason =
                 episodesForSelection(seriesId)
                     .groupBy { it.parentIndexNumber }
-                    .toSortedMap(compareBy<Int>({ it == 0 }, { it }))
+                    .toSortedMap(compareBy({ it == 0 }, { it }))
                     .mapValues { (_, episodes) -> episodes.sortedBy { it.indexNumber } }
 
             var firstEpisodeOfSeries: AfinityEpisode? = null
