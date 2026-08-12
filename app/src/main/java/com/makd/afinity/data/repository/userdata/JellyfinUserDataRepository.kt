@@ -222,6 +222,7 @@ constructor(
                         startIndex = startIndex,
                         fields = listOf(ItemFields.OVERVIEW),
                         enableUserData = true,
+                        enableTotalRecordCount = false,
                     )
 
                 response.content?.items?.mapNotNull { it.id } ?: emptyList()

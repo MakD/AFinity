@@ -912,6 +912,7 @@ constructor(
         if (appDataRepository.lastUserDataChangedAt.value > lastHomeRefreshedAt) {
             viewModelScope.launch {
                 appDataRepository.refreshPlaybackSections()
+                appDataRepository.refreshLibrarySections()
                 lastHomeRefreshedAt = System.currentTimeMillis()
             }
         }

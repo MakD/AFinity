@@ -207,6 +207,7 @@ constructor(
                                         ),
                                     enableImages = true,
                                     enableUserData = true,
+                                    enableTotalRecordCount = false,
                                 )
                                 .content
                                 ?.items
@@ -544,6 +545,7 @@ constructor(
                                                         ),
                                                     enableImages = true,
                                                     enableUserData = true,
+                                                    enableTotalRecordCount = false,
                                                 )
                                                 .content
                                                 ?.items
@@ -565,6 +567,7 @@ constructor(
                                                 fields = listOf(ItemFields.OVERVIEW),
                                                 enableImages = true,
                                                 enableUserData = true,
+                                                enableTotalRecordCount = false,
                                             )
                                             .content
                                             ?.items

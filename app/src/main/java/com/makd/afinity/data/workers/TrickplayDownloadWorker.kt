@@ -113,6 +113,7 @@ constructor(
                                 fields = listOf(ItemFields.TRICKPLAY, ItemFields.OVERVIEW),
                                 enableImages = false,
                                 enableUserData = false,
+                                enableTotalRecordCount = false,
                             )
                             .content
                             ?.items

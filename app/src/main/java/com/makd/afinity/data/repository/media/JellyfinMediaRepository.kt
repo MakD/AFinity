@@ -262,6 +262,7 @@ constructor(
                         fields = FieldSets.CACHE_CONTINUE_WATCHING,
                         enableImages = true,
                         enableUserData = true,
+                        enableTotalRecordCount = false,
                     )
 
                 val continueWatchingItems =
@@ -332,6 +333,7 @@ constructor(
                         enableUserData = true,
                         enableResumable = false,
                         enableRewatching = false,
+                        enableTotalRecordCount = false,
                     )
 
                 val nextUpEpisodes =
@@ -805,7 +807,12 @@ constructor(
     override suspend fun getItem(itemId: UUID, fields: List<ItemFields>?): BaseItemDto? =
         apiCall(null, "Failed to get item with id: $itemId") { apiClient, userId ->
             ItemsApi(apiClient)
-                .getItems(userId = userId, ids = listOf(itemId), fields = fields)
+                .getItems(
+                    userId = userId,
+                    ids = listOf(itemId),
+                    fields = fields,
+                    enableTotalRecordCount = false,
+                )
                 .content
                 .items
                 .firstOrNull()
@@ -827,6 +834,7 @@ constructor(
                     fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                     enableImages = true,
                     enableUserData = true,
+                    enableTotalRecordCount = false,
                 )
                 .content
                 .items
@@ -995,6 +1003,7 @@ constructor(
                     fields = FieldSets.MEDIA_ITEM_CARDS,
                     enableImages = true,
                     enableUserData = true,
+                    enableTotalRecordCount = false,
                 )
                 .content
                 .items
@@ -1018,6 +1027,7 @@ constructor(
                     fields = FieldSets.MEDIA_ITEM_CARDS,
                     enableImages = true,
                     enableUserData = true,
+                    enableTotalRecordCount = false,
                 )
                 .content
                 .items
@@ -1381,6 +1391,7 @@ constructor(
                     fields = fields ?: FieldSets.SEARCH_RESULTS,
                     enableImages = true,
                     enableUserData = true,
+                    enableTotalRecordCount = false,
                 )
                 .content
                 .items
@@ -1446,6 +1457,7 @@ constructor(
                     enableUserData = true,
                     recursive = true,
                     limit = 150,
+                    enableTotalRecordCount = false,
                 )
                 .content
                 .items
@@ -1585,6 +1597,7 @@ constructor(
                     enableImages = true,
                     imageTypeLimit = 1,
                     enableImageTypes = listOf(ImageType.THUMB),
+                    enableTotalRecordCount = false,
                 )
 
         Timber.d("Fetched ${response.content.items.size} studios server-wide")
@@ -1656,6 +1669,7 @@ constructor(
                     fields = FieldSets.MEDIA_ITEM_CARDS,
                     enableImages = true,
                     enableUserData = false,
+                    enableTotalRecordCount = false,
                 )
 
             val qualifying =
@@ -1684,6 +1698,7 @@ constructor(
                                             enableImages = true,
                                             enableUserData = false,
                                             sortBy = listOf(ItemSortBy.PRODUCTION_YEAR),
+                                            enableTotalRecordCount = false,
                                         )
                                     val children =
                                         childrenResponse.content.items.mapNotNull {
@@ -1723,6 +1738,7 @@ constructor(
                 enableImages = false,
                 enableUserData = false,
                 limit = null,
+                enableTotalRecordCount = false,
             )
 
         val allBoxSets = boxSetsResponse.content.items
@@ -1745,6 +1761,7 @@ constructor(
                                         fields = emptyList(),
                                         enableImages = false,
                                         enableUserData = false,
+                                        enableTotalRecordCount = false,
                                     )
 
                                 val childItemIds = childrenResponse.content.items.map { it.id }
@@ -1785,6 +1802,7 @@ constructor(
                         fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                         enableImages = true,
                         enableUserData = true,
+                        enableTotalRecordCount = false,
                     )
                     .content
                     .items

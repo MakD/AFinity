@@ -546,6 +546,7 @@ constructor(
     fun updateItem(updatedItem: AfinityItem) {
         _watchAgain.update { items ->
             if (items.none { it.id == updatedItem.id }) items
+            else if (!updatedItem.played) items.filterNot { it.id == updatedItem.id }
             else items.map { if (it.id == updatedItem.id) updatedItem else it }
         }
         _criticsChoice.update { items ->
@@ -868,7 +869,8 @@ constructor(
             if (bypassCache) null
             else homeCacheRepository.getItems(cacheKey, baseUrl, recentCacheTTL)
         if (!cachedItems.isNullOrEmpty()) {
-            return if (cachedItems.size < WATCH_AGAIN_MIN_ITEMS) emptyList() else cachedItems
+            val playedOnly = cachedItems.filter { it.played }
+            return if (playedOnly.size < WATCH_AGAIN_MIN_ITEMS) emptyList() else playedOnly
         }
 
         val (watchedItems, watchedBoxSets) =

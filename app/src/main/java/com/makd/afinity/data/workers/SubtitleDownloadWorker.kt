@@ -110,6 +110,7 @@ constructor(
                                 fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.MEDIA_STREAMS),
                                 enableImages = false,
                                 enableUserData = false,
+                                enableTotalRecordCount = false,
                             )
                             .content
                             ?.items
