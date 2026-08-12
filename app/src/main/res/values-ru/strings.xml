@@ -1606,4 +1606,11 @@
     </plurals>
     <string name="music_playlist_empty_title">Этот плейлист пуст</string>
     <string name="music_playlist_empty_message">Добавьте песни, чтобы начать прослушивание.</string>
+    <string name="admin_refresh_mode_scan">Сканирование новых и измененных файлов</string>
+    <string name="admin_refresh_mode_scan_desc">Повторное чтение файлов на диске. Обращение к сети идет только при наличии изменений.</string>
+    <string name="admin_refresh_mode_missing">Поиск отсутствующих метаданных</string>
+    <string name="admin_refresh_mode_missing_desc">Запрос любых недостающих данных у ваших провайдеров. Существующие данные сохраняются.</string>
+    <string name="admin_refresh_mode_replace">Замена всех метаданных</string>
+    <string name="admin_refresh_mode_replace_desc">Повторная загрузка все данных, существующие перезаписываются. Ручные изменения будут утеряны.</string>
+    <string name="music_mix_radio_title_fmt">Радио «%1$s»</string>
 </resources>
