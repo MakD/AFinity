@@ -325,6 +325,12 @@ constructor(
                 .drop(1)
                 .collect { newUrl ->
                     if (!_isInitialDataLoaded.value) return@collect
+                    if (sessionManager.isSwitchingSession.value) {
+                        Timber.d(
+                            "Server base URL changed to $newUrl during a session switch — deferring to the session reload"
+                        )
+                        return@collect
+                    }
                     Timber.d(
                         "Server base URL changed to $newUrl — clearing all URL-dependent caches and reloading"
                     )

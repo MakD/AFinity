@@ -77,6 +77,8 @@ import kotlin.time.Duration.Companion.seconds
 
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class AudnexusClient
 
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class ProberClient
+
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
@@ -389,6 +391,44 @@ object NetworkModule {
     @Singleton
     fun provideApiClient(jellyfin: Jellyfin): ApiClient {
         return jellyfin.createApi(httpClientOptions = JELLYFIN_HTTP_OPTIONS)
+    }
+
+    @Provides
+    @Singleton
+    @ProberClient
+    fun provideProberOkHttpClient(baseOkHttpClient: OkHttpClient): OkHttpClient =
+        baseOkHttpClient
+            .newBuilder()
+            .dispatcher(
+                Dispatcher(
+                        Executors.newCachedThreadPool { runnable ->
+                            Thread(runnable, "Jellyfin-Prober").apply { isDaemon = false }
+                        }
+                    )
+                    .apply {
+                        maxRequests = 8
+                        maxRequestsPerHost = 4
+                    }
+            )
+            .build()
+
+    @Provides
+    @Singleton
+    @ProberClient
+    fun provideProberJellyfin(
+        @ApplicationContext context: Context,
+        clientInfo: ClientInfo,
+        deviceInfo: DeviceInfo,
+        @ProberClient proberOkHttpClient: OkHttpClient,
+    ): Jellyfin {
+        val proberFactory = OkHttpFactory(base = proberOkHttpClient)
+        return createJellyfin {
+            this.context = context
+            this.clientInfo = clientInfo
+            this.deviceInfo = deviceInfo
+            this.apiClientFactory = proberFactory
+            this.socketConnectionFactory = proberFactory
+        }
     }
 
     @Provides

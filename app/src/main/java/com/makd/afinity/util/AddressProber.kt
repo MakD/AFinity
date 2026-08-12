@@ -4,6 +4,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
@@ -78,9 +79,13 @@ suspend fun probeAddresses(
                 val probeStart = System.currentTimeMillis()
                 val success = validator(address)
                 val elapsed = System.currentTimeMillis() - probeStart
-                Timber.d(
-                    "$logTag: Probe $address [$tag] → ${if (success) "OK" else "FAIL"} (${elapsed}ms)"
-                )
+                val outcome =
+                    when {
+                        success -> "OK"
+                        !isActive -> "ABANDONED"
+                        else -> "FAIL"
+                    }
+                Timber.d("$logTag: Probe $address [$tag] → $outcome (${elapsed}ms)")
                 results.send(address to success)
             }
         }

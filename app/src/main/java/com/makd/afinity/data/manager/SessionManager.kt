@@ -12,6 +12,7 @@ import com.makd.afinity.data.repository.server.ServerAddressResolver
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.di.NetworkModule
+import com.makd.afinity.di.ProberClient
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -63,6 +64,7 @@ constructor(
     private val serverAddressResolver: ServerAddressResolver,
     private val okHttpFactory: OkHttpFactory,
     private val jellyfin: Jellyfin,
+    @param:ProberClient private val proberJellyfin: Jellyfin,
     @param:ApplicationContext private val context: Context,
     @ApplicationScope private val sessionScope: CoroutineScope,
 ) {
@@ -101,7 +103,7 @@ constructor(
                 val validator: suspend (String) -> Boolean = { address ->
                     try {
                         val tempClient =
-                            jellyfin.createApi(baseUrl = address).also {
+                            proberJellyfin.createApi(baseUrl = address).also {
                                 it.update(accessToken = accessToken)
                             }
                         val response =

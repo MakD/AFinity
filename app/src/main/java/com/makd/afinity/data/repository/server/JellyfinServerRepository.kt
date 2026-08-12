@@ -4,6 +4,7 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.di.ApplicationScope
+import com.makd.afinity.di.ProberClient
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -42,6 +43,7 @@ class JellyfinServerRepository
 @Inject
 constructor(
     private val jellyfin: Jellyfin,
+    @param:ProberClient private val proberJellyfin: Jellyfin,
     private val apiClient: ApiClient,
     private val sessionManagerProvider: Provider<SessionManager>,
     private val databaseRepository: DatabaseRepository,
@@ -311,7 +313,7 @@ constructor(
             try {
                 val result =
                     withTimeoutOrNull(timeoutMs) {
-                        val testClient = jellyfin.createApi(baseUrl = address)
+                        val testClient = proberJellyfin.createApi(baseUrl = address)
                         val systemApi = SystemApi(testClient)
                         systemApi.getPingSystem()
                         true
