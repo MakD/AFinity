@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -238,18 +239,21 @@ private fun MainContent(
     var sawLogin by rememberSaveable { mutableStateOf(false) }
     // 0 = unresolved, 1 = start at home, 2 = start at onboarding hub
     var startDecision by rememberSaveable { mutableStateOf(0) }
+    var navMounted by remember { mutableStateOf(false) }
 
-    LaunchedEffect(authState) {
+    LaunchedEffect(authState, startDecision) {
         when (authState) {
             is AuthenticationState.NotAuthenticated -> {
                 sawLogin = true
                 startDecision = 0
+                navMounted = false
             }
             is AuthenticationState.Authenticated -> {
                 if (startDecision == 0) {
                     startDecision =
                         if (sawLogin && !viewModel.isOnboardingFirstRunDone()) 2 else 1
                 }
+                if (startDecision != 0) navMounted = true
             }
             else -> {}
         }
@@ -266,7 +270,7 @@ private fun MainContent(
             LoginScreen(onLoginSuccess = {}, modifier = modifier, widthSizeClass = widthSizeClass)
         } else {
             Box(modifier = modifier) {
-                if (authState is AuthenticationState.Authenticated && startDecision != 0) {
+                if (navMounted) {
                     MainNavigation(
                         modifier = Modifier.fillMaxSize(),
                         updateManager = updateManager,

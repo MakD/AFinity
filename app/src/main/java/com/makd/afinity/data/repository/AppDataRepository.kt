@@ -958,10 +958,10 @@ constructor(
                 val mediaDeferred = async { mediaRepository.getFavoriteMedia() }
                 val peopleDeferred = async { mediaRepository.getFavoritePeople() }
                 val channelsDeferred = async {
-                    try {
-                        liveTvRepository.getChannels(isFavorite = true)
-                    } catch (_: Exception) {
+                    if (sessionManager.currentSession.value?.canAccessLiveTv == false) {
                         emptyList()
+                    } else {
+                        liveTvRepository.getChannels(isFavorite = true)
                     }
                 }
                 val albumsDeferred = async {

@@ -3,12 +3,11 @@ package com.makd.afinity.data.repository.jellyseerr
 import com.makd.afinity.data.database.dao.JellyseerrDao
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import com.makd.afinity.util.NetworkLocality
+import com.makd.afinity.util.pingUrl
 import com.makd.afinity.util.probeAddresses
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -61,20 +60,14 @@ constructor(
     }
 
     private suspend fun pingService(address: String, timeoutMs: Long = 2000L): Boolean {
-        return withContext(Dispatchers.IO) {
-            try {
-                val result = withTimeoutOrNull(timeoutMs) {
-                    val normalizedUrl = address.trimEnd('/') + "/api/v1/status"
-                    val request = Request.Builder().url(normalizedUrl).get().build()
-                    val response = pingClient.newCall(request).execute()
-                    response.close()
-                    response.isSuccessful
-                }
-                result == true
-            } catch (e: Exception) {
-                Timber.d("Jellyseerr ping failed for $address: ${e.message}")
-                false
-            }
+        val normalizedUrl = address.trimEnd('/') + "/api/v1/status"
+        return try {
+            withTimeoutOrNull(timeoutMs) { pingClient.pingUrl(normalizedUrl) } == true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.d("Jellyseerr ping failed for $address: ${e.message}")
+            false
         }
     }
 }

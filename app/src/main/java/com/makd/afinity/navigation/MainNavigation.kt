@@ -198,6 +198,16 @@ fun MainNavigation(
             { coroutineScope.launch { railState.expand() } }
         } else null
 
+    LaunchedEffect(Unit) {
+        viewModel.sessionCleared.collect {
+            Timber.d("Session cleared, returning to HOME")
+            navController.navigate(Destination.HOME.route) {
+                popUpTo(0) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
     LaunchedEffect(isOffline) {
         if (isOffline) {
             val currentRoute = navController.currentBackStackEntry?.destination?.route

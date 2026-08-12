@@ -55,6 +55,8 @@ constructor(
 
     val pendingNavigationRoute = pendingNavigationManager.pendingRoute
 
+    val sessionCleared = appDataRepository.sessionCleared
+
     fun consumePendingNavigation() {
         pendingNavigationManager.consume()
     }

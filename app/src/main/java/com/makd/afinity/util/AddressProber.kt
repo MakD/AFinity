@@ -1,9 +1,15 @@
 package com.makd.afinity.util
 
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -71,13 +77,24 @@ suspend fun probeAddresses(
 
     val startTime = System.currentTimeMillis()
 
-    return coroutineScope {
+    val probeScope =
+        CoroutineScope(currentCoroutineContext() + SupervisorJob(currentCoroutineContext()[Job]))
+
+    try {
         val results = Channel<Pair<String, Boolean>>(orderedAddresses.size)
-        val jobs = orderedAddresses.map { address ->
-            launch {
+        orderedAddresses.forEach { address ->
+            probeScope.launch {
                 val tag = if (address in localSet) "local" else "ext"
                 val probeStart = System.currentTimeMillis()
-                val success = validator(address)
+                val success =
+                    try {
+                        validator(address)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Timber.w(e, "$logTag: Probe $address [$tag] threw")
+                        false
+                    }
                 val elapsed = System.currentTimeMillis() - probeStart
                 val outcome =
                     when {
@@ -128,7 +145,6 @@ suspend fun probeAddresses(
         }
 
         val resolved = winner ?: fallbackWinner
-        jobs.forEach { it.cancel() }
 
         val totalElapsed = System.currentTimeMillis() - startTime
         if (resolved != null) {
@@ -137,6 +153,8 @@ suspend fun probeAddresses(
         } else {
             Timber.w("$logTag: All ${orderedAddresses.size} addresses failed (${totalElapsed}ms)")
         }
-        resolved
+        return resolved
+    } finally {
+        probeScope.cancel()
     }
 }

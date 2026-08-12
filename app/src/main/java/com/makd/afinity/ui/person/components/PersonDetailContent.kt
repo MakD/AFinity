@@ -55,7 +55,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -79,6 +78,7 @@ import com.makd.afinity.ui.components.FavoriteToggleButton
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import com.makd.afinity.ui.utils.htmlToAnnotatedString
+import com.makd.afinity.ui.utils.verticalLayoutOffset
 
 @Composable
 fun PersonDetailContent(
@@ -604,13 +604,3 @@ private fun PersonExternalLinksSection(
         }
     }
 }
-
-private fun Modifier.verticalLayoutOffset(yOffset: Dp) =
-    this.layout { measurable, constraints ->
-        val placeable = measurable.measure(constraints)
-        val yOffsetPx = yOffset.roundToPx()
-
-        layout(placeable.width, placeable.height + yOffsetPx) {
-            placeable.placeRelative(0, yOffsetPx)
-        }
-    }

@@ -55,7 +55,7 @@ fun Modifier.verticalLayoutOffset(yOffset: Dp) =
         val placeable = measurable.measure(constraints)
         val yOffsetPx = yOffset.roundToPx()
 
-        layout(placeable.width, placeable.height + yOffsetPx) {
+        layout(placeable.width, (placeable.height + yOffsetPx).coerceAtLeast(0)) {
             placeable.placeRelative(0, yOffsetPx)
         }
     }
