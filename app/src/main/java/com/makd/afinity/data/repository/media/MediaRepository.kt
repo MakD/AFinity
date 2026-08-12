@@ -31,7 +31,6 @@ interface MediaRepository {
     fun getBaseUrl(): String
 
     val libraries: Flow<List<AfinityCollection>>
-    val latestMedia: Flow<List<AfinityItem>>
     val continueWatching: Flow<List<AfinityItem>>
     val nextUp: Flow<List<AfinityEpisode>>
 
@@ -39,7 +38,6 @@ interface MediaRepository {
 
     suspend fun invalidateContinueWatchingCache()
 
-    suspend fun invalidateLatestMediaCache()
 
     suspend fun invalidateNextUpCache()
 
@@ -316,7 +314,6 @@ interface MediaRepository {
 
     fun getLibrariesFlow(): Flow<List<AfinityCollection>>
 
-    fun getLatestMediaFlow(parentId: UUID? = null): Flow<List<AfinityItem>>
 
     fun getContinueWatchingFlow(): Flow<List<AfinityItem>>
 

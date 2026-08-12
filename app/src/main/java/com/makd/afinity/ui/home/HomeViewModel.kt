@@ -155,17 +155,6 @@ constructor(
         }
 
         viewModelScope.launch {
-            mediaRepository.getLatestMediaFlow().collect { items ->
-                _uiState.update {
-                    it.copy(
-                        latestMedia =
-                            items.filter { item -> item is AfinityMovie || item is AfinityShow }
-                    )
-                }
-            }
-        }
-
-        viewModelScope.launch {
             appDataRepository.heroCarouselItems.collect { heroItems ->
                 _uiState.update { it.copy(heroCarouselItems = heroItems) }
             }
@@ -463,7 +452,6 @@ constructor(
                                 state.continueWatching.filter { it.id != idToRemove },
                             nextUp = state.nextUp.filter { it.id != idToRemove },
                             latestMovies = state.latestMovies.filter { it.id != idToRemove },
-                            latestMedia = state.latestMedia.filter { it.id != idToRemove },
                         )
                     }
                 }
@@ -1025,7 +1013,6 @@ private fun HomeSectionDescriptor.toHomeSection(content: HomeSectionContent?): H
 
 data class HomeUiState(
     val heroCarouselItems: List<AfinityItem> = emptyList(),
-    val latestMedia: List<AfinityItem> = emptyList(),
     val continueWatching: List<AfinityItem> = emptyList(),
     val offlineContinueWatching: List<AfinityItem> = emptyList(),
     val nextUp: List<AfinityEpisode> = emptyList(),

@@ -76,7 +76,6 @@ import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.HeroCarousel
-import com.makd.afinity.ui.home.components.ContinueWatchingSkeleton
 import com.makd.afinity.ui.home.components.DownloadedAudiobooksSection
 import com.makd.afinity.ui.home.components.DownloadedMusicAlbumsSection
 import com.makd.afinity.ui.home.components.DownloadedMusicTracksSection
@@ -85,7 +84,6 @@ import com.makd.afinity.ui.home.components.HighestRatedSection
 import com.makd.afinity.ui.home.components.ItemsRowSection
 import com.makd.afinity.ui.home.components.LibrariesSection
 import com.makd.afinity.ui.home.components.MovieRecommendationSection
-import com.makd.afinity.ui.home.components.MoviesSectionSkeleton
 import com.makd.afinity.ui.home.components.NextUpSection
 import com.makd.afinity.ui.home.components.OptimizedContinueWatchingSection
 import com.makd.afinity.ui.home.components.OptimizedLatestMoviesSection
@@ -96,7 +94,6 @@ import com.makd.afinity.ui.home.components.PersonSection
 import com.makd.afinity.ui.home.components.PopularStudiosSection
 import com.makd.afinity.ui.home.components.ShowGenreSection
 import com.makd.afinity.ui.home.components.SpotlightCarousel
-import com.makd.afinity.ui.home.components.TvSeriesSectionSkeleton
 import com.makd.afinity.ui.home.components.UpcomingEpisodesSection
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.music.library.startMusicService
@@ -298,16 +295,6 @@ fun HomeScreen(
                                     )
                                 }
                             }
-                        } else if (
-                            !uiState.isOffline &&
-                                uiState.isLoading &&
-                                uiState.latestMedia.isNotEmpty()
-                        ) {
-                            item(key = "cw_skeleton") {
-                                Box(modifier = baseModifier.padding(top = 24.dp)) {
-                                    ContinueWatchingSkeleton(widthSizeClass)
-                                }
-                            }
                         }
 
                         if (uiState.isOffline && uiState.offlineNextUp.isNotEmpty()) {
@@ -414,18 +401,6 @@ fun HomeScreen(
 
                         if (
                             !uiState.isOffline &&
-                                HomeRow.NEXT_UP !in uiState.hiddenRows &&
-                                !uiState.nextUpLoaded
-                        ) {
-                            item(key = "next_up_skeleton") {
-                                Box(modifier = baseModifier.padding(top = 24.dp)) {
-                                    ContinueWatchingSkeleton(widthSizeClass)
-                                }
-                            }
-                        }
-
-                        if (
-                            !uiState.isOffline &&
                                 uiState.nextUp.isNotEmpty() &&
                                 HomeRow.NEXT_UP !in uiState.hiddenRows
                         ) {
@@ -453,12 +428,6 @@ fun HomeScreen(
                                                 widthSizeClass = widthSizeClass,
                                                 unavailableItemIds = uiState.unavailableDownloadIds,
                                             )
-                                        }
-                                    }
-                                } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
-                                    item(key = "movies_skeleton") {
-                                        Box(modifier = baseModifier.padding(top = 24.dp)) {
-                                            MoviesSectionSkeleton(widthSizeClass)
                                         }
                                     }
                                 }
@@ -492,12 +461,6 @@ fun HomeScreen(
                                             )
                                         }
                                     }
-                                } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
-                                    item(key = "tv_skeleton") {
-                                        Box(modifier = baseModifier.padding(top = 24.dp)) {
-                                            TvSeriesSectionSkeleton(widthSizeClass)
-                                        }
-                                    }
                                 }
                             } else {
                                 items(
@@ -512,18 +475,6 @@ fun HomeScreen(
                                             widthSizeClass = widthSizeClass,
                                         )
                                     }
-                                }
-                            }
-                        }
-
-                        if (
-                            !uiState.isOffline &&
-                                HomeRow.UPCOMING_EPISODES !in uiState.hiddenRows &&
-                                !uiState.upcomingLoaded
-                        ) {
-                            item(key = "upcoming_skeleton") {
-                                Box(modifier = baseModifier.padding(top = 24.dp)) {
-                                    ContinueWatchingSkeleton(widthSizeClass)
                                 }
                             }
                         }
@@ -548,18 +499,6 @@ fun HomeScreen(
 
                         if (
                             !uiState.isOffline &&
-                                HomeRow.CRITICS_CHOICE !in uiState.hiddenRows &&
-                                !uiState.highestRatedLoaded
-                        ) {
-                            item(key = "critics_choice_skeleton") {
-                                Box(modifier = baseModifier.padding(top = 24.dp)) {
-                                    MoviesSectionSkeleton(widthSizeClass)
-                                }
-                            }
-                        }
-
-                        if (
-                            !uiState.isOffline &&
                                 uiState.highestRated.isNotEmpty() &&
                                 HomeRow.CRITICS_CHOICE !in uiState.hiddenRows
                         ) {
@@ -570,18 +509,6 @@ fun HomeScreen(
                                         onItemClick = onItemClick,
                                         widthSizeClass = widthSizeClass,
                                     )
-                                }
-                            }
-                        }
-
-                        if (
-                            !uiState.isOffline &&
-                                HomeRow.WATCH_AGAIN !in uiState.hiddenRows &&
-                                !uiState.watchAgainLoaded
-                        ) {
-                            item(key = "watch_again_skeleton") {
-                                Box(modifier = baseModifier.padding(top = 24.dp)) {
-                                    MoviesSectionSkeleton(widthSizeClass)
                                 }
                             }
                         }

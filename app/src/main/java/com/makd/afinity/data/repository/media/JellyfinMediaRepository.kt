@@ -54,7 +54,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -126,34 +125,9 @@ constructor(
 
                 if (freshItem != null) {
                     updateItemInCache(_continueWatching, freshItem)
-                    updateItemInCache(_latestMedia, freshItem)
 
                     if (freshItem is AfinityEpisode) {
                         updateEpisodeInNextUpCache(freshItem)
-                        freshItem.seriesId.let { seriesId ->
-                            val sessionKeyAtStart = currentSessionKey()
-                            applicationScope.launch {
-                                try {
-                                    delay(500)
-                                    val seriesItem =
-                                        userLibraryApi
-                                            .getItem(userId = userId, itemId = seriesId)
-                                            .content
-                                            .toAfinityItem(getBaseUrl())
-                                    if (currentSessionKey() != sessionKeyAtStart) {
-                                        Timber.d(
-                                            "Session changed during parent series sync — discarding"
-                                        )
-                                        return@launch
-                                    }
-                                    if (seriesItem != null) {
-                                        updateItemInCache(_latestMedia, seriesItem)
-                                    }
-                                } catch (_: Exception) {
-                                    Timber.w("Failed to background sync parent series")
-                                }
-                            }
-                        }
                     }
                 }
                 return@withContext freshItem
@@ -282,41 +256,6 @@ constructor(
         }
     }
 
-    override suspend fun invalidateLatestMediaCache() {
-        withContext(Dispatchers.IO) {
-            try {
-                val sessionKeyAtStart = currentSessionKey() ?: return@withContext
-                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext
-                val userId = getCurrentUserId() ?: return@withContext
-                val userLibraryApi = UserLibraryApi(apiClient)
-                val response =
-                    userLibraryApi.getLatestMedia(
-                        userId = userId,
-                        includeItemTypes = listOf(BaseItemKind.MOVIE, BaseItemKind.SERIES),
-                        limit = 15,
-                        isPlayed = false,
-                        fields = FieldSets.CACHE_LATEST_MEDIA,
-                        enableImages = true,
-                        enableUserData = true,
-                    )
-
-                val latestItems =
-                    response.content.mapNotNull { baseItemDto ->
-                        baseItemDto.toAfinityItem(getBaseUrl())
-                    }
-
-                if (currentSessionKey() != sessionKeyAtStart) {
-                    Timber.d("Session changed during latest media refresh — discarding")
-                    return@withContext
-                }
-                _latestMedia.value = latestItems
-                Timber.d("Full refresh of latest media cache completed")
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to refresh latest media cache")
-            }
-        }
-    }
-
     override suspend fun invalidateNextUpCache() {
         withContext(Dispatchers.IO) {
             try {
@@ -357,7 +296,6 @@ constructor(
         Timber.d("Full cache invalidation requested - refreshing all caches")
         coroutineScope {
             launch { invalidateContinueWatchingCache() }
-            launch { invalidateLatestMediaCache() }
             launch { invalidateNextUpCache() }
         }
     }
@@ -371,7 +309,6 @@ constructor(
 
     override fun patchItemImages(updatedItem: AfinityItem) {
         _continueWatching.update { it.withPatchedImages(updatedItem) }
-        _latestMedia.update { it.withPatchedImages(updatedItem) }
         _nextUp.update { it.withPatchedImages(updatedItem) }
     }
 
@@ -379,7 +316,6 @@ constructor(
         Timber.d("Clearing in-memory playback caches")
         _continueWatching.value = emptyList()
         _nextUp.value = emptyList()
-        _latestMedia.value = emptyList()
     }
 
     override fun removeItemFromCache(itemId: String) {
@@ -393,13 +329,9 @@ constructor(
             id.toString() == itemId || (uuid != null && id == uuid)
         }
 
-        _latestMedia.update { list -> list.filterNot { matches(it.id) } }
         _continueWatching.update { list -> list.filterNot { matches(it.id) } }
         _nextUp.update { list -> list.filterNot { matches(it.id) || matches(it.seriesId) } }
     }
-
-    private val _latestMedia = MutableStateFlow<List<AfinityItem>>(emptyList())
-    override val latestMedia: Flow<List<AfinityItem>> = _latestMedia.asStateFlow()
 
     private val _continueWatching = MutableStateFlow<List<AfinityItem>>(emptyList())
     override val continueWatching: Flow<List<AfinityItem>> = _continueWatching.asStateFlow()
@@ -1806,8 +1738,6 @@ constructor(
         }
 
     override fun getLibrariesFlow(): Flow<List<AfinityCollection>> = libraries
-
-    override fun getLatestMediaFlow(parentId: UUID?): Flow<List<AfinityItem>> = latestMedia
 
     override fun getContinueWatchingFlow(): Flow<List<AfinityItem>> = continueWatching
 

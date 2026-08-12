@@ -338,14 +338,6 @@ constructor(
         }
     }
 
-    private suspend fun invalidateLatestMediaIfStale() {
-        val lastInvalidated = preferencesRepository.getLastCacheInvalidatedAt()
-        if (System.currentTimeMillis() - lastInvalidated > 5 * 60 * 1000L) {
-            mediaRepository.invalidateLatestMediaCache()
-            preferencesRepository.setLastCacheInvalidatedAt(System.currentTimeMillis())
-        }
-    }
-
     private fun CoroutineScope.persistHomeCache(
         cacheKey: String,
         movies: List<AfinityMovie>,
@@ -433,7 +425,6 @@ constructor(
                     mediaRepository.invalidateContinueWatchingCache()
                 }
                 val nextUpDeferred = async { mediaRepository.invalidateNextUpCache() }
-                val cacheDeferred = async { invalidateLatestMediaIfStale() }
                 val heroCarouselDeferred = async { loadHeroCarousel() }
                 val librariesDeferred = async { loadLibraries(reportFailure = true) }
                 val watchlistCountDeferred = async {
@@ -457,7 +448,6 @@ constructor(
 
                 continueWatchingDeferred.await()
                 nextUpDeferred.await()
-                cacheDeferred.await()
                 val heroItems = heroCarouselDeferred.await()
                 _heroCarouselItems.value = heroItems
 
@@ -500,7 +490,6 @@ constructor(
                     mediaRepository.invalidateContinueWatchingCache()
                 }
                 val nextUpDeferred = async { mediaRepository.invalidateNextUpCache() }
-                val latestMediaDeferred = async { invalidateLatestMediaIfStale() }
 
                 val libraries = librariesDeferred.await()
                 _libraries.value = libraries
@@ -515,7 +504,6 @@ constructor(
 
                 continueWatchingDeferred.await()
                 nextUpDeferred.await()
-                latestMediaDeferred.await()
                 persistHomeCache(cacheKey, latestMovies, latestTvSeries)
                 launch {
                     try {
@@ -558,7 +546,6 @@ constructor(
                     .collect {
                         if (!_isInitialDataLoaded.value) return@collect
                         Timber.d("Bus: library changed — refreshing library sections")
-                        mediaRepository.invalidateLatestMediaCache()
                         refreshLibrarySections()
                     }
             }
