@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -55,6 +56,11 @@ fun LibrariesScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lazyGridState = rememberLazyGridState()
     val playerOffset = LocalPlayerOffset.current
+
+    val orderedLibraries =
+        remember(uiState.libraries, uiState.hasServerOrder) {
+            if (uiState.hasServerOrder) uiState.libraries else sortLibraries(uiState.libraries)
+        }
 
     val topBarOpacity by rememberTopBarOpacity(lazyGridState)
 
@@ -95,7 +101,7 @@ fun LibrariesScreen(
                             ),
                 ) {
                     items(
-                        items = sortLibraries(uiState.libraries),
+                        items = orderedLibraries,
                         key = { library -> library.id },
                     ) { library ->
                         LibraryCard(

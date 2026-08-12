@@ -538,25 +538,18 @@ constructor(
         groupItems: Boolean,
     ): List<AfinityItem> =
         apiCall(emptyList(), "Failed to get latest media") { apiClient, userId ->
-            val sessionKeyAtStart = currentSessionKey()
-            val latestItems =
-                UserLibraryApi(apiClient)
-                    .getLatestMedia(
-                        userId = userId,
-                        parentId = parentId,
-                        limit = limit,
-                        fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
-                        enableImages = true,
-                        enableUserData = true,
-                        groupItems = groupItems,
-                    )
-                    .content
-                    .mapNotNull { baseItemDto -> baseItemDto.toAfinityItem(getBaseUrl()) }
-
-            if (parentId == null && currentSessionKey() == sessionKeyAtStart) {
-                _latestMedia.value = latestItems
-            }
-            latestItems
+            UserLibraryApi(apiClient)
+                .getLatestMedia(
+                    userId = userId,
+                    parentId = parentId,
+                    limit = limit,
+                    fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                    enableImages = true,
+                    enableUserData = true,
+                    groupItems = groupItems,
+                )
+                .content
+                .mapNotNull { baseItemDto -> baseItemDto.toAfinityItem(getBaseUrl()) }
         }
 
     override suspend fun getContinueWatching(

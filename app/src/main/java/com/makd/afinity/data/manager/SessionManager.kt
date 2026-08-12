@@ -30,11 +30,13 @@ import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.okhttp.OkHttpFactory
 import org.jellyfin.sdk.api.operations.UserApi
 import org.jellyfin.sdk.model.api.UserConfiguration
+import org.jellyfin.sdk.model.api.UserDto
 import timber.log.Timber
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -95,6 +97,7 @@ constructor(
                 val server = databaseRepository.getServer(serverId)
 
                 val sawUnauthorized = AtomicBoolean(false)
+                val probedUser = AtomicReference<UserDto?>(null)
                 val validator: suspend (String) -> Boolean = { address ->
                     try {
                         val tempClient =
@@ -103,6 +106,7 @@ constructor(
                             }
                         val response =
                             withTimeoutOrNull(3000L) { UserApi(tempClient).getCurrentUser() }
+                        response?.content?.let { probedUser.compareAndSet(null, it) }
                         response?.content != null
                     } catch (e: InvalidStatusException) {
                         if (e.status == 401) sawUnauthorized.set(true)
@@ -192,7 +196,8 @@ constructor(
 
                 sessionScope.launch {
                     try {
-                        val userDto = UserApi(apiClient).getCurrentUser().content
+                        val userDto =
+                            probedUser.get() ?: UserApi(apiClient).getCurrentUser().content
                         val isAdmin = userDto.policy?.isAdministrator == true
                         val canAccessLiveTv = userDto.policy?.enableLiveTvAccess
                         val refreshedUser =

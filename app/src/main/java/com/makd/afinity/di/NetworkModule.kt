@@ -1,6 +1,7 @@
 package com.makd.afinity.di
 
 import android.content.Context
+import android.os.Build
 import com.makd.afinity.BuildConfig
 import com.makd.afinity.core.AppConstants
 import com.makd.afinity.data.manager.SessionManager
@@ -221,6 +222,9 @@ object NetworkModule {
     }
 
     private val imageUserAgent = "AFinity/${BuildConfig.VERSION_NAME} (Android; Coil)"
+
+    private val apiUserAgent =
+        "AFinity/${BuildConfig.VERSION_NAME} (Android ${Build.VERSION.RELEASE}; ${Build.MODEL})"
 
     @Provides
     @Singleton
@@ -456,6 +460,7 @@ object NetworkModule {
                         .url(newUrl)
                         .apply {
                             addHeader("Content-Type", "application/json")
+                            header("User-Agent", apiUserAgent)
                             seerrCookieJar.getXsrfToken(baseHttpUrl.host)?.let {
                                 addHeader("XSRF-TOKEN", it)
                             }
@@ -533,6 +538,7 @@ object NetworkModule {
                             token?.let { addHeader("Authorization", "Bearer $it") }
                             addHeader("Content-Type", "application/json")
                             addHeader("x-return-tokens", "true")
+                            header("User-Agent", apiUserAgent)
                         }
                         .build()
 

@@ -631,18 +631,44 @@ constructor(
                 limit = limit,
                 groupItems = true,
             )
-        val directShows = raw.filterIsInstance<AfinityShow>()
-        val seenIds = directShows.map { it.id }.toMutableSet()
-        val missingSeriesIds =
-            raw.filterIsInstance<AfinityEpisode>()
-                .map { it.seriesId }
-                .distinct()
-                .filter { seenIds.add(it) }
+
+        val rankedSeriesIds = mutableListOf<UUID>()
+        val seenIds = mutableSetOf<UUID>()
+        val directShows = mutableMapOf<UUID, AfinityShow>()
+
+        for (item in raw) {
+            val seriesId =
+                when (item) {
+                    is AfinityShow -> item.id
+                    is AfinityEpisode -> item.seriesId
+                    else -> null
+                } ?: continue
+            if (item is AfinityShow) directShows[seriesId] = item
+            if (seenIds.add(seriesId)) rankedSeriesIds.add(seriesId)
+        }
+
+        val missingSeriesIds = rankedSeriesIds.filterNot { it in directShows }
         val fetchedShows =
             if (missingSeriesIds.isNotEmpty()) {
-                mediaRepository.getItemsByIds(missingSeriesIds).filterIsInstance<AfinityShow>()
-            } else emptyList()
-        return directShows + fetchedShows
+                mediaRepository
+                    .getItemsByIds(missingSeriesIds)
+                    .filterIsInstance<AfinityShow>()
+                    .associateBy { it.id }
+            } else emptyMap()
+
+        return rankedSeriesIds.mapNotNull { directShows[it] ?: fetchedShows[it] }
+    }
+
+    private fun <T> mergeByRank(lists: List<List<T>>): List<T> {
+        if (lists.size <= 1) return lists.firstOrNull().orEmpty()
+        val merged = mutableListOf<T>()
+        val deepest = lists.maxOf { it.size }
+        for (rank in 0 until deepest) {
+            for (list in lists) {
+                list.getOrNull(rank)?.let { merged.add(it) }
+            }
+        }
+        return merged
     }
 
     private suspend fun loadHeroCarousel(): List<AfinityItem> {
@@ -680,8 +706,16 @@ constructor(
         libraries: List<AfinityCollection>
     ): Pair<List<AfinityMovie>, List<AfinityShow>> {
         return try {
-            val movieLibraries = libraries.filter { it.type == CollectionType.Movies }
-            val tvLibraries = libraries.filter { it.type == CollectionType.TvShows }
+            val latestExcludes =
+                sessionManager.currentSession.value
+                    ?.userConfiguration
+                    ?.latestItemsExcludes
+                    .orEmpty()
+                    .toSet()
+            val latestLibraries = libraries.filterNot { it.id in latestExcludes }
+
+            val movieLibraries = latestLibraries.filter { it.type == CollectionType.Movies }
+            val tvLibraries = latestLibraries.filter { it.type == CollectionType.TvShows }
 
             val useJellyfinDefault = preferencesRepository.getHomeSortByDateAdded()
 
@@ -780,7 +814,7 @@ constructor(
 
             val latestTvSeries =
                 if (useJellyfinDefault) {
-                    allLatestSeries.take(LATEST_RETAINED)
+                    mergeByRank(showResults.map { it.second }).take(LATEST_RETAINED)
                 } else {
                     allLatestSeries.sortedByDescending { it.premiereDate }.take(LATEST_RETAINED)
                 }
