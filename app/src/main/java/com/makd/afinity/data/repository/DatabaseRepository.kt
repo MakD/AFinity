@@ -179,6 +179,8 @@ interface DatabaseRepository {
 
     suspend fun getAllUserDataToSync(userId: UUID, serverId: String): List<AfinityUserDataDto>
 
+    suspend fun countUserDataToSync(): Int
+
     fun getAllUserDataFlow(userId: UUID): Flow<List<AfinityUserDataDto>>
 
     suspend fun markUserDataSynced(userId: UUID, itemId: UUID)

@@ -84,6 +84,7 @@ constructor(
                     datePlayed = DateTime.now(),
                 )
                 updateLocalDatabasePlayedStatus(itemId, userId, true)
+                databaseRepository.markUserDataSynced(userId, itemId)
                 true
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to mark item as watched: $itemId")
@@ -104,6 +105,7 @@ constructor(
 
                 playStateApi.markUnplayedItem(itemId = itemId, userId = userId)
                 updateLocalDatabasePlayedStatus(itemId, userId, false)
+                databaseRepository.markUserDataSynced(userId, itemId)
                 true
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to mark item as unwatched: $itemId")

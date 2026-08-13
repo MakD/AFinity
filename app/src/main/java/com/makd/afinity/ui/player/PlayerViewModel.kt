@@ -525,8 +525,7 @@ constructor(
                                     ?: item.sources.firstOrNull()
                             val jfAudioIndex = _uiState.value.audioStreamIndex
                             val jfSubIndex =
-                                _uiState.value.subtitleStreamIndex
-                                    ?: TrackSelection.NO_SUBTITLE
+                                _uiState.value.subtitleStreamIndex ?: TrackSelection.NO_SUBTITLE
 
                             val livePlaybackInfo = currentLivePlaybackInfo
                             playbackRepository.reportPlaybackProgress(
@@ -953,8 +952,7 @@ constructor(
                     val duration = player.duration
                     val target = player.currentPosition.coerceAtLeast(0) + event.deltaMs
                     val newPos =
-                        if (duration > 0) target.coerceIn(0, duration)
-                        else target.coerceAtLeast(0)
+                        if (duration > 0) target.coerceIn(0, duration) else target.coerceAtLeast(0)
                     player.seekTo(newPos)
                 }
 
@@ -1739,8 +1737,7 @@ constructor(
                                         subtitleMimeType(subtitleFile.extension)
                                             ?: MimeTypes.TEXT_UNKNOWN
 
-                                    val nameParts =
-                                        subtitleFile.nameWithoutExtension.split("_")
+                                    val nameParts = subtitleFile.nameWithoutExtension.split("_")
                                     val streamIndex =
                                         nameParts.getOrNull(1)?.toIntOrNull() ?: subtitleIndex
                                     val rawCode = nameParts.firstOrNull()
@@ -1751,9 +1748,7 @@ constructor(
                                     MediaItem.SubtitleConfiguration.Builder(
                                             "file://${subtitleFile.absolutePath}".toUri()
                                         )
-                                        .setId(
-                                            TrackMapping.sideLoadedId(streamIndex)
-                                        )
+                                        .setId(TrackMapping.sideLoadedId(streamIndex))
                                         .setLabel(language)
                                         .setMimeType(mimeType)
                                         .setLanguage(language)
@@ -1771,9 +1766,11 @@ constructor(
                                 ?.mediaStreams
                                 .orEmpty()
                                 .mapNotNull { stream ->
-                                    stream.deliveryUrl?.takeIf { it.isNotBlank() }?.let {
-                                        stream.index to it
-                                    }
+                                    stream.deliveryUrl
+                                        ?.takeIf { it.isNotBlank() }
+                                        ?.let {
+                                            stream.index to it
+                                        }
                                 }
                                 .toMap()
 
@@ -1822,9 +1819,7 @@ constructor(
                                             )
 
                                     MediaItem.SubtitleConfiguration.Builder(subtitleUrl.toUri())
-                                        .setId(
-                                            TrackMapping.sideLoadedId(stream.index)
-                                        )
+                                        .setId(TrackMapping.sideLoadedId(stream.index))
                                         .setLabel(finalLabel)
                                         .setMimeType(mimeType)
                                         .setLanguage(stream.language ?: "eng")
@@ -1839,7 +1834,8 @@ constructor(
                     externalSubtitles
                         .mapNotNull { config ->
                             config.id?.toIntOrNull()?.let { id ->
-                                (id - TrackMapping.EXTERNAL_SUBTITLE_ID_BASE) to config.uri.toString()
+                                (id - TrackMapping.EXTERNAL_SUBTITLE_ID_BASE) to
+                                    config.uri.toString()
                             }
                         }
                         .toMap()
@@ -2423,8 +2419,7 @@ constructor(
                 val source =
                     item.sources.firstOrNull { it.id == sourceId } ?: item.sources.firstOrNull()
                 val jfAudioIndex = _uiState.value.audioStreamIndex
-                val jfSubIndex =
-                    _uiState.value.subtitleStreamIndex ?: TrackSelection.NO_SUBTITLE
+                val jfSubIndex = _uiState.value.subtitleStreamIndex ?: TrackSelection.NO_SUBTITLE
 
                 playbackRepository.reportPlaybackStart(
                     itemId = item.id,
@@ -3057,7 +3052,11 @@ constructor(
 
         if (item != null) {
             if (!_uiState.value.isPlayingIntro) {
-                playbackStateManager.notifyPlaybackStopped(item.id, finalPosition)
+                playbackStateManager.notifyPlaybackStopped(
+                    itemId = item.id,
+                    positionMs = finalPosition,
+                    runtimeTicks = currentItemRuntimeTicks(item),
+                )
             }
         } else {
             Timber.w("stopPlayback called but currentItem is null")
@@ -3105,7 +3104,18 @@ constructor(
                 player.currentPosition
             }
 
-        playbackStateManager.notifyPlaybackStopped(item.id, position)
+        playbackStateManager.notifyPlaybackStopped(
+            itemId = item.id,
+            positionMs = position,
+            runtimeTicks = currentItemRuntimeTicks(item),
+            isEnded = isEnded && !_uiState.value.isLiveChannel,
+        )
+    }
+
+    private fun currentItemRuntimeTicks(item: AfinityItem): Long {
+        if (_uiState.value.isLiveChannel) return 0L
+        val playerDuration = if (::player.isInitialized) player.duration else 0L
+        return if (playerDuration > 0) playerDuration * 10000 else item.runtimeTicks
     }
 
     override fun onCleared() {

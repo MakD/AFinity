@@ -237,7 +237,20 @@ constructor(
     ): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
+                val apiClient =
+                    sessionManager.getCurrentApiClient()
+                        ?: run {
+                            Timber.w(
+                                "No API client available, saving playback progress locally for item: $itemId"
+                            )
+                            savePlaybackProgressLocally(
+                                itemId,
+                                positionTicks,
+                                audioStreamIndex,
+                                subtitleStreamIndex,
+                            )
+                            return@withContext false
+                        }
                 val playStateApi = PlayStateApi(apiClient)
                 playStateApi.onPlaybackProgress(
                     itemId = itemId,
@@ -286,10 +299,26 @@ constructor(
         liveStreamId: String?,
         nextMediaType: String?,
         playlistItemId: String?,
+        runtimeTicks: Long,
+        isEnded: Boolean,
     ): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
+                val apiClient =
+                    sessionManager.getCurrentApiClient()
+                        ?: run {
+                            Timber.w(
+                                "No API client available, saving playback stop locally for item: $itemId"
+                            )
+                            savePlaybackProgressLocally(
+                                itemId = itemId,
+                                positionTicks = positionTicks,
+                                isStop = true,
+                                runtimeTicks = runtimeTicks,
+                                isEnded = isEnded,
+                            )
+                            return@withContext false
+                        }
                 val playStateApi = PlayStateApi(apiClient)
 
                 playStateApi.onPlaybackStopped(
@@ -300,19 +329,49 @@ constructor(
                     liveStreamId = liveStreamId,
                     playSessionId = sessionId,
                 )
+                clearPendingSync(itemId)
                 true
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to report playback stop for item: $itemId, saving locally")
-                savePlaybackProgressLocally(itemId, positionTicks)
+                savePlaybackProgressLocally(
+                    itemId = itemId,
+                    positionTicks = positionTicks,
+                    isStop = true,
+                    runtimeTicks = runtimeTicks,
+                    isEnded = isEnded,
+                )
                 false
             } catch (e: Exception) {
                 Timber.e(
                     e,
                     "Unexpected error reporting playback stop for item: $itemId, saving locally",
                 )
-                savePlaybackProgressLocally(itemId, positionTicks)
+                savePlaybackProgressLocally(
+                    itemId = itemId,
+                    positionTicks = positionTicks,
+                    isStop = true,
+                    runtimeTicks = runtimeTicks,
+                    isEnded = isEnded,
+                )
                 false
             }
+        }
+    }
+
+    override suspend fun savePlaybackStopOffline(
+        itemId: UUID,
+        positionTicks: Long,
+        runtimeTicks: Long,
+        isEnded: Boolean,
+    ) {
+        withContext(Dispatchers.IO) {
+            savePlaybackProgressLocally(
+                itemId = itemId,
+                positionTicks = positionTicks,
+                isStop = true,
+                runtimeTicks = runtimeTicks,
+                isEnded = isEnded,
+            )
         }
     }
 
@@ -321,6 +380,9 @@ constructor(
         positionTicks: Long,
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
+        isStop: Boolean = false,
+        runtimeTicks: Long = 0L,
+        isEnded: Boolean = false,
     ) {
         try {
             val userId =
@@ -335,26 +397,61 @@ constructor(
                 return
             }
 
+            val resolved =
+                if (isStop) {
+                    val resolvedRuntimeTicks =
+                        if (runtimeTicks > 0L) runtimeTicks else resolveRuntimeTicks(itemId, userId)
+                    PlaybackCompletion.playbackCompletionResolved(
+                        positionTicks,
+                        resolvedRuntimeTicks,
+                        isEnded,
+                    )
+                } else {
+                    PlaybackCompletion.Resolved(positionTicks.coerceAtLeast(0L), false)
+                }
+
             val existingData = databaseRepository.getUserData(userId, itemId)
             val updatedData =
                 AfinityUserDataDto(
                     userId = userId,
                     itemId = itemId,
                     serverId = serverId,
-                    played = existingData?.played ?: false,
+                    played = existingData?.played == true || resolved.played,
                     favorite = existingData?.favorite ?: false,
                     likes = existingData?.likes ?: false,
-                    playbackPositionTicks = positionTicks,
+                    playbackPositionTicks = resolved.positionTicks,
                     toBeSynced = true,
                     audioStreamIndex = audioStreamIndex ?: existingData?.audioStreamIndex,
                     subtitleStreamIndex = subtitleStreamIndex ?: existingData?.subtitleStreamIndex,
+                    lastPlayedAt = System.currentTimeMillis(),
                 )
             databaseRepository.insertUserData(updatedData)
             Timber.i(
-                "Saved playback progress locally for item $itemId: ${positionTicks / 10000}ms (will sync when online)"
+                "Saved playback progress locally for item $itemId: ${resolved.positionTicks / 10000}ms, played=${updatedData.played}"
             )
         } catch (e: Exception) {
             Timber.e(e, "Failed to save playback progress locally for item: $itemId")
+        }
+    }
+
+    private suspend fun clearPendingSync(itemId: UUID) {
+        try {
+            val userId = getCurrentUserId() ?: return
+            val serverId = sessionManager.currentSession.value?.serverId ?: return
+            databaseRepository.markUserDataSynced(userId, itemId, serverId)
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to clear pending sync flag for item: $itemId")
+        }
+    }
+
+    private suspend fun resolveRuntimeTicks(itemId: UUID, userId: UUID): Long {
+        return try {
+            databaseRepository.getEpisode(itemId, userId)?.runtimeTicks
+                ?: databaseRepository.getMovie(itemId, userId)?.runtimeTicks
+                ?: 0L
+        } catch (e: Exception) {
+            Timber.w(e, "Could not resolve runtime for item: $itemId")
+            0L
         }
     }
 

@@ -80,6 +80,9 @@ interface UserDataDao {
     @Query("SELECT COUNT(*) FROM userdata WHERE userId = :userId AND serverId = :serverId")
     suspend fun getUserDataCount(userId: UUID, serverId: String): Int
 
+    @Query("SELECT COUNT(*) FROM userdata WHERE toBeSynced = 1")
+    suspend fun countUserDataToSync(): Int
+
     @Query(
         """
         UPDATE userdata 
@@ -87,9 +90,10 @@ interface UserDataDao {
             playbackPositionTicks = :positionTicks, 
             favorite = :isFavorite,
             likes = :isLiked
-        WHERE itemId = :itemId 
-          AND userId = :userId 
+        WHERE itemId = :itemId
+          AND userId = :userId
           AND serverId = :serverId
+          AND toBeSynced = 0
     """
     )
     suspend fun patchUserDataLocally(

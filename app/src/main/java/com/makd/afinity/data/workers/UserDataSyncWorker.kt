@@ -6,15 +6,22 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.data.repository.SecurePreferencesRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.api.client.extensions.userApi
+import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.operations.ItemsApi
+import org.jellyfin.sdk.api.operations.PlayStateApi
+import org.jellyfin.sdk.model.DateTime
 import org.jellyfin.sdk.model.api.UpdateUserItemDataDto
 import timber.log.Timber
+import java.time.Instant
+import java.time.ZoneId
+import java.util.UUID
 
 @HiltWorker
 class UserDataSyncWorker
@@ -24,110 +31,205 @@ constructor(
     @Assisted workerParams: WorkerParameters,
     private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
+    private val securePreferencesRepository: SecurePreferencesRepository,
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result =
         withContext(Dispatchers.IO) {
             try {
-                Timber.d("Starting user data sync")
+                Timber.d("Starting user data sync (attempt ${runAttemptCount + 1})")
 
-                val servers = databaseRepository.getAllServers()
+                val accounts = securePreferencesRepository.getAllServerUserTokens()
 
-                if (servers.isEmpty()) {
-                    Timber.d("No servers found, skipping sync")
+                if (accounts.isEmpty()) {
+                    Timber.d("No accounts found, skipping sync")
                     return@withContext Result.success()
                 }
 
                 var totalSuccess = 0
                 var totalFailure = 0
+                var retryNeeded = false
 
-                servers.forEach { server ->
-                    try {
-                        val apiClient = sessionManager.getOrRestoreApiClient(server.id)
-
-                        if (apiClient == null) {
-                            Timber.d(
-                                "Skipping sync for server ${server.name}: No valid session found"
-                            )
-                            return@forEach
-                        }
-
-                        val userId =
+                accounts
+                    .distinctBy { it.serverId to it.userId }
+                    .forEach { account ->
+                        val pending =
                             try {
-                                apiClient.userApi.getCurrentUser().content?.id
-                            } catch (e: Exception) {
-                                Timber.w(
-                                    "Could not validate user token for server ${server.name}: ${e.message}"
+                                databaseRepository.getAllUserDataToSync(
+                                    account.userId,
+                                    account.serverId,
                                 )
+                            } catch (e: Exception) {
+                                Timber.e(e, "Could not read pending user data for ${account.serverId}")
+                                retryNeeded = true
+                                return@forEach
+                            }
+
+                        if (pending.isEmpty()) return@forEach
+
+                        Timber.i(
+                            "Found ${pending.size} items to sync for user ${account.userId} on server ${account.serverId}"
+                        )
+
+                        val apiClient =
+                            try {
+                                sessionManager.getDetachedApiClient(
+                                    account.serverId,
+                                    account.userId,
+                                )
+                            } catch (e: Exception) {
+                                Timber.w(e, "Could not build client for server ${account.serverId}")
                                 null
                             }
 
-                        if (userId == null) {
+                        if (apiClient == null) {
+                            Timber.w(
+                                "No client for server ${account.serverId} with ${pending.size} pending items, will retry"
+                            )
+                            retryNeeded = true
                             return@forEach
                         }
 
-                        val unsyncedData =
-                            databaseRepository.getAllUserDataToSync(userId, server.id)
+                        val itemsApi = ItemsApi(apiClient)
+                        val playStateApi = PlayStateApi(apiClient)
 
-                        if (unsyncedData.isNotEmpty()) {
-                            Timber.i(
-                                "Found ${unsyncedData.size} items to sync for user $userId on server ${server.name}"
-                            )
-
-                            val itemsApi = ItemsApi(apiClient)
-
-                            unsyncedData.forEach { userData ->
-                                try {
-                                    Timber.d(
-                                        "Syncing item ${userData.itemId} -> Server: ${server.name}"
-                                    )
-
-                                    itemsApi.updateItemUserData(
-                                        itemId = userData.itemId,
-                                        userId = userId,
-                                        data =
-                                            UpdateUserItemDataDto(
-                                                playbackPositionTicks =
-                                                    userData.playbackPositionTicks,
-                                                played = userData.played,
-                                                isFavorite = userData.favorite,
-                                            ),
-                                    )
-
+                        for (userData in pending) {
+                            when (
+                                uploadUserData(
+                                    itemsApi = itemsApi,
+                                    playStateApi = playStateApi,
+                                    userId = account.userId,
+                                    userData = userData,
+                                )
+                            ) {
+                                UploadResult.SYNCED -> {
                                     databaseRepository.markUserDataSynced(
-                                        userId,
+                                        account.userId,
                                         userData.itemId,
-                                        server.id,
+                                        account.serverId,
                                     )
                                     totalSuccess++
-                                } catch (e: Exception) {
+                                }
+                                UploadResult.DISCARD -> {
+                                    databaseRepository.markUserDataSynced(
+                                        account.userId,
+                                        userData.itemId,
+                                        account.serverId,
+                                    )
+                                    totalFailure++
+                                }
+                                UploadResult.UNAUTHORIZED -> {
                                     totalFailure++
                                     Timber.w(
-                                        e,
-                                        "Failed to sync item ${userData.itemId} on server ${server.name}",
+                                        "Token rejected for server ${account.serverId}, aborting its sync"
                                     )
+                                    break
+                                }
+                                UploadResult.RETRY -> {
+                                    totalFailure++
+                                    retryNeeded = true
+                                    break
                                 }
                             }
                         }
-                    } catch (e: Exception) {
-                        Timber.e(e, "Error processing sync for server ${server.name}")
                     }
-                }
 
                 Timber.i(
-                    "Global user data sync completed. Success: $totalSuccess, Failures: $totalFailure"
+                    "Global user data sync completed. Success: $totalSuccess, Failures: $totalFailure, retryNeeded: $retryNeeded"
                 )
 
-                return@withContext if (totalSuccess > 0 || totalFailure == 0) {
-                    Result.success(
-                        workDataOf("synced_count" to totalSuccess, "failed_count" to totalFailure)
-                    )
-                } else {
-                    Result.retry()
+                return@withContext when {
+                    !retryNeeded ->
+                        Result.success(
+                            workDataOf(
+                                "synced_count" to totalSuccess,
+                                "failed_count" to totalFailure,
+                            )
+                        )
+                    runAttemptCount >= MAX_RUN_ATTEMPTS -> {
+                        Timber.w(
+                            "Giving up user data sync after $runAttemptCount attempts, rows stay queued"
+                        )
+                        Result.success(
+                            workDataOf(
+                                "synced_count" to totalSuccess,
+                                "failed_count" to totalFailure,
+                            )
+                        )
+                    }
+                    else -> Result.retry()
                 }
             } catch (e: Exception) {
                 Timber.e(e, "User data sync failed with critical error")
-                return@withContext Result.retry()
+                return@withContext if (runAttemptCount >= MAX_RUN_ATTEMPTS) {
+                    Result.failure()
+                } else {
+                    Result.retry()
+                }
             }
         }
+
+    private suspend fun uploadUserData(
+        itemsApi: ItemsApi,
+        playStateApi: PlayStateApi,
+        userId: UUID,
+        userData: AfinityUserDataDto,
+    ): UploadResult {
+        return try {
+            val datePlayed = userData.lastPlayedAt?.toDateTime()
+
+            if (userData.played) {
+                playStateApi.markPlayedItem(
+                    itemId = userData.itemId,
+                    userId = userId,
+                    datePlayed = datePlayed,
+                )
+            } else {
+                itemsApi.updateItemUserData(
+                    itemId = userData.itemId,
+                    userId = userId,
+                    data =
+                        UpdateUserItemDataDto(
+                            playbackPositionTicks = userData.playbackPositionTicks,
+                            lastPlayedDate = datePlayed,
+                        ),
+                )
+            }
+            Timber.d("Synced item ${userData.itemId} (played=${userData.played})")
+            UploadResult.SYNCED
+        } catch (e: InvalidStatusException) {
+            when (e.status) {
+                401,
+                403 -> UploadResult.UNAUTHORIZED
+                400,
+                404 -> {
+                    Timber.w(
+                        "Server rejected item ${userData.itemId} with ${e.status}, dropping pending row"
+                    )
+                    UploadResult.DISCARD
+                }
+                else -> {
+                    Timber.w(e, "Failed to sync item ${userData.itemId}")
+                    UploadResult.RETRY
+                }
+            }
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to sync item ${userData.itemId}")
+            UploadResult.RETRY
+        }
+    }
+
+    private fun Long.toDateTime(): DateTime =
+        Instant.ofEpochMilli(this).atZone(ZoneId.systemDefault()).toLocalDateTime()
+
+    private enum class UploadResult {
+        SYNCED,
+        DISCARD,
+        UNAUTHORIZED,
+        RETRY,
+    }
+
+    private companion object {
+        const val MAX_RUN_ATTEMPTS = 6
+    }
 }

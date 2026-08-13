@@ -17,6 +17,7 @@ import coil3.svg.SvgDecoder
 import com.makd.afinity.cast.CastManager
 import com.makd.afinity.data.repository.CacheMaintenance
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.sync.PendingJellyfinSync
 import com.makd.afinity.data.updater.UpdateScheduler
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import com.makd.afinity.di.ImageClient
@@ -48,6 +49,8 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
     @Inject @ImageClient lateinit var imageOkHttpClient: OkHttpClient
 
     @Inject lateinit var cacheMaintenance: dagger.Lazy<CacheMaintenance>
+
+    @Inject lateinit var pendingJellyfinSync: dagger.Lazy<PendingJellyfinSync>
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     var ringBufferTree: RingBufferTree? = null
@@ -84,6 +87,13 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
         }
 
         castManager.initialize(this)
+
+        applicationScope.launch(Dispatchers.IO) {
+            runCatching { pendingJellyfinSync.get().initMonitoring() }
+                .onFailure {
+                    Timber.w(it, "Failed to start pending user data sync observer")
+                }
+        }
 
         applicationScope.launch {
             val frequency = preferencesRepository.getUpdateCheckFrequency()

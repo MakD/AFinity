@@ -129,7 +129,7 @@ import com.makd.afinity.data.models.user.User
             HomeLayoutPreferenceEntity::class,
             DeletedItemEntity::class,
         ],
-    version = 66,
+    version = 67,
     exportSchema = false,
 )
 @TypeConverters(AfinityTypeConverters::class)

@@ -69,7 +69,16 @@ interface PlaybackRepository {
         liveStreamId: String? = null,
         nextMediaType: String? = null,
         playlistItemId: String? = null,
+        runtimeTicks: Long = 0L,
+        isEnded: Boolean = false,
     ): Boolean
+
+    suspend fun savePlaybackStopOffline(
+        itemId: UUID,
+        positionTicks: Long,
+        runtimeTicks: Long = 0L,
+        isEnded: Boolean = false,
+    )
 
     suspend fun pingSession(sessionId: String): Boolean
 

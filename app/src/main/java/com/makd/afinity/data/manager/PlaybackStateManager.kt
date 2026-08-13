@@ -60,7 +60,12 @@ constructor(
         lastKnownPosition = positionMs
     }
 
-    fun notifyPlaybackStopped(itemId: UUID, positionMs: Long) {
+    fun notifyPlaybackStopped(
+        itemId: UUID,
+        positionMs: Long,
+        runtimeTicks: Long = 0L,
+        isEnded: Boolean = false,
+    ) {
         val capturedSessionId = currentSessionId
         val capturedMediaSourceId = lastKnownMediaSourceId
         val capturedLiveStreamId = lastKnownLiveStreamId
@@ -77,6 +82,8 @@ constructor(
                         capturedMediaSourceId,
                         capturedLiveStreamId,
                         positionTicks,
+                        runtimeTicks,
+                        isEnded,
                     )
                     handlePlaybackStopped(itemId)
                 } catch (e: Exception) {
@@ -92,6 +99,8 @@ constructor(
         mediaSourceId: String?,
         liveStreamId: String?,
         positionTicks: Long,
+        runtimeTicks: Long,
+        isEnded: Boolean,
     ) {
         try {
             if (sessionId != null && !mediaSourceId.isNullOrEmpty()) {
@@ -102,6 +111,8 @@ constructor(
                         positionTicks = positionTicks,
                         mediaSourceId = mediaSourceId,
                         liveStreamId = liveStreamId,
+                        runtimeTicks = runtimeTicks,
+                        isEnded = isEnded,
                     )
 
                 if (success) {
@@ -112,16 +123,23 @@ constructor(
                     Timber.w(
                         "Failed to report playback stop, progress saved locally. Scheduling sync..."
                     )
-                    syncScheduler.scheduleSyncNow()
+                    syncScheduler.triggerSync()
                 }
             } else {
                 Timber.w(
-                    "Cannot report playback stop - missing data: item=$itemId, session=$sessionId, source=$mediaSourceId"
+                    "Cannot report playback stop - missing data: item=$itemId, session=$sessionId, source=$mediaSourceId. Saving locally."
                 )
+                playbackRepository.savePlaybackStopOffline(
+                    itemId = itemId,
+                    positionTicks = positionTicks,
+                    runtimeTicks = runtimeTicks,
+                    isEnded = isEnded,
+                )
+                syncScheduler.triggerSync()
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to report playback stop to Jellyfin")
-            syncScheduler.scheduleSyncNow()
+            syncScheduler.triggerSync()
         }
     }
 

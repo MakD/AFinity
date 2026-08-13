@@ -122,32 +122,33 @@ constructor(
                     if (urlPreValidated) {
                         _isServerReachable.value = true
                         serverUrl
-                    } else try {
-                        val result = serverAddressResolver.resolveAddress(serverId, validator)
-                        if (result is AddressResolutionResult.Success) {
-                            Timber.d(
-                                "Resolved server address: ${result.address} (saved: $serverUrl)"
-                            )
-                            _isServerReachable.value = true
-                            result.address
-                        } else if (sawUnauthorized.get()) {
-                            Timber.e("Token rejected by server during address resolution (401)")
-                            return@withContext Result.failure(InvalidStatusException(401, null))
-                        } else {
+                    } else
+                        try {
+                            val result = serverAddressResolver.resolveAddress(serverId, validator)
+                            if (result is AddressResolutionResult.Success) {
+                                Timber.d(
+                                    "Resolved server address: ${result.address} (saved: $serverUrl)"
+                                )
+                                _isServerReachable.value = true
+                                result.address
+                            } else if (sawUnauthorized.get()) {
+                                Timber.e("Token rejected by server during address resolution (401)")
+                                return@withContext Result.failure(InvalidStatusException(401, null))
+                            } else {
+                                Timber.w(
+                                    "Address resolution failed, starting in offline mode. Saved URL: $serverUrl"
+                                )
+                                _isServerReachable.value = false
+                                serverUrl
+                            }
+                        } catch (e: Exception) {
                             Timber.w(
-                                "Address resolution failed, starting in offline mode. Saved URL: $serverUrl"
+                                e,
+                                "Address resolution error, starting in offline mode. Saved URL: $serverUrl",
                             )
                             _isServerReachable.value = false
                             serverUrl
                         }
-                    } catch (e: Exception) {
-                        Timber.w(
-                            e,
-                            "Address resolution error, starting in offline mode. Saved URL: $serverUrl",
-                        )
-                        _isServerReachable.value = false
-                        serverUrl
-                    }
 
                 serverRepository.setBaseUrl(resolvedUrl)
 
@@ -271,6 +272,31 @@ constructor(
         val client = getOrCreateApiClient(serverId, address)
         client.update(baseUrl = address, accessToken = tokenInfo.accessToken)
         return client
+    }
+
+    suspend fun getDetachedApiClient(serverId: String, userId: UUID): ApiClient? {
+        val session = _currentSession.value
+        if (session?.serverId == serverId && session.userId == userId) {
+            apiClients[serverId]?.let {
+                return it
+            }
+        }
+
+        databaseRepository.getServer(serverId) ?: return null
+        val tokenInfo =
+            securePrefsRepository.getAllServerUserTokens().find {
+                it.serverId == serverId && it.userId == userId
+            } ?: return null
+
+        val address =
+            when (val result = serverAddressResolver.resolveAddress(serverId)) {
+                is AddressResolutionResult.Success -> result.address
+                is AddressResolutionResult.AllFailed -> tokenInfo.serverUrl
+            }
+
+        return jellyfin
+            .createApi(baseUrl = address, httpClientOptions = NetworkModule.JELLYFIN_HTTP_OPTIONS)
+            .also { it.update(accessToken = tokenInfo.accessToken) }
     }
 
     suspend fun switchUser(serverId: String, userId: UUID): Result<Unit> {

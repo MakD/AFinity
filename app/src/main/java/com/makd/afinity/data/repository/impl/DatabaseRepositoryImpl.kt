@@ -468,6 +468,10 @@ constructor(
         return userDataDao.getUnsyncedUserData(userId, serverId)
     }
 
+    override suspend fun countUserDataToSync(): Int {
+        return userDataDao.countUserDataToSync()
+    }
+
     override fun getAllUserDataFlow(userId: UUID): Flow<List<AfinityUserDataDto>> {
         return sessionManager.currentSession.filterNotNull().flatMapLatest { session ->
             userDataDao.getAllUserDataFlow(userId, session.serverId)
