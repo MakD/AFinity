@@ -10,6 +10,7 @@ import com.makd.afinity.data.network.AudnexusApiService
 import com.makd.afinity.data.network.JellyseerrApiService
 import com.makd.afinity.data.network.MdbListApiService
 import com.makd.afinity.data.network.OmdbApiService
+import com.makd.afinity.data.network.SeerrCookieJar
 import com.makd.afinity.data.network.TmdbApiService
 import com.makd.afinity.data.network.resolveDynamicBaseUrl
 import com.makd.afinity.data.network.rewriteWithRequestPathAndQuery
@@ -25,11 +26,8 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Cache
 import okhttp3.ConnectionPool
-import okhttp3.Cookie
-import okhttp3.CookieJar
 import okhttp3.Dispatcher
 import okhttp3.Dns
-import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -52,7 +50,6 @@ import timber.log.Timber
 import java.io.File
 import java.io.IOException
 import java.net.Inet4Address
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
@@ -82,63 +79,6 @@ import kotlin.time.Duration.Companion.seconds
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-    private class SeerrCookieJar(private val securePrefs: SecurePreferencesRepository) : CookieJar {
-        private val store = ConcurrentHashMap<String, MutableList<Cookie>>()
-
-        private fun getSessionKey(host: String): String {
-            val activeSession = securePrefs.getCachedJellyseerrCookie() ?: "anonymous"
-            return "${host}_${activeSession.hashCode()}"
-        }
-
-        override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-            val key = getSessionKey(url.host)
-            val bucket = store.getOrPut(key) { mutableListOf() }
-            synchronized(bucket) {
-                for (c in cookies) {
-                    bucket.removeIf { it.name == c.name }
-                    if (c.value.isNotEmpty()) bucket.add(c)
-                }
-            }
-        }
-
-        override fun loadForRequest(url: HttpUrl): List<Cookie> {
-            val key = getSessionKey(url.host)
-            val bucket = store[key] ?: return emptyList()
-            synchronized(bucket) {
-                return bucket.filter { !it.secure || url.scheme == "https" }
-            }
-        }
-
-        fun preloadSessionCookie(url: HttpUrl, rawSetCookie: String?) {
-            rawSetCookie ?: return
-            Cookie.parse(url, rawSetCookie)?.let { saveFromResponse(url, listOf(it)) }
-        }
-
-        fun hasXsrfToken(host: String): Boolean {
-            val key = getSessionKey(host)
-            val bucket = store[key] ?: return false
-            synchronized(bucket) {
-                return bucket.any { it.name == "XSRF-TOKEN" }
-            }
-        }
-
-        fun getXsrfToken(host: String): String? {
-            val key = getSessionKey(host)
-            val bucket = store[key] ?: return null
-            synchronized(bucket) {
-                return bucket.find { it.name == "XSRF-TOKEN" }?.value
-            }
-        }
-
-        fun clear(host: String? = null) {
-            if (host != null) {
-                store.remove(getSessionKey(host))
-            } else {
-                store.clear()
-            }
-        }
-    }
-
     @Provides
     @Singleton
     fun provideClientInfo(): ClientInfo =
@@ -434,8 +374,8 @@ object NetworkModule {
     fun provideJellyseerrOkHttpClient(
         baseOkHttpClient: OkHttpClient,
         securePreferencesRepository: SecurePreferencesRepository,
+        seerrCookieJar: SeerrCookieJar,
     ): OkHttpClient {
-        val seerrCookieJar = SeerrCookieJar(securePreferencesRepository)
         val csrfSeedClient =
             baseOkHttpClient
                 .newBuilder()
@@ -461,10 +401,19 @@ object NetworkModule {
                     currentBaseUrl.toHttpUrlOrNull()
                         ?: throw IOException("Failed to parse Jellyseerr URL")
 
-                seerrCookieJar.preloadSessionCookie(
-                    baseHttpUrl,
-                    securePreferencesRepository.getCachedJellyseerrCookie(),
-                )
+                val isLoginRequest =
+                    originalRequest.url.encodedPath.let {
+                        it.endsWith("/auth/local") || it.endsWith("/auth/jellyfin")
+                    }
+
+                if (isLoginRequest) {
+                    seerrCookieJar.clear(baseHttpUrl.host)
+                } else {
+                    seerrCookieJar.preloadSessionCookie(
+                        baseHttpUrl,
+                        securePreferencesRepository.getCachedJellyseerrCookie(),
+                    )
+                }
 
                 val newUrl = baseHttpUrl.rewriteWithRequestPathAndQuery(originalRequest)
 

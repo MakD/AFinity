@@ -36,18 +36,13 @@ import com.makd.afinity.data.models.jellyseerr.WatchProviderDetails
 import com.makd.afinity.data.models.jellyseerr.WatchProviderRegion
 import com.makd.afinity.data.models.server.AddressCheck
 import com.makd.afinity.data.network.JellyseerrApiService
+import com.makd.afinity.data.network.SeerrCookieJar
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.RequestEvent
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Lazy
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -69,6 +64,12 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import timber.log.Timber
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class JellyseerrRepositoryImpl
@@ -76,6 +77,7 @@ class JellyseerrRepositoryImpl
 constructor(
     private val apiService: Lazy<JellyseerrApiService>,
     private val securePreferencesRepository: SecurePreferencesRepository,
+    private val seerrCookieJar: SeerrCookieJar,
     private val database: AfinityDatabase,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
     private val addressResolver: JellyseerrAddressResolver,
@@ -287,6 +289,8 @@ constructor(
         Timber.d("Switching Jellyseerr context to Server: $serverId, User: $userId")
         _isAuthenticated.value = false
         cachedPublicSettings = null
+        securePreferencesRepository.clearActiveJellyseerrCache()
+        seerrCookieJar.setSession("${serverId}_$userId")
         activeContext = serverId to userId
         _currentSessionId.value = "${serverId}_$userId"
 
@@ -331,6 +335,7 @@ constructor(
         activeContext = null
         cachedPublicSettings = null
         _currentSessionId.value = null
+        seerrCookieJar.setSession(null)
         securePreferencesRepository.clearActiveJellyseerrCache()
         _isAuthenticated.value = false
         Timber.d("Jellyseerr active session cleared")
@@ -362,18 +367,28 @@ constructor(
 
                 if (response.isSuccessful && response.body() != null) {
                     val loginResponse = response.body()!!
-                    val cookies = response.headers()["Set-Cookie"]
                     val serverUrl = securePreferencesRepository.getJellyseerrServerUrl() ?: ""
+                    val cookies =
+                        response.headers()["Set-Cookie"]
+                            ?: serverUrl.toHttpUrlOrNull()?.host?.let {
+                                seerrCookieJar.sessionCookieHeader(it)
+                            }
 
-                    if (cookies != null) {
-                        securePreferencesRepository.saveJellyseerrAuthForUser(
-                            jellyfinServerId = currentServerId,
-                            jellyfinUserId = currentUserId,
-                            url = serverUrl,
-                            cookie = cookies,
-                            username = loginResponse.username ?: loginResponse.email ?: "User",
+                    if (cookies.isNullOrBlank()) {
+                        Timber.e("Jellyseerr login returned no session cookie")
+                        return@withContext Result.failure(
+                            Exception("Login failed: server did not return a session cookie")
                         )
                     }
+
+                    securePreferencesRepository.saveJellyseerrAuthForUser(
+                        jellyfinServerId = currentServerId,
+                        jellyfinUserId = currentUserId,
+                        url = serverUrl,
+                        cookie = cookies,
+                        username = loginResponse.username ?: loginResponse.email ?: "User",
+                    )
+
                     val existingConfig =
                         jellyseerrDao.getConfig(currentServerId, currentUserId.toString())
                     if (
@@ -485,6 +500,7 @@ constructor(
                 jellyseerrDao.clearDiscoverFilterState(currentServerId, currentUserId.toString())
 
                 securePreferencesRepository.clearActiveJellyseerrCache()
+                seerrCookieJar.clearAll()
 
                 cachedPublicSettings = null
                 _isAuthenticated.value = false
@@ -614,13 +630,15 @@ constructor(
             activeContext?.let { (serverId, userId) ->
                 val (_, cookie, username) =
                     securePreferencesRepository.getJellyseerrAuthForUser(serverId, userId)
-                securePreferencesRepository.saveJellyseerrAuthForUser(
-                    serverId,
-                    userId,
-                    url,
-                    cookie ?: "",
-                    username ?: "",
-                )
+                if (!cookie.isNullOrBlank()) {
+                    securePreferencesRepository.saveJellyseerrAuthForUser(
+                        serverId,
+                        userId,
+                        url,
+                        cookie,
+                        username ?: "",
+                    )
+                }
             }
         }
     }
@@ -1641,10 +1659,7 @@ constructor(
                 val entity =
                     jellyseerrDao.getDiscoverFilterState(serverId, userId.toString(), contextKey)
                         ?: return@withContext null
-                val options =
-                    kotlinx.serialization.json.Json.decodeFromString<DiscoverFilterOptions>(
-                        entity.filterOptionsJson
-                    )
+                val options = Json.decodeFromString<DiscoverFilterOptions>(entity.filterOptionsJson)
                 entity.sortBy to options
             } catch (e: Exception) {
                 Timber.w(e, "Failed to load discover filter state for $contextKey")
@@ -1667,8 +1682,7 @@ constructor(
                         jellyfinUserId = userId.toString(),
                         filterContextKey = contextKey,
                         sortBy = sortBy,
-                        filterOptionsJson =
-                            kotlinx.serialization.json.Json.encodeToString(filterOptions),
+                        filterOptionsJson = Json.encodeToString(filterOptions),
                     )
                 )
             } catch (e: Exception) {
@@ -1731,7 +1745,7 @@ constructor(
         val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
         val seasonsJsonString =
             if (seasons != null) {
-                kotlinx.serialization.json.Json.encodeToString(seasons)
+                Json.encodeToString(seasons)
             } else null
         return JellyseerrRequestEntity(
             id = id,
@@ -1786,7 +1800,7 @@ constructor(
         val seasonsList =
             if (seasonsJson != null) {
                 try {
-                    kotlinx.serialization.json.Json.decodeFromString<
+                    Json.decodeFromString<
                         List<com.makd.afinity.data.models.jellyseerr.SeasonRequest>
                     >(
                         seasonsJson

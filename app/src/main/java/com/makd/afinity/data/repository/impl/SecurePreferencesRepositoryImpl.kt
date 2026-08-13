@@ -53,10 +53,6 @@ constructor(@param:ApplicationContext private val context: Context) : SecurePref
         val KEY_DEVICE_ID = stringPreferencesKey("device_id")
         val KEY_API_KEY = stringPreferencesKey("api_key")
 
-        val KEY_JELLYSEERR_SERVER_URL = stringPreferencesKey("jellyseerr_server_url")
-        val KEY_JELLYSEERR_COOKIE = stringPreferencesKey("jellyseerr_cookie")
-        val KEY_JELLYSEERR_USERNAME = stringPreferencesKey("jellyseerr_username")
-
         val KEY_ACTIVE_SERVER_ID = stringPreferencesKey("active_server_id")
         val KEY_ACTIVE_USER_ID = stringPreferencesKey("active_user_id")
         val KEY_ACTIVE_SERVER_URL = stringPreferencesKey("active_server_url")
@@ -311,41 +307,6 @@ constructor(@param:ApplicationContext private val context: Context) : SecurePref
     }
 
     override suspend fun getJellyseerrServerUrl(): String? = cachedJellyseerrUrl
-
-    override suspend fun saveJellyseerrCookie(cookie: String) {
-        cachedJellyseerrCookie = cookie
-        context.dataStore.edit { it[KEY_JELLYSEERR_COOKIE] = encrypt(cookie) }
-    }
-
-    override suspend fun getJellyseerrCookie(): String? {
-        if (cachedJellyseerrCookie != null) return cachedJellyseerrCookie
-        return getDecryptedString(KEY_JELLYSEERR_COOKIE)
-    }
-
-    override suspend fun saveJellyseerrUsername(username: String) {
-        context.dataStore.edit { it[KEY_JELLYSEERR_USERNAME] = encrypt(username) }
-    }
-
-    override suspend fun getJellyseerrUsername(): String? =
-        cachedJellyseerrUsername ?: getDecryptedString(KEY_JELLYSEERR_USERNAME)
-
-    override suspend fun clearJellyseerrAuthData() {
-        clearActiveJellyseerrCache()
-        context.dataStore.edit {
-            it.remove(KEY_JELLYSEERR_SERVER_URL)
-            it.remove(KEY_JELLYSEERR_COOKIE)
-            it.remove(KEY_JELLYSEERR_USERNAME)
-        }
-    }
-
-    override suspend fun hasValidJellyseerrAuth(): Boolean {
-        if (!cachedJellyseerrCookie.isNullOrBlank() && !cachedJellyseerrUrl.isNullOrBlank())
-            return true
-
-        val cookie = getJellyseerrCookie()
-        val url = getJellyseerrServerUrl()
-        return !cookie.isNullOrBlank() && !url.isNullOrBlank()
-    }
 
     override fun getCachedJellyseerrServerUrl(): String? = cachedJellyseerrUrl
 

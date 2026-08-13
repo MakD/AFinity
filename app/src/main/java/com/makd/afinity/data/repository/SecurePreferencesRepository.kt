@@ -86,12 +86,6 @@ interface SecurePreferencesRepository {
 
     suspend fun getJellyseerrServerUrl(): String?
 
-    suspend fun getJellyseerrCookie(): String?
-
-    suspend fun getJellyseerrUsername(): String?
-
-    suspend fun hasValidJellyseerrAuth(): Boolean
-
     suspend fun saveJellyseerrServerUrl(url: String)
 
     fun getCachedJellyseerrServerUrl(): String?
@@ -99,12 +93,6 @@ interface SecurePreferencesRepository {
     fun updateCachedJellyseerrServerUrl(url: String)
 
     fun getCachedJellyseerrCookie(): String?
-
-    suspend fun saveJellyseerrCookie(cookie: String)
-
-    suspend fun saveJellyseerrUsername(username: String)
-
-    suspend fun clearJellyseerrAuthData()
 
     suspend fun saveAudiobookshelfAuthForUser(
         jellyfinServerId: String,
