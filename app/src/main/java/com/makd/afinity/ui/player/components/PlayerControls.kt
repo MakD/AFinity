@@ -95,6 +95,11 @@ import com.makd.afinity.player.common.TrackMapping
 import com.makd.afinity.ui.components.AfinityBadge
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.formatRuntimeTicks
+import com.makd.afinity.ui.components.ratings.communityRatingOf
+import com.makd.afinity.ui.components.ratings.criticRatingOf
+import com.makd.afinity.ui.components.ratings.displayPriority
+import com.makd.afinity.ui.components.ratings.excludingSupersededBy
+import com.makd.afinity.ui.components.ratings.toDisplay
 import com.makd.afinity.ui.livetv.components.LiveBadge
 import com.makd.afinity.ui.player.PlayerViewModel
 import com.makd.afinity.ui.player.toLocalizedLanguageName
@@ -312,7 +317,7 @@ fun PlayerControls(
         val pauseDetailsEligible =
             uiState.pauseScreenEnabled &&
                 !uiState.isPlaying &&
-                !uiState.isBuffering &&
+                !uiState.playWhenReady &&
                 !uiState.isControlsLocked &&
                 !uiState.isInPictureInPictureMode &&
                 uiState.currentItem != null &&
@@ -491,8 +496,10 @@ fun PlayerControls(
                     CenterPlayButton(
                         uiState = uiState,
                         isPlaying = uiState.isPlaying,
-                        showPlayButton = uiState.showPlayButton || uiState.isBuffering,
-                        isBuffering = uiState.isBuffering,
+                        showPlayButton =
+                            uiState.showPlayButton ||
+                                (uiState.isBuffering && uiState.playWhenReady),
+                        isBuffering = uiState.isBuffering && uiState.playWhenReady,
                         hasQueueNeighbors = playlistQueue.size > 1,
                         onPlayPauseClick = {
                             if (uiState.isPlaying) onPlayerEvent(PlayerEvent.Pause)
@@ -1592,7 +1599,6 @@ private fun PauseDetailsOverlay(
     val cast = people.filter { it.type == PersonKind.ACTOR }.take(3)
     val directors = people.filter { it.type == PersonKind.DIRECTOR }.map { it.name }
 
-    val ratings = uiState.externalRatings
     val speed = uiState.playbackSpeed.coerceAtLeast(0.1f)
     val remainingMs =
         ((uiState.duration - uiState.currentPosition).coerceAtLeast(0L) / speed).toLong()
@@ -1636,6 +1642,19 @@ private fun PauseDetailsOverlay(
             else -> null
         }
     val criticRating = (item as? AfinityMovie)?.criticRating
+
+    val ratingChips =
+        remember(uiState.mdbRatings, communityRating, criticRating) {
+            (listOfNotNull(communityRatingOf(communityRating), criticRatingOf(criticRating)) +
+                    uiState.mdbRatings
+                        .excludingSupersededBy(criticRating)
+                        .sortedBy { it.displayPriority() })
+                .mapNotNull { it.toDisplay() }
+        }
+    val awardsHighlight =
+        uiState.omdbAwards
+            ?.takeIf { it.isNotBlank() }
+            ?.let { it.split(".", limit = 2).firstOrNull()?.trim() ?: it }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f))) {
         Column(
@@ -1699,55 +1718,6 @@ private fun PauseDetailsOverlay(
                     resolution?.let { r -> metadataItems.add { PauseMetaText(r, metaColor) } }
                     hdr?.let { h -> metadataItems.add { PauseMetaText(h, metaColor) } }
                     audioLabel?.let { a -> metadataItems.add { PauseMetaText(a, metaColor) } }
-                    communityRating?.let { r ->
-                        metadataItems.add {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                    contentDescription = stringResource(R.string.cd_imdb),
-                                    tint = Color.Unspecified,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                                PauseMetaText(String.format(Locale.US, "%.1f", r), metaColor)
-                            }
-                        }
-                    }
-                    criticRating?.let { rt ->
-                        metadataItems.add {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            ) {
-                                Icon(
-                                    painter =
-                                        painterResource(
-                                            id =
-                                                if (rt > 60) R.drawable.ic_rotten_tomato_fresh
-                                                else R.drawable.ic_rotten_tomato_rotten
-                                        ),
-                                    contentDescription =
-                                        stringResource(R.string.cd_rotten_tomatoes),
-                                    tint = Color.Unspecified,
-                                    modifier = Modifier.size(13.dp),
-                                )
-                                PauseMetaText("${rt.toInt()}%", metaColor)
-                            }
-                        }
-                    }
-                    ratings.tmdb?.let { t ->
-                        metadataItems.add {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            ) {
-                                PauseMetaText("TMDB", Color.White.copy(alpha = 0.5f))
-                                PauseMetaText(t, metaColor)
-                            }
-                        }
-                    }
                     if (metadataItems.isNotEmpty()) {
                         FlowRow(
                             modifier = Modifier.padding(top = 12.dp),
@@ -1760,6 +1730,65 @@ private fun PauseDetailsOverlay(
                                     PauseMetaText("•", Color.White.copy(alpha = 0.4f))
                                 }
                             }
+                        }
+                    }
+                    if (ratingChips.isNotEmpty()) {
+                        FlowRow(
+                            modifier = Modifier.padding(top = 10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            ratingChips.forEach { display ->
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                ) {
+                                    if (display.iconRes != null) {
+                                        Icon(
+                                            painter = painterResource(id = display.iconRes),
+                                            contentDescription = display.sourceName,
+                                            tint = Color.Unspecified,
+                                            modifier = Modifier.size(16.dp),
+                                        )
+                                    } else {
+                                        PauseMetaText(
+                                            display.sourceName,
+                                            Color.White.copy(alpha = 0.5f),
+                                        )
+                                    }
+                                    PauseMetaText(display.score, metaColor)
+                                }
+                            }
+                        }
+                    }
+                    if (awardsHighlight != null) {
+                        val goldAccent = Color(0xFFD4AF37)
+                        Row(
+                            modifier = Modifier.padding(top = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_laurel),
+                                contentDescription = null,
+                                tint = goldAccent,
+                                modifier = Modifier.size(20.dp),
+                            )
+                            Text(
+                                text = awardsHighlight.uppercase(),
+                                color = goldAccent,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_laurel),
+                                contentDescription = null,
+                                tint = goldAccent,
+                                modifier = Modifier.size(20.dp),
+                            )
                         }
                     }
                     if (directors.isNotEmpty()) {

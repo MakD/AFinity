@@ -52,6 +52,7 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.ChannelType
 import com.makd.afinity.data.models.livetv.LiveTvPlaybackInfo
+import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityImages
@@ -78,6 +79,7 @@ import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.repository.metadata.ItemRatingsLoader
 import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.data.repository.segments.SegmentsRepository
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
@@ -129,6 +131,7 @@ constructor(
     private val playbackStateManager: PlaybackStateManager,
     val castManager: CastManager,
     private val mediaRepository: MediaRepository,
+    private val itemRatingsLoader: ItemRatingsLoader,
     private val segmentsRepository: SegmentsRepository,
     private val preferencesRepository: PreferencesRepository,
     private val playlistManager: PlaylistManager,
@@ -922,6 +925,7 @@ constructor(
 
         val isBuffering = !isActuallyPlaying && playbackState == Player.STATE_BUFFERING
         val isPausedState = !isActuallyPlaying && playbackState == Player.STATE_READY
+        val playWhenReady = player.playWhenReady
 
         lastKnownPosition = position
         lastKnownDuration = duration
@@ -933,10 +937,12 @@ constructor(
                 isPlaying = isActuallyPlaying,
                 isPaused = isPausedState,
                 isBuffering = isBuffering,
+                playWhenReady = playWhenReady,
                 currentPosition = position,
                 bufferedPosition = bufferedPosition,
                 duration = duration,
-                showPlayButton = if (isBuffering) false else _uiState.value.showPlayButton,
+                showPlayButton =
+                    if (isBuffering && playWhenReady) false else _uiState.value.showPlayButton,
             )
     }
 
@@ -1672,10 +1678,11 @@ constructor(
                     subtitleUserSelected = false,
                     availableSources = fullItem.sources,
                     currentMediaSourceId = actualMediaSourceId,
-                    externalRatings = ExternalRatings(),
+                    mdbRatings = emptyList(),
+                    omdbAwards = null,
                 )
             }
-            loadExternalRatings(fullItem)
+            loadItemRatings(fullItem)
             currentSessionId = playbackInfo?.playSessionId ?: UUID.randomUUID().toString()
             currentLivePlaybackInfo = null
             Timber.d(
@@ -2043,43 +2050,12 @@ constructor(
         trickplayFetchJob?.cancel()
     }
 
-    private fun loadExternalRatings(item: AfinityItem) {
+    private fun loadItemRatings(item: AfinityItem) {
         viewModelScope.launch {
-            val community =
-                when (item) {
-                    is AfinityMovie -> item.communityRating
-                    is AfinityEpisode -> item.communityRating
-                    else -> null
-                }
-            val isMovie = item is AfinityMovie
-            val tmdbId = item.providerIds?.get("Tmdb")
-            var imdb: String? = null
-            var rt: String? = (item as? AfinityMovie)?.criticRating?.let { "${it.toInt()}%" }
-            var tmdb: String? = null
-            if (tmdbId != null) {
-                runCatching {
-                    val result = mediaRepository.getMdbListRatings(tmdbId, isMovie)
-                    result.ratings
-                        .firstOrNull { it.source.equals("imdb", ignoreCase = true) }
-                        ?.value
-                        ?.let { imdb = String.format(Locale.ROOT, "%.1f", it) }
-                    result.ratings
-                        .firstOrNull { it.source.equals("tomatoes", ignoreCase = true) }
-                        ?.value
-                        ?.let { rt = "${it.toInt()}%" }
-                    result.ratings
-                        .firstOrNull { it.source.equals("tmdb", ignoreCase = true) }
-                        ?.value
-                        ?.let { tmdb = String.format(Locale.ROOT, "%.1f", it) }
-                }
-            }
-            if (imdb == null && community != null) {
-                imdb = String.format(Locale.ROOT, "%.1f", community)
-            }
+            val ratings = runCatching { itemRatingsLoader.load(item) }.getOrNull() ?: return@launch
+            if (currentItem?.id != item.id) return@launch
             updateUiState {
-                it.copy(
-                    externalRatings = ExternalRatings(imdb = imdb, rottenTomatoes = rt, tmdb = tmdb)
-                )
+                it.copy(mdbRatings = ratings.mdbRatings, omdbAwards = ratings.omdbAwards)
             }
         }
     }
@@ -3148,20 +3124,12 @@ constructor(
         enterPictureInPicture?.invoke()
     }
 
-    data class ExternalRatings(
-        val imdb: String? = null,
-        val rottenTomatoes: String? = null,
-        val tmdb: String? = null,
-    ) {
-        val hasAny: Boolean
-            get() = imdb != null || rottenTomatoes != null || tmdb != null
-    }
-
     data class PlayerUiState(
         val isPlayerReady: Boolean = false,
         val isPlaying: Boolean = false,
         val isPaused: Boolean = false,
         val isBuffering: Boolean = false,
+        val playWhenReady: Boolean = false,
         val isLoading: Boolean = false,
         val currentPosition: Long = 0L,
         val bufferedPosition: Long = 0L,
@@ -3204,7 +3172,8 @@ constructor(
         val isControlsVisible: Boolean = true,
         val videoZoomMode: VideoZoomMode = VideoZoomMode.FIT,
         val videoAspectRatio: Float = 0f,
-        val externalRatings: ExternalRatings = ExternalRatings(),
+        val mdbRatings: List<MdbListRating> = emptyList(),
+        val omdbAwards: String? = null,
         val resolvedOrientation: Int = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,
         val logoAutoHide: Boolean = false,
         val pauseScreenEnabled: Boolean = false,
