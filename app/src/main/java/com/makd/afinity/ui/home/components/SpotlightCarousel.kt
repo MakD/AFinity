@@ -49,6 +49,7 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.focalAlpha
+import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.ui.theme.CardDimensions
 import java.util.Locale
 
@@ -71,6 +72,7 @@ fun SpotlightCarousel(
     val windowWidth = with(density) { containerSize.width.toDp() }
     val windowHeight = with(density) { containerSize.height.toDp() }
     val state = rememberCarouselState { items.size }
+    val ratingScale = rememberRatingMetadataScale()
 
     Column(modifier = modifier) {
         HomeSectionHeader(title = title, startPadding = 14.dp)
@@ -185,10 +187,11 @@ fun SpotlightCarousel(
                                 ) {
                                     imdbRating?.let { rating ->
                                         Icon(
-                                            painter = painterResource(R.drawable.ic_imdb_logo),
+                                            painter =
+                                                painterResource(R.drawable.ic_community_rating),
                                             contentDescription = null,
                                             tint = Color.Unspecified,
-                                            modifier = Modifier.size(18.dp),
+                                            modifier = Modifier.size(ratingScale.rtIconSize),
                                         )
                                         Text(
                                             text = String.format(Locale.US, "%.1f", rating),
@@ -212,7 +215,7 @@ fun SpotlightCarousel(
                                                 ),
                                             contentDescription = null,
                                             tint = Color.Unspecified,
-                                            modifier = Modifier.size(14.dp),
+                                            modifier = Modifier.size(ratingScale.rtIconSize),
                                         )
                                         Text(
                                             text = "${rt.toInt()}%",

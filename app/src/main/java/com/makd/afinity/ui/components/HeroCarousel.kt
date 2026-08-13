@@ -622,6 +622,7 @@ private fun HeroMetadata(item: AfinityItem) {
             is AfinityEpisode -> item.communityRating
             else -> null
         }
+    val ratingScale = rememberRatingMetadataScale()
 
     if (LocalShowRatings.current) {
         communityRating?.let { rating ->
@@ -630,10 +631,10 @@ private fun HeroMetadata(item: AfinityItem) {
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_imdb_logo),
+                    painter = painterResource(id = R.drawable.ic_community_rating),
                     contentDescription = stringResource(R.string.cd_imdb),
                     tint = Color.Unspecified,
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(ratingScale.rtIconSize),
                 )
                 Text(
                     text = String.format(Locale.US, "%.1f", rating),
@@ -658,7 +659,7 @@ private fun HeroMetadata(item: AfinityItem) {
                             ),
                         contentDescription = null,
                         tint = Color.Unspecified,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(ratingScale.rtIconSize),
                     )
                     Text(
                         text = "${rtRating.toInt()}%",

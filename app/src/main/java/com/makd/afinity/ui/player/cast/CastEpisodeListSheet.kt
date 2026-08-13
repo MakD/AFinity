@@ -61,6 +61,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.formatRuntimeTicks
+import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import java.util.Locale
 import java.util.UUID
 
@@ -134,6 +135,7 @@ private fun CastEpisodeCard(
     val borderColor =
         if (isCurrentlyPlaying) MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
         else Color.Transparent
+    val ratingScale = rememberRatingMetadataScale()
 
     Row(
         modifier =
@@ -294,10 +296,10 @@ private fun CastEpisodeCard(
                             horizontalArrangement = Arrangement.spacedBy(2.dp),
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                painter = painterResource(id = R.drawable.ic_community_rating),
                                 contentDescription = stringResource(R.string.cd_imdb),
                                 tint = Color.Unspecified,
-                                modifier = Modifier.size(16.dp),
+                                modifier = Modifier.size(ratingScale.rtIconSize),
                             )
                             Text(
                                 text = String.format(Locale.US, "%.1f", rating),

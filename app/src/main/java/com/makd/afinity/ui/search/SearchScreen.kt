@@ -107,6 +107,7 @@ import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
+import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
@@ -861,6 +862,7 @@ private fun GenreCard(genre: String, onClick: () -> Unit, isAudiobookshelf: Bool
 
 @Composable
 private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
+    val ratingScale = rememberRatingMetadataScale()
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -982,10 +984,11 @@ private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
                                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                                 ) {
                                     Icon(
-                                        painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                        painter =
+                                            painterResource(id = R.drawable.ic_community_rating),
                                         contentDescription = stringResource(R.string.cd_imdb),
                                         tint = Color.Unspecified,
-                                        modifier = Modifier.size(16.dp),
+                                        modifier = Modifier.size(ratingScale.rtIconSize),
                                     )
                                     Text(
                                         text = String.format(Locale.US, "%.1f", r),
@@ -1015,7 +1018,7 @@ private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
                                         contentDescription =
                                             stringResource(R.string.cd_rotten_tomatoes),
                                         tint = Color.Unspecified,
-                                        modifier = Modifier.size(14.dp),
+                                        modifier = Modifier.size(ratingScale.rtIconSize),
                                     )
                                     Text(
                                         text = "${rtRating.toInt()}%",

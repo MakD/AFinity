@@ -39,6 +39,7 @@ import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import java.util.Locale
 
 @Composable
@@ -51,6 +52,7 @@ fun NextUpSkipOverlay(
 ) {
     val nextEpisode = nextItem as? AfinityEpisode
     val overlayColor = Color.Black.copy(alpha = 0.9f)
+    val ratingScale = rememberRatingMetadataScale()
 
     if (nextEpisode != null && segment.type == AfinitySegmentType.OUTRO) {
         Card(
@@ -114,10 +116,11 @@ fun NextUpSkipOverlay(
                             nextEpisode.communityRating?.let { rating ->
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
-                                        painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                        painter =
+                                            painterResource(id = R.drawable.ic_community_rating),
                                         contentDescription = null,
                                         tint = Color.Unspecified,
-                                        modifier = Modifier.size(16.dp),
+                                        modifier = Modifier.size(ratingScale.rtIconSize),
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(

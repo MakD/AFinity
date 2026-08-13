@@ -42,7 +42,11 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.navigation.LocalShowRatings
-import java.util.Locale
+import com.makd.afinity.ui.components.ratings.communityRatingOf
+import com.makd.afinity.ui.components.ratings.criticRatingOf
+import com.makd.afinity.ui.components.ratings.displayPriority
+import com.makd.afinity.ui.components.ratings.excludingSupersededBy
+import com.makd.afinity.ui.components.ratings.toDisplay
 import java.util.UUID
 
 @Composable
@@ -128,11 +132,11 @@ private fun RatingsAndReviews(
             else -> null
         }
 
-    val hasRatings =
-        mdbRatingBadges.hasAny ||
-            mdbRatings.isNotEmpty() ||
-            communityRating != null ||
-            criticRating != null
+    val orderedRatings =
+        listOfNotNull(communityRatingOf(communityRating), criticRatingOf(criticRating)) +
+            mdbRatings.excludingSupersededBy(criticRating).sortedBy { it.displayPriority() }
+
+    val hasRatings = mdbRatingBadges.hasAny || orderedRatings.isNotEmpty()
     val hasReviews = tmdbReviews.isNotEmpty()
     val hasAwards = !omdbAwards.isNullOrBlank()
 
@@ -178,96 +182,14 @@ private fun RatingsAndReviews(
                         }
                     }
 
-                    communityRating?.let { rating ->
-                        item {
-                            Scorecard(
-                                sourceName = "IMDb",
-                                iconRes = R.drawable.ic_imdb_logo,
-                                score = String.format(Locale.US, "%.1f", rating),
-                                subtext = "/ 10",
-                            )
-                        }
-                    }
-
-                    criticRating?.let { rating ->
-                        item {
-                            Scorecard(
-                                sourceName = "Rotten Tomatoes",
-                                iconRes =
-                                    if (rating > 60) R.drawable.ic_rotten_tomato_fresh
-                                    else R.drawable.ic_rotten_tomato_rotten,
-                                score = "${rating.toInt()}%",
-                                subtext = if (rating > 60) "Fresh" else "Rotten",
-                            )
-                        }
-                    }
-
-                    val sortedMdbRatings = mdbRatings.sortedBy {
-                        if (it.source.lowercase() == "popcorn") 0 else 1
-                    }
-
-                    items(sortedMdbRatings) { rating ->
-                        val sourceLower = rating.source.lowercase()
-                        val rawValue =
-                            if (sourceLower == "metacriticuser") {
-                                rating.score ?: (rating.value?.times(10.0)) ?: return@items
-                            } else {
-                                rating.value ?: return@items
-                            }
-
-                        val formattedScore =
-                            if (sourceLower == "metacriticuser") {
-                                String.format(Locale.US, "%.1f", rawValue / 10.0)
-                            } else if (rawValue % 1.0 == 0.0) {
-                                rawValue.toInt().toString()
-                            } else {
-                                rawValue.toString()
-                            }
-
-                        val isPercentage = sourceLower in listOf("trakt", "tmdb", "popcorn")
-
-                        val iconRes =
-                            when (sourceLower) {
-                                "trakt" -> R.drawable.ic_trakt
-                                "tmdb" -> R.drawable.ic_tmdb
-                                "letterboxd" -> R.drawable.ic_letterboxd
-                                "popcorn" ->
-                                    if (rawValue >= 60.0) R.drawable.ic_rt_fresh_popcorn
-                                    else R.drawable.ic_rt_stale_popcorn
-                                "metacritic" ->
-                                    when {
-                                        rawValue >= 75.0 -> R.drawable.ic_metacritic_green
-                                        rawValue >= 50.0 -> R.drawable.ic_metacritic_yellow
-                                        else -> R.drawable.ic_metacritic_red
-                                    }
-                                "metacriticuser" ->
-                                    when {
-                                        rawValue >= 75.0 -> R.drawable.ic_metacritic_user_green
-                                        rawValue >= 50.0 -> R.drawable.ic_metacritic_user_yellow
-                                        else -> R.drawable.ic_metacritic_user_red
-                                    }
-                                "rogerebert" -> R.drawable.ic_ebert
-                                "myanimelist" -> R.drawable.ic_mal
-                                else -> null
-                            }
-                        val dynamicSubtext =
-                            when (sourceLower) {
-                                "popcorn" -> if (rawValue >= 60.0) "Hot" else "Stale"
-                                "metacritic" -> "/ 100"
-                                "metacriticuser" -> "/ 10"
-                                "letterboxd" -> "/ 5"
-                                "rogerebert" -> "/ 4"
-                                "myanimelist" -> "/ 10"
-                                "trakt",
-                                "tmdb" -> "Score"
-                                else -> "/ 10"
-                            }
+                    items(orderedRatings) { rating ->
+                        val display = rating.toDisplay() ?: return@items
 
                         Scorecard(
-                            sourceName = rating.source.replaceFirstChar { it.uppercase() },
-                            iconRes = iconRes,
-                            score = if (isPercentage) "$formattedScore%" else formattedScore,
-                            subtext = dynamicSubtext,
+                            sourceName = display.sourceName,
+                            iconRes = display.iconRes,
+                            score = display.score,
+                            subtext = display.subtext,
                         )
                     }
                 }

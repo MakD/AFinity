@@ -63,6 +63,7 @@ import com.makd.afinity.ui.components.FavoriteToggleButton
 import com.makd.afinity.ui.components.WatchedToggleButton
 import com.makd.afinity.ui.components.WatchlistToggleButton
 import com.makd.afinity.ui.components.formatRuntimeTicks
+import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.ui.item.components.shared.AdminAction
 import com.makd.afinity.ui.item.components.shared.MediaLanguageFlagsSection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
@@ -97,6 +98,7 @@ fun EpisodeDetailOverlay(
 ) {
     val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val ratingScale = rememberRatingMetadataScale()
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -281,10 +283,10 @@ fun EpisodeDetailOverlay(
                             horizontalArrangement = Arrangement.spacedBy(2.dp),
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                painter = painterResource(id = R.drawable.ic_community_rating),
                                 contentDescription = stringResource(R.string.cd_imdb),
                                 tint = Color.Unspecified,
-                                modifier = Modifier.size(22.dp),
+                                modifier = Modifier.size(ratingScale.rtIconSize),
                             )
                             Text(
                                 text = String.format(Locale.US, "%.1f", rating),

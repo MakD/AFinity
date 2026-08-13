@@ -27,7 +27,6 @@ import com.makd.afinity.data.models.extensions.toAfinitySeason
 import com.makd.afinity.data.models.extensions.toAfinityVideoPlaylist
 import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.mdblist.MdbListRatingBadges
-import com.makd.afinity.data.models.mdblist.MdbListRatingsResult
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -50,6 +49,7 @@ import com.makd.afinity.data.repository.admin.AdminRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.repository.metadata.ItemRatingsLoader
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
@@ -98,6 +98,7 @@ constructor(
     private val userDataRepository: UserDataRepository,
     private val mediaRepository: MediaRepository,
     private val sessionManager: SessionManager,
+    private val itemRatingsLoader: ItemRatingsLoader,
     private val downloadRepository: DownloadRepository,
     private val databaseRepository: DatabaseRepository,
     private val offlineModeManager: OfflineModeManager,
@@ -1092,47 +1093,12 @@ constructor(
                             }
                         }
 
-                        val ratingsDeferred = async {
-                            try {
-                                if (tmdbId != null) {
-                                    val ratingsResult =
-                                        mediaRepository.getMdbListRatings(
-                                            tmdbId,
-                                            item is AfinityMovie,
-                                        )
-                                    ratingsResult.copy(
-                                        ratings =
-                                            ratingsResult.ratings.filter {
-                                                it.source.lowercase() !in
-                                                    listOf("imdb", "tomatoes") && it.value != null
-                                            }
-                                    )
-                                } else {
-                                    MdbListRatingsResult()
-                                }
-                            } catch (e: Exception) {
-                                MdbListRatingsResult()
-                            }
-                        }
-
-                        val omdbDeferred = async {
-                            try {
-                                if (imdbId != null) {
-                                    mediaRepository.getOmdbDetails(imdbId)?.awards?.takeIf {
-                                        it != "N/A"
-                                    }
-                                } else {
-                                    null
-                                }
-                            } catch (e: Exception) {
-                                null
-                            }
-                        }
+                        val ratingsDeferred = async { itemRatingsLoader.fetch(item) }
 
                         val ratingsResult = ratingsDeferred.await()
-                        fetchedRatings = ratingsResult.ratings
+                        fetchedRatings = ratingsResult.mdbRatings
                         fetchedRatingBadges = ratingsResult.badges
-                        fetchedOmdbAwards = omdbDeferred.await()
+                        fetchedOmdbAwards = ratingsResult.omdbAwards
                         _uiState.update {
                             it.copy(
                                 mdbRatings = fetchedRatings,

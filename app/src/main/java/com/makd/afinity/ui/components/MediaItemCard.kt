@@ -219,10 +219,10 @@ fun MediaItemCard(
                             horizontalArrangement = Arrangement.spacedBy(2.dp),
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                painter = painterResource(id = R.drawable.ic_community_rating),
                                 contentDescription = stringResource(R.string.cd_imdb),
                                 tint = Color.Unspecified,
-                                modifier = Modifier.size(ratingScale.imdbIconSize),
+                                modifier = Modifier.size(ratingScale.rtIconSize),
                             )
                             Text(
                                 text = String.format(Locale.US, "%.1f", rating),
