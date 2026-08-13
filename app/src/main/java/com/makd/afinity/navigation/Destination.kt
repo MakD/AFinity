@@ -75,6 +75,7 @@ enum class Destination(
         const val SERVER_MANAGEMENT_ROUTE = "server_management"
         const val ADD_EDIT_SERVER_ROUTE = "add_edit_server?serverId={serverId}"
 
+        const val SPLASH_ROUTE = "splash"
         const val LOGIN_ROUTE = "login?serverUrl={serverUrl}"
         const val SERVICES_HUB_ROUTE = "services_hub?entry={entry}"
 

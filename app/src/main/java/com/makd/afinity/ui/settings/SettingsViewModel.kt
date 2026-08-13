@@ -813,7 +813,7 @@ constructor(
         }
     }
 
-    fun logout(onLogoutComplete: () -> Unit) {
+    fun logout() {
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isLoggingOut = true)
@@ -836,8 +836,6 @@ constructor(
                         Timber.w(e, "Failed to logout from Audiobookshelf during AFinity logout")
                     }
                 }
-
-                onLogoutComplete()
             } catch (e: Exception) {
                 Timber.e(e, "Logout failed")
                 _uiState.value =

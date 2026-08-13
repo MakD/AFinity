@@ -229,8 +229,8 @@ fun HomeScreen(
                                 bottom = max(bottomPadding, playerOffset) + 16.dp,
                             ),
                     ) {
-                        if (showCarousel) {
-                            item(key = "hero_carousel") {
+                        item(key = "hero_carousel") {
+                            if (showCarousel) {
                                 HeroCarousel(
                                     items = uiState.heroCarouselItems,
                                     height = screenHeight * 0.65f,

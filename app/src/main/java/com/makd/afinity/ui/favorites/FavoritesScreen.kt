@@ -60,7 +60,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
@@ -178,7 +177,7 @@ fun FavoritesScreen(
                             actionText = "Browse Media",
                             onActionClick = {
                                 navController.navigate(Destination.HOME.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
+                                    popUpTo(Destination.HOME.route) {
                                         saveState = true
                                     }
                                     launchSingleTop = true

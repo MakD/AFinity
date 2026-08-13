@@ -2,7 +2,6 @@
 
 package com.makd.afinity.navigation
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.animateDpAsState
@@ -11,7 +10,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -50,13 +48,13 @@ import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.makd.afinity.AuthenticationState
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.common.CollectionType
@@ -77,6 +75,7 @@ import com.makd.afinity.ui.audiobookshelf.libraries.AudiobookshelfLibraryScreen
 import com.makd.afinity.ui.audiobookshelf.libraries.AudiobookshelfSeriesListScreen
 import com.makd.afinity.ui.audiobookshelf.player.AudiobookshelfPlayerScreen
 import com.makd.afinity.ui.components.AFinitySnackbar
+import com.makd.afinity.ui.components.AfinitySplashScreen
 import com.makd.afinity.ui.components.AppNavigationDrawerContent
 import com.makd.afinity.ui.favorites.FavoritesCategory
 import com.makd.afinity.ui.favorites.FavoritesCategoryScreen
@@ -133,9 +132,10 @@ fun MainNavigation(
     updateManager: UpdateManager,
     offlineModeManager: OfflineModeManager,
     widthSizeClass: WindowWidthSizeClass,
-    startAtOnboarding: Boolean = false,
+    authState: AuthenticationState,
 ) {
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
+    val appLoadingState by viewModel.appLoadingState.collectAsStateWithLifecycle()
     val favoritesCount by viewModel.favoritesCount.collectAsStateWithLifecycle()
     val watchlistCount by viewModel.watchlistCount.collectAsStateWithLifecycle()
     val isJellyseerrAuthenticated by
@@ -143,7 +143,6 @@ fun MainNavigation(
     val isAudiobookshelfAuthenticated by
         viewModel.isAudiobookshelfAuthenticated.collectAsStateWithLifecycle()
     val hasLiveTvAccess by viewModel.hasLiveTvAccess.collectAsStateWithLifecycle()
-    val appLoadingState by viewModel.appLoadingState.collectAsStateWithLifecycle()
     val isOffline by offlineModeManager.isOffline.collectAsStateWithLifecycle(initialValue = false)
     val connectionType by offlineModeManager.connectionType.collectAsStateWithLifecycle()
     val audiobookshelfPlaybackState by
@@ -158,10 +157,31 @@ fun MainNavigation(
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    val currentRoute = currentDestination?.route
     val coroutineScope = rememberCoroutineScope()
     val pendingNavigationRoute by viewModel.pendingNavigationRoute.collectAsStateWithLifecycle()
 
-    LaunchedEffect(pendingNavigationRoute) {
+    val isPreAuth =
+        currentRoute == null ||
+            currentRoute == Destination.SPLASH_ROUTE ||
+            currentRoute == Destination.LOGIN_ROUTE
+
+    LaunchedEffect(authState, currentRoute) {
+        if (
+            authState is AuthenticationState.NotAuthenticated &&
+                currentRoute != null &&
+                currentRoute != Destination.LOGIN_ROUTE
+        ) {
+            Timber.d("Not authenticated → login")
+            navController.navigate(Destination.createLoginRoute()) {
+                popUpTo(0) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
+    LaunchedEffect(pendingNavigationRoute, isPreAuth) {
+        if (isPreAuth) return@LaunchedEffect
         pendingNavigationRoute?.let { route ->
             navController.navigate(route) { launchSingleTop = true }
             viewModel.consumePendingNavigation()
@@ -172,7 +192,11 @@ fun MainNavigation(
     val serverRestartingMessage = stringResource(R.string.websocket_server_restarting)
     val serverShutdownMessage = stringResource(R.string.websocket_server_shutdown)
 
-    LaunchedEffect(webSocketState) {
+    LaunchedEffect(webSocketState, isPreAuth) {
+        if (isPreAuth) {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            return@LaunchedEffect
+        }
         when (webSocketState) {
             WebSocketState.SERVER_RESTARTING ->
                 snackbarHostState.showSnackbar(
@@ -190,7 +214,7 @@ fun MainNavigation(
 
     val shouldShowNavigation =
         currentDestination?.route?.let { route -> Destination.entries.any { it.route == route } }
-            ?: true
+            ?: false
 
     val useNavRail = widthSizeClass != WindowWidthSizeClass.Compact
     val onMenuClick: (() -> Unit)? =
@@ -200,21 +224,26 @@ fun MainNavigation(
 
     LaunchedEffect(Unit) {
         viewModel.sessionCleared.collect {
-            Timber.d("Session cleared, returning to HOME")
+            val homeInBackStack =
+                runCatching { navController.getBackStackEntry(Destination.HOME.route) }.isSuccess
+            Timber.d("Session cleared, returning to HOME (reuse=$homeInBackStack)")
             navController.navigate(Destination.HOME.route) {
-                popUpTo(0) { inclusive = true }
+                if (homeInBackStack) {
+                    popUpTo(Destination.HOME.route) { inclusive = false }
+                } else {
+                    popUpTo(0) { inclusive = true }
+                }
                 launchSingleTop = true
             }
         }
     }
 
-    LaunchedEffect(isOffline) {
-        if (isOffline) {
-            val currentRoute = navController.currentBackStackEntry?.destination?.route
+    LaunchedEffect(isOffline, isPreAuth) {
+        if (isOffline && !isPreAuth) {
             if (currentRoute != null && currentRoute != Destination.HOME.route) {
                 Timber.d("Switching to offline mode, navigating to HOME")
                 navController.navigate(Destination.HOME.route) {
-                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    popUpTo(Destination.HOME.route) { saveState = true }
                     launchSingleTop = true
                     restoreState = true
                 }
@@ -229,26 +258,21 @@ fun MainNavigation(
         ) {
             Timber.d("Libraries menu entry removed, navigating to HOME")
             navController.navigate(Destination.HOME.route) {
-                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                popUpTo(Destination.HOME.route) { saveState = true }
                 launchSingleTop = true
                 restoreState = true
             }
         }
     }
 
-    AnimatedContent(
-        targetState = appLoadingState.isLoading,
-        transitionSpec = {
-            fadeIn(animationSpec = tween(400)) togetherWith fadeOut(animationSpec = tween(400))
-        },
-        label = "MainNavigationLoadingState",
-    ) { isLoading ->
-        if (isLoading) {
-            Box(modifier = modifier.fillMaxSize())
-        } else {
-            NavigationSuiteScaffold(
+    Box(modifier = modifier.fillMaxSize()) {
+        NavigationSuiteScaffold(
                 layoutType =
                     when {
+                        authState !is AuthenticationState.Authenticated ->
+                            NavigationSuiteType.None
+                        isPreAuth -> NavigationSuiteType.None
+                        appLoadingState.isLoading -> NavigationSuiteType.None
                         !shouldShowNavigation -> NavigationSuiteType.None
                         navigationDrawerEnabled -> NavigationSuiteType.None
                         useNavRail -> NavigationSuiteType.NavigationRail
@@ -294,7 +318,7 @@ fun MainNavigation(
                             selected = selected,
                             onClick = {
                                 navController.navigate(destination.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
+                                    popUpTo(Destination.HOME.route) {
                                         saveState = true
                                     }
                                     launchSingleTop = true
@@ -326,7 +350,7 @@ fun MainNavigation(
                         )
                     }
                 },
-                modifier = modifier,
+                modifier = Modifier.fillMaxSize(),
                 containerColor = MaterialTheme.colorScheme.surface,
                 contentColor = MaterialTheme.colorScheme.onSurface,
                 navigationSuiteColors =
@@ -382,12 +406,22 @@ fun MainNavigation(
                             Box(modifier = Modifier.fillMaxSize()) {
                                 NavHost(
                                     navController = navController,
-                                    startDestination =
-                                        if (startAtOnboarding)
-                                            Destination.createServicesHubRoute("firstRun")
-                                        else Destination.HOME.route,
+                                    startDestination = Destination.SPLASH_ROUTE,
                                     modifier = Modifier.fillMaxSize(),
                                 ) {
+                                    composable(Destination.SPLASH_ROUTE) {
+                                        LaunchedEffect(authState) {
+                                            if (authState is AuthenticationState.Authenticated) {
+                                                Timber.d("Splash: authenticated → home")
+                                                navController.navigate(Destination.HOME.route) {
+                                                    popUpTo(0) { inclusive = true }
+                                                }
+                                            }
+                                        }
+
+                                        Box(modifier = Modifier.fillMaxSize())
+                                    }
+
                                     composable(Destination.HOME.route) {
                                         HomeScreen(
                                             onItemClick = { item ->
@@ -1082,10 +1116,6 @@ fun MainNavigation(
                                             navController = navController,
                                             onBackClick =
                                                 dropUnlessResumed { navController.popBackStack() },
-                                            onLogoutComplete = {
-                                                // Logout handled by MainActivity observing auth
-                                                // state
-                                            },
                                         )
                                     }
 
@@ -1184,8 +1214,19 @@ fun MainNavigation(
                                     ) {
                                         LoginScreen(
                                             onLoginSuccess = {
-                                                navController.navigate(Destination.HOME.route) {
-                                                    popUpTo(0) { inclusive = true }
+                                                coroutineScope.launch {
+                                                    val target =
+                                                        if (viewModel.isOnboardingFirstRunDone()) {
+                                                            Destination.HOME.route
+                                                        } else {
+                                                            Destination.createServicesHubRoute(
+                                                                "firstRun"
+                                                            )
+                                                        }
+                                                    Timber.d("Login success → $target")
+                                                    navController.navigate(target) {
+                                                        popUpTo(0) { inclusive = true }
+                                                    }
                                                 }
                                             },
                                             modifier = Modifier.fillMaxSize(),
@@ -1515,7 +1556,7 @@ fun MainNavigation(
                                 )
 
                                 AnimatedVisibility(
-                                    visible = miniPlayerState != null,
+                                    visible = miniPlayerState != null && !isPreAuth,
                                     enter = slideInVertically { it },
                                     exit = slideOutVertically { it },
                                     modifier = Modifier.align(Alignment.BottomCenter),
@@ -1646,7 +1687,7 @@ fun MainNavigation(
                                 onDestinationClick = { destination ->
                                     coroutineScope.launch { railState.collapse() }
                                     navController.navigate(destination.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
+                                        popUpTo(Destination.HOME.route) {
                                             saveState = true
                                         }
                                         launchSingleTop = true
@@ -1671,9 +1712,31 @@ fun MainNavigation(
                     }
                 }
             }
+
+        val isAuthenticating = authState !is AuthenticationState.Authenticated
+
+        AnimatedVisibility(
+            visible =
+                currentRoute != Destination.LOGIN_ROUTE &&
+                    (isAuthenticating || appLoadingState.isLoading),
+            enter = fadeIn(animationSpec = tween(400)),
+            exit = fadeOut(animationSpec = tween(400)),
+        ) {
+            AfinitySplashScreen(
+                statusText =
+                    if (isAuthenticating) {
+                        stringResource(R.string.splash_status_authenticating)
+                    } else {
+                        appLoadingState.loadingPhase.ifEmpty { "Loading..." }
+                    },
+                progress = if (isAuthenticating) null else appLoadingState.loadingProgress,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
     }
-    GlobalUpdateDialog(updateManager = updateManager)
+    if (!isPreAuth) {
+        GlobalUpdateDialog(updateManager = updateManager)
+    }
 }
 
 private fun NavController.navigateToItem(item: AfinityItem) {

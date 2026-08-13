@@ -57,6 +57,9 @@ constructor(
 
     val sessionCleared = appDataRepository.sessionCleared
 
+    suspend fun isOnboardingFirstRunDone(): Boolean =
+        preferencesRepository.getOnboardingFirstRunDone()
+
     fun consumePendingNavigation() {
         pendingNavigationManager.consume()
     }

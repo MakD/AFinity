@@ -119,7 +119,6 @@ import timber.log.Timber
 fun SettingsScreen(
     navController: NavHostController,
     onBackClick: () -> Unit,
-    onLogoutComplete: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -206,7 +205,7 @@ fun SettingsScreen(
         LogoutConfirmationDialog(
             onConfirm = {
                 showLogoutDialog = false
-                viewModel.logout(onLogoutComplete)
+                viewModel.logout()
             },
             onDismiss = { showLogoutDialog = false },
         )

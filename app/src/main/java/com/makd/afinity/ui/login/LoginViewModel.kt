@@ -643,25 +643,6 @@ constructor(
         _uiState.value = _uiState.value.copy(error = null)
     }
 
-    fun logout() {
-        viewModelScope.launch {
-            try {
-                authRepository.logout()
-                sessionManager.logout()
-                _uiState.value = LoginUiState()
-                _publicUsers.value = emptyList()
-                _serverUrl.value = ""
-                _connectedServerUrl.value = ""
-                Timber.d("Successfully logged out")
-            } catch (e: Exception) {
-                Timber.e(e, "Logout failed")
-                _uiState.value = LoginUiState()
-                _publicUsers.value = emptyList()
-                _serverUrl.value = ""
-                _connectedServerUrl.value = ""
-            }
-        }
-    }
 }
 
 data class LoginUiState(
