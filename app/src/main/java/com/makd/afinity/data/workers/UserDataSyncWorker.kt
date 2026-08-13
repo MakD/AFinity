@@ -7,17 +7,17 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.user.AfinityUserDataDto
+import com.makd.afinity.data.network.userDataUtc
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
-import org.jellyfin.sdk.api.operations.ItemsApi
 import org.jellyfin.sdk.api.operations.PlayStateApi
 import org.jellyfin.sdk.model.DateTime
-import org.jellyfin.sdk.model.api.UpdateUserItemDataDto
 import timber.log.Timber
 import java.time.Instant
 import java.time.ZoneId
@@ -93,13 +93,12 @@ constructor(
                             return@forEach
                         }
 
-                        val itemsApi = ItemsApi(apiClient)
                         val playStateApi = PlayStateApi(apiClient)
 
                         for (userData in pending) {
                             when (
                                 uploadUserData(
-                                    itemsApi = itemsApi,
+                                    apiClient = apiClient,
                                     playStateApi = playStateApi,
                                     userId = account.userId,
                                     userData = userData,
@@ -173,29 +172,24 @@ constructor(
         }
 
     private suspend fun uploadUserData(
-        itemsApi: ItemsApi,
+        apiClient: ApiClient,
         playStateApi: PlayStateApi,
         userId: UUID,
         userData: AfinityUserDataDto,
     ): UploadResult {
         return try {
-            val datePlayed = userData.lastPlayedAt?.toDateTime()
-
             if (userData.played) {
                 playStateApi.markPlayedItem(
                     itemId = userData.itemId,
                     userId = userId,
-                    datePlayed = datePlayed,
+                    datePlayed = userData.lastPlayedAt?.toDateTime(),
                 )
             } else {
-                itemsApi.updateItemUserData(
+                apiClient.userDataUtc(
                     itemId = userData.itemId,
                     userId = userId,
-                    data =
-                        UpdateUserItemDataDto(
-                            playbackPositionTicks = userData.playbackPositionTicks,
-                            lastPlayedDate = datePlayed,
-                        ),
+                    positionTicks = userData.playbackPositionTicks,
+                    lastPlayedAtMillis = userData.lastPlayedAt,
                 )
             }
             Timber.d("Synced item ${userData.itemId} (played=${userData.played})")
