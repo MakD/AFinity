@@ -59,21 +59,34 @@ fun MusicTrackRow(
     modifier: Modifier = Modifier,
 ) {
     var showMenu by remember { mutableStateOf(false) }
-    val hasMenuItems = onInstantMix != null || onStartRadio != null || onAddNext != null || onAddLast != null || onFavorite != null || onAddToPlaylist != null || onRemoveFromPlaylist != null || onDownload != null
+    val hasMenuItems =
+        onInstantMix != null ||
+            onStartRadio != null ||
+            onAddNext != null ||
+            onAddLast != null ||
+            onFavorite != null ||
+            onAddToPlaylist != null ||
+            onRemoveFromPlaylist != null ||
+            onDownload != null
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }, onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() },
+                    onClick = onClick,
+                )
+                .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (showAlbumArt) {
             Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                modifier =
+                    Modifier.size(48.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center,
             ) {
                 AsyncImage(
@@ -82,16 +95,14 @@ fun MusicTrackRow(
                     blurHash = track.images.primaryImageBlurHash,
                     targetWidth = 48.dp,
                     targetHeight = 48.dp,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .aspectRatio(1f),
+                    modifier = Modifier.size(48.dp).aspectRatio(1f),
                     contentScale = ContentScale.Crop,
                 )
                 if (isPlaying) {
                     Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f)),
+                        modifier =
+                            Modifier.size(48.dp)
+                                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f)),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
@@ -108,8 +119,9 @@ fun MusicTrackRow(
             Text(
                 text = trackNumber.toString(),
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (isPlaying) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant,
+                color =
+                    if (isPlaying) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.width(28.dp),
             )
             Spacer(modifier = Modifier.width(12.dp))
@@ -119,15 +131,18 @@ fun MusicTrackRow(
             Text(
                 text = track.name,
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                color = if (isPlaying) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurface,
+                color =
+                    if (isPlaying) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            val subtitle = listOfNotNull(
-                track.artist ?: track.artists.firstOrNull(),
-                if (showAlbumArt) track.album else null,
-            ).joinToString(" · ")
+            val subtitle =
+                listOfNotNull(
+                        track.artist ?: track.artists.firstOrNull(),
+                        if (showAlbumArt) track.album else null,
+                    )
+                    .joinToString(" · ")
             if (subtitle.isNotEmpty()) {
                 Text(
                     text = subtitle,
@@ -168,13 +183,29 @@ fun MusicTrackRow(
                 DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                     if (onFavorite != null) {
                         DropdownMenuItem(
-                            text = { Text(stringResource(if (track.favorite) R.string.cd_favorite_remove else R.string.cd_favorite_add)) },
-                            onClick = { showMenu = false; onFavorite() },
+                            text = {
+                                Text(
+                                    stringResource(
+                                        if (track.favorite) R.string.cd_favorite_remove
+                                        else R.string.cd_favorite_add
+                                    )
+                                )
+                            },
+                            onClick = {
+                                showMenu = false
+                                onFavorite()
+                            },
                             leadingIcon = {
                                 Icon(
-                                    painter = painterResource(if (track.favorite) R.drawable.ic_favorite_filled else R.drawable.ic_favorite),
+                                    painter =
+                                        painterResource(
+                                            if (track.favorite) R.drawable.ic_favorite_filled
+                                            else R.drawable.ic_favorite
+                                        ),
                                     contentDescription = null,
-                                    tint = if (track.favorite) Color.Red else LocalContentColor.current,
+                                    tint =
+                                        if (track.favorite) Color.Red
+                                        else LocalContentColor.current,
                                     modifier = Modifier.size(18.dp),
                                 )
                             },
@@ -183,7 +214,10 @@ fun MusicTrackRow(
                     if (onInstantMix != null) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.music_action_instant_mix)) },
-                            onClick = { showMenu = false; onInstantMix() },
+                            onClick = {
+                                showMenu = false
+                                onInstantMix()
+                            },
                             leadingIcon = {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_compass),
@@ -196,7 +230,10 @@ fun MusicTrackRow(
                     if (onStartRadio != null) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.music_action_start_radio)) },
-                            onClick = { showMenu = false; onStartRadio() },
+                            onClick = {
+                                showMenu = false
+                                onStartRadio()
+                            },
                             leadingIcon = {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_radio),
@@ -209,7 +246,10 @@ fun MusicTrackRow(
                     if (onAddNext != null) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.music_action_play_next)) },
-                            onClick = { showMenu = false; onAddNext() },
+                            onClick = {
+                                showMenu = false
+                                onAddNext()
+                            },
                             leadingIcon = {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_player_skip_forward),
@@ -222,7 +262,10 @@ fun MusicTrackRow(
                     if (onAddLast != null) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.music_action_add_to_queue)) },
-                            onClick = { showMenu = false; onAddLast() },
+                            onClick = {
+                                showMenu = false
+                                onAddLast()
+                            },
                             leadingIcon = {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_playlist_alt),
@@ -235,7 +278,10 @@ fun MusicTrackRow(
                     if (onAddToPlaylist != null) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.music_action_add_to_playlist)) },
-                            onClick = { showMenu = false; onAddToPlaylist() },
+                            onClick = {
+                                showMenu = false
+                                onAddToPlaylist()
+                            },
                             leadingIcon = {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_playlist),
@@ -247,8 +293,13 @@ fun MusicTrackRow(
                     }
                     if (onRemoveFromPlaylist != null) {
                         DropdownMenuItem(
-                            text = { Text(stringResource(R.string.music_action_remove_from_playlist)) },
-                            onClick = { showMenu = false; onRemoveFromPlaylist() },
+                            text = {
+                                Text(stringResource(R.string.music_action_remove_from_playlist))
+                            },
+                            onClick = {
+                                showMenu = false
+                                onRemoveFromPlaylist()
+                            },
                             leadingIcon = {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_delete),
@@ -261,7 +312,10 @@ fun MusicTrackRow(
                     if (onDownload != null) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.action_download)) },
-                            onClick = { showMenu = false; onDownload() },
+                            onClick = {
+                                showMenu = false
+                                onDownload()
+                            },
                             leadingIcon = {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_download),

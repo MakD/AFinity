@@ -99,7 +99,8 @@ fun MetadataRow(
                 verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                val source = item.sources.find { it.id == selectedSourceId } ?: item.sources.firstOrNull()
+                val source =
+                    item.sources.find { it.id == selectedSourceId } ?: item.sources.firstOrNull()
 
                 source
                     ?.mediaStreams
@@ -159,7 +160,8 @@ fun MetadataRow(
                     ?.mediaStreams
                     ?.firstOrNull { it.type == MediaStreamType.AUDIO }
                     ?.let { audioStream ->
-                        val isAtmos = audioStream.profile?.contains("Atmos", ignoreCase = true) == true
+                        val isAtmos =
+                            audioStream.profile?.contains("Atmos", ignoreCase = true) == true
                         val codec = audioStream.codec.takeIf { it.isNotEmpty() } ?: return@let
                         when {
                             isAtmos ->

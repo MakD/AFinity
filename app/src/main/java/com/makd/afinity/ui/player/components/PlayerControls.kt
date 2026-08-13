@@ -1580,8 +1580,7 @@ private fun PauseDetailsOverlay(
             is AfinityShow -> item.officialRating
             else -> null
         }
-    val runtimeText =
-        if (item.runtimeTicks > 0L) formatRuntimeTicks(item.runtimeTicks) else null
+    val runtimeText = if (item.runtimeTicks > 0L) formatRuntimeTicks(item.runtimeTicks) else null
     val overview = item.overview.takeIf { it.isNotBlank() }
     val people =
         when (item) {

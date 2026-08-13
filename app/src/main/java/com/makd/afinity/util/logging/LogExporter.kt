@@ -88,20 +88,21 @@ object LogExporter {
         }
 
     private fun buildHeader(context: Context): String {
-        val packageInfo =
-            runCatching { context.packageManager.getPackageInfo(context.packageName, 0) }
-                .getOrNull()
+        val packageInfo = runCatching {
+            context.packageManager.getPackageInfo(context.packageName, 0)
+        }
+            .getOrNull()
 
         val versionName = packageInfo?.versionName ?: BuildConfig.VERSION_NAME
         val versionCode = packageInfo?.longVersionCode ?: 0L
         val buildType = if (BuildConfig.DEBUG) "debug" else "release"
 
         return buildString {
-                appendLine("AFinity $versionName ($versionCode) [$buildType]")
-                appendLine("Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
-                appendLine("Device: ${Build.MANUFACTURER} ${Build.MODEL} (${Build.DEVICE})")
-                appendLine("ABI: ${Build.SUPPORTED_ABIS.firstOrNull() ?: "unknown"}")
-            }
+            appendLine("AFinity $versionName ($versionCode) [$buildType]")
+            appendLine("Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
+            appendLine("Device: ${Build.MANUFACTURER} ${Build.MODEL} (${Build.DEVICE})")
+            appendLine("ABI: ${Build.SUPPORTED_ABIS.firstOrNull() ?: "unknown"}")
+        }
             .trimEnd()
     }
 

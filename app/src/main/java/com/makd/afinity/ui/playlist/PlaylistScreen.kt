@@ -126,9 +126,7 @@ fun PlaylistScreen(
             }
         }
 
-    LaunchedEffect(uiState.deleted) {
-        if (uiState.deleted) navController.popBackStack()
-    }
+    LaunchedEffect(uiState.deleted) { if (uiState.deleted) navController.popBackStack() }
 
     LaunchedEffect(Unit) {
         viewModel.videoPlaybackRequests.collect { request ->

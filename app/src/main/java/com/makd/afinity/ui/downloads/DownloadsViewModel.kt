@@ -219,9 +219,7 @@ constructor(
                                     computeSpeeds(
                                         speedSamples,
                                         activeDownloads
-                                            .filter {
-                                                it.status == DownloadStatus.DOWNLOADING
-                                            }
+                                            .filter { it.status == DownloadStatus.DOWNLOADING }
                                             .map { it.id to it.bytesDownloaded },
                                     ),
                             )
@@ -258,9 +256,7 @@ constructor(
                                     computeSpeeds(
                                         absSpeedSamples,
                                         absActive
-                                            .filter {
-                                                it.status == AbsDownloadStatus.DOWNLOADING
-                                            }
+                                            .filter { it.status == AbsDownloadStatus.DOWNLOADING }
                                             .map { it.id to it.bytesDownloaded },
                                     ),
                             )
@@ -304,8 +300,7 @@ constructor(
                 deltaBytes > 0 && deltaMs > 0 -> {
                     val instant = deltaBytes * 1000 / deltaMs
                     val smoothed =
-                        if (prev.speedBps == 0L) instant
-                        else (prev.speedBps * 7 + instant * 3) / 10
+                        if (prev.speedBps == 0L) instant else (prev.speedBps * 7 + instant * 3) / 10
                     samples[id] = SpeedSample(bytesDownloaded, now, smoothed)
                     speeds[id] = smoothed
                 }
@@ -412,9 +407,7 @@ constructor(
 
     private fun mergeUsage(vararg usageMaps: Map<String, Long>): Map<String, Long> = buildMap {
         usageMaps.forEach { usage ->
-            usage.forEach { (volumeId, bytes) ->
-                put(volumeId, (get(volumeId) ?: 0L) + bytes)
-            }
+            usage.forEach { (volumeId, bytes) -> put(volumeId, (get(volumeId) ?: 0L) + bytes) }
         }
     }
 
@@ -564,9 +557,7 @@ constructor(
         viewModelScope.launch {
             uiState.value.completedDownloads
                 .filter { it.itemType == "Audio" && it.seriesId == albumSeriesId }
-                .forEach {
-                    downloadRepository.deleteDownload(it.id)
-                }
+                .forEach { downloadRepository.deleteDownload(it.id) }
             loadStorageInfo()
         }
     }

@@ -127,9 +127,7 @@ fun WatchlistScreen(
                     actionText = "Browse Media",
                     onActionClick = {
                         navController.navigate(Destination.HOME.route) {
-                            popUpTo(Destination.HOME.route) {
-                                saveState = true
-                            }
+                            popUpTo(Destination.HOME.route) { saveState = true }
                             launchSingleTop = true
                             restoreState = true
                         }

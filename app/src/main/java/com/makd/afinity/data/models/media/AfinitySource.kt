@@ -33,12 +33,8 @@ suspend fun MediaSourceInfo.toAfinitySource(
             MediaProtocol.HTTP -> this.path.orEmpty()
             else -> ""
         }
-    val videoStream = mediaStreams?.firstOrNull {
-        it.type == MediaStreamType.VIDEO
-    }
-    val audioStream = mediaStreams?.firstOrNull {
-        it.type == MediaStreamType.AUDIO
-    }
+    val videoStream = mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+    val audioStream = mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }
     return AfinitySource(
         id = id.orEmpty(),
         name = name.orEmpty(),

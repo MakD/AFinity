@@ -119,7 +119,10 @@ fun PlaybackStatsOverlay(stats: PlaybackStats, onClose: () -> Unit) {
                 )
 
                 InfoSectionTitle(stringResource(R.string.playback_stats_section_network_buffer))
-                InfoRow(stringResource(R.string.playback_stats_label_forward_buffer), stats.bufferHealth)
+                InfoRow(
+                    stringResource(R.string.playback_stats_label_forward_buffer),
+                    stats.bufferHealth,
+                )
                 if (stats.networkSpeed.isNotBlank()) {
                     InfoRow(
                         stringResource(R.string.playback_stats_label_network_speed),
@@ -130,7 +133,10 @@ fun PlaybackStatsOverlay(stats: PlaybackStats, onClose: () -> Unit) {
                     InfoRow(stringResource(R.string.playback_stats_label_cached), stats.cached)
                 }
                 if (stats.videoBitrate != "Unknown") {
-                    InfoRow(stringResource(R.string.playback_stats_label_video_bitrate), stats.videoBitrate)
+                    InfoRow(
+                        stringResource(R.string.playback_stats_label_video_bitrate),
+                        stats.videoBitrate,
+                    )
                 }
                 if (stats.audioBitrate.isNotBlank()) {
                     InfoRow(
@@ -145,7 +151,10 @@ fun PlaybackStatsOverlay(stats: PlaybackStats, onClose: () -> Unit) {
                         color = MaterialTheme.colorScheme.surfaceVariant,
                     )
                     InfoSectionTitle(stringResource(R.string.playback_stats_section_video_info))
-                    InfoRow(stringResource(R.string.playback_stats_label_resolution), stats.videoResolution)
+                    InfoRow(
+                        stringResource(R.string.playback_stats_label_resolution),
+                        stats.videoResolution,
+                    )
                     if (stats.videoRange.isNotBlank()) {
                         InfoRow(
                             stringResource(R.string.playback_stats_label_video_range),
@@ -182,7 +191,10 @@ fun PlaybackStatsOverlay(stats: PlaybackStats, onClose: () -> Unit) {
                     )
                 }
                 if (stats.hasVideo) {
-                    InfoRow(stringResource(R.string.playback_stats_label_video_codec), stats.videoCodec)
+                    InfoRow(
+                        stringResource(R.string.playback_stats_label_video_codec),
+                        stats.videoCodec,
+                    )
                 }
                 InfoRow(stringResource(R.string.playback_stats_label_audio_codec), stats.audioCodec)
                 InfoRow(
@@ -191,7 +203,10 @@ fun PlaybackStatsOverlay(stats: PlaybackStats, onClose: () -> Unit) {
                 )
                 InfoRow(
                     stringResource(R.string.playback_stats_label_sample_rate),
-                    stringResource(R.string.playback_stats_value_sample_rate_fmt, stats.audioSampleRate),
+                    stringResource(
+                        R.string.playback_stats_value_sample_rate_fmt,
+                        stats.audioSampleRate,
+                    ),
                 )
                 if (stats.subtitleTrack.isNotBlank()) {
                     InfoRow(

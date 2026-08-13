@@ -186,9 +186,7 @@ private fun NotInGroupContent(
         Spacer(modifier = Modifier.height(8.dp))
 
         Button(
-            onClick = {
-                if (groupName.isNotBlank()) onCreateGroup(groupName.trim())
-            },
+            onClick = { if (groupName.isNotBlank()) onCreateGroup(groupName.trim()) },
             enabled = groupName.isNotBlank() && !isJoining,
             modifier = Modifier.fillMaxWidth(),
         ) {
@@ -228,9 +226,7 @@ private fun NotInGroupContent(
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             )
-            TextButton(onClick = onRefreshGroups, enabled = !isJoining) {
-                Text(text = "Refresh")
-            }
+            TextButton(onClick = onRefreshGroups, enabled = !isJoining) { Text(text = "Refresh") }
         }
 
         if (uiState.isLoadingGroups) {

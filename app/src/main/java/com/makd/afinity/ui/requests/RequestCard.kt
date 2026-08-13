@@ -219,7 +219,8 @@ fun AvailableRequestCard(
         Card(
             onClick = onClick,
             modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            colors =
+                CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
@@ -235,12 +236,17 @@ fun AvailableRequestCard(
                 Card(
                     modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
                     shape = RoundedCornerShape(4.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondary
+                        ),
                 ) {
                     Text(
-                        text = stringResource(
-                            if (isPartial) R.string.status_partially_available else R.string.status_available
-                        ),
+                        text =
+                            stringResource(
+                                if (isPartial) R.string.status_partially_available
+                                else R.string.status_available
+                            ),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSecondary,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
@@ -263,10 +269,11 @@ fun AvailableRequestCard(
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = stringResource(
-                R.string.requested_by_fmt,
-                request.requestedBy.displayName ?: stringResource(R.string.user_unknown),
-            ),
+            text =
+                stringResource(
+                    R.string.requested_by_fmt,
+                    request.requestedBy.displayName ?: stringResource(R.string.user_unknown),
+                ),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
@@ -300,7 +307,8 @@ private fun getRequestStatusAttributes(request: JellyseerrRequest): StatusAttrib
                 contentColor = MaterialTheme.colorScheme.onError,
             )
         RequestStatus.APPROVED if
-            mediaStatus == MediaStatus.PENDING || mediaStatus == MediaStatus.UNKNOWN ->
+            mediaStatus == MediaStatus.PENDING || mediaStatus == MediaStatus.UNKNOWN
+         ->
             StatusAttributes(
                 textRes = R.string.status_processing,
                 containerColor = MaterialTheme.colorScheme.primary,

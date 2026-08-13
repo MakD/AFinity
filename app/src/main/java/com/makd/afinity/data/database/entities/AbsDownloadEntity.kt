@@ -8,12 +8,13 @@ import java.util.UUID
 
 @Entity(
     tableName = "abs_downloads",
-    indices = [
-        Index(
-            value = ["libraryItemId", "episodeId", "jellyfinServerId", "jellyfinUserId"],
-            unique = true,
-        )
-    ],
+    indices =
+        [
+            Index(
+                value = ["libraryItemId", "episodeId", "jellyfinServerId", "jellyfinUserId"],
+                unique = true,
+            )
+        ],
 )
 data class AbsDownloadEntity(
     @PrimaryKey val id: UUID,

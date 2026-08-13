@@ -41,7 +41,11 @@ fun BufferingIndicator(
 ) {
     val sizedModifier = if (size != null) modifier.size(size) else modifier
     if (strokeWidth != null) {
-        CircularProgressIndicator(color = color, strokeWidth = strokeWidth, modifier = sizedModifier)
+        CircularProgressIndicator(
+            color = color,
+            strokeWidth = strokeWidth,
+            modifier = sizedModifier,
+        )
     } else {
         CircularProgressIndicator(color = color, modifier = sizedModifier)
     }

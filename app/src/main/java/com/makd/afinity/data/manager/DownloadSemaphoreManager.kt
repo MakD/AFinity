@@ -10,8 +10,7 @@ class DownloadSemaphoreManager @Inject constructor() {
     private val lock = Any()
     private var currentPermits = 3
 
-    @Volatile
-    private var _semaphore = Semaphore(3)
+    @Volatile private var _semaphore = Semaphore(3)
 
     val semaphore: Semaphore
         get() = _semaphore

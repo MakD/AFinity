@@ -83,8 +83,7 @@ constructor(
                 Locality.TAILSCALE -> ConnectionType.TAILSCALE
                 Locality.TUNNELLED -> ConnectionType.VPN
                 Locality.PUBLIC -> ConnectionType.REMOTE
-                Locality.UNKNOWN ->
-                    lastKnownConnectionType ?: connectionTypeOf(false, serverUrl)
+                Locality.UNKNOWN -> lastKnownConnectionType ?: connectionTypeOf(false, serverUrl)
             }
         lastKnownConnectionType = resolved
         return resolved

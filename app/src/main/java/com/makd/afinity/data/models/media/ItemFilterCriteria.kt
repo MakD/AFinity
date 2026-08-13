@@ -39,10 +39,11 @@ fun LibraryFilters.toItemFilterCriteria(studios: List<String> = emptyList()): It
         studios = studios,
         officialRatings = officialRatings.toList(),
         tags = tags.toList(),
-        videoTypes = buildList {
-            if (VideoTypeFilter.BLU_RAY in videoTypes) add("BluRay")
-            if (VideoTypeFilter.DVD in videoTypes) add("Dvd")
-        },
+        videoTypes =
+            buildList {
+                if (VideoTypeFilter.BLU_RAY in videoTypes) add("BluRay")
+                if (VideoTypeFilter.DVD in videoTypes) add("Dvd")
+            },
         seriesStatuses = seriesStatuses.map { it.serialName },
         hasSubtitles = if (LibraryFeature.SUBTITLES in features) true else null,
         hasTrailer = if (LibraryFeature.TRAILER in features) true else null,

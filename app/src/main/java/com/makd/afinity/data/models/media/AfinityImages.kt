@@ -57,12 +57,11 @@ fun AfinityItem.patchedImagesFrom(source: AfinityItem): AfinityItem =
 
 fun <T : AfinityItem> List<T>.withPatchedImages(source: AfinityItem): List<T> {
     var changed = false
-    val patched =
-        map { item ->
-            @Suppress("UNCHECKED_CAST") val next = item.patchedImagesFrom(source) as T
-            if (next !== item) changed = true
-            next
-        }
+    val patched = map { item ->
+        @Suppress("UNCHECKED_CAST") val next = item.patchedImagesFrom(source) as T
+        if (next !== item) changed = true
+        next
+    }
     return if (changed) patched else this
 }
 

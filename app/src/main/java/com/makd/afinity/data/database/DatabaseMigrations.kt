@@ -1166,10 +1166,15 @@ object DatabaseMigrations {
                         `localImagePath` TEXT,
                         PRIMARY KEY(`id`, `serverId`, `userId`)
                     )
-                    """.trimIndent()
+                    """
+                        .trimIndent()
                 )
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_music_tracks_serverId_userId` ON `music_tracks` (`serverId`, `userId`)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_music_tracks_albumId_serverId_userId` ON `music_tracks` (`albumId`, `serverId`, `userId`)")
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_music_tracks_serverId_userId` ON `music_tracks` (`serverId`, `userId`)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_music_tracks_albumId_serverId_userId` ON `music_tracks` (`albumId`, `serverId`, `userId`)"
+                )
 
                 db.execSQL(
                     """
@@ -1187,9 +1192,12 @@ object DatabaseMigrations {
                         `localImagePath` TEXT,
                         PRIMARY KEY(`id`, `serverId`, `userId`)
                     )
-                    """.trimIndent()
+                    """
+                        .trimIndent()
                 )
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_music_albums_serverId_userId` ON `music_albums` (`serverId`, `userId`)")
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_music_albums_serverId_userId` ON `music_albums` (`serverId`, `userId`)"
+                )
 
                 db.execSQL(
                     """
@@ -1201,7 +1209,8 @@ object DatabaseMigrations {
                         `cachedAt` INTEGER NOT NULL,
                         PRIMARY KEY(`trackId`, `serverId`, `userId`)
                     )
-                    """.trimIndent()
+                    """
+                        .trimIndent()
                 )
             }
         }
@@ -1448,9 +1457,7 @@ object DatabaseMigrations {
     val MIGRATION_66_67 =
         object : Migration(66, 67) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL(
-                    "ALTER TABLE `userdata` ADD COLUMN `lastPlayedAt` INTEGER DEFAULT NULL"
-                )
+                db.execSQL("ALTER TABLE `userdata` ADD COLUMN `lastPlayedAt` INTEGER DEFAULT NULL")
             }
         }
 

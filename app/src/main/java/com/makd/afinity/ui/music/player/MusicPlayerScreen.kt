@@ -145,7 +145,9 @@ fun SharedTransitionScope.MusicPlayerScreen(
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) }) },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) })
+        },
         containerColor = Color.Transparent,
     ) { paddingValues ->
         Box(
@@ -192,11 +194,12 @@ fun SharedTransitionScope.MusicPlayerScreen(
                         else
                             ({
                                 playbackState.currentTrack?.let { track ->
-                                    radioSeed = RadioSeed(
-                                        trackId = track.id,
-                                        albumId = track.albumId,
-                                        sourceTracks = queue,
-                                    )
+                                    radioSeed =
+                                        RadioSeed(
+                                            trackId = track.id,
+                                            albumId = track.albumId,
+                                            sourceTracks = queue,
+                                        )
                                 }
                             }),
                     isRadioActive = radioState.isActive,
@@ -236,11 +239,12 @@ fun SharedTransitionScope.MusicPlayerScreen(
                         else
                             ({
                                 playbackState.currentTrack?.let { track ->
-                                    radioSeed = RadioSeed(
-                                        trackId = track.id,
-                                        albumId = track.albumId,
-                                        sourceTracks = queue,
-                                    )
+                                    radioSeed =
+                                        RadioSeed(
+                                            trackId = track.id,
+                                            albumId = track.albumId,
+                                            sourceTracks = queue,
+                                        )
                                 }
                             }),
                     isRadioActive = radioState.isActive,
@@ -475,7 +479,9 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = playbackState.currentTrack?.name ?: stringResource(R.string.music_player_nothing_playing),
+                    text =
+                        playbackState.currentTrack?.name
+                            ?: stringResource(R.string.music_player_nothing_playing),
                     style =
                         MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.ExtraBold
@@ -539,7 +545,10 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                             contentDescription = "Start Radio",
                             tint =
                                 if (isRadioActive) animatedColor
-                                else Color.White.copy(alpha = if (onStartRadio != null) 0.8f else 0.3f),
+                                else
+                                    Color.White.copy(
+                                        alpha = if (onStartRadio != null) 0.8f else 0.3f
+                                    ),
                         )
                         Box(
                             modifier =
@@ -873,7 +882,9 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = playbackState.currentTrack?.name ?: stringResource(R.string.music_player_nothing_playing),
+                        text =
+                            playbackState.currentTrack?.name
+                                ?: stringResource(R.string.music_player_nothing_playing),
                         style =
                             MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                         color = Color.White,
@@ -931,13 +942,19 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                         enabled = onStartRadio != null,
                         onClick = onStartRadio ?: {},
                     ) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_radio),
                                 contentDescription = stringResource(R.string.cd_music_start_radio),
                                 tint =
                                     if (isRadioActive) animatedColor
-                                    else Color.White.copy(alpha = if (onStartRadio != null) 0.8f else 0.3f),
+                                    else
+                                        Color.White.copy(
+                                            alpha = if (onStartRadio != null) 0.8f else 0.3f
+                                        ),
                             )
                             Box(
                                 modifier =

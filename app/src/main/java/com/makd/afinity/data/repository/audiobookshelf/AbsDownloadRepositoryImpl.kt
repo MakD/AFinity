@@ -195,9 +195,9 @@ constructor(
     }
 
     override suspend fun getStorageUsedPerVolumeAllServers(): Map<String, Long> =
-        absDownloadDao
-            .getStorageUsedPerVolumeAllServers()
-            .associate { it.storageVolumeId to it.totalBytes }
+        absDownloadDao.getStorageUsedPerVolumeAllServers().associate {
+            it.storageVolumeId to it.totalBytes
+        }
 
     private suspend fun buildLocalDirPath(
         volumeId: String,

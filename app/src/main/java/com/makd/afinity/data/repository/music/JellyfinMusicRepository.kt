@@ -105,7 +105,8 @@ constructor(
         limit: Int,
         nameStartsWith: String?,
     ): List<AfinityTrack> =
-        apiCall(emptyList(), "Failed to fetch tracks for library: $libraryId") { apiClient, userId ->
+        apiCall(emptyList(), "Failed to fetch tracks for library: $libraryId") { apiClient, userId
+            ->
             val baseUrl = getBaseUrlInternal()
 
             val itemFilters = buildList {
@@ -147,7 +148,8 @@ constructor(
         limit: Int,
         nameStartsWith: String?,
     ): List<AfinityAlbum> =
-        apiCall(emptyList(), "Failed to fetch albums for library: $libraryId") { apiClient, userId ->
+        apiCall(emptyList(), "Failed to fetch albums for library: $libraryId") { apiClient, userId
+            ->
             val baseUrl = getBaseUrlInternal()
 
             val itemFilters = buildList {
@@ -189,12 +191,11 @@ constructor(
         limit: Int,
         nameStartsWith: String?,
     ): List<AfinityArtist> =
-        apiCall(emptyList(), "Failed to fetch artists for library: $libraryId") { apiClient, userId ->
+        apiCall(emptyList(), "Failed to fetch artists for library: $libraryId") { apiClient, userId
+            ->
             val baseUrl = getBaseUrlInternal()
 
-            val itemFilters = buildList {
-                if (filters.favoritesOnly) add(ItemFilter.IS_FAVORITE)
-            }
+            val itemFilters = buildList { if (filters.favoritesOnly) add(ItemFilter.IS_FAVORITE) }
 
             val response =
                 ArtistsApi(apiClient)
@@ -222,9 +223,10 @@ constructor(
         libraryId: UUID,
         itemType: BaseItemKind,
     ): MusicFilterOptions =
-        apiCall(MusicFilterOptions(), "Failed to fetch music filter options for library: $libraryId") {
-            apiClient,
-            userId ->
+        apiCall(
+            MusicFilterOptions(),
+            "Failed to fetch music filter options for library: $libraryId",
+        ) { apiClient, userId ->
             val content =
                 FilterApi(apiClient)
                     .getQueryFiltersLegacy(
@@ -275,62 +277,59 @@ constructor(
         val serverId = session?.serverId
         val userId = session?.userId
 
-            fun toFileUri(rawPath: String): String =
-                if (rawPath.startsWith("/"))
-                    android.net.Uri.fromFile(java.io.File(rawPath)).toString()
-                else rawPath
+        fun toFileUri(rawPath: String): String =
+            if (rawPath.startsWith("/")) android.net.Uri.fromFile(java.io.File(rawPath)).toString()
+            else rawPath
 
-            suspend fun patchLocalPaths(tracks: List<AfinityTrack>): List<AfinityTrack> {
-                if (serverId == null || userId == null) return tracks
-                return tracks.map { track ->
-                    if (track.localFilePath != null) return@map track
-                    val download = databaseRepository.getDownloadByItemId(track.id)
-                    if (download?.status == DownloadStatus.COMPLETED && download.filePath != null) {
-                        track.copy(localFilePath = toFileUri(download.filePath))
-                    } else {
-                        track
-                    }
+        suspend fun patchLocalPaths(tracks: List<AfinityTrack>): List<AfinityTrack> {
+            if (serverId == null || userId == null) return tracks
+            return tracks.map { track ->
+                if (track.localFilePath != null) return@map track
+                val download = databaseRepository.getDownloadByItemId(track.id)
+                if (download?.status == DownloadStatus.COMPLETED && download.filePath != null) {
+                    track.copy(localFilePath = toFileUri(download.filePath))
+                } else {
+                    track
                 }
             }
+        }
 
-            suspend fun tracksFromDownloads(): List<AfinityTrack> {
-                if (serverId == null || userId == null) return emptyList()
-                return databaseRepository
-                    .getCompletedAudioDownloadsByAlbum(albumId.toString(), serverId, userId)
-                    .map { dl ->
-                        AfinityTrack(
-                            id = dl.itemId,
-                            name = dl.itemName,
-                            albumId =
-                                dl.seriesId?.let {
-                                    runCatching { UUID.fromString(it) }.getOrNull()
-                                },
-                            album = dl.seriesName,
-                            artistId = null,
-                            artist = null,
-                            artists = emptyList(),
-                            indexNumber = dl.episodeNumber,
-                            discNumber = dl.seasonNumber,
-                            productionYear = dl.releaseYear?.toIntOrNull(),
-                            runtimeTicks = dl.runtimeTicks ?: 0L,
-                            playbackPositionTicks = 0L,
-                            played = false,
-                            favorite = false,
-                            playCount = null,
-                            normalizationGain = null,
-                            images = AfinityImages(primary = dl.imageUrl?.toUri()),
-                            localFilePath = dl.filePath?.let { toFileUri(it) },
-                        )
-                    }
-            }
+        suspend fun tracksFromDownloads(): List<AfinityTrack> {
+            if (serverId == null || userId == null) return emptyList()
+            return databaseRepository
+                .getCompletedAudioDownloadsByAlbum(albumId.toString(), serverId, userId)
+                .map { dl ->
+                    AfinityTrack(
+                        id = dl.itemId,
+                        name = dl.itemName,
+                        albumId =
+                            dl.seriesId?.let { runCatching { UUID.fromString(it) }.getOrNull() },
+                        album = dl.seriesName,
+                        artistId = null,
+                        artist = null,
+                        artists = emptyList(),
+                        indexNumber = dl.episodeNumber,
+                        discNumber = dl.seasonNumber,
+                        productionYear = dl.releaseYear?.toIntOrNull(),
+                        runtimeTicks = dl.runtimeTicks ?: 0L,
+                        playbackPositionTicks = 0L,
+                        played = false,
+                        favorite = false,
+                        playCount = null,
+                        normalizationGain = null,
+                        images = AfinityImages(primary = dl.imageUrl?.toUri()),
+                        localFilePath = dl.filePath?.let { toFileUri(it) },
+                    )
+                }
+        }
 
-            suspend fun dbFallback(): List<AfinityTrack> {
-                if (serverId == null || userId == null) return emptyList()
-                val dbTracks =
-                    databaseRepository.getMusicAlbumTracks(albumId, serverId, userId.toString())
-                val patched = patchLocalPaths(dbTracks)
-                return if (patched.isNotEmpty()) patched else tracksFromDownloads()
-            }
+        suspend fun dbFallback(): List<AfinityTrack> {
+            if (serverId == null || userId == null) return emptyList()
+            val dbTracks =
+                databaseRepository.getMusicAlbumTracks(albumId, serverId, userId.toString())
+            val patched = patchLocalPaths(dbTracks)
+            return if (patched.isNotEmpty()) patched else tracksFromDownloads()
+        }
 
         return apiInvoker
             .apiResult { apiClient, apiUserId ->
@@ -355,7 +354,9 @@ constructor(
                         )
                         .content
                         .items
-                        .mapNotNull { dto -> runCatching { dto.toAfinityTrack(baseUrl) }.getOrNull() }
+                        .mapNotNull { dto ->
+                            runCatching { dto.toAfinityTrack(baseUrl) }.getOrNull()
+                        }
                 patchLocalPaths(tracks)
             }
             .getOrElse { e ->
@@ -428,7 +429,8 @@ constructor(
         libraryId: UUID?,
         limit: Int,
     ): List<AfinityTrack> =
-        apiCall(emptyList(), "Failed to fetch top tracks for artist: $artistId") { apiClient, userId ->
+        apiCall(emptyList(), "Failed to fetch top tracks for artist: $artistId") { apiClient, userId
+            ->
             val baseUrl = getBaseUrlInternal()
 
             val response =
@@ -452,7 +454,9 @@ constructor(
         }
 
     override suspend fun getArtistAppearsOn(artistId: UUID, libraryId: UUID?): List<AfinityAlbum> =
-        apiCall(emptyList(), "Failed to fetch 'appears on' albums for artist: $artistId") { apiClient, userId ->
+        apiCall(emptyList(), "Failed to fetch 'appears on' albums for artist: $artistId") {
+            apiClient,
+            userId ->
             val baseUrl = getBaseUrlInternal()
 
             val response =
@@ -553,11 +557,11 @@ constructor(
                     .filter { it.mediaType == MediaType.AUDIO }
                     .mapNotNull { dto ->
                         runCatching {
-                                PlaylistEntry.Audio(
-                                    playlistItemId = dto.playlistItemId,
-                                    track = dto.toAfinityTrack(baseUrl),
-                                )
-                            }
+                            PlaylistEntry.Audio(
+                                playlistItemId = dto.playlistItemId,
+                                track = dto.toAfinityTrack(baseUrl),
+                            )
+                        }
                             .getOrNull()
                     }
             AfinityPlaylistContents(
@@ -575,51 +579,51 @@ constructor(
     ): AfinityPlaylist? =
         apiCall(null, "Failed to create playlist: $name") { apiClient, userId ->
             val result =
-                    PlaylistsApi(apiClient)
-                        .createPlaylist(
-                            org.jellyfin.sdk.model.api.CreatePlaylistDto(
-                                name = name,
-                                ids = emptyList(),
-                                userId = userId,
-                                mediaType = mediaType,
-                                users = emptyList(),
-                                isPublic = isPublic,
-                            )
+                PlaylistsApi(apiClient)
+                    .createPlaylist(
+                        org.jellyfin.sdk.model.api.CreatePlaylistDto(
+                            name = name,
+                            ids = emptyList(),
+                            userId = userId,
+                            mediaType = mediaType,
+                            users = emptyList(),
+                            isPublic = isPublic,
                         )
+                    )
 
-                val rawId = result.content.id
-                Timber.d("createPlaylist: server returned id='$rawId' for '$name'")
-                val playlistId =
-                    parseUuid(rawId)
-                        ?: run {
-                            Timber.e("createPlaylist: could not parse id='$rawId' as UUID")
-                            return@apiCall null
-                        }
-
-                if (trackIds.isNotEmpty()) {
-                    runCatching {
-                        PlaylistsApi(apiClient)
-                            .addItemToPlaylist(
-                                playlistId = playlistId,
-                                ids = trackIds,
-                                userId = userId,
-                            )
+            val rawId = result.content.id
+            Timber.d("createPlaylist: server returned id='$rawId' for '$name'")
+            val playlistId =
+                parseUuid(rawId)
+                    ?: run {
+                        Timber.e("createPlaylist: could not parse id='$rawId' as UUID")
+                        return@apiCall null
                     }
-                        .onFailure { Timber.e(it, "createPlaylist: addItemToPlaylist failed") }
+
+            if (trackIds.isNotEmpty()) {
+                runCatching {
+                    PlaylistsApi(apiClient)
+                        .addItemToPlaylist(
+                            playlistId = playlistId,
+                            ids = trackIds,
+                            userId = userId,
+                        )
                 }
+                    .onFailure { Timber.e(it, "createPlaylist: addItemToPlaylist failed") }
+            }
 
-                invalidatePlaylistsCache()
-                mediaChangeManager.notifyLibraryContentChanged("playlist_created")
+            invalidatePlaylistsCache()
+            mediaChangeManager.notifyLibraryContentChanged("playlist_created")
 
-                AfinityPlaylist(
-                    id = playlistId,
-                    name = name,
-                    overview = null,
-                    songCount = trackIds.size.takeIf { it > 0 },
-                    runtimeTicks = 0L,
-                    favorite = false,
-                    images = AfinityImages(primary = null, primaryImageBlurHash = null),
-                )
+            AfinityPlaylist(
+                id = playlistId,
+                name = name,
+                overview = null,
+                songCount = trackIds.size.takeIf { it > 0 },
+                runtimeTicks = 0L,
+                favorite = false,
+                images = AfinityImages(primary = null, primaryImageBlurHash = null),
+            )
         }
 
     override suspend fun addTracksToPlaylist(playlistId: UUID, trackIds: List<UUID>) =
@@ -692,7 +696,9 @@ constructor(
         }
 
     override suspend fun getArtistRadio(artistId: UUID, limit: Int): List<AfinityTrack> =
-        apiCall(emptyList(), "Failed to fetch artist radio for artist: $artistId") { apiClient, userId ->
+        apiCall(emptyList(), "Failed to fetch artist radio for artist: $artistId") {
+            apiClient,
+            userId ->
             val baseUrl = getBaseUrlInternal()
 
             val response =
@@ -710,7 +716,8 @@ constructor(
         }
 
     override suspend fun getSimilarAlbums(itemId: UUID, limit: Int): List<AfinityAlbum> =
-        apiCall(emptyList(), "Failed to get similar albums for item: $itemId") { apiClient, userId ->
+        apiCall(emptyList(), "Failed to get similar albums for item: $itemId") { apiClient, userId
+            ->
             val baseUrl = getBaseUrlInternal()
             val response =
                 org.jellyfin.sdk.api.operations
@@ -758,46 +765,44 @@ constructor(
         ) { apiClient, userId ->
             val baseUrl = getBaseUrlInternal()
 
-                val response =
-                    ItemsApi(apiClient)
-                        .getItems(
-                            userId = userId,
-                            parentId = libraryId,
-                            searchTerm = query,
-                            includeItemTypes =
-                                listOf(
-                                    BaseItemKind.AUDIO,
-                                    BaseItemKind.MUSIC_ALBUM,
-                                    BaseItemKind.MUSIC_ARTIST,
-                                    BaseItemKind.PLAYLIST,
-                                ),
-                            fields = FieldSets.MUSIC_SEARCH,
-                            enableUserData = true,
-                            recursive = true,
-                            limit = 40,
-                            enableTotalRecordCount = false,
-                        )
-                val items = response.content.items
-                MusicSearchResults(
-                    tracks =
-                        items
-                            .filter { it.type == BaseItemKind.AUDIO }
-                            .mapNotNull { runCatching { it.toAfinityTrack(baseUrl) }.getOrNull() },
-                    albums =
-                        items
-                            .filter { it.type == BaseItemKind.MUSIC_ALBUM }
-                            .mapNotNull { runCatching { it.toAfinityAlbum(baseUrl) }.getOrNull() },
-                    artists =
-                        items
-                            .filter { it.type == BaseItemKind.MUSIC_ARTIST }
-                            .mapNotNull { runCatching { it.toAfinityArtist(baseUrl) }.getOrNull() },
-                    playlists =
-                        items
-                            .filter { it.type == BaseItemKind.PLAYLIST }
-                            .mapNotNull {
-                                runCatching { it.toAfinityPlaylist(baseUrl) }.getOrNull()
-                            },
-                )
+            val response =
+                ItemsApi(apiClient)
+                    .getItems(
+                        userId = userId,
+                        parentId = libraryId,
+                        searchTerm = query,
+                        includeItemTypes =
+                            listOf(
+                                BaseItemKind.AUDIO,
+                                BaseItemKind.MUSIC_ALBUM,
+                                BaseItemKind.MUSIC_ARTIST,
+                                BaseItemKind.PLAYLIST,
+                            ),
+                        fields = FieldSets.MUSIC_SEARCH,
+                        enableUserData = true,
+                        recursive = true,
+                        limit = 40,
+                        enableTotalRecordCount = false,
+                    )
+            val items = response.content.items
+            MusicSearchResults(
+                tracks =
+                    items
+                        .filter { it.type == BaseItemKind.AUDIO }
+                        .mapNotNull { runCatching { it.toAfinityTrack(baseUrl) }.getOrNull() },
+                albums =
+                    items
+                        .filter { it.type == BaseItemKind.MUSIC_ALBUM }
+                        .mapNotNull { runCatching { it.toAfinityAlbum(baseUrl) }.getOrNull() },
+                artists =
+                    items
+                        .filter { it.type == BaseItemKind.MUSIC_ARTIST }
+                        .mapNotNull { runCatching { it.toAfinityArtist(baseUrl) }.getOrNull() },
+                playlists =
+                    items
+                        .filter { it.type == BaseItemKind.PLAYLIST }
+                        .mapNotNull { runCatching { it.toAfinityPlaylist(baseUrl) }.getOrNull() },
+            )
         }
 
     override suspend fun setFavorite(itemId: UUID, favorite: Boolean) {
@@ -875,8 +880,7 @@ constructor(
                 val name = dto.name?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
                 val id = dto.id ?: return@mapNotNull null
                 val imageUrl =
-                    dto.imageTags?.get(org.jellyfin.sdk.model.api.ImageType.PRIMARY)?.let { tag
-                        ->
+                    dto.imageTags?.get(org.jellyfin.sdk.model.api.ImageType.PRIMARY)?.let { tag ->
                         baseUrl
                             .trimEnd('/')
                             .toUri()
@@ -914,8 +918,7 @@ constructor(
                 val name = dto.name?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
                 val id = dto.id ?: return@mapNotNull null
                 val imageUrl =
-                    dto.imageTags?.get(org.jellyfin.sdk.model.api.ImageType.PRIMARY)?.let { tag
-                        ->
+                    dto.imageTags?.get(org.jellyfin.sdk.model.api.ImageType.PRIMARY)?.let { tag ->
                         baseUrl
                             .trimEnd('/')
                             .toUri()
@@ -1182,7 +1185,9 @@ constructor(
         genreName: String,
         limit: Int,
     ): List<AfinityAlbum> =
-        apiCall(emptyList(), "Failed to fetch recently added albums for genre: $genreName") { apiClient, userId ->
+        apiCall(emptyList(), "Failed to fetch recently added albums for genre: $genreName") {
+            apiClient,
+            userId ->
             val baseUrl = getBaseUrlInternal()
             val response =
                 ItemsApi(apiClient)

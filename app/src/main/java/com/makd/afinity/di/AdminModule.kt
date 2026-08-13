@@ -15,6 +15,6 @@ abstract class AdminModule {
     @Binds
     @Singleton
     abstract fun bindAdminRepository(
-        jellyfinAdminRepository: JellyfinAdminRepository,
+        jellyfinAdminRepository: JellyfinAdminRepository
     ): AdminRepository
 }

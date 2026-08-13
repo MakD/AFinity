@@ -68,7 +68,11 @@ interface MusicRepository {
 
     suspend fun getArtistAlbums(artistId: UUID, libraryId: UUID? = null): List<AfinityAlbum>
 
-    suspend fun getArtistTopTracks(artistId: UUID, libraryId: UUID? = null, limit: Int = 10): List<AfinityTrack>
+    suspend fun getArtistTopTracks(
+        artistId: UUID,
+        libraryId: UUID? = null,
+        limit: Int = 10,
+    ): List<AfinityTrack>
 
     suspend fun getArtistAppearsOn(artistId: UUID, libraryId: UUID? = null): List<AfinityAlbum>
 
@@ -115,13 +119,20 @@ interface MusicRepository {
 
     suspend fun getMusicGenres(limit: Int = 10): List<AfinityMusicGenre>
 
-    suspend fun getAllMusicGenres(libraryId: UUID? = null, startIndex: Int = 0, limit: Int = 100): List<AfinityMusicGenre>
+    suspend fun getAllMusicGenres(
+        libraryId: UUID? = null,
+        startIndex: Int = 0,
+        limit: Int = 100,
+    ): List<AfinityMusicGenre>
 
     suspend fun getAlbumsByGenre(genreName: String, limit: Int = 15): List<AfinityAlbum>
 
     suspend fun getArtistsByGenre(genreName: String, limit: Int = 30): List<AfinityArtist>
 
-    suspend fun getRecentlyAddedAlbumsByGenre(genreName: String, limit: Int = 12): List<AfinityAlbum>
+    suspend fun getRecentlyAddedAlbumsByGenre(
+        genreName: String,
+        limit: Int = 12,
+    ): List<AfinityAlbum>
 
     suspend fun getFavoriteArtists(limit: Int = 10): List<AfinityArtist>
 

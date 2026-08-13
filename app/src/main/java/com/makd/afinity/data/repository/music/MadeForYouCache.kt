@@ -130,9 +130,8 @@ constructor(
             return cached.toAlbum()?.let { MadeForYouSlot.Album(slotId, it) }
         }
         val kind =
-            mixKind?.let { name ->
-                MadeForYouMixKind.entries.firstOrNull { it.name == name }
-            } ?: return null
+            mixKind?.let { name -> MadeForYouMixKind.entries.firstOrNull { it.name == name } }
+                ?: return null
         val tracks = tracks.mapNotNull { it.toTrack() }
         if (tracks.isEmpty()) return null
         return MadeForYouSlot.Mix(slotId, kind, seedName, tracks)

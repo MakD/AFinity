@@ -99,7 +99,8 @@ constructor(
                         .getItem(episode.id, fields = FieldSets.ITEM_DETAIL)
                         ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
                 _selectedEpisode.value = fullEpisode ?: episode
-                _selectedEpisodeWatchlistStatus.value = watchlistRepository.isInWatchlist(episode.id)
+                _selectedEpisodeWatchlistStatus.value =
+                    watchlistRepository.isInWatchlist(episode.id)
                 _selectedEpisodeDownloadInfo.value =
                     downloadRepository.getDownloadByItemId(episode.id)
             } catch (e: Exception) {
@@ -246,9 +247,7 @@ constructor(
             }
         }
 
-        viewModelScope.launch {
-            adminChangeBroadcaster.itemChanged.collect { loadItems() }
-        }
+        viewModelScope.launch { adminChangeBroadcaster.itemChanged.collect { loadItems() } }
 
         viewModelScope.launch {
             mediaChangeManager.libraryContentChanges.collect { event ->
@@ -344,9 +343,7 @@ constructor(
         currentFilters =
             when (section.sourceType) {
                 CustomSectionSourceType.GENRE ->
-                    section.filters.copy(
-                        genres = section.filters.genres + section.sourceValues
-                    )
+                    section.filters.copy(genres = section.filters.genres + section.sourceValues)
                 CustomSectionSourceType.TAG ->
                     section.filters.copy(tags = section.filters.tags + section.sourceValues)
                 else -> section.filters

@@ -13,14 +13,24 @@ import com.makd.afinity.data.database.entities.ShowGenreCacheEntity
 @Dao
 interface GenreCacheDao {
 
-    @Query("SELECT * FROM genre_cache WHERE serverId = :serverId AND userId = :userId ORDER BY genreName ASC")
+    @Query(
+        "SELECT * FROM genre_cache WHERE serverId = :serverId AND userId = :userId ORDER BY genreName ASC"
+    )
     suspend fun getAllCachedGenres(serverId: String, userId: String): List<GenreCacheEntity>
 
-    @Query("SELECT genreName FROM genre_cache WHERE serverId = :serverId AND userId = :userId ORDER BY genreName ASC")
+    @Query(
+        "SELECT genreName FROM genre_cache WHERE serverId = :serverId AND userId = :userId ORDER BY genreName ASC"
+    )
     suspend fun getAllGenreNames(serverId: String, userId: String): List<String>
 
-    @Query("SELECT * FROM genre_cache WHERE genreName = :genreName AND serverId = :serverId AND userId = :userId")
-    suspend fun getGenreCache(genreName: String, serverId: String, userId: String): GenreCacheEntity?
+    @Query(
+        "SELECT * FROM genre_cache WHERE genreName = :genreName AND serverId = :serverId AND userId = :userId"
+    )
+    suspend fun getGenreCache(
+        genreName: String,
+        serverId: String,
+        userId: String,
+    ): GenreCacheEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertGenreCache(genre: GenreCacheEntity)
@@ -28,18 +38,28 @@ interface GenreCacheDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertGenreCaches(genres: List<GenreCacheEntity>)
 
-    @Query("DELETE FROM genre_cache WHERE genreName = :genreName AND serverId = :serverId AND userId = :userId")
+    @Query(
+        "DELETE FROM genre_cache WHERE genreName = :genreName AND serverId = :serverId AND userId = :userId"
+    )
     suspend fun deleteGenreCache(genreName: String, serverId: String, userId: String)
 
     @Query("DELETE FROM genre_cache") suspend fun clearAllGenreCaches()
 
-    @Query("SELECT * FROM genre_movie_cache WHERE genreName = :genreName AND serverId = :serverId AND userId = :userId ORDER BY position ASC")
-    suspend fun getCachedMoviesForGenre(genreName: String, serverId: String, userId: String): List<GenreMovieCacheEntity>
+    @Query(
+        "SELECT * FROM genre_movie_cache WHERE genreName = :genreName AND serverId = :serverId AND userId = :userId ORDER BY position ASC"
+    )
+    suspend fun getCachedMoviesForGenre(
+        genreName: String,
+        serverId: String,
+        userId: String,
+    ): List<GenreMovieCacheEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertGenreMovies(movies: List<GenreMovieCacheEntity>)
 
-    @Query("DELETE FROM genre_movie_cache WHERE genreName = :genreName AND serverId = :serverId AND userId = :userId")
+    @Query(
+        "DELETE FROM genre_movie_cache WHERE genreName = :genreName AND serverId = :serverId AND userId = :userId"
+    )
     suspend fun deleteMoviesForGenre(genreName: String, serverId: String, userId: String)
 
     @Query("DELETE FROM genre_movie_cache") suspend fun clearAllGenreMovies()
@@ -71,9 +91,16 @@ interface GenreCacheDao {
         AND (lastFetchedTimestamp + :ttlMillis) > :currentTime
     """
     )
-    suspend fun hasAnyFreshGenre(serverId: String, userId: String, ttlMillis: Long, currentTime: Long): Boolean
+    suspend fun hasAnyFreshGenre(
+        serverId: String,
+        userId: String,
+        ttlMillis: Long,
+        currentTime: Long,
+    ): Boolean
 
-    @Query("SELECT MIN(lastFetchedTimestamp) FROM genre_cache WHERE serverId = :serverId AND userId = :userId")
+    @Query(
+        "SELECT MIN(lastFetchedTimestamp) FROM genre_cache WHERE serverId = :serverId AND userId = :userId"
+    )
     suspend fun getOldestCacheTimestamp(serverId: String, userId: String): Long?
 
     @Transaction
@@ -109,14 +136,24 @@ interface GenreCacheDao {
         clearAllGenreShows()
     }
 
-    @Query("SELECT * FROM show_genre_cache WHERE serverId = :serverId AND userId = :userId ORDER BY genreName ASC")
+    @Query(
+        "SELECT * FROM show_genre_cache WHERE serverId = :serverId AND userId = :userId ORDER BY genreName ASC"
+    )
     suspend fun getAllCachedShowGenres(serverId: String, userId: String): List<ShowGenreCacheEntity>
 
-    @Query("SELECT genreName FROM show_genre_cache WHERE serverId = :serverId AND userId = :userId ORDER BY genreName ASC")
+    @Query(
+        "SELECT genreName FROM show_genre_cache WHERE serverId = :serverId AND userId = :userId ORDER BY genreName ASC"
+    )
     suspend fun getAllShowGenreNames(serverId: String, userId: String): List<String>
 
-    @Query("SELECT * FROM show_genre_cache WHERE genreName = :genreName AND serverId = :serverId AND userId = :userId")
-    suspend fun getShowGenreCache(genreName: String, serverId: String, userId: String): ShowGenreCacheEntity?
+    @Query(
+        "SELECT * FROM show_genre_cache WHERE genreName = :genreName AND serverId = :serverId AND userId = :userId"
+    )
+    suspend fun getShowGenreCache(
+        genreName: String,
+        serverId: String,
+        userId: String,
+    ): ShowGenreCacheEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertShowGenreCache(genre: ShowGenreCacheEntity)
@@ -124,18 +161,28 @@ interface GenreCacheDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertShowGenreCaches(genres: List<ShowGenreCacheEntity>)
 
-    @Query("DELETE FROM show_genre_cache WHERE genreName = :genreName AND serverId = :serverId AND userId = :userId")
+    @Query(
+        "DELETE FROM show_genre_cache WHERE genreName = :genreName AND serverId = :serverId AND userId = :userId"
+    )
     suspend fun deleteShowGenreCache(genreName: String, serverId: String, userId: String)
 
     @Query("DELETE FROM show_genre_cache") suspend fun clearAllShowGenreCaches()
 
-    @Query("SELECT * FROM genre_show_cache WHERE genreName = :genreName AND serverId = :serverId AND userId = :userId ORDER BY position ASC")
-    suspend fun getCachedShowsForGenre(genreName: String, serverId: String, userId: String): List<GenreShowCacheEntity>
+    @Query(
+        "SELECT * FROM genre_show_cache WHERE genreName = :genreName AND serverId = :serverId AND userId = :userId ORDER BY position ASC"
+    )
+    suspend fun getCachedShowsForGenre(
+        genreName: String,
+        serverId: String,
+        userId: String,
+    ): List<GenreShowCacheEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertGenreShows(shows: List<GenreShowCacheEntity>)
 
-    @Query("DELETE FROM genre_show_cache WHERE genreName = :genreName AND serverId = :serverId AND userId = :userId")
+    @Query(
+        "DELETE FROM genre_show_cache WHERE genreName = :genreName AND serverId = :serverId AND userId = :userId"
+    )
     suspend fun deleteShowsForGenre(genreName: String, serverId: String, userId: String)
 
     @Query("DELETE FROM genre_show_cache") suspend fun clearAllGenreShows()
@@ -167,22 +214,47 @@ interface GenreCacheDao {
         AND (lastFetchedTimestamp + :ttlMillis) > :currentTime
     """
     )
-    suspend fun hasAnyFreshShowGenre(serverId: String, userId: String, ttlMillis: Long, currentTime: Long): Boolean
+    suspend fun hasAnyFreshShowGenre(
+        serverId: String,
+        userId: String,
+        ttlMillis: Long,
+        currentTime: Long,
+    ): Boolean
 
-    @Query("SELECT MIN(lastFetchedTimestamp) FROM show_genre_cache WHERE serverId = :serverId AND userId = :userId")
+    @Query(
+        "SELECT MIN(lastFetchedTimestamp) FROM show_genre_cache WHERE serverId = :serverId AND userId = :userId"
+    )
     suspend fun getOldestShowCacheTimestamp(serverId: String, userId: String): Long?
 
-    @Query("DELETE FROM genre_movie_cache WHERE movieId = :itemId AND serverId = :serverId AND userId = :userId")
+    @Query(
+        "DELETE FROM genre_movie_cache WHERE movieId = :itemId AND serverId = :serverId AND userId = :userId"
+    )
     suspend fun deleteCachedMovie(itemId: String, serverId: String, userId: String)
 
-    @Query("DELETE FROM genre_show_cache WHERE showId = :itemId AND serverId = :serverId AND userId = :userId")
+    @Query(
+        "DELETE FROM genre_show_cache WHERE showId = :itemId AND serverId = :serverId AND userId = :userId"
+    )
     suspend fun deleteCachedShow(itemId: String, serverId: String, userId: String)
 
-    @Query("UPDATE genre_movie_cache SET movieData = :newData WHERE movieId = :itemId AND serverId = :serverId AND userId = :userId")
-    suspend fun updateCachedMovieData(itemId: String, serverId: String, userId: String, newData: String)
+    @Query(
+        "UPDATE genre_movie_cache SET movieData = :newData WHERE movieId = :itemId AND serverId = :serverId AND userId = :userId"
+    )
+    suspend fun updateCachedMovieData(
+        itemId: String,
+        serverId: String,
+        userId: String,
+        newData: String,
+    )
 
-    @Query("UPDATE genre_show_cache SET showData = :newData WHERE showId = :itemId AND serverId = :serverId AND userId = :userId")
-    suspend fun updateCachedShowData(itemId: String, serverId: String, userId: String, newData: String)
+    @Query(
+        "UPDATE genre_show_cache SET showData = :newData WHERE showId = :itemId AND serverId = :serverId AND userId = :userId"
+    )
+    suspend fun updateCachedShowData(
+        itemId: String,
+        serverId: String,
+        userId: String,
+        newData: String,
+    )
 
     @Transaction
     suspend fun cacheGenreWithShows(
@@ -209,6 +281,8 @@ interface GenreCacheDao {
         }
     }
 
-    @Query("SELECT (SELECT COUNT(*) FROM genre_cache) + (SELECT COUNT(*) FROM genre_movie_cache) + (SELECT COUNT(*) FROM genre_show_cache) + (SELECT COUNT(*) FROM show_genre_cache)")
+    @Query(
+        "SELECT (SELECT COUNT(*) FROM genre_cache) + (SELECT COUNT(*) FROM genre_movie_cache) + (SELECT COUNT(*) FROM genre_show_cache) + (SELECT COUNT(*) FROM show_genre_cache)"
+    )
     suspend fun cachedEntryCount(): Int
 }

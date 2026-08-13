@@ -8,13 +8,13 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.repository.JellyseerrRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltViewModel
 class JellyseerrLoginViewModel
@@ -215,7 +215,8 @@ constructor(
             !hasScheme && port != -1 -> listOf("https://$input", "http://$input")
             hasScheme && scheme == "https" -> listOf(input, "https://$host:5055")
             hasScheme && scheme == "http" -> listOf(input, "http://$host:5055")
-            else -> listOf("https://$host", "https://$host:5055", "http://$host:5055", "http://$host")
+            else ->
+                listOf("https://$host", "https://$host:5055", "http://$host:5055", "http://$host")
         }
     }
 

@@ -67,7 +67,11 @@ constructor(
             networkRequest,
             object : ConnectivityManager.NetworkCallback() {
                 override fun onAvailable(network: Network) {
-                    val total = synchronized(networks) { networks.add(network); networks.size }
+                    val total =
+                        synchronized(networks) {
+                            networks.add(network)
+                            networks.size
+                        }
                     _isNetworkAvailable.value = true
                     if (!_isOnWifi.value) {
                         _isOnWifi.value = isOnWifi()
@@ -78,7 +82,10 @@ constructor(
 
                 override fun onLost(network: Network) {
                     val remaining =
-                        synchronized(networks) { networks.remove(network); networks.size }
+                        synchronized(networks) {
+                            networks.remove(network)
+                            networks.size
+                        }
                     _isNetworkAvailable.value = remaining > 0
                     _networkDropEvents.tryEmit(Unit)
                     Timber.d("Network lost: $network, Remaining networks: $remaining")

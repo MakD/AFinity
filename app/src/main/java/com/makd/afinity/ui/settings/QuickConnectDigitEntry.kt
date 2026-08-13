@@ -77,8 +77,10 @@ fun QuickConnectDigitEntry(
             val lastIndex = digits.size - 1
             val spacing = if (maxWidth < 260.dp) 6.dp else 8.dp
             val boxSize =
-                ((maxWidth - spacing * lastIndex) / digits.size)
-                    .coerceIn(MinDigitBoxSize, MaxDigitBoxSize)
+                ((maxWidth - spacing * lastIndex) / digits.size).coerceIn(
+                    MinDigitBoxSize,
+                    MaxDigitBoxSize,
+                )
             val digitFontSize =
                 (DigitFontSizeAtMaxBox * (boxSize / MaxDigitBoxSize).coerceIn(0.65f, 1f)).sp
             val cornerRadius = if (boxSize < 34.dp) 8.dp else 10.dp

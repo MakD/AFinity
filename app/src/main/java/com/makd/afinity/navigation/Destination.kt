@@ -84,8 +84,10 @@ enum class Destination(
         const val EDIT_IMAGES_ROUTE = "admin/edit_images/{itemId}"
 
         fun createEditMetadataRoute(itemId: String): String = "admin/edit_metadata/$itemId"
+
         fun createIdentifyItemRoute(itemId: String, itemType: String): String =
             "admin/identify/$itemId/$itemType"
+
         fun createEditImagesRoute(itemId: String): String = "admin/edit_images/$itemId"
 
         const val MUSIC_LIBRARY_ROUTE = "music/library/{libraryId}/{libraryName}"
@@ -94,9 +96,14 @@ enum class Destination(
         const val MUSIC_ARTIST_ROUTE = "music/artist/{artistId}"
         const val PLAYLIST_ROUTE = "playlist/{playlistId}?audioOnly={audioOnly}"
         const val MUSIC_PLAYER_ROUTE = "music/player"
-        const val MUSIC_GENRE_ROUTE = "music/genre/{genreName}?imageUrl={imageUrl}&genreId={genreId}"
+        const val MUSIC_GENRE_ROUTE =
+            "music/genre/{genreName}?imageUrl={imageUrl}&genreId={genreId}"
 
-        fun createMusicGenreRoute(genreName: String, imageUrl: String? = null, genreId: java.util.UUID? = null): String {
+        fun createMusicGenreRoute(
+            genreName: String,
+            imageUrl: String? = null,
+            genreId: java.util.UUID? = null,
+        ): String {
             val encodedName = genreName.replace("/", "%2F")
             val params = buildList {
                 if (imageUrl != null) add("imageUrl=${URLEncoder.encode(imageUrl, "UTF-8")}")
@@ -122,8 +129,7 @@ enum class Destination(
         const val AUDIOBOOKSHELF_LOGIN_ROUTE = "audiobookshelf/login"
         const val AUDIOBOOKSHELF_LIBRARIES_ROUTE = "audiobookshelf/libraries"
         const val AUDIOBOOKSHELF_SERIES_LIST_ROUTE = "audiobookshelf/series-browse"
-        const val AUDIOBOOKSHELF_LIBRARY_ROUTE =
-            "audiobookshelf/library/{libraryId}/{libraryName}"
+        const val AUDIOBOOKSHELF_LIBRARY_ROUTE = "audiobookshelf/library/{libraryId}/{libraryName}"
 
         const val AUDIOBOOKSHELF_ITEM_ROUTE = "audiobookshelf/item/{itemId}"
         const val AUDIOBOOKSHELF_SERIES_ROUTE =
@@ -300,15 +306,15 @@ enum class Destination(
         ): String {
             val base = "seerr_media/${mediaType.lowercase()}/$tmdbId"
             val params = buildList {
-                title?.takeIf { it.isNotBlank() }?.let {
-                    add("seerrTitle=${android.net.Uri.encode(it)}")
-                }
-                backdropUrl?.takeIf { it.isNotBlank() }?.let {
-                    add("seerrBackdrop=${android.net.Uri.encode(it)}")
-                }
-                posterUrl?.takeIf { it.isNotBlank() }?.let {
-                    add("seerrPoster=${android.net.Uri.encode(it)}")
-                }
+                title
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { add("seerrTitle=${android.net.Uri.encode(it)}") }
+                backdropUrl
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { add("seerrBackdrop=${android.net.Uri.encode(it)}") }
+                posterUrl
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { add("seerrPoster=${android.net.Uri.encode(it)}") }
             }
             return if (params.isEmpty()) base else "$base?${params.joinToString("&")}"
         }

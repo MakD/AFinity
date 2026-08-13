@@ -58,8 +58,7 @@ constructor(
     suspend fun upsert(section: CustomHomeSection): Boolean {
         val key = sessionKey() ?: return false
         return try {
-            val position =
-                if (section.position >= 0) section.position else dao.maxPosition(key) + 1
+            val position = if (section.position >= 0) section.position else dao.maxPosition(key) + 1
             dao.upsert(section.copy(position = position).toEntity(key))
             true
         } catch (e: Exception) {
@@ -108,9 +107,7 @@ constructor(
                 runCatching { CustomSectionSourceType.valueOf(sourceType) }
                     .getOrDefault(CustomSectionSourceType.GENRE),
             sourceValues =
-                sourceValue
-                    .split(CustomHomeSection.SOURCE_DELIMITER)
-                    .filter { it.isNotBlank() },
+                sourceValue.split(CustomHomeSection.SOURCE_DELIMITER).filter { it.isNotBlank() },
             includeItemTypes = includeItemTypes.split(',').filter { it.isNotBlank() },
             itemLimit = itemLimit,
             sortBy = runCatching { SortBy.valueOf(sortBy) }.getOrDefault(SortBy.NAME),
@@ -151,8 +148,7 @@ constructor(
             enabled = enabled,
             seasonStart = seasonStart,
             seasonEnd = seasonEnd,
-            filtersJson =
-                if (filters.isEmpty) null else filtersCodec.encodeToString(filters),
+            filtersJson = if (filters.isEmpty) null else filtersCodec.encodeToString(filters),
         )
 
     companion object {
@@ -171,7 +167,9 @@ constructor(
             }
         }
 
-        private fun parseMonthDay(value: String): MonthDay? =
-            runCatching { MonthDay.parse("--$value") }.getOrNull()
+        private fun parseMonthDay(value: String): MonthDay? = runCatching {
+            MonthDay.parse("--$value")
+        }
+            .getOrNull()
     }
 }

@@ -7,7 +7,5 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AudiobookshelfEqualizerManager
-@Inject
-constructor(@ApplicationContext context: Context) :
+class AudiobookshelfEqualizerManager @Inject constructor(@ApplicationContext context: Context) :
     AudioEqualizerManager(context, "audiobookshelf_equalizer")

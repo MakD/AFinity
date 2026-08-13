@@ -79,7 +79,10 @@ constructor(@param:ApplicationContext private val context: Context) {
                     )
                 )
             } catch (e: Exception) {
-                Timber.w(e, "Failed to resolve storage volume for dir: ${dir.absolutePath}")
+                Timber.w(
+                    e,
+                    "Failed to resolve storage volume for dir: ${dir.absolutePath}",
+                )
             }
         }
 

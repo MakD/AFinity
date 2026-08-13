@@ -583,9 +583,7 @@ constructor(
                         _state.value =
                             _state.value.copy(
                                 error =
-                                    context.getString(
-                                        R.string.error_address_different_jellyseerr
-                                    ),
+                                    context.getString(R.string.error_address_different_jellyseerr),
                                 isLoading = false,
                             )
                         return@launch

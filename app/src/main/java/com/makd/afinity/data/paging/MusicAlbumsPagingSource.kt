@@ -26,15 +26,16 @@ class MusicAlbumsPagingSource(
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, AfinityAlbum> {
         return try {
             val page = params.key ?: 0
-            val items = musicRepository.getAlbums(
-                libraryId = libraryId,
-                sortBy = sortBy,
-                sortOrder = sortOrder,
-                filters = filters,
-                startIndex = page * PAGE_SIZE,
-                limit = PAGE_SIZE,
-                nameStartsWith = nameStartsWith,
-            )
+            val items =
+                musicRepository.getAlbums(
+                    libraryId = libraryId,
+                    sortBy = sortBy,
+                    sortOrder = sortOrder,
+                    filters = filters,
+                    startIndex = page * PAGE_SIZE,
+                    limit = PAGE_SIZE,
+                    nameStartsWith = nameStartsWith,
+                )
             LoadResult.Page(
                 data = items,
                 prevKey = if (page == 0) null else page - 1,

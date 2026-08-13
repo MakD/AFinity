@@ -75,9 +75,7 @@ constructor(
         _selectedEpisodeDownloadInfo.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            adminChangeBroadcaster.itemChanged.collect { loadWatchlist() }
-        }
+        viewModelScope.launch { adminChangeBroadcaster.itemChanged.collect { loadWatchlist() } }
 
         viewModelScope.launch {
             appDataRepository.watchlistData.collect { data ->

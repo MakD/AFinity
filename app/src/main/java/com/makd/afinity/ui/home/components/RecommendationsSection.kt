@@ -124,8 +124,7 @@ fun PersonFromMovieSection(
                 PersonSectionType.WRITTEN_BY -> R.string.home_written_by_from_watched
             }
         HomeSectionHeader(
-            title =
-                stringResource(titleRes, section.person.name, section.referenceMovie.name)
+            title = stringResource(titleRes, section.person.name, section.referenceMovie.name)
         )
 
         LazyRow(

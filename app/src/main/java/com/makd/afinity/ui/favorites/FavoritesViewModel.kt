@@ -102,9 +102,7 @@ constructor(
             }
         }
 
-        viewModelScope.launch {
-            adminChangeBroadcaster.itemChanged.collect { loadFavorites() }
-        }
+        viewModelScope.launch { adminChangeBroadcaster.itemChanged.collect { loadFavorites() } }
 
         viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
@@ -234,7 +232,11 @@ constructor(
         val newFavorite = !track.favorite
         _uiState.update { state ->
             if (newFavorite) {
-                state.copy(favoriteTracks = (tracks.filterNot { it.id == track.id } + track.copy(favorite = true)).sortedBy { it.name })
+                state.copy(
+                    favoriteTracks =
+                        (tracks.filterNot { it.id == track.id } + track.copy(favorite = true))
+                            .sortedBy { it.name }
+                )
             } else {
                 state.copy(favoriteTracks = tracks.filterNot { it.id == track.id })
             }

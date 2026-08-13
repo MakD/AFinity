@@ -12,8 +12,7 @@ import java.util.UUID
 @Dao
 interface AbsDownloadDao {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(entity: AbsDownloadEntity)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsert(entity: AbsDownloadEntity)
 
     @Query("SELECT * FROM abs_downloads WHERE id = :id")
     suspend fun getById(id: UUID): AbsDownloadEntity?
@@ -152,11 +151,12 @@ interface AbsDownloadDao {
         updatedAt: Long,
     )
 
-    @Query("UPDATE abs_downloads SET status = :status, error = :error, updatedAt = :updatedAt WHERE id = :id")
+    @Query(
+        "UPDATE abs_downloads SET status = :status, error = :error, updatedAt = :updatedAt WHERE id = :id"
+    )
     suspend fun updateStatus(id: UUID, status: AbsDownloadStatus, error: String?, updatedAt: Long)
 
-    @Query("DELETE FROM abs_downloads WHERE id = :id")
-    suspend fun deleteById(id: UUID)
+    @Query("DELETE FROM abs_downloads WHERE id = :id") suspend fun deleteById(id: UUID)
 
     @Query(
         """SELECT COALESCE(SUM(bytesDownloaded), 0) FROM abs_downloads

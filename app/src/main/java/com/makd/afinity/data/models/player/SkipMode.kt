@@ -9,9 +9,10 @@ enum class SkipMode {
         fun fromString(value: String) = entries.firstOrNull { it.name == value } ?: BUTTON
     }
 
-    fun getDisplayName(): String = when (this) {
-        BUTTON -> "Show button"
-        AUTO_SKIP -> "Auto-skip"
-        DISABLED -> "Disabled"
-    }
+    fun getDisplayName(): String =
+        when (this) {
+            BUTTON -> "Show button"
+            AUTO_SKIP -> "Auto-skip"
+            DISABLED -> "Disabled"
+        }
 }

@@ -39,9 +39,10 @@ constructor(
 
     val genreName: String = savedStateHandle.get<String>("genreName") ?: ""
     val genreImageUrl: String? = savedStateHandle.get<String>("imageUrl")
-    val genreId: UUID? = savedStateHandle.get<String>("genreId")?.let {
-        runCatching { UUID.fromString(it) }.getOrNull()
-    }
+    val genreId: UUID? =
+        savedStateHandle.get<String>("genreId")?.let {
+            runCatching { UUID.fromString(it) }.getOrNull()
+        }
 
     val userProfileImageUrl: StateFlow<String?> = appDataRepository.userProfileImageUrl
 
@@ -63,13 +64,14 @@ constructor(
                 val recentJob = async {
                     musicRepository.getRecentlyAddedAlbumsByGenre(genreName, limit = 20)
                 }
-                _uiState.value = _uiState.value.copy(
-                    albums = albumsJob.await(),
-                    artists = artistsJob.await(),
-                    tracks = tracksJob.await(),
-                    recentlyAdded = recentJob.await(),
-                    isLoading = false,
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        albums = albumsJob.await(),
+                        artists = artistsJob.await(),
+                        tracks = tracksJob.await(),
+                        recentlyAdded = recentJob.await(),
+                        isLoading = false,
+                    )
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to load genre content for: $genreName")

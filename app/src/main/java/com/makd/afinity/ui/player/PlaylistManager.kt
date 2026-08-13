@@ -215,7 +215,9 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
 
         updatePlaylistState()
 
-        Timber.d("Queue set with ${queue.size} items, starting at index $currentIndex, content starts at $contentStartIndex")
+        Timber.d(
+            "Queue set with ${queue.size} items, starting at index $currentIndex, content starts at $contentStartIndex"
+        )
     }
 
     fun next(): AfinityItem? {
@@ -325,10 +327,9 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
             return
         }
 
-        val resumableIndex =
-            currentQueue.indexOfFirst { item ->
-                item.playbackPositionTicks > 0 && item.playbackPositionTicks < item.runtimeTicks
-            }
+        val resumableIndex = currentQueue.indexOfFirst { item ->
+            item.playbackPositionTicks > 0 && item.playbackPositionTicks < item.runtimeTicks
+        }
 
         val unwatchedIndex =
             if (resumableIndex == -1) {

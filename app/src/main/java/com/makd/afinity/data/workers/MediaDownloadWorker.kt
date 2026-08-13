@@ -303,9 +303,7 @@ constructor(
 
                     okHttpClient.newCall(request).execute().use { response ->
                         if (!response.isSuccessful && response.code != 416) {
-                            throw Exception(
-                                "Download failed: ${response.code} ${response.message}"
-                            )
+                            throw Exception("Download failed: ${response.code} ${response.message}")
                         }
                         if (response.code == 416) {
                             Timber.w("File already fully downloaded (416). Skipping body copy.")
@@ -1039,12 +1037,8 @@ constructor(
             "Episode" -> {
                 val seasonEpisode =
                     listOfNotNull(
-                            download.seasonNumber?.let {
-                                String.format(Locale.ROOT, "S%02d", it)
-                            },
-                            download.episodeNumber?.let {
-                                String.format(Locale.ROOT, "E%02d", it)
-                            },
+                            download.seasonNumber?.let { String.format(Locale.ROOT, "S%02d", it) },
+                            download.episodeNumber?.let { String.format(Locale.ROOT, "E%02d", it) },
                         )
                         .joinToString("")
                 listOf(seasonEpisode, download.itemName)
@@ -1107,8 +1101,7 @@ constructor(
     private fun formatBytes(bytes: Long): String =
         when {
             bytes < 1024 -> "$bytes B"
-            bytes < 1024 * 1024 ->
-                String.format(Locale.getDefault(), "%.1f KB", bytes / 1024.0)
+            bytes < 1024 * 1024 -> String.format(Locale.getDefault(), "%.1f KB", bytes / 1024.0)
             bytes < 1024L * 1024 * 1024 ->
                 String.format(Locale.getDefault(), "%.1f MB", bytes / (1024.0 * 1024.0))
             else ->

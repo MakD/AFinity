@@ -144,9 +144,13 @@ constructor(
 
         val justCompletedIds = previousRunningTaskIds - currentRunningIds
         if (justCompletedIds.isNotEmpty()) {
-            val completedLibraryTasks = newTasks.filter { it.id in justCompletedIds && it.isLibraryRelated() }
+            val completedLibraryTasks = newTasks.filter {
+                it.id in justCompletedIds && it.isLibraryRelated()
+            }
             if (completedLibraryTasks.isNotEmpty()) {
-                Timber.d("Library tasks completed: ${completedLibraryTasks.map { it.key }} — invalidating media caches")
+                Timber.d(
+                    "Library tasks completed: ${completedLibraryTasks.map { it.key }} — invalidating media caches"
+                )
                 appDataRepository.scheduleHomeRefreshAfterTaskCompletion()
             }
         }

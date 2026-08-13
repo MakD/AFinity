@@ -56,8 +56,9 @@ constructor(
 
     fun updateYear(year: String) = _uiState.update { it.copy(year = year) }
 
-    fun updateProviderId(key: String, value: String) =
-        _uiState.update { it.copy(providerIds = it.providerIds + (key to value)) }
+    fun updateProviderId(key: String, value: String) = _uiState.update {
+        it.copy(providerIds = it.providerIds + (key to value))
+    }
 
     fun toggleReplaceImages() = _uiState.update { it.copy(replaceAllImages = !it.replaceAllImages) }
 
@@ -66,10 +67,23 @@ constructor(
             _uiState.update { it.copy(searching = true, results = emptyList(), error = null) }
             val state = _uiState.value
             val year = state.year.toIntOrNull()
-            val results = when (itemType) {
-                "Series" -> adminRepository.searchSeries(itemId, state.searchName, year, state.providerIds)
-                else -> adminRepository.searchMovie(itemId, state.searchName, year, state.providerIds)
-            }
+            val results =
+                when (itemType) {
+                    "Series" ->
+                        adminRepository.searchSeries(
+                            itemId,
+                            state.searchName,
+                            year,
+                            state.providerIds,
+                        )
+                    else ->
+                        adminRepository.searchMovie(
+                            itemId,
+                            state.searchName,
+                            year,
+                            state.providerIds,
+                        )
+                }
             _uiState.update { it.copy(searching = false, results = results) }
         }
     }
@@ -77,11 +91,12 @@ constructor(
     fun applyResult(result: IdentifyResult) {
         viewModelScope.launch {
             _uiState.update { it.copy(applying = true, error = null) }
-            val res = adminRepository.applyIdentifyResult(
-                itemId = itemId,
-                result = result,
-                replaceAllImages = _uiState.value.replaceAllImages,
-            )
+            val res =
+                adminRepository.applyIdentifyResult(
+                    itemId = itemId,
+                    result = result,
+                    replaceAllImages = _uiState.value.replaceAllImages,
+                )
             _uiState.update {
                 it.copy(
                     applying = false,

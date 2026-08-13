@@ -25,6 +25,7 @@ import com.makd.afinity.data.models.download.DownloadStatus
 
 @Composable
 fun DownloadProgressIndicator(
+    modifier: Modifier = Modifier,
     downloadInfo: DownloadInfo?,
     onDownloadClick: () -> Unit,
     onPauseClick: () -> Unit,
@@ -35,11 +36,11 @@ fun DownloadProgressIndicator(
     isUnavailable: Boolean = false,
     onDownloadLongClick: (() -> Unit)? = null,
     iconSize: Dp = 28.dp,
-    modifier: Modifier = Modifier,
 ) {
-    val isStartDownloadState = downloadInfo?.status == null ||
-        downloadInfo.status == DownloadStatus.FAILED ||
-        downloadInfo.status == DownloadStatus.CANCELLED
+    val isStartDownloadState =
+        downloadInfo?.status == null ||
+            downloadInfo.status == DownloadStatus.FAILED ||
+            downloadInfo.status == DownloadStatus.CANCELLED
     val enabled = canDownload || !isStartDownloadState
 
     val onClick: () -> Unit = {
@@ -55,8 +56,7 @@ fun DownloadProgressIndicator(
     }
 
     // A long-press to choose a storage location only makes sense from the start-download state.
-    val longClick: (() -> Unit)? =
-        onDownloadLongClick?.takeIf { isStartDownloadState }
+    val longClick: (() -> Unit)? = onDownloadLongClick?.takeIf { isStartDownloadState }
 
     val content: @Composable () -> Unit = {
         DownloadIndicatorContent(

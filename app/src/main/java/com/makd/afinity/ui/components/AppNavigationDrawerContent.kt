@@ -226,8 +226,7 @@ fun AppNavigationDrawerContent(
             }
 
             Column(
-                modifier =
-                    Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
+                modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
             ) {
                 AnimatedVisibility(
                     visible = accountSwitcherExpanded,
@@ -238,9 +237,7 @@ fun AppNavigationDrawerContent(
                         modifier =
                             Modifier.fillMaxWidth()
                                 .windowInsetsPadding(
-                                    WindowInsets.displayCutout.only(
-                                        WindowInsetsSides.Horizontal
-                                    )
+                                    WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
                                 )
                                 .padding(bottom = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -270,83 +267,85 @@ fun AppNavigationDrawerContent(
                             )
                 ) {
                     Destination.entries.forEach { destination ->
-                    val visible =
-                        when {
-                            isOffline && destination != Destination.HOME -> false
-                            destination == Destination.LIBRARIES -> librariesInDrawer && !isOffline
-                            destination == Destination.FAVORITES -> favoritesCount > 0
-                            destination == Destination.WATCHLIST -> watchlistCount > 0
-                            destination == Destination.REQUESTS -> isJellyseerrAuthenticated
-                            destination == Destination.AUDIOBOOKS -> isAudiobookshelfAuthenticated
-                            destination == Destination.LIVE_TV -> hasLiveTvAccess
-                            else -> true
-                        }
-                    if (!visible) return@forEach
+                        val visible =
+                            when {
+                                isOffline && destination != Destination.HOME -> false
+                                destination == Destination.LIBRARIES ->
+                                    librariesInDrawer && !isOffline
+                                destination == Destination.FAVORITES -> favoritesCount > 0
+                                destination == Destination.WATCHLIST -> watchlistCount > 0
+                                destination == Destination.REQUESTS -> isJellyseerrAuthenticated
+                                destination == Destination.AUDIOBOOKS ->
+                                    isAudiobookshelfAuthenticated
+                                destination == Destination.LIVE_TV -> hasLiveTvAccess
+                                else -> true
+                            }
+                        if (!visible) return@forEach
 
-                    val selected =
-                        currentDestination?.hierarchy?.any { it.route == destination.route } ==
-                            true
-                    val badgeCount =
-                        when (destination) {
-                            Destination.FAVORITES -> favoritesCount
-                            Destination.WATCHLIST -> watchlistCount
-                            else -> 0
-                        }
+                        val selected =
+                            currentDestination?.hierarchy?.any { it.route == destination.route } ==
+                                true
+                        val badgeCount =
+                            when (destination) {
+                                Destination.FAVORITES -> favoritesCount
+                                Destination.WATCHLIST -> watchlistCount
+                                else -> 0
+                            }
+
+                        NavigationDrawerItem(
+                            label = {
+                                Text(
+                                    text = destination.title,
+                                    style = MaterialTheme.typography.labelLarge,
+                                )
+                            },
+                            selected = selected,
+                            onClick = { onDestinationClick(destination) },
+                            icon = {
+                                Icon(
+                                    painter =
+                                        painterResource(
+                                            id =
+                                                if (selected) destination.selectedIconRes
+                                                else destination.unselectedIconRes
+                                        ),
+                                    contentDescription = destination.title,
+                                )
+                            },
+                            badge = {
+                                if (badgeCount > 0) {
+                                    Text(
+                                        text = badgeCount.toString(),
+                                        style = MaterialTheme.typography.labelMedium,
+                                    )
+                                }
+                            },
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
+                            shape = RoundedCornerShape(16.dp),
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     NavigationDrawerItem(
                         label = {
                             Text(
-                                text = destination.title,
+                                text = stringResource(R.string.settings_title),
                                 style = MaterialTheme.typography.labelLarge,
                             )
                         },
-                        selected = selected,
-                        onClick = { onDestinationClick(destination) },
+                        selected = false,
+                        onClick = onSettingsClick,
                         icon = {
                             Icon(
-                                painter =
-                                    painterResource(
-                                        id =
-                                            if (selected) destination.selectedIconRes
-                                            else destination.unselectedIconRes
-                                    ),
-                                contentDescription = destination.title,
+                                painter = painterResource(id = R.drawable.ic_settings),
+                                contentDescription = stringResource(R.string.settings_title),
                             )
-                        },
-                        badge = {
-                            if (badgeCount > 0) {
-                                Text(
-                                    text = badgeCount.toString(),
-                                    style = MaterialTheme.typography.labelMedium,
-                                )
-                            }
                         },
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
                         shape = RoundedCornerShape(16.dp),
                     )
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                NavigationDrawerItem(
-                    label = {
-                        Text(
-                            text = stringResource(R.string.settings_title),
-                            style = MaterialTheme.typography.labelLarge,
-                        )
-                    },
-                    selected = false,
-                    onClick = onSettingsClick,
-                    icon = {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_settings),
-                            contentDescription = stringResource(R.string.settings_title),
-                        )
-                    },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
-                    shape = RoundedCornerShape(16.dp),
-                )
-            }
             }
 
             Text(
@@ -363,4 +362,3 @@ fun AppNavigationDrawerContent(
         }
     }
 }
-

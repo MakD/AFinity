@@ -68,9 +68,7 @@ internal fun AudiobookshelfLoginContent(
     @Suppress("UNUSED_VARIABLE") val context = LocalContext.current
     var passwordVisible by remember { mutableStateOf(false) }
 
-    LaunchedEffect(uiState.isLoggedIn) {
-        if (uiState.isLoggedIn) onDismiss()
-    }
+    LaunchedEffect(uiState.isLoggedIn) { if (uiState.isLoggedIn) onDismiss() }
 
     Column(
         modifier =

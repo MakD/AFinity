@@ -10,7 +10,9 @@ import com.makd.afinity.data.database.entities.BoxSetCacheMetadata
 @Dao
 interface BoxSetCacheDao {
 
-    @Query("SELECT * FROM boxset_cache WHERE itemId = :itemId AND serverId = :serverId AND userId = :userId")
+    @Query(
+        "SELECT * FROM boxset_cache WHERE itemId = :itemId AND serverId = :serverId AND userId = :userId"
+    )
     suspend fun getCacheEntry(itemId: String, serverId: String, userId: String): BoxSetCacheEntity?
 
     @Query("SELECT * FROM boxset_cache WHERE serverId = :serverId AND userId = :userId")
@@ -25,7 +27,9 @@ interface BoxSetCacheDao {
     @Query("DELETE FROM boxset_cache WHERE serverId = :serverId AND userId = :userId")
     suspend fun clearAllCacheEntries(serverId: String, userId: String)
 
-    @Query("DELETE FROM boxset_cache WHERE itemId = :itemId AND serverId = :serverId AND userId = :userId")
+    @Query(
+        "DELETE FROM boxset_cache WHERE itemId = :itemId AND serverId = :serverId AND userId = :userId"
+    )
     suspend fun deleteCacheEntry(itemId: String, serverId: String, userId: String)
 
     @Query("SELECT COUNT(*) FROM boxset_cache WHERE serverId = :serverId AND userId = :userId")
@@ -48,6 +52,5 @@ interface BoxSetCacheDao {
         clearMetadata(serverId, userId)
     }
 
-    @Query("SELECT (SELECT COUNT(*) FROM boxset_cache)")
-    suspend fun cachedEntryCount(): Int
+    @Query("SELECT (SELECT COUNT(*) FROM boxset_cache)") suspend fun cachedEntryCount(): Int
 }

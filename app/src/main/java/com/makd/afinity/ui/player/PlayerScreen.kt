@@ -166,13 +166,14 @@ fun PlayerScreen(
     LaunchedEffect(Unit) {
         syncPlayViewModel.effects.collect { effect ->
             when (effect) {
-                is SyncPlayEffect.LoadContent -> viewModel.handlePlayerEvent(
-                    PlayerEvent.LoadMedia(
-                        item = effect.item,
-                        mediaSourceId = effect.mediaSourceId,
-                        startPositionMs = effect.startPositionMs,
+                is SyncPlayEffect.LoadContent ->
+                    viewModel.handlePlayerEvent(
+                        PlayerEvent.LoadMedia(
+                            item = effect.item,
+                            mediaSourceId = effect.mediaSourceId,
+                            startPositionMs = effect.startPositionMs,
+                        )
                     )
-                )
                 is SyncPlayEffect.GroupJoined -> syncPlayViewModel.dismissGroupSheet()
                 else -> {}
             }
@@ -285,7 +286,11 @@ fun PlayerScreen(
                             seekOriginTime = viewModel.player.currentPosition
                             viewModel.handlePlayerEvent(PlayerEvent.OnSeekBarDragStart)
                         } else {
-                            viewModel.handlePlayerEvent(PlayerEvent.OnSeekBarDragFinished(viewModel.uiState.value.seekPosition))
+                            viewModel.handlePlayerEvent(
+                                PlayerEvent.OnSeekBarDragFinished(
+                                    viewModel.uiState.value.seekPosition
+                                )
+                            )
                         }
                     }
                 },

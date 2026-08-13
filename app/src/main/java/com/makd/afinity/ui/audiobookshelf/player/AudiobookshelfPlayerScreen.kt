@@ -279,9 +279,7 @@ fun SharedTransitionScope.PortraitPlayerContent(
 
         val density = LocalDensity.current
         val coverWidthPx =
-            with(density) {
-                (LocalConfiguration.current.screenWidthDp.dp - 48.dp).roundToPx()
-            }
+            with(density) { (LocalConfiguration.current.screenWidthDp.dp - 48.dp).roundToPx() }
 
         Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             Surface(

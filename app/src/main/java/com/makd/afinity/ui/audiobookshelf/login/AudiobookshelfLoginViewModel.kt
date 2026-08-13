@@ -33,8 +33,10 @@ constructor(
 
     fun updateServerUrl(url: String) {
         val trimmed = url.trim()
-        val urlError = if (trimmed.isNotBlank() && !isValidUrl(trimmed)) "Invalid URL format" else null
-        _uiState.value = _uiState.value.copy(serverUrl = trimmed, serverUrlError = urlError, error = null)
+        val urlError =
+            if (trimmed.isNotBlank() && !isValidUrl(trimmed)) "Invalid URL format" else null
+        _uiState.value =
+            _uiState.value.copy(serverUrl = trimmed, serverUrlError = urlError, error = null)
     }
 
     private fun isValidUrl(url: String): Boolean {
@@ -205,7 +207,8 @@ constructor(
             !hasScheme && port != -1 -> listOf("https://$input", "http://$input")
             hasScheme && scheme == "https" -> listOf(input, "https://$host:13378")
             hasScheme && scheme == "http" -> listOf(input, "http://$host:13378")
-            else -> listOf("https://$host", "https://$host:13378", "http://$host:13378", "http://$host")
+            else ->
+                listOf("https://$host", "https://$host:13378", "http://$host:13378", "http://$host")
         }
     }
 

@@ -61,35 +61,31 @@ constructor(
     private val scanMutex = Mutex()
     private var scanCache: Triple<String, Long, List<BaseItemDto>>? = null
 
-    private suspend fun recentItemsWithPeople(): List<BaseItemDto> =
-        scanMutex.withLock {
-            val sessionKey = "${currentServerId()}_${currentUserId()}"
-            scanCache?.let { (key, timestamp, items) ->
-                if (
-                    key == sessionKey &&
-                        System.currentTimeMillis() - timestamp < peopleScanTTL
-                ) {
-                    return items
-                }
+    private suspend fun recentItemsWithPeople(): List<BaseItemDto> = scanMutex.withLock {
+        val sessionKey = "${currentServerId()}_${currentUserId()}"
+        scanCache?.let { (key, timestamp, items) ->
+            if (key == sessionKey && System.currentTimeMillis() - timestamp < peopleScanTTL) {
+                return items
             }
-
-            val items =
-                mediaRepository
-                    .getItems(
-                        includeItemTypes = listOf("Movie", "Series"),
-                        fields = listOf(ItemFields.PEOPLE),
-                        limit = peopleScanLimit,
-                        sortBy = SortBy.DATE_ADDED,
-                        sortDescending = true,
-                    )
-                    .items
-                    .orEmpty()
-
-            if (items.isNotEmpty()) {
-                scanCache = Triple(sessionKey, System.currentTimeMillis(), items)
-            }
-            return items
         }
+
+        val items =
+            mediaRepository
+                .getItems(
+                    includeItemTypes = listOf("Movie", "Series"),
+                    fields = listOf(ItemFields.PEOPLE),
+                    limit = peopleScanLimit,
+                    sortBy = SortBy.DATE_ADDED,
+                    sortDescending = true,
+                )
+                .items
+                .orEmpty()
+
+        if (items.isNotEmpty()) {
+            scanCache = Triple(sessionKey, System.currentTimeMillis(), items)
+        }
+        return items
+    }
 
     fun invalidatePeopleScan() {
         scanCache = null
@@ -298,12 +294,10 @@ constructor(
                 val allSections = personSectionDao.getAllCachedSections(serverId, userId)
                 for (section in allSections) {
                     val itemStrings = json.decodeFromString<List<String>>(section.itemsData)
-                    val retained =
-                        itemStrings.filterNot { itemJson ->
-                            val existing = afinityTypeConverters.toAfinityItem(itemJson)
-                            existing != null &&
-                                ItemIds.normalize(existing.id.toString()) == normalized
-                        }
+                    val retained = itemStrings.filterNot { itemJson ->
+                        val existing = afinityTypeConverters.toAfinityItem(itemJson)
+                        existing != null && ItemIds.normalize(existing.id.toString()) == normalized
+                    }
                     if (retained.size != itemStrings.size) {
                         personSectionDao.insertSection(
                             section.copy(itemsData = json.encodeToString(retained))

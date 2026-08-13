@@ -77,13 +77,12 @@ constructor(
                     ?: return@withContext Result.failure(
                         workDataOf("error" to "Missing download ID")
                     )
-            val downloadId =
-                runCatching { UUID.fromString(downloadIdStr) }
-                    .getOrElse {
-                        return@withContext Result.failure(
-                            workDataOf("error" to "Invalid download ID")
-                        )
-                    }
+            val downloadId = runCatching {
+                UUID.fromString(downloadIdStr)
+            }
+                .getOrElse {
+                    return@withContext Result.failure(workDataOf("error" to "Invalid download ID"))
+                }
 
             val libraryItemId =
                 inputData.getString(AbsDownloadRepositoryImpl.KEY_LIBRARY_ITEM_ID)
@@ -162,52 +161,51 @@ constructor(
 
                 if (item.media != null) {
                     runCatching {
-                            audiobookshelfDao.insertItem(
-                                AudiobookshelfItemEntity(
-                                    id = item.id ?: libraryItemId,
-                                    jellyfinServerId = entity.jellyfinServerId,
-                                    jellyfinUserId = entity.jellyfinUserId,
-                                    libraryId = item.libraryId ?: "",
-                                    title = item.media.metadata.title ?: "",
-                                    authorName = item.media.metadata.authorName,
-                                    narratorName = item.media.metadata.narratorName,
-                                    seriesName = item.media.metadata.seriesName,
-                                    seriesSequence = null,
-                                    mediaType =
-                                        item.mediaType
-                                            ?: if (episodeId != null) "podcast" else "book",
-                                    duration = item.media.duration,
-                                    coverUrl = item.media.coverPath,
-                                    description = item.media.metadata.description,
-                                    publishedYear = item.media.metadata.publishedYear,
-                                    genres =
-                                        item.media.metadata.genres?.let { json.encodeToString(it) },
-                                    numTracks = item.media.numTracks,
-                                    numChapters = item.media.numChapters,
-                                    addedAt = item.addedAt,
-                                    updatedAt = item.updatedAt,
-                                    cachedAt = System.currentTimeMillis(),
-                                )
+                        audiobookshelfDao.insertItem(
+                            AudiobookshelfItemEntity(
+                                id = item.id ?: libraryItemId,
+                                jellyfinServerId = entity.jellyfinServerId,
+                                jellyfinUserId = entity.jellyfinUserId,
+                                libraryId = item.libraryId ?: "",
+                                title = item.media.metadata.title ?: "",
+                                authorName = item.media.metadata.authorName,
+                                narratorName = item.media.metadata.narratorName,
+                                seriesName = item.media.metadata.seriesName,
+                                seriesSequence = null,
+                                mediaType =
+                                    item.mediaType ?: if (episodeId != null) "podcast" else "book",
+                                duration = item.media.duration,
+                                coverUrl = item.media.coverPath,
+                                description = item.media.metadata.description,
+                                publishedYear = item.media.metadata.publishedYear,
+                                genres =
+                                    item.media.metadata.genres?.let { json.encodeToString(it) },
+                                numTracks = item.media.numTracks,
+                                numChapters = item.media.numChapters,
+                                addedAt = item.addedAt,
+                                updatedAt = item.updatedAt,
+                                cachedAt = System.currentTimeMillis(),
                             )
-                            item.media.episodes?.let { episodes ->
-                                audiobookshelfDao.replaceEpisodesForItem(
-                                    item.id ?: libraryItemId,
-                                    entity.jellyfinServerId,
-                                    entity.jellyfinUserId,
-                                    episodes.map {
-                                        it.toEntity(
-                                            item.id ?: libraryItemId,
-                                            entity.jellyfinServerId,
-                                            entity.jellyfinUserId,
-                                            json,
-                                        )
-                                    },
-                                )
-                            }
-                            Timber.d(
-                                "AbsDownload: cached item $libraryItemId for offline browsing (${item.media.episodes?.size ?: 0} episodes)"
+                        )
+                        item.media.episodes?.let { episodes ->
+                            audiobookshelfDao.replaceEpisodesForItem(
+                                item.id ?: libraryItemId,
+                                entity.jellyfinServerId,
+                                entity.jellyfinUserId,
+                                episodes.map {
+                                    it.toEntity(
+                                        item.id ?: libraryItemId,
+                                        entity.jellyfinServerId,
+                                        entity.jellyfinUserId,
+                                        json,
+                                    )
+                                },
                             )
                         }
+                        Timber.d(
+                            "AbsDownload: cached item $libraryItemId for offline browsing (${item.media.episodes?.size ?: 0} episodes)"
+                        )
+                    }
                         .onFailure {
                             Timber.w(it, "AbsDownload: failed to cache item $libraryItemId")
                         }
@@ -682,17 +680,16 @@ constructor(
         tracksTotal: Int,
         downloadedBytes: Long,
         totalBytes: Long,
-    ): String =
-        buildList {
-                if (tracksTotal > 1) add("Track ${trackIndex + 1}/$tracksTotal")
-                if (totalBytes > 0) {
-                    add("${downloadedBytes * 100 / totalBytes}%")
-                    add("${formatBytes(downloadedBytes)} / ${formatBytes(totalBytes)}")
-                } else {
-                    add(formatBytes(downloadedBytes))
-                }
-            }
-            .joinToString(" • ")
+    ): String = buildList {
+        if (tracksTotal > 1) add("Track ${trackIndex + 1}/$tracksTotal")
+        if (totalBytes > 0) {
+            add("${downloadedBytes * 100 / totalBytes}%")
+            add("${formatBytes(downloadedBytes)} / ${formatBytes(totalBytes)}")
+        } else {
+            add(formatBytes(downloadedBytes))
+        }
+    }
+        .joinToString(" • ")
 
     private fun decodeCover(coverPath: String?): Bitmap? {
         val path = coverPath?.removePrefix("file://") ?: return null
@@ -714,8 +711,7 @@ constructor(
     private fun formatBytes(bytes: Long): String =
         when {
             bytes < 1024 -> "$bytes B"
-            bytes < 1024 * 1024 ->
-                String.format(Locale.getDefault(), "%.1f KB", bytes / 1024.0)
+            bytes < 1024 * 1024 -> String.format(Locale.getDefault(), "%.1f KB", bytes / 1024.0)
             bytes < 1024L * 1024 * 1024 ->
                 String.format(Locale.getDefault(), "%.1f MB", bytes / (1024.0 * 1024.0))
             else ->

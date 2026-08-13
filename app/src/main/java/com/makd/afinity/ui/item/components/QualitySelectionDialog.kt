@@ -45,8 +45,7 @@ fun QualitySelectionDialog(
         onSourceSelected(source)
     },
 ) {
-    var selectedSource by
-        remember(sources) { mutableStateOf(sources.singleOrNull()) }
+    var selectedSource by remember(sources) { mutableStateOf(sources.singleOrNull()) }
     val showVolumePicker = volumes.size > 1
 
     Dialog(onDismissRequest = onDismiss) {
@@ -189,7 +188,8 @@ private fun VolumeOption(
     isSelected: Boolean,
     onSelect: () -> Unit,
     modifier: Modifier = Modifier,
-) {    Surface(
+) {
+    Surface(
         onClick = onSelect,
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.small,

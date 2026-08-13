@@ -85,8 +85,9 @@ constructor(@param:GitHubClient private val okHttpClient: OkHttpClient) {
                         ?: return@withContext Result.failure(Exception("Empty response body"))
 
                 val releases = json.decodeFromString<List<GitHubRelease>>(body)
-                val latest = releases.firstOrNull { it.prerelease && !it.draft }
-                    ?: return@withContext Result.failure(Exception("No nightly releases found"))
+                val latest =
+                    releases.firstOrNull { it.prerelease && !it.draft }
+                        ?: return@withContext Result.failure(Exception("No nightly releases found"))
 
                 Timber.d("Fetched latest nightly release: ${latest.tagName}")
                 Result.success(latest)

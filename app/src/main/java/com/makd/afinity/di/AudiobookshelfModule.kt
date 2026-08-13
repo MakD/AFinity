@@ -27,9 +27,7 @@ abstract class AudiobookshelfModule {
 
     @Binds
     @Singleton
-    abstract fun bindAbsDownloadRepository(
-        impl: AbsDownloadRepositoryImpl
-    ): AbsDownloadRepository
+    abstract fun bindAbsDownloadRepository(impl: AbsDownloadRepositoryImpl): AbsDownloadRepository
 
     companion object {
         @Provides

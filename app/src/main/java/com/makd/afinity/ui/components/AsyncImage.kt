@@ -99,8 +99,7 @@ private fun rememberBlurHashPainter(
     }
 }
 
-@Immutable
-private class LowResPlaceholder(val memoryCacheKey: String, val painter: Painter)
+@Immutable private class LowResPlaceholder(val memoryCacheKey: String, val painter: Painter)
 
 @Composable
 private fun rememberCachedLowResPlaceholder(
@@ -165,8 +164,7 @@ fun AsyncImage(
 
     val imageSize =
         remember(targetWidthPx, targetHeight, density, scaleFactor) {
-            val heightPx =
-                targetHeight?.let { with(density) { (it.toPx() * scaleFactor).toInt() } }
+            val heightPx = targetHeight?.let { with(density) { (it.toPx() * scaleFactor).toInt() } }
             if (targetWidthPx != null && heightPx != null) {
                 Size(width = targetWidthPx, height = heightPx)
             } else {

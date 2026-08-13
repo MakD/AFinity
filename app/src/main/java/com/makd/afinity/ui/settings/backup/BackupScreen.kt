@@ -130,10 +130,10 @@ private fun BackupBody(viewModel: BackupViewModel, modifier: Modifier = Modifier
             val payload = uiState.pendingExport
             if (uri != null && payload != null) {
                 runCatching {
-                        context.contentResolver.openOutputStream(uri)?.use {
-                            it.write(payload.toByteArray())
-                        }
+                    context.contentResolver.openOutputStream(uri)?.use {
+                        it.write(payload.toByteArray())
                     }
+                }
                     .onFailure { Timber.e(it, "Failed to write settings backup") }
             }
             viewModel.onExportDelivered()
@@ -142,14 +142,13 @@ private fun BackupBody(viewModel: BackupViewModel, modifier: Modifier = Modifier
     val importLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri == null) return@rememberLauncherForActivityResult
-            val raw =
-                runCatching {
-                        context.contentResolver.openInputStream(uri)?.use {
-                            it.readBytes().decodeToString()
-                        }
-                    }
-                    .onFailure { Timber.e(it, "Failed to read settings backup") }
-                    .getOrNull()
+            val raw = runCatching {
+                context.contentResolver.openInputStream(uri)?.use {
+                    it.readBytes().decodeToString()
+                }
+            }
+                .onFailure { Timber.e(it, "Failed to read settings backup") }
+                .getOrNull()
             if (raw != null) viewModel.previewImport(raw)
         }
 

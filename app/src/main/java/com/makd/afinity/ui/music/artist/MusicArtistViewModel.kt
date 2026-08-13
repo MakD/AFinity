@@ -33,7 +33,9 @@ data class MusicArtistUiState(
 )
 
 @HiltViewModel
-class MusicArtistViewModel @Inject constructor(
+class MusicArtistViewModel
+@Inject
+constructor(
     private val musicRepository: MusicRepository,
     private val downloadRepository: DownloadRepository,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
@@ -55,7 +57,12 @@ class MusicArtistViewModel @Inject constructor(
         viewModelScope.launch {
             downloadRepository.getAllDownloadsFlow().collect { allDownloads ->
                 _uiState.update {
-                    it.copy(trackDownloadInfos = allDownloads.filter { d -> d.itemType == "Audio" }.associateBy { d -> d.itemId })
+                    it.copy(
+                        trackDownloadInfos =
+                            allDownloads
+                                .filter { d -> d.itemType == "Audio" }
+                                .associateBy { d -> d.itemId }
+                    )
                 }
             }
         }
@@ -66,7 +73,9 @@ class MusicArtistViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
             try {
                 val artistDeferred = async { musicRepository.getArtistById(artistId) }
-                val tracksDeferred = async { musicRepository.getArtistTopTracks(artistId, limit = 10) }
+                val tracksDeferred = async {
+                    musicRepository.getArtistTopTracks(artistId, limit = 10)
+                }
                 val albumsDeferred = async { musicRepository.getArtistAlbums(artistId) }
                 val appearsDeferred = async { musicRepository.getArtistAppearsOn(artistId) }
 
@@ -90,7 +99,12 @@ class MusicArtistViewModel @Inject constructor(
         val tracks = _uiState.value.topTracks
         val track = tracks.find { it.id == trackId } ?: return
         val newFavorite = !track.favorite
-        _uiState.update { it.copy(topTracks = tracks.map { t -> if (t.id == trackId) t.copy(favorite = newFavorite) else t }) }
+        _uiState.update {
+            it.copy(
+                topTracks =
+                    tracks.map { t -> if (t.id == trackId) t.copy(favorite = newFavorite) else t }
+            )
+        }
         viewModelScope.launch {
             runCatching { musicRepository.setFavorite(trackId, newFavorite) }
                 .onSuccess { appDataRepository.updateTrackFavoriteStatus(track, newFavorite) }
@@ -108,28 +122,33 @@ class MusicArtistViewModel @Inject constructor(
                     appDataRepository.updateArtistFavoriteStatus(artist, newFavorite)
                     adminChangeBroadcaster.notifyItemChanged(artist.id.toString())
                 }
-                .onFailure { _uiState.update { it.copy(artist = artist.copy(favorite = artist.favorite)) } }
+                .onFailure {
+                    _uiState.update { it.copy(artist = artist.copy(favorite = artist.favorite)) }
+                }
         }
     }
 
     fun downloadArtist() {
         viewModelScope.launch {
-            downloadRepository.startArtistDownload(artistId)
-                .onFailure { Timber.e(it, "Failed to start artist download") }
+            downloadRepository.startArtistDownload(artistId).onFailure {
+                Timber.e(it, "Failed to initMonitoring artist download")
+            }
         }
     }
 
     fun downloadAlbum(albumId: UUID) {
         viewModelScope.launch {
-            downloadRepository.startAlbumDownload(albumId)
-                .onFailure { Timber.e(it, "Failed to start album download for $albumId") }
+            downloadRepository.startAlbumDownload(albumId).onFailure {
+                Timber.e(it, "Failed to initMonitoring album download for $albumId")
+            }
         }
     }
 
     fun downloadTrack(trackId: UUID) {
         viewModelScope.launch {
-            downloadRepository.startDownload(trackId, "")
-                .onFailure { Timber.e(it, "Failed to download track $trackId") }
+            downloadRepository.startDownload(trackId, "").onFailure {
+                Timber.e(it, "Failed to download track $trackId")
+            }
         }
     }
 }

@@ -513,7 +513,10 @@ private fun CastSeekSection(
                 inactiveTrackColor = Color.White.copy(alpha = 0.2f),
             ),
         track = { sliderState ->
-            Box(modifier = Modifier.fillMaxWidth().height(18.dp), contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier.fillMaxWidth().height(18.dp),
+                contentAlignment = Alignment.Center,
+            ) {
                 SliderDefaults.Track(
                     sliderState = sliderState,
                     modifier = Modifier.height(4.dp),

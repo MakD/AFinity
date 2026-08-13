@@ -29,9 +29,7 @@ class RingBufferTree(private val maxLines: Int = 500) : Timber.Tree() {
             buffer.addLast(line)
             t?.let {
                 val trace =
-                    LogRedactor.redact(
-                        it.stackTraceToString().lines().take(20).joinToString("\n")
-                    )
+                    LogRedactor.redact(it.stackTraceToString().lines().take(20).joinToString("\n"))
                 if (buffer.size >= maxLines) buffer.removeFirst()
                 buffer.addLast(trace)
             }

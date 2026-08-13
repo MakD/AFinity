@@ -62,9 +62,7 @@ constructor(
     private var lastLoadedAt = 0L
 
     init {
-        viewModelScope.launch {
-            adminChangeBroadcaster.itemChanged.collect { loadPersonDetails() }
-        }
+        viewModelScope.launch { adminChangeBroadcaster.itemChanged.collect { loadPersonDetails() } }
 
         viewModelScope.launch {
             appDataRepository.isInitialDataLoaded.collect { isLoaded ->

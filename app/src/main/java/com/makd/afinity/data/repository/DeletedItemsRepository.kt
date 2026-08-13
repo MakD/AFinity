@@ -20,7 +20,9 @@ class DeletedItemsRepository @Inject constructor(private val dao: DeletedItemDao
     @Volatile private var cachedIds: Set<String>? = null
 
     suspend fun deletedIds(): Set<String> {
-        cachedIds?.let { return it }
+        cachedIds?.let {
+            return it
+        }
         return mutex.withLock {
             cachedIds
                 ?: withContext(Dispatchers.IO) {
@@ -38,12 +40,10 @@ class DeletedItemsRepository @Inject constructor(private val dao: DeletedItemDao
         val now = System.currentTimeMillis()
         mutex.withLock {
             runCatching {
-                    withContext(Dispatchers.IO) {
-                        dao.insertAll(
-                            normalized.map { DeletedItemEntity(it, serverId, now) }
-                        )
-                    }
+                withContext(Dispatchers.IO) {
+                    dao.insertAll(normalized.map { DeletedItemEntity(it, serverId, now) })
                 }
+            }
                 .onFailure { Timber.e(it, "Failed to persist deleted item tombstones") }
             cachedIds = cachedIds?.plus(normalized)
         }
@@ -71,10 +71,10 @@ class DeletedItemsRepository @Inject constructor(private val dao: DeletedItemDao
 
     suspend fun prune(maxAgeMs: Long = DEFAULT_MAX_AGE_MS) {
         runCatching {
-                withContext(Dispatchers.IO) {
-                    dao.deleteOlderThan(System.currentTimeMillis() - maxAgeMs)
-                }
+            withContext(Dispatchers.IO) {
+                dao.deleteOlderThan(System.currentTimeMillis() - maxAgeMs)
             }
+        }
             .onFailure { Timber.w(it, "Failed to prune deleted item tombstones") }
         mutex.withLock { cachedIds = null }
     }

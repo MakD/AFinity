@@ -42,6 +42,12 @@ import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Lazy
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -63,12 +69,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import timber.log.Timber
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class JellyseerrRepositoryImpl
@@ -954,9 +954,7 @@ constructor(
                                 if (mediaInfo.id > 0) {
                                     targetMediaId = mediaInfo.id
                                 }
-                                mediaInfo.requests?.forEach { req ->
-                                    requestsToDelete.add(req.id)
-                                }
+                                mediaInfo.requests?.forEach { req -> requestsToDelete.add(req.id) }
                             }
                         }
                     } catch (e: Exception) {
@@ -1239,9 +1237,7 @@ constructor(
     }
 
     override suspend fun getTvDetails(tvId: Int): Result<MediaDetails> {
-        return seerrResult("Failed to get TV details") { api ->
-            api.getTvDetails(tvId)
-        }
+        return seerrResult("Failed to get TV details") { api -> api.getTvDetails(tvId) }
     }
 
     override suspend fun getRatings(mediaType: MediaType, tmdbId: Int): Result<RatingsCombined> {

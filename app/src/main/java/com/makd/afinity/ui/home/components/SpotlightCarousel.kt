@@ -139,8 +139,7 @@ fun SpotlightCarousel(
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         val logoUrl =
-                            item.images.logoImageUrlWithTransparency
-                                ?: item.images.showLogoImageUrl
+                            item.images.logoImageUrlWithTransparency ?: item.images.showLogoImageUrl
                         val imdbRating =
                             when (item) {
                                 is AfinityMovie -> item.communityRating
@@ -178,8 +177,7 @@ fun SpotlightCarousel(
                             }
 
                             if (
-                                LocalShowRatings.current &&
-                                    (imdbRating != null || rtRating != null)
+                                LocalShowRatings.current && (imdbRating != null || rtRating != null)
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -209,8 +207,7 @@ fun SpotlightCarousel(
                                         Icon(
                                             painter =
                                                 painterResource(
-                                                    if (rt > 60)
-                                                        R.drawable.ic_rotten_tomato_fresh
+                                                    if (rt > 60) R.drawable.ic_rotten_tomato_fresh
                                                     else R.drawable.ic_rotten_tomato_rotten
                                                 ),
                                             contentDescription = null,

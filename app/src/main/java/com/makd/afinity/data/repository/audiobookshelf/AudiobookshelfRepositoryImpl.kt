@@ -170,7 +170,10 @@ constructor(
                             _currentConfig.value?.copy(serverUrl = result.address)
                     }
                 } catch (e: Exception) {
-                    Timber.e(e, "Audiobookshelf: Failed to re-resolve address on network change")
+                    Timber.e(
+                        e,
+                        "Audiobookshelf: Failed to re-playbackCompletionResolved address on network change",
+                    )
                 }
             }
         }
@@ -771,7 +774,9 @@ constructor(
     ): String? {
         val download =
             database.absDownloadDao().getDownloadForBook(itemId, serverId, userId)
-                ?: database.absDownloadDao().getFirstCompletedEpisodeForItem(itemId, serverId, userId)
+                ?: database
+                    .absDownloadDao()
+                    .getFirstCompletedEpisodeForItem(itemId, serverId, userId)
         val dirPath = download?.localDirPath ?: return null
         val coverFile = File(dirPath, "cover.jpg")
         return if (coverFile.exists() && coverFile.length() > 0) {
@@ -1355,12 +1360,14 @@ constructor(
                 } else {
                     val errorBody = response.errorBody()?.string()
                     Timber.e(
-                        "Failed to start session: ${response.code()} - ${response.message()}, body=$errorBody"
+                        "Failed to initMonitoring session: ${response.code()} - ${response.message()}, body=$errorBody"
                     )
-                    Result.failure(Exception("Failed to start session: ${response.message()}"))
+                    Result.failure(
+                        Exception("Failed to initMonitoring session: ${response.message()}")
+                    )
                 }
             } catch (e: Exception) {
-                Timber.e(e, "Failed to start playback session")
+                Timber.e(e, "Failed to initMonitoring playback session")
                 Result.failure(e)
             }
         }
@@ -1985,7 +1992,7 @@ constructor(
             try {
                 val context = currentActiveContext
                 Timber.d(
-                    "AudibleRating: start itemId=$itemId asin=$asin title=$title context=$context"
+                    "AudibleRating: initMonitoring itemId=$itemId asin=$asin title=$title context=$context"
                 )
                 val (serverId, userId) = context ?: return@withContext Result.success(null)
 
@@ -2009,9 +2016,7 @@ constructor(
                 resolvedAsin ?: return@withContext Result.success(null)
 
                 val region =
-                    Locale.getDefault().country.lowercase().let {
-                        if (it == "gb") "uk" else it
-                    }
+                    Locale.getDefault().country.lowercase().let { if (it == "gb") "uk" else it }
 
                 Timber.d("AudibleRating: fetching from Audnexus asin=$resolvedAsin region=$region")
                 var response = audnexusApiService.getBook(resolvedAsin, region)
@@ -2058,9 +2063,7 @@ constructor(
     private suspend fun searchAsinFallback(title: String, authorName: String?): String? {
         return try {
             val region =
-                Locale.getDefault().country.lowercase().let {
-                    if (it == "gb") "uk" else it
-                }
+                Locale.getDefault().country.lowercase().let { if (it == "gb") "uk" else it }
             Timber.d(
                 "AudibleRating: fallback search title=$title author=$authorName region=$region"
             )

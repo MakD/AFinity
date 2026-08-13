@@ -107,7 +107,12 @@ constructor(
             viewModelScope.launch {
                 authRepository.isAuthenticated.collect { isAuthenticated ->
                     if (isAuthenticated) {
-                        _uiState.value = _uiState.value.copy(isLoggedIn = true, password = "", isLoggingIn = false)
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isLoggedIn = true,
+                                password = "",
+                                isLoggingIn = false,
+                            )
                     }
                 }
             }
@@ -120,7 +125,8 @@ constructor(
 
         _serverUrl.value = trimmedUrl
 
-        val urlError = if (trimmedUrl.isNotBlank() && !isValidUrl(trimmedUrl)) "Invalid URL format" else null
+        val urlError =
+            if (trimmedUrl.isNotBlank() && !isValidUrl(trimmedUrl)) "Invalid URL format" else null
         _uiState.update { it.copy(serverUrlError = urlError) }
 
         if (trimmedUrl.isBlank()) {
@@ -331,7 +337,12 @@ constructor(
 
                     if (result.isSuccess) {
                         discoveryJob?.cancel()
-                        _uiState.value = _uiState.value.copy(isLoggingIn = false, isLoggedIn = true, password = "")
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isLoggingIn = false,
+                                isLoggedIn = true,
+                                password = "",
+                            )
                         Timber.d("Successfully logged in with saved user: ${user.name}")
                     } else {
                         _uiState.value =
@@ -417,7 +428,11 @@ constructor(
                             if (sessionResult.isSuccess) {
                                 discoveryJob?.cancel()
                                 _uiState.value =
-                                    _uiState.value.copy(isLoggingIn = false, isLoggedIn = true, password = "")
+                                    _uiState.value.copy(
+                                        isLoggingIn = false,
+                                        isLoggedIn = true,
+                                        password = "",
+                                    )
                                 Timber.d("Successfully logged in user: ${currentState.username}")
                             } else {
                                 _uiState.value =
@@ -535,7 +550,8 @@ constructor(
                                     _uiState.value =
                                         _uiState.value.copy(
                                             isLoggingIn = false,
-                                            isLoggedIn = true, password = "",
+                                            isLoggedIn = true,
+                                            password = "",
                                             quickConnectCode = null,
                                             quickConnectSecret = null,
                                         )
@@ -642,7 +658,6 @@ constructor(
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }
-
 }
 
 data class LoginUiState(

@@ -92,9 +92,7 @@ fun EditImagesScreen(
             viewModel.uploadImage(uiState.selectedType, bytes, mimeType)
         }
 
-    LaunchedEffect(uiState.error) {
-        uiState.error?.let { snackbarHostState.showSnackbar(it) }
-    }
+    LaunchedEffect(uiState.error) { uiState.error?.let { snackbarHostState.showSnackbar(it) } }
     LaunchedEffect(uiState.actionSuccess) {
         if (uiState.actionSuccess) {
             snackbarHostState.showSnackbar("Done")

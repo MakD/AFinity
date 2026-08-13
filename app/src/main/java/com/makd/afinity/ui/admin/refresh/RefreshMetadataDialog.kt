@@ -37,9 +37,7 @@ fun RefreshMetadataDialog(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(uiState.done) {
-        if (uiState.done) onDismiss()
-    }
+    LaunchedEffect(uiState.done) { if (uiState.done) onDismiss() }
 
     AlertDialog(
         onDismissRequest = { if (!uiState.refreshing) onDismiss() },

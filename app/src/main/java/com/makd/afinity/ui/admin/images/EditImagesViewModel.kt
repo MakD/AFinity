@@ -59,11 +59,12 @@ constructor(
     fun loadRemoteImages(imageType: String = _uiState.value.selectedType) {
         viewModelScope.launch {
             _uiState.update { it.copy(loadingRemote = true) }
-            val remote = adminRepository.getRemoteImages(
-                itemId = itemId,
-                imageType = imageType,
-                includeAllLanguages = _uiState.value.includeAllLanguages,
-            )
+            val remote =
+                adminRepository.getRemoteImages(
+                    itemId = itemId,
+                    imageType = imageType,
+                    includeAllLanguages = _uiState.value.includeAllLanguages,
+                )
             _uiState.update { it.copy(loadingRemote = false, remoteImages = remote) }
         }
     }
@@ -77,11 +78,12 @@ constructor(
         val url = image.remoteUrl ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(applying = true, error = null) }
-            val result = adminRepository.downloadRemoteImage(
-                itemId = itemId,
-                imageType = image.imageType,
-                imageUrl = url,
-            )
+            val result =
+                adminRepository.downloadRemoteImage(
+                    itemId = itemId,
+                    imageType = image.imageType,
+                    imageUrl = url,
+                )
             _uiState.update {
                 it.copy(
                     applying = false,

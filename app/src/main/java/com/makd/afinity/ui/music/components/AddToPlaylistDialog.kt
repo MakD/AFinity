@@ -70,9 +70,7 @@ fun AddToPlaylistDialog(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var screen by remember { mutableStateOf(DialogScreen.List) }
 
-    LaunchedEffect(Unit) {
-        viewModel.loadPlaylists()
-    }
+    LaunchedEffect(Unit) { viewModel.loadPlaylists() }
 
     LaunchedEffect(state.result) {
         val result = state.result ?: return@LaunchedEffect
@@ -251,9 +249,7 @@ fun CreatePlaylistDialogContent(
     var isPublic by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
 
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-    }
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
     AlertDialog(
         onDismissRequest = { if (!isLoading) onDismiss() },

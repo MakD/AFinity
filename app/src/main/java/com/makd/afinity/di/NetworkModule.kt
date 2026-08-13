@@ -246,10 +246,7 @@ object NetworkModule {
             .cache(null)
             .addInterceptor { chain ->
                 chain.proceed(
-                    chain.request()
-                        .newBuilder()
-                        .header("User-Agent", imageUserAgent)
-                        .build()
+                    chain.request().newBuilder().header("User-Agent", imageUserAgent).build()
                 )
             }
             .addInterceptor { chain ->

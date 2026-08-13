@@ -486,9 +486,7 @@ constructor(
             try {
                 val apiClient =
                     getApiClient()
-                        ?: return@withContext Result.failure(
-                            IllegalStateException("No API client")
-                        )
+                        ?: return@withContext Result.failure(IllegalStateException("No API client"))
                 LibraryApi(apiClient).deleteItem(itemId = UUID.fromString(itemId))
                 adminChangeBroadcaster.notifyItemDeleted(itemId, tmdbId, isMovie)
                 Result.success(Unit)

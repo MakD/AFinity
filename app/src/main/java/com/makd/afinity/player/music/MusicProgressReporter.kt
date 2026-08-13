@@ -14,9 +14,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class MusicProgressReporter @Inject constructor(
-    private val playbackRepository: PlaybackRepository,
-) {
+class MusicProgressReporter
+@Inject
+constructor(private val playbackRepository: PlaybackRepository) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var progressJob: Job? = null
     private var currentTrackId: UUID? = null
@@ -34,7 +34,8 @@ class MusicProgressReporter @Inject constructor(
                     playMethod = "DirectPlay",
                     canSeek = true,
                 )
-            }.onFailure { Timber.w(it, "Failed to report playback start for $trackId") }
+            }
+                .onFailure { Timber.w(it, "Failed to report playback start for $trackId") }
         }
     }
 
@@ -52,7 +53,8 @@ class MusicProgressReporter @Inject constructor(
                         isPaused = isPaused(),
                         playMethod = "DirectPlay",
                     )
-                }.onFailure { Timber.w(it, "Failed to report playback progress") }
+                }
+                    .onFailure { Timber.w(it, "Failed to report playback progress") }
             }
         }
     }
@@ -73,7 +75,8 @@ class MusicProgressReporter @Inject constructor(
                     positionTicks = positionMs * 10_000L,
                     mediaSourceId = trackId.toString(),
                 )
-            }.onFailure { Timber.w(it, "Failed to report playback stop for $trackId") }
+            }
+                .onFailure { Timber.w(it, "Failed to report playback stop for $trackId") }
         }
         stopProgressUpdates()
         currentTrackId = null

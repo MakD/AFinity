@@ -561,7 +561,9 @@ private fun LandscapeItemDetailContent(
                 remember(item.id) {
                     if (item is AfinitySeason) {
                         listOfNotNull(
-                            item.images.backdropImageUrl?.let { it to item.images.backdropBlurHash },
+                            item.images.backdropImageUrl?.let {
+                                it to item.images.backdropBlurHash
+                            },
                             item.images.showBackdropImageUrl?.let {
                                 it to item.images.showBackdropBlurHash
                             },
@@ -569,7 +571,9 @@ private fun LandscapeItemDetailContent(
                         )
                     } else {
                         listOfNotNull(
-                            item.images.backdropImageUrl?.let { it to item.images.backdropBlurHash },
+                            item.images.backdropImageUrl?.let {
+                                it to item.images.backdropBlurHash
+                            },
                             item.images.primaryImageUrl?.let { it to item.images.primaryBlurHash },
                         )
                     }
@@ -643,7 +647,11 @@ private fun LandscapeItemDetailContent(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            if (item !is AfinityBoxSet && item !is AfinityVideoPlaylist && item.canPlay) {
+                            if (
+                                item !is AfinityBoxSet &&
+                                    item !is AfinityVideoPlaylist &&
+                                    item.canPlay
+                            ) {
                                 Box(modifier = Modifier.widthIn(max = 200.dp)) {
                                     PrimaryPlaybackButton(
                                         item = item,
@@ -1325,9 +1333,7 @@ private fun DeleteConfirmationDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_cancel))
-            }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
     )
 }

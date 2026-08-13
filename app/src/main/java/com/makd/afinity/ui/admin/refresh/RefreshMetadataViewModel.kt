@@ -12,7 +12,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class RefreshMode { Scan, Missing, ReplaceAll }
+enum class RefreshMode {
+    Scan,
+    Missing,
+    ReplaceAll,
+}
 
 data class RefreshUiState(
     val mode: RefreshMode = RefreshMode.Scan,
@@ -43,18 +47,22 @@ constructor(
         val state = _uiState.value
         viewModelScope.launch {
             _uiState.update { it.copy(refreshing = true, error = null) }
-            val (metaMode, imageMode, replaceMeta, replaceImages) = when (state.mode) {
-                RefreshMode.Scan -> RefreshParams("Default", "Default", false, false)
-                RefreshMode.Missing -> RefreshParams("FullRefresh", "FullRefresh", false, state.replaceImages)
-                RefreshMode.ReplaceAll -> RefreshParams("FullRefresh", "FullRefresh", true, state.replaceImages)
-            }
-            val result = adminRepository.refreshItem(
-                itemId = itemId,
-                metadataRefreshMode = metaMode,
-                imageRefreshMode = imageMode,
-                replaceAllMetadata = replaceMeta,
-                replaceAllImages = replaceImages,
-            )
+            val (metaMode, imageMode, replaceMeta, replaceImages) =
+                when (state.mode) {
+                    RefreshMode.Scan -> RefreshParams("Default", "Default", false, false)
+                    RefreshMode.Missing ->
+                        RefreshParams("FullRefresh", "FullRefresh", false, state.replaceImages)
+                    RefreshMode.ReplaceAll ->
+                        RefreshParams("FullRefresh", "FullRefresh", true, state.replaceImages)
+                }
+            val result =
+                adminRepository.refreshItem(
+                    itemId = itemId,
+                    metadataRefreshMode = metaMode,
+                    imageRefreshMode = imageMode,
+                    replaceAllMetadata = replaceMeta,
+                    replaceAllImages = replaceImages,
+                )
             _uiState.update {
                 it.copy(
                     refreshing = false,

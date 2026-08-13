@@ -26,7 +26,9 @@ private const val CONTINUOUS_INITIAL = 5
 private const val CONTINUOUS_APPEND = 2
 
 @Singleton
-class RadioManager @Inject constructor(
+class RadioManager
+@Inject
+constructor(
     private val musicRepository: MusicRepository,
     private val queueManager: MusicQueueManager,
 ) {
@@ -39,15 +41,16 @@ class RadioManager @Inject constructor(
     fun startRadio(seed: RadioSeed, mode: RadioMode) {
         appendJob?.cancel()
         scope.launch {
-            _radioState.value = RadioState(
-                isActive = true,
-                mode = mode,
-                seedTrackId = seed.trackId,
-                albumId = seed.albumId,
-                continuousSeedId = seed.trackId,
-                sourceTracks = seed.sourceTracks,
-                isGenerating = true,
-            )
+            _radioState.value =
+                RadioState(
+                    isActive = true,
+                    mode = mode,
+                    seedTrackId = seed.trackId,
+                    albumId = seed.albumId,
+                    continuousSeedId = seed.trackId,
+                    sourceTracks = seed.sourceTracks,
+                    isGenerating = true,
+                )
             val count = if (mode == RadioMode.CONTINUOUS) CONTINUOUS_INITIAL else INITIAL_BATCH_SIZE
             val tracks = generateTracks(count)
             if (tracks.isNotEmpty()) {
@@ -79,7 +82,9 @@ class RadioManager @Inject constructor(
     private suspend fun appendTracks() {
         if (_radioState.value.isGenerating) return
         _radioState.update { it.copy(isGenerating = true) }
-        val count = if (_radioState.value.mode == RadioMode.CONTINUOUS) CONTINUOUS_APPEND else APPEND_BATCH_SIZE
+        val count =
+            if (_radioState.value.mode == RadioMode.CONTINUOUS) CONTINUOUS_APPEND
+            else APPEND_BATCH_SIZE
         val tracks = generateTracks(count)
         if (tracks.isNotEmpty()) {
             queueManager.addLast(tracks)
@@ -92,10 +97,11 @@ class RadioManager @Inject constructor(
         return try {
             when (state.mode) {
                 RadioMode.SIMILAR -> similarTracks(state.seedTrackId ?: return emptyList(), count)
-                RadioMode.CONTINUOUS -> continuousTracks(
-                    state.continuousSeedId ?: state.seedTrackId ?: return emptyList(),
-                    count,
-                )
+                RadioMode.CONTINUOUS ->
+                    continuousTracks(
+                        state.continuousSeedId ?: state.seedTrackId ?: return emptyList(),
+                        count,
+                    )
                 RadioMode.ALBUM_MIX -> albumMixTracks(state.albumId)
                 RadioMode.RESHUFFLE -> reshuffleTracks(state.sourceTracks)
                 RadioMode.RANDOM -> randomTracks(state.sourceTracks, count)

@@ -26,25 +26,27 @@ data class MusicAlbumEntity(
     val localImagePath: String? = null,
 )
 
-fun AfinityAlbum.toMusicAlbumEntity(serverId: String, userId: String) = MusicAlbumEntity(
-    id = id.toString(),
-    serverId = serverId,
-    userId = userId,
-    name = name,
-    artist = artist,
-    artistId = artistId?.toString(),
-    productionYear = productionYear,
-    songCount = songCount,
-    runtimeTicks = runtimeTicks,
-    images = images,
-)
+fun AfinityAlbum.toMusicAlbumEntity(serverId: String, userId: String) =
+    MusicAlbumEntity(
+        id = id.toString(),
+        serverId = serverId,
+        userId = userId,
+        name = name,
+        artist = artist,
+        artistId = artistId?.toString(),
+        productionYear = productionYear,
+        songCount = songCount,
+        runtimeTicks = runtimeTicks,
+        images = images,
+    )
 
 fun MusicAlbumEntity.toAfinityAlbum(): AfinityAlbum {
-    val resolvedImages = if (localImagePath != null) {
-        (images ?: AfinityImages()).copy(primary = Uri.parse(localImagePath))
-    } else {
-        images ?: AfinityImages()
-    }
+    val resolvedImages =
+        if (localImagePath != null) {
+            (images ?: AfinityImages()).copy(primary = Uri.parse(localImagePath))
+        } else {
+            images ?: AfinityImages()
+        }
     return AfinityAlbum(
         id = UUID.fromString(id),
         name = name,

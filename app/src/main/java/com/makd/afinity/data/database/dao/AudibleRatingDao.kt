@@ -24,6 +24,5 @@ interface AudibleRatingDao {
 
     @Query("DELETE FROM audible_ratings") suspend fun clearAll()
 
-    @Query("SELECT (SELECT COUNT(*) FROM audible_ratings)")
-    suspend fun cachedEntryCount(): Int
+    @Query("SELECT (SELECT COUNT(*) FROM audible_ratings)") suspend fun cachedEntryCount(): Int
 }

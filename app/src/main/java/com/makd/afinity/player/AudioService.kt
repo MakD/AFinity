@@ -303,9 +303,7 @@ class AudioService : MediaSessionService() {
         exoPlayer
             ?.audioSessionId
             ?.takeIf { it != C.AUDIO_SESSION_ID_UNSET }
-            ?.let {
-                absEqualizerManager.attachToSession(it)
-            }
+            ?.let { absEqualizerManager.attachToSession(it) }
         val posMs = exoPlayer?.currentPosition ?: 0L
         musicProgressReporter.onPlaybackStopped(posMs)
         musicPlaybackManager.clearPlayer()
@@ -326,9 +324,7 @@ class AudioService : MediaSessionService() {
         exoPlayer
             ?.audioSessionId
             ?.takeIf { it != C.AUDIO_SESSION_ID_UNSET }
-            ?.let {
-                musicEqualizerManager.attachToSession(it)
-            }
+            ?.let { musicEqualizerManager.attachToSession(it) }
         absProgressSyncer.stopSyncing()
         absPlaybackManager.clearSession()
         stopPositionUpdates()

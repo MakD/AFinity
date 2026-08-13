@@ -35,8 +35,7 @@ fun DownloadListItemRow(
     supportingContent: @Composable () -> Unit,
 ) {
     ListItem(
-        modifier =
-            if (onClick != null) modifier.clickable(onClick = onClick) else modifier,
+        modifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier,
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         leadingContent = {
             AsyncImage(

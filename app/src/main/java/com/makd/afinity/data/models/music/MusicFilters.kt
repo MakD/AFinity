@@ -12,11 +12,7 @@ data class MusicFilters(
 ) {
     val isActive: Boolean
         get() =
-            favoritesOnly ||
-                unplayedOnly ||
-                playedOnly ||
-                genres.isNotEmpty() ||
-                years.isNotEmpty()
+            favoritesOnly || unplayedOnly || playedOnly || genres.isNotEmpty() || years.isNotEmpty()
 }
 
 data class MusicFilterOptions(

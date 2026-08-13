@@ -69,7 +69,8 @@ fun FilteredMediaScreen(
     onProfileClick: () -> Unit,
     mainUiState: MainUiState,
     onItemClick: (jellyfinItemId: String, itemType: String?) -> Unit,
-    onNavigateToSeerrMedia: (item: com.makd.afinity.data.models.jellyseerr.SearchResultItem) -> Unit =
+    onNavigateToSeerrMedia:
+        (item: com.makd.afinity.data.models.jellyseerr.SearchResultItem) -> Unit =
         {},
     modifier: Modifier = Modifier,
     viewModel: FilteredMediaViewModel = hiltViewModel(),
@@ -320,7 +321,9 @@ fun FilteredMediaScreen(
                     currentField = uiState.tvSortField,
                     currentDescending = uiState.tvSortDescending,
                     onDismiss = { showSortDialog = false },
-                    onSortSelected = { field, descending -> viewModel.setTvSort(field, descending) },
+                    onSortSelected = { field, descending ->
+                        viewModel.setTvSort(field, descending)
+                    },
                 )
             else -> {}
         }
@@ -372,4 +375,3 @@ private fun ErrorView(message: String, onRetry: () -> Unit, modifier: Modifier =
         }
     }
 }
-

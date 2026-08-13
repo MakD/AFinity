@@ -233,8 +233,10 @@ fun ContinueWatchingCard(
                                             horizontalArrangement = Arrangement.spacedBy(2.dp),
                                         ) {
                                             Icon(
-                                                painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                                contentDescription = stringResource(R.string.cd_imdb),
+                                                painter =
+                                                    painterResource(id = R.drawable.ic_imdb_logo),
+                                                contentDescription =
+                                                    stringResource(R.string.cd_imdb),
                                                 tint = Color.Unspecified,
                                                 modifier = Modifier.size(ratingScale.imdbIconSize),
                                             )
@@ -243,8 +245,8 @@ fun ContinueWatchingCard(
                                                 style =
                                                     MaterialTheme.typography.bodySmall.copy(
                                                         fontSize =
-                                                            MaterialTheme.typography.bodySmall.fontSize *
-                                                                ratingScale.textScale
+                                                            MaterialTheme.typography.bodySmall
+                                                                .fontSize * ratingScale.textScale
                                                     ),
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
@@ -266,7 +268,9 @@ fun ContinueWatchingCard(
                                                             }
                                                     ),
                                                 contentDescription =
-                                                    stringResource(R.string.cd_rotten_tomatoes_rating),
+                                                    stringResource(
+                                                        R.string.cd_rotten_tomatoes_rating
+                                                    ),
                                                 modifier = Modifier.size(ratingScale.rtIconSize),
                                                 tint = Color.Unspecified,
                                             )
@@ -276,8 +280,8 @@ fun ContinueWatchingCard(
                                                 style =
                                                     MaterialTheme.typography.bodySmall.copy(
                                                         fontSize =
-                                                            MaterialTheme.typography.bodySmall.fontSize *
-                                                                ratingScale.textScale
+                                                            MaterialTheme.typography.bodySmall
+                                                                .fontSize * ratingScale.textScale
                                                     ),
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
@@ -345,8 +349,8 @@ fun ContinueWatchingCard(
                                             style =
                                                 MaterialTheme.typography.bodySmall.copy(
                                                     fontSize =
-                                                        MaterialTheme.typography.bodySmall.fontSize *
-                                                            ratingScale.textScale
+                                                        MaterialTheme.typography.bodySmall
+                                                            .fontSize * ratingScale.textScale
                                                 ),
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )

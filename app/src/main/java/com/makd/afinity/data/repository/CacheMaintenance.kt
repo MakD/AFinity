@@ -128,7 +128,9 @@ constructor(
         withContext(Dispatchers.IO) {
             val imageBytes = runCatching {
                 SingletonImageLoader.get(context).diskCache?.size ?: 0L
-            }.onFailure { Timber.w(it, "Failed to read image cache size") }.getOrDefault(0L)
+            }
+                .onFailure { Timber.w(it, "Failed to read image cache size") }
+                .getOrDefault(0L)
 
             val bytes =
                 mapOf(
@@ -151,10 +153,7 @@ constructor(
                         {
                             database.jellyseerrDao().cachedEntryCount()
                         },
-                    CacheKind.AUDIOBOOKSHELF to
-                        {
-                            database.audiobookshelfDao().cachedEntryCount()
-                        },
+                    CacheKind.AUDIOBOOKSHELF to { database.audiobookshelfDao().cachedEntryCount() },
                     CacheKind.ITEM_METADATA to
                         {
                             database.itemMetadataCacheDao().cachedEntryCount()
@@ -284,9 +283,7 @@ constructor(
         files
             .sortedByDescending { it.lastModified() }
             .drop(MAX_CRASH_FILES)
-            .forEach { stale ->
-                if (stale.delete()) Timber.d("Pruned crash file ${stale.name}")
-            }
+            .forEach { stale -> if (stale.delete()) Timber.d("Pruned crash file ${stale.name}") }
     }
 
     private suspend fun pruneOrphanedAvatars() {

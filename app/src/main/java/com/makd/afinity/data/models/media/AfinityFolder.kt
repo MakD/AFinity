@@ -1,7 +1,6 @@
 package com.makd.afinity.data.models.media
 
 import java.util.UUID
-import org.jellyfin.sdk.model.api.BaseItemDto
 
 data class AfinityFolder(
     override val id: UUID,
@@ -22,4 +21,3 @@ data class AfinityFolder(
     override val providerIds: Map<String, String>?,
     override val externalUrls: List<AfinityExternalUrl>?,
 ) : AfinityItem
-

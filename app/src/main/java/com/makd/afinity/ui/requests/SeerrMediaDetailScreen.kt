@@ -490,9 +490,7 @@ private fun SeerrPortraitContent(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = max(bottomPadding, playerOffset) + 16.dp),
     ) {
-        item {
-            SeerrHeroSection(imageUrl = details.getBackdropUrl() ?: details.getPosterUrl())
-        }
+        item { SeerrHeroSection(imageUrl = details.getBackdropUrl() ?: details.getPosterUrl()) }
 
         item {
             Column(
@@ -829,23 +827,17 @@ private fun buildSeerrDetailRows(
     val countries =
         details.productionCountries
             ?.mapNotNull { it.name ?: it.iso_3166_1 }
-            ?.takeIf {
-                it.isNotEmpty()
-            }
+            ?.takeIf { it.isNotEmpty() }
 
     originalTitle?.let { add(SeerrDetailRowData("Original Title", it)) }
     details.status
         ?.takeIf { it.isNotBlank() }
-        ?.let {
-            add(SeerrDetailRowData("Status", it, isStatus = true))
-        }
+        ?.let { add(SeerrDetailRowData("Status", it, isStatus = true)) }
 
     if (mediaType == MediaType.TV) {
         details.seriesType
             ?.takeIf { it.isNotBlank() }
-            ?.let {
-                add(SeerrDetailRowData("Series Type", it))
-            }
+            ?.let { add(SeerrDetailRowData("Series Type", it)) }
         details.firstAirDate?.let { date ->
             formatSeerrDate(date)?.let { add(SeerrDetailRowData("First Air Date", it)) }
         }
@@ -855,15 +847,11 @@ private fun buildSeerrDetailRows(
         details.episodeRunTime
             ?.firstOrNull()
             ?.takeIf { it > 0 }
-            ?.let {
-                add(SeerrDetailRowData("Episode Runtime", "$it min"))
-            }
+            ?.let { add(SeerrDetailRowData("Episode Runtime", "$it min")) }
         details.networks
             ?.mapNotNull { it.name }
             ?.takeIf { it.isNotEmpty() }
-            ?.let {
-                add(SeerrDetailRowData("Networks", it.joinToString(", ")))
-            }
+            ?.let { add(SeerrDetailRowData("Networks", it.joinToString(", "))) }
     } else {
         val usReleases =
             details.releases?.results?.firstOrNull { it.iso_3166_1 == "US" }?.release_dates
@@ -890,14 +878,10 @@ private fun buildSeerrDetailRows(
         }
         details.budget
             ?.takeIf { it > 0 }
-            ?.let {
-                add(SeerrDetailRowData("Budget", String.format(Locale.US, "$%,d", it)))
-            }
+            ?.let { add(SeerrDetailRowData("Budget", String.format(Locale.US, "$%,d", it))) }
         details.revenue
             ?.takeIf { it > 0 }
-            ?.let {
-                add(SeerrDetailRowData("Revenue", String.format(Locale.US, "$%,d", it)))
-            }
+            ?.let { add(SeerrDetailRowData("Revenue", String.format(Locale.US, "$%,d", it))) }
     }
 
     language

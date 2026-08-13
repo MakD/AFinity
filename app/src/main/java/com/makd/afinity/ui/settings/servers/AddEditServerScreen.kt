@@ -135,8 +135,7 @@ fun AddEditServerScreen(
                 top = paddingValues.calculateTopPadding(),
                 start = paddingValues.calculateStartPadding(layoutDirection),
                 end = paddingValues.calculateEndPadding(layoutDirection),
-                bottom =
-                    max(max(paddingValues.calculateBottomPadding(), playerOffset), imeBottom),
+                bottom = max(max(paddingValues.calculateBottomPadding(), playerOffset), imeBottom),
             )
         Column(
             modifier =

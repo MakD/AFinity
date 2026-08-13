@@ -38,10 +38,11 @@ object PlayerModule {
         preferencesRepository: PreferencesRepository,
     ): SimpleCache {
         val cacheDir = File(context.cacheDir, "exo_media_cache")
-        val sizeMb =
-            runCatching { runBlocking { preferencesRepository.getVideoCacheSizeMb() } }
-                .onFailure { Timber.e(it, "Failed to read video cache size, using default") }
-                .getOrDefault(1024)
+        val sizeMb = runCatching {
+            runBlocking { preferencesRepository.getVideoCacheSizeMb() }
+        }
+            .onFailure { Timber.e(it, "Failed to read video cache size, using default") }
+            .getOrDefault(1024)
         val evictor = LeastRecentlyUsedCacheEvictor(sizeMb * 1024L * 1024L)
 
         return SimpleCache(cacheDir, evictor, databaseProvider)

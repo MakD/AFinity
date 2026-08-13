@@ -425,7 +425,8 @@ fun BaseItemDto.toAfinityImages(baseUrl: String, imageFormat: ImageFormat? = nul
                     .appendQueryParameter("tag", tag)
                     .build()
             },
-        showLogo = run {
+        showLogo =
+            run {
                 val logoTag = parentLogoImageTag
                 val itemId = if (logoTag != null) (parentLogoItemId ?: seriesId) else seriesId
                 val fallbackTag = seriesPrimaryImageTag

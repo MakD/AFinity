@@ -42,7 +42,9 @@ fun WatchlistToggleButton(
             contentDescription =
                 if (isInWatchlist) stringResource(R.string.cd_watchlist_remove)
                 else stringResource(R.string.cd_watchlist_add),
-            tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onSurfaceVariant,
+            tint =
+                if (isInWatchlist) Color(0xFFFF9800)
+                else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(28.dp),
         )
     }

@@ -5,8 +5,8 @@ import androidx.paging.PagingState
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
-import java.util.UUID
 import timber.log.Timber
+import java.util.UUID
 
 class EpisodesPagingSource(
     private val mediaRepository: MediaRepository,

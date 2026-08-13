@@ -16,11 +16,13 @@ object LogRedactor {
             RegexOption.IGNORE_CASE,
         )
 
-    private val bearerHeader =
-        Regex("(Bearer\\s+)[A-Za-z0-9._~+/=-]{8,}", RegexOption.IGNORE_CASE)
+    private val bearerHeader = Regex("(Bearer\\s+)[A-Za-z0-9._~+/=-]{8,}", RegexOption.IGNORE_CASE)
 
     private val cookieValues =
-        Regex("((?:connect\\.sid|XSRF-TOKEN|jellyfin_session)=)[^;,\\s\"]+", RegexOption.IGNORE_CASE)
+        Regex(
+            "((?:connect\\.sid|XSRF-TOKEN|jellyfin_session)=)[^;,\\s\"]+",
+            RegexOption.IGNORE_CASE,
+        )
 
     private val jsonWebToken = Regex("eyJ[A-Za-z0-9_-]{6,}\\.[A-Za-z0-9_-]+(?:\\.[A-Za-z0-9_-]+)?")
 

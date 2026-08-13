@@ -210,9 +210,7 @@ constructor(
                         CustomSectionSourceType.LIBRARY -> it.copy(libraryOptions = options)
                         CustomSectionSourceType.TAG -> it.copy(tagOptions = options)
                     }
-                next.copy(
-                    sourceStates = next.sourceStates + (sourceType to SourceLoadState.LOADED)
-                )
+                next.copy(sourceStates = next.sourceStates + (sourceType to SourceLoadState.LOADED))
             }
         } catch (e: CancellationException) {
             throw e
@@ -243,21 +241,20 @@ constructor(
             }
             CustomSectionSourceType.STUDIO ->
                 perLibrary { library ->
-                    mediaRepository.getStudiosResult(
-                        includeItemTypes = listOf("MOVIE", "SERIES", "BOX_SET"),
-                        parentId = library.id,
-                        limit = null,
-                        requireImages = false,
-                        minItemCount = 0,
-                    )
+                    mediaRepository
+                        .getStudiosResult(
+                            includeItemTypes = listOf("MOVIE", "SERIES", "BOX_SET"),
+                            parentId = library.id,
+                            limit = null,
+                            requireImages = false,
+                            minItemCount = 0,
+                        )
                         .map { studios -> studios.map { SourceOption(it.name, it.name) } }
                 }
             CustomSectionSourceType.COLLECTION -> loadItemOptions("BOX_SET")
             CustomSectionSourceType.PLAYLIST -> loadItemOptions("PLAYLIST")
             CustomSectionSourceType.TAG ->
-                filterOptionsOrLoad()?.let { merged ->
-                    merged.tags.map { SourceOption(it, it) }
-                }
+                filterOptionsOrLoad()?.let { merged -> merged.tags.map { SourceOption(it, it) } }
             CustomSectionSourceType.LIBRARY ->
                 withContext(Dispatchers.IO) {
                     mediaRepository
@@ -296,23 +293,22 @@ constructor(
                     .filterNot { it.type == CollectionType.Music }
             if (libraries.isEmpty()) return@withContext LibraryFilterOptions()
 
-            val results =
-                coroutineScope {
-                    libraries
-                        .map { library ->
-                            async {
-                                mediaRepository.getFilterOptionsResult(
-                                    parentId = library.id,
-                                    libraryType = library.type,
-                                )
-                            }
+            val results = coroutineScope {
+                libraries
+                    .map { library ->
+                        async {
+                            mediaRepository.getFilterOptionsResult(
+                                parentId = library.id,
+                                libraryType = library.type,
+                            )
                         }
-                        .awaitAll()
-                }
+                    }
+                    .awaitAll()
+            }
             if (results.all { it.isFailure }) {
-                results.firstNotNullOfOrNull { it.exceptionOrNull() }?.let {
-                    Timber.w(it, "Failed to load filter options from every library")
-                }
+                results
+                    .firstNotNullOfOrNull { it.exceptionOrNull() }
+                    ?.let { Timber.w(it, "Failed to load filter options from every library") }
                 return@withContext null
             }
 
@@ -342,9 +338,11 @@ constructor(
 
             val results = coroutineScope { libraries.map { async { fetch(it) } }.awaitAll() }
             if (results.all { it.isFailure }) {
-                results.firstNotNullOfOrNull { it.exceptionOrNull() }?.let {
-                    Timber.w(it, "Failed to load custom section sources from every library")
-                }
+                results
+                    .firstNotNullOfOrNull { it.exceptionOrNull() }
+                    ?.let {
+                        Timber.w(it, "Failed to load custom section sources from every library")
+                    }
                 return@withContext null
             }
             results

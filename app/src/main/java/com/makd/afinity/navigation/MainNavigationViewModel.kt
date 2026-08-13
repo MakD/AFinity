@@ -65,25 +65,31 @@ constructor(
     }
 
     val showRatings =
-        preferencesRepository.getShowRatingsFlow().stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = true,
-        )
+        preferencesRepository
+            .getShowRatingsFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = true,
+            )
 
     val navigationDrawerEnabled =
-        preferencesRepository.getNavigationDrawerEnabledFlow().stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = false,
-        )
+        preferencesRepository
+            .getNavigationDrawerEnabledFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = false,
+            )
 
     val librariesInDrawer =
-        preferencesRepository.getLibrariesInDrawerFlow().stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = false,
-        )
+        preferencesRepository
+            .getLibrariesInDrawerFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = false,
+            )
 
     val serverName =
         sessionManager.currentSession

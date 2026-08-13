@@ -53,27 +53,46 @@ constructor(
     }
 
     fun updateName(value: String) = update { copy(name = value) }
+
     fun updateOriginalTitle(value: String) = update { copy(originalTitle = value.ifBlank { null }) }
+
     fun updateOverview(value: String) = update { copy(overview = value.ifBlank { null }) }
+
     fun updateYear(value: String) = update { copy(productionYear = value.toIntOrNull()) }
-    fun updateOfficialRating(value: String) = update { copy(officialRating = value.ifBlank { null }) }
+
+    fun updateOfficialRating(value: String) = update {
+        copy(officialRating = value.ifBlank { null })
+    }
+
     fun updateCustomRating(value: String) = update { copy(customRating = value.ifBlank { null }) }
-    fun updateCommunityRating(value: String) = update { copy(communityRating = value.toDoubleOrNull()) }
+
+    fun updateCommunityRating(value: String) = update {
+        copy(communityRating = value.toDoubleOrNull())
+    }
+
     fun updateStatus(value: String) = update { copy(status = value.ifBlank { null }) }
+
     fun updateDisplayOrder(value: String) = update { copy(displayOrder = value.ifBlank { null }) }
+
     fun toggleLockData() = update { copy(lockData = !lockData) }
 
     fun addGenre(genre: String) = update { copy(genres = genres + genre) }
+
     fun removeGenre(genre: String) = update { copy(genres = genres - genre) }
 
     fun addTag(tag: String) = update { copy(tags = tags + tag) }
+
     fun removeTag(tag: String) = update { copy(tags = tags - tag) }
 
     fun addStudio(studio: String) = update { copy(studios = studios + studio) }
+
     fun removeStudio(studio: String) = update { copy(studios = studios - studio) }
 
     fun addPerson(person: EditablePerson) = update { copy(people = people + person) }
-    fun removePerson(index: Int) = update { copy(people = people.toMutableList().also { it.removeAt(index) }) }
+
+    fun removePerson(index: Int) = update {
+        copy(people = people.toMutableList().also { it.removeAt(index) })
+    }
 
     fun toggleLockedField(field: String) = update {
         val updated = if (field in lockedFields) lockedFields - field else lockedFields + field
@@ -99,8 +118,6 @@ constructor(
         get() = _uiState.value.item != _uiState.value.edited
 
     private fun update(block: EditableItem.() -> EditableItem) {
-        _uiState.update { state ->
-            state.copy(edited = state.edited?.block())
-        }
+        _uiState.update { state -> state.copy(edited = state.edited?.block()) }
     }
 }

@@ -17,6 +17,5 @@ interface JellyfinStatsDao {
 
     @Query("DELETE FROM jellyfin_stats_cache") suspend fun clearAll()
 
-    @Query("SELECT (SELECT COUNT(*) FROM jellyfin_stats_cache)")
-    suspend fun cachedEntryCount(): Int
+    @Query("SELECT (SELECT COUNT(*) FROM jellyfin_stats_cache)") suspend fun cachedEntryCount(): Int
 }

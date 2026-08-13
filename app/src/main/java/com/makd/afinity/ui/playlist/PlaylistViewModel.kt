@@ -49,12 +49,14 @@ private fun AfinityPlaylist.withEntryTotals(entries: List<PlaylistEntry>): Afini
             },
     )
 
-private fun List<PlaylistEntry>.withFavorite(trackId: UUID, favorite: Boolean): List<PlaylistEntry> =
-    map { entry ->
-        if (entry is PlaylistEntry.Audio && entry.track.id == trackId)
-            entry.copy(track = entry.track.copy(favorite = favorite))
-        else entry
-    }
+private fun List<PlaylistEntry>.withFavorite(
+    trackId: UUID,
+    favorite: Boolean,
+): List<PlaylistEntry> = map { entry ->
+    if (entry is PlaylistEntry.Audio && entry.track.id == trackId)
+        entry.copy(track = entry.track.copy(favorite = favorite))
+    else entry
+}
 
 data class PlaylistUiState(
     val playlist: AfinityPlaylist? = null,
@@ -83,7 +85,9 @@ data class PlaylistUiState(
 }
 
 @HiltViewModel
-class PlaylistViewModel @Inject constructor(
+class PlaylistViewModel
+@Inject
+constructor(
     private val musicRepository: MusicRepository,
     private val mediaRepository: MediaRepository,
     private val downloadRepository: DownloadRepository,
@@ -126,7 +130,9 @@ class PlaylistViewModel @Inject constructor(
             runCatching { musicRepository.setFavorite(playlist.id, newFavorite) }
                 .onSuccess { appDataRepository.updatePlaylistFavoriteStatus(playlist, newFavorite) }
                 .onFailure {
-                    _uiState.update { it.copy(playlist = playlist.copy(favorite = playlist.favorite)) }
+                    _uiState.update {
+                        it.copy(playlist = playlist.copy(favorite = playlist.favorite))
+                    }
                 }
         }
     }
@@ -221,8 +227,9 @@ class PlaylistViewModel @Inject constructor(
 
     fun downloadPlaylist() {
         viewModelScope.launch {
-            downloadRepository.startPlaylistDownload(playlistId)
-                .onFailure { Timber.e(it, "Failed to start playlist download") }
+            downloadRepository.startPlaylistDownload(playlistId).onFailure {
+                Timber.e(it, "Failed to start playlist download")
+            }
         }
     }
 
@@ -258,13 +265,17 @@ class PlaylistViewModel @Inject constructor(
         }
     }
 
-    private fun aggregatePlaylistDownloadInfo(downloads: List<DownloadInfo>, totalTracks: Int): DownloadInfo? {
+    private fun aggregatePlaylistDownloadInfo(
+        downloads: List<DownloadInfo>,
+        totalTracks: Int,
+    ): DownloadInfo? {
         if (downloads.isEmpty()) return null
         val hasActive = downloads.any {
             it.status == DownloadStatus.DOWNLOADING || it.status == DownloadStatus.QUEUED
         }
         val allComplete = downloads.all { it.status == DownloadStatus.COMPLETED }
-        if (!hasActive && !(allComplete && totalTracks > 0 && downloads.size >= totalTracks)) return null
+        if (!hasActive && !(allComplete && totalTracks > 0 && downloads.size >= totalTracks))
+            return null
         val status =
             when {
                 downloads.any { it.status == DownloadStatus.DOWNLOADING } ->
@@ -297,8 +308,9 @@ class PlaylistViewModel @Inject constructor(
 
     fun downloadTrack(trackId: UUID) {
         viewModelScope.launch {
-            downloadRepository.startDownload(trackId, "")
-                .onFailure { Timber.e(it, "Failed to download track $trackId") }
+            downloadRepository.startDownload(trackId, "").onFailure {
+                Timber.e(it, "Failed to download track $trackId")
+            }
         }
     }
 

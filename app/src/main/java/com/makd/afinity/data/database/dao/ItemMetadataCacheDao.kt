@@ -10,8 +10,14 @@ import java.util.UUID
 @Dao
 interface ItemMetadataCacheDao {
 
-    @Query("SELECT * FROM item_metadata_cache WHERE itemId = :itemId AND serverId = :serverId AND userId = :userId")
-    suspend fun getMetadata(itemId: UUID, serverId: String, userId: String): ItemMetadataCacheEntity?
+    @Query(
+        "SELECT * FROM item_metadata_cache WHERE itemId = :itemId AND serverId = :serverId AND userId = :userId"
+    )
+    suspend fun getMetadata(
+        itemId: UUID,
+        serverId: String,
+        userId: String,
+    ): ItemMetadataCacheEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdateMetadata(metadata: ItemMetadataCacheEntity)
@@ -21,6 +27,5 @@ interface ItemMetadataCacheDao {
 
     @Query("DELETE FROM item_metadata_cache") suspend fun clearAll()
 
-    @Query("SELECT (SELECT COUNT(*) FROM item_metadata_cache)")
-    suspend fun cachedEntryCount(): Int
+    @Query("SELECT (SELECT COUNT(*) FROM item_metadata_cache)") suspend fun cachedEntryCount(): Int
 }

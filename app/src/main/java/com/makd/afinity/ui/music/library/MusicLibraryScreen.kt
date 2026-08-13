@@ -1158,10 +1158,7 @@ private fun HeroDiscoverCard(
     contentAlpha: () -> Float,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier =
-            modifier.clip(RoundedCornerShape(16.dp)).clickable { onAlbumClick(album) }
-    ) {
+    Box(modifier = modifier.clip(RoundedCornerShape(16.dp)).clickable { onAlbumClick(album) }) {
         AsyncImage(
             imageUrl = album.images.primary?.toString(),
             contentDescription = album.name,

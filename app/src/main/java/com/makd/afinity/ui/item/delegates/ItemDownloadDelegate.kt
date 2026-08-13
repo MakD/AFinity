@@ -43,8 +43,8 @@ constructor(
     }
 
     /**
-     * Long-press entry point for a single (leaf) item. Always opens the version/location picker when
-     * the item has remote sources, letting the user choose a quality version and/or a storage
+     * Long-press entry point for a single (leaf) item. Always opens the version/location picker
+     * when the item has remote sources, letting the user choose a quality version and/or a storage
      * volume. The available volumes and current default are resolved off the main thread and handed
      * back via [showPicker] so the caller can populate its dialog state.
      */
@@ -69,7 +69,6 @@ constructor(
             }
         }
     }
-
 
     fun onQualitySelected(
         scope: CoroutineScope,

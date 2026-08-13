@@ -118,8 +118,7 @@ private fun connectionTypeOf(
 private fun addressTypeDots(
     urls: List<String>,
     liveTypes: Map<String, ConnectionType>,
-): List<Color> =
-    urls.map { connectionIndicatorColor(connectionTypeOf(it, liveTypes)) }.distinct()
+): List<Color> = urls.map { connectionIndicatorColor(connectionTypeOf(it, liveTypes)) }.distinct()
 
 private fun maskKey(key: String): String =
     if (key.length <= 3) "*".repeat(key.length)
@@ -192,9 +191,7 @@ fun ServicesHubScreen(
     val seerrSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val absSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    val onSeerrTile = {
-        if (seerrConnected) selected = EditorKind.SEERR else showSeerrSheet = true
-    }
+    val onSeerrTile = { if (seerrConnected) selected = EditorKind.SEERR else showSeerrSheet = true }
     val onAbsTile = { if (absConnected) selected = EditorKind.ABS else showAbsSheet = true }
     val onRemoteTile = { selected = EditorKind.JELLYFIN }
     val onRatingsTile = { selected = EditorKind.RATINGS }
@@ -459,9 +456,8 @@ private fun HubList(
                 Spacer(Modifier.height(28.dp))
                 Text(
                     text =
-                        serverName?.let {
-                            stringResource(R.string.services_hub_welcome_named, it)
-                        } ?: stringResource(R.string.services_hub_welcome),
+                        serverName?.let { stringResource(R.string.services_hub_welcome_named, it) }
+                            ?: stringResource(R.string.services_hub_welcome),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.SemiBold,
                 )

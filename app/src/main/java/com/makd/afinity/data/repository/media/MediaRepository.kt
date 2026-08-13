@@ -40,7 +40,6 @@ interface MediaRepository {
 
     suspend fun invalidateContinueWatchingCache()
 
-
     suspend fun invalidateNextUpCache()
 
     suspend fun invalidateAllCaches()
@@ -315,7 +314,6 @@ interface MediaRepository {
     ): Result<LibraryFilterOptions>
 
     fun getLibrariesFlow(): Flow<List<AfinityCollection>>
-
 
     fun getContinueWatchingFlow(): Flow<List<AfinityItem>>
 

@@ -15,7 +15,9 @@ data class CreateRequestBody(
     @EncodeDefault(EncodeDefault.Mode.NEVER) @SerialName("is4k") val is4k: Boolean = false,
     @EncodeDefault(EncodeDefault.Mode.NEVER) @SerialName("serverId") val serverId: Int? = null,
     @EncodeDefault(EncodeDefault.Mode.NEVER) @SerialName("profileId") val profileId: Int? = null,
-    @EncodeDefault(EncodeDefault.Mode.NEVER) @SerialName("rootFolder") val rootFolder: String? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    @SerialName("rootFolder")
+    val rootFolder: String? = null,
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     @SerialName("languageProfileId")
     val languageProfileId: Int? = null,

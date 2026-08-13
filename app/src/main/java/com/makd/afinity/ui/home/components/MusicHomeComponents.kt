@@ -336,7 +336,11 @@ fun MusicAlbumRowSection(
                 onViewAllClick = onViewAllClick,
             )
         } else {
-            HomeSectionHeader(title = title, startPadding = horizontalPadding, bottomPadding = 12.dp)
+            HomeSectionHeader(
+                title = title,
+                startPadding = horizontalPadding,
+                bottomPadding = 12.dp,
+            )
         }
         LazyRow(
             modifier = Modifier.padding(horizontal = horizontalPadding),
@@ -380,7 +384,11 @@ fun MusicPlaylistRowSection(
                 onViewAllClick = onViewAllClick,
             )
         } else {
-            HomeSectionHeader(title = title, startPadding = horizontalPadding, bottomPadding = 12.dp)
+            HomeSectionHeader(
+                title = title,
+                startPadding = horizontalPadding,
+                bottomPadding = 12.dp,
+            )
         }
         LazyRow(
             modifier = Modifier.padding(horizontal = horizontalPadding),

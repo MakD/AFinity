@@ -104,8 +104,7 @@ constructor(
 
                 val startFailure = startResult.exceptionOrNull()
                 if (startFailure != null) {
-                    val is401 =
-                        startFailure is InvalidStatusException && startFailure.status == 401
+                    val is401 = startFailure is InvalidStatusException && startFailure.status == 401
                     if (is401) {
                         Timber.e("Token rejected by server (401) - Logging out")
                         clearAllAuthData()
@@ -113,7 +112,7 @@ constructor(
                     }
                     Timber.w(
                         startFailure,
-                        "SessionManager start failed during restore (server unreachable)",
+                        "SessionManager initMonitoring failed during restore (server unreachable)",
                     )
                     return@withContext AuthRepository.RestoreResult.Degraded(startFailure)
                 }

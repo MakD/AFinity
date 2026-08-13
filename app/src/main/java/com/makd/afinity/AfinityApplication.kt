@@ -90,9 +90,7 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
 
         applicationScope.launch(Dispatchers.IO) {
             runCatching { pendingJellyfinSync.get().initMonitoring() }
-                .onFailure {
-                    Timber.w(it, "Failed to start pending user data sync observer")
-                }
+                .onFailure { Timber.w(it, "Failed to start pending user data sync observer") }
         }
 
         applicationScope.launch {

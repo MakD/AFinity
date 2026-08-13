@@ -24,16 +24,19 @@ data class AddToPlaylistState(
 
 sealed interface AddToPlaylistResult {
     data class Added(val playlistName: String) : AddToPlaylistResult
+
     data class Created(val playlistName: String) : AddToPlaylistResult
+
     data class Removed(val playlistName: String) : AddToPlaylistResult
+
     data class Deleted(val playlistName: String) : AddToPlaylistResult
+
     data class Error(val message: String) : AddToPlaylistResult
 }
 
 @HiltViewModel
-class AddToPlaylistViewModel @Inject constructor(
-    private val musicRepository: MusicRepository,
-) : ViewModel() {
+class AddToPlaylistViewModel @Inject constructor(private val musicRepository: MusicRepository) :
+    ViewModel() {
 
     private val _state = MutableStateFlow(AddToPlaylistState())
     val state: StateFlow<AddToPlaylistState> = _state.asStateFlow()
@@ -84,8 +87,7 @@ class AddToPlaylistViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isSubmitting = true) }
             try {
-                val created =
-                    musicRepository.createPlaylist(name, trackIds, isPublic, mediaType)
+                val created = musicRepository.createPlaylist(name, trackIds, isPublic, mediaType)
                 if (created != null) {
                     _state.update { state ->
                         state.copy(

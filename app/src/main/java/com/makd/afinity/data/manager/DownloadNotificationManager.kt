@@ -164,8 +164,9 @@ constructor(@param:ApplicationContext private val context: Context) {
 
     private fun ensureChannel() {
         val channel =
-            NotificationChannel(CHANNEL_ID, "Downloads", NotificationManager.IMPORTANCE_LOW)
-                .apply { description = "Background download tasks" }
+            NotificationChannel(CHANNEL_ID, "Downloads", NotificationManager.IMPORTANCE_LOW).apply {
+                description = "Background download tasks"
+            }
         notificationManager.createNotificationChannel(channel)
     }
 
@@ -186,8 +187,7 @@ constructor(@param:ApplicationContext private val context: Context) {
     private fun formatBytes(bytes: Long): String =
         when {
             bytes < 1024 -> "$bytes B"
-            bytes < 1024 * 1024 ->
-                String.format(Locale.getDefault(), "%.1f KB", bytes / 1024.0)
+            bytes < 1024 * 1024 -> String.format(Locale.getDefault(), "%.1f KB", bytes / 1024.0)
             bytes < 1024L * 1024 * 1024 ->
                 String.format(Locale.getDefault(), "%.1f MB", bytes / (1024.0 * 1024.0))
             else ->

@@ -95,8 +95,8 @@ internal fun SessionSwitcherContent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Crossfade(targetState = state.isSwitching, label = "session_switch_animation") {
-            isSwitching ->
+        Crossfade(targetState = state.isSwitching, label = "session_switch_animation") { isSwitching
+            ->
             if (isSwitching) {
                 Box(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),

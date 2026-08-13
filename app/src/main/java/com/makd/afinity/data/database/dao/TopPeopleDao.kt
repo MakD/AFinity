@@ -9,8 +9,14 @@ import com.makd.afinity.data.database.entities.TopPeopleCacheEntity
 @Dao
 interface TopPeopleDao {
 
-    @Query("SELECT * FROM top_people_cache WHERE personType = :type AND serverId = :serverId AND userId = :userId")
-    suspend fun getCachedTopPeople(type: String, serverId: String, userId: String): TopPeopleCacheEntity?
+    @Query(
+        "SELECT * FROM top_people_cache WHERE personType = :type AND serverId = :serverId AND userId = :userId"
+    )
+    suspend fun getCachedTopPeople(
+        type: String,
+        serverId: String,
+        userId: String,
+    ): TopPeopleCacheEntity?
 
     @Query(
         """
@@ -22,16 +28,23 @@ interface TopPeopleDao {
         AND (cachedTimestamp + :ttlMillis) > :currentTime
     """
     )
-    suspend fun isTopPeopleCacheFresh(type: String, serverId: String, userId: String, ttlMillis: Long, currentTime: Long): Boolean
+    suspend fun isTopPeopleCacheFresh(
+        type: String,
+        serverId: String,
+        userId: String,
+        ttlMillis: Long,
+        currentTime: Long,
+    ): Boolean
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTopPeople(entity: TopPeopleCacheEntity)
 
-    @Query("DELETE FROM top_people_cache WHERE personType = :type AND serverId = :serverId AND userId = :userId")
+    @Query(
+        "DELETE FROM top_people_cache WHERE personType = :type AND serverId = :serverId AND userId = :userId"
+    )
     suspend fun deleteTopPeople(type: String, serverId: String, userId: String)
 
     @Query("DELETE FROM top_people_cache") suspend fun clearAllCache()
 
-    @Query("SELECT (SELECT COUNT(*) FROM top_people_cache)")
-    suspend fun cachedEntryCount(): Int
+    @Query("SELECT (SELECT COUNT(*) FROM top_people_cache)") suspend fun cachedEntryCount(): Int
 }

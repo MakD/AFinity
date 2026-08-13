@@ -48,10 +48,8 @@ fun HomeSectionHeader(
             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
             maxLines = if (onViewAllClick != null) 1 else Int.MAX_VALUE,
-            overflow =
-                if (onViewAllClick != null) TextOverflow.Ellipsis else TextOverflow.Clip,
-            modifier =
-                if (onViewAllClick != null) Modifier.weight(1f, fill = false) else Modifier,
+            overflow = if (onViewAllClick != null) TextOverflow.Ellipsis else TextOverflow.Clip,
+            modifier = if (onViewAllClick != null) Modifier.weight(1f, fill = false) else Modifier,
         )
 
         if (onViewAllClick != null) {

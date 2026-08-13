@@ -4,14 +4,14 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.toAfinitySegment
 import com.makd.afinity.data.repository.DatabaseRepository
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.operations.MediaSegmentsApi
 import org.jellyfin.sdk.model.api.MediaSegmentType
 import timber.log.Timber
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class JellyfinSegmentsRepository
@@ -39,10 +39,12 @@ constructor(
                     val apiClient =
                         sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
                     val mediaSegmentsApi = MediaSegmentsApi(apiClient)
-                    val response = mediaSegmentsApi.getItemSegments(
-                        itemId = itemId,
-                        includeSegmentTypes = listOf(MediaSegmentType.INTRO, MediaSegmentType.OUTRO),
-                    )
+                    val response =
+                        mediaSegmentsApi.getItemSegments(
+                            itemId = itemId,
+                            includeSegmentTypes =
+                                listOf(MediaSegmentType.INTRO, MediaSegmentType.OUTRO),
+                        )
 
                     val segments =
                         response.content?.items?.map { mediaSegmentDto ->

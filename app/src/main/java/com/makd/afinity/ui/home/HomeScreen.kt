@@ -133,9 +133,7 @@ fun HomeScreen(
         }
     val lazyListState = rememberLazyListState()
     val scrollToTopScope = rememberCoroutineScope()
-    val showScrollToTop by remember {
-        derivedStateOf { lazyListState.firstVisibleItemIndex > 3 }
-    }
+    val showScrollToTop by remember { derivedStateOf { lazyListState.firstVisibleItemIndex > 3 } }
     val continueWatchingScrollState = rememberLazyListState()
     val continueWatchingItems =
         if (uiState.isOffline) uiState.offlineContinueWatching else uiState.continueWatching

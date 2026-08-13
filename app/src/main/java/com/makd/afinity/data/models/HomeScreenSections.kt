@@ -33,12 +33,15 @@ data class PersonWithCount(val person: AfinityPerson, val appearanceCount: Int) 
 
     companion object {
         fun fromCached(cached: CachedPersonWithCount, baseUrl: String): PersonWithCount {
-            val imageUri = cached.imageTag?.let { tag ->
-                baseUrl.toUri().buildUpon()
-                    .appendEncodedPath("Items/${cached.personId}/Images/Primary")
-                    .appendQueryParameter("tag", tag)
-                    .build()
-            }
+            val imageUri =
+                cached.imageTag?.let { tag ->
+                    baseUrl
+                        .toUri()
+                        .buildUpon()
+                        .appendEncodedPath("Items/${cached.personId}/Images/Primary")
+                        .appendQueryParameter("tag", tag)
+                        .build()
+                }
             return PersonWithCount(
                 person =
                     AfinityPerson(

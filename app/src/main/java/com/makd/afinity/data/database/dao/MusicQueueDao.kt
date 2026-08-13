@@ -19,9 +19,7 @@ interface MusicQueueDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(tracks: List<MusicQueueEntity>)
 
-    @Query("DELETE FROM music_queue")
-    suspend fun clearQueue()
+    @Query("DELETE FROM music_queue") suspend fun clearQueue()
 
-    @Query("DELETE FROM music_queue WHERE position = :position")
-    suspend fun removeAt(position: Int)
+    @Query("DELETE FROM music_queue WHERE position = :position") suspend fun removeAt(position: Int)
 }

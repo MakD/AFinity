@@ -272,9 +272,7 @@ fun MusicAlbumScreen(
                                                 Modifier.clickable(
                                                     indication = null,
                                                     interactionSource =
-                                                        remember {
-                                                            MutableInteractionSource()
-                                                        },
+                                                        remember { MutableInteractionSource() },
                                                 ) {
                                                     navController.navigate(
                                                         Destination.createMusicArtistRoute(
@@ -477,9 +475,7 @@ fun MusicAlbumScreen(
                                                 Modifier.clickable(
                                                     indication = null,
                                                     interactionSource =
-                                                        remember {
-                                                            MutableInteractionSource()
-                                                        },
+                                                        remember { MutableInteractionSource() },
                                                 ) {
                                                     navController.navigate(
                                                         com.makd.afinity.navigation.Destination

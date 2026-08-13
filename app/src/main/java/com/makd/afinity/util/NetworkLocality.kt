@@ -55,7 +55,9 @@ constructor(
 
         val activeNetwork = connectivityManager.activeNetwork ?: return Locality.UNKNOWN
         val key = "${activeNetwork.networkHandle}|$host"
-        cache[key]?.let { return it }
+        cache[key]?.let {
+            return it
+        }
 
         val addresses = resolveOn(activeNetwork, host)
         if (addresses.isNullOrEmpty()) return Locality.UNKNOWN
@@ -138,6 +140,8 @@ constructor(
         }
     }
 
-    private fun isNumericHost(host: String): Boolean =
-        runCatching { InetAddresses.isNumericAddress(host) }.getOrDefault(false)
+    private fun isNumericHost(host: String): Boolean = runCatching {
+        InetAddresses.isNumericAddress(host)
+    }
+        .getOrDefault(false)
 }

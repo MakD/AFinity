@@ -19,11 +19,12 @@ class MusicGenresPagingSource(
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, AfinityMusicGenre> {
         return try {
             val page = params.key ?: 0
-            val items = musicRepository.getAllMusicGenres(
-                libraryId = libraryId,
-                startIndex = page * PAGE_SIZE,
-                limit = PAGE_SIZE,
-            )
+            val items =
+                musicRepository.getAllMusicGenres(
+                    libraryId = libraryId,
+                    startIndex = page * PAGE_SIZE,
+                    limit = PAGE_SIZE,
+                )
             LoadResult.Page(
                 data = items,
                 prevKey = if (page == 0) null else page - 1,

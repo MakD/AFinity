@@ -187,11 +187,12 @@ constructor(
                 }
 
                 var hasEpisodeChanges = false
-                val newEpisodes = _uiState.value.episodeResults.map { episode ->
-                    (pendingItemUpdates[episode.id] as? AfinityEpisode)?.also {
-                        hasEpisodeChanges = true
-                    } ?: episode
-                }
+                val newEpisodes =
+                    _uiState.value.episodeResults.map { episode ->
+                        (pendingItemUpdates[episode.id] as? AfinityEpisode)?.also {
+                            hasEpisodeChanges = true
+                        } ?: episode
+                    }
 
                 if (hasChanges || hasEpisodeChanges) {
                     _uiState.update {
@@ -664,9 +665,8 @@ constructor(
         musicSearchJob = viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isMusicSearching = true) }
-                val libraryId = _uiState.value.selectedLibrary
-                    ?.takeIf { it.type == CollectionType.Music }
-                    ?.id
+                val libraryId =
+                    _uiState.value.selectedLibrary?.takeIf { it.type == CollectionType.Music }?.id
                 val results = musicRepository.searchMusic(query, libraryId)
                 _uiState.update { it.copy(musicSearchResults = results, isMusicSearching = false) }
             } catch (e: Exception) {
@@ -700,9 +700,11 @@ constructor(
         viewModelScope.launch {
             val userId =
                 _currentUser.value?.id
-                    ?: jellyseerrRepository.getCurrentUser().getOrNull()?.also {
-                        _currentUser.value = it
-                    }?.id
+                    ?: jellyseerrRepository
+                        .getCurrentUser()
+                        .getOrNull()
+                        ?.also { _currentUser.value = it }
+                        ?.id
                     ?: return@launch
             jellyseerrRepository.getUserQuota(userId).onSuccess { quota ->
                 _uiState.update { it.copy(userQuota = quota) }
@@ -1130,9 +1132,7 @@ constructor(
                             },
                         tags = state.selectedTagIds.takeIf { state.availableTags.isNotEmpty() },
                         userId =
-                            state.selectedRequestUser?.id?.takeIf {
-                                it != _currentUser.value?.id
-                            },
+                            state.selectedRequestUser?.id?.takeIf { it != _currentUser.value?.id },
                     )
                     .fold(
                         onSuccess = { newRequest ->
@@ -1354,9 +1354,13 @@ constructor(
         val newFavorite = !track.favorite
         _uiState.update {
             it.copy(
-                musicSearchResults = musicResults.copy(
-                    tracks = tracks.map { t -> if (t.id == trackId) t.copy(favorite = newFavorite) else t }
-                )
+                musicSearchResults =
+                    musicResults.copy(
+                        tracks =
+                            tracks.map { t ->
+                                if (t.id == trackId) t.copy(favorite = newFavorite) else t
+                            }
+                    )
             )
         }
         viewModelScope.launch {

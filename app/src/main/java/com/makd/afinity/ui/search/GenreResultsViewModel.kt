@@ -67,11 +67,9 @@ constructor(
     private fun applyUpdatesToPagingFlow(
         baseFlow: Flow<PagingData<AfinityItem>>
     ): Flow<PagingData<AfinityItem>> {
-        return baseFlow
-            .cachedIn(viewModelScope)
-            .combine(_itemUpdates) { pagingData, updates ->
-                pagingData.map { item -> updates[item.id] ?: item }
-            }
+        return baseFlow.cachedIn(viewModelScope).combine(_itemUpdates) { pagingData, updates ->
+            pagingData.map { item -> updates[item.id] ?: item }
+        }
     }
 
     init {
@@ -86,9 +84,7 @@ constructor(
         }
 
         viewModelScope.launch {
-            adminChangeBroadcaster.itemChanged.collect {
-                currentGenre?.let { reloadGenre(it) }
-            }
+            adminChangeBroadcaster.itemChanged.collect { currentGenre?.let { reloadGenre(it) } }
         }
 
         viewModelScope.launch {

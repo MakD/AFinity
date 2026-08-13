@@ -137,10 +137,9 @@ constructor(
             val resolvedSeriesId =
                 (item as? AfinityEpisode)?.seriesId ?: (item as? AfinitySeason)?.seriesId
             val resolvedSeasonId = (item as? AfinityEpisode)?.seasonId
-            val parentItem =
-                resolvedSeriesId?.let { seriesId ->
-                    resolvedById[seriesId] ?: resolveParentItem(item, seriesId)
-                }
+            val parentItem = resolvedSeriesId?.let { seriesId ->
+                resolvedById[seriesId] ?: resolveParentItem(item, seriesId)
+            }
             val seasonItem = resolvedSeasonId?.let { resolvedById[it] }
 
             _mediaChanges.emit(

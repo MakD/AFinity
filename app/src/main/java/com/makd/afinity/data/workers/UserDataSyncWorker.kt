@@ -60,7 +60,10 @@ constructor(
                                     account.serverId,
                                 )
                             } catch (e: Exception) {
-                                Timber.e(e, "Could not read pending user data for ${account.serverId}")
+                                Timber.e(
+                                    e,
+                                    "Could not read pending user data for ${account.serverId}",
+                                )
                                 retryNeeded = true
                                 return@forEach
                             }

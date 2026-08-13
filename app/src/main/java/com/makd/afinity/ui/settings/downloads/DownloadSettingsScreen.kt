@@ -1626,7 +1626,8 @@ fun VideoCacheSettingsCard(
             ) {
                 Text(
                     text = stringResource(R.string.pref_image_cache_max_disk),
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
+                    style =
+                        MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Surface(

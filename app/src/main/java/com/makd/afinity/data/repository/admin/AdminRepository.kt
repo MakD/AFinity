@@ -74,4 +74,3 @@ interface AdminRepository {
         isMovie: Boolean? = null,
     ): Result<Unit>
 }
-

@@ -239,7 +239,8 @@ private fun AudiobookshelfItemGrid(
     LazyVerticalGrid(
         columns = GridCells.Adaptive(widthSizeClass.gridMinSize),
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + playerOffset),
+        contentPadding =
+            PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + playerOffset),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {

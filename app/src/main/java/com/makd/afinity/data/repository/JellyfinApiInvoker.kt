@@ -15,9 +15,7 @@ class NoActiveSessionException : Exception("No active Jellyfin session")
 @Singleton
 class JellyfinApiInvoker @Inject constructor(private val sessionManager: SessionManager) {
 
-    suspend fun <T> apiResult(
-        block: suspend (apiClient: ApiClient, userId: UUID) -> T
-    ): Result<T> =
+    suspend fun <T> apiResult(block: suspend (apiClient: ApiClient, userId: UUID) -> T): Result<T> =
         withContext(Dispatchers.IO) {
             val apiClient =
                 sessionManager.getCurrentApiClient()

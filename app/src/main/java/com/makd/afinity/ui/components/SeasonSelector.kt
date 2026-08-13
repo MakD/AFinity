@@ -67,7 +67,8 @@ fun SeasonSelector(
                     },
                     label = {
                         Text(
-                            if (disabledSeasons.isEmpty()) stringResource(R.string.season_all_seasons)
+                            if (disabledSeasons.isEmpty())
+                                stringResource(R.string.season_all_seasons)
                             else stringResource(R.string.season_all_remaining_seasons)
                         )
                     },

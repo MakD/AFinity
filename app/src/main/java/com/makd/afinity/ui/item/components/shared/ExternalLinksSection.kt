@@ -32,33 +32,33 @@ fun ExternalLinksSection(item: AfinityItem) {
 
     if (externalLinks.isNotEmpty()) {
         LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                contentPadding = PaddingValues(horizontal = 0.dp),
-            ) {
-                items(externalLinks, key = { it.url }) { link ->
-                    Box(
-                        modifier =
-                            Modifier.clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null,
-                                    onClick = {
-                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link.url))
-                                        context.startActivity(intent)
-                                    },
-                                )
-                                .padding(top = 8.dp, bottom = 8.dp, end = 16.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Image(
-                            painter = painterResource(id = link.iconRes),
-                            contentDescription = link.name,
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier.height(16.dp),
-                        )
-                    }
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            contentPadding = PaddingValues(horizontal = 0.dp),
+        ) {
+            items(externalLinks, key = { it.url }) { link ->
+                Box(
+                    modifier =
+                        Modifier.clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link.url))
+                                    context.startActivity(intent)
+                                },
+                            )
+                            .padding(top = 8.dp, bottom = 8.dp, end = 16.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        painter = painterResource(id = link.iconRes),
+                        contentDescription = link.name,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.height(16.dp),
+                    )
                 }
             }
+        }
     }
 }
 

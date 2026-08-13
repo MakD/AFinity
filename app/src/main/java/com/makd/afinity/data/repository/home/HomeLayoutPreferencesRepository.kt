@@ -39,7 +39,8 @@ constructor(
                 flowOf(emptySet())
             } else {
                 dao.observeForSession(key).map { rows ->
-                    rows.filterNot { it.visible }
+                    rows
+                        .filterNot { it.visible }
                         .mapNotNull { HomeRow.fromKey(it.sectionKey) }
                         .filterNot { it.mandatory }
                         .toSet()

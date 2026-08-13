@@ -131,18 +131,14 @@ constructor(
 
         scope.launch {
             homeLayoutPreferencesRepository.discoveryConfig.distinctUntilChanged().drop(1).collect {
-                sessionKey()?.let { sk ->
-                    homeCacheRepository.invalidate(layoutCacheKey(sk))
-                }
+                sessionKey()?.let { sk -> homeCacheRepository.invalidate(layoutCacheKey(sk)) }
                 ensureLayout(force = true)
             }
         }
     }
 
     private suspend fun applyCustomSections(sections: List<CustomHomeSection>) {
-        val visible = sections.filter {
-            it.enabled && CustomHomeSectionsRepository.isInSeason(it)
-        }
+        val visible = sections.filter { it.enabled && CustomHomeSectionsRepository.isInSeason(it) }
 
         val sk = sessionKey()
         val staleKeys = mutableListOf<String>()
@@ -230,54 +226,55 @@ constructor(
     private val studiosMutex = Mutex()
     private var cachedStudios: List<AfinityStudio>? = null
 
-    private suspend fun studiosPool(force: Boolean): List<AfinityStudio> =
-        studiosMutex.withLock {
-            if (!force) cachedStudios?.let { return it }
-
-            val sk = sessionKey()
-            val baseUrl = mediaRepository.getBaseUrl()
-
-            if (!force && sk != null) {
-                val cached =
-                    homeCacheRepository.getRaw(studiosCacheKey(sk), studiosTTL)?.let { raw ->
-                        runCatching { json.decodeFromString<List<CachedStudio>>(raw) }.getOrNull()
-                    }
-                if (!cached.isNullOrEmpty()) {
-                    val restored =
-                        cached.mapNotNull { it.toStudio() }.map { it.withBaseUrl(baseUrl) }
-                    if (restored.isNotEmpty()) {
-                        cachedStudios = restored
-                        return restored
-                    }
-                }
+    private suspend fun studiosPool(force: Boolean): List<AfinityStudio> = studiosMutex.withLock {
+        if (!force)
+            cachedStudios?.let {
+                return it
             }
 
-            val fetched =
-                try {
-                    mediaRepository.getStudios(
-                        limit = STUDIOS_POOL,
-                        includeItemTypes = POPULAR_STUDIOS_TYPES,
-                    )
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to load studios")
-                    emptyList()
-                }
+        val sk = sessionKey()
+        val baseUrl = mediaRepository.getBaseUrl()
 
-            if (fetched.isNotEmpty()) {
-                cachedStudios = fetched
-                if (sk != null) {
-                    runCatching {
-                        homeCacheRepository.putRaw(
-                            studiosCacheKey(sk),
-                            json.encodeToString(fetched.map { CachedStudio.from(it) }),
-                        )
-                    }
+        if (!force && sk != null) {
+            val cached =
+                homeCacheRepository.getRaw(studiosCacheKey(sk), studiosTTL)?.let { raw ->
+                    runCatching { json.decodeFromString<List<CachedStudio>>(raw) }.getOrNull()
+                }
+            if (!cached.isNullOrEmpty()) {
+                val restored = cached.mapNotNull { it.toStudio() }.map { it.withBaseUrl(baseUrl) }
+                if (restored.isNotEmpty()) {
+                    cachedStudios = restored
+                    return restored
                 }
             }
-            return fetched
         }
+
+        val fetched =
+            try {
+                mediaRepository.getStudios(
+                    limit = STUDIOS_POOL,
+                    includeItemTypes = POPULAR_STUDIOS_TYPES,
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to load studios")
+                emptyList()
+            }
+
+        if (fetched.isNotEmpty()) {
+            cachedStudios = fetched
+            if (sk != null) {
+                runCatching {
+                    homeCacheRepository.putRaw(
+                        studiosCacheKey(sk),
+                        json.encodeToString(fetched.map { CachedStudio.from(it) }),
+                    )
+                }
+            }
+        }
+        return fetched
+    }
 
     private fun contentCacheKey(sessionKey: String, descriptorKey: String) =
         "home_sec_${sessionKey}_$descriptorKey"
@@ -431,26 +428,27 @@ constructor(
             enqueueHydration(listOf(descriptorKey))
             return
         }
-        enqueueHydration(list.subList(index, minOf(index + HYDRATE_AHEAD, list.size)).map { it.key })
+        enqueueHydration(
+            list.subList(index, minOf(index + HYDRATE_AHEAD, list.size)).map { it.key }
+        )
     }
 
     private fun enqueueHydration(keys: List<String>, refresh: Boolean = false) {
         scope.launch(Dispatchers.IO) {
-            val shouldDrain =
-                hydrationMutex.withLock {
-                    if (refresh) {
-                        hydrationRefreshKeys.addAll(keys)
-                        hydrationQueue.addAll(keys)
-                    } else {
-                        hydrationQueue.addAll(keys.filterNot { _content.value.containsKey(it) })
-                    }
-                    if (isHydrating || hydrationQueue.isEmpty()) {
-                        false
-                    } else {
-                        isHydrating = true
-                        true
-                    }
+            val shouldDrain = hydrationMutex.withLock {
+                if (refresh) {
+                    hydrationRefreshKeys.addAll(keys)
+                    hydrationQueue.addAll(keys)
+                } else {
+                    hydrationQueue.addAll(keys.filterNot { _content.value.containsKey(it) })
                 }
+                if (isHydrating || hydrationQueue.isEmpty()) {
+                    false
+                } else {
+                    isHydrating = true
+                    true
+                }
+            }
             if (shouldDrain) drainHydrationQueue()
         }
     }
@@ -520,12 +518,11 @@ constructor(
     ) {
         if (_pinnedLayout.value.isEmpty()) return
         customRefreshJob?.cancel()
-        customRefreshJob =
-            scope.launch {
-                delay(debounceMs)
-                if (sessionKey() == null) return@launch
-                refreshPinnedSections(reason)
-            }
+        customRefreshJob = scope.launch {
+            delay(debounceMs)
+            if (sessionKey() == null) return@launch
+            refreshPinnedSections(reason)
+        }
     }
 
     private fun refreshPinnedSections(reason: String) {
@@ -565,8 +562,15 @@ constructor(
     }
 
     fun removeItem(itemId: String) {
-        val uuid = try { UUID.fromString(itemId) } catch (e: Exception) { null }
-        val matches: (UUID) -> Boolean = { id -> id.toString() == itemId || (uuid != null && id == uuid) }
+        val uuid =
+            try {
+                UUID.fromString(itemId)
+            } catch (e: Exception) {
+                null
+            }
+        val matches: (UUID) -> Boolean = { id ->
+            id.toString() == itemId || (uuid != null && id == uuid)
+        }
 
         _watchAgain.update { items -> items.filterNot { matches(it.id) } }
         _criticsChoice.update { items -> items.filterNot { matches(it.id) } }
@@ -600,7 +604,8 @@ constructor(
                 if (content.section.recommendedItems.any { matches(it.id) }) {
                     HomeSectionContent.Movie(
                         content.section.copy(
-                            recommendedItems = content.section.recommendedItems.filterNot { matches(it.id) }
+                            recommendedItems =
+                                content.section.recommendedItems.filterNot { matches(it.id) }
                         )
                     )
                 } else {
@@ -624,7 +629,6 @@ constructor(
             HomeSectionContent.Empty -> content
         }
     }
-
 
     suspend fun clearAllData() {
         buildJob?.cancel()
@@ -953,7 +957,8 @@ constructor(
         val cacheKey = contentCacheKey(sk, descriptorKey)
         val cachedItems =
             if (bypassCache) null
-            else homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
+            else
+                homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
         if (!cachedItems.isNullOrEmpty()) {
             return rankByRating(presentationSample(descriptorKey, cachedItems, CRITICS_ROW_SIZE))
         }
@@ -1114,7 +1119,8 @@ constructor(
         val cacheKey = contentCacheKey(sk, descriptor.key)
         val cachedItems =
             if (bypassCache) null
-            else homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
+            else
+                homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
         if (!cachedItems.isNullOrEmpty()) {
             return HomeSectionContent.PersonFromMovie(
                 PersonFromMovieSection(
@@ -1161,7 +1167,8 @@ constructor(
         val cacheKey = contentCacheKey(sk, descriptor.key)
         val cachedItems =
             if (bypassCache) null
-            else homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
+            else
+                homeCacheRepository.getItems(cacheKey, mediaRepository.getBaseUrl(), recentCacheTTL)
         if (!cachedItems.isNullOrEmpty()) {
             return HomeSectionContent.Spotlight(
                 presentationSample(descriptor.key, cachedItems, SPOTLIGHT_ROW_SIZE)
@@ -1680,16 +1687,15 @@ private data class CachedStudio(
     val primaryImageUrl: String?,
     val itemCount: Int,
 ) {
-    fun toStudio(): AfinityStudio? =
-        runCatching {
-                AfinityStudio(
-                    id = UUID.fromString(id),
-                    name = name,
-                    primaryImageUrl = primaryImageUrl,
-                    itemCount = itemCount,
-                )
-            }
-            .getOrNull()
+    fun toStudio(): AfinityStudio? = runCatching {
+        AfinityStudio(
+            id = UUID.fromString(id),
+            name = name,
+            primaryImageUrl = primaryImageUrl,
+            itemCount = itemCount,
+        )
+    }
+        .getOrNull()
 
     companion object {
         fun from(studio: AfinityStudio) =

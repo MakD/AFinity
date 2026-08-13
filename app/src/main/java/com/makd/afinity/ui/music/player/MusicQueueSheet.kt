@@ -81,19 +81,15 @@ fun MusicQueueSheet(
     var dragStartIndex by remember { mutableStateOf<Int?>(null) }
     var dragEndIndex by remember { mutableStateOf<Int?>(null) }
     val uidCounter = remember { AtomicInteger(0) }
-    var localNextTracks by
-        remember {
-            mutableStateOf(
-                nextTracks.map { track -> QueueEntry(uidCounter.getAndIncrement(), track) }
-            )
-        }
+    var localNextTracks by remember {
+        mutableStateOf(nextTracks.map { track -> QueueEntry(uidCounter.getAndIncrement(), track) })
+    }
     LaunchedEffect(nextTracks) {
         val pool = localNextTracks.groupByTo(HashMap()) { it.track.id }
-        localNextTracks =
-            nextTracks.map { track ->
-                val reused = pool[track.id]?.removeFirstOrNull()
-                QueueEntry(reused?.uid ?: uidCounter.getAndIncrement(), track)
-            }
+        localNextTracks = nextTracks.map { track ->
+            val reused = pool[track.id]?.removeFirstOrNull()
+            QueueEntry(reused?.uid ?: uidCounter.getAndIncrement(), track)
+        }
     }
     val reorderState =
         rememberReorderableLazyListState(lazyListState) { from, to ->
@@ -126,7 +122,10 @@ fun MusicQueueSheet(
                         onDismiss()
                     }
                 ) {
-                    Text(stringResource(R.string.music_filter_clear), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        stringResource(R.string.music_filter_clear),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
 
@@ -223,7 +222,8 @@ fun MusicQueueSheet(
                                     ) {
                                         Icon(
                                             painter = painterResource(R.drawable.ic_delete),
-                                            contentDescription = stringResource(R.string.cd_music_remove),
+                                            contentDescription =
+                                                stringResource(R.string.cd_music_remove),
                                             tint =
                                                 MaterialTheme.colorScheme.onErrorContainer.copy(
                                                     alpha = iconAlpha

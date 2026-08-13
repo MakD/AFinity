@@ -271,15 +271,16 @@ object TrackSelection {
     private fun List<IndexedValue<AfinityMediaStream>>.firstFull(
         language: String,
         preferHearingImpaired: Boolean,
-    ): IndexedValue<AfinityMediaStream>? =
-        filter { !it.value.isForced && matches(it.value, language) }
-            .sortedWith(
-                compareByDescending<IndexedValue<AfinityMediaStream>> {
-                        it.value.isHearingImpaired == preferHearingImpaired
-                    }
-                    .thenByDescending { it.value.isDefault }
-            )
-            .firstOrNull()
+    ): IndexedValue<AfinityMediaStream>? = filter {
+        !it.value.isForced && matches(it.value, language)
+    }
+        .sortedWith(
+            compareByDescending<IndexedValue<AfinityMediaStream>> {
+                    it.value.isHearingImpaired == preferHearingImpaired
+                }
+                .thenByDescending { it.value.isDefault }
+        )
+        .firstOrNull()
 
     private fun List<IndexedValue<AfinityMediaStream>>.firstForced(
         language: String

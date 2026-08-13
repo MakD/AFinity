@@ -21,9 +21,7 @@ import com.makd.afinity.R
 @Composable
 fun SyncPlayWaitingOverlay(modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.75f)),
+        modifier = modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)),
         contentAlignment = Alignment.Center,
     ) {
         Column(

@@ -194,9 +194,7 @@ constructor(
         }
         scope.launch { persistQueue(trimmed) }
         val mediaItems = trimmed.map { buildMediaItem(it) }
-        scope.launch {
-            _rearrangeQueueEvents.emit(RearrangeQueueEvent(mediaItems, newIndex))
-        }
+        scope.launch { _rearrangeQueueEvents.emit(RearrangeQueueEvent(mediaItems, newIndex)) }
     }
 
     fun removeAt(index: Int) {
@@ -262,9 +260,7 @@ constructor(
 
     fun onTrackChanged(newIndex: Int) {
         _currentIndex.value = newIndex.coerceIn(0, (_queue.value.size - 1).coerceAtLeast(0))
-        scope.launch {
-            dataStore.edit { prefs -> prefs[KEY_CURRENT_INDEX] = newIndex }
-        }
+        scope.launch { dataStore.edit { prefs -> prefs[KEY_CURRENT_INDEX] = newIndex } }
     }
 
     fun toggleShuffle(currentPositionMs: Long = 0L) {

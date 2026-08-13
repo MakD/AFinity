@@ -3,7 +3,8 @@ package com.makd.afinity.data.models.jellyseerr
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-@Serializable data class TmdbKeyword(@SerialName("id") val id: Int, @SerialName("name") val name: String)
+@Serializable
+data class TmdbKeyword(@SerialName("id") val id: Int, @SerialName("name") val name: String)
 
 @Serializable
 data class TmdbKeywordSearchResponse(

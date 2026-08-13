@@ -240,7 +240,10 @@ constructor(
                     try {
                         targetItem = mediaRepository.getItemById(event.itemId)
                     } catch (e: Exception) {
-                        Timber.e(e, "Failed to resolve item for detail patch: ${event.itemId}")
+                        Timber.e(
+                            e,
+                            "Failed to playbackCompletionResolved item for detail patch: ${event.itemId}",
+                        )
                     }
                 }
                 val trueSeriesId =
@@ -695,12 +698,11 @@ constructor(
                         mediaRepository
                             .getItemsByIds(seriesIdsNeedingRuntime, FieldSets.MINIMAL)
                             .associate { it.id to it.runtimeTicks }
-                val items =
-                    converted.map { item ->
-                        if (item is AfinitySeason && item.runtimeTicks == 0L)
-                            item.copy(runtimeTicks = seriesRuntimes[item.seriesId] ?: 0L)
-                        else item
-                    }
+                val items = converted.map { item ->
+                    if (item is AfinitySeason && item.runtimeTicks == 0L)
+                        item.copy(runtimeTicks = seriesRuntimes[item.seriesId] ?: 0L)
+                    else item
+                }
                 _uiState.value = _uiState.value.copy(boxSetItems = items)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load boxset items")
@@ -734,9 +736,7 @@ constructor(
                                 BaseItemKind.BOX_SET ->
                                     baseItemDto.toAfinityBoxSet(mediaRepository.getBaseUrl())
                                 BaseItemKind.PLAYLIST ->
-                                    baseItemDto.toAfinityVideoPlaylist(
-                                        mediaRepository.getBaseUrl()
-                                    )
+                                    baseItemDto.toAfinityVideoPlaylist(mediaRepository.getBaseUrl())
                                 BaseItemKind.SEASON -> {
                                     val season =
                                         baseItemDto.toAfinitySeason(mediaRepository.getBaseUrl())
@@ -1283,7 +1283,7 @@ constructor(
                         .onSuccess { count ->
                             Timber.i("Queued $count episodes for season ${currentItem.name}")
                         }
-                        .onFailure { Timber.e(it, "Failed to start season download") }
+                        .onFailure { Timber.e(it, "Failed to initMonitoring season download") }
                 }
             }
             currentItem is AfinityShow -> {
@@ -1293,7 +1293,7 @@ constructor(
                         .onSuccess { count ->
                             Timber.i("Queued $count episodes for series ${currentItem.name}")
                         }
-                        .onFailure { Timber.e(it, "Failed to start series download") }
+                        .onFailure { Timber.e(it, "Failed to initMonitoring series download") }
                 }
             }
         }
@@ -1363,7 +1363,7 @@ constructor(
                         .onSuccess { count ->
                             Timber.i("Queued $count episodes for season ${currentItem.name}")
                         }
-                        .onFailure { Timber.e(it, "Failed to start season download") }
+                        .onFailure { Timber.e(it, "Failed to initMonitoring season download") }
                 }
             }
             is AfinityShow -> {
@@ -1373,7 +1373,7 @@ constructor(
                         .onSuccess { count ->
                             Timber.i("Queued $count episodes for series ${currentItem.name}")
                         }
-                        .onFailure { Timber.e(it, "Failed to start series download") }
+                        .onFailure { Timber.e(it, "Failed to initMonitoring series download") }
                 }
             }
             else -> {}
@@ -1626,7 +1626,6 @@ constructor(
             }
         }
     }
-
 }
 
 data class ItemDetailUiState(

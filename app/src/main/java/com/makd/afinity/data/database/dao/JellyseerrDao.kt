@@ -8,8 +8,8 @@ import com.makd.afinity.data.database.entities.JellyseerrAddressEntity
 import com.makd.afinity.data.database.entities.JellyseerrConfigEntity
 import com.makd.afinity.data.database.entities.JellyseerrDiscoverFilterEntity
 import com.makd.afinity.data.database.entities.JellyseerrRequestEntity
-import kotlinx.coroutines.flow.Flow
 import java.util.UUID
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface JellyseerrDao {
@@ -53,11 +53,9 @@ interface JellyseerrDao {
     )
     suspend fun clearAllRequests(serverId: String, userId: String)
 
-    @Query("DELETE FROM jellyseerr_requests")
-    suspend fun deleteAllRequests()
+    @Query("DELETE FROM jellyseerr_requests") suspend fun deleteAllRequests()
 
-    @Query("SELECT (SELECT COUNT(*) FROM jellyseerr_requests)")
-    suspend fun cachedEntryCount(): Int
+    @Query("SELECT (SELECT COUNT(*) FROM jellyseerr_requests)") suspend fun cachedEntryCount(): Int
 
     @Query(
         "DELETE FROM jellyseerr_requests WHERE cachedAt < :expiryTime AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"

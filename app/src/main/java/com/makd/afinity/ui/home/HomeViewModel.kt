@@ -316,24 +316,22 @@ constructor(
 
         viewModelScope.launch {
             appDataRepository.genreMovies.collect { genreMovies ->
-                val ordered =
-                    genreMovies.mapValues { (genre, movies) ->
-                        homeSectionsRepository
-                            .presentationOrder("genre_movie_$genre", movies)
-                            .take(HOME_GENRE_ROW_SIZE)
-                    }
+                val ordered = genreMovies.mapValues { (genre, movies) ->
+                    homeSectionsRepository
+                        .presentationOrder("genre_movie_$genre", movies)
+                        .take(HOME_GENRE_ROW_SIZE)
+                }
                 _uiState.update { it.copy(genreMovies = ordered) }
             }
         }
 
         viewModelScope.launch {
             appDataRepository.genreShows.collect { genreShows ->
-                val ordered =
-                    genreShows.mapValues { (genre, shows) ->
-                        homeSectionsRepository
-                            .presentationOrder("genre_show_$genre", shows)
-                            .take(HOME_GENRE_ROW_SIZE)
-                    }
+                val ordered = genreShows.mapValues { (genre, shows) ->
+                    homeSectionsRepository
+                        .presentationOrder("genre_show_$genre", shows)
+                        .take(HOME_GENRE_ROW_SIZE)
+                }
                 _uiState.update { it.copy(genreShows = ordered) }
             }
         }
@@ -481,16 +479,17 @@ constructor(
         }
     }
 
-    private fun <T : AfinityItem> List<T>.unplayedForDisplay(): List<T> =
-        filter { !it.played }.take(AppDataRepository.LATEST_DISPLAYED)
+    private fun <T : AfinityItem> List<T>.unplayedForDisplay(): List<T> = filter {
+        !it.played
+    }
+        .take(AppDataRepository.LATEST_DISPLAYED)
 
     private fun <T : AfinityItem> sectionsForDisplay(
         sections: List<Pair<AfinityCollection, List<T>>>
-    ): List<Pair<AfinityCollection, List<T>>> =
-        sections.mapNotNull { (library, items) ->
-            val visible = items.unplayedForDisplay()
-            if (visible.isEmpty()) null else library to visible
-        }
+    ): List<Pair<AfinityCollection, List<T>>> = sections.mapNotNull { (library, items) ->
+        val visible = items.unplayedForDisplay()
+        if (visible.isEmpty()) null else library to visible
+    }
 
     private fun patchUiStateItem(updatedItem: AfinityItem) {
         _uiState.update { state ->
@@ -978,14 +977,12 @@ private fun HomeSectionDescriptor.toHomeSection(content: HomeSectionContent?): H
                                 HomeSectionType.SPOTLIGHT_GENRE_MOVIE,
                                 HomeSectionType.SPOTLIGHT_GENRE_SHOW,
                                 HomeSectionType.SPOTLIGHT_STUDIO,
-                                HomeSectionType.SPOTLIGHT_BOXSET ->
-                                    CustomSectionCardStyle.SPOTLIGHT
+                                HomeSectionType.SPOTLIGHT_BOXSET -> CustomSectionCardStyle.SPOTLIGHT
                                 HomeSectionType.CUSTOM ->
-                                    cardStyle
-                                        ?.let {
-                                            runCatching { CustomSectionCardStyle.valueOf(it) }
-                                                .getOrNull()
-                                        } ?: CustomSectionCardStyle.PORTRAIT
+                                    cardStyle?.let {
+                                        runCatching { CustomSectionCardStyle.valueOf(it) }
+                                            .getOrNull()
+                                    } ?: CustomSectionCardStyle.PORTRAIT
                                 else -> CustomSectionCardStyle.PORTRAIT
                             },
                     )
@@ -1002,10 +999,9 @@ private fun HomeSectionDescriptor.toHomeSection(content: HomeSectionContent?): H
                         title = title,
                         items = content.items,
                         cardStyle =
-                            cardStyle
-                                ?.let {
-                                    runCatching { CustomSectionCardStyle.valueOf(it) }.getOrNull()
-                                } ?: CustomSectionCardStyle.PORTRAIT,
+                            cardStyle?.let {
+                                runCatching { CustomSectionCardStyle.valueOf(it) }.getOrNull()
+                            } ?: CustomSectionCardStyle.PORTRAIT,
                         customSectionId = customSectionId?.takeIf { supportsFullList },
                     )
             }

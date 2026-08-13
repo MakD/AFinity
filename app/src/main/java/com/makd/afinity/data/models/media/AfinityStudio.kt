@@ -13,7 +13,13 @@ data class AfinityStudio(
 fun AfinityStudio.withBaseUrl(newBaseUrl: String): AfinityStudio {
     val base = newBaseUrl.trimEnd('/').toUri()
     return copy(
-        primaryImageUrl = primaryImageUrl?.toUri()
-            ?.buildUpon()?.scheme(base.scheme)?.encodedAuthority(base.encodedAuthority)?.build()?.toString()
+        primaryImageUrl =
+            primaryImageUrl
+                ?.toUri()
+                ?.buildUpon()
+                ?.scheme(base.scheme)
+                ?.encodedAuthority(base.encodedAuthority)
+                ?.build()
+                ?.toString()
     )
 }

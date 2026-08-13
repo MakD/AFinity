@@ -15,6 +15,7 @@ import javax.inject.Singleton
 
 sealed class AudiobookshelfAddressResult {
     data class Success(val address: String) : AudiobookshelfAddressResult()
+
     data class AllFailed(val attemptedAddresses: List<String>) : AudiobookshelfAddressResult()
 }
 
@@ -27,19 +28,22 @@ constructor(
     private val networkLocality: NetworkLocality,
 ) {
 
-    private val pingClient = OkHttpClient.Builder()
-        .connectTimeout(2, TimeUnit.SECONDS)
-        .readTimeout(2, TimeUnit.SECONDS)
-        .build()
+    private val pingClient =
+        OkHttpClient.Builder()
+            .connectTimeout(2, TimeUnit.SECONDS)
+            .readTimeout(2, TimeUnit.SECONDS)
+            .build()
 
     suspend fun resolveAddress(
         serverId: String,
         userId: String,
         primaryUrl: String,
     ): AudiobookshelfAddressResult {
-        val alternateAddresses = audiobookshelfDao.getAddresses(serverId, userId)
-            .map { it.address }
-            .filter { it != primaryUrl }
+        val alternateAddresses =
+            audiobookshelfDao
+                .getAddresses(serverId, userId)
+                .map { it.address }
+                .filter { it != primaryUrl }
 
         val addressesToTry = listOf(primaryUrl) + alternateAddresses
 

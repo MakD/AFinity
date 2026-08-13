@@ -36,60 +36,58 @@ class AfinityTypeConverters {
         dateTime?.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
 
     @TypeConverter
-    fun toLocalDateTime(dateTimeString: String?): LocalDateTime? =
-        dateTimeString?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME) }
+    fun toLocalDateTime(dateTimeString: String?): LocalDateTime? = dateTimeString?.let {
+        LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+    }
 
     @TypeConverter
-    fun fromChapterList(chapters: List<AfinityChapter>?): String? =
-        chapters?.let { json.encodeToString(it) }
+    fun fromChapterList(chapters: List<AfinityChapter>?): String? = chapters?.let {
+        json.encodeToString(it)
+    }
 
     @TypeConverter
-    fun toChapterList(chaptersString: String?): List<AfinityChapter>? =
-        chaptersString?.let {
-            try {
-                json.decodeFromString<List<AfinityChapter>>(it)
-            } catch (e: Exception) {
-                null
-            }
+    fun toChapterList(chaptersString: String?): List<AfinityChapter>? = chaptersString?.let {
+        try {
+            json.decodeFromString<List<AfinityChapter>>(it)
+        } catch (e: Exception) {
+            null
         }
+    }
 
     @TypeConverter
     fun fromStringList(strings: List<String>?): String? = strings?.let { json.encodeToString(it) }
 
     @TypeConverter
-    fun toStringList(stringsString: String?): List<String>? =
-        stringsString?.let {
-            try {
-                json.decodeFromString<List<String>>(it)
-            } catch (e: Exception) {
-                null
-            }
+    fun toStringList(stringsString: String?): List<String>? = stringsString?.let {
+        try {
+            json.decodeFromString<List<String>>(it)
+        } catch (e: Exception) {
+            null
         }
+    }
 
     @TypeConverter fun fromSourceType(sourceType: AfinitySourceType?): String? = sourceType?.name
 
     @TypeConverter
-    fun toSourceType(sourceTypeName: String?): AfinitySourceType? =
-        sourceTypeName?.let {
-            try {
-                AfinitySourceType.valueOf(it)
-            } catch (e: Exception) {
-                null
-            }
+    fun toSourceType(sourceTypeName: String?): AfinitySourceType? = sourceTypeName?.let {
+        try {
+            AfinitySourceType.valueOf(it)
+        } catch (e: Exception) {
+            null
         }
+    }
 
     @TypeConverter
     fun fromSegmentType(segmentType: AfinitySegmentType?): String? = segmentType?.name
 
     @TypeConverter
-    fun toSegmentType(segmentTypeName: String?): AfinitySegmentType? =
-        segmentTypeName?.let {
-            try {
-                AfinitySegmentType.valueOf(it)
-            } catch (e: Exception) {
-                null
-            }
+    fun toSegmentType(segmentTypeName: String?): AfinitySegmentType? = segmentTypeName?.let {
+        try {
+            AfinitySegmentType.valueOf(it)
+        } catch (e: Exception) {
+            null
         }
+    }
 
     @TypeConverter
     fun fromMediaStreamType(mediaStreamType: MediaStreamType?): String? = mediaStreamType?.name
@@ -164,17 +162,16 @@ class AfinityTypeConverters {
     @TypeConverter
     fun fromAfinityPersonList(people: List<AfinityPerson>?): String? {
         if (people == null) return null
-        val serializable =
-            people.map { person ->
-                SerializableAfinityPerson(
-                    id = person.id.toString(),
-                    name = person.name,
-                    type = person.type.name,
-                    role = person.role,
-                    imageUri = person.image.uri?.toString(),
-                    imageBlurHash = person.image.blurHash,
-                )
-            }
+        val serializable = people.map { person ->
+            SerializableAfinityPerson(
+                id = person.id.toString(),
+                name = person.name,
+                type = person.type.name,
+                role = person.role,
+                imageUri = person.image.uri?.toString(),
+                imageBlurHash = person.image.blurHash,
+            )
+        }
         return json.encodeToString(serializable)
     }
 
@@ -458,46 +455,46 @@ class AfinityTypeConverters {
     }
 
     @TypeConverter
-    fun fromTmdbReviewList(reviews: List<TmdbReview>?): String? =
-        reviews?.let { json.encodeToString(it) }
+    fun fromTmdbReviewList(reviews: List<TmdbReview>?): String? = reviews?.let {
+        json.encodeToString(it)
+    }
 
     @TypeConverter
-    fun toTmdbReviewList(reviewsString: String?): List<TmdbReview>? =
-        reviewsString?.let {
-            try {
-                json.decodeFromString<List<TmdbReview>>(it)
-            } catch (e: Exception) {
-                null
-            }
+    fun toTmdbReviewList(reviewsString: String?): List<TmdbReview>? = reviewsString?.let {
+        try {
+            json.decodeFromString<List<TmdbReview>>(it)
+        } catch (e: Exception) {
+            null
         }
+    }
 
     @TypeConverter
-    fun fromMdbRatingList(ratings: List<MdbListRating>?): String? =
-        ratings?.let { json.encodeToString(it) }
+    fun fromMdbRatingList(ratings: List<MdbListRating>?): String? = ratings?.let {
+        json.encodeToString(it)
+    }
 
     @TypeConverter
-    fun toMdbRatingList(ratingsString: String?): List<MdbListRating>? =
-        ratingsString?.let {
-            try {
-                json.decodeFromString<List<MdbListRating>>(it)
-            } catch (e: Exception) {
-                null
-            }
+    fun toMdbRatingList(ratingsString: String?): List<MdbListRating>? = ratingsString?.let {
+        try {
+            json.decodeFromString<List<MdbListRating>>(it)
+        } catch (e: Exception) {
+            null
         }
+    }
 
     @TypeConverter
-    fun fromMdbRatingBadges(badges: MdbListRatingBadges?): String? =
-        badges?.let { json.encodeToString(it) }
+    fun fromMdbRatingBadges(badges: MdbListRatingBadges?): String? = badges?.let {
+        json.encodeToString(it)
+    }
 
     @TypeConverter
-    fun toMdbRatingBadges(badgesString: String?): MdbListRatingBadges? =
-        badgesString?.let {
-            try {
-                json.decodeFromString<MdbListRatingBadges>(it)
-            } catch (e: Exception) {
-                null
-            }
+    fun toMdbRatingBadges(badgesString: String?): MdbListRatingBadges? = badgesString?.let {
+        try {
+            json.decodeFromString<MdbListRatingBadges>(it)
+        } catch (e: Exception) {
+            null
         }
+    }
 }
 
 @Serializable

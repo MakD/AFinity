@@ -8,7 +8,5 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class MusicEqualizerManager
-@Inject
-constructor(@ApplicationContext context: Context) :
+class MusicEqualizerManager @Inject constructor(@ApplicationContext context: Context) :
     AudioEqualizerManager(context, "music_equalizer", EqualizerPreset.MUSIC)

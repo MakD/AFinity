@@ -24,31 +24,35 @@ constructor(
     private val audiobookshelfRepository: Lazy<AudiobookshelfRepository>,
 ) : CoroutineWorker(appContext, workerParams) {
 
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        val serverId = inputData.getString(AbsProgressSyncScheduler.KEY_SERVER_ID)
-        val userIdStr = inputData.getString(AbsProgressSyncScheduler.KEY_USER_ID)
+    override suspend fun doWork(): Result =
+        withContext(Dispatchers.IO) {
+            val serverId = inputData.getString(AbsProgressSyncScheduler.KEY_SERVER_ID)
+            val userIdStr = inputData.getString(AbsProgressSyncScheduler.KEY_USER_ID)
 
-        if (serverId == null || userIdStr == null) {
-            Timber.w("AbsProgressSync: missing serverId/userId in input data, skipping")
-            return@withContext Result.failure(workDataOf("error" to "missing context"))
-        }
-
-        val userId = runCatching { UUID.fromString(userIdStr) }.getOrElse {
-            Timber.w("AbsProgressSync: invalid userId '$userIdStr'")
-            return@withContext Result.failure(workDataOf("error" to "invalid userId"))
-        }
-
-        Timber.d("AbsProgressSync: syncing pending progress for serverId=$serverId")
-        val result = audiobookshelfRepository.get().syncPendingProgress(serverId, userId)
-        return@withContext when {
-            result.isSuccess -> {
-                Timber.d("AbsProgressSync: synced ${result.getOrDefault(0)} items")
-                Result.success(workDataOf("synced" to result.getOrDefault(0)))
+            if (serverId == null || userIdStr == null) {
+                Timber.w("AbsProgressSync: missing serverId/userId in input data, skipping")
+                return@withContext Result.failure(workDataOf("error" to "missing context"))
             }
-            else -> {
-                Timber.w("AbsProgressSync: failed — ${result.exceptionOrNull()?.message}")
-                Result.failure(workDataOf("error" to result.exceptionOrNull()?.message))
+
+            val userId = runCatching {
+                UUID.fromString(userIdStr)
+            }
+                .getOrElse {
+                    Timber.w("AbsProgressSync: invalid userId '$userIdStr'")
+                    return@withContext Result.failure(workDataOf("error" to "invalid userId"))
+                }
+
+            Timber.d("AbsProgressSync: syncing pending progress for serverId=$serverId")
+            val result = audiobookshelfRepository.get().syncPendingProgress(serverId, userId)
+            return@withContext when {
+                result.isSuccess -> {
+                    Timber.d("AbsProgressSync: synced ${result.getOrDefault(0)} items")
+                    Result.success(workDataOf("synced" to result.getOrDefault(0)))
+                }
+                else -> {
+                    Timber.w("AbsProgressSync: failed — ${result.exceptionOrNull()?.message}")
+                    Result.failure(workDataOf("error" to result.exceptionOrNull()?.message))
+                }
             }
         }
-    }
 }

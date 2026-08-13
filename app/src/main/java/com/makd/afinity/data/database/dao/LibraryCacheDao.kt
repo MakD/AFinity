@@ -32,7 +32,9 @@ interface LibraryCacheDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCachedItems(items: List<LibraryCacheEntity>)
 
-    @Query("DELETE FROM library_cache WHERE libraryId = :libraryId AND serverId = :serverId AND userId = :userId")
+    @Query(
+        "DELETE FROM library_cache WHERE libraryId = :libraryId AND serverId = :serverId AND userId = :userId"
+    )
     suspend fun clearCacheForLibrary(libraryId: String, serverId: String, userId: String)
 
     @Query("DELETE FROM library_cache WHERE cacheTimestamp < :expiredTimestamp")

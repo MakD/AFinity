@@ -394,9 +394,7 @@ private fun CustomSectionRow(
             ) {
                 Text(
                     text =
-                        section.title.ifBlank {
-                            stringResource(R.string.custom_sections_untitled)
-                        },
+                        section.title.ifBlank { stringResource(R.string.custom_sections_untitled) },
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
                     maxLines = 1,
@@ -1089,9 +1087,7 @@ private fun CountInputDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = stringResource(R.string.action_cancel))
-            }
+            TextButton(onClick = onDismiss) { Text(text = stringResource(R.string.action_cancel)) }
         },
     )
 }
@@ -1309,9 +1305,7 @@ private fun MonthDayPickerDialog(
                                         modifier = Modifier.weight(1f),
                                     )
                                 }
-                                repeat(7 - week.size) {
-                                    Spacer(modifier = Modifier.weight(1f))
-                                }
+                                repeat(7 - week.size) { Spacer(modifier = Modifier.weight(1f)) }
                             }
                         }
                     }
@@ -1324,9 +1318,7 @@ private fun MonthDayPickerDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = stringResource(R.string.action_cancel))
-            }
+            TextButton(onClick = onDismiss) { Text(text = stringResource(R.string.action_cancel)) }
         },
     )
 }

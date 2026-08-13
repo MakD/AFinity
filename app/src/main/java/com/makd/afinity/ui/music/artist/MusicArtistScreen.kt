@@ -201,7 +201,8 @@ fun MusicArtistScreen(
                     item {
                         MusicDetailActionRow(
                             modifier =
-                                Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                                Modifier.fillMaxWidth()
+                                    .padding(horizontal = 20.dp, vertical = 8.dp),
                             playbackEnabled = uiState.topTracks.isNotEmpty(),
                             onShuffle = {
                                 startMusicService(context)
@@ -238,7 +239,8 @@ fun MusicArtistScreen(
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_compass),
-                                        contentDescription = stringResource(R.string.cd_music_instant_mix),
+                                        contentDescription =
+                                            stringResource(R.string.cd_music_instant_mix),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(26.dp),
                                     )
@@ -258,7 +260,8 @@ fun MusicArtistScreen(
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_radio),
-                                        contentDescription = stringResource(R.string.cd_music_start_radio),
+                                        contentDescription =
+                                            stringResource(R.string.cd_music_start_radio),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(26.dp),
                                     )
@@ -466,7 +469,11 @@ fun MusicArtistScreen(
                                             label = "see_more_label",
                                         ) { expanded ->
                                             Text(
-                                                text = stringResource(if (expanded) R.string.action_see_less else R.string.action_see_more),
+                                                text =
+                                                    stringResource(
+                                                        if (expanded) R.string.action_see_less
+                                                        else R.string.action_see_more
+                                                    ),
                                                 style = MaterialTheme.typography.labelLarge,
                                             )
                                         }
@@ -625,7 +632,8 @@ fun MusicArtistScreen(
 
                         MusicDetailActionRow(
                             modifier =
-                                Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                                Modifier.fillMaxWidth()
+                                    .padding(horizontal = 20.dp, vertical = 8.dp),
                             playbackEnabled = uiState.topTracks.isNotEmpty(),
                             onShuffle = {
                                 startMusicService(context)
@@ -662,7 +670,8 @@ fun MusicArtistScreen(
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_compass),
-                                        contentDescription = stringResource(R.string.cd_music_instant_mix),
+                                        contentDescription =
+                                            stringResource(R.string.cd_music_instant_mix),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(26.dp),
                                     )
@@ -682,7 +691,8 @@ fun MusicArtistScreen(
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_radio),
-                                        contentDescription = stringResource(R.string.cd_music_start_radio),
+                                        contentDescription =
+                                            stringResource(R.string.cd_music_start_radio),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(26.dp),
                                     )
@@ -848,12 +858,8 @@ fun MusicArtistScreen(
                                                                 sourceTracks = uiState.topTracks,
                                                             )
                                                     }),
-                                            onAddNext = {
-                                                playerViewModel.addNext(listOf(track))
-                                            },
-                                            onAddLast = {
-                                                playerViewModel.addLast(listOf(track))
-                                            },
+                                            onAddNext = { playerViewModel.addNext(listOf(track)) },
+                                            onAddLast = { playerViewModel.addLast(listOf(track)) },
                                             onFavorite = {
                                                 viewModel.toggleTrackFavorite(track.id)
                                             },
@@ -865,9 +871,7 @@ fun MusicArtistScreen(
                                                         addToPlaylistViewModel.reset()
                                                         showAddToPlaylist = true
                                                     }),
-                                            onDownload = {
-                                                viewModel.downloadTrack(track.id)
-                                            },
+                                            onDownload = { viewModel.downloadTrack(track.id) },
                                             isDownloaded =
                                                 uiState.trackDownloadInfos[track.id]?.status ==
                                                     DownloadStatus.COMPLETED,
@@ -895,7 +899,8 @@ fun MusicArtistScreen(
                                     ) { expanded ->
                                         Text(
                                             text =
-                                                if (expanded) stringResource(R.string.action_see_less)
+                                                if (expanded)
+                                                    stringResource(R.string.action_see_less)
                                                 else stringResource(R.string.action_see_more),
                                             style = MaterialTheme.typography.labelLarge,
                                         )
@@ -1072,7 +1077,10 @@ private fun ArtistOverviewSection(overview: String, modifier: Modifier = Modifie
 
         if (isEllipsized || isExpanded) {
             Text(
-                text = stringResource(if (isExpanded) R.string.action_show_less else R.string.action_show_more),
+                text =
+                    stringResource(
+                        if (isExpanded) R.string.action_show_less else R.string.action_show_more
+                    ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier =

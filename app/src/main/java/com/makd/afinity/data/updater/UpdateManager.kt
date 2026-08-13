@@ -324,8 +324,7 @@ constructor(
                                 ?.takeIf { it.scheme == "file" }
                                 ?.path
                                 ?.let { File(it) }
-                                ?.takeIf { it.exists() }
-                                ?: getDownloadedApkFile(release)
+                                ?.takeIf { it.exists() } ?: getDownloadedApkFile(release)
 
                         if (file != null && file.exists()) {
                             _updateState.value =
@@ -506,7 +505,8 @@ constructor(
 
     private fun getDownloadedApkFile(release: GitHubRelease): File? {
         val apkAsset = findApkAsset(release) ?: return null
-        val downloadDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: return null
+        val downloadDir =
+            context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: return null
         val pattern = apkFilePattern(apkAsset)
 
         return downloadDir

@@ -28,17 +28,17 @@ interface CustomHomeSectionDao {
     @Query("SELECT COUNT(*) FROM custom_home_sections WHERE sessionKey = :sessionKey")
     suspend fun countForSession(sessionKey: String): Int
 
-    @Query("SELECT COALESCE(MAX(position), -1) FROM custom_home_sections WHERE sessionKey = :sessionKey")
+    @Query(
+        "SELECT COALESCE(MAX(position), -1) FROM custom_home_sections WHERE sessionKey = :sessionKey"
+    )
     suspend fun maxPosition(sessionKey: String): Int
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: CustomHomeSectionEntity)
 
-    @Delete
-    suspend fun delete(entity: CustomHomeSectionEntity)
+    @Delete suspend fun delete(entity: CustomHomeSectionEntity)
 
-    @Query("DELETE FROM custom_home_sections WHERE id = :id")
-    suspend fun deleteById(id: String)
+    @Query("DELETE FROM custom_home_sections WHERE id = :id") suspend fun deleteById(id: String)
 
     @Query("DELETE FROM custom_home_sections WHERE sessionKey = :sessionKey")
     suspend fun deleteForSession(sessionKey: String)

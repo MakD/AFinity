@@ -160,8 +160,7 @@ internal fun JellyseerrLoginContent(
                 value = uiState.email,
                 onValueChange = viewModel::updateEmail,
                 label =
-                    if (uiState.useJellyfinAuth)
-                        stringResource(R.string.label_jellyfin_username)
+                    if (uiState.useJellyfinAuth) stringResource(R.string.label_jellyfin_username)
                     else stringResource(R.string.label_seerr_email),
                 placeholder =
                     if (uiState.useJellyfinAuth) stringResource(R.string.placeholder_username)
@@ -185,8 +184,7 @@ internal fun JellyseerrLoginContent(
                 value = uiState.password,
                 onValueChange = viewModel::updatePassword,
                 label =
-                    if (uiState.useJellyfinAuth)
-                        stringResource(R.string.label_jellyfin_password)
+                    if (uiState.useJellyfinAuth) stringResource(R.string.label_jellyfin_password)
                     else stringResource(R.string.label_seerr_password),
                 leadingIcon = painterResource(id = R.drawable.ic_lock_filled),
                 supportingText = uiState.passwordError,

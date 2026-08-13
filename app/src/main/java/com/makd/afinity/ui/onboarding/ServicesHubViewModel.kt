@@ -52,7 +52,9 @@ constructor(
 
     val jellyseerrHost =
         jellyseerrRepository.isAuthenticated
-            .map { connected -> if (connected) hostOf(jellyseerrRepository.getServerUrl()) else null }
+            .map { connected ->
+                if (connected) hostOf(jellyseerrRepository.getServerUrl()) else null
+            }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val audiobookshelfHost =
@@ -93,9 +95,9 @@ constructor(
     fun disconnectAudiobookshelf() {
         viewModelScope.launch {
             runCatching {
-                    audiobookshelfPlayer.release()
-                    audiobookshelfRepository.logout()
-                }
+                audiobookshelfPlayer.release()
+                audiobookshelfRepository.logout()
+            }
                 .onFailure { Timber.e(it, "Failed to disconnect Audiobookshelf") }
         }
     }
@@ -146,8 +148,7 @@ constructor(
             } catch (e: Exception) {
                 Timber.e(e, "Failed to verify remote address")
                 _remoteError.value =
-                    e.message
-                        ?: context.getString(R.string.services_hub_remote_error_unreachable)
+                    e.message ?: context.getString(R.string.services_hub_remote_error_unreachable)
             } finally {
                 _remoteVerifying.value = false
             }

@@ -5,16 +5,17 @@ import com.makd.afinity.util.NetworkConnectivityMonitor
 import com.makd.afinity.util.NetworkLocality
 import com.makd.afinity.util.pingUrl
 import com.makd.afinity.util.probeAddresses
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import timber.log.Timber
-import java.util.concurrent.TimeUnit
-import javax.inject.Inject
-import javax.inject.Singleton
 
 sealed class JellyseerrAddressResult {
     data class Success(val address: String) : JellyseerrAddressResult()
+
     data class AllFailed(val attemptedAddresses: List<String>) : JellyseerrAddressResult()
 }
 
@@ -27,19 +28,22 @@ constructor(
     private val networkLocality: NetworkLocality,
 ) {
 
-    private val pingClient = OkHttpClient.Builder()
-        .connectTimeout(2, TimeUnit.SECONDS)
-        .readTimeout(2, TimeUnit.SECONDS)
-        .build()
+    private val pingClient =
+        OkHttpClient.Builder()
+            .connectTimeout(2, TimeUnit.SECONDS)
+            .readTimeout(2, TimeUnit.SECONDS)
+            .build()
 
     suspend fun resolveAddress(
         serverId: String,
         userId: String,
         primaryUrl: String,
     ): JellyseerrAddressResult {
-        val alternateAddresses = jellyseerrDao.getAddresses(serverId, userId)
-            .map { it.address }
-            .filter { it != primaryUrl }
+        val alternateAddresses =
+            jellyseerrDao
+                .getAddresses(serverId, userId)
+                .map { it.address }
+                .filter { it != primaryUrl }
 
         val addressesToTry = listOf(primaryUrl) + alternateAddresses
 

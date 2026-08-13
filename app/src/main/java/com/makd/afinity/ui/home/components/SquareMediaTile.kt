@@ -35,7 +35,9 @@ fun SquareMediaTile(
             modifier = Modifier.width(100.dp).aspectRatio(1f),
             shape = RoundedCornerShape(8.dp),
             colors =
-                CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
         ) {
             AsyncImage(
                 imageUrl = imageUrl,

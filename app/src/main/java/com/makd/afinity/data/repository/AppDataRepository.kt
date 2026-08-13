@@ -4,7 +4,6 @@ import android.content.Context
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
-
 import com.makd.afinity.data.manager.MediaRefreshBus
 import com.makd.afinity.data.manager.RefreshTrigger
 import com.makd.afinity.data.manager.SessionManager
@@ -166,9 +165,7 @@ constructor(
         }
 
         scope.launch {
-            adminChangeBroadcaster.itemDeleted.collect { event ->
-                onItemDeleted(event.itemId)
-            }
+            adminChangeBroadcaster.itemDeleted.collect { event -> onItemDeleted(event.itemId) }
         }
 
         scope.launch {
@@ -234,7 +231,6 @@ constructor(
             }
         }
     }
-
 
     private val _latestMovies = MutableStateFlow<List<AfinityMovie>>(emptyList())
     val latestMovies: StateFlow<List<AfinityMovie>> = _latestMovies.asStateFlow()
@@ -826,8 +822,6 @@ constructor(
 
     suspend fun loadShowsForGenre(genre: String, limit: Int = 20) =
         genreRepository.loadShowsForGenre(genre, limit)
-
-
 
     private fun updateProgress(progress: Float, phase: String) {
         _loadingProgress.value = progress

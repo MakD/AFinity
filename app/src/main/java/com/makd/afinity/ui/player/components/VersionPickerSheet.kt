@@ -33,9 +33,9 @@ import com.makd.afinity.data.models.media.AfinitySource
 import java.util.Locale
 
 /**
- * Floating overlay (matching the existing audio/subtitle selector style) that lists
- * all available media versions for a merged-versions item. Used inside the player
- * and triggered from [PlayerControls].
+ * Floating overlay (matching the existing audio/subtitle selector style) that lists all available
+ * media versions for a merged-versions item. Used inside the player and triggered from
+ * [PlayerControls].
  */
 @Composable
 fun VersionPickerSheet(
@@ -46,12 +46,11 @@ fun VersionPickerSheet(
 ) {
     Box(
         modifier =
-            Modifier
-                .clickable(onClick = {}) // consume — do not propagate
+            Modifier.clickable(onClick = {}) // consume — do not propagate
                 .background(Color.Black.copy(alpha = 0.95f), RoundedCornerShape(8.dp))
                 .padding(12.dp)
                 .width(240.dp)
-                .heightIn(max = 180.dp),
+                .heightIn(max = 180.dp)
     ) {
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -86,8 +85,7 @@ private fun VersionItem(
 ) {
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
+            Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(6.dp))
                 .background(
                     if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
@@ -112,7 +110,8 @@ private fun VersionItem(
         Column(modifier = Modifier.weight(1f)) {
             // Primary label — plugin sets name from folder/file structure e.g. "1080p BluRay"
             Text(
-                text = source.name.ifBlank { stringResource(R.string.player_version_default_label) },
+                text =
+                    source.name.ifBlank { stringResource(R.string.player_version_default_label) },
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                 color = Color.White,
@@ -136,14 +135,15 @@ private fun VersionItem(
 
 private fun buildVersionSubLabel(source: AfinitySource): String {
     return buildList {
-        val w = source.width
-        val h = source.height
-        if (w != null && h != null && w > 0 && h > 0) add("${w}×${h}")
-        source.videoCodec?.uppercase()?.let { if (it.isNotBlank()) add(it) }
-        source.bitrate?.let { bps ->
-            val mbps = bps / 1_000_000.0
-            add(String.format(Locale.US, "%.1f Mbps", mbps))
+            val w = source.width
+            val h = source.height
+            if (w != null && h != null && w > 0 && h > 0) add("${w}×${h}")
+            source.videoCodec?.uppercase()?.let { if (it.isNotBlank()) add(it) }
+            source.bitrate?.let { bps ->
+                val mbps = bps / 1_000_000.0
+                add(String.format(Locale.US, "%.1f Mbps", mbps))
+            }
+            source.container?.uppercase()?.let { if (it.isNotBlank()) add(it) }
         }
-        source.container?.uppercase()?.let { if (it.isNotBlank()) add(it) }
-    }.joinToString(" · ")
+        .joinToString(" · ")
 }

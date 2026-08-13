@@ -163,14 +163,10 @@ constructor(
         refreshJob = viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true, error = null) }
             val cachedLibraries =
-                withTimeoutOrNull(200) {
-                    libraries.first { it.isNotEmpty() }
-                } ?: libraries.value
+                withTimeoutOrNull(200) { libraries.first { it.isNotEmpty() } } ?: libraries.value
 
             val refreshLibrariesDeferred =
-                async(Dispatchers.IO) {
-                    audiobookshelfRepository.refreshLibraries()
-                }
+                async(Dispatchers.IO) { audiobookshelfRepository.refreshLibraries() }
 
             val activeLibraries = cachedLibraries.ifEmpty {
                 refreshLibrariesDeferred.await().getOrNull() ?: emptyList()
@@ -184,9 +180,7 @@ constructor(
                 val hasCachedSections = activeLibraries.all { cachedViews.containsKey(it.id) }
                 if (hasCachedSections) {
                     _personalizedSections.value =
-                        withContext(Dispatchers.Default) {
-                            buildSectionsFromViews(cachedViews)
-                        }
+                        withContext(Dispatchers.Default) { buildSectionsFromViews(cachedViews) }
                     _uiState.update { it.copy(isRefreshing = false) }
                 }
 
@@ -224,41 +218,40 @@ constructor(
         }
     }
 
-    private suspend fun fetchPersonalizedIncrementally(
-        libraryList: List<Library>
-    ) = coroutineScope {
-        val stateMutex = Mutex()
-        val viewsByLibrary = mutableMapOf<String, List<PersonalizedView>>()
+    private suspend fun fetchPersonalizedIncrementally(libraryList: List<Library>) =
+        coroutineScope {
+            val stateMutex = Mutex()
+            val viewsByLibrary = mutableMapOf<String, List<PersonalizedView>>()
 
-        suspend fun record(libraryId: String, views: List<PersonalizedView>) {
-            stateMutex.withLock {
-                viewsByLibrary[libraryId] = views
-                val ordered = linkedMapOf<String, List<PersonalizedView>>()
-                for (library in libraryList) {
-                    viewsByLibrary[library.id]?.let { ordered[library.id] = it }
-                }
-                val sections = buildSectionsFromViews(ordered)
-                if (sections.isNotEmpty()) {
-                    _personalizedSections.value = sections
-                    _uiState.update { it.copy(isRefreshing = false) }
-                }
-            }
-        }
-
-        libraryList.forEach { library ->
-            launch(Dispatchers.IO) {
-                audiobookshelfRepository
-                    .getPersonalized(library.id)
-                    .onSuccess { views -> record(library.id, views) }
-                    .onFailure { error ->
-                        Timber.e(
-                            error,
-                            "Failed to load personalized data for library ${library.id}",
-                        )
+            suspend fun record(libraryId: String, views: List<PersonalizedView>) {
+                stateMutex.withLock {
+                    viewsByLibrary[libraryId] = views
+                    val ordered = linkedMapOf<String, List<PersonalizedView>>()
+                    for (library in libraryList) {
+                        viewsByLibrary[library.id]?.let { ordered[library.id] = it }
                     }
+                    val sections = buildSectionsFromViews(ordered)
+                    if (sections.isNotEmpty()) {
+                        _personalizedSections.value = sections
+                        _uiState.update { it.copy(isRefreshing = false) }
+                    }
+                }
+            }
+
+            libraryList.forEach { library ->
+                launch(Dispatchers.IO) {
+                    audiobookshelfRepository
+                        .getPersonalized(library.id)
+                        .onSuccess { views -> record(library.id, views) }
+                        .onFailure { error ->
+                            Timber.e(
+                                error,
+                                "Failed to load personalized data for library ${library.id}",
+                            )
+                        }
+                }
             }
         }
-    }
 
     private suspend fun refreshContinueListening(libraryList: List<Library>) = coroutineScope {
         val results =

@@ -177,9 +177,7 @@ fun FavoritesScreen(
                             actionText = "Browse Media",
                             onActionClick = {
                                 navController.navigate(Destination.HOME.route) {
-                                    popUpTo(Destination.HOME.route) {
-                                        saveState = true
-                                    }
+                                    popUpTo(Destination.HOME.route) { saveState = true }
                                     launchSingleTop = true
                                     restoreState = true
                                 }
@@ -369,10 +367,7 @@ fun FavoritesScreen(
                             if (uiState.favoritePlaylists.isNotEmpty()) {
                                 item {
                                     MusicPlaylistRowSection(
-                                        title =
-                                            stringResource(
-                                                R.string.section_favorite_playlists
-                                            ),
+                                        title = stringResource(R.string.section_favorite_playlists),
                                         playlists = uiState.favoritePlaylists,
                                         horizontalPadding = 0.dp,
                                         onPlaylistClick = { playlist ->

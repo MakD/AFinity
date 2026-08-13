@@ -115,8 +115,7 @@ fun GestureHandler(
                                     isLongPressActive = true
                                     wasLongPress = true
                                     val xFraction =
-                                        if (componentWidth > 0f) offset.x / componentWidth
-                                        else 0.5f
+                                        if (componentWidth > 0f) offset.x / componentWidth else 0.5f
                                     currentOnLongPressStart(xFraction)
                                 }
                             }

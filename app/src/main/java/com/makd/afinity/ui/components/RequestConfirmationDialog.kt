@@ -665,9 +665,8 @@ fun RequestConfirmationDialog(
                                     tvdbCandidates
                                         .firstOrNull { it.tvdbId == selectedTvdbId }
                                         ?.let { candidate ->
-                                            candidate.year?.let {
-                                                "${candidate.title} ($it)"
-                                            } ?: candidate.title
+                                            candidate.year?.let { "${candidate.title} ($it)" }
+                                                ?: candidate.title
                                         } ?: stringResource(R.string.request_select_placeholder),
                                 items = tvdbCandidates,
                                 itemText = { candidate ->

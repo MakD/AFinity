@@ -117,7 +117,9 @@ constructor(
             combine(
                     sessionManager.isServerReachable,
                     networkConnectivityMonitor.isNetworkAvailable,
-                ) { reachable, networkAvailable -> !reachable && networkAvailable }
+                ) { reachable, networkAvailable ->
+                    !reachable && networkAvailable
+                }
                 .distinctUntilChanged()
                 .collectLatest { shouldRecover ->
                     if (!shouldRecover) return@collectLatest
@@ -140,39 +142,38 @@ constructor(
         }
     }
 
-    private suspend fun tryResolveAndConnect(): Boolean =
-        reconnectMutex.withLock {
-            val session = sessionManager.currentSession.value ?: return@withLock false
-            if (_currentBaseUrl.value.isBlank()) return@withLock false
-            val serverId = session.serverId
-            try {
-                val result = serverAddressResolver.resolveAddress(serverId)
-                if (sessionManager.currentSession.value?.serverId != serverId) {
-                    Timber.d("Session changed during re-resolution, discarding result for $serverId")
-                    return@withLock false
-                }
-                when (result) {
-                    is AddressResolutionResult.Success -> {
-                        sessionManager.setServerReachable(true)
-                        if (result.address != _currentBaseUrl.value) {
-                            Timber.d(
-                                "Reconnected: updating URL from ${_currentBaseUrl.value} to ${result.address}"
-                            )
-                            setBaseUrl(result.address)
-                            sessionManager.updateSessionUrl(result.address)
-                        }
-                        true
-                    }
-                    is AddressResolutionResult.AllFailed -> {
-                        Timber.w("Re-resolution failed for all addresses")
-                        false
-                    }
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to re-resolve server address")
-                false
+    private suspend fun tryResolveAndConnect(): Boolean = reconnectMutex.withLock {
+        val session = sessionManager.currentSession.value ?: return@withLock false
+        if (_currentBaseUrl.value.isBlank()) return@withLock false
+        val serverId = session.serverId
+        try {
+            val result = serverAddressResolver.resolveAddress(serverId)
+            if (sessionManager.currentSession.value?.serverId != serverId) {
+                Timber.d("Session changed during re-resolution, discarding result for $serverId")
+                return@withLock false
             }
+            when (result) {
+                is AddressResolutionResult.Success -> {
+                    sessionManager.setServerReachable(true)
+                    if (result.address != _currentBaseUrl.value) {
+                        Timber.d(
+                            "Reconnected: updating URL from ${_currentBaseUrl.value} to ${result.address}"
+                        )
+                        setBaseUrl(result.address)
+                        sessionManager.updateSessionUrl(result.address)
+                    }
+                    true
+                }
+                is AddressResolutionResult.AllFailed -> {
+                    Timber.w("Re-resolution failed for all addresses")
+                    false
+                }
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to re-resolve server address")
+            false
         }
+    }
 
     private suspend fun confirmUnreachable(serverId: String) {
         if (!sessionManager.isServerReachable.value) return

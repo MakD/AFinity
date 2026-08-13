@@ -1312,9 +1312,8 @@ constructor(
                     if (!isLocal) {
                         mpv.getPropertyInt("cache-speed")
                             ?.takeIf { it > 0 }
-                            ?.let {
-                                String.format(Locale.US, "%.1f Mbps", it * 8f / 1_000_000f)
-                            } ?: ""
+                            ?.let { String.format(Locale.US, "%.1f Mbps", it * 8f / 1_000_000f) }
+                            ?: ""
                     } else ""
 
                 val colorInfo =
@@ -1354,9 +1353,7 @@ constructor(
                     audioBitrate =
                         mpv.getPropertyInt("audio-bitrate")
                             ?.takeIf { it > 0 }
-                            ?.let {
-                                "${it / 1000} kbps"
-                            } ?: "",
+                            ?.let { "${it / 1000} kbps" } ?: "",
                     videoResolution =
                         "${mpv.getPropertyInt("width") ?: 0}x${mpv.getPropertyInt("height") ?: 0}",
                     videoCodec = mpv.getPropertyString("video-codec")?.uppercase() ?: "UNKNOWN",
@@ -1768,9 +1765,7 @@ constructor(
                                 .mapNotNull { stream ->
                                     stream.deliveryUrl
                                         ?.takeIf { it.isNotBlank() }
-                                        ?.let {
-                                            stream.index to it
-                                        }
+                                        ?.let { stream.index to it }
                                 }
                                 .toMap()
 

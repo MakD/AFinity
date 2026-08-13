@@ -62,6 +62,5 @@ data class LibraryFilterOptions(
     val years: List<Int> = emptyList(),
 ) {
     val isEmpty: Boolean
-        get() =
-            genres.isEmpty() && tags.isEmpty() && officialRatings.isEmpty() && years.isEmpty()
+        get() = genres.isEmpty() && tags.isEmpty() && officialRatings.isEmpty() && years.isEmpty()
 }

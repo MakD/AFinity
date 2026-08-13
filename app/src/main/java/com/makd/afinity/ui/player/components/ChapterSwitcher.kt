@@ -75,9 +75,7 @@ fun ChapterSwitcher(
 
     val flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
 
-    LaunchedEffect(activeChapterIndex) {
-        listState.animateScrollToItem(activeChapterIndex)
-    }
+    LaunchedEffect(activeChapterIndex) { listState.animateScrollToItem(activeChapterIndex) }
 
     Box(
         modifier =

@@ -31,7 +31,8 @@ enum class CustomSectionItemType(
         ): List<CustomSectionItemType> =
             when (sourceType) {
                 CustomSectionSourceType.COLLECTION -> entries.filterNot { it == BOX_SET }
-                CustomSectionSourceType.PLAYLIST -> entries.filterNot { it == SERIES || it == SEASON }
+                CustomSectionSourceType.PLAYLIST ->
+                    entries.filterNot { it == SERIES || it == SEASON }
                 CustomSectionSourceType.LIBRARY ->
                     when (libraryType) {
                         CollectionType.Movies -> listOf(MOVIE)
@@ -129,8 +130,9 @@ data class CustomHomeSection(
     fun withItemTypesLimitedTo(allowed: List<CustomSectionItemType>): CustomHomeSection {
         val kept = itemTypes.filter { it in allowed }
         if (kept == itemTypes && kept.isNotEmpty()) return this
-        val next =
-            kept.ifEmpty { allowed.filter { it.key in DEFAULT_ITEM_TYPES }.ifEmpty { allowed.take(1) } }
+        val next = kept.ifEmpty {
+            allowed.filter { it.key in DEFAULT_ITEM_TYPES }.ifEmpty { allowed.take(1) }
+        }
         return copy(includeItemTypes = next.map { it.key })
     }
 

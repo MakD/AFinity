@@ -97,7 +97,9 @@ constructor(
     }
 
     private fun isTvType(type: FilterType): Boolean =
-        type == FilterType.GENRE_TV || type == FilterType.POPULAR_TV || type == FilterType.UPCOMING_TV
+        type == FilterType.GENRE_TV ||
+            type == FilterType.POPULAR_TV ||
+            type == FilterType.UPCOMING_TV
 
     private fun contextKeyFor(params: FilterParams): String? =
         when (params.type) {
@@ -116,7 +118,10 @@ constructor(
 
         if (persisted == null) {
             val releaseDateGte =
-                if (params.type == FilterType.UPCOMING_MOVIES || params.type == FilterType.UPCOMING_TV) {
+                if (
+                    params.type == FilterType.UPCOMING_MOVIES ||
+                        params.type == FilterType.UPCOMING_TV
+                ) {
                     java.time.LocalDate.now().toString()
                 } else null
             val defaultRegion =
@@ -152,7 +157,8 @@ constructor(
                     filterOptions = options,
                 )
             } else {
-                val field = MovieSortField.entries.find { it.apiKey == apiKey } ?: state.movieSortField
+                val field =
+                    MovieSortField.entries.find { it.apiKey == apiKey } ?: state.movieSortField
                 state.copy(
                     movieSortField = field,
                     movieSortDescending = descending,
@@ -228,7 +234,9 @@ constructor(
         if (!isTv && state.movieGenres.isNotEmpty()) return
 
         viewModelScope.launch {
-            val result = if (isTv) jellyseerrRepository.getTvGenres() else jellyseerrRepository.getMovieGenres()
+            val result =
+                if (isTv) jellyseerrRepository.getTvGenres()
+                else jellyseerrRepository.getMovieGenres()
 
             result.onSuccess { genres ->
                 _uiState.update {
@@ -274,13 +282,12 @@ constructor(
             return
         }
 
-        keywordSearchJob =
-            viewModelScope.launch {
-                delay(300)
-                jellyseerrRepository.searchKeywords(query).onSuccess { response ->
-                    _uiState.update { it.copy(keywordSearchResults = response.results) }
-                }
+        keywordSearchJob = viewModelScope.launch {
+            delay(300)
+            jellyseerrRepository.searchKeywords(query).onSuccess { response ->
+                _uiState.update { it.copy(keywordSearchResults = response.results) }
             }
+        }
     }
 
     private fun loadPage() {
@@ -362,8 +369,10 @@ constructor(
 
                         val hideAvailable =
                             params.type != FilterType.PERSON &&
-                                jellyseerrRepository.getPublicSettings().getOrNull()?.hideAvailable ==
-                                    true
+                                jellyseerrRepository
+                                    .getPublicSettings()
+                                    .getOrNull()
+                                    ?.hideAvailable == true
                         val newItems =
                             if (hideAvailable) rawItems.filterNot { it.isAvailableOrPartial() }
                             else rawItems
