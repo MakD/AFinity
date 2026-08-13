@@ -280,8 +280,9 @@ internal fun ChaptersSection(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            itemsIndexed(chapters, key = { _, chapter -> chapter.startPosition }) { index, chapter
-                ->
+            itemsIndexed(chapters, key = { index, chapter -> "${chapter.startPosition}_$index" }) {
+                index,
+                chapter ->
                 ChapterCard(
                     chapter = chapter,
                     index = index,
