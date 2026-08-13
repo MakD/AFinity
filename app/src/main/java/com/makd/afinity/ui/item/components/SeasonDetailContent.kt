@@ -28,6 +28,7 @@ import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import com.makd.afinity.R
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.mdblist.MdbListRating
@@ -161,7 +162,7 @@ private fun HorizontalEpisodesList(
     ) {
         items(
             count = lazyEpisodeItems.itemCount,
-            key = { index -> lazyEpisodeItems[index]?.id ?: index },
+            key = lazyEpisodeItems.itemKey { it.id },
         ) { index ->
             lazyEpisodeItems[index]?.let { episode ->
                 ContinueWatchingCard(
