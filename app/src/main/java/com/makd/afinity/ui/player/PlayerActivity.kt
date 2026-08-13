@@ -20,6 +20,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -32,6 +33,7 @@ import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.theme.AFinityTheme
 import dagger.hilt.android.AndroidEntryPoint
 import timber.log.Timber
@@ -137,6 +139,8 @@ class PlayerActivity : AppCompatActivity() {
                 preferencesRepository.getThemeModeFlow().collectAsState(initial = "SYSTEM")
             val dynamicColors by
                 preferencesRepository.getDynamicColorsFlow().collectAsState(initial = true)
+            val showRatings by
+                preferencesRepository.getShowRatingsFlow().collectAsState(initial = true)
 
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -159,21 +163,23 @@ class PlayerActivity : AppCompatActivity() {
             }
 
             AFinityTheme(themeMode = themeMode, dynamicColor = dynamicColors) {
-                PlayerScreenWrapper(
-                    itemId = itemId,
-                    mediaSourceId = mediaSourceId,
-                    audioStreamIndex = audioStreamIndex,
-                    subtitleStreamIndex = subtitleStreamIndex,
-                    startPositionMs = startPositionMs,
-                    seasonId = seasonId,
-                    shuffle = shuffle,
-                    playlistId = playlistId,
-                    isLiveChannel = isLiveChannel,
-                    channelName = channelName,
-                    liveStreamUrl = liveStreamUrl,
-                    onBackPressed = { finish() },
-                    modifier = Modifier.fillMaxSize(),
-                )
+                CompositionLocalProvider(LocalShowRatings provides showRatings) {
+                    PlayerScreenWrapper(
+                        itemId = itemId,
+                        mediaSourceId = mediaSourceId,
+                        audioStreamIndex = audioStreamIndex,
+                        subtitleStreamIndex = subtitleStreamIndex,
+                        startPositionMs = startPositionMs,
+                        seasonId = seasonId,
+                        shuffle = shuffle,
+                        playlistId = playlistId,
+                        isLiveChannel = isLiveChannel,
+                        channelName = channelName,
+                        liveStreamUrl = liveStreamUrl,
+                        onBackPressed = { finish() },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
         }
     }

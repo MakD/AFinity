@@ -91,6 +91,7 @@ import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.models.syncplay.SyncPlayMemberInfo
+import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.player.common.TrackMapping
 import com.makd.afinity.ui.components.AfinityBadge
 import com.makd.afinity.ui.components.AsyncImage
@@ -1643,13 +1644,18 @@ private fun PauseDetailsOverlay(
         }
     val criticRating = (item as? AfinityMovie)?.criticRating
 
+    val showRatings = LocalShowRatings.current
     val ratingChips =
-        remember(uiState.mdbRatings, communityRating, criticRating) {
-            (listOfNotNull(communityRatingOf(communityRating), criticRatingOf(criticRating)) +
-                    uiState.mdbRatings
-                        .excludingSupersededBy(criticRating)
-                        .sortedBy { it.displayPriority() })
-                .mapNotNull { it.toDisplay() }
+        remember(uiState.mdbRatings, communityRating, criticRating, showRatings) {
+            if (!showRatings) {
+                emptyList()
+            } else {
+                (listOfNotNull(communityRatingOf(communityRating), criticRatingOf(criticRating)) +
+                        uiState.mdbRatings
+                            .excludingSupersededBy(criticRating)
+                            .sortedBy { it.displayPriority() })
+                    .mapNotNull { it.toDisplay() }
+            }
         }
     val awardsHighlight =
         uiState.omdbAwards
