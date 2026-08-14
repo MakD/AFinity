@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -30,7 +29,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -233,38 +231,32 @@ fun AddEditServerScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.End,
-            ) {
-                TextButton(
-                    onClick = viewModel::testConnection,
-                    enabled = !state.isTestingConnection && state.serverUrl.isNotBlank(),
-                    shape = RoundedCornerShape(12.dp),
-                ) {
-                    if (state.isTestingConnection) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.btn_testing))
-                    } else {
-                        Text(stringResource(R.string.btn_test_connection))
-                    }
-                }
-            }
-
             Spacer(modifier = Modifier.weight(1f))
 
+            val isTestSuccessful = state.connectionTestResult is ConnectionTestResult.Success
+
             LoadingButton(
-                loading = state.isSaving,
+                loading = if (isTestSuccessful) state.isSaving else state.isTestingConnection,
                 text =
-                    if (state.serverId != null) stringResource(R.string.btn_save_changes)
-                    else stringResource(R.string.btn_save_server),
-                onClick = viewModel::saveServer,
-                enabled = state.connectionTestResult is ConnectionTestResult.Success,
+                    if (isTestSuccessful) {
+                        if (state.serverId != null) stringResource(R.string.btn_save_changes)
+                        else stringResource(R.string.btn_save_server)
+                    } else {
+                        stringResource(R.string.btn_test_connection)
+                    },
+                onClick = {
+                    if (isTestSuccessful) {
+                        viewModel.saveServer()
+                    } else {
+                        viewModel.testConnection()
+                    }
+                },
+                enabled =
+                    if (isTestSuccessful) {
+                        true
+                    } else {
+                        !state.isTestingConnection && state.serverUrl.isNotBlank()
+                    },
             )
 
             Spacer(modifier = Modifier.height(24.dp))
