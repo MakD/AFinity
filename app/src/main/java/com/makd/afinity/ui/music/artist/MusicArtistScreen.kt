@@ -106,6 +106,9 @@ fun MusicArtistScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val playbackState by playerViewModel.playbackState.collectAsStateWithLifecycle()
     val isOffline by playerViewModel.isOffline.collectAsStateWithLifecycle()
+    val isDownloadAllowedByServer by
+        viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
+    val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val playerOffset = LocalPlayerOffset.current
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -384,7 +387,15 @@ fun MusicArtistScreen(
                                                         addToPlaylistViewModel.reset()
                                                         showAddToPlaylist = true
                                                     }),
-                                            onDownload = { viewModel.downloadTrack(track.id) },
+                                            onDownload =
+                                                if (
+                                                    isDownloadAllowedByServer &&
+                                                        canDownloadOnNetwork
+                                                )
+                                                    ({
+                                                        viewModel.downloadTrack(track.id)
+                                                    })
+                                                else null,
                                             isDownloaded =
                                                 uiState.trackDownloadInfos[track.id]?.status ==
                                                     DownloadStatus.COMPLETED,
@@ -439,9 +450,15 @@ fun MusicArtistScreen(
                                                         addToPlaylistViewModel.reset()
                                                         showAddToPlaylist = true
                                                     },
-                                                    onDownload = {
-                                                        viewModel.downloadTrack(track.id)
-                                                    },
+                                                    onDownload =
+                                                        if (
+                                                            isDownloadAllowedByServer &&
+                                                                canDownloadOnNetwork
+                                                        )
+                                                            ({
+                                                                viewModel.downloadTrack(track.id)
+                                                            })
+                                                        else null,
                                                     isDownloaded =
                                                         uiState.trackDownloadInfos[track.id]
                                                             ?.status == DownloadStatus.COMPLETED,
@@ -812,7 +829,12 @@ fun MusicArtistScreen(
                                             addToPlaylistViewModel.reset()
                                             showAddToPlaylist = true
                                         }),
-                                onDownload = { viewModel.downloadTrack(track.id) },
+                                onDownload =
+                                    if (isDownloadAllowedByServer && canDownloadOnNetwork)
+                                        ({
+                                            viewModel.downloadTrack(track.id)
+                                        })
+                                    else null,
                                 isDownloaded =
                                     uiState.trackDownloadInfos[track.id]?.status ==
                                         DownloadStatus.COMPLETED,
@@ -871,7 +893,15 @@ fun MusicArtistScreen(
                                                         addToPlaylistViewModel.reset()
                                                         showAddToPlaylist = true
                                                     }),
-                                            onDownload = { viewModel.downloadTrack(track.id) },
+                                            onDownload =
+                                                if (
+                                                    isDownloadAllowedByServer &&
+                                                        canDownloadOnNetwork
+                                                )
+                                                    ({
+                                                        viewModel.downloadTrack(track.id)
+                                                    })
+                                                else null,
                                             isDownloaded =
                                                 uiState.trackDownloadInfos[track.id]?.status ==
                                                     DownloadStatus.COMPLETED,

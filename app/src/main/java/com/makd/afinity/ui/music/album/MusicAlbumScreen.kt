@@ -94,6 +94,9 @@ fun MusicAlbumScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val playbackState by playerViewModel.playbackState.collectAsStateWithLifecycle()
     val isOffline by playerViewModel.isOffline.collectAsStateWithLifecycle()
+    val isDownloadAllowedByServer by
+        viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
+    val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val playerOffset = LocalPlayerOffset.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -192,14 +195,17 @@ fun MusicAlbumScreen(
                     )
                 }
             }
-            DownloadProgressIndicator(
-                downloadInfo = uiState.albumDownloadInfo,
-                onDownloadClick = { viewModel.downloadAlbum() },
-                onPauseClick = {},
-                onResumeClick = { viewModel.downloadAlbum() },
-                onCancelClick = { viewModel.cancelAlbumDownload() },
-                iconSize = 26.dp,
-            )
+            if (isDownloadAllowedByServer) {
+                DownloadProgressIndicator(
+                    downloadInfo = uiState.albumDownloadInfo,
+                    onDownloadClick = { viewModel.downloadAlbum() },
+                    onPauseClick = {},
+                    onResumeClick = { viewModel.downloadAlbum() },
+                    onCancelClick = { viewModel.cancelAlbumDownload() },
+                    canDownload = canDownloadOnNetwork,
+                    iconSize = 26.dp,
+                )
+            }
         }
     }
 
@@ -385,7 +391,12 @@ fun MusicAlbumScreen(
                                             addToPlaylistViewModel.reset()
                                             showAddToPlaylist = true
                                         }),
-                                onDownload = { viewModel.downloadTrack(track.id) },
+                                onDownload =
+                                    if (isDownloadAllowedByServer && canDownloadOnNetwork)
+                                        ({
+                                            viewModel.downloadTrack(track.id)
+                                        })
+                                    else null,
                                 isDownloaded =
                                     uiState.trackDownloadInfos[track.id]?.status ==
                                         DownloadStatus.COMPLETED,
@@ -579,7 +590,12 @@ fun MusicAlbumScreen(
                                         addToPlaylistViewModel.reset()
                                         showAddToPlaylist = true
                                     }),
-                            onDownload = { viewModel.downloadTrack(track.id) },
+                            onDownload =
+                                if (isDownloadAllowedByServer && canDownloadOnNetwork)
+                                    ({
+                                        viewModel.downloadTrack(track.id)
+                                    })
+                                else null,
                             isDownloaded =
                                 uiState.trackDownloadInfos[track.id]?.status ==
                                     DownloadStatus.COMPLETED,

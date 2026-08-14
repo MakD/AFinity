@@ -71,6 +71,9 @@ fun MusicBrowseScreen(
     val trackFilters by viewModel.trackFilters.collectAsStateWithLifecycle()
     val albumFilters by viewModel.albumFilters.collectAsStateWithLifecycle()
     val artistFilters by viewModel.artistFilters.collectAsStateWithLifecycle()
+    val isDownloadAllowedByServer by
+        viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
+    val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -264,7 +267,10 @@ fun MusicBrowseScreen(
                                 addToPlaylistViewModel.reset()
                                 showAddToPlaylist = true
                             }),
-                    onDownload = { track -> viewModel.downloadTrack(track.id) },
+                    onDownload =
+                        if (isDownloadAllowedByServer && canDownloadOnNetwork)
+                            ({ track -> viewModel.downloadTrack(track.id) })
+                        else null,
                     downloadedTrackIds =
                         viewModel.trackDownloadInfos.collectAsStateWithLifecycle().value.keys,
                     modifier = Modifier.fillMaxSize().padding(innerPadding),

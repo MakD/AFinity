@@ -42,6 +42,7 @@ import java.util.concurrent.TimeUnit
 
 @Composable
 fun MusicTrackRow(
+    modifier: Modifier = Modifier,
     track: AfinityTrack,
     isPlaying: Boolean = false,
     trackNumber: Int? = null,
@@ -55,8 +56,8 @@ fun MusicTrackRow(
     onAddToPlaylist: (() -> Unit)? = null,
     onRemoveFromPlaylist: (() -> Unit)? = null,
     onDownload: (() -> Unit)? = null,
+    isDownloadEnabled: Boolean = true,
     isDownloaded: Boolean = false,
-    modifier: Modifier = Modifier,
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val hasMenuItems =
@@ -316,6 +317,7 @@ fun MusicTrackRow(
                                 showMenu = false
                                 onDownload()
                             },
+                            enabled = isDownloadEnabled,
                             leadingIcon = {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_download),

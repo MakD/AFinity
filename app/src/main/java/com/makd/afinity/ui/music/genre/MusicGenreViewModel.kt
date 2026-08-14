@@ -3,17 +3,27 @@ package com.makd.afinity.ui.music.genre
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.AppDataRepository
+import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.music.MusicRepository
+import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.UUID
@@ -26,6 +36,7 @@ data class MusicGenreUiState(
     val recentlyAdded: List<AfinityAlbum> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
+    val trackDownloadInfos: Map<UUID, DownloadInfo> = emptyMap(),
 )
 
 @HiltViewModel
@@ -34,6 +45,10 @@ class MusicGenreViewModel
 constructor(
     private val musicRepository: MusicRepository,
     private val appDataRepository: AppDataRepository,
+    private val downloadRepository: DownloadRepository,
+    private val sessionManager: SessionManager,
+    private val preferencesRepository: PreferencesRepository,
+    private val networkMonitor: NetworkConnectivityMonitor,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -44,6 +59,20 @@ constructor(
             runCatching { UUID.fromString(it) }.getOrNull()
         }
 
+    val isDownloadAllowedByServer: StateFlow<Boolean> =
+        sessionManager.currentSession
+            .map { it?.canDownload != false }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val canDownloadOnNetwork: StateFlow<Boolean> =
+        combine(
+                preferencesRepository.getDownloadWifiOnlyFlow(),
+                networkMonitor.isOnWifiFlow,
+            ) { wifiOnly, onWifi ->
+                !wifiOnly || onWifi
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     val userProfileImageUrl: StateFlow<String?> = appDataRepository.userProfileImageUrl
 
     private val _uiState = MutableStateFlow(MusicGenreUiState())
@@ -51,6 +80,30 @@ constructor(
 
     init {
         viewModelScope.launch { loadGenreContent() }
+        observeDownloads()
+    }
+
+    private fun observeDownloads() {
+        viewModelScope.launch {
+            downloadRepository.getAllDownloadsFlow().collect { allDownloads ->
+                _uiState.update {
+                    it.copy(
+                        trackDownloadInfos =
+                            allDownloads
+                                .filter { d -> d.itemType == "Audio" }
+                                .associateBy { d -> d.itemId }
+                    )
+                }
+            }
+        }
+    }
+
+    fun downloadTrack(trackId: UUID) {
+        viewModelScope.launch {
+            downloadRepository.startDownload(trackId, "").onFailure {
+                Timber.e(it, "Failed to download track $trackId")
+            }
+        }
     }
 
     private suspend fun loadGenreContent() {
