@@ -519,7 +519,7 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                     onClick = onAddToPlaylist ?: {},
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_playlist),
+                        painter = painterResource(R.drawable.ic_playlist_add),
                         contentDescription = stringResource(R.string.cd_music_add_to_playlist),
                         tint =
                             Color.White.copy(alpha = if (onAddToPlaylist != null) 0.8f else 0.3f),
@@ -919,7 +919,7 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                         onClick = onAddToPlaylist ?: {},
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_playlist),
+                            painter = painterResource(R.drawable.ic_playlist_add),
                             contentDescription = stringResource(R.string.cd_music_add_to_playlist),
                             tint =
                                 Color.White.copy(

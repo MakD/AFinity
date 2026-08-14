@@ -118,7 +118,7 @@ fun ActionButtonsRow(
         if (!isAdmin && onAddToPlaylist != null) {
             IconButton(onClick = onAddToPlaylist) {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_playlist),
+                    painter = painterResource(id = R.drawable.ic_playlist_add),
                     contentDescription = stringResource(R.string.cd_music_add_to_playlist),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(28.dp),
@@ -146,7 +146,7 @@ fun ActionButtonsRow(
                             text = { Text(stringResource(R.string.cd_music_add_to_playlist)) },
                             leadingIcon = {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.ic_playlist),
+                                    painter = painterResource(id = R.drawable.ic_playlist_add),
                                     contentDescription = null,
                                     modifier = Modifier.size(20.dp),
                                 )
