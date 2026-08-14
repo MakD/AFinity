@@ -34,6 +34,7 @@ import com.makd.afinity.ui.item.components.DownloadProgressIndicator
 
 @Composable
 fun ActionButtonsRow(
+    modifier: Modifier = Modifier,
     item: AfinityItem,
     isInWatchlist: Boolean,
     hasTrailer: Boolean,
@@ -48,14 +49,14 @@ fun ActionButtonsRow(
     onPauseDownload: () -> Unit,
     onResumeDownload: () -> Unit,
     onCancelDownload: () -> Unit,
-    canDownload: Boolean = true,
+    isDownloadAllowedByServer: Boolean = true,
+    canDownloadOnNetwork: Boolean = true,
     isLandscape: Boolean = false,
     downloadUnavailable: Boolean = false,
     isAdmin: Boolean = false,
     onAdminAction: (AdminAction) -> Unit = {},
     onDownloadLongClick: (() -> Unit)? = null,
     onAddToPlaylist: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -64,15 +65,15 @@ fun ActionButtonsRow(
             else Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onPlayTrailer, enabled = hasTrailer) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_video),
-                contentDescription = stringResource(R.string.hero_btn_play_trailer),
-                tint =
-                    if (hasTrailer) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-                modifier = Modifier.size(28.dp),
-            )
+        if (hasTrailer) {
+            IconButton(onClick = onPlayTrailer) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_video),
+                    contentDescription = stringResource(R.string.hero_btn_play_trailer),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp),
+                )
+            }
         }
 
         WatchlistToggleButton(isInWatchlist = isInWatchlist, onClick = onToggleWatchlist)
@@ -100,27 +101,38 @@ fun ActionButtonsRow(
             enabled = hasPlayableItems,
         )
 
-        DownloadProgressIndicator(
-            downloadInfo = downloadInfo,
-            onDownloadClick = onDownloadClick,
-            onPauseClick = onPauseDownload,
-            onResumeClick = onResumeDownload,
-            onCancelClick = onCancelDownload,
-            canDownload = canDownload && hasPlayableItems,
-            isLandscape = isLandscape,
-            isUnavailable = downloadUnavailable,
-            onDownloadLongClick = onDownloadLongClick,
-        )
+        if (isDownloadAllowedByServer && !downloadUnavailable) {
+            DownloadProgressIndicator(
+                downloadInfo = downloadInfo,
+                onDownloadClick = onDownloadClick,
+                onPauseClick = onPauseDownload,
+                onResumeClick = onResumeDownload,
+                onCancelClick = onCancelDownload,
+                canDownload = canDownloadOnNetwork && hasPlayableItems,
+                isLandscape = isLandscape,
+                isUnavailable = false,
+                onDownloadLongClick = onDownloadLongClick,
+            )
+        }
 
-        if (isAdmin || onAddToPlaylist != null) {
+        if (!isAdmin && onAddToPlaylist != null) {
+            IconButton(onClick = onAddToPlaylist) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_playlist),
+                    contentDescription = stringResource(R.string.cd_music_add_to_playlist),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(28.dp),
+                )
+            }
+        }
+
+        if (isAdmin) {
             var menuExpanded by remember { mutableStateOf(false) }
             Box {
                 IconButton(onClick = { menuExpanded = true }) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_options),
-                        contentDescription =
-                            if (isAdmin) stringResource(R.string.cd_admin_manage)
-                            else stringResource(R.string.cd_music_more_options),
+                        contentDescription = stringResource(R.string.cd_admin_manage),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(28.dp),
                     )
@@ -144,87 +156,85 @@ fun ActionButtonsRow(
                                 onAddToPlaylist()
                             },
                         )
-                        if (isAdmin) HorizontalDivider()
+                        HorizontalDivider()
                     }
 
-                    if (isAdmin) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.admin_action_edit_metadata)) },
-                            leadingIcon = {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_edit_circle),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
-                                )
-                            },
-                            onClick = {
-                                menuExpanded = false
-                                onAdminAction(AdminAction.EditMetadata)
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.admin_action_identify)) },
-                            leadingIcon = {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_search),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
-                                )
-                            },
-                            onClick = {
-                                menuExpanded = false
-                                onAdminAction(AdminAction.Identify)
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.admin_action_edit_images)) },
-                            leadingIcon = {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_photo_search),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
-                                )
-                            },
-                            onClick = {
-                                menuExpanded = false
-                                onAdminAction(AdminAction.EditImages)
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.admin_action_refresh_metadata)) },
-                            leadingIcon = {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_refresh),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
-                                )
-                            },
-                            onClick = {
-                                menuExpanded = false
-                                onAdminAction(AdminAction.Refresh)
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    text = stringResource(R.string.admin_action_delete),
-                                    color = MaterialTheme.colorScheme.error,
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_delete),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(20.dp),
-                                )
-                            },
-                            onClick = {
-                                menuExpanded = false
-                                onAdminAction(AdminAction.Delete)
-                            },
-                        )
-                    }
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.admin_action_edit_metadata)) },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_edit_circle),
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onAdminAction(AdminAction.EditMetadata)
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.admin_action_identify)) },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_search),
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onAdminAction(AdminAction.Identify)
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.admin_action_edit_images)) },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_photo_search),
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onAdminAction(AdminAction.EditImages)
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.admin_action_refresh_metadata)) },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_refresh),
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onAdminAction(AdminAction.Refresh)
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = stringResource(R.string.admin_action_delete),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_delete),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onAdminAction(AdminAction.Delete)
+                        },
+                    )
                 }
             }
         }

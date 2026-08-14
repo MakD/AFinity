@@ -49,6 +49,7 @@ data class Session(
     val server: Server? = null,
     val isAdmin: Boolean? = null,
     val canAccessLiveTv: Boolean? = null,
+    val canDownload: Boolean? = null,
     val userConfiguration: UserConfiguration? = null,
 )
 
@@ -203,6 +204,8 @@ constructor(
                             probedUser.get() ?: UserApi(apiClient).getCurrentUser().content
                         val isAdmin = userDto.policy?.isAdministrator == true
                         val canAccessLiveTv = userDto.policy?.enableLiveTvAccess
+                        val canDownload = userDto.policy?.enableContentDownloading
+
                         val refreshedUser =
                             user?.copy(isAdmin = isAdmin, canAccessLiveTv = canAccessLiveTv)
                                 ?: User(
@@ -215,17 +218,21 @@ constructor(
                                     canAccessLiveTv = canAccessLiveTv,
                                 )
                         databaseRepository.insertUser(refreshedUser)
+
                         val current = _currentSession.value
                         if (current?.serverId == serverId && current.userId == userId) {
                             _currentSession.value =
                                 current.copy(
                                     isAdmin = isAdmin,
                                     canAccessLiveTv = canAccessLiveTv,
+                                    canDownload = canDownload,
                                     user = refreshedUser,
                                     userConfiguration = userDto.configuration,
                                 )
                         }
-                        Timber.d("Admin status refreshed from policy: isAdmin=$isAdmin")
+                        Timber.d(
+                            "Admin status refreshed from policy: isAdmin=$isAdmin, canDownload=$canDownload"
+                        )
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to refresh user policy; using cached isAdmin")
                     }

@@ -92,7 +92,8 @@ fun EpisodeDetailOverlay(
     onPauseDownload: () -> Unit,
     onResumeDownload: () -> Unit,
     onCancelDownload: () -> Unit,
-    canDownload: Boolean = true,
+    isDownloadAllowedByServer: Boolean = true,
+    canDownloadOnNetwork: Boolean = true,
     onDownloadLongClick: (() -> Unit)? = null,
     onGoToSeries: (() -> Unit)? = null,
     isAdmin: Boolean = false,
@@ -492,14 +493,14 @@ fun EpisodeDetailOverlay(
                         WatchedToggleButton(isPlayed = episode.played, onClick = onToggleWatched)
                     }
 
-                    if (!episode.missing) {
+                    if (!episode.missing && isDownloadAllowedByServer) {
                         DownloadProgressIndicator(
                             downloadInfo = downloadInfo,
                             onDownloadClick = onDownloadClick,
                             onPauseClick = onPauseDownload,
                             onResumeClick = onResumeDownload,
                             onCancelClick = onCancelDownload,
-                            canDownload = canDownload,
+                            canDownload = canDownloadOnNetwork,
                             onDownloadLongClick = onDownloadLongClick,
                         )
                     }

@@ -105,7 +105,9 @@ fun LibraryContentScreen(
         viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
     val selectedEpisodeDownloadInfo by
         viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
-    val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
+    val isDownloadAllowedByServer by
+        viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
+    val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
@@ -366,7 +368,8 @@ fun LibraryContentScreen(
         selectedEpisode = selectedEpisode,
         watchlistStatus = selectedEpisodeWatchlistStatus,
         downloadInfo = selectedEpisodeDownloadInfo,
-        canDownload = canDownload,
+        isDownloadAllowedByServer = isDownloadAllowedByServer,
+        canDownloadOnNetwork = canDownloadOnNetwork,
         onClearSelection = { viewModel.clearSelectedEpisode() },
         onToggleFavorite = { viewModel.toggleEpisodeFavorite(it) },
         onToggleWatchlist = { viewModel.toggleEpisodeWatchlist(it) },

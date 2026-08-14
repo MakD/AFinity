@@ -141,7 +141,9 @@ fun ItemDetailScreen(
         viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
     val selectedEpisodeDownloadInfo by
         viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
-    val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
+    val isDownloadAllowedByServer by
+        viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
+    val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
     var showEpisodeRefreshDialog by remember { mutableStateOf(false) }
     var showEpisodeDeleteDialog by remember { mutableStateOf(false) }
@@ -272,7 +274,8 @@ fun ItemDetailScreen(
                 onPauseDownload = { viewModel.pauseDownload() },
                 onResumeDownload = { viewModel.resumeDownload() },
                 onCancelDownload = { viewModel.cancelDownload() },
-                canDownload = canDownload,
+                isDownloadAllowedByServer = isDownloadAllowedByServer,
+                canDownloadOnNetwork = canDownloadOnNetwork,
                 onGoToSeries =
                     if (uiState.item !is AfinityShow && uiState.item !is AfinitySeason) {
                         {
@@ -534,7 +537,9 @@ private fun LandscapeItemDetailContent(
 ) {
     val preferencesRepository = rememberPreferencesRepository()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
+    val isDownloadAllowedByServer by
+        viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
+    val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
     var showRefreshDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -690,7 +695,8 @@ private fun LandscapeItemDetailContent(
                                 onPauseDownload = { viewModel.pauseDownload() },
                                 onResumeDownload = { viewModel.resumeDownload() },
                                 onCancelDownload = { viewModel.cancelDownload() },
-                                canDownload = canDownload,
+                                isDownloadAllowedByServer = isDownloadAllowedByServer,
+                                canDownloadOnNetwork = canDownloadOnNetwork,
                                 isLandscape = true,
                                 downloadUnavailable = uiState.downloadUnavailable,
                                 isAdmin = isAdmin,
@@ -834,7 +840,9 @@ private fun PortraitItemDetailContent(
     val preferencesRepository = rememberPreferencesRepository()
     val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
+    val isDownloadAllowedByServer by
+        viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
+    val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
     var showRefreshDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -901,7 +909,8 @@ private fun PortraitItemDetailContent(
                     onPauseDownload = { viewModel.pauseDownload() },
                     onResumeDownload = { viewModel.resumeDownload() },
                     onCancelDownload = { viewModel.cancelDownload() },
-                    canDownload = canDownload,
+                    isDownloadAllowedByServer = isDownloadAllowedByServer,
+                    canDownloadOnNetwork = canDownloadOnNetwork,
                     isLandscape = false,
                     downloadUnavailable = uiState.downloadUnavailable,
                     isAdmin = isAdmin,

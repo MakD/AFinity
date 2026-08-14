@@ -61,7 +61,9 @@ fun WatchlistScreen(
         viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
     val selectedEpisodeDownloadInfo by
         viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
-    val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
+    val isDownloadAllowedByServer by
+        viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
+    val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
     val playerOffset = LocalPlayerOffset.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -213,7 +215,8 @@ fun WatchlistScreen(
         selectedEpisode = selectedEpisode,
         watchlistStatus = selectedEpisodeWatchlistStatus,
         downloadInfo = selectedEpisodeDownloadInfo,
-        canDownload = canDownload,
+        isDownloadAllowedByServer = isDownloadAllowedByServer,
+        canDownloadOnNetwork = canDownloadOnNetwork,
         onClearSelection = { viewModel.clearSelectedEpisode() },
         onToggleFavorite = { episode -> viewModel.toggleEpisodeFavorite(episode) },
         onToggleWatchlist = { episode -> viewModel.toggleEpisodeWatchlist(episode) },

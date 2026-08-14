@@ -26,7 +26,8 @@ fun EpisodeOverlayHandler(
     selectedEpisode: AfinityEpisode?,
     watchlistStatus: Boolean,
     downloadInfo: DownloadInfo?,
-    canDownload: Boolean,
+    isDownloadAllowedByServer: Boolean = true,
+    canDownloadOnNetwork: Boolean = true,
     onClearSelection: () -> Unit,
     onToggleFavorite: (AfinityEpisode) -> Unit,
     onToggleWatchlist: (AfinityEpisode) -> Unit,
@@ -47,7 +48,8 @@ fun EpisodeOverlayHandler(
             episode = episode,
             isInWatchlist = watchlistStatus,
             downloadInfo = downloadInfo,
-            canDownload = canDownload,
+            isDownloadAllowedByServer = isDownloadAllowedByServer,
+            canDownloadOnNetwork = canDownloadOnNetwork,
             onDismiss = {
                 onClearSelection()
                 pendingNavigationSeriesId = null

@@ -3,6 +3,7 @@ package com.makd.afinity.ui.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.MediaChangeManager
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.manager.resolveChangedItems
 import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
@@ -62,6 +63,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -81,6 +83,7 @@ constructor(
     private val appDataRepository: AppDataRepository,
     private val audiobookshelfRepository: AudiobookshelfRepository,
     private val mediaChangeManager: MediaChangeManager,
+    private val sessionManager: SessionManager,
     private val downloadRepository: DownloadRepository,
     private val userDataRepository: UserDataRepository,
     private val authRepository: AuthRepository,
@@ -93,10 +96,18 @@ constructor(
 
     private val _uiState = MutableStateFlow(SearchUiState())
 
-    val canDownload: StateFlow<Boolean> =
-        preferencesRepository
-            .getDownloadWifiOnlyFlow()
-            .combine(networkMonitor.isOnWifiFlow) { wifiOnly, onWifi -> !wifiOnly || onWifi }
+    val isDownloadAllowedByServer: StateFlow<Boolean> =
+        sessionManager.currentSession
+            .map { it?.canDownload != false }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val canDownloadOnNetwork: StateFlow<Boolean> =
+        combine(
+                preferencesRepository.getDownloadWifiOnlyFlow(),
+                networkMonitor.isOnWifiFlow,
+            ) { wifiOnly, onWifi ->
+                !wifiOnly || onWifi
+            }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 

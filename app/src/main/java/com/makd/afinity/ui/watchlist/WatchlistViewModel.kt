@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -45,6 +47,7 @@ constructor(
     private val mediaRepository: MediaRepository,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
+    private val sessionManager: SessionManager,
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val preferencesRepository: PreferencesRepository,
     private val networkMonitor: NetworkConnectivityMonitor,
@@ -53,10 +56,18 @@ constructor(
     private val _uiState = MutableStateFlow(WatchlistUiState())
     private var lastWatchlistLoadedAt = 0L
 
-    val canDownload: StateFlow<Boolean> =
-        preferencesRepository
-            .getDownloadWifiOnlyFlow()
-            .combine(networkMonitor.isOnWifiFlow) { wifiOnly, onWifi -> !wifiOnly || onWifi }
+    val isDownloadAllowedByServer: StateFlow<Boolean> =
+        sessionManager.currentSession
+            .map { it?.canDownload != false }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val canDownloadOnNetwork: StateFlow<Boolean> =
+        combine(
+                preferencesRepository.getDownloadWifiOnlyFlow(),
+                networkMonitor.isOnWifiFlow,
+            ) { wifiOnly, onWifi ->
+                !wifiOnly || onWifi
+            }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
     val uiState: StateFlow<WatchlistUiState> = _uiState.asStateFlow()
 

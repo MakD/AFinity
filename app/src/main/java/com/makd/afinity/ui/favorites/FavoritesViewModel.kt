@@ -4,15 +4,22 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.manager.resolveChangedItems
 import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.toAfinityEpisode
+import com.makd.afinity.data.models.music.AfinityAlbum
+import com.makd.afinity.data.models.music.AfinityArtist
+import com.makd.afinity.data.models.music.AfinityPlaylist
+import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.PreferencesRepository
@@ -30,6 +37,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -46,6 +54,7 @@ constructor(
     private val musicRepository: MusicRepository,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
+    private val sessionManager: SessionManager,
     private val watchlistRepository: WatchlistRepository,
     private val downloadRepository: DownloadRepository,
     private val appDataRepository: AppDataRepository,
@@ -57,11 +66,20 @@ constructor(
     private val _uiState = MutableStateFlow(FavoritesUiState())
     private var lastFavoritesLoadedAt = 0L
 
-    val canDownload: StateFlow<Boolean> =
-        preferencesRepository
-            .getDownloadWifiOnlyFlow()
-            .combine(networkMonitor.isOnWifiFlow) { wifiOnly, onWifi -> !wifiOnly || onWifi }
+    val isDownloadAllowedByServer: StateFlow<Boolean> =
+        sessionManager.currentSession
+            .map { it?.canDownload != false }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val canDownloadOnNetwork: StateFlow<Boolean> =
+        combine(
+                preferencesRepository.getDownloadWifiOnlyFlow(),
+                networkMonitor.isOnWifiFlow,
+            ) { wifiOnly, onWifi ->
+                !wifiOnly || onWifi
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     val uiState: StateFlow<FavoritesUiState> = _uiState.asStateFlow()
 
     private val _selectedEpisode = MutableStateFlow<AfinityEpisode?>(null)
@@ -209,8 +227,19 @@ constructor(
                 val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
                 _selectedEpisodeWatchlistStatus.value = isInWatchlist
 
-                val episodeDownload = downloadRepository.getDownloadByItemId(episode.id)
-                _selectedEpisodeDownloadInfo.value = episodeDownload
+                try {
+                    val episodeDownload = downloadRepository.getDownloadByItemId(episode.id)
+                    _selectedEpisodeDownloadInfo.value = episodeDownload
+                } catch (e: Exception) {
+                    _selectedEpisodeDownloadInfo.value = null
+                }
+                launch {
+                    downloadRepository.getAllDownloadsFlow().collect { downloads ->
+                        _selectedEpisode.value?.id?.let { id ->
+                            _selectedEpisodeDownloadInfo.value = downloads.find { it.itemId == id }
+                        }
+                    }
+                }
 
                 _isLoadingEpisode.value = false
             } catch (e: Exception) {
@@ -227,7 +256,7 @@ constructor(
         _selectedEpisodeDownloadInfo.value = null
     }
 
-    fun toggleTrackFavorite(track: com.makd.afinity.data.models.music.AfinityTrack) {
+    fun toggleTrackFavorite(track: AfinityTrack) {
         val tracks = _uiState.value.favoriteTracks
         val newFavorite = !track.favorite
         _uiState.update { state ->
@@ -295,12 +324,12 @@ data class FavoritesUiState(
     val seasons: List<AfinitySeason> = emptyList(),
     val episodes: List<AfinityEpisode> = emptyList(),
     val boxSets: List<AfinityBoxSet> = emptyList(),
-    val people: List<com.makd.afinity.data.models.media.AfinityPersonDetail> = emptyList(),
-    val channels: List<com.makd.afinity.data.models.livetv.AfinityChannel> = emptyList(),
-    val favoriteAlbums: List<com.makd.afinity.data.models.music.AfinityAlbum> = emptyList(),
-    val favoriteArtists: List<com.makd.afinity.data.models.music.AfinityArtist> = emptyList(),
-    val favoriteTracks: List<com.makd.afinity.data.models.music.AfinityTrack> = emptyList(),
-    val favoritePlaylists: List<com.makd.afinity.data.models.music.AfinityPlaylist> = emptyList(),
+    val people: List<AfinityPersonDetail> = emptyList(),
+    val channels: List<AfinityChannel> = emptyList(),
+    val favoriteAlbums: List<AfinityAlbum> = emptyList(),
+    val favoriteArtists: List<AfinityArtist> = emptyList(),
+    val favoriteTracks: List<AfinityTrack> = emptyList(),
+    val favoritePlaylists: List<AfinityPlaylist> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
 )

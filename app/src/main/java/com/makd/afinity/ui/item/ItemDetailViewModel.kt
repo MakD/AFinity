@@ -160,10 +160,18 @@ constructor(
             .map { it?.isAdmin == true }
             .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-    val canDownload: StateFlow<Boolean> =
-        preferencesRepository
-            .getDownloadWifiOnlyFlow()
-            .combine(networkMonitor.isOnWifiFlow) { wifiOnly, onWifi -> !wifiOnly || onWifi }
+    val isDownloadAllowedByServer: StateFlow<Boolean> =
+        sessionManager.currentSession
+            .map { it?.canDownload != false }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val canDownloadOnNetwork: StateFlow<Boolean> =
+        combine(
+                preferencesRepository.getDownloadWifiOnlyFlow(),
+                networkMonitor.isOnWifiFlow,
+            ) { wifiOnly, onWifi ->
+                !wifiOnly || onWifi
+            }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     private val _selectedMediaSource = MutableStateFlow<MediaSourceOption?>(null)

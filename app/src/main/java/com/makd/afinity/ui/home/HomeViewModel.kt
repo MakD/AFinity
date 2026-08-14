@@ -16,6 +16,7 @@ import com.makd.afinity.data.manager.AdminChangeKind
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.GenreType
@@ -106,6 +107,7 @@ constructor(
     private val playbackStateManager: PlaybackStateManager,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
+    private val sessionManager: SessionManager,
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val preferencesRepository: PreferencesRepository,
     private val networkMonitor: NetworkConnectivityMonitor,
@@ -115,11 +117,20 @@ constructor(
 
     private val _uiState = MutableStateFlow(HomeUiState())
 
-    val canDownload: StateFlow<Boolean> =
-        preferencesRepository
-            .getDownloadWifiOnlyFlow()
-            .combine(networkMonitor.isOnWifiFlow) { wifiOnly, onWifi -> !wifiOnly || onWifi }
+    val isDownloadAllowedByServer: StateFlow<Boolean> =
+        sessionManager.currentSession
+            .map { it?.canDownload != false }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val canDownloadOnNetwork: StateFlow<Boolean> =
+        combine(
+                preferencesRepository.getDownloadWifiOnlyFlow(),
+                networkMonitor.isOnWifiFlow,
+            ) { wifiOnly, onWifi ->
+                !wifiOnly || onWifi
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
     private val _isFetchingRandomItem = MutableStateFlow(false)
     val isFetchingRandomItem: StateFlow<Boolean> = _isFetchingRandomItem.asStateFlow()
