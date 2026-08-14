@@ -1110,8 +1110,8 @@ private fun QuickConnectPane(
     onAuthorize: (String) -> Unit,
     onBackClick: () -> Unit,
 ) {
-    val (digits, focusRequesters) = rememberQuickConnectDigits()
-    val code = digits.joinToString("") { it.value }
+    val codeState = rememberQuickConnectCode()
+    val code = codeState.value
 
     LaunchedEffect(isSuccess) {
         if (isSuccess) kotlinx.coroutines.delay(1200)
@@ -1152,13 +1152,14 @@ private fun QuickConnectPane(
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(48.dp).padding(top = 8.dp),
             )
+
             QuickConnectDigitEntry(
-                digits = digits,
-                focusRequesters = focusRequesters,
+                codeState = codeState,
                 isAuthorizing = isAuthorizing,
                 isSuccess = isSuccess,
                 errorMessage = errorMessage,
             )
+
             Button(
                 onClick = { onAuthorize(code) },
                 enabled = code.length == 6 && !isAuthorizing && !isSuccess,
@@ -1186,8 +1187,8 @@ private fun AuthorizeQuickConnectDialog(
     onAuthorize: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val (digits, focusRequesters) = rememberQuickConnectDigits()
-    val code = digits.joinToString("") { it.value }
+    val codeState = rememberQuickConnectCode()
+    val code = codeState.value
 
     LaunchedEffect(isSuccess) {
         if (isSuccess) kotlinx.coroutines.delay(1200)
@@ -1211,8 +1212,7 @@ private fun AuthorizeQuickConnectDialog(
         },
         text = {
             QuickConnectDigitEntry(
-                digits = digits,
-                focusRequesters = focusRequesters,
+                codeState = codeState,
                 isAuthorizing = isAuthorizing,
                 isSuccess = isSuccess,
                 errorMessage = errorMessage,
