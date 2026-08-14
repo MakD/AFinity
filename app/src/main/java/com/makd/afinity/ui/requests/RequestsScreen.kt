@@ -33,6 +33,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.DiscoverSlider
+import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.Permissions
 import com.makd.afinity.data.models.jellyseerr.RequestStatus
@@ -131,8 +132,23 @@ fun RequestsScreen(
                                 .filter { req ->
                                     RequestStatus.fromValue(req.status) == RequestStatus.COMPLETED
                                 }
-                                .sortedByDescending { req ->
-                                    req.media.mediaAddedAt ?: req.updatedAt
+                                .groupBy { req ->
+                                    "${req.media.tmdbId}_${req.getMediaType()}"
+                                }
+                                .map { (_, groupedRequests) ->
+                                    val firstRequest =
+                                        groupedRequests.minByOrNull { it.id }
+                                            ?: groupedRequests.first()
+                                    val extraCount = groupedRequests.size - 1
+
+                                    DisplayRequest(
+                                        request = firstRequest,
+                                        additionalRequestersCount = extraCount,
+                                    )
+                                }
+                                .sortedByDescending { displayReq ->
+                                    displayReq.request.media.mediaAddedAt
+                                        ?: displayReq.request.updatedAt
                                 }
                         }
 
@@ -526,3 +542,8 @@ private fun EmptyStateView(modifier: Modifier = Modifier) {
         iconSize = 48.dp,
     )
 }
+
+data class DisplayRequest(
+    val request: JellyseerrRequest,
+    val additionalRequestersCount: Int,
+)

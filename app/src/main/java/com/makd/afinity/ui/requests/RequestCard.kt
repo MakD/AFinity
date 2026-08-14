@@ -207,12 +207,16 @@ fun RequestCard(
 
 @Composable
 fun AvailableRequestCard(
-    request: JellyseerrRequest,
+    request: DisplayRequest,
     onClick: () -> Unit,
     cardWidth: Dp,
     modifier: Modifier = Modifier,
 ) {
-    val statusValue = if (request.is4k) request.media.status4k ?: 1 else request.media.status ?: 1
+    val jellyseerrRequest = request.request
+    val extraCount = request.additionalRequestersCount
+    val statusValue =
+        if (jellyseerrRequest.is4k) jellyseerrRequest.media.status4k ?: 1
+        else jellyseerrRequest.media.status ?: 1
     val isPartial = MediaStatus.fromValue(statusValue) == MediaStatus.PARTIALLY_AVAILABLE
 
     Column(modifier = modifier.width(cardWidth)) {
@@ -225,8 +229,8 @@ fun AvailableRequestCard(
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 AsyncImage(
-                    imageUrl = request.media.getPosterUrl(),
-                    contentDescription = request.media.getDisplayTitle(),
+                    imageUrl = jellyseerrRequest.media.getPosterUrl(),
+                    contentDescription = jellyseerrRequest.media.getDisplayTitle(),
                     blurHash = null,
                     targetWidth = cardWidth,
                     targetHeight = cardWidth * 3f / 2f,
@@ -259,7 +263,7 @@ fun AvailableRequestCard(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = request.media.getDisplayTitle(),
+            text = jellyseerrRequest.media.getDisplayTitle(),
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onBackground,
             maxLines = 1,
@@ -268,12 +272,17 @@ fun AvailableRequestCard(
 
         Spacer(modifier = Modifier.height(4.dp))
 
+        val baseRequester =
+            jellyseerrRequest.requestedBy.displayName ?: stringResource(R.string.user_unknown)
+        val requesterText =
+            if (extraCount > 0) {
+                "$baseRequester +$extraCount"
+            } else {
+                baseRequester
+            }
+
         Text(
-            text =
-                stringResource(
-                    R.string.requested_by_fmt,
-                    request.requestedBy.displayName ?: stringResource(R.string.user_unknown),
-                ),
+            text = stringResource(R.string.requested_by_fmt, requesterText),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,

@@ -81,7 +81,7 @@ fun MyRequestsSection(
 
 @Composable
 fun AvailableRequestsSection(
-    requests: List<JellyseerrRequest>,
+    requests: List<DisplayRequest>,
     onRequestClick: (JellyseerrRequest) -> Unit,
     onRequestVisible: (JellyseerrRequest) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
@@ -99,12 +99,17 @@ fun AvailableRequestsSection(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            items(items = requests, key = { request -> "available_request_${request.id}" }) {
-                request ->
-                LaunchedEffect(request.id) { onRequestVisible(request) }
+            items(
+                items = requests,
+                key = { displayItem -> "available_request_${displayItem.request.id}" },
+            ) { displayItem ->
+                LaunchedEffect(displayItem.request.id) {
+                    onRequestVisible(displayItem.request)
+                }
+
                 AvailableRequestCard(
-                    request = request,
-                    onClick = { onRequestClick(request) },
+                    request = displayItem,
+                    onClick = { onRequestClick(displayItem.request) },
                     cardWidth = cardWidth,
                 )
             }
