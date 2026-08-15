@@ -130,7 +130,7 @@
     <string name="writers_prefix">Сценаристы: %1$s</string>
     <string name="seasons_title">Сезоны</string>
     <string name="action_play">Воспроизвести</string>
-    <string name="action_rewatch">Смотреть заново</string>
+    <string name="action_rewatch">Смотреть еще раз</string>
     <string name="action_resume_playback">Возобновить</string>
     <string name="status_loading">Загрузка…</string>
     <string name="cd_backdrop_fmt">Задник для %1$s</string>
@@ -325,10 +325,10 @@
     <string name="error_something_went_wrong">Что-то пошло не так</string>
     <string name="tab_movies">Фильмы</string>
     <string name="tab_tv_shows">Сериалы</string>
-    <string name="empty_genre_movies">Не найдено фильмов в этом жанре</string>
-    <string name="empty_genre_tv">Не найдено сериалов в этом жанре</string>
-    <string name="empty_genre_audiobooks">Не найдено аудиокниг в этом жанре</string>
-    <string name="empty_genre_podcasts">Не найдено подкастов в этом жанре</string>
+    <string name="empty_genre_movies">Фильмы c таким жанром не найдены</string>
+    <string name="empty_genre_tv">Сериалы с таким жанром не найдены</string>
+    <string name="empty_genre_audiobooks">Аудиокниги с таким жанром не найдены</string>
+    <string name="empty_genre_podcasts">Подкасты с таким жанром не найдены</string>
     <string name="error_unknown_occurred">Произошла неизвестная ошибка</string>
     <string name="search_no_results">Результаты не найдены</string>
     <string name="search_placeholder">Поиск</string>
@@ -354,7 +354,7 @@
     <string name="pref_theme_mode_title">Режим темы</string>
     <string name="pref_dynamic_colors_title">Динамические цвета</string>
     <string name="pref_dynamic_colors_summary">Использовать цвета ваших обоев</string>
-    <string name="settings_group_home_screen">Начальный экран</string>
+    <string name="settings_group_home_screen">Главный экран</string>
     <string name="pref_combine_library_title">Совмещать разделы библиотек</string>
     <string name="pref_combine_library_summary">Объединять фильмы и сериалы в единый список</string>
     <string name="pref_sort_date_added_title">Сортировать по дате добавления</string>
@@ -693,7 +693,7 @@
     <string name="season_n_fmt">Сезон %1$d</string>
     <string name="home_downloaded_audiobooks">Скачанные аудиокниги</string>
     <string name="home_downloaded_episodes">Скачанные эпизоды</string>
-    <string name="home_best_of_studio_fmt">Лучшее из %1$s</string>
+    <string name="home_best_of_studio_fmt">Лучшее от %1$s</string>
     <string name="pref_group_integrations">Интеграции</string>
     <string name="pref_tmdb_api_key_title">Ключ API TMDB</string>
     <string name="pref_mdblist_api_key_title">Ключ API MDBList</string>
@@ -756,7 +756,7 @@
     <string name="stat_libraries">Библиотеки</string>
     <string name="section_discover_request">Предложения и запросы</string>
     <string name="section_audiobooks_podcasts">Аудиокниги и подкасты</string>
-    <string name="extra_type_theme_song">Тематическая песня</string>
+    <string name="extra_type_theme_song">Заглавная тема</string>
     <string name="extra_type_theme_video">Заставка</string>
     <string name="cd_episode_list">Список эпизодов</string>
     <string name="cd_playback_speed">Скорость проигрывания</string>
@@ -1048,7 +1048,7 @@
     <string name="music_mix_surprise_me">Удиви меня</string>
     <string name="music_mix_random">Случайный микс</string>
     <string name="music_mix_radio">Радио</string>
-    <string name="music_mix_instant_mix_genre_fmt">%1$s песен</string>
+    <string name="music_mix_instant_mix_genre_fmt">Песни в жанре «%1$s»</string>
     <string name="music_player_now_playing">СЕЙЧАС ИГРАЕТ</string>
     <string name="music_player_nothing_playing">Ничего не играет</string>
     <string name="music_player_no_lyrics">Текст песни недоступен</string>
@@ -1194,9 +1194,9 @@
     <string name="cd_open_navigation_menu">Открыть меню навигации</string>
     <string name="cd_go_to_home">Вернуться на главную</string>
     <string name="cd_switch_account">Сменить аккаунт</string>
-    <string name="connection_label_local">Локально</string>
+    <string name="connection_label_local">Локальный</string>
     <string name="connection_label_tailscale">Tailscale</string>
-    <string name="connection_label_remote">Удаленно</string>
+    <string name="connection_label_remote">Удаленный</string>
     <string name="connection_label_offline">Не в сети</string>
     <string name="drawer_admin_badge">Админ</string>
     <string name="drawer_app_version">AFinity v%1$s</string>
@@ -1232,7 +1232,7 @@
     <string name="settings_group_navigation">Навигация</string>
     <string name="api_key_dialog_message">Введите ваш ключ API внизу.</string>
     <string name="font_system_default">Как в системе</string>
-    <string name="pref_navigation_drawer_summary">Использовать боковое меню вместо панели внизу</string>
+    <string name="pref_navigation_drawer_summary">Использовать меню сбоку вместо панели внизу</string>
     <string name="pref_libraries_in_drawer_title">Показывать библиотеки в меню</string>
     <string name="pref_libraries_in_drawer_summary">Отображать библиотеки в меню навигации, а не на главном экране</string>
     <string name="buffer_desc_minimal">Минимальный</string>
@@ -1469,7 +1469,7 @@
     <string name="home_row_latest_tv">Новые сериалы</string>
     <string name="home_row_latest_movies">Новые фильмы</string>
     <string name="home_row_upcoming">Очередное</string>
-    <string name="home_row_watch_again">Смотреть заново</string>
+    <string name="home_row_watch_again">Смотреть еще раз</string>
     <string name="home_row_critics_choice">Выбор критиков</string>
     <string name="home_row_next_up">Далее</string>
     <string name="home_row_continue_watching">Продолжить просмотр</string>
@@ -1578,10 +1578,10 @@
         <item quantity="other">%1$d песен</item>
     </plurals>
     <plurals name="playlist_choice_videos">
-        <item quantity="one">%1$d видео</item>
-        <item quantity="few">%1$d видео</item>
-        <item quantity="many">%1$d видео</item>
-        <item quantity="other">%1$d видео</item>
+        <item quantity="one">%1$d видеоролик</item>
+        <item quantity="few">%1$d видеоролика</item>
+        <item quantity="many">%1$d видеороликов</item>
+        <item quantity="other">%1$d видеороликов</item>
     </plurals>
     <string name="playlist_play_music">Включить музыку</string>
     <string name="playlist_play_videos">Включить видео</string>
