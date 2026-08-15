@@ -11,10 +11,9 @@ import androidx.paging.cachedIn
 import androidx.paging.filter
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
-import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.download.DownloadInfo
-import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.extensions.toRecentlyPlayedAlbums
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
@@ -35,7 +34,6 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.music.MadeForYouCache
 import com.makd.afinity.data.repository.music.MusicRepository
-import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -45,14 +43,12 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -191,26 +187,15 @@ constructor(
     private val preferencesRepository: PreferencesRepository,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val madeForYouCache: MadeForYouCache,
-    private val sessionManager: SessionManager,
-    private val networkMonitor: NetworkConnectivityMonitor,
+    private val downloadPermissions: DownloadPermissions,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     val libraryId: UUID = UUID.fromString(savedStateHandle.get<String>("libraryId")!!)
     val libraryName: String = savedStateHandle.get<String>("libraryName") ?: ""
-    val isDownloadAllowedByServer: StateFlow<Boolean> =
-        sessionManager.currentSession
-            .map { it?.canDownload != false }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val isDownloadAllowedByServer: StateFlow<Boolean> = downloadPermissions.isAllowedByServer
 
-    val canDownloadOnNetwork: StateFlow<Boolean> =
-        combine(
-                preferencesRepository.getDownloadWifiOnlyFlow(),
-                networkMonitor.isOnWifiFlow,
-            ) { wifiOnly, onWifi ->
-                !wifiOnly || onWifi
-            }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val canDownloadOnNetwork: StateFlow<Boolean> = downloadPermissions.isAllowedOnNetwork
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -386,9 +371,7 @@ constructor(
         viewModelScope.launch {
             downloadRepository.getAllDownloadsFlow().collect { allDownloads ->
                 _trackDownloadInfos.value =
-                    allDownloads
-                        .filter { it.itemType == "Audio" && it.status == DownloadStatus.COMPLETED }
-                        .associateBy { it.itemId }
+                    allDownloads.filter { it.itemType == "Audio" }.associateBy { it.itemId }
             }
         }
     }
@@ -501,6 +484,11 @@ constructor(
                 Timber.e(it, "Failed to download track $trackId")
             }
         }
+    }
+
+    fun cancelTrackDownload(trackId: UUID) {
+        val info = _trackDownloadInfos.value[trackId] ?: return
+        viewModelScope.launch { downloadRepository.cancelDownload(info.id) }
     }
 
     private fun buildMadeForYouLayout(albums: List<AfinityAlbum>): List<MadeForYouSlot> {

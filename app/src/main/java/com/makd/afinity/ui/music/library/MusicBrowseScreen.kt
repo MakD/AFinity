@@ -268,11 +268,13 @@ fun MusicBrowseScreen(
                                 showAddToPlaylist = true
                             }),
                     onDownload =
-                        if (isDownloadAllowedByServer && canDownloadOnNetwork)
+                        if (isDownloadAllowedByServer)
                             ({ track -> viewModel.downloadTrack(track.id) })
                         else null,
-                    downloadedTrackIds =
-                        viewModel.trackDownloadInfos.collectAsStateWithLifecycle().value.keys,
+                    onCancelDownload = { track -> viewModel.cancelTrackDownload(track.id) },
+                    isDownloadEnabled = canDownloadOnNetwork,
+                    trackDownloadInfos =
+                        viewModel.trackDownloadInfos.collectAsStateWithLifecycle().value,
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
                 )
             LibraryFilter.Genres ->

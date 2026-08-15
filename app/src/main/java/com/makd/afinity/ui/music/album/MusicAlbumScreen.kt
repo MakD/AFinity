@@ -61,7 +61,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.makd.afinity.R
-import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
@@ -392,14 +391,14 @@ fun MusicAlbumScreen(
                                             showAddToPlaylist = true
                                         }),
                                 onDownload =
-                                    if (isDownloadAllowedByServer && canDownloadOnNetwork)
+                                    if (isDownloadAllowedByServer)
                                         ({
                                             viewModel.downloadTrack(track.id)
                                         })
                                     else null,
-                                isDownloaded =
-                                    uiState.trackDownloadInfos[track.id]?.status ==
-                                        DownloadStatus.COMPLETED,
+                                isDownloadEnabled = canDownloadOnNetwork,
+                                onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
+                                downloadInfo = uiState.trackDownloadInfos[track.id],
                             )
                         }
                     }
@@ -591,14 +590,14 @@ fun MusicAlbumScreen(
                                         showAddToPlaylist = true
                                     }),
                             onDownload =
-                                if (isDownloadAllowedByServer && canDownloadOnNetwork)
+                                if (isDownloadAllowedByServer)
                                     ({
                                         viewModel.downloadTrack(track.id)
                                     })
                                 else null,
-                            isDownloaded =
-                                uiState.trackDownloadInfos[track.id]?.status ==
-                                    DownloadStatus.COMPLETED,
+                            isDownloadEnabled = canDownloadOnNetwork,
+                            onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
+                            downloadInfo = uiState.trackDownloadInfos[track.id],
                         )
                     }
                 }

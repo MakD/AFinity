@@ -12,12 +12,15 @@ import com.makd.afinity.data.database.entities.toDownloadInfo
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.data.models.download.PlaylistDownloadFilter
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityMovie
 import com.makd.afinity.data.models.extensions.toAfinityTrack
+import com.makd.afinity.data.models.extensions.toAfinityVideo
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySourceType
+import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.PlaylistEntry
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.PreferencesRepository
@@ -220,6 +223,9 @@ constructor(
                                     Exception("Failed to convert episode")
                                 )
 
+                        BaseItemKind.VIDEO,
+                        BaseItemKind.MUSIC_VIDEO -> baseItemDto.toAfinityVideo(baseUrl)
+
                         else ->
                             return@withContext Result.failure(
                                 Exception("Unsupported item type: ${baseItemDto.type}")
@@ -243,6 +249,7 @@ constructor(
                     when (item) {
                         is AfinityMovie -> item.images.primary?.toString()
                         is AfinityEpisode -> item.images.primary?.toString()
+                        is AfinityVideo -> item.images.primary?.toString()
                         else -> null
                     }
 
@@ -250,11 +257,17 @@ constructor(
                 val seriesName = (item as? AfinityEpisode)?.seriesName
                 val seasonNumber = (item as? AfinityEpisode)?.parentIndexNumber
                 val episodeNumber = (item as? AfinityEpisode)?.indexNumber
-                val releaseYear = (item as? AfinityMovie)?.productionYear?.toString()
+                val releaseYear =
+                    when (item) {
+                        is AfinityMovie -> item.productionYear?.toString()
+                        is AfinityVideo -> item.productionYear?.toString()
+                        else -> null
+                    }
                 val runtimeTicks =
                     when (item) {
                         is AfinityMovie -> item.runtimeTicks
                         is AfinityEpisode -> item.runtimeTicks
+                        is AfinityVideo -> item.runtimeTicks
                         else -> 0L
                     }
 
@@ -275,6 +288,7 @@ constructor(
                             when (item) {
                                 is AfinityMovie -> "Movie"
                                 is AfinityEpisode -> "Episode"
+                                is AfinityVideo -> "Video"
                                 else -> "Unknown"
                             },
                         sourceId = source.id,
@@ -299,6 +313,7 @@ constructor(
                         folderPath = folderPath,
                         seriesId = (item as? AfinityEpisode)?.seriesId?.toString(),
                         storageVolumeId = resolvedVolumeId,
+                        playlistId = playlistId,
                     )
 
                 databaseRepository.insertDownload(download)
@@ -832,10 +847,21 @@ constructor(
             }
         }
 
-    override suspend fun startPlaylistDownload(playlistId: UUID, volumeId: String?): Result<Int> =
+    override suspend fun startPlaylistDownload(
+        playlistId: UUID,
+        volumeId: String?,
+        filter: PlaylistDownloadFilter,
+    ): Result<Int> =
         withContext(Dispatchers.IO) {
             return@withContext try {
-                val entries = mediaRepository.getPlaylistEntries(playlistId).entries
+                val entries =
+                    mediaRepository.getPlaylistEntries(playlistId).entries.filter { entry ->
+                        when (filter) {
+                            PlaylistDownloadFilter.ALL -> true
+                            PlaylistDownloadFilter.AUDIO -> entry is PlaylistEntry.Audio
+                            PlaylistDownloadFilter.VIDEO -> entry is PlaylistEntry.Video
+                        }
+                    }
                 var started = 0
                 val playlistIdStr = playlistId.toString()
                 for (entry in entries) {

@@ -2,6 +2,7 @@ package com.makd.afinity.data.repository.download
 
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.data.models.download.PlaylistDownloadFilter
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
@@ -69,5 +70,9 @@ interface DownloadRepository {
 
     suspend fun startArtistDownload(artistId: UUID, volumeId: String? = null): Result<Int>
 
-    suspend fun startPlaylistDownload(playlistId: UUID, volumeId: String? = null): Result<Int>
+    suspend fun startPlaylistDownload(
+        playlistId: UUID,
+        volumeId: String? = null,
+        filter: PlaylistDownloadFilter = PlaylistDownloadFilter.ALL,
+    ): Result<Int>
 }

@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.extensions.showBackdropBlurHash
@@ -70,6 +71,7 @@ import com.makd.afinity.ui.item.components.shared.AdminAction
 import com.makd.afinity.ui.item.components.shared.MediaLanguageFlagsSection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelectionButton
+import com.makd.afinity.util.rememberStorageLocationProvider
 import org.jellyfin.sdk.model.api.MediaStreamType
 import java.text.SimpleDateFormat
 import java.time.format.DateTimeFormatter
@@ -102,6 +104,14 @@ fun EpisodeDetailOverlay(
     val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val ratingScale = rememberRatingMetadataScale()
+    val storageLocationProvider = rememberStorageLocationProvider()
+    val downloadUnavailable =
+        remember(downloadInfo?.itemId, downloadInfo?.status, downloadInfo?.storageVolumeId) {
+            val info = downloadInfo
+            info != null &&
+                info.status == DownloadStatus.COMPLETED &&
+                info.storageVolumeId !in storageLocationProvider.mountedVolumeIds()
+        }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -501,6 +511,7 @@ fun EpisodeDetailOverlay(
                             onResumeClick = onResumeDownload,
                             onCancelClick = onCancelDownload,
                             canDownload = canDownloadOnNetwork,
+                            isUnavailable = downloadUnavailable,
                             onDownloadLongClick = onDownloadLongClick,
                         )
                     }

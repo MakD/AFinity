@@ -68,7 +68,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.makd.afinity.R
-import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicPlaybackState
 import com.makd.afinity.data.models.music.RadioSeed
@@ -359,9 +358,13 @@ fun MusicGenreScreen(
                                 onAddNext = { track -> playerViewModel.addNext(listOf(track)) },
                                 onAddLast = { track -> playerViewModel.addLast(listOf(track)) },
                                 onDownload =
-                                    if (isDownloadAllowedByServer && canDownloadOnNetwork)
+                                    if (isDownloadAllowedByServer)
                                         ({ track -> viewModel.downloadTrack(track.id) })
                                     else null,
+                                onCancelDownload = { track ->
+                                    viewModel.cancelTrackDownload(track.id)
+                                },
+                                isDownloadEnabled = canDownloadOnNetwork,
                             )
                         }
                     }
@@ -544,9 +547,11 @@ fun MusicGenreScreen(
                             onAddNext = { track -> playerViewModel.addNext(listOf(track)) },
                             onAddLast = { track -> playerViewModel.addLast(listOf(track)) },
                             onDownload =
-                                if (isDownloadAllowedByServer && canDownloadOnNetwork)
+                                if (isDownloadAllowedByServer)
                                     ({ track -> viewModel.downloadTrack(track.id) })
                                 else null,
+                            onCancelDownload = { track -> viewModel.cancelTrackDownload(track.id) },
+                            isDownloadEnabled = canDownloadOnNetwork,
                         )
                     }
                 }
@@ -593,6 +598,8 @@ private fun GenreTracksSection(
     onAddNext: (AfinityTrack) -> Unit,
     onAddLast: (AfinityTrack) -> Unit,
     onDownload: ((AfinityTrack) -> Unit)? = null,
+    onCancelDownload: ((AfinityTrack) -> Unit)? = null,
+    isDownloadEnabled: Boolean = true,
 ) {
     val fixedTracks = uiState.tracks.take(5)
     val extraTracks = uiState.tracks.drop(5)
@@ -647,8 +654,9 @@ private fun GenreTracksSection(
                     onAddNext = { onAddNext(track) },
                     onAddLast = { onAddLast(track) },
                     onDownload = onDownload?.let { dl -> { dl(track) } },
-                    isDownloaded =
-                        uiState.trackDownloadInfos[track.id]?.status == DownloadStatus.COMPLETED,
+                    onCancelDownload = onCancelDownload?.let { c -> { c(track) } },
+                    isDownloadEnabled = isDownloadEnabled,
+                    downloadInfo = uiState.trackDownloadInfos[track.id],
                 )
             }
             AnimatedVisibility(
@@ -679,6 +687,10 @@ private fun GenreTracksSection(
                                     }),
                             onAddNext = { onAddNext(track) },
                             onAddLast = { onAddLast(track) },
+                            onDownload = onDownload?.let { dl -> { dl(track) } },
+                            onCancelDownload = onCancelDownload?.let { c -> { c(track) } },
+                            isDownloadEnabled = isDownloadEnabled,
+                            downloadInfo = uiState.trackDownloadInfos[track.id],
                         )
                     }
                 }

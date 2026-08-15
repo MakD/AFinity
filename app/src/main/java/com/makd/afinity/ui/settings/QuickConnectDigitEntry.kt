@@ -19,10 +19,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
@@ -37,6 +40,7 @@ import com.makd.afinity.R
 private val MaxDigitBoxSize = 42.dp
 private val MinDigitBoxSize = 24.dp
 private const val DigitFontSizeAtMaxBox = 20f
+internal const val QuickConnectCodeLength = 6
 
 @Composable
 fun rememberQuickConnectCode(): MutableState<String> {
@@ -63,9 +67,13 @@ fun QuickConnectDigitEntry(
             textAlign = TextAlign.Center,
         )
 
+        var isFocused by remember { mutableStateOf(false) }
+
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             val spacing = if (maxWidth < 260.dp) 6.dp else 8.dp
-            val boxSize = ((maxWidth - spacing * 5) / 6).coerceIn(MinDigitBoxSize, MaxDigitBoxSize)
+            val boxSize =
+                ((maxWidth - spacing * (QuickConnectCodeLength - 1)) / QuickConnectCodeLength)
+                    .coerceIn(MinDigitBoxSize, MaxDigitBoxSize)
             val digitFontSize =
                 (DigitFontSizeAtMaxBox * (boxSize / MaxDigitBoxSize).coerceIn(0.65f, 1f)).sp
             val cornerRadius = if (boxSize < 34.dp) 8.dp else 10.dp
@@ -74,11 +82,12 @@ fun QuickConnectDigitEntry(
                 value = codeState.value,
                 onValueChange = { input ->
                     val filtered = input.filter { it.isDigit() }
-                    if (filtered.length <= 6) {
+                    if (filtered.length <= QuickConnectCodeLength) {
                         codeState.value = filtered
                     }
                 },
-                modifier = Modifier.align(Alignment.Center),
+                modifier =
+                    Modifier.align(Alignment.Center).onFocusChanged { isFocused = it.isFocused },
                 keyboardOptions =
                     KeyboardOptions(
                         keyboardType = KeyboardType.Number,
@@ -94,8 +103,13 @@ fun QuickConnectDigitEntry(
                             horizontalArrangement = Arrangement.spacedBy(spacing),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            repeat(6) { index ->
+                            repeat(QuickConnectCodeLength) { index ->
                                 val char = codeState.value.getOrNull(index)?.toString() ?: ""
+                                val isActive =
+                                    isFocused &&
+                                        !isAuthorizing &&
+                                        !isSuccess &&
+                                        index == codeState.value.length
 
                                 Box(
                                     modifier =
@@ -107,13 +121,15 @@ fun QuickConnectDigitEntry(
                                                 shape = RoundedCornerShape(cornerRadius),
                                             )
                                             .border(
-                                                width = if (char.isNotEmpty()) 2.dp else 1.dp,
+                                                width =
+                                                    if (char.isNotEmpty() || isActive) 2.dp
+                                                    else 1.dp,
                                                 color =
                                                     when {
                                                         isSuccess -> Color(0xFF4CAF50)
                                                         errorMessage != null ->
                                                             MaterialTheme.colorScheme.error
-                                                        char.isNotEmpty() ->
+                                                        char.isNotEmpty() || isActive ->
                                                             MaterialTheme.colorScheme.primary
                                                         else ->
                                                             MaterialTheme.colorScheme.outline.copy(

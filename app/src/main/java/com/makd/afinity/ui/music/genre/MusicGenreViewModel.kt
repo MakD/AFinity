@@ -3,26 +3,20 @@ package com.makd.afinity.ui.music.genre
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.AppDataRepository
-import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.music.MusicRepository
-import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -46,9 +40,7 @@ constructor(
     private val musicRepository: MusicRepository,
     private val appDataRepository: AppDataRepository,
     private val downloadRepository: DownloadRepository,
-    private val sessionManager: SessionManager,
-    private val preferencesRepository: PreferencesRepository,
-    private val networkMonitor: NetworkConnectivityMonitor,
+    private val downloadPermissions: DownloadPermissions,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -59,19 +51,9 @@ constructor(
             runCatching { UUID.fromString(it) }.getOrNull()
         }
 
-    val isDownloadAllowedByServer: StateFlow<Boolean> =
-        sessionManager.currentSession
-            .map { it?.canDownload != false }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val isDownloadAllowedByServer: StateFlow<Boolean> = downloadPermissions.isAllowedByServer
 
-    val canDownloadOnNetwork: StateFlow<Boolean> =
-        combine(
-                preferencesRepository.getDownloadWifiOnlyFlow(),
-                networkMonitor.isOnWifiFlow,
-            ) { wifiOnly, onWifi ->
-                !wifiOnly || onWifi
-            }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val canDownloadOnNetwork: StateFlow<Boolean> = downloadPermissions.isAllowedOnNetwork
 
     val userProfileImageUrl: StateFlow<String?> = appDataRepository.userProfileImageUrl
 
@@ -104,6 +86,11 @@ constructor(
                 Timber.e(it, "Failed to download track $trackId")
             }
         }
+    }
+
+    fun cancelTrackDownload(trackId: UUID) {
+        val info = _uiState.value.trackDownloadInfos[trackId] ?: return
+        viewModelScope.launch { downloadRepository.cancelDownload(info.id) }
     }
 
     private suspend fun loadGenreContent() {

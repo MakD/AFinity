@@ -274,15 +274,14 @@ fun AvailableRequestCard(
 
         val baseRequester =
             jellyseerrRequest.requestedBy.displayName ?: stringResource(R.string.user_unknown)
-        val requesterText =
-            if (extraCount > 0) {
-                "$baseRequester +$extraCount"
-            } else {
-                baseRequester
-            }
 
         Text(
-            text = stringResource(R.string.requested_by_fmt, requesterText),
+            text =
+                if (extraCount > 0) {
+                    stringResource(R.string.requested_by_multiple_fmt, baseRequester, extraCount)
+                } else {
+                    stringResource(R.string.requested_by_fmt, baseRequester)
+                },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,

@@ -1162,7 +1162,7 @@ private fun QuickConnectPane(
 
             Button(
                 onClick = { onAuthorize(code) },
-                enabled = code.length == 6 && !isAuthorizing && !isSuccess,
+                enabled = code.length == QuickConnectCodeLength && !isAuthorizing && !isSuccess,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 if (isAuthorizing) {
@@ -1221,7 +1221,7 @@ private fun AuthorizeQuickConnectDialog(
         confirmButton = {
             Button(
                 onClick = { onAuthorize(code) },
-                enabled = code.length == 6 && !isAuthorizing && !isSuccess,
+                enabled = code.length == QuickConnectCodeLength && !isAuthorizing && !isSuccess,
             ) {
                 if (isAuthorizing) {
                     CircularProgressIndicator(

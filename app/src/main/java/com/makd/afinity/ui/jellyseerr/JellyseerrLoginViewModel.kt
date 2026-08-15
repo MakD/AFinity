@@ -4,17 +4,22 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
+import com.makd.afinity.data.models.jellyseerr.PublicSettings
 import com.makd.afinity.data.repository.JellyseerrRepository
+import com.makd.afinity.data.repository.jellyseerr.JellyseerrLoginException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltViewModel
 class JellyseerrLoginViewModel
@@ -22,14 +27,32 @@ class JellyseerrLoginViewModel
 constructor(
     @param:ApplicationContext private val context: Context,
     private val jellyseerrRepository: JellyseerrRepository,
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(JellyseerrLoginUiState())
     val uiState: StateFlow<JellyseerrLoginUiState> = _uiState.asStateFlow()
 
+    private var probeJob: Job? = null
+
+    private companion object {
+        const val MEDIA_SERVER_TYPE_JELLYFIN = 2
+        const val PROBE_DEBOUNCE_MS = 600L
+    }
+
     init {
         loadSavedServerUrl()
         checkAuthStatus()
+        seedJellyfinUsername()
+    }
+
+    private fun sessionUsername(): String? = sessionManager.currentSession.value?.user?.name
+
+    private fun seedJellyfinUsername() {
+        val username = sessionUsername() ?: return
+        _uiState.update {
+            if (it.useJellyfinAuth) it.copy(email = username, emailError = null) else it
+        }
     }
 
     private fun checkAuthStatus() {
@@ -59,6 +82,7 @@ constructor(
                 val savedUrl = jellyseerrRepository.getServerUrl()
                 if (!savedUrl.isNullOrBlank()) {
                     _uiState.update { it.copy(serverUrl = savedUrl) }
+                    probeServer(savedUrl)
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load saved server URL")
@@ -67,8 +91,51 @@ constructor(
     }
 
     fun updateServerUrl(url: String) {
-        val error = if (url.isNotBlank() && !isValidUrl(url)) "Invalid URL format" else null
+        val error =
+            if (url.isNotBlank() && !isValidUrl(url)) {
+                context.getString(R.string.error_invalid_url_format)
+            } else {
+                null
+            }
         _uiState.update { it.copy(serverUrl = url, serverUrlError = error) }
+        probeServer(url)
+    }
+
+    private fun probeServer(rawUrl: String) {
+        probeJob?.cancel()
+
+        val trimmed = rawUrl.trim().removeSuffix("/")
+        if (trimmed.isBlank() || !isValidUrl(trimmed)) {
+            _uiState.update { it.copy(publicSettings = null) }
+            return
+        }
+
+        probeJob = viewModelScope.launch {
+            delay(PROBE_DEBOUNCE_MS)
+            for (url in generateCandidateUrls(trimmed)) {
+                val settings = jellyseerrRepository.verifyServer(url) ?: continue
+                _uiState.update { it.copy(publicSettings = settings) }
+                applyDetectedAuthMode(settings)
+                return@launch
+            }
+            _uiState.update { it.copy(publicSettings = null) }
+        }
+    }
+
+    private fun applyDetectedAuthMode(settings: PublicSettings) {
+        if (_uiState.value.authModeUserSelected) return
+
+        val jellyfinAuthAvailable =
+            settings.mediaServerLogin && settings.mediaServerType == MEDIA_SERVER_TYPE_JELLYFIN
+
+        val useJellyfin =
+            when {
+                jellyfinAuthAvailable -> true
+                settings.localLogin -> false
+                else -> return
+            }
+
+        switchAuthMode(useJellyfin)
     }
 
     fun updateEmail(email: String) {
@@ -80,12 +147,17 @@ constructor(
     }
 
     fun setUseJellyfinAuth(useJellyfin: Boolean) {
+        _uiState.update { it.copy(authModeUserSelected = true) }
+        switchAuthMode(useJellyfin)
+    }
+
+    private fun switchAuthMode(useJellyfin: Boolean) {
         if (_uiState.value.useJellyfinAuth == useJellyfin) return
 
         _uiState.update {
             it.copy(
                 useJellyfinAuth = useJellyfin,
-                email = "",
+                email = if (useJellyfin) sessionUsername().orEmpty() else "",
                 password = "",
                 emailError = null,
                 passwordError = null,
@@ -106,11 +178,13 @@ constructor(
                 val candidateUrls = generateCandidateUrls(rawUrl)
 
                 var validUrl: String? = null
+                var resolvedSettings: PublicSettings? = null
 
                 for (url in candidateUrls) {
-                    val isServerValid = jellyseerrRepository.verifyServer(url)
-                    if (isServerValid) {
+                    val settings = jellyseerrRepository.verifyServer(url)
+                    if (settings != null) {
                         validUrl = url
+                        resolvedSettings = settings
                         break
                     } else {
                         Timber.d("Verification failed for candidate URL: $url")
@@ -128,6 +202,7 @@ constructor(
                     return@launch
                 }
 
+                _uiState.update { it.copy(publicSettings = resolvedSettings) }
                 jellyseerrRepository.setServerUrl(validUrl)
                 val result =
                     jellyseerrRepository.login(
@@ -154,12 +229,21 @@ constructor(
                 } else {
                     val lastError = result.exceptionOrNull()
                     val errMsg = lastError?.message ?: ""
+                    val statusCode = (lastError as? JellyseerrLoginException)?.code
 
                     val finalErrorMessage =
-                        if (errMsg.contains("401") || errMsg.contains("403")) {
-                            "Invalid email or password."
-                        } else {
-                            parseErrorMessage(errMsg)
+                        when {
+                            statusCode == 401 || statusCode == 403 ->
+                                if (_uiState.value.useJellyfinAuth) {
+                                    context.getString(R.string.error_invalid_jellyfin_password)
+                                } else {
+                                    context.getString(R.string.error_invalid_credentials)
+                                }
+
+                            statusCode != null && statusCode >= 500 ->
+                                context.getString(R.string.error_seerr_account_setup_failed)
+
+                            else -> parseErrorMessage(errMsg)
                         }
 
                     _uiState.update { it.copy(isLoading = false, error = finalErrorMessage) }
@@ -182,20 +266,34 @@ constructor(
         var isValid = true
 
         if (state.serverUrl.isBlank()) {
-            _uiState.update { it.copy(serverUrlError = "Server URL is required") }
+            _uiState.update {
+                it.copy(serverUrlError = context.getString(R.string.error_server_url_required))
+            }
             isValid = false
         } else if (!isValidUrl(state.serverUrl)) {
-            _uiState.update { it.copy(serverUrlError = "Invalid URL format") }
+            _uiState.update {
+                it.copy(serverUrlError = context.getString(R.string.error_invalid_url_format))
+            }
             isValid = false
         }
 
         if (state.email.isBlank()) {
-            _uiState.update { it.copy(emailError = "Email or username is required") }
+            if (state.useJellyfinAuth) {
+                _uiState.update {
+                    it.copy(error = context.getString(R.string.error_no_jellyfin_session))
+                }
+            } else {
+                _uiState.update {
+                    it.copy(emailError = context.getString(R.string.error_email_username_required))
+                }
+            }
             isValid = false
         }
 
         if (!state.useJellyfinAuth && state.password.isBlank()) {
-            _uiState.update { it.copy(passwordError = "Password is required") }
+            _uiState.update {
+                it.copy(passwordError = context.getString(R.string.error_password_required))
+            }
             isValid = false
         }
 
@@ -262,7 +360,8 @@ constructor(
                                 it.copy(
                                     isLoading = false,
                                     currentUser = null,
-                                    email = "",
+                                    email =
+                                        if (it.useJellyfinAuth) sessionUsername().orEmpty() else "",
                                     password = "",
                                 )
                             }
@@ -308,4 +407,6 @@ data class JellyseerrLoginUiState(
     val loginSuccess: Boolean = false,
     val loggedInUser: String? = null,
     val currentUser: JellyseerrUser? = null,
+    val publicSettings: PublicSettings? = null,
+    val authModeUserSelected: Boolean = false,
 )

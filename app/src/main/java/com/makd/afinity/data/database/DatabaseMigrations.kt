@@ -1461,6 +1461,13 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_67_68 =
+        object : Migration(67, 68) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `users` ADD COLUMN `canDownload` INTEGER DEFAULT NULL")
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1529,5 +1536,6 @@ object DatabaseMigrations {
             MIGRATION_64_65,
             MIGRATION_65_66,
             MIGRATION_66_67,
+            MIGRATION_67_68,
         )
 }

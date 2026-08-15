@@ -229,8 +229,14 @@ constructor(
     }
 
     fun selectUser(user: User) {
+        val isDifferentUser = _uiState.value.selectedUser?.id != user.id
         _uiState.value =
-            _uiState.value.copy(selectedUser = user, username = user.name, error = null)
+            _uiState.value.copy(
+                selectedUser = user,
+                username = user.name,
+                password = if (isDifferentUser) "" else _uiState.value.password,
+                error = null,
+            )
     }
 
     fun selectServer(server: Server) {

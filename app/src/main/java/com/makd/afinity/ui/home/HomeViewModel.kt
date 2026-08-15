@@ -13,10 +13,10 @@ import androidx.work.WorkManager
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.AdminChangeKind
+import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackStateManager
-import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.GenreType
@@ -46,7 +46,6 @@ import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
-import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsDownloadRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
@@ -60,7 +59,6 @@ import com.makd.afinity.data.workers.HomeDataReloadWorker
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import com.makd.afinity.ui.utils.IntentUtils
-import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -107,29 +105,17 @@ constructor(
     private val playbackStateManager: PlaybackStateManager,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
-    private val sessionManager: SessionManager,
     private val itemUserDataDelegate: ItemUserDataDelegate,
-    private val preferencesRepository: PreferencesRepository,
-    private val networkMonitor: NetworkConnectivityMonitor,
     private val homeSectionsRepository: HomeSectionsRepository,
     private val homeLayoutPreferencesRepository: HomeLayoutPreferencesRepository,
+    private val downloadPermissions: DownloadPermissions,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
 
-    val isDownloadAllowedByServer: StateFlow<Boolean> =
-        sessionManager.currentSession
-            .map { it?.canDownload != false }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val isDownloadAllowedByServer: StateFlow<Boolean> = downloadPermissions.isAllowedByServer
 
-    val canDownloadOnNetwork: StateFlow<Boolean> =
-        combine(
-                preferencesRepository.getDownloadWifiOnlyFlow(),
-                networkMonitor.isOnWifiFlow,
-            ) { wifiOnly, onWifi ->
-                !wifiOnly || onWifi
-            }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val canDownloadOnNetwork: StateFlow<Boolean> = downloadPermissions.isAllowedOnNetwork
 
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
     private val _isFetchingRandomItem = MutableStateFlow(false)

@@ -11,8 +11,8 @@ import androidx.paging.filter
 import androidx.paging.map
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
+import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.MediaChangeManager
-import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.manager.resolveChangedItems
 import com.makd.afinity.data.models.CustomHomeSection
 import com.makd.afinity.data.models.CustomSectionItemType
@@ -34,21 +34,24 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
-import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -66,30 +69,19 @@ constructor(
     private val appDataRepository: AppDataRepository,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
-    private val sessionManager: SessionManager,
     private val preferencesRepository: PreferencesRepository,
     private val customHomeSectionsRepository: CustomHomeSectionsRepository,
     private val watchlistRepository: WatchlistRepository,
     private val downloadRepository: DownloadRepository,
     private val userDataRepository: UserDataRepository,
     private val itemUserDataDelegate: ItemUserDataDelegate,
-    private val networkMonitor: NetworkConnectivityMonitor,
+    private val downloadPermissions: DownloadPermissions,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    val isDownloadAllowedByServer: StateFlow<Boolean> =
-        sessionManager.currentSession
-            .map { it?.canDownload != false }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val isDownloadAllowedByServer: StateFlow<Boolean> = downloadPermissions.isAllowedByServer
 
-    val canDownloadOnNetwork: StateFlow<Boolean> =
-        combine(
-                preferencesRepository.getDownloadWifiOnlyFlow(),
-                networkMonitor.isOnWifiFlow,
-            ) { wifiOnly, onWifi ->
-                !wifiOnly || onWifi
-            }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val canDownloadOnNetwork: StateFlow<Boolean> = downloadPermissions.isAllowedOnNetwork
 
     private val _selectedEpisode = MutableStateFlow<AfinityEpisode?>(null)
     val selectedEpisode: StateFlow<AfinityEpisode?> = _selectedEpisode.asStateFlow()
@@ -102,6 +94,22 @@ constructor(
     val selectedEpisodeDownloadInfo: StateFlow<DownloadInfo?> =
         _selectedEpisodeDownloadInfo.asStateFlow()
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun observeSelectedEpisodeDownload() {
+        _selectedEpisode
+            .map { it?.id }
+            .distinctUntilChanged()
+            .flatMapLatest { id ->
+                if (id == null) flowOf(null)
+                else
+                    downloadRepository.getAllDownloadsFlow().map { downloads ->
+                        downloads.find { it.itemId == id }
+                    }
+            }
+            .onEach { _selectedEpisodeDownloadInfo.value = it }
+            .launchIn(viewModelScope)
+    }
+
     fun selectEpisode(episode: AfinityEpisode) {
         viewModelScope.launch {
             try {
@@ -112,8 +120,6 @@ constructor(
                 _selectedEpisode.value = fullEpisode ?: episode
                 _selectedEpisodeWatchlistStatus.value =
                     watchlistRepository.isInWatchlist(episode.id)
-                _selectedEpisodeDownloadInfo.value =
-                    downloadRepository.getDownloadByItemId(episode.id)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load full episode details")
                 _selectedEpisode.value = episode
@@ -231,6 +237,8 @@ constructor(
     private var currentFilters = LibraryFilters()
 
     init {
+        observeSelectedEpisodeDownload()
+
         viewModelScope.launch {
             appDataRepository.isInitialDataLoaded.collect { isLoaded ->
                 if (isLoaded) {

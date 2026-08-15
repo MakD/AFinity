@@ -37,11 +37,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalAutofillManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -65,6 +69,7 @@ internal fun AudiobookshelfLoginContent(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
+    val autofillManager = LocalAutofillManager.current
     @Suppress("UNUSED_VARIABLE") val context = LocalContext.current
     var passwordVisible by remember { mutableStateOf(false) }
 
@@ -125,7 +130,7 @@ internal fun AudiobookshelfLoginContent(
                     ),
                 keyboardActions =
                     KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Username },
             )
 
             AfinityTextField(
@@ -169,13 +174,14 @@ internal fun AudiobookshelfLoginContent(
                 keyboardActions =
                     KeyboardActions(
                         onDone = {
+                            autofillManager?.commit()
                             focusManager.clearFocus()
                             if (!uiState.isLoggingIn) {
                                 viewModel.login()
                             }
                         }
                     ),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Password },
             )
         }
 
@@ -214,6 +220,7 @@ internal fun AudiobookshelfLoginContent(
             loading = uiState.isLoggingIn,
             text = stringResource(R.string.btn_login),
             onClick = {
+                autofillManager?.commit()
                 focusManager.clearFocus()
                 viewModel.login()
             },

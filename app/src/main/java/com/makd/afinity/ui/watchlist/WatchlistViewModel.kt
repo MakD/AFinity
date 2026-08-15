@@ -3,8 +3,8 @@ package com.makd.afinity.ui.watchlist
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
+import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.MediaChangeManager
-import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -15,22 +15,23 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.FieldSets
-import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
-import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -47,28 +48,17 @@ constructor(
     private val mediaRepository: MediaRepository,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
-    private val sessionManager: SessionManager,
     private val itemUserDataDelegate: ItemUserDataDelegate,
-    private val preferencesRepository: PreferencesRepository,
-    private val networkMonitor: NetworkConnectivityMonitor,
+    private val downloadPermissions: DownloadPermissions,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WatchlistUiState())
     private var lastWatchlistLoadedAt = 0L
 
-    val isDownloadAllowedByServer: StateFlow<Boolean> =
-        sessionManager.currentSession
-            .map { it?.canDownload != false }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val isDownloadAllowedByServer: StateFlow<Boolean> = downloadPermissions.isAllowedByServer
 
-    val canDownloadOnNetwork: StateFlow<Boolean> =
-        combine(
-                preferencesRepository.getDownloadWifiOnlyFlow(),
-                networkMonitor.isOnWifiFlow,
-            ) { wifiOnly, onWifi ->
-                !wifiOnly || onWifi
-            }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val canDownloadOnNetwork: StateFlow<Boolean> = downloadPermissions.isAllowedOnNetwork
+
     val uiState: StateFlow<WatchlistUiState> = _uiState.asStateFlow()
 
     private val _selectedEpisode = MutableStateFlow<AfinityEpisode?>(null)
@@ -86,6 +76,8 @@ constructor(
         _selectedEpisodeDownloadInfo.asStateFlow()
 
     init {
+        observeSelectedEpisodeDownload()
+
         viewModelScope.launch { adminChangeBroadcaster.itemChanged.collect { loadWatchlist() } }
 
         viewModelScope.launch {
@@ -132,6 +124,22 @@ constructor(
         Timber.d("Watchlist item clicked: ${item.name} (${item.id})")
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun observeSelectedEpisodeDownload() {
+        _selectedEpisode
+            .map { it?.id }
+            .distinctUntilChanged()
+            .flatMapLatest { id ->
+                if (id == null) flowOf(null)
+                else
+                    downloadRepository.getAllDownloadsFlow().map { downloads ->
+                        downloads.find { it.itemId == id }
+                    }
+            }
+            .onEach { _selectedEpisodeDownloadInfo.value = it }
+            .launchIn(viewModelScope)
+    }
+
     fun selectEpisode(episode: AfinityEpisode) {
         viewModelScope.launch {
             try {
@@ -146,9 +154,6 @@ constructor(
 
                 val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
                 _selectedEpisodeWatchlistStatus.value = isInWatchlist
-
-                val episodeDownload = downloadRepository.getDownloadByItemId(episode.id)
-                _selectedEpisodeDownloadInfo.value = episodeDownload
 
                 _isLoadingEpisode.value = false
             } catch (e: Exception) {

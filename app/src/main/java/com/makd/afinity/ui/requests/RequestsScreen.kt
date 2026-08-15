@@ -133,23 +133,23 @@ fun RequestsScreen(
                                     RequestStatus.fromValue(req.status) == RequestStatus.COMPLETED
                                 }
                                 .groupBy { req ->
-                                    "${req.media.tmdbId}_${req.getMediaType()}"
+                                    (req.media.tmdbId?.toString() ?: "req_${req.id}") to
+                                        req.media.mediaType
                                 }
                                 .map { (_, groupedRequests) ->
-                                    val firstRequest =
-                                        groupedRequests.minByOrNull { it.id }
-                                            ?: groupedRequests.first()
-                                    val extraCount = groupedRequests.size - 1
-
                                     DisplayRequest(
-                                        request = firstRequest,
-                                        additionalRequestersCount = extraCount,
+                                        request = groupedRequests.minBy { it.id },
+                                        additionalRequestersCount =
+                                            groupedRequests
+                                                .distinctBy { it.requestedBy.displayName }
+                                                .size - 1,
+                                        sortKey =
+                                            groupedRequests.firstNotNullOfOrNull {
+                                                it.media.mediaAddedAt
+                                            } ?: groupedRequests.maxOf { it.updatedAt },
                                     )
                                 }
-                                .sortedByDescending { displayReq ->
-                                    displayReq.request.media.mediaAddedAt
-                                        ?: displayReq.request.updatedAt
-                                }
+                                .sortedByDescending { displayReq -> displayReq.sortKey }
                         }
 
                     LazyColumn(
@@ -546,4 +546,5 @@ private fun EmptyStateView(modifier: Modifier = Modifier) {
 data class DisplayRequest(
     val request: JellyseerrRequest,
     val additionalRequestersCount: Int,
+    val sortKey: String,
 )

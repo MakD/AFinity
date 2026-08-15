@@ -661,6 +661,7 @@
     <string name="cd_approve">Approve</string>
     <string name="cd_decline">Decline</string>
     <string name="requested_by_fmt">Requested by %1$s</string>
+    <string name="requested_by_multiple_fmt">Requested by %1$s +%2$d</string>
     <string name="user_unknown">Unknown</string>
 
     <string name="requests_title">Requests</string>
@@ -1488,6 +1489,12 @@
     <string name="error_email_username_required">Email or username is required</string>
     <string name="error_password_required">Password is required</string>
     <string name="error_invalid_credentials">Invalid email or password</string>
+    <string name="jellyseerr_username_from_jellyfin">From your Jellyfin account</string>
+    <string name="jellyseerr_email_hint">Your Seerr account email</string>
+    <string name="jellyseerr_connect_subtitle_found_fmt">Found %1$s. Sign in to enable content requests.</string>
+    <string name="error_invalid_jellyfin_password">Incorrect password for your Jellyfin account.</string>
+    <string name="error_no_jellyfin_session">No active Jellyfin session. Sign in to Jellyfin first.</string>
+    <string name="error_seerr_account_setup_failed">Seerr accepted your credentials but could not finish setting up your account. Ask your Seerr administrator to check the server logs.</string>
     <string name="error_server_connect_failed_fmt">Failed to connect to server: %1$s</string>
     <string name="error_login_failed_fmt">Login failed: %1$s</string>
     <string name="error_username_required">Username is required</string>
@@ -1695,6 +1702,13 @@
     </plurals>
     <string name="playlist_play_music">Play music</string>
     <string name="playlist_play_videos">Play videos</string>
+    <string name="playlist_download_choice_title">Download music or videos?</string>
+    <string name="playlist_download_songs_only">Songs only</string>
+    <string name="playlist_download_videos_only">Videos only</string>
+    <string name="playlist_download_everything">Everything</string>
+    <string name="playlist_download_partial_fmt">Started %1$d of %2$d downloads</string>
+    <string name="playlist_download_failed">Couldn\'t start the download</string>
+    <string name="playlist_download_failed_fmt">Couldn\'t start the download: %1$s</string>
     <!-- Playlist -->
     <plurals name="music_playlist_song_count">
         <item quantity="one">%1$d song</item>

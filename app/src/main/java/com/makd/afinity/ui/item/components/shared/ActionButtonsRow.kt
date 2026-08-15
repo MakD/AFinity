@@ -34,12 +34,10 @@ import com.makd.afinity.ui.item.components.DownloadProgressIndicator
 
 @Composable
 fun ActionButtonsRow(
-    modifier: Modifier = Modifier,
     item: AfinityItem,
     isInWatchlist: Boolean,
     hasTrailer: Boolean,
     downloadInfo: DownloadInfo?,
-    hasPlayableItems: Boolean = true,
     onPlayTrailer: () -> Unit,
     onToggleWatchlist: () -> Unit,
     onShufflePlay: () -> Unit,
@@ -49,6 +47,8 @@ fun ActionButtonsRow(
     onPauseDownload: () -> Unit,
     onResumeDownload: () -> Unit,
     onCancelDownload: () -> Unit,
+    modifier: Modifier = Modifier,
+    hasPlayableItems: Boolean = true,
     isDownloadAllowedByServer: Boolean = true,
     canDownloadOnNetwork: Boolean = true,
     isLandscape: Boolean = false,
@@ -101,7 +101,7 @@ fun ActionButtonsRow(
             enabled = hasPlayableItems,
         )
 
-        if (isDownloadAllowedByServer && !downloadUnavailable) {
+        if (isDownloadAllowedByServer) {
             DownloadProgressIndicator(
                 downloadInfo = downloadInfo,
                 onDownloadClick = onDownloadClick,
@@ -110,7 +110,7 @@ fun ActionButtonsRow(
                 onCancelClick = onCancelDownload,
                 canDownload = canDownloadOnNetwork && hasPlayableItems,
                 isLandscape = isLandscape,
-                isUnavailable = false,
+                isUnavailable = downloadUnavailable,
                 onDownloadLongClick = onDownloadLongClick,
             )
         }

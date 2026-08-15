@@ -83,6 +83,7 @@ import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemKey
 import com.makd.afinity.R
+import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityMusicGenre
@@ -233,7 +234,9 @@ internal fun TracksList(
     onFavorite: (AfinityTrack, Boolean) -> Unit,
     onAddToPlaylist: ((AfinityTrack) -> Unit)?,
     onDownload: ((AfinityTrack) -> Unit)? = null,
-    downloadedTrackIds: Set<UUID> = emptySet(),
+    onCancelDownload: ((AfinityTrack) -> Unit)? = null,
+    isDownloadEnabled: Boolean = true,
+    trackDownloadInfos: Map<UUID, DownloadInfo> = emptyMap(),
     modifier: Modifier = Modifier,
 ) {
     val isInitialLoading = tracks.loadState.refresh is LoadState.Loading && tracks.itemCount == 0
@@ -273,7 +276,9 @@ internal fun TracksList(
                 onFavorite = { onFavorite(track, effectiveFavorite) },
                 onAddToPlaylist = onAddToPlaylist?.let { atp -> { atp(track) } },
                 onDownload = onDownload?.let { dl -> { dl(track) } },
-                isDownloaded = downloadedTrackIds.contains(track.id),
+                onCancelDownload = onCancelDownload?.let { c -> { c(track) } },
+                isDownloadEnabled = isDownloadEnabled,
+                downloadInfo = trackDownloadInfos[track.id],
             )
         }
     }

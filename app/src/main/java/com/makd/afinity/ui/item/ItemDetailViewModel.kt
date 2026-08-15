@@ -12,6 +12,7 @@ import androidx.paging.map
 import com.makd.afinity.R
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
+import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.MediaChangeSource
 import com.makd.afinity.data.manager.OfflineModeManager
@@ -61,6 +62,7 @@ import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -76,7 +78,11 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -115,6 +121,7 @@ constructor(
     private val preferencesRepository: PreferencesRepository,
     private val storageLocationProvider: StorageLocationProvider,
     private val networkMonitor: NetworkConnectivityMonitor,
+    private val downloadPermissions: DownloadPermissions,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -160,19 +167,9 @@ constructor(
             .map { it?.isAdmin == true }
             .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-    val isDownloadAllowedByServer: StateFlow<Boolean> =
-        sessionManager.currentSession
-            .map { it?.canDownload != false }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val isDownloadAllowedByServer: StateFlow<Boolean> = downloadPermissions.isAllowedByServer
 
-    val canDownloadOnNetwork: StateFlow<Boolean> =
-        combine(
-                preferencesRepository.getDownloadWifiOnlyFlow(),
-                networkMonitor.isOnWifiFlow,
-            ) { wifiOnly, onWifi ->
-                !wifiOnly || onWifi
-            }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val canDownloadOnNetwork: StateFlow<Boolean> = downloadPermissions.isAllowedOnNetwork
 
     private val _selectedMediaSource = MutableStateFlow<MediaSourceOption?>(null)
     val selectedMediaSource = _selectedMediaSource.asStateFlow()
@@ -1187,6 +1184,26 @@ constructor(
     val selectedEpisodeDownloadInfo: StateFlow<DownloadInfo?> =
         _selectedEpisodeDownloadInfo.asStateFlow()
 
+    init {
+        observeSelectedEpisodeDownload()
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun observeSelectedEpisodeDownload() {
+        _selectedEpisode
+            .map { it?.id }
+            .distinctUntilChanged()
+            .flatMapLatest { id ->
+                if (id == null) flowOf(null)
+                else
+                    downloadRepository.getAllDownloadsFlow().map { downloads ->
+                        downloads.find { it.itemId == id }
+                    }
+            }
+            .onEach { _selectedEpisodeDownloadInfo.value = it }
+            .launchIn(viewModelScope)
+    }
+
     fun selectEpisode(episode: AfinityEpisode) {
         viewModelScope.launch {
             try {
@@ -1208,20 +1225,6 @@ constructor(
                 _selectedEpisode.value = fullEpisode ?: episode
                 _selectedEpisodeWatchlistStatus.value = episode.liked
 
-                try {
-                    _selectedEpisodeDownloadInfo.value =
-                        downloadRepository.getDownloadByItemId(episode.id)
-                } catch (_: Exception) {
-                    _selectedEpisodeDownloadInfo.value = null
-                }
-
-                launch {
-                    downloadRepository.getAllDownloadsFlow().collect { downloads ->
-                        _selectedEpisode.value?.id?.let { id ->
-                            _selectedEpisodeDownloadInfo.value = downloads.find { it.itemId == id }
-                        }
-                    }
-                }
                 _isLoadingEpisode.value = false
             } catch (_: Exception) {
                 _selectedEpisode.value = episode

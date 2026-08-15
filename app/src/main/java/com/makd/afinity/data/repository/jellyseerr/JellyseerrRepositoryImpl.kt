@@ -58,7 +58,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -99,6 +98,11 @@ constructor(
     private var activeContext: Pair<String, UUID>? = null
 
     private var cachedPublicSettings: PublicSettings? = null
+
+    private val publicSettingsJson = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
 
     companion object {
         private const val CACHE_VALIDITY_MS = 5 * 60 * 1000L
@@ -166,28 +170,26 @@ constructor(
         }
     }
 
-    override suspend fun verifyServer(url: String): Boolean {
+    override suspend fun verifyServer(url: String): PublicSettings? {
         return withContext(Dispatchers.IO) {
-            try {
-                var cleanUrl = url.trim().removeSuffix("/")
-                if (!cleanUrl.endsWith("/api/v1/status", ignoreCase = true)) {
-                    cleanUrl = "$cleanUrl/api/v1/status"
-                }
+            val base =
+                url.trim().removeSuffix("/").removeSuffix("/api/v1/status").removeSuffix("/")
+            fetchPublicSettings(base)
+        }
+    }
 
-                val client =
-                    okhttp3.OkHttpClient.Builder()
-                        .connectTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
-                        .readTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
-                        .build()
-
-                val request = okhttp3.Request.Builder().url(cleanUrl).get().build()
-
-                val response = client.newCall(request).execute()
-                response.isSuccessful
-            } catch (e: Exception) {
-                Timber.d("Jellyseerr server verification failed for $url: ${e.message}")
-                false
+    private fun fetchPublicSettings(baseUrl: String): PublicSettings? {
+        return try {
+            val request =
+                okhttp3.Request.Builder().url("$baseUrl/api/v1/settings/public").get().build()
+            identityClient().newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return null
+                val body = response.body?.string() ?: return null
+                publicSettingsJson.decodeFromString<PublicSettings>(body)
             }
+        } catch (e: Exception) {
+            Timber.d("Jellyseerr public settings fetch failed for $baseUrl: ${e.message}")
+            null
         }
     }
 
@@ -197,24 +199,8 @@ constructor(
             .readTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
             .build()
 
-    private fun fetchInstanceId(baseUrl: String): String? {
-        return try {
-            val request =
-                okhttp3.Request.Builder().url("$baseUrl/api/v1/settings/public").get().build()
-            identityClient().newCall(request).execute().use { response ->
-                if (!response.isSuccessful) return null
-                val body = response.body?.string() ?: return null
-                Json.parseToJsonElement(body)
-                    .jsonObject["plexClientIdentifier"]
-                    ?.jsonPrimitive
-                    ?.contentOrNull
-                    ?.takeIf { it.isNotBlank() }
-            }
-        } catch (e: Exception) {
-            Timber.d("Jellyseerr instance id fetch failed for $baseUrl: ${e.message}")
-            null
-        }
-    }
+    private fun fetchInstanceId(baseUrl: String): String? =
+        fetchPublicSettings(baseUrl)?.instanceId?.takeIf { it.isNotBlank() }
 
     override suspend fun verifyAddressIdentity(url: String): AddressCheck {
         return withContext(Dispatchers.IO) {
@@ -358,7 +344,12 @@ constructor(
 
                 val response =
                     if (useJellyfinAuth) {
-                        val jellyfinRequest = JellyfinLoginRequest(email, password)
+                        val jellyfinRequest =
+                            JellyfinLoginRequest(
+                                username = email,
+                                password = password,
+                                email = email.lowercase(),
+                            )
                         apiService.get().loginJellyfin(jellyfinRequest)
                     } else {
                         val localRequest = LoginRequest(email, password)
@@ -466,7 +457,7 @@ constructor(
                 } else {
                     val errorMsg = "Login failed: ${response.code()} - ${response.message()}"
                     Timber.e(errorMsg)
-                    Result.failure(Exception(errorMsg))
+                    Result.failure(JellyseerrLoginException(response.code(), errorMsg))
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Jellyseerr login failed")
@@ -1814,7 +1805,7 @@ constructor(
             status = status,
             media =
                 MediaInfo(
-                    id = id,
+                    id = 0,
                     mediaType = mediaType,
                     tmdbId = tmdbId,
                     tvdbId = tvdbId,

@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,7 +66,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.makd.afinity.R
-import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.data.models.download.PlaylistDownloadFilter
 import com.makd.afinity.data.models.media.PlaylistEntry
 import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.navigation.LocalPlayerOffset
@@ -120,6 +121,7 @@ fun PlaylistScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     var playChoiceShuffle by remember { mutableStateOf<Boolean?>(null) }
+    var showDownloadChoice by remember { mutableStateOf(false) }
     var draggedKey by remember { mutableStateOf<String?>(null) }
     val reorderState =
         rememberReorderableLazyListState(lazyListState) { from, to ->
@@ -143,6 +145,26 @@ fun PlaylistScreen(
                 playlistId = request.playlistId,
                 shuffle = request.shuffle,
             )
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.downloadMessages.collect { message ->
+            val text =
+                when (message) {
+                    is PlaylistDownloadMessage.PartiallyStarted ->
+                        context.getString(
+                            R.string.playlist_download_partial_fmt,
+                            message.started,
+                            message.expected,
+                        )
+
+                    is PlaylistDownloadMessage.Failed ->
+                        message.reason?.let {
+                            context.getString(R.string.playlist_download_failed_fmt, it)
+                        } ?: context.getString(R.string.playlist_download_failed)
+                }
+            snackbarHostState.showSnackbar(text)
         }
     }
 
@@ -332,7 +354,10 @@ fun PlaylistScreen(
                             if (isDownloadAllowedByServer) {
                                 DownloadProgressIndicator(
                                     downloadInfo = uiState.playlistDownloadInfo,
-                                    onDownloadClick = { viewModel.downloadPlaylist() },
+                                    onDownloadClick = {
+                                        if (uiState.isMixed) showDownloadChoice = true
+                                        else viewModel.downloadPlaylist()
+                                    },
                                     onPauseClick = {},
                                     onResumeClick = { viewModel.downloadPlaylist() },
                                     onCancelClick = { viewModel.cancelPlaylistDownload() },
@@ -414,14 +439,16 @@ fun PlaylistScreen(
                                         },
                                         onRemoveFromPlaylist = { viewModel.removeEntry(entry) },
                                         onDownload =
-                                            if (isDownloadAllowedByServer && canDownloadOnNetwork)
+                                            if (isDownloadAllowedByServer)
                                                 ({
                                                     viewModel.downloadTrack(track.id)
                                                 })
                                             else null,
-                                        isDownloaded =
-                                            uiState.trackDownloadInfos[track.id]?.status ==
-                                                DownloadStatus.COMPLETED,
+                                        isDownloadEnabled = canDownloadOnNetwork,
+                                        onCancelDownload = {
+                                            viewModel.cancelTrackDownload(track.id)
+                                        },
+                                        downloadInfo = uiState.trackDownloadInfos[track.id],
                                         modifier = dragModifier,
                                     )
                                 }
@@ -588,7 +615,10 @@ fun PlaylistScreen(
                         if (isDownloadAllowedByServer) {
                             DownloadProgressIndicator(
                                 downloadInfo = uiState.playlistDownloadInfo,
-                                onDownloadClick = { viewModel.downloadPlaylist() },
+                                onDownloadClick = {
+                                    if (uiState.isMixed) showDownloadChoice = true
+                                    else viewModel.downloadPlaylist()
+                                },
                                 onPauseClick = {},
                                 onResumeClick = { viewModel.downloadPlaylist() },
                                 onCancelClick = { viewModel.cancelPlaylistDownload() },
@@ -670,14 +700,14 @@ fun PlaylistScreen(
                                     },
                                     onRemoveFromPlaylist = { viewModel.removeEntry(entry) },
                                     onDownload =
-                                        if (isDownloadAllowedByServer && canDownloadOnNetwork)
+                                        if (isDownloadAllowedByServer)
                                             ({
                                                 viewModel.downloadTrack(track.id)
                                             })
                                         else null,
-                                    isDownloaded =
-                                        uiState.trackDownloadInfos[track.id]?.status ==
-                                            DownloadStatus.COMPLETED,
+                                    isDownloadEnabled = canDownloadOnNetwork,
+                                    onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
+                                    downloadInfo = uiState.trackDownloadInfos[track.id],
                                     modifier = dragModifier,
                                 )
                             }
@@ -781,6 +811,66 @@ fun PlaylistScreen(
         )
     }
 
+    if (showDownloadChoice) {
+        AlertDialog(
+            onDismissRequest = { showDownloadChoice = false },
+            title = { Text(stringResource(R.string.playlist_download_choice_title)) },
+            text = {
+                Column {
+                    Text(
+                        stringResource(
+                            R.string.playlist_play_choice_message,
+                            pluralStringResource(
+                                R.plurals.playlist_choice_songs,
+                                uiState.audioCount,
+                                uiState.audioCount,
+                            ),
+                            pluralStringResource(
+                                R.plurals.playlist_choice_videos,
+                                uiState.videoCount,
+                                uiState.videoCount,
+                            ),
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    DownloadChoiceRow(
+                        iconRes = R.drawable.ic_music,
+                        label = stringResource(R.string.playlist_download_songs_only),
+                        count = uiState.audioCount,
+                        onClick = {
+                            showDownloadChoice = false
+                            viewModel.downloadPlaylist(PlaylistDownloadFilter.AUDIO)
+                        },
+                    )
+                    DownloadChoiceRow(
+                        iconRes = R.drawable.ic_music_video,
+                        label = stringResource(R.string.playlist_download_videos_only),
+                        count = uiState.videoCount,
+                        onClick = {
+                            showDownloadChoice = false
+                            viewModel.downloadPlaylist(PlaylistDownloadFilter.VIDEO)
+                        },
+                    )
+                    DownloadChoiceRow(
+                        iconRes = R.drawable.ic_download,
+                        label = stringResource(R.string.playlist_download_everything),
+                        count = uiState.audioCount + uiState.videoCount,
+                        onClick = {
+                            showDownloadChoice = false
+                            viewModel.downloadPlaylist(PlaylistDownloadFilter.ALL)
+                        },
+                    )
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showDownloadChoice = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
+    }
+
     if (showDeleteConfirm) {
 
         AlertDialog(
@@ -869,6 +959,38 @@ private fun PlaylistArtistsRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun DownloadChoiceRow(iconRes: Int, label: String, count: Int, onClick: () -> Unit) {
+    if (count <= 0) return
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onClick)
+                .padding(horizontal = 8.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp),
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = count.toString(),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

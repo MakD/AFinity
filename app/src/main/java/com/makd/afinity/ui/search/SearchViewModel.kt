@@ -2,8 +2,8 @@ package com.makd.afinity.ui.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.MediaChangeManager
-import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.manager.resolveChangedItems
 import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
@@ -37,17 +37,16 @@ import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyseerrRepository
-import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
-import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -55,16 +54,17 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -83,32 +83,21 @@ constructor(
     private val appDataRepository: AppDataRepository,
     private val audiobookshelfRepository: AudiobookshelfRepository,
     private val mediaChangeManager: MediaChangeManager,
-    private val sessionManager: SessionManager,
     private val downloadRepository: DownloadRepository,
     private val userDataRepository: UserDataRepository,
     private val authRepository: AuthRepository,
     private val databaseRepository: DatabaseRepository,
     private val itemUserDataDelegate: ItemUserDataDelegate,
-    private val preferencesRepository: PreferencesRepository,
-    private val networkMonitor: NetworkConnectivityMonitor,
     private val musicRepository: MusicRepository,
+    private val downloadPermissions: DownloadPermissions,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState())
 
-    val isDownloadAllowedByServer: StateFlow<Boolean> =
-        sessionManager.currentSession
-            .map { it?.canDownload != false }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val isDownloadAllowedByServer: StateFlow<Boolean> = downloadPermissions.isAllowedByServer
 
-    val canDownloadOnNetwork: StateFlow<Boolean> =
-        combine(
-                preferencesRepository.getDownloadWifiOnlyFlow(),
-                networkMonitor.isOnWifiFlow,
-            ) { wifiOnly, onWifi ->
-                !wifiOnly || onWifi
-            }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val canDownloadOnNetwork: StateFlow<Boolean> = downloadPermissions.isAllowedOnNetwork
+
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
     val isJellyseerrAuthenticated = jellyseerrRepository.isAuthenticated
@@ -144,6 +133,8 @@ constructor(
     private var lastQueryAt = 0L
 
     init {
+        observeSelectedEpisodeDownload()
+
         viewModelScope.launch {
             searchQueryFlow.debounce(300).distinctUntilChanged().collectLatest { query ->
                 if (query.length >= 2) {
@@ -234,6 +225,22 @@ constructor(
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun observeSelectedEpisodeDownload() {
+        _selectedEpisode
+            .map { it?.id }
+            .distinctUntilChanged()
+            .flatMapLatest { id ->
+                if (id == null) flowOf(null)
+                else
+                    downloadRepository.getAllDownloadsFlow().map { downloads ->
+                        downloads.find { it.itemId == id }
+                    }
+            }
+            .onEach { _selectedEpisodeDownloadInfo.value = it }
+            .launchIn(viewModelScope)
+    }
+
     fun selectEpisode(episode: AfinityEpisode) {
         viewModelScope.launch {
             try {
@@ -255,20 +262,6 @@ constructor(
                 _selectedEpisode.value = fullEpisode ?: episode
                 _selectedEpisodeWatchlistStatus.value = episode.liked
 
-                try {
-                    _selectedEpisodeDownloadInfo.value =
-                        downloadRepository.getDownloadByItemId(episode.id)
-                } catch (e: Exception) {
-                    _selectedEpisodeDownloadInfo.value = null
-                }
-
-                launch {
-                    downloadRepository.getAllDownloadsFlow().collect { downloads ->
-                        _selectedEpisode.value?.id?.let { id ->
-                            _selectedEpisodeDownloadInfo.value = downloads.find { it.itemId == id }
-                        }
-                    }
-                }
                 _isLoadingEpisode.value = false
             } catch (e: Exception) {
                 _selectedEpisode.value = episode

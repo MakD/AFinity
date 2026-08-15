@@ -36,14 +36,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.item.components.DownloadProgressIndicator
 import java.util.concurrent.TimeUnit
 
 @Composable
 fun MusicTrackRow(
-    modifier: Modifier = Modifier,
     track: AfinityTrack,
+    modifier: Modifier = Modifier,
     isPlaying: Boolean = false,
     trackNumber: Int? = null,
     showAlbumArt: Boolean = true,
@@ -56,10 +59,16 @@ fun MusicTrackRow(
     onAddToPlaylist: (() -> Unit)? = null,
     onRemoveFromPlaylist: (() -> Unit)? = null,
     onDownload: (() -> Unit)? = null,
+    onCancelDownload: (() -> Unit)? = null,
     isDownloadEnabled: Boolean = true,
-    isDownloaded: Boolean = false,
+    downloadInfo: DownloadInfo? = null,
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    val downloadStatus = downloadInfo?.status
+    val isDownloadIdle =
+        downloadStatus == null ||
+            downloadStatus == DownloadStatus.FAILED ||
+            downloadStatus == DownloadStatus.CANCELLED
     val hasMenuItems =
         onInstantMix != null ||
             onStartRadio != null ||
@@ -155,13 +164,26 @@ fun MusicTrackRow(
             }
         }
 
-        if (isDownloaded) {
-            Icon(
-                painter = painterResource(R.drawable.ic_sd_card),
-                contentDescription = stringResource(R.string.cd_music_downloaded),
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 6.dp).size(14.dp),
-            )
+        when {
+            downloadStatus == DownloadStatus.COMPLETED ->
+                Icon(
+                    painter = painterResource(R.drawable.ic_sd_card),
+                    contentDescription = stringResource(R.string.cd_music_downloaded),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 6.dp).size(14.dp),
+                )
+
+            !isDownloadIdle && onCancelDownload != null ->
+                DownloadProgressIndicator(
+                    modifier = Modifier.padding(start = 6.dp).size(32.dp),
+                    downloadInfo = downloadInfo,
+                    onDownloadClick = { onDownload?.invoke() },
+                    onPauseClick = {},
+                    onResumeClick = { onDownload?.invoke() },
+                    onCancelClick = onCancelDownload,
+                    canDownload = isDownloadEnabled,
+                    iconSize = 20.dp,
+                )
         }
 
         Text(
@@ -311,17 +333,44 @@ fun MusicTrackRow(
                         )
                     }
                     if (onDownload != null) {
+                        val labelRes =
+                            when (downloadStatus) {
+                                DownloadStatus.QUEUED,
+                                DownloadStatus.DOWNLOADING -> R.string.cd_cancel_download
+                                DownloadStatus.PAUSED -> R.string.cd_resume_download
+                                DownloadStatus.COMPLETED -> R.string.cd_delete_download
+                                else -> R.string.action_download
+                            }
+                        val iconRes =
+                            when (downloadStatus) {
+                                DownloadStatus.QUEUED,
+                                DownloadStatus.DOWNLOADING -> R.drawable.ic_cancel
+                                DownloadStatus.COMPLETED -> R.drawable.ic_delete
+                                else -> R.drawable.ic_download
+                            }
                         DropdownMenuItem(
-                            text = { Text(stringResource(R.string.action_download)) },
+                            text = { Text(stringResource(labelRes)) },
                             onClick = {
                                 showMenu = false
-                                onDownload()
+                                if (isDownloadIdle || downloadStatus == DownloadStatus.PAUSED) {
+                                    onDownload()
+                                } else {
+                                    onCancelDownload?.invoke()
+                                }
                             },
-                            enabled = isDownloadEnabled,
+                            enabled = isDownloadEnabled || !isDownloadIdle,
                             leadingIcon = {
                                 Icon(
-                                    painter = painterResource(R.drawable.ic_download),
+                                    painter = painterResource(iconRes),
                                     contentDescription = null,
+                                    tint =
+                                        if (
+                                            downloadStatus == DownloadStatus.COMPLETED ||
+                                                downloadStatus == DownloadStatus.QUEUED ||
+                                                downloadStatus == DownloadStatus.DOWNLOADING
+                                        )
+                                            Color.Red
+                                        else LocalContentColor.current,
                                     modifier = Modifier.size(18.dp),
                                 )
                             },

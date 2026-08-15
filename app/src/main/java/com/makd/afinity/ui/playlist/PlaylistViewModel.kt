@@ -3,31 +3,26 @@ package com.makd.afinity.ui.playlist
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.data.models.download.PlaylistDownloadFilter
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.PlaylistEntry
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.FieldSets
-import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.music.MusicRepository
-import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -35,6 +30,12 @@ import java.util.UUID
 import javax.inject.Inject
 
 data class PlaylistArtistEntry(val name: String, val imageUrl: String?)
+
+sealed interface PlaylistDownloadMessage {
+    data class PartiallyStarted(val started: Int, val expected: Int) : PlaylistDownloadMessage
+
+    data class Failed(val reason: String?) : PlaylistDownloadMessage
+}
 
 data class VideoPlaybackRequest(
     val itemId: UUID,
@@ -99,27 +100,15 @@ constructor(
     private val mediaRepository: MediaRepository,
     private val downloadRepository: DownloadRepository,
     private val appDataRepository: AppDataRepository,
-    private val sessionManager: SessionManager,
-    private val preferencesRepository: PreferencesRepository,
-    private val networkMonitor: NetworkConnectivityMonitor,
+    private val downloadPermissions: DownloadPermissions,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     val playlistId: UUID = UUID.fromString(savedStateHandle.get<String>("playlistId")!!)
 
-    val isDownloadAllowedByServer: StateFlow<Boolean> =
-        sessionManager.currentSession
-            .map { it?.canDownload != false }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val isDownloadAllowedByServer: StateFlow<Boolean> = downloadPermissions.isAllowedByServer
 
-    val canDownloadOnNetwork: StateFlow<Boolean> =
-        combine(
-                preferencesRepository.getDownloadWifiOnlyFlow(),
-                networkMonitor.isOnWifiFlow,
-            ) { wifiOnly, onWifi ->
-                !wifiOnly || onWifi
-            }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val canDownloadOnNetwork: StateFlow<Boolean> = downloadPermissions.isAllowedOnNetwork
 
     private val audioOnly: Boolean = savedStateHandle.get<String>("audioOnly")?.toBoolean() == true
 
@@ -127,6 +116,9 @@ constructor(
 
     private val _videoPlaybackRequests = MutableSharedFlow<VideoPlaybackRequest>()
     val videoPlaybackRequests = _videoPlaybackRequests.asSharedFlow()
+
+    private val _downloadMessages = MutableSharedFlow<PlaylistDownloadMessage>()
+    val downloadMessages = _downloadMessages.asSharedFlow()
     val uiState: StateFlow<PlaylistUiState> = _uiState.asStateFlow()
 
     init {
@@ -249,19 +241,46 @@ constructor(
         }
     }
 
-    fun downloadPlaylist() {
-        viewModelScope.launch {
-            downloadRepository.startPlaylistDownload(playlistId).onFailure {
-                Timber.e(it, "Failed to start playlist download")
+    fun downloadPlaylist(filter: PlaylistDownloadFilter = defaultDownloadFilter()) {
+        val expected =
+            _uiState.value.let { state ->
+                when (filter) {
+                    PlaylistDownloadFilter.AUDIO -> state.audioCount
+                    PlaylistDownloadFilter.VIDEO -> state.videoCount
+                    PlaylistDownloadFilter.ALL -> state.audioCount + state.videoCount
+                }
             }
+        viewModelScope.launch {
+            downloadRepository
+                .startPlaylistDownload(playlistId, filter = filter)
+                .onSuccess { started ->
+                    if (started < expected) {
+                        _downloadMessages.emit(
+                            PlaylistDownloadMessage.PartiallyStarted(started, expected)
+                        )
+                    }
+                }
+                .onFailure {
+                    Timber.e(it, "Failed to start playlist download")
+                    _downloadMessages.emit(PlaylistDownloadMessage.Failed(it.message))
+                }
         }
     }
 
+    fun defaultDownloadFilter(): PlaylistDownloadFilter =
+        when {
+            _uiState.value.audioOnly -> PlaylistDownloadFilter.AUDIO
+            _uiState.value.videoCount == 0 -> PlaylistDownloadFilter.AUDIO
+            _uiState.value.audioCount == 0 -> PlaylistDownloadFilter.VIDEO
+            else -> PlaylistDownloadFilter.ALL
+        }
+
     fun cancelPlaylistDownload() {
+        val isDelete = _uiState.value.playlistDownloadInfo?.status == DownloadStatus.COMPLETED
         viewModelScope.launch {
-            _uiState.value.trackDownloadInfos.values.forEach {
-                downloadRepository.cancelDownload(it.id)
-            }
+            _uiState.value.trackDownloadInfos.values
+                .filter { isDelete || it.status != DownloadStatus.COMPLETED }
+                .forEach { downloadRepository.cancelDownload(it.id) }
         }
     }
 
@@ -279,11 +298,15 @@ constructor(
     private fun updateDownloadState(allDownloads: List<DownloadInfo>) {
         val entries = _uiState.value.entries
         val entryIds = entries.map { it.id }.toSet()
-        val playlistDownloads = allDownloads.filter { it.itemId in entryIds }
+        val playlistIdStr = playlistId.toString()
+        val stamped = allDownloads.filter { it.playlistId == playlistIdStr }
+        val playlistDownloads = allDownloads.filter {
+            it.itemId in entryIds || it.playlistId == playlistIdStr
+        }
+        val expected = if (stamped.isNotEmpty()) stamped.size else entries.size
         _uiState.update {
             it.copy(
-                playlistDownloadInfo =
-                    aggregatePlaylistDownloadInfo(playlistDownloads, entries.size),
+                playlistDownloadInfo = aggregatePlaylistDownloadInfo(playlistDownloads, expected),
                 trackDownloadInfos = playlistDownloads.associateBy { info -> info.itemId },
             )
         }
@@ -336,6 +359,11 @@ constructor(
                 Timber.e(it, "Failed to download track $trackId")
             }
         }
+    }
+
+    fun cancelTrackDownload(trackId: UUID) {
+        val info = _uiState.value.trackDownloadInfos[trackId] ?: return
+        viewModelScope.launch { downloadRepository.cancelDownload(info.id) }
     }
 
     fun reload() {

@@ -7,4 +7,5 @@ import kotlinx.serialization.Serializable
 data class JellyfinLoginRequest(
     @SerialName("username") val username: String,
     @SerialName("password") val password: String,
+    @SerialName("email") val email: String,
 )

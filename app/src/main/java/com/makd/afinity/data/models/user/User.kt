@@ -27,4 +27,5 @@ data class User(
     val primaryImageTag: String? = null,
     val isAdmin: Boolean = false,
     val canAccessLiveTv: Boolean? = null,
+    val canDownload: Boolean? = null,
 )

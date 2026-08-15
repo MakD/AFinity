@@ -40,10 +40,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalAutofillManager
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -67,6 +71,7 @@ internal fun JellyseerrLoginContent(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
+    val autofillManager = LocalAutofillManager.current
     var passwordVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.loginSuccess) {
@@ -91,8 +96,18 @@ internal fun JellyseerrLoginContent(
                 text = stringResource(R.string.jellyseerr_connect_title),
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             )
+            val instanceTitle =
+                uiState.publicSettings?.applicationTitle?.takeIf { it.isNotBlank() }
             Text(
-                text = stringResource(R.string.jellyseerr_connect_subtitle),
+                text =
+                    if (instanceTitle != null) {
+                        stringResource(
+                            R.string.jellyseerr_connect_subtitle_found_fmt,
+                            instanceTitle,
+                        )
+                    } else {
+                        stringResource(R.string.jellyseerr_connect_subtitle)
+                    },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -116,41 +131,47 @@ internal fun JellyseerrLoginContent(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                text = stringResource(R.string.label_login_method),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Medium,
-            )
+        val settings = uiState.publicSettings
+        val showLoginMethodChoice =
+            settings == null || (settings.localLogin && settings.mediaServerLogin)
 
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                SegmentedButton(
-                    selected = uiState.useJellyfinAuth,
-                    onClick = { viewModel.setUseJellyfinAuth(true) },
-                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                    enabled = !uiState.isLoading,
-                    colors =
-                        SegmentedButtonDefaults.colors(
-                            activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        ),
-                ) {
-                    Text(stringResource(R.string.login_method_jellyfin))
-                }
+        if (showLoginMethodChoice) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = stringResource(R.string.label_login_method),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Medium,
+                )
 
-                SegmentedButton(
-                    selected = !uiState.useJellyfinAuth,
-                    onClick = { viewModel.setUseJellyfinAuth(false) },
-                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                    enabled = !uiState.isLoading,
-                    colors =
-                        SegmentedButtonDefaults.colors(
-                            activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        ),
-                ) {
-                    Text(stringResource(R.string.login_method_local))
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    SegmentedButton(
+                        selected = uiState.useJellyfinAuth,
+                        onClick = { viewModel.setUseJellyfinAuth(true) },
+                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                        enabled = !uiState.isLoading,
+                        colors =
+                            SegmentedButtonDefaults.colors(
+                                activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            ),
+                    ) {
+                        Text(stringResource(R.string.login_method_jellyfin))
+                    }
+
+                    SegmentedButton(
+                        selected = !uiState.useJellyfinAuth,
+                        onClick = { viewModel.setUseJellyfinAuth(false) },
+                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                        enabled = !uiState.isLoading,
+                        colors =
+                            SegmentedButtonDefaults.colors(
+                                activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            ),
+                    ) {
+                        Text(stringResource(R.string.login_method_local))
+                    }
                 }
             }
         }
@@ -166,9 +187,16 @@ internal fun JellyseerrLoginContent(
                     if (uiState.useJellyfinAuth) stringResource(R.string.placeholder_username)
                     else stringResource(R.string.placeholder_email_example),
                 leadingIcon = painterResource(id = R.drawable.ic_user),
-                supportingText = uiState.emailError,
+                supportingText =
+                    when {
+                        uiState.emailError != null -> uiState.emailError
+                        uiState.useJellyfinAuth ->
+                            stringResource(R.string.jellyseerr_username_from_jellyfin)
+
+                        else -> stringResource(R.string.jellyseerr_email_hint)
+                    },
                 isError = uiState.emailError != null,
-                enabled = !uiState.isLoading,
+                enabled = !uiState.isLoading && !uiState.useJellyfinAuth,
                 keyboardOptions =
                     KeyboardOptions(
                         keyboardType =
@@ -177,7 +205,12 @@ internal fun JellyseerrLoginContent(
                     ),
                 keyboardActions =
                     KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier.fillMaxWidth().semantics {
+                        contentType =
+                            if (uiState.useJellyfinAuth) ContentType.Username
+                            else ContentType.EmailAddress
+                    },
             )
 
             AfinityTextField(
@@ -225,13 +258,15 @@ internal fun JellyseerrLoginContent(
                 keyboardActions =
                     KeyboardActions(
                         onDone = {
+                            autofillManager?.commit()
                             focusManager.clearFocus()
                             if (!uiState.isLoading) {
                                 viewModel.login()
                             }
                         }
                     ),
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier.fillMaxWidth().semantics { contentType = ContentType.Password },
             )
         }
 
@@ -270,6 +305,7 @@ internal fun JellyseerrLoginContent(
             loading = uiState.isLoading,
             text = stringResource(R.string.btn_login),
             onClick = {
+                autofillManager?.commit()
                 focusManager.clearFocus()
                 viewModel.login()
             },

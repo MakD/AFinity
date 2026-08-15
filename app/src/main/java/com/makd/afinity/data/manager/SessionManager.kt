@@ -183,6 +183,7 @@ constructor(
                         server = server,
                         isAdmin = user?.isAdmin == true,
                         canAccessLiveTv = user?.canAccessLiveTv,
+                        canDownload = user?.canDownload,
                     )
 
                 securePrefsRepository.saveActiveSession(serverId, userId, resolvedUrl)
@@ -207,7 +208,11 @@ constructor(
                         val canDownload = userDto.policy?.enableContentDownloading
 
                         val refreshedUser =
-                            user?.copy(isAdmin = isAdmin, canAccessLiveTv = canAccessLiveTv)
+                            user?.copy(
+                                isAdmin = isAdmin,
+                                canAccessLiveTv = canAccessLiveTv,
+                                canDownload = canDownload,
+                            )
                                 ?: User(
                                     id = userDto.id,
                                     name = userDto.name ?: "",
@@ -216,6 +221,7 @@ constructor(
                                     primaryImageTag = userDto.primaryImageTag,
                                     isAdmin = isAdmin,
                                     canAccessLiveTv = canAccessLiveTv,
+                                    canDownload = canDownload,
                                 )
                         databaseRepository.insertUser(refreshedUser)
 

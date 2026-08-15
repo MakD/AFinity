@@ -60,18 +60,23 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalAutofillManager
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -908,6 +913,7 @@ private fun UserAvatarItem(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun PasswordForm(
     uiState: LoginUiState,
@@ -916,6 +922,7 @@ private fun PasswordForm(
     onLogin: () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
+    val autofillManager = LocalAutofillManager.current
     var passwordVisible by remember { mutableStateOf(false) }
     val passwordFocusRequester = remember { FocusRequester() }
 
@@ -925,10 +932,14 @@ private fun PasswordForm(
             onValueChange = onUsernameChange,
             label = stringResource(R.string.login_username_label),
             leadingIcon = painterResource(id = R.drawable.ic_user),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+            keyboardOptions =
+                KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next,
+                ),
             keyboardActions =
                 KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Username },
         )
 
         AfinityTextField(
@@ -949,15 +960,22 @@ private fun PasswordForm(
             visualTransformation =
                 if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions =
-                KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done,
+                ),
             keyboardActions =
                 KeyboardActions(
                     onDone = {
+                        autofillManager?.commit()
                         focusManager.clearFocus()
                         onLogin()
                     }
                 ),
-            modifier = Modifier.fillMaxWidth().focusRequester(passwordFocusRequester),
+            modifier =
+                Modifier.fillMaxWidth().focusRequester(passwordFocusRequester).semantics {
+                    contentType = ContentType.Password
+                },
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -965,7 +983,11 @@ private fun PasswordForm(
         LoadingButton(
             loading = uiState.isLoggingIn,
             text = stringResource(R.string.login_btn_sign_in),
-            onClick = onLogin,
+            onClick = {
+                autofillManager?.commit()
+                focusManager.clearFocus()
+                onLogin()
+            },
             enabled = uiState.username.isNotBlank(),
         )
     }

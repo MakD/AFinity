@@ -552,7 +552,7 @@ constructor(
                 val repository = jellyseerrRepositoryProvider.get()
 
                 for (url in candidateUrls) {
-                    if (repository.verifyServer(url)) {
+                    if (repository.verifyServer(url) != null) {
                         validUrl = url
                         break
                     }
