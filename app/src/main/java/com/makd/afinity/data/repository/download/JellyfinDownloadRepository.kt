@@ -9,6 +9,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.database.entities.toDownloadInfo
+import com.makd.afinity.data.manager.DownloadNotificationManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
@@ -61,6 +62,7 @@ constructor(
     private val databaseRepository: DatabaseRepository,
     private val preferencesRepository: PreferencesRepository,
     private val storageLocationProvider: StorageLocationProvider,
+    private val downloadNotificationManager: DownloadNotificationManager,
     private val workManager: WorkManager,
 ) : DownloadRepository {
 
@@ -405,6 +407,7 @@ constructor(
         withContext(Dispatchers.IO) {
             return@withContext try {
                 workManager.cancelUniqueWork("download_$downloadId")
+                downloadNotificationManager.cancelProgress(downloadId)
 
                 val download = databaseRepository.getDownload(downloadId)
                 if (download != null) {
@@ -458,6 +461,7 @@ constructor(
         withContext(Dispatchers.IO) {
             return@withContext try {
                 workManager.cancelUniqueWork("download_$downloadId")
+                downloadNotificationManager.cancelProgress(downloadId)
 
                 val download = databaseRepository.getDownload(downloadId)
                 if (download != null) {

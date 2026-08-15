@@ -89,6 +89,18 @@ constructor(@param:ApplicationContext private val context: Context) {
         safeNotify(SUMMARY_ACTIVE_ID, notification)
     }
 
+    fun progressNotificationId(downloadId: UUID): Int = downloadId.hashCode()
+
+    fun cancelProgress(downloadId: UUID) {
+        val id = progressNotificationId(downloadId)
+        try {
+            notificationManager.cancel(id)
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to cancel download progress notification")
+        }
+        cleanupActiveSummary(id)
+    }
+
     fun cleanupActiveSummary(ownNotificationId: Int) {
         try {
             val remaining =
