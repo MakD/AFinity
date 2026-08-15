@@ -189,6 +189,14 @@ constructor(
         }
 
         viewModelScope.launch {
+            appDataRepository
+                .getCombineLibrarySectionsFlow()
+                .distinctUntilChanged()
+                .drop(1)
+                .collect { appDataRepository.reloadHomeData() }
+        }
+
+        viewModelScope.launch {
             appDataRepository.getHomeSortByDateAddedFlow().distinctUntilChanged().drop(1).collect {
                 appDataRepository.reloadHomeData()
             }

@@ -475,6 +475,7 @@ constructor(
         limit: Int,
         fields: List<ItemFields>?,
         groupItems: Boolean,
+        includeItemTypes: List<BaseItemKind>?,
     ): List<AfinityItem> =
         apiCall(emptyList(), "Failed to get latest media") { apiClient, userId ->
             UserLibraryApi(apiClient)
@@ -486,6 +487,7 @@ constructor(
                     enableImages = true,
                     enableUserData = true,
                     groupItems = groupItems,
+                    includeItemTypes = includeItemTypes,
                 )
                 .content
                 .mapNotNull { baseItemDto -> baseItemDto.toAfinityItem(getBaseUrl()) }

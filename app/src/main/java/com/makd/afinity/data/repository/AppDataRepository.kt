@@ -66,6 +66,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.jellyfin.sdk.model.api.BaseItemKind
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -566,7 +567,8 @@ constructor(
 
             launch {
                 var previousHidden: Set<HomeRow>? = null
-                homeLayoutPreferencesRepository.hiddenRows.distinctUntilChanged().collect { hidden ->
+                homeLayoutPreferencesRepository.hiddenRows.distinctUntilChanged().collect { hidden
+                    ->
                     val before = previousHidden
                     previousHidden = hidden
                     if (before == null) return@collect
@@ -638,14 +640,25 @@ constructor(
         }
     }
 
-    private suspend fun getLatestShowsForLibrary(libraryId: UUID, limit: Int): List<AfinityShow> {
-        val raw =
+    private suspend fun getLatestShowsForLibrary(libraryId: UUID, limit: Int): List<AfinityShow> =
+        resolveLatestShows(
             mediaRepository.getLatestMedia(
                 parentId = libraryId,
                 limit = limit,
                 groupItems = true,
             )
+        )
 
+    private suspend fun getLatestShowsCombined(limit: Int): List<AfinityShow> =
+        resolveLatestShows(
+            mediaRepository.getLatestMedia(
+                limit = limit,
+                groupItems = true,
+                includeItemTypes = listOf(BaseItemKind.EPISODE),
+            )
+        )
+
+    private suspend fun resolveLatestShows(raw: List<AfinityItem>): List<AfinityShow> {
         val rankedSeriesIds = mutableListOf<UUID>()
         val seenIds = mutableSetOf<UUID>()
         val directShows = mutableMapOf<UUID, AfinityShow>()
@@ -737,9 +750,17 @@ constructor(
                 else latestLibraries.filter { it.type == CollectionType.TvShows }
 
             val useJellyfinDefault = preferencesRepository.getHomeSortByDateAdded()
+            val combinedTvLatest =
+                useJellyfinDefault &&
+                    tvLibraries.isNotEmpty() &&
+                    preferencesRepository.getCombineLibrarySections()
 
-            val (movieResults, showResults) =
+            val (movieResults, showResults, combinedShows) =
                 coroutineScope {
+                    val combinedShowsDeferred = async {
+                        if (combinedTvLatest) getLatestShowsCombined(limit = COMBINED_LATEST_FETCH)
+                        else emptyList()
+                    }
                     val moviesDeferred = async {
                         if (useJellyfinDefault) {
                             movieLibraries
@@ -783,6 +804,7 @@ constructor(
                     }
 
                     val showsDeferred = async {
+                        if (combinedTvLatest) return@async emptyList()
                         tvLibraries
                             .map { library ->
                                 async {
@@ -808,7 +830,11 @@ constructor(
                             .awaitAll()
                     }
 
-                    Pair(moviesDeferred.await(), showsDeferred.await())
+                    Triple(
+                        moviesDeferred.await(),
+                        showsDeferred.await(),
+                        combinedShowsDeferred.await(),
+                    )
                 }
 
             _separateMovieLibrarySections.value =
@@ -832,7 +858,9 @@ constructor(
                 }
 
             val latestTvSeries =
-                if (useJellyfinDefault) {
+                if (combinedTvLatest) {
+                    combinedShows.take(LATEST_RETAINED)
+                } else if (useJellyfinDefault) {
                     mergeByRank(showResults.map { it.second }).take(LATEST_RETAINED)
                 } else {
                     allLatestSeries.sortedByDescending { it.premiereDate }.take(LATEST_RETAINED)
@@ -880,26 +908,6 @@ constructor(
             Timber.d("Refreshed library sections (latest movies + shows)")
         } catch (e: Exception) {
             Timber.e(e, "Failed to refresh library sections")
-        }
-    }
-
-    suspend fun refreshLiveSections() {
-        if (!_isInitialDataLoaded.value) return
-        try {
-            coroutineScope {
-                launch { mediaRepository.invalidateContinueWatchingCache() }
-                launch { mediaRepository.invalidateNextUpCache() }
-                val libs = _libraries.value
-                if (libs.isNotEmpty()) {
-                    launch {
-                        val (latestMovies, latestTvSeries) = loadHomeSpecificData(libs)
-                        if (latestMovies.isNotEmpty()) _latestMovies.value = latestMovies
-                        if (latestTvSeries.isNotEmpty()) _latestTvSeries.value = latestTvSeries
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to refresh live sections")
         }
     }
 
@@ -1196,6 +1204,7 @@ constructor(
     companion object {
         const val LATEST_RETAINED = 25
         const val LATEST_DISPLAYED = 15
+        const val COMBINED_LATEST_FETCH = 60
         private val LATEST_ROWS = setOf(HomeRow.LATEST_MOVIES, HomeRow.LATEST_TV)
     }
 }

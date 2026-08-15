@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
+import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import java.util.UUID
 
@@ -64,6 +65,7 @@ interface MediaRepository {
         limit: Int = 16,
         fields: List<ItemFields>? = null,
         groupItems: Boolean = true,
+        includeItemTypes: List<BaseItemKind>? = null,
     ): List<AfinityItem>
 
     suspend fun getContinueWatching(
