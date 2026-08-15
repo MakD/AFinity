@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.HomeRow
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.player.AssRenderMode
 import com.makd.afinity.data.models.player.MpvAudioOutput
@@ -27,6 +28,7 @@ import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
+import com.makd.afinity.data.repository.home.HomeLayoutPreferencesRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.player.common.TrackSelection
@@ -41,6 +43,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -56,6 +59,7 @@ constructor(
     private val preferencesRepository: PreferencesRepository,
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val appDataRepository: AppDataRepository,
+    private val homeLayoutPreferencesRepository: HomeLayoutPreferencesRepository,
     private val serverRepository: ServerRepository,
     private val databaseRepository: DatabaseRepository,
     private val sessionManager: SessionManager,
@@ -77,6 +81,15 @@ constructor(
 
     private val _homeSortByDateAdded = MutableStateFlow(true)
     val homeSortByDateAdded: StateFlow<Boolean> = _homeSortByDateAdded.asStateFlow()
+
+    val latestRowsVisible: StateFlow<Boolean> =
+        homeLayoutPreferencesRepository.hiddenRows
+            .map { hidden -> HomeRow.LATEST_MOVIES !in hidden || HomeRow.LATEST_TV !in hidden }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = true,
+            )
 
     val navigationDrawerEnabled: StateFlow<Boolean> =
         preferencesRepository

@@ -92,7 +92,7 @@
     <string name="home_watch_again">Watch Again</string>
     <string name="custom_sections_title">Custom Home Sections</string>
     <string name="custom_sections_group_always">Always shown</string>
-    <string name="custom_sections_always_caption">The core rows every Jellyfin client needs. These can\'t be turned off.</string>
+    <string name="custom_sections_always_caption">Your libraries and what you were watching. These can\'t be turned off.</string>
     <string name="custom_sections_always_on">Always on</string>
     <string name="custom_sections_group_rows">Built-in rows</string>
     <string name="custom_sections_rows_caption">Shown at the top, in this order. Turn off any you don\'t use.</string>
@@ -743,6 +743,7 @@
     <string name="pref_combine_library_summary">Merge Movies and TV Shows into single lists</string>
     <string name="pref_sort_date_added_title">Sort by Date Added</string>
     <string name="pref_sort_date_added_summary">Show newest content first on home screen</string>
+    <string name="pref_requires_latest_rows">Turn on Latest Movies or Latest TV to use this</string>
 
     <string name="settings_group_content_layout">Content Layout</string>
     <string name="pref_episode_layout_title">Episode Layout</string>

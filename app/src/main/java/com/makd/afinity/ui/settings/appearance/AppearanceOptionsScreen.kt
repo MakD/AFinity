@@ -54,6 +54,7 @@ fun AppearanceOptionsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val combineLibrarySections by viewModel.combineLibrarySections.collectAsStateWithLifecycle()
     val homeSortByDateAdded by viewModel.homeSortByDateAdded.collectAsStateWithLifecycle()
+    val latestRowsVisible by viewModel.latestRowsVisible.collectAsStateWithLifecycle()
     val navigationDrawerEnabled by viewModel.navigationDrawerEnabled.collectAsStateWithLifecycle()
     val librariesInDrawer by viewModel.librariesInDrawer.collectAsStateWithLifecycle()
     val episodeLayout by viewModel.episodeLayout.collectAsStateWithLifecycle()
@@ -154,17 +155,29 @@ fun AppearanceOptionsScreen(
                     SettingsSwitchItem(
                         icon = painterResource(id = R.drawable.ic_view_module),
                         title = stringResource(R.string.pref_combine_library_title),
-                        subtitle = stringResource(R.string.pref_combine_library_summary),
+                        subtitle =
+                            if (latestRowsVisible) {
+                                stringResource(R.string.pref_combine_library_summary)
+                            } else {
+                                stringResource(R.string.pref_requires_latest_rows)
+                            },
                         checked = combineLibrarySections,
                         onCheckedChange = viewModel::toggleCombineLibrarySections,
+                        enabled = latestRowsVisible,
                     )
                     SettingsDivider()
                     SettingsSwitchItem(
                         icon = painterResource(id = R.drawable.ic_calendar),
                         title = stringResource(R.string.pref_sort_date_added_title),
-                        subtitle = stringResource(R.string.pref_sort_date_added_summary),
+                        subtitle =
+                            if (latestRowsVisible) {
+                                stringResource(R.string.pref_sort_date_added_summary)
+                            } else {
+                                stringResource(R.string.pref_requires_latest_rows)
+                            },
                         checked = homeSortByDateAdded,
                         onCheckedChange = viewModel::toggleHomeSortByDateAdded,
+                        enabled = latestRowsVisible,
                     )
                 }
             }

@@ -1230,28 +1230,44 @@ constructor(
         coroutineScope {
             fun cap(section: DiscoverySection) = discovery.countFor(section)
 
+            val spotlightCap = cap(DiscoverySection.SPOTLIGHTS)
+
             val actorsDeferred = async {
-                peopleRepository.getTopPeople(PersonKind.ACTOR, limit = 75, minAppearances = 5)
+                if (cap(DiscoverySection.STARRING) == 0) emptyList()
+                else peopleRepository.getTopPeople(PersonKind.ACTOR, limit = 75, minAppearances = 5)
             }
             val directorsDeferred = async {
-                peopleRepository.getTopPeople(PersonKind.DIRECTOR, limit = 75, minAppearances = 5)
+                if (cap(DiscoverySection.DIRECTED_BY) == 0) emptyList()
+                else
+                    peopleRepository.getTopPeople(
+                        PersonKind.DIRECTOR,
+                        limit = 75,
+                        minAppearances = 5,
+                    )
             }
             val writersDeferred = async {
-                peopleRepository.getTopPeople(PersonKind.WRITER, limit = 50, minAppearances = 3)
+                if (cap(DiscoverySection.WRITTEN_BY) == 0) emptyList()
+                else peopleRepository.getTopPeople(PersonKind.WRITER, limit = 50, minAppearances = 3)
             }
-            val studiosDeferred = async { studiosPool(force = false) }
+            val studiosDeferred = async {
+                if (spotlightCap == 0) emptyList() else studiosPool(force = false)
+            }
             val boxSetsDeferred = async {
-                try {
-                    mediaRepository
-                        .getItems(
-                            includeItemTypes = listOf("BOX_SET"),
-                            fields = FieldSets.MEDIA_ITEM_CARDS,
-                        )
-                        .items
-                        ?.filter { (it.childCount ?: 0) >= 3 && it.name != null } ?: emptyList()
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to load boxsets for spotlight descriptors")
+                if (spotlightCap == 0) {
                     emptyList()
+                } else {
+                    try {
+                        mediaRepository
+                            .getItems(
+                                includeItemTypes = listOf("BOX_SET"),
+                                fields = FieldSets.MEDIA_ITEM_CARDS,
+                            )
+                            .items
+                            ?.filter { (it.childCount ?: 0) >= 3 && it.name != null } ?: emptyList()
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to load boxsets for spotlight descriptors")
+                        emptyList()
+                    }
                 }
             }
 
@@ -1470,7 +1486,7 @@ constructor(
                     )
                 }
             }
-            val spotlights = spotlightDescriptors.shuffled().take(cap(DiscoverySection.SPOTLIGHTS))
+            val spotlights = spotlightDescriptors.shuffled().take(spotlightCap)
 
             val recommendationDescriptors =
                 (actorDescriptors + directorDescriptors).shuffled() +

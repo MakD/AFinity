@@ -9,6 +9,7 @@ import com.makd.afinity.data.manager.RefreshTrigger
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.manager.UserImageStore
 import com.makd.afinity.data.models.GenreItem
+import com.makd.afinity.data.models.HomeRow
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityItem
@@ -28,6 +29,7 @@ import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.home.HomeCacheRepository
+import com.makd.afinity.data.repository.home.HomeLayoutPreferencesRepository
 import com.makd.afinity.data.repository.home.HomeSectionsRepository
 import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import com.makd.afinity.data.repository.media.MediaRepository
@@ -90,6 +92,7 @@ constructor(
     private val musicRepository: MusicRepository,
     private val homeCacheRepository: HomeCacheRepository,
     private val homeSectionsRepository: HomeSectionsRepository,
+    private val homeLayoutPreferencesRepository: HomeLayoutPreferencesRepository,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val deletedItemsRepository: DeletedItemsRepository,
     @ApplicationScope private val scope: CoroutineScope,
@@ -345,8 +348,15 @@ constructor(
         movies: List<AfinityMovie>,
         shows: List<AfinityShow>,
     ) {
-        launch { homeCacheRepository.putLatestMovies("latest_movies_$cacheKey", movies) }
-        launch { homeCacheRepository.putLatestShows("latest_shows_$cacheKey", shows) }
+        launch {
+            val hiddenRows = homeLayoutPreferencesRepository.getHiddenRows()
+            if (HomeRow.LATEST_MOVIES !in hiddenRows) {
+                homeCacheRepository.putLatestMovies("latest_movies_$cacheKey", movies)
+            }
+            if (HomeRow.LATEST_TV !in hiddenRows) {
+                homeCacheRepository.putLatestShows("latest_shows_$cacheKey", shows)
+            }
+        }
     }
 
     fun skipInitialDataLoad() {
@@ -394,12 +404,14 @@ constructor(
             val currentBaseUrl = mediaRepository.getBaseUrl()
             val cachedMovies =
                 homeCacheRepository.getLatestMovies("latest_movies_$cacheKey", currentBaseUrl)
-            if (cachedMovies != null) {
+            val latestMoviesHidden =
+                HomeRow.LATEST_MOVIES in homeLayoutPreferencesRepository.getHiddenRows()
+            if (cachedMovies != null || latestMoviesHidden) {
                 Timber.d("Cache hit — fetching carousel in parallel, rendering once both are ready")
                 try {
                     coroutineScope {
                         val heroDeferred = async { loadHeroCarousel() }
-                        _latestMovies.value = cachedMovies
+                        _latestMovies.value = cachedMovies.orEmpty()
                         _latestTvSeries.value =
                             homeCacheRepository.getLatestShows(
                                 "latest_shows_$cacheKey",
@@ -553,6 +565,19 @@ constructor(
             }
 
             launch {
+                var previousHidden: Set<HomeRow>? = null
+                homeLayoutPreferencesRepository.hiddenRows.distinctUntilChanged().collect { hidden ->
+                    val before = previousHidden
+                    previousHidden = hidden
+                    if (before == null) return@collect
+                    if (LATEST_ROWS.none { it in before && it !in hidden }) return@collect
+                    if (!_isInitialDataLoaded.value) return@collect
+                    Timber.d("Latest row re-enabled — refreshing library sections")
+                    refreshLibrarySections()
+                }
+            }
+
+            launch {
                 mediaChangeManager.mediaChanges.collect { event ->
                     event.updatedItem?.let { updateItemInCaches(it) }
                     event.parentItem?.let { updateItemInCaches(it) }
@@ -703,8 +728,13 @@ constructor(
                     .toSet()
             val latestLibraries = libraries.filterNot { it.id in latestExcludes }
 
-            val movieLibraries = latestLibraries.filter { it.type == CollectionType.Movies }
-            val tvLibraries = latestLibraries.filter { it.type == CollectionType.TvShows }
+            val hiddenRows = homeLayoutPreferencesRepository.getHiddenRows()
+            val movieLibraries =
+                if (HomeRow.LATEST_MOVIES in hiddenRows) emptyList()
+                else latestLibraries.filter { it.type == CollectionType.Movies }
+            val tvLibraries =
+                if (HomeRow.LATEST_TV in hiddenRows) emptyList()
+                else latestLibraries.filter { it.type == CollectionType.TvShows }
 
             val useJellyfinDefault = preferencesRepository.getHomeSortByDateAdded()
 
@@ -1166,6 +1196,7 @@ constructor(
     companion object {
         const val LATEST_RETAINED = 25
         const val LATEST_DISPLAYED = 15
+        private val LATEST_ROWS = setOf(HomeRow.LATEST_MOVIES, HomeRow.LATEST_TV)
     }
 }
 
