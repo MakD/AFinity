@@ -94,6 +94,36 @@ constructor(
         _batches.emit(MediaChangeBatch(listOf(change), change.source))
     }
 
+    suspend fun publishContentChanges(ids: List<UUID>) {
+        if (ids.isEmpty() || ids.size > CONTENT_CHANGE_PATCH_LIMIT) return
+
+        val items =
+            try {
+                mediaRepository.getItemsByIds(ids, FieldSets.ITEM_DETAIL)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to resolve content changes for ${ids.size} items")
+                return
+            }
+        if (items.isEmpty()) return
+
+        val changes =
+            items.map { item ->
+                MediaChangeEvent(
+                    itemId = item.id,
+                    updatedItem = item,
+                    seriesId =
+                        (item as? AfinityEpisode)?.seriesId ?: (item as? AfinitySeason)?.seriesId,
+                    seasonId = (item as? AfinityEpisode)?.seasonId,
+                    source = MediaChangeSource.WEBSOCKET,
+                )
+            }
+        _batches.emit(MediaChangeBatch(changes, MediaChangeSource.WEBSOCKET))
+    }
+
+    companion object {
+        const val CONTENT_CHANGE_PATCH_LIMIT = 10
+    }
+
     suspend fun applyUserDataChangesBatch(userDataList: List<UserItemDataDto>) {
         if (userDataList.isEmpty()) return
 

@@ -1499,10 +1499,6 @@ constructor(
                     }
 
                 if (success) {
-                    mediaChangeManager.publishKnownChange(
-                        updatedItem = currentItem.withPlayed(isNowPlayed),
-                        source = MediaChangeSource.MANUAL,
-                    )
                     if (
                         currentItem is AfinitySeason ||
                             currentItem is AfinityShow ||
@@ -1553,13 +1549,7 @@ constructor(
                     } else {
                         userDataRepository.markWatched(episode.id)
                     }
-                if (success) {
-                    mediaChangeManager.notifyItemChanged(
-                        episode.id,
-                        episode.seriesId,
-                        episode.seasonId,
-                    )
-                } else {
+                if (!success) {
                     _selectedEpisode.value = episode
                 }
             } catch (e: Exception) {

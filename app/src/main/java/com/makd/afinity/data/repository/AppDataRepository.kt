@@ -4,6 +4,7 @@ import android.content.Context
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.AdminChangeKind
+import com.makd.afinity.data.manager.MediaChangeEvent
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.MediaRefreshBus
 import com.makd.afinity.data.manager.RefreshTrigger
@@ -605,6 +606,15 @@ constructor(
             }
 
             launch {
+                mediaChangeManager.batches.collect { batch ->
+                    if (batch.changes.any { it.mayReenterLatest() }) {
+                        Timber.d("Item marked unplayed — refreshing library sections for re-insert")
+                        refreshLibrarySections()
+                    }
+                }
+            }
+
+            launch {
                 mediaChangeManager.mediaChanges.collect { event ->
                     val userData = event.userData
                     val changedItem =
@@ -615,7 +625,13 @@ constructor(
                     event.parentItem?.let { updateItemInCaches(it) }
                     event.seasonItem?.let { updateItemInCaches(it) }
 
-                    if (userData == null) return@collect
+                    if (userData == null) {
+                        event.updatedItem?.let { item ->
+                            mediaRepository.patchItemImages(item)
+                            _heroCarouselItems.update { it.withPatchedImages(item) }
+                        }
+                        return@collect
+                    }
                     val item = changedItem ?: return@collect
                     if (item.id != userData.itemId) return@collect
 
@@ -1101,6 +1117,27 @@ constructor(
 
     private fun <T : AfinityItem> List<T>.replacedWith(item: T): List<T> =
         if (none { it.id == item.id }) this else map { if (it.id == item.id) item else it }
+
+    private fun MediaChangeEvent.mayReenterLatest(): Boolean {
+        val data = userData
+        val item = updatedItem
+        val played: Boolean
+        val position: Long
+        when {
+            data != null -> {
+                played = data.played
+                position = data.playbackPositionTicks
+            }
+            item != null -> {
+                played = item.played
+                position = item.playbackPositionTicks
+            }
+            else -> return false
+        }
+        if (played || position != 0L) return false
+        return _latestMovies.value.none { it.id == itemId } &&
+            _latestTvSeries.value.none { it.id == itemId }
+    }
 
     private fun heldItemById(id: UUID): AfinityItem? {
         _latestMovies.value.firstOrNull { it.id == id }?.let {

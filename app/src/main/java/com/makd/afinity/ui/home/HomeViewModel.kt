@@ -783,13 +783,7 @@ constructor(
                         userDataRepository.markWatched(episode.id)
                     }
 
-                if (success) {
-                    mediaChangeManager.notifyItemChanged(
-                        episode.id,
-                        episode.seriesId,
-                        episode.seasonId,
-                    )
-                } else {
+                if (!success) {
                     _selectedEpisode.value = episode
                 }
             } catch (e: Exception) {
@@ -873,7 +867,6 @@ constructor(
         if (appDataRepository.lastUserDataChangedAt.value > lastHomeRefreshedAt) {
             viewModelScope.launch {
                 appDataRepository.refreshPlaybackSections()
-                appDataRepository.refreshLibrarySections()
                 lastHomeRefreshedAt = System.currentTimeMillis()
             }
         }

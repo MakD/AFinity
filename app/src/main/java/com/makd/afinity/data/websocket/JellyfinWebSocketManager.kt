@@ -9,6 +9,7 @@ import com.makd.afinity.data.manager.RefreshTrigger
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.syncplay.SyncPlayGroupUpdate
 import com.makd.afinity.di.ApplicationScope
+import com.makd.afinity.util.ItemIds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -39,6 +40,7 @@ import org.jellyfin.sdk.model.api.TaskInfo
 import org.jellyfin.sdk.model.api.TaskState
 import org.jellyfin.sdk.model.api.UserDataChangedMessage
 import timber.log.Timber
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -268,8 +270,24 @@ constructor(
             return
         }
 
-        if (!update?.itemsUpdated.isNullOrEmpty()) {
+        val updated = update?.itemsUpdated.orEmpty()
+        if (updated.isNotEmpty()) {
             mediaChangeManager.notifyLibraryMetadataChanged("library items updated websocket event")
+
+            if (updated.size <= MediaChangeManager.CONTENT_CHANGE_PATCH_LIMIT) {
+                val ids = updated.mapNotNull { raw ->
+                    ItemIds.canonical(raw)?.let { canonical ->
+                        try {
+                            UUID.fromString(canonical)
+                        } catch (_: IllegalArgumentException) {
+                            null
+                        }
+                    }
+                }
+                scope.launch { mediaChangeManager.publishContentChanges(ids) }
+            } else {
+                Timber.d("Skipping per-item patch for ${updated.size} updated items (scan-sized)")
+            }
         }
     }
 

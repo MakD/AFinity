@@ -322,13 +322,7 @@ constructor(
                     if (episode.played) userDataRepository.markUnwatched(episode.id)
                     else userDataRepository.markWatched(episode.id)
 
-                if (success) {
-                    mediaChangeManager.notifyItemChanged(
-                        episode.id,
-                        episode.seriesId,
-                        episode.seasonId,
-                    )
-                } else {
+                if (!success) {
                     _selectedEpisode.value = episode
                     updateItemInSearchResults(episode)
                 }

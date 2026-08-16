@@ -1,5 +1,6 @@
 package com.makd.afinity.data.repository.userdata
 
+import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.repository.DatabaseRepository
 import kotlinx.coroutines.Dispatchers
@@ -27,6 +28,7 @@ class JellyfinUserDataRepository
 constructor(
     private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
+    private val mediaChangeManager: MediaChangeManager,
 ) : UserDataRepository {
 
     private suspend fun getCurrentUserId(): UUID? {
@@ -85,6 +87,7 @@ constructor(
                 )
                 updateLocalDatabasePlayedStatus(itemId, userId, true)
                 databaseRepository.markUserDataSynced(userId, itemId)
+                mediaChangeManager.notifyItemChanged(itemId)
                 true
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to mark item as watched: $itemId")
@@ -106,6 +109,7 @@ constructor(
                 playStateApi.markUnplayedItem(itemId = itemId, userId = userId)
                 updateLocalDatabasePlayedStatus(itemId, userId, false)
                 databaseRepository.markUserDataSynced(userId, itemId)
+                mediaChangeManager.notifyItemChanged(itemId)
                 true
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to mark item as unwatched: $itemId")
