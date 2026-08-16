@@ -10,19 +10,19 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import java.util.UUID
 
-interface AfinityItem {
-    val id: UUID
+interface AfinityItem : AfinityUserDataOwner {
+    override val id: UUID
     val name: String
     val originalTitle: String?
     val overview: String
-    val played: Boolean
-    val favorite: Boolean
-    val liked: Boolean
+    override val played: Boolean
+    override val favorite: Boolean
+    override val liked: Boolean
     val canPlay: Boolean
     val canDownload: Boolean
     val sources: List<AfinitySource>
     val runtimeTicks: Long
-    val playbackPositionTicks: Long
+    override val playbackPositionTicks: Long
     val unplayedItemCount: Int?
     val images: AfinityImages
     val chapters: List<AfinityChapter>

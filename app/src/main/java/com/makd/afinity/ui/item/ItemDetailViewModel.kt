@@ -12,6 +12,7 @@ import androidx.paging.map
 import com.makd.afinity.R
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
+import com.makd.afinity.data.manager.AdminChangeKind
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.MediaChangeSource
@@ -225,8 +226,10 @@ constructor(
         }
 
         viewModelScope.launch {
-            adminChangeBroadcaster.itemChanged
-                .filter { it == itemId.toString() }
+            adminChangeBroadcaster.changes
+                .filter {
+                    it.itemId == itemId.toString() && it.kind != AdminChangeKind.IMAGES
+                }
                 .collect { forceReloadFromServer() }
         }
 

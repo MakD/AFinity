@@ -3,6 +3,7 @@ package com.makd.afinity.data.repository
 import android.content.Context
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
+import com.makd.afinity.data.manager.AdminChangeKind
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.MediaRefreshBus
 import com.makd.afinity.data.manager.RefreshTrigger
@@ -170,6 +171,29 @@ constructor(
 
         scope.launch {
             adminChangeBroadcaster.itemDeleted.collect { event -> onItemDeleted(event.itemId) }
+        }
+
+        scope.launch {
+            adminChangeBroadcaster.changes.collect { change ->
+                val changedId =
+                    try {
+                        UUID.fromString(change.itemId)
+                    } catch (_: IllegalArgumentException) {
+                        null
+                    }
+                if (changedId != null && change.kind != AdminChangeKind.DELETED) {
+                    applyAdminItemChange(changedId)
+                }
+                if (change.kind != AdminChangeKind.IMAGES) {
+                    refreshPlaybackSections()
+                }
+                if (change.kind == AdminChangeKind.METADATA) {
+                    homeSectionsRepository.refreshCustomSections(
+                        "admin metadata edit",
+                        HomeSectionsRepository.ADMIN_REFRESH_DEBOUNCE_MS,
+                    )
+                }
+            }
         }
 
         scope.launch {
@@ -923,6 +947,7 @@ constructor(
         updateItemInCaches(updatedItem)
         mediaRepository.patchItemImages(updatedItem)
         _heroCarouselItems.update { it.withPatchedImages(updatedItem) }
+        mediaChangeManager.publishKnownChange(updatedItem)
     }
 
     suspend fun updateItemInCaches(updatedItem: AfinityItem) {

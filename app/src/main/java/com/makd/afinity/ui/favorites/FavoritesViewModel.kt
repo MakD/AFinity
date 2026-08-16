@@ -3,6 +3,7 @@ package com.makd.afinity.ui.favorites
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
+import com.makd.afinity.data.manager.AdminChangeKind
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.resolveChangedItems
@@ -35,6 +36,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
@@ -111,7 +113,11 @@ constructor(
             }
         }
 
-        viewModelScope.launch { adminChangeBroadcaster.itemChanged.collect { loadFavorites() } }
+        viewModelScope.launch {
+            adminChangeBroadcaster.changes
+                .filter { it.kind != AdminChangeKind.IMAGES }
+                .collect { loadFavorites() }
+        }
 
         viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->

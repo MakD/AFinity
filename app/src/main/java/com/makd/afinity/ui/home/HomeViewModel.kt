@@ -11,8 +11,6 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.makd.afinity.R
-import com.makd.afinity.data.manager.AdminChangeBroadcaster
-import com.makd.afinity.data.manager.AdminChangeKind
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.OfflineModeManager
@@ -103,7 +101,6 @@ constructor(
     private val authRepository: AuthRepository,
     private val mediaRepository: MediaRepository,
     private val playbackStateManager: PlaybackStateManager,
-    private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val homeSectionsRepository: HomeSectionsRepository,
@@ -199,29 +196,6 @@ constructor(
         viewModelScope.launch {
             appDataRepository.getHomeSortByDateAddedFlow().distinctUntilChanged().drop(1).collect {
                 appDataRepository.reloadHomeData()
-            }
-        }
-
-        viewModelScope.launch {
-            adminChangeBroadcaster.changes.collect { change ->
-                val changedId =
-                    try {
-                        UUID.fromString(change.itemId)
-                    } catch (_: IllegalArgumentException) {
-                        null
-                    }
-                if (changedId != null && change.kind != AdminChangeKind.DELETED) {
-                    appDataRepository.applyAdminItemChange(changedId)
-                }
-                if (change.kind != AdminChangeKind.IMAGES) {
-                    appDataRepository.refreshPlaybackSections()
-                }
-                if (change.kind == AdminChangeKind.METADATA) {
-                    homeSectionsRepository.refreshCustomSections(
-                        "admin metadata edit",
-                        HomeSectionsRepository.ADMIN_REFRESH_DEBOUNCE_MS,
-                    )
-                }
             }
         }
 
