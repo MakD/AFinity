@@ -104,7 +104,16 @@ constructor(
                     _uiState.value.shows.forEach { add(it.id) }
                 }
 
-                val resolved = event.resolveChangedItems(mediaRepository, displayedIds)
+                val resolved =
+                    event.resolveChangedItems(
+                        mediaRepository = mediaRepository,
+                        displayedIds = displayedIds,
+                        heldItem = { id ->
+                            pendingItemUpdates[id]
+                                ?: _uiState.value.movies.firstOrNull { it.id == id }
+                                ?: _uiState.value.shows.firstOrNull { it.id == id }
+                        },
+                    )
                 if (resolved.isNotEmpty()) {
                     resolved.forEach { pendingItemUpdates[it.id] = it }
                     personListUpdateTrigger.tryEmit(Unit)

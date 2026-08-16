@@ -25,6 +25,7 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.models.media.withPatchedImages
+import com.makd.afinity.data.models.media.withUserData
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityPlaylist
@@ -605,12 +606,17 @@ constructor(
 
             launch {
                 mediaChangeManager.mediaChanges.collect { event ->
-                    event.updatedItem?.let { updateItemInCaches(it) }
+                    val userData = event.userData
+                    val changedItem =
+                        userData?.let { data -> heldItemById(event.itemId)?.withUserData(data) }
+                            ?: event.updatedItem
+
+                    changedItem?.let { updateItemInCaches(it) }
                     event.parentItem?.let { updateItemInCaches(it) }
                     event.seasonItem?.let { updateItemInCaches(it) }
 
-                    val userData = event.userData ?: return@collect
-                    val item = event.updatedItem ?: return@collect
+                    if (userData == null) return@collect
+                    val item = changedItem ?: return@collect
                     if (item.id != userData.itemId) return@collect
 
                     updateFavoriteStatus(item, userData.isFavorite)
@@ -1096,6 +1102,32 @@ constructor(
     private fun <T : AfinityItem> List<T>.replacedWith(item: T): List<T> =
         if (none { it.id == item.id }) this else map { if (it.id == item.id) item else it }
 
+    private fun heldItemById(id: UUID): AfinityItem? {
+        _latestMovies.value.firstOrNull { it.id == id }?.let {
+            return it
+        }
+        _latestTvSeries.value.firstOrNull { it.id == id }?.let {
+            return it
+        }
+        _heroCarouselItems.value.firstOrNull { it.id == id }?.let {
+            return it
+        }
+        _separateMovieLibrarySections.value
+            .firstNotNullOfOrNull { (_, movies) -> movies.firstOrNull { it.id == id } }
+            ?.let {
+                return it
+            }
+        _separateTvLibrarySections.value
+            .firstNotNullOfOrNull { (_, shows) -> shows.firstOrNull { it.id == id } }
+            ?.let {
+                return it
+            }
+        _favoritesData.value.itemById(id)?.let {
+            return it
+        }
+        return _watchlistData.value.itemById(id)
+    }
+
     fun updateFavoriteStatus(item: AfinityItem, isFavorite: Boolean) {
         _favoritesData.update { current ->
             when (item) {
@@ -1248,6 +1280,14 @@ data class FavoritesData(
     val favoritePlaylists: List<AfinityPlaylist> = emptyList(),
 )
 
+fun FavoritesData.itemById(id: UUID): AfinityItem? =
+    movies.firstOrNull { it.id == id }
+        ?: shows.firstOrNull { it.id == id }
+        ?: seasons.firstOrNull { it.id == id }
+        ?: episodes.firstOrNull { it.id == id }
+        ?: boxSets.firstOrNull { it.id == id }
+        ?: channels.firstOrNull { it.id == id }
+
 data class WatchlistData(
     val boxSets: List<AfinityBoxSet> = emptyList(),
     val movies: List<AfinityMovie> = emptyList(),
@@ -1255,3 +1295,10 @@ data class WatchlistData(
     val seasons: List<AfinitySeason> = emptyList(),
     val episodes: List<AfinityEpisode> = emptyList(),
 )
+
+fun WatchlistData.itemById(id: UUID): AfinityItem? =
+    movies.firstOrNull { it.id == id }
+        ?: shows.firstOrNull { it.id == id }
+        ?: seasons.firstOrNull { it.id == id }
+        ?: episodes.firstOrNull { it.id == id }
+        ?: boxSets.firstOrNull { it.id == id }

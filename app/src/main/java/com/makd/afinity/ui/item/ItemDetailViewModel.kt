@@ -20,6 +20,7 @@ import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackEvent
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.manager.resolveTargetItem
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
@@ -244,17 +245,18 @@ constructor(
         viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
                 val currentItem = _uiState.value.item ?: return@collect
-                var targetItem = event.updatedItem ?: event.parentItem ?: event.seasonItem
-                if (targetItem == null) {
-                    try {
-                        targetItem = mediaRepository.getItemById(event.itemId)
-                    } catch (e: Exception) {
-                        Timber.e(
-                            e,
-                            "Failed to playbackCompletionResolved item for detail patch: ${event.itemId}",
-                        )
-                    }
-                }
+                val targetItem =
+                    event.resolveTargetItem(
+                        mediaRepository = mediaRepository,
+                        heldItem = { id ->
+                            pendingItemUpdates[id]
+                                ?: _uiState.value.item?.takeIf { it.id == id }
+                                ?: _selectedEpisode.value?.takeIf { it.id == id }
+                                ?: _uiState.value.similarItems.firstOrNull { it.id == id }
+                                ?: _uiState.value.boxSetItems.firstOrNull { it.id == id }
+                                ?: _uiState.value.nextEpisode?.takeIf { it.id == id }
+                        },
+                    )
                 val trueSeriesId =
                     event.seriesId
                         ?: (targetItem as? AfinityEpisode)?.seriesId
@@ -366,58 +368,59 @@ constructor(
                     }
                 }
 
+            }
+        }
+
+        viewModelScope.launch {
+            mediaChangeManager.batches.collect { batch ->
+                val currentItem = _uiState.value.item ?: return@collect
+                val isInBoxSet = _uiState.value.boxSetItems.any { batch.affects(it.id) }
+
                 if (
-                    currentItem is AfinityShow ||
-                        currentItem is AfinitySeason ||
-                        (currentItem is AfinityBoxSet && isInBoxSet)
+                    currentItem !is AfinityShow &&
+                        currentItem !is AfinitySeason &&
+                        !(currentItem is AfinityBoxSet && isInBoxSet)
                 ) {
-                    if (
-                        event.source == MediaChangeSource.WEBSOCKET ||
-                            event.itemId == currentItem.id ||
-                            isInBoxSet
-                    ) {
-                        launch {
-                            try {
-                                val nextEp =
-                                    when (currentItem) {
-                                        is AfinityShow ->
-                                            mediaRepository.getEpisodeToPlay(currentItem.id)
-                                        is AfinitySeason ->
-                                            mediaRepository.getEpisodeToPlayForSeason(
-                                                currentItem.id,
-                                                currentItem.seriesId,
-                                            )
-                                        else -> null
-                                    }
-                                if (nextEp != null && nextEp != _uiState.value.nextEpisode) {
-                                    _uiState.update { it.copy(nextEpisode = nextEp) }
-                                }
+                    return@collect
+                }
+                if (
+                    batch.source != MediaChangeSource.WEBSOCKET &&
+                        !batch.affects(currentItem.id) &&
+                        !isInBoxSet
+                ) {
+                    return@collect
+                }
 
-                                if (currentItem is AfinityShow) {
-                                    val freshSeasons = mediaRepository.getSeasons(currentItem.id)
-                                    _uiState.update { it.copy(seasons = freshSeasons) }
-                                }
-
-                                val freshMainItem = mediaRepository.getItemById(currentItem.id)
-                                if (freshMainItem != null && freshMainItem != _uiState.value.item) {
-                                    _uiState.update { it.copy(item = freshMainItem) }
-
-                                    if (currentItem is AfinityBoxSet && isInBoxSet) {
-                                        mediaChangeManager.notifyItemChanged(
-                                            currentItem.id,
-                                            null,
-                                            null,
-                                        )
-                                    }
-                                }
-                            } catch (e: Exception) {
-                                Timber.e(
-                                    e,
-                                    "Failed background patch for series/season/boxset counts",
+                try {
+                    val nextEp =
+                        when (currentItem) {
+                            is AfinityShow -> mediaRepository.getEpisodeToPlay(currentItem.id)
+                            is AfinitySeason ->
+                                mediaRepository.getEpisodeToPlayForSeason(
+                                    currentItem.id,
+                                    currentItem.seriesId,
                                 )
-                            }
+                            else -> null
+                        }
+                    if (nextEp != null && nextEp != _uiState.value.nextEpisode) {
+                        _uiState.update { it.copy(nextEpisode = nextEp) }
+                    }
+
+                    if (currentItem is AfinityShow) {
+                        val freshSeasons = mediaRepository.getSeasons(currentItem.id)
+                        _uiState.update { it.copy(seasons = freshSeasons) }
+                    }
+
+                    val freshMainItem = mediaRepository.getItemById(currentItem.id)
+                    if (freshMainItem != null && freshMainItem != _uiState.value.item) {
+                        _uiState.update { it.copy(item = freshMainItem) }
+
+                        if (currentItem is AfinityBoxSet && isInBoxSet) {
+                            mediaChangeManager.notifyItemChanged(currentItem.id, null, null)
                         }
                     }
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed background patch for series/season/boxset counts")
                 }
             }
         }

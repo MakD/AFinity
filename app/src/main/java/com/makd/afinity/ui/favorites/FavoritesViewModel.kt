@@ -129,7 +129,17 @@ constructor(
                     currentState.episodes.forEach { add(it.id) }
                 }
 
-                val resolved = event.resolveChangedItems(mediaRepository, displayedIds)
+                val resolved =
+                    event.resolveChangedItems(
+                        mediaRepository = mediaRepository,
+                        displayedIds = displayedIds,
+                        heldItem = { id ->
+                            currentState.movies.firstOrNull { it.id == id }
+                                ?: currentState.shows.firstOrNull { it.id == id }
+                                ?: currentState.seasons.firstOrNull { it.id == id }
+                                ?: currentState.episodes.firstOrNull { it.id == id }
+                        },
+                    )
                 if (resolved.isEmpty()) return@collect
 
                 val newMovies = currentState.movies.toMutableList()
@@ -142,28 +152,28 @@ constructor(
                     when (freshItem) {
                         is AfinityMovie -> {
                             val idx = newMovies.indexOfFirst { it.id == freshItem.id }
-                            if (idx != -1) {
+                            if (idx != -1 && newMovies[idx] !== freshItem) {
                                 newMovies[idx] = freshItem
                                 hasChanges = true
                             }
                         }
                         is AfinityShow -> {
                             val idx = newShows.indexOfFirst { it.id == freshItem.id }
-                            if (idx != -1) {
+                            if (idx != -1 && newShows[idx] !== freshItem) {
                                 newShows[idx] = freshItem
                                 hasChanges = true
                             }
                         }
                         is AfinitySeason -> {
                             val idx = newSeasons.indexOfFirst { it.id == freshItem.id }
-                            if (idx != -1) {
+                            if (idx != -1 && newSeasons[idx] !== freshItem) {
                                 newSeasons[idx] = freshItem
                                 hasChanges = true
                             }
                         }
                         is AfinityEpisode -> {
                             val idx = newEpisodes.indexOfFirst { it.id == freshItem.id }
-                            if (idx != -1) {
+                            if (idx != -1 && newEpisodes[idx] !== freshItem) {
                                 newEpisodes[idx] = freshItem
                                 hasChanges = true
                             }

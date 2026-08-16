@@ -8,8 +8,12 @@ import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.di.ApplicationScope
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.UserItemDataDto
 import timber.log.Timber
@@ -17,6 +21,7 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
 class MediaChangeManager
 @Inject
@@ -28,8 +33,10 @@ constructor(
     @ApplicationScope private val scope: CoroutineScope,
 ) {
 
-    private val _mediaChanges = MutableSharedFlow<MediaChangeEvent>(extraBufferCapacity = 64)
-    val mediaChanges = _mediaChanges.asSharedFlow()
+    private val _batches = MutableSharedFlow<MediaChangeBatch>(extraBufferCapacity = 16)
+    val batches = _batches.asSharedFlow()
+
+    val mediaChanges: Flow<MediaChangeEvent> = _batches.flatMapConcat { it.changes.asFlow() }
 
     private val _libraryContentChanges =
         MutableSharedFlow<LibraryContentChangeEvent>(extraBufferCapacity = 16)
@@ -83,6 +90,10 @@ constructor(
         applyUserDataChangesBatch(listOf(userData))
     }
 
+    private suspend fun emitSingle(change: MediaChangeEvent) {
+        _batches.emit(MediaChangeBatch(listOf(change), change.source))
+    }
+
     suspend fun applyUserDataChangesBatch(userDataList: List<UserItemDataDto>) {
         if (userDataList.isEmpty()) return
 
@@ -110,7 +121,7 @@ constructor(
                     if (itemIds.size == 1) {
                         listOfNotNull(mediaRepository.getItemById(itemIds.first()))
                     } else {
-                        mediaRepository.getItemsByIds(itemIds, FieldSets.ITEM_DETAIL)
+                        mediaRepository.getItemsByIds(itemIds, FieldSets.MEDIA_ITEM_CARDS)
                     }
                 items.associateBy { it.id }
             } catch (e: Exception) {
@@ -130,6 +141,9 @@ constructor(
                 .filter { it in userDataByItemId }
                 .toSet()
 
+        val resolvedParents = mutableMapOf<UUID, AfinityItem?>()
+        val changes = mutableListOf<MediaChangeEvent>()
+
         for (itemId in itemIds) {
             if (itemId in parentIdsCarriedByChildren) continue
 
@@ -138,11 +152,12 @@ constructor(
                 (item as? AfinityEpisode)?.seriesId ?: (item as? AfinitySeason)?.seriesId
             val resolvedSeasonId = (item as? AfinityEpisode)?.seasonId
             val parentItem = resolvedSeriesId?.let { seriesId ->
-                resolvedById[seriesId] ?: resolveParentItem(item, seriesId)
+                resolvedById[seriesId]
+                    ?: resolvedParents.getOrPut(seriesId) { resolveParentItem(item, seriesId) }
             }
             val seasonItem = resolvedSeasonId?.let { resolvedById[it] }
 
-            _mediaChanges.emit(
+            changes.add(
                 MediaChangeEvent(
                     itemId = itemId,
                     updatedItem = item,
@@ -154,6 +169,10 @@ constructor(
                     userData = userDataByItemId[itemId],
                 )
             )
+        }
+
+        if (changes.isNotEmpty()) {
+            _batches.emit(MediaChangeBatch(changes, MediaChangeSource.WEBSOCKET))
         }
     }
 
@@ -186,7 +205,7 @@ constructor(
                     else -> knownSeasonId
                 }
 
-            _mediaChanges.emit(
+            emitSingle(
                 MediaChangeEvent(
                     itemId = itemId,
                     updatedItem = updatedItem,
@@ -202,7 +221,7 @@ constructor(
             updatedItem
         } catch (e: Exception) {
             Timber.e(e, "Failed to publish media change for $itemId")
-            _mediaChanges.emit(
+            emitSingle(
                 MediaChangeEvent(
                     itemId = itemId,
                     seriesId = knownSeriesId,
@@ -240,7 +259,7 @@ constructor(
                     else -> knownSeasonId
                 }
 
-            _mediaChanges.emit(
+            emitSingle(
                 MediaChangeEvent(
                     itemId = updatedItem.id,
                     updatedItem = updatedItem,
@@ -294,6 +313,24 @@ constructor(
             null
         }
     }
+}
+
+data class MediaChangeBatch(
+    val changes: List<MediaChangeEvent>,
+    val source: MediaChangeSource,
+) {
+    val itemIds: Set<UUID> =
+        buildSet {
+            changes.forEach { change ->
+                add(change.itemId)
+                change.seriesId?.let { add(it) }
+                change.seasonId?.let { add(it) }
+            }
+        }
+
+    fun affects(vararg ids: UUID?): Boolean = ids.any { it != null && it in itemIds }
+
+    fun affectsAny(ids: Collection<UUID>): Boolean = ids.any { it in itemIds }
 }
 
 data class MediaChangeEvent(

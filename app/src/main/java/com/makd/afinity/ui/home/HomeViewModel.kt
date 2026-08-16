@@ -15,6 +15,7 @@ import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.data.manager.resolveTargetItem
 import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.GenreType
@@ -384,17 +385,11 @@ constructor(
 
         viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
-                var targetItem = event.updatedItem ?: event.parentItem ?: event.seasonItem
-                if (targetItem == null) {
-                    try {
-                        targetItem = mediaRepository.getItemById(event.itemId)
-                    } catch (e: Exception) {
-                        Timber.e(
-                            e,
-                            "Failed to resolve item for granular home patch: ${event.itemId}",
-                        )
-                    }
-                }
+                val targetItem =
+                    event.resolveTargetItem(
+                        mediaRepository = mediaRepository,
+                        heldItem = { id -> _uiState.value.heldItemById(id) },
+                    )
 
                 var parentShowItem: AfinityItem? = null
                 val trueSeriesId =
@@ -1026,6 +1021,22 @@ data class HomeUiState(
     val separateTvLibrarySections: List<Pair<AfinityCollection, List<AfinityShow>>> = emptyList(),
     val isOffline: Boolean = false,
 )
+
+fun HomeUiState.heldItemById(id: UUID): AfinityItem? =
+    continueWatching.firstOrNull { it.id == id }
+        ?: nextUp.firstOrNull { it.id == id }
+        ?: upcomingEpisodes.firstOrNull { it.id == id }
+        ?: latestMovies.firstOrNull { it.id == id }
+        ?: latestTvSeries.firstOrNull { it.id == id }
+        ?: watchAgain.firstOrNull { it.id == id }
+        ?: highestRated.firstOrNull { it.id == id }
+        ?: heroCarouselItems.firstOrNull { it.id == id }
+        ?: separateMovieLibrarySections.firstNotNullOfOrNull { (_, movies) ->
+            movies.firstOrNull { it.id == id }
+        }
+        ?: separateTvLibrarySections.firstNotNullOfOrNull { (_, shows) ->
+            shows.firstOrNull { it.id == id }
+        }
 
 private const val HOME_GENRE_POOL = 50
 private const val HOME_GENRE_ROW_SIZE = 20

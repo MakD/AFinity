@@ -89,7 +89,11 @@ constructor(
 
         viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
-                val resolved = event.resolveChangedItems(mediaRepository)
+                val resolved =
+                    event.resolveChangedItems(
+                        mediaRepository = mediaRepository,
+                        heldItem = { id -> pendingUpdates[id] ?: _itemUpdates.value[id] },
+                    )
                 if (resolved.isNotEmpty()) {
                     resolved.forEach { pendingUpdates[it.id] = it }
                     genreUpdateTrigger.tryEmit(Unit)

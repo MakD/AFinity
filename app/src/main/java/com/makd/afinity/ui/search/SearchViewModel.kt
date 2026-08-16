@@ -212,7 +212,15 @@ constructor(
 
         viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
-                val resolved = event.resolveChangedItems(mediaRepository)
+                val resolved =
+                    event.resolveChangedItems(
+                        mediaRepository = mediaRepository,
+                        heldItem = { id ->
+                            pendingItemUpdates[id]
+                                ?: _uiState.value.searchResults.firstOrNull { it.id == id }
+                                ?: _uiState.value.episodeResults.firstOrNull { it.id == id }
+                        },
+                    )
 
                 _selectedEpisode.value?.let { ep ->
                     val freshEpisode = resolved.firstOrNull { it.id == ep.id } as? AfinityEpisode
