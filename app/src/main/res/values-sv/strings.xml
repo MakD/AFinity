@@ -62,7 +62,9 @@
     <string name="hero_btn_play_trailer">Spela Trailer</string>
     <string name="hero_btn_play_media">Spela Upp</string>
     <string name="hero_btn_watch_now">Titta Nu</string>
-    <string name="hero_season_plural">%1$d Säsonger</string>
+    <plurals name="hero_season_plural">
+        <item quantity="one">%1$d Säsonger</item>
+    </plurals>
     <string name="favorites_title">Favoriter</string>
     <string name="error_unknown">Okänt Fel</string>
     <string name="favorites_empty_title">Inga favoriter än</string>
