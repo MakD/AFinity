@@ -62,7 +62,9 @@
     <string name="hero_btn_play_trailer">Fragmanı izle</string>
     <string name="hero_btn_play_media">Medyayı oynat</string>
     <string name="hero_btn_watch_now">Şimdi izle</string>
-    <string name="hero_season_plural">%1$d Sezon</string>
+    <plurals name="hero_season_plural">
+        <item quantity="one">%1$d Sezon</item>
+    </plurals>
     <string name="favorites_title">Favoriler</string>
     <string name="error_unknown">Bilinmeyen hata</string>
     <string name="favorites_empty_title">Henüz Favorileriniz yok</string>
@@ -81,13 +83,19 @@
     <string name="meta_cc">Görsel İşitsel Altyazı</string>
     <string name="meta_time_remaining_hours_minutes">%1$ds %2$dd kaldı</string>
     <string name="meta_time_remaining_minutes">%1$dd kaldı</string>
-    <string name="meta_boxset_count">%1$d öğe</string>
+    <plurals name="meta_boxset_count">
+        <item quantity="one">%1$d öğe</item>
+    </plurals>
     <string name="meta_runtime_hours_minutes">%1$ds %2$dd</string>
     <string name="meta_runtime_minutes">%1$dd</string>
-    <string name="meta_parts_fmt">%1$d hisse</string>
+    <plurals name="meta_parts_fmt">
+        <item quantity="one">%1$d hisse</item>
+    </plurals>
     <string name="meta_part_of_fmt">Bölüm %1$d/%2$d</string>
     <string name="meta_ends_at">%1$s\'de bitiyor</string>
-    <string name="meta_episode_count">%1$d bölüm</string>
+    <plurals name="meta_episode_count">
+        <item quantity="one">%1$d bölüm</item>
+    </plurals>
     <string name="similar_items_title">Bunun gibiler</string>
     <string name="special_features_title">Özel Seçenekler</string>
     <string name="extra_type_clip">Klip</string>
@@ -117,8 +125,12 @@
     <string name="action_see_less">Daha azını gör</string>
     <string name="cd_expand">Genişlet</string>
     <string name="cd_collapse">Daralt</string>
-    <string name="director_prefix">Yönetmen: %1$s</string>
-    <string name="writers_prefix">Yazar: %1$s</string>
+    <plurals name="director_prefix">
+        <item quantity="one">Yönetmen: %1$s</item>
+    </plurals>
+    <plurals name="writers_prefix">
+        <item quantity="one">Yazar: %1$s</item>
+    </plurals>
     <string name="seasons_title">Sezonlar</string>
     <string name="action_play">Oynat</string>
     <string name="action_rewatch">Yeniden izle</string>
