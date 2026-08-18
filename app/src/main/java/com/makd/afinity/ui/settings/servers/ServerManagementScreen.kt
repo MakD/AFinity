@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -15,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,9 +46,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
+import com.makd.afinity.ui.components.SettingsGroupTitle
 import com.makd.afinity.ui.settings.servers.components.DeleteServerConfirmationDialog
 import com.makd.afinity.ui.settings.servers.components.EmptyServersState
-import com.makd.afinity.ui.settings.servers.components.SectionHeader
 import com.makd.afinity.ui.settings.servers.components.UnverifiedAddressDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -206,11 +205,10 @@ private fun ServerListPane(
                         end = customPadding.calculateEndPadding(layoutDirection) + 16.dp,
                         bottom = customPadding.calculateBottomPadding() + 100.dp,
                     ),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 if (activeServer != null) {
                     item(key = "header_active") {
-                        SectionHeader(title = stringResource(R.string.server_section_active))
+                        SettingsGroupTitle(title = stringResource(R.string.server_section_active))
                     }
                     item(key = activeServer.server.id) {
                         ServerCard(
@@ -225,20 +223,24 @@ private fun ServerListPane(
 
                 if (savedServers.isNotEmpty()) {
                     item(key = "header_saved") {
-                        SectionHeader(
+                        SettingsGroupTitle(
                             title = stringResource(R.string.server_section_saved),
                             modifier =
-                                if (activeServer != null) Modifier.padding(top = 8.dp)
+                                if (activeServer != null) Modifier.padding(top = 24.dp)
                                 else Modifier,
                         )
                     }
-                    items(items = savedServers, key = { it.server.id }) { serverWithCount ->
+                    itemsIndexed(items = savedServers, key = { _, item -> item.server.id }) {
+                        index,
+                        serverWithCount ->
                         ServerCard(
                             serverWithCount = serverWithCount,
                             onClick = { viewModel.showServerDetail(serverWithCount) },
                             onEditClick = { onEditServerClick(serverWithCount.server.id) },
                             onDeleteClick = { viewModel.showDeleteConfirmation(serverWithCount) },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .padding(top = if (index == 0) 0.dp else 12.dp),
                         )
                     }
                 }

@@ -1029,6 +1029,7 @@ private fun SubtitleCustomizationContent(
         value = subtitlePrefs.textSize,
         valueRange = 0.5f..2.0f,
         onValueChange = { onUpdate(subtitlePrefs.copy(textSize = it)) },
+        steps = 14,
     )
 
     SettingsDivider()
@@ -1106,6 +1107,7 @@ private fun SubtitleCustomizationContent(
                     value = subtitlePrefs.outlineSize,
                     valueRange = 0f..10f,
                     onValueChange = { onUpdate(subtitlePrefs.copy(outlineSize = it)) },
+                    steps = 19,
                 )
             }
         }
@@ -1234,6 +1236,7 @@ private fun SubtitleSliderItem(
     value: Float,
     valueRange: ClosedFloatingPointRange<Float>,
     onValueChange: (Float) -> Unit,
+    steps: Int = 0,
 ) {
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
         Row(
@@ -1269,6 +1272,7 @@ private fun SubtitleSliderItem(
             value = value,
             onValueChange = onValueChange,
             valueRange = valueRange,
+            steps = steps,
             colors =
                 SliderDefaults.colors(
                     thumbColor = MaterialTheme.colorScheme.primary,

@@ -39,13 +39,7 @@ fun SettingsGroup(
 ) {
     Column(modifier = modifier.fillMaxWidth().padding(start = 16.dp, end = endPadding)) {
         if (title != null) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
-            )
+            SettingsGroupTitle(title = title)
         }
         Surface(
             shape = RoundedCornerShape(24.dp),
@@ -55,6 +49,17 @@ fun SettingsGroup(
             Column(modifier = Modifier.padding(vertical = 4.dp)) { content() }
         }
     }
+}
+
+@Composable
+fun SettingsGroupTitle(title: String, modifier: Modifier = Modifier) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.Bold,
+        modifier = modifier.padding(start = 16.dp, bottom = 8.dp),
+    )
 }
 
 @Composable
