@@ -57,7 +57,9 @@
     <string name="hero_btn_play_trailer">Trailer abspielen</string>
     <string name="hero_btn_play_media">Medien abspielen</string>
     <string name="hero_btn_watch_now">Jetzt ansehen</string>
-    <string name="hero_season_plural">%1$d Staffeln</string>
+    <plurals name="hero_season_plural">
+        <item quantity="one">%1$d Staffeln</item>
+    </plurals>
     <string name="favorites_title">Favoriten</string>
     <string name="error_unknown">Unbekannter Fehler</string>
     <string name="favorites_empty_title">Noch keine Favoriten</string>
@@ -76,7 +78,9 @@
     <string name="meta_cc">UT</string>
     <string name="meta_time_remaining_hours_minutes">Noch %1$dh %2$dm</string>
     <string name="meta_time_remaining_minutes">Noch %1$dm</string>
-    <string name="meta_boxset_count">%1$d Einträge</string>
+    <plurals name="meta_boxset_count">
+        <item quantity="one">%1$d Einträge</item>
+    </plurals>
     <string name="meta_runtime_hours_minutes">%1$dh %2$dm</string>
     <string name="meta_runtime_minutes">%1$dm</string>
     <string name="similar_items_title">Ähnliche Titel</string>
@@ -98,8 +102,12 @@
     <string name="action_see_less">Weniger ansehen</string>
     <string name="cd_expand">Erweitern</string>
     <string name="cd_collapse">Einklappen</string>
-    <string name="director_prefix">Regie: %1$s</string>
-    <string name="writers_prefix">Drehbuch: %1$s</string>
+    <plurals name="director_prefix">
+        <item quantity="one">Regie: %1$s</item>
+    </plurals>
+    <plurals name="writers_prefix">
+        <item quantity="one">Drehbuch: %1$s</item>
+    </plurals>
     <string name="seasons_title">Staffeln</string>
     <string name="action_play">Abspielen</string>
     <string name="action_rewatch">Nochmal ansehen</string>
@@ -153,7 +161,9 @@
     <string name="action_show_all_channels">Alle Sender anzeigen</string>
     <string name="livetv_header_letter_fmt">Sender (%1$s)</string>
     <string name="livetv_header_all">Alle Sender</string>
-    <string name="livetv_count_fmt">%1$d Sender gefunden</string>
+    <plurals name="livetv_count_fmt">
+        <item quantity="one">%1$d Sender gefunden</item>
+    </plurals>
     <string name="livetv_guide_date_fmt">EEE. d. MMM</string>
     <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
     <string name="action_now">Jetzt</string>
