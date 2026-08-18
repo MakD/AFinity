@@ -76,7 +76,9 @@
     <string name="favorites_empty_title">Ancora Nessun Preferito</string>
     <string name="meta_truehd">TrueHD</string>
     <string name="meta_ends_at">Finisce alle %1$s</string>
-    <string name="meta_episode_count">%1$d episodi</string>
+    <plurals name="meta_episode_count">
+        <item quantity="one">%1$d episodi</item>
+    </plurals>
     <string name="similar_items_title">Simili a questo</string>
     <string name="special_features_title">Caratteristiche speciali</string>
     <string name="extra_type_clip">Clip</string>
@@ -157,7 +159,9 @@
     <string name="livetv_error_not_available_message">Configura Live TV sul tuo server Jellyfin</string>
     <string name="person_biography">Biografia</string>
     <string name="person_born_deceased_fmt">Nato: %1$s</string>
-    <string name="person_died_fmt">Morto: %1$s (Età %2$d)</string>
+    <plurals name="person_died_fmt">
+        <item quantity="one">Morto: %1$s (Età %2$d)</item>
+    </plurals>
     <string name="person_died_no_age_fmt">Morto: %1$s</string>
     <string name="person_birthplace_fmt">Luogo di Nascita: %1$s</string>
     <string name="person_date_fmt">MMMM d, yyyy</string>
@@ -195,7 +199,9 @@
     <string name="meta_time_remaining_minutes">%1$dm rimanenti</string>
     <string name="meta_runtime_hours_minutes">%1$do %2$dm</string>
     <string name="meta_runtime_minutes">%1$dm</string>
-    <string name="writers_prefix">Scrittori: %1$s</string>
+    <plurals name="writers_prefix">
+        <item quantity="one">Scrittori: %1$s</item>
+    </plurals>
     <string name="cd_backdrop_fmt">%1$s backdrop</string>
     <string name="libraries_title">Libreria</string>
     <string name="library_empty_letter_fmt">Nessun contenuto che inizia con \"%1$s\"</string>
@@ -207,7 +213,9 @@
     <string name="livetv_cat_movies">Film</string>
     <string name="livetv_cat_shows">Serie</string>
     <string name="livetv_header_all">Tutti i canali</string>
-    <string name="livetv_count_fmt">%1$d nessun canale trovato</string>
+    <plurals name="livetv_count_fmt">
+        <item quantity="one">%1$d nessun canale trovato</item>
+    </plurals>
     <string name="livetv_guide_date_fmt">EEE, MMM d</string>
     <string name="player_up_next">Avanti</string>
     <string name="cd_close">Chiudi</string>
@@ -284,7 +292,9 @@
     <string name="cd_guide_previous_time">Blocco Temporale Precedente</string>
     <string name="cd_guide_next_time">Prossimo Blocco Temporale</string>
     <string name="livetv_home_empty_message">Controlla dopo per la lista completa dei programmi</string>
-    <string name="person_born_fmt">Nato: %1$s (%2$d anni)</string>
+    <plurals name="person_born_fmt">
+        <item quantity="one">Nato: %1$s (%2$d anni)</item>
+    </plurals>
     <string name="cd_person_image_fmt">%1$s immagine</string>
     <string name="cd_playback_info">Statistiche di Riproduzione</string>
     <string name="parts_title">Parti</string>
@@ -349,7 +359,9 @@
     <string name="filter_request">Richiesta</string>
     <string name="filter_audiobooks">Audiolibri</string>
     <string name="explore_genres">Esplora i generi</string>
-    <string name="search_results_count_fmt">%1$d risultati trovati</string>
+    <plurals name="search_results_count_fmt">
+        <item quantity="one">%1$d risultati trovati</item>
+    </plurals>
     <string name="cd_watched">Guardato</string>
     <string name="cd_finished">Finito</string>
     <string name="media_type_book">Libro</string>
@@ -361,7 +373,9 @@
     <string name="pref_sub_vertical_pos">Posizione verticale</string>
     <string name="pref_sub_horizontal_align">Allineamento orizzontale</string>
     <string name="action_reset_defaults">Ripristina le impostazioni predefinite</string>
-    <string name="director_prefix">Regista: %1$s</string>
+    <plurals name="director_prefix">
+        <item quantity="one">Regista: %1$s</item>
+    </plurals>
     <string name="settings_group_theme">Tema</string>
     <string name="pref_combine_library_summary">Unisci film e serie TV in un unico elenco</string>
     <string name="pref_max_concurrent_downloads">Numero massimo download contemporanei</string>
