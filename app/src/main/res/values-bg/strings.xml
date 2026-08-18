@@ -61,7 +61,9 @@
     <string name="hero_btn_play_trailer">Гледане на трейлър</string>
     <string name="hero_btn_play_media">Възпроизвеждане</string>
     <string name="hero_btn_watch_now">Гледай сега</string>
-    <string name="hero_season_plural">%1$d сезона</string>
+    <plurals name="hero_season_plural">
+        <item quantity="one">%1$d сезона</item>
+    </plurals>
     <string name="favorites_title">Любими</string>
     <string name="error_unknown">Неизвестна грешка</string>
     <string name="favorites_empty_title">Все още нямате любими</string>
@@ -80,11 +82,15 @@
     <string name="meta_cc">CC</string>
     <string name="meta_time_remaining_hours_minutes">Остават %1$d ч. %2$d м</string>
     <string name="meta_time_remaining_minutes">Остават %1$d м</string>
-    <string name="meta_boxset_count">%1$d елемента</string>
+    <plurals name="meta_boxset_count">
+        <item quantity="one">%1$d елемента</item>
+    </plurals>
     <string name="meta_runtime_hours_minutes">%1$d ч. %2$d м</string>
     <string name="meta_runtime_minutes">%1$d м</string>
     <string name="meta_ends_at">Завършва в %1$s</string>
-    <string name="meta_episode_count">%1$d епизода</string>
+    <plurals name="meta_episode_count">
+        <item quantity="one">%1$d епизода</item>
+    </plurals>
     <string name="similar_items_title">Още подобни</string>
     <string name="special_features_title">Специални материали</string>
     <string name="extra_type_clip">Клип</string>
@@ -113,8 +119,12 @@
     <string name="action_see_less">Покажи по-малко</string>
     <string name="cd_expand">Разгъване</string>
     <string name="cd_collapse">Свиване</string>
-    <string name="director_prefix">Режисьор: %1$s</string>
-    <string name="writers_prefix">Сценаристи: %1$s</string>
+    <plurals name="director_prefix">
+        <item quantity="one">Режисьор: %1$s</item>
+    </plurals>
+    <plurals name="writers_prefix">
+        <item quantity="one">Сценаристи: %1$s</item>
+    </plurals>
     <string name="seasons_title">Сезони</string>
     <string name="action_play">Възпроизвеждане</string>
     <string name="action_rewatch">Гледай отново</string>
@@ -168,7 +178,9 @@
     <string name="action_show_all_channels">Покажи всички канали</string>
     <string name="livetv_header_letter_fmt">Канали (%1$s)</string>
     <string name="livetv_header_all">Всички канали</string>
-    <string name="livetv_count_fmt">Намерени %1$d канала</string>
+    <plurals name="livetv_count_fmt">
+        <item quantity="one">Намерени %1$d канала</item>
+    </plurals>
     <string name="livetv_guide_date_fmt">EEE, d MMM</string>
     <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
     <string name="action_now">Сега</string>
@@ -183,9 +195,13 @@
     <string name="livetv_error_not_available_title">Телевизията на живо не е налична</string>
     <string name="livetv_error_not_available_message">Конфигурирайте телевизия на живо във вашия Jellyfin сървър</string>
     <string name="person_biography">Биография</string>
-    <string name="person_born_fmt">Роден(а): %1$s (на %2$d години)</string>
+    <plurals name="person_born_fmt">
+        <item quantity="one">Роден(а): %1$s (на %2$d години)</item>
+    </plurals>
     <string name="person_born_deceased_fmt">Роден(а): %1$s</string>
-    <string name="person_died_fmt">Починал(а): %1$s (на %2$d години)</string>
+    <plurals name="person_died_fmt">
+        <item quantity="one">Починал(а): %1$s (на %2$d години)</item>
+    </plurals>
     <string name="person_died_no_age_fmt">Починал(а): %1$s</string>
     <string name="person_birthplace_fmt">Място на раждане: %1$s</string>
     <string name="person_date_fmt">d MMMM yyyy</string>
@@ -303,7 +319,9 @@
     <string name="filter_request">Заявка</string>
     <string name="filter_audiobooks">Аудиокниги</string>
     <string name="explore_genres">Разгледайте жанровете</string>
-    <string name="search_results_count_fmt">Намерени са %1$d резултата</string>
+    <plurals name="search_results_count_fmt">
+        <item quantity="one">Намерени са %1$d резултата</item>
+    </plurals>
     <string name="cd_watched">Гледано</string>
     <string name="cd_finished">Завършено</string>
     <string name="media_type_book">Книга</string>
@@ -445,7 +463,9 @@
     <string name="empty_servers_message">Натиснете бутона +, за да добавите първия си Jellyfin сървър.</string>
     <string name="dialog_delete_server_title">Изтриване на сървъра?</string>
     <string name="dialog_delete_server_message_fmt">Сигурни ли сте, че искате да изтриете „%1$s“?</string>
-    <string name="dialog_delete_server_warning_fmt">Това ще премахне %1$d запазени потребители и всички свързани данни.</string>
+    <plurals name="dialog_delete_server_warning_fmt">
+        <item quantity="one">Това ще премахне %1$d запазени потребители и всички свързани данни.</item>
+    </plurals>
     <string name="action_delete">Изтриване</string>
     <string name="error_load_servers_failed">Грешка при зареждането на сървърите</string>
     <string name="error_delete_active_server">Текущият активен сървър не може да бъде изтрит. Моля, първо превключете към друг сървър.</string>
