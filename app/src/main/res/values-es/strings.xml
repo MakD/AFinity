@@ -58,7 +58,9 @@
     <string name="hero_btn_play_trailer">Reproducir tráiler</string>
     <string name="hero_btn_play_media">Reproducir medios</string>
     <string name="hero_btn_watch_now">Ver ahora</string>
-    <string name="hero_season_plural">%1$d Estaciones</string>
+    <plurals name="hero_season_plural">
+        <item quantity="one">%1$d Estaciones</item>
+    </plurals>
     <string name="favorites_title">Favoritos</string>
     <string name="error_unknown">Error desconocido</string>
     <string name="favorites_empty_title">Aún no hay favoritos</string>
