@@ -83,13 +83,19 @@
     <string name="meta_cc">CC</string>
     <string name="meta_time_remaining_hours_minutes">%1$dh %2$d min kvar</string>
     <string name="meta_time_remaining_minutes">%1$d min kvar</string>
-    <string name="meta_boxset_count">%1$d titlar</string>
+    <plurals name="meta_boxset_count">
+        <item quantity="one">%1$d titlar</item>
+    </plurals>
     <string name="meta_runtime_hours_minutes">%1$dh %2$d min</string>
     <string name="meta_runtime_minutes">%1$d min</string>
-    <string name="meta_parts_fmt">%1$d delar</string>
+    <plurals name="meta_parts_fmt">
+        <item quantity="one">%1$d delar</item>
+    </plurals>
     <string name="meta_part_of_fmt">Del %1$d/%2$d</string>
     <string name="meta_ends_at">Slutar %1$s</string>
-    <string name="meta_episode_count">%1$d avsnitt</string>
+    <plurals name="meta_episode_count">
+        <item quantity="one">%1$d avsnitt</item>
+    </plurals>
     <string name="similar_items_title">Liknande</string>
     <string name="special_features_title">Extramaterial</string>
     <string name="extra_type_clip">Klipp</string>
@@ -119,8 +125,12 @@
     <string name="action_see_less">Visa mindre</string>
     <string name="cd_expand">Expandera</string>
     <string name="cd_collapse">Fäll ihop</string>
-    <string name="director_prefix">Regissör: %1$s</string>
-    <string name="writers_prefix">Manus: %1$s</string>
+    <plurals name="director_prefix">
+        <item quantity="one">Regissör: %1$s</item>
+    </plurals>
+    <plurals name="writers_prefix">
+        <item quantity="one">Manus: %1$s</item>
+    </plurals>
     <string name="seasons_title">Säsonger</string>
     <string name="action_play">Spela upp</string>
     <string name="action_rewatch">Se igen</string>
@@ -174,7 +184,9 @@
     <string name="action_show_all_channels">Visa alla kanaler</string>
     <string name="livetv_header_letter_fmt">Kanaler (%1$s)</string>
     <string name="livetv_header_all">Alla kanaler</string>
-    <string name="livetv_count_fmt">%1$d kanaler hittades</string>
+    <plurals name="livetv_count_fmt">
+        <item quantity="one">%1$d kanaler hittades</item>
+    </plurals>
     <string name="livetv_guide_date_fmt">EEE d MMM</string>
     <string name="livetv_guide_time_range_fmt">%1$d:00–%2$d:00</string>
     <string name="action_now">Nu</string>
@@ -189,9 +201,13 @@
     <string name="livetv_error_not_available_title">Live-TV är inte tillgängligt</string>
     <string name="livetv_error_not_available_message">Konfigurera Live-TV på Jellyfin-servern.</string>
     <string name="person_biography">Biografi</string>
-    <string name="person_born_fmt">Född: %1$s (%2$d år)</string>
+    <plurals name="person_born_fmt">
+        <item quantity="one">Född: %1$s (%2$d år)</item>
+    </plurals>
     <string name="person_born_deceased_fmt">Född: %1$s</string>
-    <string name="person_died_fmt">Död: %1$s (%2$d år)</string>
+    <plurals name="person_died_fmt">
+        <item quantity="one">Död: %1$s (%2$d år)</item>
+    </plurals>
     <string name="person_died_no_age_fmt">Död: %1$s</string>
     <string name="person_birthplace_fmt">Födelseort: %1$s</string>
     <string name="person_date_fmt">d MMMM yyyy</string>
@@ -309,7 +325,9 @@
     <string name="filter_request">Önska</string>
     <string name="filter_audiobooks">Ljudböcker</string>
     <string name="explore_genres">Utforska genrer</string>
-    <string name="search_results_count_fmt">%1$d resultat</string>
+    <plurals name="search_results_count_fmt">
+        <item quantity="one">%1$d resultat</item>
+    </plurals>
     <string name="cd_watched">Sedd</string>
     <string name="cd_finished">Klar</string>
     <string name="media_type_book">Bok</string>
@@ -452,7 +470,9 @@
     <string name="empty_servers_message">Tryck på plusknappen för att lägga till din första Jellyfin-server.</string>
     <string name="dialog_delete_server_title">Ta bort server?</string>
     <string name="dialog_delete_server_message_fmt">Vill du ta bort ”%1$s”?</string>
-    <string name="dialog_delete_server_warning_fmt">Det tar bort %1$d sparade användare och all tillhörande data.</string>
+    <plurals name="dialog_delete_server_warning_fmt">
+        <item quantity="one">Det tar bort %1$d sparade användare och all tillhörande data.</item>
+    </plurals>
     <string name="action_delete">Ta bort</string>
     <string name="error_load_servers_failed">Kunde inte läsa in servrar</string>
     <string name="error_delete_active_server">Det går inte att ta bort den aktiva servern. Byt till en annan server först.</string>
@@ -693,7 +713,9 @@
     <string name="cd_add_address">Lägg till adress</string>
     <string name="cd_security_warning">Säkerhetsvarning</string>
     <string name="server_primary_connection">Primär anslutning</string>
-    <string name="server_backup_routes_fmt">+ %1$d reservvägar</string>
+    <plurals name="server_backup_routes_fmt">
+        <item quantity="one">+ %1$d reservvägar</item>
+    </plurals>
     <string name="service_label_seerr">Seerr</string>
     <string name="service_label_abs">ABS</string>
     <string name="service_label_tmdb">TMDB</string>
