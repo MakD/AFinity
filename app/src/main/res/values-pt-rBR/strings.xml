@@ -58,7 +58,9 @@
     <string name="hero_btn_play_trailer">Reproduzir trailer</string>
     <string name="hero_btn_play_media">Reproduzir mídia</string>
     <string name="hero_btn_watch_now">Assista agora</string>
-    <string name="hero_season_plural">%1$d Temporadas</string>
+    <plurals name="hero_season_plural">
+        <item quantity="one">%1$d Temporadas</item>
+    </plurals>
     <string name="favorites_title">Favoritos</string>
     <string name="error_unknown">Erro desconhecido</string>
     <string name="favorites_empty_title">Ainda não há favoritos</string>
@@ -77,11 +79,15 @@
     <string name="meta_cc">CC</string>
     <string name="meta_time_remaining_hours_minutes">%1$dh %2$dm restante</string>
     <string name="meta_time_remaining_minutes">%1$destou à esquerda</string>
-    <string name="meta_boxset_count">%1$d Unid</string>
+    <plurals name="meta_boxset_count">
+        <item quantity="one">%1$d Unid</item>
+    </plurals>
     <string name="meta_runtime_hours_minutes">%1$dh %2$dm</string>
     <string name="meta_runtime_minutes">%1$dm</string>
     <string name="meta_ends_at">Termina em %1$s</string>
-    <string name="meta_episode_count">%1$d episódios</string>
+    <plurals name="meta_episode_count">
+        <item quantity="one">%1$d episódios</item>
+    </plurals>
     <string name="similar_items_title">Mais como este</string>
     <string name="special_features_title">Recursos especiais</string>
     <string name="extra_type_clip">Grampo</string>
@@ -110,8 +116,12 @@
     <string name="action_see_less">Ver menos</string>
     <string name="cd_expand">Expandir</string>
     <string name="cd_collapse">Colapso</string>
-    <string name="director_prefix">Diretor: %1$s</string>
-    <string name="writers_prefix">Escritores: %1$s</string>
+    <plurals name="director_prefix">
+        <item quantity="one">Diretor: %1$s</item>
+    </plurals>
+    <plurals name="writers_prefix">
+        <item quantity="one">Escritores: %1$s</item>
+    </plurals>
     <string name="seasons_title">Temporadas</string>
     <string name="action_play">Jogar</string>
     <string name="action_rewatch">Assistir novamente</string>
@@ -165,7 +175,9 @@
     <string name="action_show_all_channels">Mostrar todos os canais</string>
     <string name="livetv_header_letter_fmt">Canais (%1$s)</string>
     <string name="livetv_header_all">Todos os canais</string>
-    <string name="livetv_count_fmt">%1$d canais encontrados</string>
+    <plurals name="livetv_count_fmt">
+        <item quantity="one">%1$d canais encontrados</item>
+    </plurals>
     <string name="livetv_guide_date_fmt">EEE, MMM d</string>
     <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
     <string name="action_now">Agora</string>
@@ -180,9 +192,13 @@
     <string name="livetv_error_not_available_title">TV ao vivo não disponível</string>
     <string name="livetv_error_not_available_message">Configure a TV ao vivo em seu servidor Jellyfin</string>
     <string name="person_biography">Biografia</string>
-    <string name="person_born_fmt">Nascido: %1$s (%2$d anos)</string>
+    <plurals name="person_born_fmt">
+        <item quantity="one">Nascido: %1$s (%2$d anos)</item>
+    </plurals>
     <string name="person_born_deceased_fmt">Nascer: %1$s</string>
-    <string name="person_died_fmt">Morreu: %1$s (idade %2$d)</string>
+    <plurals name="person_died_fmt">
+        <item quantity="one">Morreu: %1$s (idade %2$d)</item>
+    </plurals>
     <string name="person_died_no_age_fmt">Morreu: %1$s</string>
     <string name="person_birthplace_fmt">Local de nascimento: %1$s</string>
     <string name="person_date_fmt">MMMM d, aaaa</string>
@@ -298,7 +314,9 @@
     <string name="filter_request">Solicitar</string>
     <string name="filter_audiobooks">Audiolivros</string>
     <string name="explore_genres">Explorar gêneros</string>
-    <string name="search_results_count_fmt">%1$d resultados encontrados</string>
+    <plurals name="search_results_count_fmt">
+        <item quantity="one">%1$d resultados encontrados</item>
+    </plurals>
     <string name="cd_watched">Assistido</string>
     <string name="cd_finished">Finalizado</string>
     <string name="media_type_book">Livro</string>
@@ -433,7 +451,9 @@
     <string name="empty_servers_message">Toque no botão + para adicionar seu primeiro servidor Jellyfin.</string>
     <string name="dialog_delete_server_title">Excluir servidor?</string>
     <string name="dialog_delete_server_message_fmt">Tem certeza de que deseja excluir \"%1$s\"?</string>
-    <string name="dialog_delete_server_warning_fmt">Isso removerá os usuários salvos %1$d e todos os dados associados.</string>
+    <plurals name="dialog_delete_server_warning_fmt">
+        <item quantity="one">Isso removerá os usuários salvos %1$d e todos os dados associados.</item>
+    </plurals>
     <string name="action_delete">Excluir</string>
     <string name="error_load_servers_failed">Falha ao carregar servidores</string>
     <string name="error_delete_active_server">Não é possível excluir o servidor atualmente ativo. Por favor, mude para outro servidor primeiro.</string>
