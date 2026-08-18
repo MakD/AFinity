@@ -12,6 +12,7 @@ import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.music.MusicRepository
+import com.makd.afinity.data.store.ItemStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,6 +43,7 @@ constructor(
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val appDataRepository: AppDataRepository,
     private val downloadPermissions: DownloadPermissions,
+    private val itemStore: ItemStore,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -57,6 +59,24 @@ constructor(
     init {
         load()
         observeDownloads()
+
+        viewModelScope.launch {
+            itemStore.overlay.collect { overlay ->
+                if (overlay.isEmpty()) return@collect
+                _uiState.update { state ->
+                    val tracks = itemStore.mergeOwners(state.tracks)
+                    val album =
+                        state.album?.let { current ->
+                            itemStore.mergeOwners(listOf(current)).first()
+                        }
+                    if (tracks === state.tracks && album === state.album) {
+                        state
+                    } else {
+                        state.copy(tracks = tracks, album = album)
+                    }
+                }
+            }
+        }
     }
 
     private fun load() {
@@ -71,10 +91,11 @@ constructor(
                     album?.artistId?.let {
                         "${musicRepository.getBaseUrl()}/Items/$it/Images/Primary?fillHeight=128&quality=90"
                     }
+                itemStore.putIfAbsent(tracks + listOfNotNull(album))
                 _uiState.update {
                     it.copy(
-                        album = album,
-                        tracks = tracks,
+                        album = album?.let { a -> itemStore.mergeOwners(listOf(a)).first() },
+                        tracks = itemStore.mergeOwners(tracks),
                         artistImageUrl = artistImageUrl,
                         isLoading = false,
                     )

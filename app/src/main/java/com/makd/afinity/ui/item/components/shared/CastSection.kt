@@ -35,8 +35,8 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
-import java.util.UUID
 import org.jellyfin.sdk.model.api.PersonKind
+import java.util.UUID
 
 @Composable
 fun CastSection(
@@ -50,7 +50,7 @@ fun CastSection(
             is AfinityShow -> item.people.filter { it.type == PersonKind.ACTOR }
             is AfinitySeason -> item.people.filter { it.type == PersonKind.ACTOR }
             else -> emptyList()
-        }
+        }.distinctBy { it.id }
 
     val cardWidth = widthSizeClass.portraitWidth
 

@@ -3,6 +3,8 @@ package com.makd.afinity.data.repository
 import android.content.Context
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
+import com.makd.afinity.data.manager.AdminChangeKind
+import com.makd.afinity.data.manager.MediaChangeEvent
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.MediaRefreshBus
 import com.makd.afinity.data.manager.RefreshTrigger
@@ -24,10 +26,12 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.models.media.withPatchedImages
+import com.makd.afinity.data.models.media.withUserData
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
+import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.repository.home.HomeCacheRepository
 import com.makd.afinity.data.repository.home.HomeLayoutPreferencesRepository
 import com.makd.afinity.data.repository.home.HomeSectionsRepository
@@ -36,12 +40,14 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
+import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.util.ItemIds
 import com.makd.afinity.util.JellyfinImageUrlBuilder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -60,6 +66,8 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -94,15 +102,35 @@ constructor(
     private val homeCacheRepository: HomeCacheRepository,
     private val homeSectionsRepository: HomeSectionsRepository,
     private val homeLayoutPreferencesRepository: HomeLayoutPreferencesRepository,
+    private val itemStore: ItemStore,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val deletedItemsRepository: DeletedItemsRepository,
+    private val databaseRepository: DatabaseRepository,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val userDataOverlay: StateFlow<Map<UUID, AfinityUserDataDto>> =
+        sessionManager.currentSession
+            .flatMapLatest { session ->
+                if (session == null) {
+                    flowOf(emptyMap())
+                } else {
+                    databaseRepository.getAllUserDataFlow(session.userId).map { rows ->
+                        rows.associateBy { it.itemId }
+                    }
+                }
+            }
+            .stateIn(scope, SharingStarted.WhileSubscribed(5_000), emptyMap())
     private var liveDataJob: Job? = null
+    private var lastReinsertRefreshAt = 0L
     private var initialLoadJob: Deferred<Unit>? = null
     private val initialLoadMutex = Mutex()
     private val _lastUserDataChangedAt = MutableStateFlow(0L)
     val lastUserDataChangedAt: StateFlow<Long> = _lastUserDataChangedAt.asStateFlow()
+
+    private val _lastResyncAt = MutableStateFlow(0L)
+    val lastResyncAt: StateFlow<Long> = _lastResyncAt.asStateFlow()
 
     private val _sessionCleared = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val sessionCleared: SharedFlow<Unit> = _sessionCleared.asSharedFlow()
@@ -170,6 +198,29 @@ constructor(
 
         scope.launch {
             adminChangeBroadcaster.itemDeleted.collect { event -> onItemDeleted(event.itemId) }
+        }
+
+        scope.launch {
+            adminChangeBroadcaster.changes.collect { change ->
+                val changedId =
+                    try {
+                        UUID.fromString(change.itemId)
+                    } catch (_: IllegalArgumentException) {
+                        null
+                    }
+                if (changedId != null && change.kind != AdminChangeKind.DELETED) {
+                    applyAdminItemChange(changedId)
+                }
+                if (change.kind != AdminChangeKind.IMAGES) {
+                    refreshPlaybackSections()
+                }
+                if (change.kind == AdminChangeKind.METADATA) {
+                    homeSectionsRepository.refreshCustomSections(
+                        "admin metadata edit",
+                        HomeSectionsRepository.ADMIN_REFRESH_DEBOUNCE_MS,
+                    )
+                }
+            }
         }
 
         scope.launch {
@@ -561,7 +612,21 @@ constructor(
                     .collect {
                         if (!_isInitialDataLoaded.value) return@collect
                         Timber.d("Bus: library changed — refreshing library sections")
+                        itemStore.clear()
                         refreshLibrarySections()
+                    }
+            }
+
+            launch {
+                mediaRefreshBus.events
+                    .filter { it == RefreshTrigger.CONTENT_RESYNC }
+                    .debounce(1_500L)
+                    .collect {
+                        if (!_isInitialDataLoaded.value) return@collect
+                        Timber.d("Bus: content resync — refreshing library sections")
+                        itemStore.clear()
+                        refreshLibrarySections()
+                        _lastResyncAt.value = System.currentTimeMillis()
                     }
             }
 
@@ -580,13 +645,35 @@ constructor(
             }
 
             launch {
+                mediaChangeManager.batches.collect { batch ->
+                    if (!batch.changes.any { it.mayReenterLatest() }) return@collect
+                    val now = System.currentTimeMillis()
+                    if (now - lastReinsertRefreshAt < REINSERT_REFRESH_COOLDOWN_MS) return@collect
+                    lastReinsertRefreshAt = now
+                    Timber.d("Item marked unplayed — refreshing library sections for re-insert")
+                    refreshLibrarySections()
+                }
+            }
+
+            launch {
                 mediaChangeManager.mediaChanges.collect { event ->
-                    event.updatedItem?.let { updateItemInCaches(it) }
+                    val userData = event.userData
+                    val changedItem =
+                        userData?.let { data -> heldItemById(event.itemId)?.withUserData(data) }
+                            ?: event.updatedItem
+
+                    changedItem?.let { updateItemInCaches(it) }
                     event.parentItem?.let { updateItemInCaches(it) }
                     event.seasonItem?.let { updateItemInCaches(it) }
 
-                    val userData = event.userData ?: return@collect
-                    val item = event.updatedItem ?: return@collect
+                    if (userData == null) {
+                        event.updatedItem?.let { item ->
+                            mediaRepository.patchItemImages(item)
+                            _heroCarouselItems.update { it.withPatchedImages(item) }
+                        }
+                        return@collect
+                    }
+                    val item = changedItem ?: return@collect
                     if (item.id != userData.itemId) return@collect
 
                     updateFavoriteStatus(item, userData.isFavorite)
@@ -840,12 +927,16 @@ constructor(
             _separateMovieLibrarySections.value =
                 movieResults
                     .filter { it.second.isNotEmpty() }
-                    .map { (library, movies) -> library to movies.take(LATEST_RETAINED) }
+                    .map { (library, movies) ->
+                        library to mergeStoreUserData(movies.take(LATEST_RETAINED))
+                    }
 
             _separateTvLibrarySections.value =
                 showResults
                     .filter { it.second.isNotEmpty() }
-                    .map { (library, shows) -> library to shows.take(LATEST_RETAINED) }
+                    .map { (library, shows) ->
+                        library to mergeStoreUserData(shows.take(LATEST_RETAINED))
+                    }
 
             val allLatestMovies = movieResults.flatMap { it.second }
             val allLatestSeries = showResults.flatMap { it.second }
@@ -866,7 +957,7 @@ constructor(
                     allLatestSeries.sortedByDescending { it.premiereDate }.take(LATEST_RETAINED)
                 }
 
-            Pair(latestMovies, latestTvSeries)
+            Pair(mergeStoreUserData(latestMovies), mergeStoreUserData(latestTvSeries))
         } catch (e: Exception) {
             Timber.e(e, "Failed to load home specific data")
             Pair(emptyList(), emptyList())
@@ -923,6 +1014,7 @@ constructor(
         updateItemInCaches(updatedItem)
         mediaRepository.patchItemImages(updatedItem)
         _heroCarouselItems.update { it.withPatchedImages(updatedItem) }
+        mediaChangeManager.publishKnownChange(updatedItem)
     }
 
     suspend fun updateItemInCaches(updatedItem: AfinityItem) {
@@ -1071,6 +1163,60 @@ constructor(
     private fun <T : AfinityItem> List<T>.replacedWith(item: T): List<T> =
         if (none { it.id == item.id }) this else map { if (it.id == item.id) item else it }
 
+    private fun <T : AfinityItem> mergeStoreUserData(items: List<T>): List<T> =
+        itemStore.merge(items)
+
+    private fun MediaChangeEvent.mayReenterLatest(): Boolean {
+        if (userData == null && patch == null) return false
+        val item = updatedItem ?: return false
+        if (item !is AfinityMovie && item !is AfinityShow) return false
+        val data = userData
+        val played: Boolean
+        val position: Long
+        if (data != null) {
+            played = data.played
+            position = data.playbackPositionTicks
+        } else {
+            played = item.played
+            position = item.playbackPositionTicks
+        }
+        if (played || position != 0L) return false
+        return _latestMovies.value.none { it.id == itemId } &&
+            _latestTvSeries.value.none { it.id == itemId }
+    }
+
+    private fun heldItemById(id: UUID): AfinityItem? {
+        _latestMovies.value
+            .firstOrNull { it.id == id }
+            ?.let {
+                return it
+            }
+        _latestTvSeries.value
+            .firstOrNull { it.id == id }
+            ?.let {
+                return it
+            }
+        _heroCarouselItems.value
+            .firstOrNull { it.id == id }
+            ?.let {
+                return it
+            }
+        _separateMovieLibrarySections.value
+            .firstNotNullOfOrNull { (_, movies) -> movies.firstOrNull { it.id == id } }
+            ?.let {
+                return it
+            }
+        _separateTvLibrarySections.value
+            .firstNotNullOfOrNull { (_, shows) -> shows.firstOrNull { it.id == id } }
+            ?.let {
+                return it
+            }
+        _favoritesData.value.itemById(id)?.let {
+            return it
+        }
+        return _watchlistData.value.itemById(id)
+    }
+
     fun updateFavoriteStatus(item: AfinityItem, isFavorite: Boolean) {
         _favoritesData.update { current ->
             when (item) {
@@ -1177,6 +1323,7 @@ constructor(
         liveDataJob?.cancel()
         homeSectionsRepository.clearAllData()
         mediaRepository.clearPlaybackCaches()
+        itemStore.clear()
         _heroCarouselItems.value = emptyList()
         _libraries.value = emptyList()
         _latestMovies.value = emptyList()
@@ -1205,6 +1352,7 @@ constructor(
         const val LATEST_RETAINED = 25
         const val LATEST_DISPLAYED = 15
         const val COMBINED_LATEST_FETCH = 60
+        private const val REINSERT_REFRESH_COOLDOWN_MS = 5_000L
         private val LATEST_ROWS = setOf(HomeRow.LATEST_MOVIES, HomeRow.LATEST_TV)
     }
 }
@@ -1223,6 +1371,14 @@ data class FavoritesData(
     val favoritePlaylists: List<AfinityPlaylist> = emptyList(),
 )
 
+fun FavoritesData.itemById(id: UUID): AfinityItem? =
+    movies.firstOrNull { it.id == id }
+        ?: shows.firstOrNull { it.id == id }
+        ?: seasons.firstOrNull { it.id == id }
+        ?: episodes.firstOrNull { it.id == id }
+        ?: boxSets.firstOrNull { it.id == id }
+        ?: channels.firstOrNull { it.id == id }
+
 data class WatchlistData(
     val boxSets: List<AfinityBoxSet> = emptyList(),
     val movies: List<AfinityMovie> = emptyList(),
@@ -1230,3 +1386,10 @@ data class WatchlistData(
     val seasons: List<AfinitySeason> = emptyList(),
     val episodes: List<AfinityEpisode> = emptyList(),
 )
+
+fun WatchlistData.itemById(id: UUID): AfinityItem? =
+    movies.firstOrNull { it.id == id }
+        ?: shows.firstOrNull { it.id == id }
+        ?: seasons.firstOrNull { it.id == id }
+        ?: episodes.firstOrNull { it.id == id }
+        ?: boxSets.firstOrNull { it.id == id }

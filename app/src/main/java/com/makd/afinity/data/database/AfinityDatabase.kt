@@ -16,10 +16,8 @@ import com.makd.afinity.data.database.dao.HomeLayoutPreferenceDao
 import com.makd.afinity.data.database.dao.ItemMetadataCacheDao
 import com.makd.afinity.data.database.dao.JellyfinStatsDao
 import com.makd.afinity.data.database.dao.JellyseerrDao
-import com.makd.afinity.data.database.dao.LibraryCacheDao
 import com.makd.afinity.data.database.dao.MediaStreamDao
 import com.makd.afinity.data.database.dao.MovieDao
-import com.makd.afinity.data.database.dao.MovieSectionDao
 import com.makd.afinity.data.database.dao.MusicAlbumDao
 import com.makd.afinity.data.database.dao.MusicLyricsDao
 import com.makd.afinity.data.database.dao.MusicQueueDao
@@ -66,8 +64,6 @@ import com.makd.afinity.data.database.entities.JellyseerrAddressEntity
 import com.makd.afinity.data.database.entities.JellyseerrConfigEntity
 import com.makd.afinity.data.database.entities.JellyseerrDiscoverFilterEntity
 import com.makd.afinity.data.database.entities.JellyseerrRequestEntity
-import com.makd.afinity.data.database.entities.LibraryCacheEntity
-import com.makd.afinity.data.database.entities.MovieSectionCacheEntity
 import com.makd.afinity.data.database.entities.MusicAlbumEntity
 import com.makd.afinity.data.database.entities.MusicLyricsEntity
 import com.makd.afinity.data.database.entities.MusicQueueEntity
@@ -86,7 +82,6 @@ import com.makd.afinity.data.models.user.User
             Server::class,
             ServerAddress::class,
             User::class,
-            LibraryCacheEntity::class,
             BoxSetCacheEntity::class,
             BoxSetCacheMetadata::class,
             GenreCacheEntity::class,
@@ -95,7 +90,6 @@ import com.makd.afinity.data.models.user.User
             GenreShowCacheEntity::class,
             TopPeopleCacheEntity::class,
             PersonSectionCacheEntity::class,
-            MovieSectionCacheEntity::class,
             AfinityMovieDto::class,
             AfinityShowDto::class,
             AfinitySeasonDto::class,
@@ -129,7 +123,7 @@ import com.makd.afinity.data.models.user.User
             HomeLayoutPreferenceEntity::class,
             DeletedItemEntity::class,
         ],
-    version = 68,
+    version = 70,
     exportSchema = false,
 )
 @TypeConverters(AfinityTypeConverters::class)
@@ -157,8 +151,6 @@ abstract class AfinityDatabase : RoomDatabase() {
 
     abstract fun serverDatabaseDao(): ServerDatabaseDao
 
-    abstract fun libraryCacheDao(): LibraryCacheDao
-
     abstract fun boxSetCacheDao(): BoxSetCacheDao
 
     abstract fun genreCacheDao(): GenreCacheDao
@@ -166,8 +158,6 @@ abstract class AfinityDatabase : RoomDatabase() {
     abstract fun topPeopleDao(): TopPeopleDao
 
     abstract fun personSectionDao(): PersonSectionDao
-
-    abstract fun movieSectionDao(): MovieSectionDao
 
     abstract fun jellyseerrDao(): JellyseerrDao
 

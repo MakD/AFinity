@@ -7,6 +7,7 @@ import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.di.ApplicationScope
+import com.makd.afinity.util.forUser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,6 +23,7 @@ import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.operations.QuickConnectApi
 import org.jellyfin.sdk.api.operations.SessionApi
 import org.jellyfin.sdk.api.operations.UserApi
+import org.jellyfin.sdk.model.DeviceInfo
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.ClientCapabilitiesDto
 import org.jellyfin.sdk.model.api.GeneralCommandType
@@ -36,6 +38,7 @@ class JellyfinAuthRepository
 @Inject
 constructor(
     private val jellyfin: Jellyfin,
+    private val deviceInfo: DeviceInfo,
     private val sessionManager: SessionManager,
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val databaseRepository: DatabaseRepository,
@@ -149,7 +152,11 @@ constructor(
     ): AuthRepository.AuthResult {
         return withContext(Dispatchers.IO) {
             try {
-                val client = jellyfin.createApi(baseUrl = serverUrl)
+                val client =
+                    jellyfin.createApi(
+                        baseUrl = serverUrl,
+                        deviceInfo = deviceInfo.forUser(UUID.randomUUID()),
+                    )
                 val userApi = UserApi(client)
                 val authRequest =
                     org.jellyfin.sdk.model.api.AuthenticateUserByName(
@@ -184,7 +191,11 @@ constructor(
     ): AuthRepository.AuthResult {
         return withContext(Dispatchers.IO) {
             try {
-                val client = jellyfin.createApi(baseUrl = serverUrl)
+                val client =
+                    jellyfin.createApi(
+                        baseUrl = serverUrl,
+                        deviceInfo = deviceInfo.forUser(UUID.randomUUID()),
+                    )
                 val userApi = UserApi(client)
                 val quickConnectRequest =
                     org.jellyfin.sdk.model.api.QuickConnectDto(secret = secret)
@@ -204,7 +215,11 @@ constructor(
     override suspend fun initiateQuickConnect(serverUrl: String): QuickConnectState? {
         return withContext(Dispatchers.IO) {
             try {
-                val client = jellyfin.createApi(baseUrl = serverUrl)
+                val client =
+                    jellyfin.createApi(
+                        baseUrl = serverUrl,
+                        deviceInfo = deviceInfo.forUser(UUID.randomUUID()),
+                    )
                 val quickConnectApi = QuickConnectApi(client)
                 val result = quickConnectApi.initiateQuickConnect().content
                 QuickConnectState(
@@ -228,7 +243,11 @@ constructor(
     ): QuickConnectState? {
         return withContext(Dispatchers.IO) {
             try {
-                val client = jellyfin.createApi(baseUrl = serverUrl)
+                val client =
+                    jellyfin.createApi(
+                        baseUrl = serverUrl,
+                        deviceInfo = deviceInfo.forUser(UUID.randomUUID()),
+                    )
                 val quickConnectApi = QuickConnectApi(client)
                 val result = quickConnectApi.getQuickConnectState(secret = secret).content
                 QuickConnectState(
@@ -301,7 +320,11 @@ constructor(
     override suspend fun getPublicUsers(serverUrl: String): List<User> {
         return withContext(Dispatchers.IO) {
             try {
-                val client = jellyfin.createApi(baseUrl = serverUrl)
+                val client =
+                    jellyfin.createApi(
+                        baseUrl = serverUrl,
+                        deviceInfo = deviceInfo.forUser(UUID.randomUUID()),
+                    )
                 val userApi = UserApi(client)
                 userApi.getPublicUsers().content.map { userDto ->
                     User(

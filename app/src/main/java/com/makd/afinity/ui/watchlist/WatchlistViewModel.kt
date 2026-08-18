@@ -19,8 +19,10 @@ import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
+import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,9 +34,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @OptIn(FlowPreview::class)
 @HiltViewModel
@@ -50,6 +52,7 @@ constructor(
     private val mediaChangeManager: MediaChangeManager,
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val downloadPermissions: DownloadPermissions,
+    private val itemStore: ItemStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WatchlistUiState())
@@ -82,17 +85,58 @@ constructor(
 
         viewModelScope.launch {
             appDataRepository.watchlistData.collect { data ->
+                itemStore.putIfAbsent(
+                    data.boxSets + data.movies + data.shows + data.seasons + data.episodes
+                )
                 _uiState.value =
                     WatchlistUiState(
-                        boxSets = data.boxSets,
-                        movies = data.movies,
-                        shows = data.shows,
-                        seasons = data.seasons,
-                        episodes = data.episodes,
+                        boxSets = itemStore.merge(data.boxSets),
+                        movies = itemStore.merge(data.movies),
+                        shows = itemStore.merge(data.shows),
+                        seasons = itemStore.merge(data.seasons),
+                        episodes = itemStore.merge(data.episodes),
                         isLoading = false,
                         error = null,
                     )
                 lastWatchlistLoadedAt = System.currentTimeMillis()
+            }
+        }
+
+        viewModelScope.launch {
+            appDataRepository.lastResyncAt.collect { at ->
+                if (at <= lastWatchlistLoadedAt) return@collect
+                lastWatchlistLoadedAt = System.currentTimeMillis()
+                appDataRepository.reloadWatchlist()
+            }
+        }
+
+        viewModelScope.launch {
+            itemStore.overlay.collect { overlay ->
+                if (overlay.isEmpty()) return@collect
+                _uiState.update { state ->
+                    val boxSets = itemStore.merge(state.boxSets)
+                    val movies = itemStore.merge(state.movies)
+                    val shows = itemStore.merge(state.shows)
+                    val seasons = itemStore.merge(state.seasons)
+                    val episodes = itemStore.merge(state.episodes)
+                    if (
+                        boxSets === state.boxSets &&
+                            movies === state.movies &&
+                            shows === state.shows &&
+                            seasons === state.seasons &&
+                            episodes === state.episodes
+                    ) {
+                        state
+                    } else {
+                        state.copy(
+                            boxSets = boxSets,
+                            movies = movies,
+                            shows = shows,
+                            seasons = seasons,
+                            episodes = episodes,
+                        )
+                    }
+                }
             }
         }
     }

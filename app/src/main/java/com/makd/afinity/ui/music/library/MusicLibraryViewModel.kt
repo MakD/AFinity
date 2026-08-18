@@ -9,6 +9,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.filter
+import androidx.paging.map
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.DownloadPermissions
@@ -34,6 +35,7 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.music.MadeForYouCache
 import com.makd.afinity.data.repository.music.MusicRepository
+import com.makd.afinity.data.store.ItemStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -188,6 +190,7 @@ constructor(
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val madeForYouCache: MadeForYouCache,
     private val downloadPermissions: DownloadPermissions,
+    private val itemStore: ItemStore,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -284,6 +287,10 @@ constructor(
                     .flow
             }
             .cachedIn(viewModelScope)
+            .combine(itemStore.overlay) { pagingData, overlay ->
+                if (overlay.isEmpty()) pagingData
+                else pagingData.map { track -> itemStore.mergeOwner(track) }
+            }
             .combine(trackFavoriteOverridesFlow) { pagingData, overrides ->
                 if (!_trackFilters.value.favoritesOnly) pagingData
                 else pagingData.filter { track -> overrides[track.id] ?: track.favorite }
@@ -315,6 +322,10 @@ constructor(
                     .flow
             }
             .cachedIn(viewModelScope)
+            .combine(itemStore.overlay) { pagingData, overlay ->
+                if (overlay.isEmpty()) pagingData
+                else pagingData.map { album -> itemStore.mergeOwner(album) }
+            }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val artistsPagingFlow: Flow<PagingData<AfinityArtist>> =
@@ -335,6 +346,10 @@ constructor(
                     .flow
             }
             .cachedIn(viewModelScope)
+            .combine(itemStore.overlay) { pagingData, overlay ->
+                if (overlay.isEmpty()) pagingData
+                else pagingData.map { artist -> itemStore.mergeOwner(artist) }
+            }
 
     init {
         loadPersistedPrefs()

@@ -16,4 +16,6 @@ data class AfinityUserDataDto(
     val audioStreamIndex: Int? = null,
     val subtitleStreamIndex: Int? = null,
     val lastPlayedAt: Long? = null,
+    val unplayedItemCount: Int? = null,
+    val playCount: Int? = null,
 )

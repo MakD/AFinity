@@ -3,6 +3,8 @@ package com.makd.afinity.data.manager
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
+import com.makd.afinity.data.models.media.withUserData
+import com.makd.afinity.data.models.media.withUserDataPatch
 import com.makd.afinity.data.repository.media.MediaRepository
 import timber.log.Timber
 import java.util.UUID
@@ -10,6 +12,7 @@ import java.util.UUID
 suspend fun MediaChangeEvent.resolveChangedItems(
     mediaRepository: MediaRepository,
     displayedIds: Set<UUID>? = null,
+    heldItem: ((UUID) -> AfinityItem?)? = null,
 ): List<AfinityItem> {
     val provided = listOfNotNull(updatedItem, parentItem, seasonItem).associateBy { it.id }
     val resolvedSeriesId =
@@ -24,7 +27,8 @@ suspend fun MediaChangeEvent.resolveChangedItems(
     return candidateIds
         .filter { displayedIds == null || it in displayedIds }
         .mapNotNull { id ->
-            provided[id]
+            patchedFromHeld(id, heldItem)
+                ?: provided[id]
                 ?: run {
                     val fetchAllowed =
                         displayedIds != null || id == itemId || id == resolvedSeriesId
@@ -37,4 +41,43 @@ suspend fun MediaChangeEvent.resolveChangedItems(
                     }
                 }
         }
+}
+
+suspend fun MediaChangeEvent.resolveTargetItem(
+    mediaRepository: MediaRepository,
+    heldItem: ((UUID) -> AfinityItem?)? = null,
+): AfinityItem? {
+    patchedFromHeld(itemId, heldItem)?.let {
+        return it
+    }
+    updatedItem?.let {
+        return it
+    }
+    parentItem?.let {
+        return it
+    }
+    seasonItem?.let {
+        return it
+    }
+    return try {
+        mediaRepository.getItemById(itemId)
+    } catch (e: Exception) {
+        Timber.e(e, "Failed to resolve target item for media change patch: $itemId")
+        null
+    }
+}
+
+private fun MediaChangeEvent.patchedFromHeld(
+    id: UUID,
+    heldItem: ((UUID) -> AfinityItem?)?,
+): AfinityItem? {
+    if (id != itemId) return null
+    val data = userData
+    if (data != null) {
+        val held = heldItem?.invoke(id) ?: return null
+        return held.withUserData(data)
+    }
+    val partial = patch ?: return null
+    val held = heldItem?.invoke(id) ?: return null
+    return held.withUserDataPatch(partial)
 }

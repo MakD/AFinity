@@ -72,6 +72,7 @@ fun BaseItemDto.toAfinityTrack(baseUrl: String): AfinityTrack {
         playbackPositionTicks = userData?.playbackPositionTicks ?: 0L,
         played = userData?.played == true,
         favorite = userData?.isFavorite == true,
+        liked = userData?.likes == true,
         playCount = userData?.playCount,
         normalizationGain = normalizationGain,
         images =
@@ -97,6 +98,8 @@ fun BaseItemDto.toAfinityAlbum(baseUrl: String): AfinityAlbum {
         overview = overview,
         favorite = userData?.isFavorite == true,
         played = userData?.played == true,
+        liked = userData?.likes == true,
+        playbackPositionTicks = userData?.playbackPositionTicks ?: 0L,
         playCount = userData?.playCount,
         images = toAfinityImages(baseUrl),
     )
@@ -110,6 +113,8 @@ fun BaseItemDto.toAfinityArtist(baseUrl: String): AfinityArtist {
         albumCount = childCount,
         genres = genres ?: emptyList(),
         favorite = userData?.isFavorite == true,
+        liked = userData?.likes == true,
+        played = userData?.played == true,
         images = toAfinityImages(baseUrl),
     )
 }

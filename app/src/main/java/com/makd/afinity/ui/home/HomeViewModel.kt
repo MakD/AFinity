@@ -11,12 +11,11 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.makd.afinity.R
-import com.makd.afinity.data.manager.AdminChangeBroadcaster
-import com.makd.afinity.data.manager.AdminChangeKind
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.data.manager.resolveTargetItem
 import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.GenreType
@@ -55,6 +54,7 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
+import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.data.workers.HomeDataReloadWorker
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
@@ -103,12 +103,12 @@ constructor(
     private val authRepository: AuthRepository,
     private val mediaRepository: MediaRepository,
     private val playbackStateManager: PlaybackStateManager,
-    private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val homeSectionsRepository: HomeSectionsRepository,
     private val homeLayoutPreferencesRepository: HomeLayoutPreferencesRepository,
     private val downloadPermissions: DownloadPermissions,
+    private val itemStore: ItemStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -160,13 +160,13 @@ constructor(
         viewModelScope.launch {
             mediaRepository.getContinueWatchingFlow().collect { items ->
                 lastHomeRefreshedAt = System.currentTimeMillis()
-                _uiState.update { it.copy(continueWatching = items) }
+                _uiState.update { it.copy(continueWatching = itemStore.merge(items)) }
             }
         }
 
         viewModelScope.launch {
             mediaRepository.getNextUpFlow().collect { items ->
-                _uiState.update { it.copy(nextUp = items, nextUpLoaded = true) }
+                _uiState.update { it.copy(nextUp = itemStore.merge(items), nextUpLoaded = true) }
             }
         }
 
@@ -199,29 +199,6 @@ constructor(
         viewModelScope.launch {
             appDataRepository.getHomeSortByDateAddedFlow().distinctUntilChanged().drop(1).collect {
                 appDataRepository.reloadHomeData()
-            }
-        }
-
-        viewModelScope.launch {
-            adminChangeBroadcaster.changes.collect { change ->
-                val changedId =
-                    try {
-                        UUID.fromString(change.itemId)
-                    } catch (_: IllegalArgumentException) {
-                        null
-                    }
-                if (changedId != null && change.kind != AdminChangeKind.DELETED) {
-                    appDataRepository.applyAdminItemChange(changedId)
-                }
-                if (change.kind != AdminChangeKind.IMAGES) {
-                    appDataRepository.refreshPlaybackSections()
-                }
-                if (change.kind == AdminChangeKind.METADATA) {
-                    homeSectionsRepository.refreshCustomSections(
-                        "admin metadata edit",
-                        HomeSectionsRepository.ADMIN_REFRESH_DEBOUNCE_MS,
-                    )
-                }
             }
         }
 
@@ -409,18 +386,21 @@ constructor(
         }
 
         viewModelScope.launch {
+            itemStore.overlay.collect { overlay ->
+                if (overlay.isEmpty()) return@collect
+                _uiState.update { state -> state.mergedWith(itemStore) }
+            }
+        }
+
+        viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
-                var targetItem = event.updatedItem ?: event.parentItem ?: event.seasonItem
-                if (targetItem == null) {
-                    try {
-                        targetItem = mediaRepository.getItemById(event.itemId)
-                    } catch (e: Exception) {
-                        Timber.e(
-                            e,
-                            "Failed to resolve item for granular home patch: ${event.itemId}",
-                        )
-                    }
-                }
+                val targetItem =
+                    event.resolveTargetItem(
+                        mediaRepository = mediaRepository,
+                        heldItem = { id ->
+                            _uiState.value.heldItemById(id) ?: itemStore.get(id) as? AfinityItem
+                        },
+                    )
 
                 var parentShowItem: AfinityItem? = null
                 val trueSeriesId =
@@ -814,13 +794,7 @@ constructor(
                         userDataRepository.markWatched(episode.id)
                     }
 
-                if (success) {
-                    mediaChangeManager.notifyItemChanged(
-                        episode.id,
-                        episode.seriesId,
-                        episode.seasonId,
-                    )
-                } else {
+                if (!success) {
                     _selectedEpisode.value = episode
                 }
             } catch (e: Exception) {
@@ -904,7 +878,6 @@ constructor(
         if (appDataRepository.lastUserDataChangedAt.value > lastHomeRefreshedAt) {
             viewModelScope.launch {
                 appDataRepository.refreshPlaybackSections()
-                appDataRepository.refreshLibrarySections()
                 lastHomeRefreshedAt = System.currentTimeMillis()
             }
         }
@@ -1052,6 +1025,75 @@ data class HomeUiState(
     val separateTvLibrarySections: List<Pair<AfinityCollection, List<AfinityShow>>> = emptyList(),
     val isOffline: Boolean = false,
 )
+
+fun HomeUiState.mergedWith(itemStore: ItemStore): HomeUiState {
+    val hero = itemStore.merge(heroCarouselItems)
+    val continueW = itemStore.merge(continueWatching)
+    val next = itemStore.merge(nextUp)
+    val upcoming = itemStore.merge(upcomingEpisodes)
+    val movies = itemStore.merge(latestMovies)
+    val shows = itemStore.merge(latestTvSeries)
+    val again = itemStore.merge(watchAgain)
+    val rated = itemStore.merge(highestRated)
+    val genreM = genreMovies.mapValues { (_, list) -> itemStore.merge(list) }
+    val genreS = genreShows.mapValues { (_, list) -> itemStore.merge(list) }
+    val movieSections = separateMovieLibrarySections.map { (lib, items) ->
+        lib to itemStore.merge(items)
+    }
+    val showSections = separateTvLibrarySections.map { (lib, items) ->
+        lib to itemStore.merge(items)
+    }
+
+    val unchanged =
+        hero === heroCarouselItems &&
+            continueW === continueWatching &&
+            next === nextUp &&
+            upcoming === upcomingEpisodes &&
+            movies === latestMovies &&
+            shows === latestTvSeries &&
+            again === watchAgain &&
+            rated === highestRated &&
+            genreM.keys.all { genreM[it] === genreMovies[it] } &&
+            genreS.keys.all { genreS[it] === genreShows[it] } &&
+            movieSections.indices.all {
+                movieSections[it].second === separateMovieLibrarySections[it].second
+            } &&
+            showSections.indices.all {
+                showSections[it].second === separateTvLibrarySections[it].second
+            }
+    if (unchanged) return this
+
+    return copy(
+        heroCarouselItems = hero,
+        continueWatching = continueW,
+        nextUp = next,
+        upcomingEpisodes = upcoming,
+        latestMovies = movies,
+        latestTvSeries = shows,
+        watchAgain = again,
+        highestRated = rated,
+        genreMovies = genreM,
+        genreShows = genreS,
+        separateMovieLibrarySections = movieSections,
+        separateTvLibrarySections = showSections,
+    )
+}
+
+fun HomeUiState.heldItemById(id: UUID): AfinityItem? =
+    continueWatching.firstOrNull { it.id == id }
+        ?: nextUp.firstOrNull { it.id == id }
+        ?: upcomingEpisodes.firstOrNull { it.id == id }
+        ?: latestMovies.firstOrNull { it.id == id }
+        ?: latestTvSeries.firstOrNull { it.id == id }
+        ?: watchAgain.firstOrNull { it.id == id }
+        ?: highestRated.firstOrNull { it.id == id }
+        ?: heroCarouselItems.firstOrNull { it.id == id }
+        ?: separateMovieLibrarySections.firstNotNullOfOrNull { (_, movies) ->
+            movies.firstOrNull { it.id == id }
+        }
+        ?: separateTvLibrarySections.firstNotNullOfOrNull { (_, shows) ->
+            shows.firstOrNull { it.id == id }
+        }
 
 private const val HOME_GENRE_POOL = 50
 private const val HOME_GENRE_ROW_SIZE = 20

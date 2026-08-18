@@ -1,14 +1,15 @@
 package com.makd.afinity.data.websocket
 
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.MediaRefreshBus
 import com.makd.afinity.data.manager.RefreshTrigger
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.syncplay.SyncPlayGroupUpdate
 import com.makd.afinity.di.ApplicationScope
+import com.makd.afinity.util.ItemIds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -21,6 +22,10 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.sockets.SocketApiState
@@ -39,6 +44,7 @@ import org.jellyfin.sdk.model.api.TaskInfo
 import org.jellyfin.sdk.model.api.TaskState
 import org.jellyfin.sdk.model.api.UserDataChangedMessage
 import timber.log.Timber
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -50,14 +56,15 @@ constructor(
     private val mediaChangeManager: MediaChangeManager,
     private val mediaRefreshBus: MediaRefreshBus,
     @ApplicationScope private val scope: CoroutineScope,
-) : DefaultLifecycleObserver {
-    private var connectionJob: Job? = null
+) {
     private var reconnectJob: Job? = null
     private var libraryTaskWasRunning = false
     private var hasConnectedBefore = false
+    private var resyncedForThisConnection = false
 
     private companion object {
         const val SUBSCRIPTION_RETRY_DELAY_MS = 3_000L
+        const val SUBSCRIPTION_IMMEDIATE_RETRIES = 3
     }
 
     private val _connectionState = MutableStateFlow(WebSocketState.DISCONNECTED)
@@ -76,64 +83,63 @@ constructor(
         MutableSharedFlow<SyncPlayGroupUpdate>(extraBufferCapacity = 16)
     val syncPlayGroupUpdates: SharedFlow<SyncPlayGroupUpdate> = _syncPlayGroupUpdates.asSharedFlow()
 
+    private val restartEpoch = MutableStateFlow(0)
+
     init {
-
-        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
-
         scope.launch {
-            sessionManager.currentSession.collect { session ->
-                hasConnectedBefore = false
-                if (session != null) {
-                    disconnect()
-                    connect()
-                } else {
-                    disconnect()
-                }
+            ProcessLifecycleOwner.get().lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                combine(sessionManager.currentSession, restartEpoch) { session, epoch ->
+                        session to epoch
+                    }
+                    .distinctUntilChanged { (oldSession, oldEpoch), (newSession, newEpoch) ->
+                        oldEpoch == newEpoch &&
+                            oldSession?.userId == newSession?.userId &&
+                            oldSession?.serverId == newSession?.serverId &&
+                            oldSession?.serverUrl == newSession?.serverUrl
+                    }
+                    .collectLatest { (session, _) ->
+                        reconnectJob?.cancel()
+                        reconnectJob = null
+                        hasConnectedBefore = false
+                        resyncedForThisConnection = false
+                        if (session == null) {
+                            _connectionState.value = WebSocketState.DISCONNECTED
+                            return@collectLatest
+                        }
+                        runSocket()
+                    }
             }
+            _connectionState.value = WebSocketState.DISCONNECTED
         }
     }
 
-    override fun onStart(owner: LifecycleOwner) {
-        super.onStart(owner)
-        if (sessionManager.currentSession.value != null) {
-            connect()
-        }
-    }
-
-    override fun onStop(owner: LifecycleOwner) {
-        super.onStop(owner)
-        disconnect()
-    }
-
-    fun connect() {
-        if (connectionJob?.isActive == true) return
-
+    private suspend fun runSocket() {
         val currentApiClient = sessionManager.getCurrentApiClient() ?: return
-
-        connectionJob = scope.launch {
-            launch { monitorSocketState(currentApiClient) }
-            launch { subscribeToLibraryChanges(currentApiClient) }
-            launch { subscribeToUserDataChanges(currentApiClient) }
-            launch { subscribeToSessionChanges(currentApiClient) }
-            launch { subscribeToPlayCommands(currentApiClient) }
-            launch { subscribeToServerMessages(currentApiClient) }
-            launch { subscribeToTaskChanges(currentApiClient) }
-            launch { subscribeToSyncPlayCommands(currentApiClient) }
-            launch { subscribeToSyncPlayGroupUpdates(currentApiClient) }
+        try {
+            coroutineScope {
+                launch { monitorSocketState(currentApiClient) }
+                launch { subscribeToLibraryChanges(currentApiClient) }
+                launch { subscribeToUserDataChanges(currentApiClient) }
+                if (sessionManager.currentSession.value?.isAdmin == true) {
+                    launch { subscribeToSessionChanges(currentApiClient) }
+                }
+                launch { subscribeToPlayCommands(currentApiClient) }
+                launch { subscribeToServerMessages(currentApiClient) }
+                launch { subscribeToTaskChanges(currentApiClient) }
+                launch { subscribeToSyncPlayCommands(currentApiClient) }
+                launch { subscribeToSyncPlayGroupUpdates(currentApiClient) }
+            }
+        } finally {
+            resyncedForThisConnection = false
+            _connectionState.value = WebSocketState.DISCONNECTED
         }
-    }
-
-    fun disconnect() {
-        reconnectJob?.cancel()
-        reconnectJob = null
-        connectionJob?.cancel()
-        connectionJob = null
-        _connectionState.value = WebSocketState.DISCONNECTED
     }
 
     private suspend fun monitorSocketState(apiClient: ApiClient) {
         try {
             _connectionState.value = WebSocketState.CONNECTING
+
+            var previousState: WebSocketState? = null
 
             apiClient.webSocket.state.collect { socketState ->
                 val newState =
@@ -143,17 +149,21 @@ constructor(
                         is SocketApiState.Disconnected -> WebSocketState.DISCONNECTED
                     }
 
-                if (
-                    newState == WebSocketState.CONNECTED &&
-                        _connectionState.value != WebSocketState.CONNECTED
-                ) {
-                    if (hasConnectedBefore) {
-                        Timber.d("WebSocket reconnected - triggering user data resync")
+                if (previousState == WebSocketState.CONNECTED && newState != WebSocketState.CONNECTED) {
+                    resyncedForThisConnection = false
+                }
+
+                if (newState == WebSocketState.CONNECTED && previousState != WebSocketState.CONNECTED) {
+                    if (hasConnectedBefore && !resyncedForThisConnection) {
+                        resyncedForThisConnection = true
+                        Timber.d("WebSocket reconnected - resyncing user data and content")
                         mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
+                        mediaRefreshBus.emit(RefreshTrigger.CONTENT_RESYNC)
                     }
                     hasConnectedBefore = true
                 }
 
+                previousState = newState
                 _connectionState.value = newState
             }
         } catch (e: CancellationException) {
@@ -169,15 +179,24 @@ constructor(
         subscribe: () -> Flow<T>,
         handler: suspend (T) -> Unit,
     ) {
+        var consecutiveFailures = 0
         while (true) {
             try {
-                subscribe().collect { handler(it) }
+                subscribe().collect {
+                    consecutiveFailures = 0
+                    handler(it)
+                }
+                consecutiveFailures++
+                Timber.w("$name subscription ended without error - resubscribing")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Timber.e(e, "$name subscription failed - resubscribing")
+                consecutiveFailures++
+                Timber.e(e, "$name subscription failed ($consecutiveFailures) - resubscribing")
             }
-            delay(SUBSCRIPTION_RETRY_DELAY_MS)
+            if (consecutiveFailures > SUBSCRIPTION_IMMEDIATE_RETRIES) {
+                delay(SUBSCRIPTION_RETRY_DELAY_MS)
+            }
         }
     }
 
@@ -268,8 +287,24 @@ constructor(
             return
         }
 
-        if (!update?.itemsUpdated.isNullOrEmpty()) {
+        val updated = update?.itemsUpdated.orEmpty()
+        if (updated.isNotEmpty()) {
             mediaChangeManager.notifyLibraryMetadataChanged("library items updated websocket event")
+
+            if (updated.size <= MediaChangeManager.CONTENT_CHANGE_PATCH_LIMIT) {
+                val ids = updated.mapNotNull { raw ->
+                    ItemIds.canonical(raw)?.let { canonical ->
+                        try {
+                            UUID.fromString(canonical)
+                        } catch (_: IllegalArgumentException) {
+                            null
+                        }
+                    }
+                }
+                scope.launch { mediaChangeManager.publishContentChanges(ids) }
+            } else {
+                Timber.d("Skipping per-item patch for ${updated.size} updated items (scan-sized)")
+            }
         }
     }
 
@@ -337,15 +372,14 @@ constructor(
         reconnectJob?.cancel()
         reconnectJob = scope.launch {
             delay(20_000L)
-            disconnect()
-            connect()
+            Timber.d("Server restart grace elapsed — restarting socket")
+            restartEpoch.update { it + 1 }
         }
     }
 
     private suspend fun handleServerShutdown() {
         Timber.w("Server is shutting down")
         _connectionState.value = WebSocketState.SERVER_SHUTDOWN
-        disconnect()
     }
 
     private suspend fun subscribeToSyncPlayCommands(apiClient: ApiClient) {

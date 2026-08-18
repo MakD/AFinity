@@ -13,6 +13,7 @@ import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.di.NetworkModule
 import com.makd.afinity.di.ProberClient
+import com.makd.afinity.util.forUser
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,6 +31,8 @@ import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.okhttp.OkHttpFactory
 import org.jellyfin.sdk.api.operations.UserApi
+import org.jellyfin.sdk.api.sockets.DefaultSocketApi
+import org.jellyfin.sdk.model.DeviceInfo
 import org.jellyfin.sdk.model.api.UserConfiguration
 import org.jellyfin.sdk.model.api.UserDto
 import timber.log.Timber
@@ -65,6 +68,7 @@ constructor(
     private val serverAddressResolver: ServerAddressResolver,
     private val okHttpFactory: OkHttpFactory,
     private val jellyfin: Jellyfin,
+    private val deviceInfo: DeviceInfo,
     @param:ProberClient private val proberJellyfin: Jellyfin,
     @param:ApplicationContext private val context: Context,
     @ApplicationScope private val sessionScope: CoroutineScope,
@@ -86,6 +90,8 @@ constructor(
 
     private val apiClients = ConcurrentHashMap<String, ApiClient>()
     private val sessionMutex = Mutex()
+
+    private fun clientKey(serverId: String, userId: UUID): String = "$serverId|$userId"
 
     suspend fun startSession(
         serverUrl: String,
@@ -153,8 +159,9 @@ constructor(
 
                 serverRepository.setBaseUrl(resolvedUrl)
 
-                val apiClient = getOrCreateApiClient(serverId, resolvedUrl)
+                val apiClient = getOrCreateApiClient(serverId, userId, resolvedUrl)
                 apiClient.update(baseUrl = resolvedUrl, accessToken = accessToken)
+                apiClient.notifySocketCredentialsChanged()
 
                 securePrefsRepository.saveAuthenticationData(
                     accessToken = accessToken,
@@ -261,20 +268,28 @@ constructor(
         if (current.serverUrl == newUrl) return
 
         _currentSession.value = current.copy(serverUrl = newUrl)
-        apiClients[current.serverId]?.update(baseUrl = newUrl)
+        apiClients[clientKey(current.serverId, current.userId)]?.update(baseUrl = newUrl)
         securePrefsRepository.saveActiveSession(current.serverId, current.userId, newUrl)
 
         Timber.d("Session URL updated: $newUrl")
     }
 
     suspend fun getOrRestoreApiClient(serverId: String): ApiClient? {
-        apiClients[serverId]?.let {
-            return it
+        _currentSession.value?.let { session ->
+            if (session.serverId == serverId) {
+                apiClients[clientKey(serverId, session.userId)]?.let {
+                    return it
+                }
+            }
         }
 
         databaseRepository.getServer(serverId) ?: return null
         val tokens = securePrefsRepository.getAllServerUserTokens()
         val tokenInfo = tokens.find { it.serverId == serverId } ?: return null
+
+        apiClients[clientKey(serverId, tokenInfo.userId)]?.let {
+            return it
+        }
 
         Timber.d("Restoring ApiClient for background work: Server $serverId")
         val address =
@@ -282,15 +297,16 @@ constructor(
                 is AddressResolutionResult.Success -> result.address
                 is AddressResolutionResult.AllFailed -> tokenInfo.serverUrl
             }
-        val client = getOrCreateApiClient(serverId, address)
+        val client = getOrCreateApiClient(serverId, tokenInfo.userId, address)
         client.update(baseUrl = address, accessToken = tokenInfo.accessToken)
+        client.notifySocketCredentialsChanged()
         return client
     }
 
     suspend fun getDetachedApiClient(serverId: String, userId: UUID): ApiClient? {
         val session = _currentSession.value
         if (session?.serverId == serverId && session.userId == userId) {
-            apiClients[serverId]?.let {
+            apiClients[clientKey(serverId, userId)]?.let {
                 return it
             }
         }
@@ -308,7 +324,11 @@ constructor(
             }
 
         return jellyfin
-            .createApi(baseUrl = address, httpClientOptions = NetworkModule.JELLYFIN_HTTP_OPTIONS)
+            .createApi(
+                baseUrl = address,
+                deviceInfo = deviceInfo.forUser(userId),
+                httpClientOptions = NetworkModule.JELLYFIN_HTTP_OPTIONS,
+            )
             .also { it.update(accessToken = tokenInfo.accessToken) }
     }
 
@@ -357,8 +377,19 @@ constructor(
         Timber.d("Logged out successfully (token kept for re-login)")
     }
 
-    private fun getOrCreateApiClient(serverId: String, serverUrl: String): ApiClient {
-        val existingClient = apiClients[serverId]
+    private fun ApiClient.notifySocketCredentialsChanged() {
+        val socket = webSocket as? DefaultSocketApi ?: return
+        socket.notifyApiClientUpdate()
+        Timber.d("Notified websocket of credential change")
+    }
+
+    private fun getOrCreateApiClient(
+        serverId: String,
+        userId: UUID,
+        serverUrl: String,
+    ): ApiClient {
+        val key = clientKey(serverId, userId)
+        val existingClient = apiClients[key]
         if (existingClient != null) {
             if (existingClient.baseUrl != serverUrl) {
                 existingClient.update(baseUrl = serverUrl)
@@ -366,19 +397,20 @@ constructor(
             return existingClient
         }
 
-        Timber.d("Creating NEW ApiClient for server: $serverId with baseUrl: $serverUrl")
+        Timber.d("Creating NEW ApiClient for server: $serverId user: $userId baseUrl: $serverUrl")
         val newClient =
             jellyfin.createApi(
                 baseUrl = serverUrl,
+                deviceInfo = deviceInfo.forUser(userId),
                 httpClientOptions = NetworkModule.JELLYFIN_HTTP_OPTIONS,
             )
-        apiClients[serverId] = newClient
+        apiClients[key] = newClient
         return newClient
     }
 
     fun getCurrentApiClient(): ApiClient? {
         val session = _currentSession.value ?: return null
-        return apiClients[session.serverId]
+        return apiClients[clientKey(session.serverId, session.userId)]
     }
 
     companion object {
