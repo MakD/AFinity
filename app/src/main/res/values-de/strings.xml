@@ -174,7 +174,9 @@
     <string name="livetv_title">Live-Fernsehen</string>
     <string name="livetv_error_not_available_title">Live-Fernsehen nicht verfügbar</string>
     <string name="person_biography">Biografie</string>
-    <string name="person_born_fmt">Geboren: %1$s (%2$d Jahre alt)</string>
+    <plurals name="person_born_fmt">
+        <item quantity="one">Geboren: %1$s (%2$d Jahre alt)</item>
+    </plurals>
     <string name="person_birthplace_fmt">Geburtsort: %1$s</string>
     <string name="action_show_more">Mehr anzeigen</string>
     <string name="action_show_less">Weniger anzeigen</string>
@@ -251,7 +253,9 @@
     <string name="cd_clear">Leeren</string>
     <string name="filter_request">Anfrage</string>
     <string name="explore_genres">Genres entdecken</string>
-    <string name="search_results_count_fmt">%1$d Ergebnisse gefunden</string>
+    <plurals name="search_results_count_fmt">
+        <item quantity="one">%1$d Ergebnisse gefunden</item>
+    </plurals>
     <string name="cd_watched">Angesehen</string>
     <string name="media_type_book">Buch</string>
     <string name="media_type_podcast">Podcast</string>
@@ -524,7 +528,9 @@
     <string name="empty_sessions_message">Logge dich in einen Server ein, um eine Sitzung zu erstellen</string>
     <string name="pref_group_preferences">Präferenzen</string>
     <string name="dialog_select_language_title">Sprache auswählen</string>
-    <string name="meta_episode_count">%1$d Folgen</string>
+    <plurals name="meta_episode_count">
+        <item quantity="one">%1$d Folgen</item>
+    </plurals>
     <string name="extra_type_interview">Interview</string>
     <string name="extra_type_scene">Szene</string>
     <string name="player_version_title">Version</string>
@@ -830,7 +836,9 @@
     <string name="playback_stats_value_sample_rate_fmt">%1$s Hz</string>
     <string name="playback_stats_label_video_output">Videoausgabe</string>
     <string name="playback_stats_value_live">Live</string>
-    <string name="playback_stats_value_seconds_fmt">%1$d Sekunden</string>
+    <plurals name="playback_stats_value_seconds_fmt">
+        <item quantity="one">%1$d Sekunden</item>
+    </plurals>
     <string name="playback_stats_label_connection">Verbindung</string>
     <string name="playback_stats_label_network_speed">Netzwerkgeschwindigkeit</string>
     <string name="playback_stats_label_cached">Zwischengespeichert</string>
