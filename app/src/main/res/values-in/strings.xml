@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="splash_powered_by">Didukung oleh Jellyfin</string>
-    <string name="splash_progress_fmt">%1$d%%</string>
     <string name="splash_status_authenticating">Sedang mengautentikasi…</string>
     <string name="loading_phase_offline">Siap (Mode Luring)</string>
     <string name="loading_phase_connecting">Sedang menghubungkan ke server…</string>
@@ -30,7 +28,6 @@
     <string name="login_btn_generate_code">Buat Kode</string>
     <string name="login_quick_connect_instructions">Masukkan kode ini di browser Anda</string>
     <string name="cd_server_icon">Ikon Server</string>
-    <string name="top_bar_search_hint">Cari</string>
     <string name="cd_search_icon">Cari</string>
     <string name="cd_profile_icon">Profil</string>
     <string name="cd_offline_mode">Mode Luring</string>
@@ -38,7 +35,6 @@
     <string name="cd_tailscale_connection">Koneksi Tailscale</string>
     <string name="cd_remote_connection">Koneksi Jarak Jauh</string>
     <string name="home_error_title">Terjadi kesalahan</string>
-    <string name="home_error_message">Data akan diperbarui secara otomatis</string>
     <string name="home_downloaded_movies">Film Diunduh</string>
     <string name="home_downloaded_shows">Serial Diunduh</string>
     <string name="home_critics_choice">Pilihan Kritikus</string>
@@ -64,15 +60,15 @@
     <string name="hero_btn_play_trailer">Putar Trailer</string>
     <string name="hero_btn_play_media">Putar Media</string>
     <string name="hero_btn_watch_now">Tonton Sekarang</string>
-    <string name="hero_season_single">1 Musim</string>
-    <string name="hero_season_plural">%1$d Musim</string>
+    <plurals name="hero_season_plural">
+        <item quantity="other">%1$d Musim</item>
+    </plurals>
     <string name="favorites_title">Favorit</string>
     <string name="error_unknown">Kesalahan Tidak Dikenal</string>
     <string name="favorites_empty_title">Belum Ada Favorit</string>
     <string name="favorites_empty_message">Item yang Anda tandai sebagai favorit akan muncul di sini</string>
     <string name="cast_section_title">Pemeran</string>
     <string name="cast_role_format">sebagai %1$s</string>
-    <string name="external_links_title">Tautan Eksternal</string>
     <string name="external_link_default_name">Tautan Eksternal</string>
     <string name="collections_included_in">Termasuk Dalam</string>
     <string name="meta_res_4k">4K</string>
@@ -85,11 +81,15 @@
     <string name="meta_cc">CC</string>
     <string name="meta_time_remaining_hours_minutes">Sisa %1$dj %2$dm</string>
     <string name="meta_time_remaining_minutes">Sisa %1$dm</string>
-    <string name="meta_boxset_count">%1$d item</string>
+    <plurals name="meta_boxset_count">
+        <item quantity="other">%1$d item</item>
+    </plurals>
     <string name="meta_runtime_hours_minutes">%1$dj %2$dm</string>
     <string name="meta_runtime_minutes">%1$dm</string>
     <string name="meta_ends_at">Berakhir pukul %1$s</string>
-    <string name="meta_episode_count">%1$d episode</string>
+    <plurals name="meta_episode_count">
+        <item quantity="other">%1$d episode</item>
+    </plurals>
     <string name="similar_items_title">Lebih Banyak Seperti Ini</string>
     <string name="special_features_title">Fitur Spesial</string>
     <string name="extra_type_clip">Klip</string>
@@ -101,31 +101,29 @@
     <string name="extra_type_sample">Sampel</string>
     <string name="extra_type_featurette">Featurette</string>
     <string name="extra_type_short">Film Pendek</string>
-    <string name="boxset_items_in_collection">Item dalam Koleksi</string>
     <string name="episode_season_episode_fmt">"S%1$d:E%2$s -  %3$s"</string>
     <string name="episode_play">Putar</string>
     <string name="episode_resume">Lanjutkan</string>
     <string name="cd_air_date">Tanggal tayang</string>
     <string name="cd_duration">Durasi</string>
     <string name="cd_go_to_series">Ke Serial</string>
-    <string name="cd_watchlist">Daftar Tonton</string>
     <string name="cd_favorite">Favorit</string>
-    <string name="cd_toggle_watched">Alihkan Status Tonton</string>
     <string name="chapters_title">Bab</string>
     <string name="quality_dialog_title">Pilih Versi</string>
     <string name="quality_dialog_subtitle">Pilih versi yang ingin diunduh</string>
     <string name="action_download">Unduh</string>
     <string name="cd_selected">Dipilih</string>
-    <string name="cd_not_selected">Tidak dipilih</string>
-    <string name="file_size_gb">%.2f GB</string>
-    <string name="file_size_mb">%d MB</string>
     <string name="season_episodes_title">Episode</string>
     <string name="action_see_more">Lihat selengkapnya</string>
     <string name="action_see_less">Lihat lebih sedikit</string>
     <string name="cd_expand">Perluas</string>
     <string name="cd_collapse">Ciutkan</string>
-    <string name="director_prefix">Sutradara: %1$s</string>
-    <string name="writers_prefix">Penulis: %1$s</string>
+    <plurals name="director_prefix">
+        <item quantity="other">Sutradara: %1$s</item>
+    </plurals>
+    <plurals name="writers_prefix">
+        <item quantity="other">Penulis: %1$s</item>
+    </plurals>
     <string name="seasons_title">Musim</string>
     <string name="action_play">Putar</string>
     <string name="action_rewatch">Tonton Ulang</string>
@@ -143,24 +141,15 @@
     <string name="libraries_title">Pustaka</string>
     <string name="libraries_empty_title">Tidak ada pustaka yang ditemukan</string>
     <string name="libraries_empty_message">Server Jellyfin Anda belum memiliki pustaka yang dikonfigurasi.</string>
-    <string name="action_search">Cari</string>
     <string name="action_show_all">Tampilkan Semua</string>
     <string name="action_clear_filter">Hapus Filter</string>
     <string name="action_apply">Terapkan</string>
-    <string name="cd_profile">Profil</string>
     <string name="library_empty_title">Tidak ada item yang ditemukan</string>
     <string name="library_empty_message">Pustaka ini tampaknya kosong atau konten belum dipindai.</string>
     <string name="library_empty_letter_fmt">Tidak ada konten yang diawali dengan \"%1$s\"</string>
     <string name="filter_all">Semua</string>
-    <string name="filter_watched">Sudah Ditonton</string>
-    <string name="filter_unwatched">Belum Ditonton</string>
     <string name="filter_watchlist">Daftar Tonton</string>
     <string name="filter_favorites">Favorit</string>
-    <string name="filter_empty_watched">Tidak ada item yang sudah ditonton</string>
-    <string name="filter_empty_unwatched">Tidak ada item yang belum ditonton</string>
-    <string name="filter_empty_watchlist">Tidak ada item dalam daftar tonton Anda</string>
-    <string name="filter_empty_favorites">Tidak ada item favorit yang ditemukan</string>
-    <string name="filter_empty_all">Tidak ada item yang ditemukan</string>
     <string name="sort_title">Urutkan berdasarkan</string>
     <string name="sort_ascending">Menaik</string>
     <string name="sort_descending">Menurun</string>
@@ -188,7 +177,9 @@
     <string name="action_show_all_channels">Tampilkan Semua Saluran</string>
     <string name="livetv_header_letter_fmt">Saluran (%1$s)</string>
     <string name="livetv_header_all">Semua Saluran</string>
-    <string name="livetv_count_fmt">%1$d saluran ditemukan</string>
+    <plurals name="livetv_count_fmt">
+        <item quantity="other">%1$d saluran ditemukan</item>
+    </plurals>
     <string name="livetv_guide_date_fmt">EEE, MMM d</string>
     <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
     <string name="action_now">Sekarang</string>
@@ -203,9 +194,13 @@
     <string name="livetv_error_not_available_title">TV Langsung tidak tersedia</string>
     <string name="livetv_error_not_available_message">Konfigurasikan TV Langsung di server Jellyfin Anda</string>
     <string name="person_biography">Biografi</string>
-    <string name="person_born_fmt">Lahir: %1$s (%2$d tahun)</string>
+    <plurals name="person_born_fmt">
+        <item quantity="other">Lahir: %1$s (%2$d tahun)</item>
+    </plurals>
     <string name="person_born_deceased_fmt">Lahir: %1$s</string>
-    <string name="person_died_fmt">Wafat: %1$s (usia %2$d)</string>
+    <plurals name="person_died_fmt">
+        <item quantity="other">Wafat: %1$s (usia %2$d)</item>
+    </plurals>
     <string name="person_died_no_age_fmt">Wafat: %1$s</string>
     <string name="person_birthplace_fmt">Tempat Lahir: %1$s</string>
     <string name="person_date_fmt">d MMMM yyyy</string>
@@ -234,7 +229,6 @@
     <string name="track_unknown">Tidak diketahui</string>
     <string name="track_none">Tidak ada</string>
     <string name="track_number_fmt">Trek %1$d</string>
-    <string name="audio_channel_fmt">(%1$dch)</string>
     <string name="playback_channel_name">Pemutaran Buku Audio AFinity</string>
     <string name="cd_logo">Logo</string>
     <string name="cd_series_logo">Logo Serial</string>
@@ -250,8 +244,6 @@
     <string name="cd_pause">Jeda</string>
     <string name="cd_episodes">Episode</string>
     <string name="cd_speed">Kecepatan Pemutaran</string>
-    <string name="cd_audio_settings">Pengaturan Audio</string>
-    <string name="cd_subtitle_settings">Pengaturan Subtitle</string>
     <string name="cd_aspect_ratio">Rasio Aspek</string>
     <string name="cd_screen_rotation">Rotasi layar</string>
     <string name="cd_fast_forward">Maju Cepat</string>
@@ -284,7 +276,6 @@
     <string name="status_partially_available">Tersedia Sebagian</string>
     <string name="status_available">Tersedia</string>
     <string name="status_deleted">Dihapus</string>
-    <string name="manage_request_title">Kelola Permintaan</string>
     <string name="cd_tmdb_rating">Rating TMDB</string>
     <string name="error_title">Kesalahan</string>
     <string name="error_no_content">Tidak ada konten yang tersedia</string>
@@ -310,9 +301,6 @@
     <string name="section_tv_genres">Genre TV</string>
     <string name="cd_view_all">Lihat Semua</string>
     <string name="error_requests_load_failed">Gagal memuat permintaan</string>
-    <string name="error_request_delete_failed_fmt">Gagal menghapus permintaan: %1$s</string>
-    <string name="error_request_approve_failed_fmt">Gagal menyetujui permintaan: %1$s</string>
-    <string name="error_request_decline_failed_fmt">Gagal menolak permintaan: %1$s</string>
     <string name="error_search_no_results_fmt">Tidak ada hasil yang ditemukan untuk \'%1$s\'</string>
     <string name="error_search_failed_fmt">Pencarian gagal: %1$s</string>
     <string name="error_request_create_failed_fmt">Gagal membuat permintaan: %1$s</string>
@@ -323,23 +311,19 @@
     <string name="empty_genre_tv">Tidak ada serial TV yang ditemukan dalam genre ini</string>
     <string name="empty_genre_audiobooks">Tidak ada buku audio yang ditemukan dalam genre ini</string>
     <string name="empty_genre_podcasts">Tidak ada podcast yang ditemukan dalam genre ini</string>
-    <string name="error_unknown_occurred">Terjadi kesalahan yang tidak diketahui</string>
     <string name="search_no_results">Tidak ada hasil yang ditemukan</string>
     <string name="search_placeholder">Cari</string>
     <string name="cd_clear">Hapus</string>
     <string name="filter_request">Minta</string>
     <string name="filter_audiobooks">Buku Audio</string>
     <string name="explore_genres">Jelajahi Genre</string>
-    <string name="search_results_count_fmt">%1$d hasil ditemukan</string>
+    <plurals name="search_results_count_fmt">
+        <item quantity="other">%1$d hasil ditemukan</item>
+    </plurals>
     <string name="cd_watched">Sudah Ditonton</string>
     <string name="cd_finished">Selesai</string>
     <string name="media_type_book">Buku</string>
     <string name="media_type_podcast">Podcast</string>
-    <string name="media_type_movie">Film</string>
-    <string name="media_type_tv_show">Serial TV</string>
-    <string name="media_type_episode">Episode</string>
-    <string name="media_type_collection">Paket Lengkap</string>
-    <string name="media_type_media">Media</string>
     <string name="media_type_unknown">TIDAK DIKETAHUI</string>
     <string name="cd_request_add">Minta</string>
     <string name="appearance_title">Tampilan</string>
@@ -360,19 +344,10 @@
     <string name="theme_amoled">Amoled</string>
     <string name="layout_horizontal">Horizontal</string>
     <string name="layout_vertical">Vertikal</string>
-    <string name="downloads_title">Unduhan</string>
     <string name="pref_downloads_and_storage">Unduhan &amp; Penyimpanan</string>
     <string name="pref_downloads_and_storage_summary">Kelola media luring dan cache gambar</string>
-    <string name="network_status_title">Status Jaringan</string>
-    <string name="network_status_offline">Mode luring</string>
-    <string name="network_status_online">Daring - Unduhan aktif</string>
     <string name="active_downloads_header_fmt">Unduhan Aktif (%1$d)</string>
     <string name="completed_downloads_header_fmt">Unduhan Selesai (%1$d)</string>
-    <string name="download_count_fmt">%1$d %2$s</string>
-    <string name="download_singular">unduhan</string>
-    <string name="download_plural">unduhan</string>
-    <string name="download_item_info_fmt">"%1$s -  %2$s"</string>
-    <string name="download_progress_size_fmt">%1$s / %2$s</string>
     <string name="download_status_queued">Dalam Antrean</string>
     <string name="download_status_downloading">Mengunduh</string>
     <string name="download_status_paused">Dijeda</string>
@@ -382,28 +357,18 @@
     <string name="storage_free_on_device_fmt">%1$s ruang tersisa di perangkat</string>
     <string name="storage_this_server">Server ini</string>
     <string name="storage_all_servers_fmt">%1$s total di semua server</string>
-    <string name="download_preferences_title">Pengaturan Unduhan</string>
     <string name="pref_download_wifi_only_title">Hanya Wi-Fi</string>
-    <string name="pref_download_wifi_only_subtitle">Hanya unduh melalui Wi-Fi</string>
-    <string name="pref_download_mobile_data_warning">Mengunduh melalui data seluler dapat dikenakan biaya data tambahan dari operator Anda</string>
-    <string name="cd_storage_stats">Statistik penyimpanan</string>
-    <string name="cd_pause_download">Jeda unduhan</string>
     <string name="cd_resume_download">Lanjutkan unduhan</string>
     <string name="cd_cancel_download">Batalkan unduhan</string>
     <string name="cd_delete_download">Hapus unduhan</string>
-    <string name="cd_status_failed">Gagal</string>
-    <string name="cd_status_completed">Selesai</string>
     <string name="player_options_title">Opsi Pemutar</string>
     <string name="pref_group_engine">Mesin &amp; Perilaku</string>
     <string name="pref_use_exoplayer_title">Gunakan ExoPlayer</string>
     <string name="pref_use_exoplayer_summary">Menggunakan LibMPV saat dinonaktifkan</string>
     <string name="pref_group_mpv">Opsi MPV</string>
     <string name="pref_mpv_hwdec_title">Dekode Perangkat Keras</string>
-    <string name="pref_mpv_hwdec_summary">Akselerasi perangkat keras untuk dekode video</string>
     <string name="pref_mpv_video_output_title">Keluaran Video</string>
-    <string name="pref_mpv_video_output_summary">Backend render GPU</string>
     <string name="pref_mpv_audio_output_title">Keluaran Audio</string>
-    <string name="pref_mpv_audio_output_summary">Driver keluaran audio</string>
     <string name="pref_group_language">Bahasa</string>
     <string name="pref_preferred_audio_language_title">Bahasa Audio Pilihan</string>
     <string name="pref_preferred_audio_language_summary">Pilih trek audio secara otomatis berdasarkan bahasa</string>
@@ -471,7 +436,6 @@
     <string name="label_server_name_optional">Nama Server (Opsional)</string>
     <string name="placeholder_server_name">Server Jellyfin Saya</string>
     <string name="btn_test_connection">Uji Koneksi</string>
-    <string name="btn_testing">Menguji…</string>
     <string name="btn_save_server">Simpan Server</string>
     <string name="btn_save_changes">Simpan Perubahan</string>
     <string name="connection_success_title">Koneksi Berhasil</string>
@@ -483,26 +447,20 @@
     <string name="error_url_required">URL server wajib diisi</string>
     <string name="error_test_connection_first">Harap uji koneksi terlebih dahulu</string>
     <string name="error_save_server_failed_fmt">Gagal menyimpan server: %1$s</string>
-    <string name="error_all_addresses_unreachable">Tidak dapat menjangkau server di alamat yang tersimpan</string>
     <string name="address_added_title">Alamat Ditambahkan</string>
     <string name="address_added_to_existing_server">Alamat ini telah ditambahkan ke server Anda yang sudah ada: %1$s.</string>
     <string name="btn_ok">OK</string>
     <string name="address_already_saved">Alamat ini sudah tersimpan untuk server ini</string>
-    <string name="label_primary_address">Utama</string>
-    <string name="action_set_primary">Jadikan utama</string>
-    <string name="error_cannot_delete_primary">Tidak dapat menghapus alamat utama</string>
     <string name="server_management_title">Kelola Server</string>
     <string name="cd_add_server">Tambah Server</string>
-    <string name="cd_edit_server">Edit Server</string>
     <string name="cd_delete_server">Hapus Server</string>
     <string name="empty_servers_title">Tidak Ada Server yang Ditemukan</string>
     <string name="empty_servers_message">Ketuk tombol + untuk menambahkan server Jellyfin pertama Anda.</string>
-    <string name="user_count_fmt">%1$d %2$s</string>
-    <string name="user_singular">pengguna</string>
-    <string name="user_plural">pengguna</string>
     <string name="dialog_delete_server_title">Hapus Server?</string>
     <string name="dialog_delete_server_message_fmt">Apakah Anda yakin ingin menghapus \"%1$s\"?</string>
-    <string name="dialog_delete_server_warning_fmt">Ini akan menghapus %1$d pengguna tersimpan beserta semua data terkait.</string>
+    <plurals name="dialog_delete_server_warning_fmt">
+        <item quantity="other">Ini akan menghapus %1$d pengguna tersimpan beserta semua data terkait.</item>
+    </plurals>
     <string name="action_delete">Hapus</string>
     <string name="error_load_servers_failed">Gagal memuat server</string>
     <string name="error_delete_active_server">Tidak dapat menghapus server yang sedang aktif. Harap beralih ke server lain terlebih dahulu.</string>
@@ -554,10 +512,7 @@
     <string name="empty_sessions_message">Masuk ke server untuk membuat sesi</string>
     <string name="cd_user_avatar">Avatar Pengguna</string>
     <string name="cd_current_session">Sesi saat ini</string>
-    <string name="error_session_token_not_found">Token sesi tidak ditemukan</string>
-    <string name="error_server_not_found">Server tidak ditemukan</string>
     <string name="error_switch_session_failed_fmt">Gagal mengganti sesi: %1$s</string>
-    <string name="error_switch_session_error_fmt">Kesalahan saat mengganti sesi: %1$s</string>
     <string name="settings_title">Pengaturan</string>
     <string name="unknown_user">Pengguna Tidak Dikenal</string>
     <string name="unknown_server">Server Tidak Dikenal</string>
@@ -567,21 +522,13 @@
     <string name="offline_mode_no_connection">Luring (Tidak ada koneksi)</string>
     <string name="offline_mode_manual">Diaktifkan secara manual</string>
     <string name="offline_mode_force">Paksa mode luring</string>
-    <string name="pref_discovery_requests">Penemuan &amp; Permintaan</string>
-    <string name="discovery_connected">Terhubung melalui Seerr</string>
-    <string name="discovery_connect">Hubungkan untuk meminta konten</string>
     <string name="pref_audiobookshelf">Audiobookshelf</string>
-    <string name="audiobookshelf_connected">Terhubung ke Audiobookshelf</string>
     <string name="audiobookshelf_connect">Hubungkan untuk menjelajahi buku audio</string>
-    <string name="dialog_disconnect_audiobookshelf_title">Putuskan Audiobookshelf</string>
-    <string name="dialog_disconnect_audiobookshelf_message">Memutuskan koneksi akan menghapus konfigurasi Audiobookshelf Anda. Anda dapat menghubungkan kembali kapan saja.</string>
     <string name="error_audiobookshelf_logout_failed_fmt">Gagal memutuskan koneksi dari Audiobookshelf: %1$s</string>
     <string name="notification_permission_title">Aktifkan Notifikasi</string>
     <string name="notification_permission_message">AFinity menggunakan notifikasi untuk kontrol pemutaran musik dan audiobook (layar kunci dan panel notifikasi) serta untuk memberi tahu Anda saat pembaruan aplikasi tersedia.\n\nJika nanti Anda berubah pikiran, Anda dapat mengaktifkannya dari Info Aplikasi → Izin → Notifikasi.</string>
     <string name="notification_permission_yes">Izinkan</string>
     <string name="notification_permission_no">Tidak, Terima Kasih</string>
-    <string name="pref_downloads">Unduhan</string>
-    <string name="pref_downloads_summary">Kelola konten luring</string>
     <string name="pref_switch_session">Ganti Sesi</string>
     <string name="pref_switch_session_summary">Ganti pengguna atau server</string>
     <string name="pref_group_connections">Koneksi</string>
@@ -605,8 +552,6 @@
     <string name="action_logout">Keluar</string>
     <string name="dialog_logout_title">Keluar</string>
     <string name="dialog_logout_message">Apakah Anda yakin ingin keluar? Anda perlu masuk kembali untuk mengakses konten.</string>
-    <string name="dialog_disconnect_seerr_title">Putuskan Seerr</string>
-    <string name="dialog_disconnect_seerr_message">Memutuskan koneksi akan mencegah Anda membuat permintaan baru. Anda dapat menghubungkan kembali kapan saja.</string>
     <string name="action_disconnect">Putuskan</string>
     <string name="dialog_error_title">Kesalahan</string>
     <string name="action_ok">OK</string>
@@ -614,7 +559,6 @@
     <string name="error_logout_failed_fmt">Keluar gagal: %1$s</string>
     <string name="error_jellyseerr_logout_failed_fmt">Gagal keluar dari Seerr: %1$s</string>
     <string name="watchlist_title">Daftar Tonton</string>
-    <string name="watchlist_empty">Daftar tonton Anda kosong</string>
     <string name="watchlist_section_header_fmt">%1$s (%2$d)</string>
     <string name="section_movies">Film</string>
     <string name="section_boxset">Paket Lengkap</string>
@@ -624,24 +568,22 @@
     <string name="section_tv_channels">Saluran TV Langsung</string>
     <string name="section_people">Orang</string>
     <string name="cd_cast">Pemeran</string>
-    <string name="cast_connected_to">Sedang casting ke %1$s</string>
     <string name="cast_stop">Hentikan Casting</string>
-    <string name="cast_settings">Pengaturan Pemutaran</string>
     <string name="cast_quality">Kualitas</string>
     <string name="cast_volume">Volume</string>
     <string name="cast_info">Info</string>
     <string name="cast_device_info">Info Perangkat</string>
     <string name="cast_device">Perangkat</string>
     <string name="cast_bitrate">Bitrate</string>
-    <string name="cast_playback_speed">Kecepatan Pemutaran</string>
-    <string name="cast_now_playing">Sedang Diputar</string>
     <string name="pref_group_chromecast">Chromecast</string>
     <string name="pref_cast_hevc_title">Aktifkan HEVC</string>
     <string name="pref_cast_hevc_description">Aktifkan untuk Chromecast Ultra/Google TV</string>
     <string name="pref_cast_max_bitrate_title">Bitrate Maksimum</string>
     <string name="abs_server_url_placeholder">https://abs.example.com</string>
     <string name="home_upcoming_episodes">Episode Mendatang</string>
-    <string name="meta_parts_fmt">%1$d Bagian</string>
+    <plurals name="meta_parts_fmt">
+        <item quantity="other">%1$d Bagian</item>
+    </plurals>
     <string name="section_available_requests">Permintaan Tersedia</string>
     <string name="cd_queued_tap_cancel">Dalam antrean, ketuk untuk membatalkan</string>
     <string name="skip_mode_button">Tampilkan tombol</string>
@@ -651,7 +593,6 @@
     <string name="pref_send_logs_summary">Bagikan log diagnostik untuk laporan bug</string>
     <string name="abs_connect_title">Hubungkan ke Audiobookshelf</string>
     <string name="abs_connect_button">Hubungkan</string>
-    <string name="abs_tab_home">Beranda</string>
     <string name="abs_tab_series">Seri</string>
     <string name="abs_placeholder_server_url">https://abs.example.com</string>
     <string name="abs_no_libraries_found">Tidak ada pustaka ditemukan</string>
@@ -689,19 +630,14 @@
     <string name="cd_abs_explicit">Eksplisit</string>
     <string name="cd_abs_abridged">Diringkas</string>
     <string name="cd_abs_open_item_fmt">Buka %1$s</string>
-    <string name="cd_abs_open_podcast">Buka podcast</string>
     <string name="cd_abs_view_series">Lihat seri</string>
-    <string name="cd_abs_play_episode">Putar episode</string>
     <string name="cd_abs_downloaded_delete">Diunduh, ketuk untuk menghapus</string>
     <string name="cd_abs_download_episode">Unduh episode</string>
     <string name="cd_abs_download">Unduh</string>
     <string name="cd_abs_minimize">Perkecil</string>
-    <string name="cd_abs_options">Opsi</string>
     <string name="cd_abs_previous_preset">Preset sebelumnya</string>
     <string name="cd_abs_next_preset">Preset berikutnya</string>
     <string name="abs_finished">Selesai</string>
-    <string name="abs_listen_again">Dengarkan Lagi</string>
-    <string name="abs_continue_listening">Lanjutkan Mendengarkan</string>
     <string name="abs_show_less">Tampilkan Lebih Sedikit</string>
     <string name="abs_read_more">Baca selengkapnya</string>
     <string name="abs_overview">Ikhtisar</string>
@@ -736,27 +672,16 @@
     <string name="home_genre_top_movies_fmt">Film %1$s Teratas</string>
     <string name="home_genre_top_series_fmt">Seri %1$s Teratas</string>
     <string name="home_best_of_studio_fmt">Terbaik dari %1$s</string>
-    <string name="pref_group_integrations">Integrasi</string>
-    <string name="pref_tmdb_api_key_title">Kunci API TMDB</string>
-    <string name="pref_mdblist_api_key_title">Kunci API MDBList</string>
-    <string name="pref_tmdb_config_title">Konfigurasi TMDB</string>
-    <string name="pref_mdblist_config_title">Konfigurasi MDBList</string>
-    <string name="pref_api_key_configured">Dikonfigurasi</string>
-    <string name="pref_api_key_not_configured">Belum dikonfigurasi</string>
-    <string name="action_clear_key">Hapus Kunci</string>
     <string name="action_save">Simpan</string>
     <string name="section_storage_cache">PENYIMPANAN &amp; CACHE</string>
     <string name="section_videos">VIDEO</string>
     <string name="section_download_audiobooks">BUKU AUDIO</string>
     <string name="section_download_podcasts">PODCAST</string>
     <string name="server_version_fmt">v%1$s</string>
-    <string name="server_manage_connections">Kelola Koneksi</string>
     <string name="server_active_connection">Koneksi Aktif</string>
-    <string name="server_default_proxy">Default (Proksi)</string>
     <string name="server_no_alternate_addresses">Tidak ada alamat alternatif yang dikonfigurasi.</string>
     <string name="section_library_overview">Ikhtisar Pustaka</string>
     <string name="section_active_services">Layanan Aktif</string>
-    <string name="section_network">Jaringan</string>
     <string name="section_user_profile_header">Profil Pengguna</string>
     <string name="section_request_stats">Statistik Permintaan</string>
     <string name="section_activity">Aktivitas</string>
@@ -785,10 +710,10 @@
     <string name="cd_manage_addresses">Kelola Alamat</string>
     <string name="cd_add_address">Tambah alamat</string>
     <string name="cd_security_warning">Peringatan Keamanan</string>
-    <string name="server_more_users_fmt">+%1$d pengguna lagi</string>
-    <string name="server_more_users_plural_fmt">+%1$d pengguna lagi</string>
     <string name="server_primary_connection">Koneksi Utama</string>
-    <string name="server_backup_routes_fmt">+ %1$d rute cadangan</string>
+    <plurals name="server_backup_routes_fmt">
+        <item quantity="other">+ %1$d rute cadangan</item>
+    </plurals>
     <string name="service_label_seerr">Seerr</string>
     <string name="service_label_abs">ABS</string>
     <string name="service_label_tmdb">TMDB</string>
@@ -816,7 +741,6 @@
     <string name="unknown_author">Penulis Tidak Diketahui</string>
     <string name="unknown_episode">Episode Tidak Diketahui</string>
     <string name="unknown_device">Perangkat Tidak Diketahui</string>
-    <string name="unknown_podcast">Podcast Tidak Diketahui</string>
     <string name="cd_rotten_tomatoes_rating">Rating Rotten Tomatoes</string>
     <string name="action_read_more">Baca selengkapnya</string>
     <string name="error_no_trailer">Tidak ada trailer yang tersedia</string>
@@ -824,7 +748,6 @@
     <string name="notif_update_available_fmt">Versi %1$s kini tersedia</string>
     <string name="notif_update_tap_to_download_fmt">Versi %1$s kini tersedia. Ketuk untuk mengunduh.</string>
     <string name="notif_channel_updates_desc">Notifikasi untuk pembaruan aplikasi</string>
-    <string name="notif_downloading_fmt">Mengunduh %1$s</string>
     <string name="notif_channel_downloads_desc">Tugas unduhan latar belakang</string>
     <string name="error_invalid_url_format">Format URL tidak valid</string>
     <string name="error_email_username_required">Email atau nama pengguna wajib diisi</string>
@@ -833,12 +756,9 @@
     <string name="error_server_connect_failed_fmt">Gagal terhubung ke server: %1$s</string>
     <string name="error_login_failed_fmt">Login gagal: %1$s</string>
     <string name="error_username_required">Nama pengguna wajib diisi</string>
-    <string name="error_quick_connect_fmt">Kesalahan Quick Connect: %1$s</string>
     <string name="error_failed_load_channels">Gagal memuat saluran</string>
     <string name="error_failed_check_livetv">Gagal memeriksa akses TV Langsung</string>
     <string name="error_content_unavailable_server">Konten tidak tersedia di server ini</string>
-    <string name="error_item_unavailable_offline">Item tidak tersedia secara offline</string>
-    <string name="error_item_not_found">Item tidak ditemukan</string>
     <string name="error_invalid_person_id">ID Orang tidak valid atau tidak ada</string>
     <string name="error_person_not_found">Orang tidak ditemukan</string>
     <string name="error_server_url_not_available">URL server tidak tersedia</string>
@@ -903,11 +823,11 @@
     <string name="cd_tmdb">TMDB</string>
     <string name="cd_mdblist">MDBList</string>
     <string name="permission_request">Permintaan</string>
-    <string name="quota_days_fmt">%1$d / %2$d hari</string>
+    <plurals name="quota_days_fmt">
+        <item quantity="other">%1$d / %2$d hari</item>
+    </plurals>
     <string name="duration_hours_fmt">%.0f jam</string>
     <string name="pref_buffer_size_title">Ukuran Buffer Video</string>
-    <string name="ws_server_restarting">Server sedang dimulai ulang, menyambungkan kembali secara otomatis…</string>
-    <string name="ws_server_shutdown">Server telah dimatikan</string>
     <string name="play_error_missing_source">Tidak ada item yang dapat diputar ditemukan di server</string>
     <string name="pref_show_ratings_title">Tampilkan Rating</string>
     <string name="pref_show_ratings_summary">Tampilkan rating IMDb dan Rotten Tomatoes pada kartu</string>
@@ -974,8 +894,6 @@
     <string name="episode_upcoming">AKAN DATANG</string>
     <string name="episode_missing">HILANG</string>
     <string name="section_storage_locations">LOKASI PENYIMPANAN</string>
-    <string name="storage_used_on_volume_fmt">%1$s digunakan di server ini</string>
-    <string name="storage_free_of_total_fmt">%1$s kosong dari %2$s</string>
     <string name="storage_usage_combined_fmt">"%1$s digunakan di sini -  %2$s kosong dari %3$s"</string>
     <string name="storage_default_badge">Default</string>
     <string name="storage_set_as_default">Jadikan default</string>
@@ -996,26 +914,12 @@
     <string name="action_authorize">Otorisasi</string>
     <string name="error_quickconnect_invalid_code">Kode tidak valid atau kedaluwarsa. Silakan coba lagi.</string>
     <string name="error_quickconnect_failed_fmt">Otorisasi gagal: %1$s</string>
-    <string name="pref_omdb_api_key_title">Kunci API OMDb</string>
-    <string name="pref_omdb_config_title">Konfigurasi OMDb</string>
-    <string name="music_playback_channel_name">Pemutaran Musik AFinity</string>
     <string name="pref_max_concurrent_downloads">Maksimum unduhan paralel</string>
     <string name="build_nightly">Build Nightly</string>
     <string name="media_route_menu_title">Cast</string>
     <string name="pref_cast_max_bitrate_auto">Otomatis (uji jaringan)</string>
     <string name="abs_action_browse">Telusuri</string>
     <string name="section_download_music">MUSIK</string>
-    <string name="music_sort_name_az">A → Z</string>
-    <string name="music_sort_name_za">Z → A</string>
-    <string name="music_sort_recently_added">Baru Ditambahkan</string>
-    <string name="music_sort_recently_played">Terakhir Diputar</string>
-    <string name="music_sort_most_played">Paling Sering Diputar</string>
-    <string name="music_sort_by_year">Berdasarkan Tahun</string>
-    <string name="music_sort_duration">Durasi</string>
-    <string name="music_sort_by_album">Berdasarkan Album</string>
-    <string name="music_sort_by_artist">Berdasarkan Artis</string>
-    <string name="music_sort_track_number">Nomor Trek</string>
-    <string name="music_sort_random">Acak</string>
     <string name="music_tab_home">Beranda</string>
     <string name="music_tab_playlists">Daftar Putar</string>
     <string name="music_tab_artists">Artis</string>
@@ -1032,9 +936,6 @@
     <string name="music_action_start_radio">Mulai Radio</string>
     <string name="music_action_browse">Telusuri</string>
     <string name="music_action_start_radio_header">MULAI RADIO</string>
-    <string name="music_filter_status">Status</string>
-    <string name="music_filter_unplayed">Belum Diputar</string>
-    <string name="music_filter_played">Sudah Diputar</string>
     <string name="music_filter_clear">Bersihkan</string>
     <string name="music_section_made_for_you">Dibuat Untuk Anda</string>
     <string name="music_section_jump_back_in">Lanjutkan Lagi</string>
@@ -1093,7 +994,6 @@
     <string name="cd_music_shuffle">Acak</string>
     <string name="cd_music_repeat">Ulangi</string>
     <string name="cd_music_lyrics">Lirik</string>
-    <string name="cd_music_go_to_home">Buka Beranda</string>
     <string name="cd_music_now_playing">Sedang diputar</string>
     <string name="cd_music_more_options">Opsi lainnya</string>
     <string name="cd_music_downloaded">Sudah diunduh</string>
@@ -1101,7 +1001,6 @@
     <string name="cd_music_remove">Hapus</string>
     <string name="cd_music_seek_backward">Cari mundur</string>
     <string name="cd_music_seek_forward">Cari maju</string>
-    <string name="cd_music_filter">Filter</string>
     <string name="cd_music_delete_playlist">Hapus daftar putar</string>
     <string name="cd_open_navigation_menu">Buka menu navigasi</string>
     <string name="cd_go_to_home">Ke Beranda</string>
@@ -1121,7 +1020,6 @@
     <string name="discover_filter_release_date_from">Dari</string>
     <string name="discover_filter_release_date_to">Sampai</string>
     <string name="discover_filter_runtime">Durasi</string>
-    <string name="discover_filter_runtime_minutes_fmt">%1$d menit</string>
     <string name="discover_filter_rating">Rating</string>
     <string name="discover_filter_vote_count">Jumlah suara</string>
     <string name="discover_filter_ratings_runtime">Durasi &amp; Rating</string>
@@ -1136,8 +1034,12 @@
     <string name="discover_filter_keywords">Kata kunci</string>
     <string name="discover_filter_keyword_include">Sertakan</string>
     <string name="discover_filter_keyword_exclude">Kecualikan</string>
-    <string name="discover_filter_keywords_included_fmt">%1$d disertakan</string>
-    <string name="discover_filter_keywords_excluded_fmt">%1$d dikecualikan</string>
+    <plurals name="discover_filter_keywords_included_fmt">
+        <item quantity="other">%1$d disertakan</item>
+    </plurals>
+    <plurals name="discover_filter_keywords_excluded_fmt">
+        <item quantity="other">%1$d dikecualikan</item>
+    </plurals>
     <string name="discover_filter_keyword_search_hint">Cari kata kunci…</string>
     <string name="discover_filter_select_region">Pilih wilayah</string>
     <string name="tv_status_returning_series">Serial berlanjut</string>
@@ -1185,12 +1087,15 @@
     <string name="update_console_status_error">KESALAHAN: tidak dapat membaca file, unduh kembali</string>
     <string name="section_ratings">Rating</string>
     <string name="request_all_seasons_note">Semua season akan diminta</string>
-    <string name="request_quota_movie_label">Batas permintaan film</string>
-    <string name="request_quota_tv_label">Batas permintaan season</string>
-    <string name="request_quota_remaining_fmt">%1$d dari %2$d tersisa</string>
-    <string name="request_quota_movie_remaining_fmt">%1$d dari %2$d permintaan tersisa</string>
-    <string name="request_quota_tv_remaining_fmt">%1$d dari %2$d permintaan season tersisa</string>
-    <string name="request_quota_period_fmt">per %1$d hari</string>
+    <plurals name="request_quota_movie_remaining_fmt">
+        <item quantity="other">%1$d dari %2$d permintaan tersisa</item>
+    </plurals>
+    <plurals name="request_quota_tv_remaining_fmt">
+        <item quantity="other">%1$d dari %2$d permintaan season tersisa</item>
+    </plurals>
+    <plurals name="request_quota_period_fmt">
+        <item quantity="other">per %1$d hari</item>
+    </plurals>
     <string name="request_quota_exceeded">Batas tercapai</string>
     <string name="request_language_profile">Profil bahasa</string>
     <string name="request_tags">Tag</string>
@@ -1199,11 +1104,11 @@
     <string name="request_series_match">Kecocokan serial</string>
     <string name="request_select_placeholder">Pilih…</string>
     <string name="seerr_detail_request">Ajukan</string>
-    <string name="seerr_detail_request_4k">Ajukan dalam 4K</string>
     <string name="seerr_detail_open_library">Buka di pustaka</string>
-    <string name="seerr_detail_status_fmt">%1$s</string>
     <string name="seerr_collection_fallback">Koleksi</string>
-    <string name="season_count_fmt">%1$d Season</string>
+    <plurals name="season_count_fmt">
+        <item quantity="other">%1$d Season</item>
+    </plurals>
     <string name="seerr_recommendations_title">Rekomendasi</string>
     <string name="seerr_details_title">Detail</string>
     <string name="request_quota_exceeded_message">Sisa permintaan Anda tidak mencukupi. Kuota Anda akan direset secara otomatis.</string>
@@ -1244,7 +1149,9 @@
     <string name="playback_stats_label_video_output">Keluaran video</string>
     <string name="playback_stats_value_direct_play_local">Putar langsung (file lokal)</string>
     <string name="playback_stats_value_live">Langsung</string>
-    <string name="playback_stats_value_seconds_fmt">%1$d detik</string>
+    <plurals name="playback_stats_value_seconds_fmt">
+        <item quantity="other">%1$d detik</item>
+    </plurals>
     <string name="playback_stats_value_bitrate_container_fmt">%1$s Mbps (kontainer)</string>
     <string name="playback_stats_label_connection">Koneksi</string>
     <string name="playback_stats_label_decoder">Dekoder</string>
@@ -1268,7 +1175,6 @@
     <string name="pref_mpv_hdr_peak_summary">Mengukur kecerahan adegan saat HDR dipetakan nada ke SDR (menggunakan lebih banyak GPU)</string>
     <string name="pref_app_font_title">Font aplikasi</string>
     <string name="font_system_default">Default sistem</string>
-    <string name="api_key_dialog_message">Masukkan kunci API Anda di bawah ini.</string>
     <string name="buffer_desc_minimal">Minimal</string>
     <string name="buffer_desc_default">Default / Direkomendasikan</string>
     <string name="buffer_desc_slow_networks">Cocok untuk jaringan lambat</string>
@@ -1278,15 +1184,8 @@
     <string name="pref_image_caching_summary">Simpan gambar media ke disk agar pemuatan lebih cepat dan penggunaan jaringan berkurang</string>
     <string name="pref_image_cache_restart_note">Berlaku saat aplikasi berikutnya dibuka</string>
     <string name="pref_image_cache_max_disk">Ruang disk maksimum</string>
-    <string name="cd_invalid_key">Kunci tidak valid</string>
     <string name="cd_decrease_limit">Kurangi batas</string>
     <string name="cd_increase_limit">Tingkatkan batas</string>
-    <string name="task_last_ran">Terakhir dijalankan %1$s%2$s</string>
-    <string name="time_just_now">baru saja</string>
-    <string name="time_minutes_ago">sekitar %1$dm yang lalu</string>
-    <string name="time_hours_ago">sekitar %1$dh yang lalu</string>
-    <string name="time_days_ago">%1$dd yang lalu</string>
-    <string name="task_duration_under_minute">, memerlukan waktu kurang dari satu menit</string>
     <string name="section_favorite_albums">Album favorit</string>
     <string name="section_favorite_artists">Artis favorit</string>
     <string name="section_favorite_songs">Lagu favorit</string>
@@ -1369,19 +1268,17 @@
     <string name="custom_sections_source_resolving">…</string>
     <string name="pref_clear_cache">Hapus data tembolok</string>
     <string name="pref_clear_cache_summary">Daftar baris beranda, genre, dan karya seni akan diambil ulang</string>
-    <string name="pref_clear_cache_usage_fmt">Gambar %1$s · %2$d entri dalam tembolok</string>
     <string name="pref_clear_cache_empty">Tidak ada tembolok</string>
-    <string name="pref_clear_cache_usage_total_fmt">%1$s dalam tembolok · %2$d entri</string>
+    <plurals name="pref_clear_cache_usage_total_fmt">
+        <item quantity="other">%1$s dalam tembolok · %2$d entri</item>
+    </plurals>
     <string name="cache_kind_images">Gambar</string>
     <string name="cache_store_video">Tembolok video</string>
     <string name="cache_store_network">Tembolok jaringan</string>
     <string name="cache_store_player">Data pemutar</string>
-    <string name="cache_kind_home_rows">Baris beranda</string>
-    <string name="cache_kind_genres">Genre</string>
-    <string name="cache_kind_people">Tokoh populer</string>
-    <string name="cache_kind_person_details">Detail tokoh</string>
-    <string name="cache_kind_box_sets">Koleksi</string>
-    <string name="cache_entries_fmt">%1$d entri</string>
+    <plurals name="cache_entries_fmt">
+        <item quantity="other">%1$d entri</item>
+    </plurals>
     <string name="pref_clear_cache_confirm">Hapus data tembolok?</string>
     <string name="pref_clear_cache_message">Unduhan, pengaturan, dan bagian kustom Anda tidak akan terpengaruh. Baris beranda akan dibuat ulang saat dimuat berikutnya.</string>
     <string name="pref_clear_cache_done">Data tembolok telah dihapus</string>
@@ -1408,8 +1305,12 @@
     <string name="backup_section_library">Pustaka</string>
     <string name="backup_section_downloads">Unduhan</string>
     <string name="backup_section_privacy">Privasi dan pembaruan</string>
-    <string name="backup_section_home_fmt">%1$d bagian kustom, baris, dan Penemuan</string>
-    <string name="backup_section_settings_fmt">%1$d pengaturan</string>
+    <plurals name="backup_section_home_fmt">
+        <item quantity="other">%1$d bagian kustom, baris, dan Penemuan</item>
+    </plurals>
+    <plurals name="backup_section_settings_fmt">
+        <item quantity="other">%1$d pengaturan</item>
+    </plurals>
     <string name="custom_sections_add_blank">Bagian kosong</string>
     <string name="custom_sections_add_blank_summary">Mulai dari awal</string>
     <string name="custom_sections_preset_range_fmt">Musiman · %1$s – %2$s</string>
@@ -1437,12 +1338,13 @@
     <string name="custom_sections_card_style_locked_fmt">%1$s (diatur secara otomatis untuk jenis baris ini)</string>
     <string name="custom_sections_field_refine">Persempit</string>
     <string name="custom_sections_refine_none">Tidak ada filter tambahan</string>
-    <string name="custom_sections_refine_summary_fmt">%1$s · %2$d filter</string>
+    <plurals name="custom_sections_refine_summary_fmt">
+        <item quantity="other">%1$s · %2$d filter</item>
+    </plurals>
     <string name="custom_sections_group_content">Konten</string>
     <string name="custom_sections_group_display">Tampilan</string>
     <string name="custom_sections_group_schedule">Jadwal</string>
     <string name="custom_sections_sort_random">Acak</string>
-    <string name="custom_sections_seasonal_badge">Musiman</string>
     <string name="custom_sections_field_seasonal">Musiman</string>
     <string name="custom_sections_seasonal_hint">Hanya tampilkan selama rentang tanggal tertentu setiap tahun</string>
     <string name="custom_sections_field_season_start">Mulai</string>
@@ -1456,8 +1358,6 @@
     <string name="media_language_none">Tanpa bahasa</string>
     <string name="media_language_unidentified">Tidak dikenali</string>
     <string name="player_tracks_label">Audio &amp; Subtitle</string>
-    <string name="player_more_label">Lainnya</string>
-    <string name="player_next_episode_label">Episode Berikutnya</string>
     <string name="player_resume">Lanjutkan</string>
     <string name="player_restart">Mulai dari awal</string>
     <string name="player_cast_heading">Cast</string>
