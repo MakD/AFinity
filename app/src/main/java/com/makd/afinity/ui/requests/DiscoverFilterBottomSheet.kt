@@ -62,6 +62,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -534,16 +535,18 @@ fun DiscoverFilterBottomSheet(
                         val keywordsSummary = buildList {
                             if (selectedKeywords.isNotEmpty()) {
                                 add(
-                                    stringResource(
-                                        R.string.discover_filter_keywords_included_fmt,
+                                    pluralStringResource(
+                                        R.plurals.discover_filter_keywords_included_fmt,
+                                        selectedKeywords.size,
                                         selectedKeywords.size,
                                     )
                                 )
                             }
                             if (selectedExcludeKeywords.isNotEmpty()) {
                                 add(
-                                    stringResource(
-                                        R.string.discover_filter_keywords_excluded_fmt,
+                                    pluralStringResource(
+                                        R.plurals.discover_filter_keywords_excluded_fmt,
+                                        selectedExcludeKeywords.size,
                                         selectedExcludeKeywords.size,
                                     )
                                 )

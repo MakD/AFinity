@@ -446,7 +446,7 @@ fun SharedTransitionScope.PortraitPlayerContent(
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                         Icon(
                             painter = painterResource(R.drawable.ic_cast_devices),
-                            contentDescription = "Cast",
+                            contentDescription = stringResource(R.string.cd_cast),
                             tint =
                                 if (isAbsCasting) animatedColor else Color.White.copy(alpha = 0.8f),
                         )
@@ -688,7 +688,7 @@ fun SharedTransitionScope.LandscapePlayerContent(
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_cast_devices),
-                                contentDescription = "Cast",
+                                contentDescription = stringResource(R.string.cd_cast),
                                 tint =
                                     if (isAbsCasting) animatedColor
                                     else Color.White.copy(alpha = 0.8f),

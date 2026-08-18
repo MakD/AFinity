@@ -53,8 +53,9 @@ import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.theme.CardDimensions
+import com.makd.afinity.util.DateSkeleton
+import com.makd.afinity.util.localizedDateFormatter
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -292,8 +293,8 @@ private fun MetadataDot(modifier: Modifier = Modifier) {
 
 private fun formatDate(date: LocalDateTime): String {
     return try {
-        val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
-        date.format(formatter)
+        val locale = Locale.getDefault()
+        date.format(localizedDateFormatter(locale, DateSkeleton.MONTH_DAY_YEAR))
     } catch (_: Exception) {
         date.toString().take(10)
     }

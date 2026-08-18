@@ -365,7 +365,7 @@ fun HomeScreen(
                             item(key = "downloaded_music_albums") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     DownloadedMusicAlbumsSection(
-                                        title = "Downloaded Albums",
+                                        title = stringResource(R.string.home_downloaded_albums),
                                         albums = uiState.downloadedMusicAlbums,
                                         onAlbumClick = { album ->
                                             navController.navigate(
@@ -383,7 +383,7 @@ fun HomeScreen(
                             item(key = "downloaded_music_tracks") {
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     DownloadedMusicTracksSection(
-                                        title = "Downloaded Tracks",
+                                        title = stringResource(R.string.home_downloaded_tracks),
                                         tracks = uiState.downloadedMusicTracks,
                                         onTrackClick = { track ->
                                             val tracks = uiState.downloadedMusicTracks

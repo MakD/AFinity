@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -275,10 +276,14 @@ private fun BackupBody(viewModel: BackupViewModel, modifier: Modifier = Modifier
 private fun sectionSummary(section: SettingsSection, preview: SettingsImportPreview): String? =
     if (section == SettingsSection.HOME) {
         val plan = preview.homePlan ?: return null
-        stringResource(R.string.backup_section_home_fmt, plan.sections.size)
+        pluralStringResource(
+            R.plurals.backup_section_home_fmt,
+            plan.sections.size,
+            plan.sections.size,
+        )
     } else {
         preview.prefCounts[section]?.let {
-            stringResource(R.string.backup_section_settings_fmt, it)
+            pluralStringResource(R.plurals.backup_section_settings_fmt, it, it)
         }
     }
 

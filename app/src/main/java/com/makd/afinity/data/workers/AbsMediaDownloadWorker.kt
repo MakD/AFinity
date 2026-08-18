@@ -28,6 +28,7 @@ import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsDownloadRepositoryImpl
 import com.makd.afinity.data.repository.audiobookshelf.toEntity
 import com.makd.afinity.di.DownloadClient
+import com.makd.afinity.util.formatFileSize
 import dagger.Lazy
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -40,7 +41,6 @@ import okhttp3.Request
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
-import java.util.Locale
 import java.util.UUID
 
 @HiltWorker
@@ -62,7 +62,6 @@ constructor(
     companion object {
         const val BUFFER_SIZE = 256 * 1024
         private const val NOTIFICATION_CHANNEL_ID = "abs_downloads"
-        private const val NOTIFICATION_CHANNEL_NAME = "Audiobook Downloads"
     }
 
     private val json = Json {
@@ -105,11 +104,13 @@ constructor(
                 setForeground(
                     createForegroundInfo(
                         downloadId,
-                        entity.title.ifEmpty { "Audiobook" },
+                        entity.title.ifEmpty {
+                            appContext.getString(R.string.notif_untitled_audiobook)
+                        },
                         entity.authorName,
                         null,
                         0f,
-                        "Queued",
+                        appContext.getString(R.string.download_status_queued),
                     )
                 )
             } catch (e: Exception) {
@@ -639,7 +640,7 @@ constructor(
             notificationManager.createNotificationChannel(
                 NotificationChannel(
                     NOTIFICATION_CHANNEL_ID,
-                    NOTIFICATION_CHANNEL_NAME,
+                    appContext.getString(R.string.notif_channel_audiobook_downloads),
                     NotificationManager.IMPORTANCE_LOW,
                 )
             )
@@ -660,7 +661,7 @@ constructor(
                 .setContentIntent(downloadNotificationManager.downloadsContentIntent())
                 .addAction(
                     R.drawable.ic_cancel,
-                    "Cancel",
+                    appContext.getString(R.string.action_cancel),
                     downloadNotificationManager.absCancelActionIntent(downloadId),
                 )
                 .build()
@@ -681,12 +682,25 @@ constructor(
         downloadedBytes: Long,
         totalBytes: Long,
     ): String = buildList {
-        if (tracksTotal > 1) add("Track ${trackIndex + 1}/$tracksTotal")
+        if (tracksTotal > 1)
+            add(
+                appContext.getString(
+                    R.string.notif_track_progress_fmt,
+                    trackIndex + 1,
+                    tracksTotal,
+                )
+            )
         if (totalBytes > 0) {
             add("${downloadedBytes * 100 / totalBytes}%")
-            add("${formatBytes(downloadedBytes)} / ${formatBytes(totalBytes)}")
+            add(
+                appContext.getString(
+                    R.string.notif_download_progress_fmt,
+                    formatFileSize(appContext, downloadedBytes),
+                    formatFileSize(appContext, totalBytes),
+                )
+            )
         } else {
-            add(formatBytes(downloadedBytes))
+            add(formatFileSize(appContext, downloadedBytes))
         }
     }
         .joinToString(" • ")
@@ -707,14 +721,4 @@ constructor(
             null
         }
     }
-
-    private fun formatBytes(bytes: Long): String =
-        when {
-            bytes < 1024 -> "$bytes B"
-            bytes < 1024 * 1024 -> String.format(Locale.getDefault(), "%.1f KB", bytes / 1024.0)
-            bytes < 1024L * 1024 * 1024 ->
-                String.format(Locale.getDefault(), "%.1f MB", bytes / (1024.0 * 1024.0))
-            else ->
-                String.format(Locale.getDefault(), "%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0))
-        }
 }

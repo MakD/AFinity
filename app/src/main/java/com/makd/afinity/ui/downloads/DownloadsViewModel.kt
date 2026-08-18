@@ -19,6 +19,7 @@ import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.data.storage.StorageVolumeInfo
 import com.makd.afinity.data.storage.VolumeUnavailableException
+import com.makd.afinity.util.formatFileSize
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,7 +28,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 
@@ -579,25 +579,7 @@ constructor(
         }
     }
 
-    fun formatStorageSize(bytes: Long): String {
-        return when {
-            bytes < 1024 -> "$bytes B"
-            bytes < 1024 * 1024 -> String.format(Locale.getDefault(), "%.2f KB", bytes / 1024.0)
-            bytes < 1024 * 1024 * 1024 ->
-                String.format(
-                    Locale.getDefault(),
-                    "%.2f MB",
-                    bytes / (1024.0 * 1024.0),
-                )
-
-            else ->
-                String.format(
-                    Locale.getDefault(),
-                    "%.2f GB",
-                    bytes / (1024.0 * 1024.0 * 1024.0),
-                )
-        }
-    }
+    fun formatStorageSize(bytes: Long): String = formatFileSize(context, bytes)
 
     data class DeviceStorageStats(
         val totalBytes: Long,

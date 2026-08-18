@@ -154,7 +154,8 @@ fun PlaylistScreen(
                 when (message) {
                     is PlaylistDownloadMessage.PartiallyStarted ->
                         context.getString(
-                            R.string.playlist_download_partial_fmt,
+                            R.plurals.playlist_download_partial_fmt,
+                            message.expected,
                             message.started,
                             message.expected,
                         )

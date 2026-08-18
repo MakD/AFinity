@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +32,7 @@ import androidx.compose.ui.window.Dialog
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.storage.StorageVolumeInfo
+import com.makd.afinity.util.formatFileSize
 
 @Composable
 fun QualitySelectionDialog(
@@ -243,16 +245,8 @@ private fun QualityOption(
 
                 Spacer(modifier = Modifier.height(2.dp))
 
-                val sizeInMB = source.size / (1024 * 1024)
-                val sizeText =
-                    if (sizeInMB >= 1024) {
-                        stringResource(R.string.file_size_gb, sizeInMB / 1024.0)
-                    } else {
-                        stringResource(R.string.file_size_mb, sizeInMB)
-                    }
-
                 Text(
-                    text = sizeText,
+                    text = formatFileSize(LocalContext.current, source.size),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

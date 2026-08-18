@@ -124,7 +124,7 @@ private fun PlaylistListDialog(
                     }
                 } else if (state.playlists.isEmpty()) {
                     Text(
-                        text = "No playlists yet. Create one below.",
+                        text = stringResource(R.string.music_no_playlists_yet),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 8.dp),

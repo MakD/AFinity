@@ -1,7 +1,9 @@
 package com.makd.afinity.ui.settings.home
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.R
 import com.makd.afinity.data.models.CustomHomeSection
 import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.CustomSectionSourceType
@@ -155,11 +157,11 @@ constructor(
         }
     }
 
-    fun requestPreset(preset: SeasonalPreset) {
+    fun requestPreset(preset: SeasonalPreset, title: String) {
         viewModelScope.launch {
             awaitSources(CustomSectionSourceType.TAG)
             awaitSources(CustomSectionSourceType.GENRE)
-            _pendingTemplate.value = presetTemplate(preset)
+            _pendingTemplate.value = presetTemplate(preset, title)
         }
     }
 
@@ -424,7 +426,7 @@ constructor(
             sourceType = CustomSectionSourceType.GENRE,
         )
 
-    fun presetTemplate(preset: SeasonalPreset): CustomHomeSection {
+    fun presetTemplate(preset: SeasonalPreset, title: String): CustomHomeSection {
         val state = _uiState.value
         val tagMatch =
             preset.suggestedTag?.let { suggested ->
@@ -445,7 +447,7 @@ constructor(
         return CustomHomeSection(
             id = UUID.randomUUID().toString(),
             position = -1,
-            title = preset.defaultTitle,
+            title = title,
             sourceType = sourceType,
             sourceValues = sourceValues,
             cardStyle = CustomSectionCardStyle.SPOTLIGHT,
@@ -457,14 +459,26 @@ constructor(
 }
 
 enum class SeasonalPreset(
-    val defaultTitle: String,
+    @param:StringRes val titleRes: Int,
     val start: String,
     val end: String,
     val suggestedTag: String?,
     val suggestedGenre: String?,
 ) {
-    HALLOWEEN("Halloween", "10-01", "10-31", "halloween", "Horror"),
-    CHRISTMAS("Christmas", "12-01", "12-26", "christmas", null),
-    NEW_YEAR("New Year", "12-28", "01-02", "new year", null),
-    VALENTINES("Valentine's", "02-07", "02-15", "valentine", "Romance"),
+    HALLOWEEN(
+        R.string.custom_sections_preset_halloween,
+        "10-01",
+        "10-31",
+        "halloween",
+        "Horror",
+    ),
+    CHRISTMAS(R.string.custom_sections_preset_christmas, "12-01", "12-26", "christmas", null),
+    NEW_YEAR(R.string.custom_sections_preset_new_year, "12-28", "01-02", "new year", null),
+    VALENTINES(
+        R.string.custom_sections_preset_valentines,
+        "02-07",
+        "02-15",
+        "valentine",
+        "Romance",
+    ),
 }

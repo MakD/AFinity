@@ -704,7 +704,7 @@ private fun AudibleRatingRow(rating: AudibleRating, modifier: Modifier = Modifie
             fontWeight = FontWeight.SemiBold,
         )
         Text(
-            text = "on Audible",
+            text = stringResource(R.string.abs_on_audible),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

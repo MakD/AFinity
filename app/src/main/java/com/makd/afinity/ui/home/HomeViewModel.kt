@@ -604,7 +604,12 @@ constructor(
                         val count = episodes.size
                         rep.copy(
                             title = rep.authorName?.takeIf { it.isNotBlank() } ?: rep.title,
-                            authorName = "$count episode${if (count > 1) "s" else ""} downloaded",
+                            authorName =
+                                context.resources.getQuantityString(
+                                    R.plurals.episodes_downloaded_fmt,
+                                    count,
+                                    count,
+                                ),
                         )
                     }
 

@@ -610,7 +610,7 @@ private fun LandscapeItemDetailContent(
 
             Image(
                 painter = painterResource(id = R.drawable.mask),
-                contentDescription = "Mask overlay",
+                contentDescription = stringResource(R.string.cd_mask_overlay),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
                 alignment = Alignment.Center,

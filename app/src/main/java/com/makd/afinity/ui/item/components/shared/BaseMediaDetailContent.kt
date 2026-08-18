@@ -167,7 +167,7 @@ private fun RatingsAndReviews(
                             BadgeCard(
                                 sourceName = "Tomatometer",
                                 iconRes = R.drawable.ic_certified_fresh,
-                                label = "Certified Fresh",
+                                label = stringResource(R.string.rt_certified_fresh),
                             )
                         }
                     }
@@ -177,7 +177,7 @@ private fun RatingsAndReviews(
                             BadgeCard(
                                 sourceName = "Popcornmeter",
                                 iconRes = R.drawable.ic_verified_hot,
-                                label = "Verified Hot",
+                                label = stringResource(R.string.rt_verified_hot),
                             )
                         }
                     }

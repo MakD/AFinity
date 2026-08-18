@@ -295,7 +295,7 @@ fun AppNavigationDrawerContent(
                         NavigationDrawerItem(
                             label = {
                                 Text(
-                                    text = destination.title,
+                                    text = stringResource(destination.titleRes),
                                     style = MaterialTheme.typography.labelLarge,
                                 )
                             },
@@ -309,7 +309,7 @@ fun AppNavigationDrawerContent(
                                                 if (selected) destination.selectedIconRes
                                                 else destination.unselectedIconRes
                                         ),
-                                    contentDescription = destination.title,
+                                    contentDescription = stringResource(destination.titleRes),
                                 )
                             },
                             badge = {

@@ -88,7 +88,8 @@ internal fun JellyseerrTabContent(
                             value =
                                 if (user.movieQuotaLimit != null && user.movieQuotaLimit > 0)
                                     stringResource(
-                                        R.string.quota_days_fmt,
+                                        R.plurals.quota_days_fmt,
+                                        user.movieQuotaDays ?: 7,
                                         user.movieQuotaLimit,
                                         user.movieQuotaDays ?: 7,
                                     )
@@ -99,7 +100,8 @@ internal fun JellyseerrTabContent(
                             value =
                                 if (user.tvQuotaLimit != null && user.tvQuotaLimit > 0)
                                     stringResource(
-                                        R.string.quota_days_fmt,
+                                        R.plurals.quota_days_fmt,
+                                        user.tvQuotaDays ?: 7,
                                         user.tvQuotaLimit,
                                         user.tvQuotaDays ?: 7,
                                     )

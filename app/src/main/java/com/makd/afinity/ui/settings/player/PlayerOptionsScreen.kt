@@ -222,7 +222,7 @@ fun PlayerOptionsScreen(
                                     selectedOption = uiState.assRenderMode,
                                     options = AssRenderMode.entries.toList(),
                                     onValueChange = viewModel::setAssRenderMode,
-                                    labelProvider = { it.getDisplayName() },
+                                    labelProvider = { stringResource(it.labelRes) },
                                     icon = painterResource(id = R.drawable.ic_subtitles),
                                     hint = stringResource(R.string.pref_ass_render_mode_hint),
                                 )
@@ -243,7 +243,7 @@ fun PlayerOptionsScreen(
                                     selectedOption = uiState.mpvHwDec,
                                     options = MpvHwDec.entries.toList(),
                                     onValueChange = viewModel::setMpvHwDec,
-                                    labelProvider = { it.getDisplayName() },
+                                    labelProvider = { stringResource(it.labelRes) },
                                     icon = painterResource(id = R.drawable.ic_cpu),
                                 )
                                 SettingsDivider()
@@ -252,7 +252,7 @@ fun PlayerOptionsScreen(
                                     selectedOption = uiState.mpvVideoOutput,
                                     options = MpvVideoOutput.entries.toList(),
                                     onValueChange = viewModel::setMpvVideoOutput,
-                                    labelProvider = { it.getDisplayName() },
+                                    labelProvider = { stringResource(it.labelRes) },
                                     icon = painterResource(id = R.drawable.ic_video_settings),
                                 )
                                 SettingsDivider()
@@ -261,7 +261,7 @@ fun PlayerOptionsScreen(
                                     selectedOption = uiState.mpvAudioOutput,
                                     options = MpvAudioOutput.entries.toList(),
                                     onValueChange = viewModel::setMpvAudioOutput,
-                                    labelProvider = { it.getDisplayName() },
+                                    labelProvider = { stringResource(it.labelRes) },
                                     icon = painterResource(id = R.drawable.ic_audio),
                                 )
                                 SettingsDivider()
@@ -287,7 +287,7 @@ fun PlayerOptionsScreen(
                                     selectedOption = uiState.mpvGpuApi,
                                     options = MpvGpuApi.entries.toList(),
                                     onValueChange = viewModel::setMpvGpuApi,
-                                    labelProvider = { it.getDisplayName() },
+                                    labelProvider = { stringResource(it.labelRes) },
                                     icon = painterResource(id = R.drawable.ic_cpu),
                                 )
                                 SettingsDivider()
@@ -296,7 +296,7 @@ fun PlayerOptionsScreen(
                                     selectedOption = uiState.mpvHdrOutput,
                                     options = MpvHdrOutput.entries.toList(),
                                     onValueChange = viewModel::setMpvHdrOutput,
-                                    labelProvider = { it.getDisplayName() },
+                                    labelProvider = { stringResource(it.labelRes) },
                                     icon = painterResource(id = R.drawable.ic_colorize),
                                     hint = stringResource(R.string.pref_mpv_hdr_output_hint),
                                 )
@@ -306,7 +306,7 @@ fun PlayerOptionsScreen(
                                     selectedOption = uiState.mpvToneMapping,
                                     options = MpvToneMapping.entries.toList(),
                                     onValueChange = viewModel::setMpvToneMapping,
-                                    labelProvider = { it.getDisplayName() },
+                                    labelProvider = { stringResource(it.labelRes) },
                                     icon = painterResource(id = R.drawable.ic_texture),
                                     hint = stringResource(R.string.pref_mpv_tone_mapping_hint),
                                 )
@@ -492,11 +492,11 @@ fun PlayerOptionsScreen(
                     val bitrateOptions =
                         listOf(
                             0 to stringResource(R.string.pref_cast_max_bitrate_auto),
-                            16_000_000 to "16 Mbps",
-                            8_000_000 to "8 Mbps",
-                            4_000_000 to "4 Mbps",
-                            2_000_000 to "2 Mbps",
-                            1_000_000 to "1 Mbps",
+                            16_000_000 to stringResource(R.string.unit_mbps_fmt, 16),
+                            8_000_000 to stringResource(R.string.unit_mbps_fmt, 8),
+                            4_000_000 to stringResource(R.string.unit_mbps_fmt, 4),
+                            2_000_000 to stringResource(R.string.unit_mbps_fmt, 2),
+                            1_000_000 to stringResource(R.string.unit_mbps_fmt, 1),
                         )
 
                     SubtitleDropdownItem(
@@ -505,7 +505,8 @@ fun PlayerOptionsScreen(
                         options = bitrateOptions.map { it.first },
                         onValueChange = viewModel::setCastMaxBitrate,
                         labelProvider = { bitrate ->
-                            bitrateOptions.find { it.first == bitrate }?.second ?: "16 Mbps"
+                            bitrateOptions.find { it.first == bitrate }?.second
+                                ?: stringResource(R.string.unit_mbps_fmt, 16)
                         },
                         icon = painterResource(id = R.drawable.ic_broadcast),
                     )
@@ -708,11 +709,31 @@ private fun getSkipModeDisplayName(mode: SkipMode): String =
 private fun BufferSizeSelectorItem(selectedSizeMb: Int, onSizeSelected: (Int) -> Unit) {
     val options =
         listOf(
-            Triple(32, "32 MB", stringResource(R.string.buffer_desc_minimal)),
-            Triple(64, "64 MB", stringResource(R.string.buffer_desc_default)),
-            Triple(128, "128 MB", stringResource(R.string.buffer_desc_slow_networks)),
-            Triple(256, "256 MB", stringResource(R.string.buffer_desc_high)),
-            Triple(512, "512 MB", stringResource(R.string.buffer_desc_extreme)),
+            Triple(
+                32,
+                stringResource(R.string.unit_megabytes_fmt, 32),
+                stringResource(R.string.buffer_desc_minimal),
+            ),
+            Triple(
+                64,
+                stringResource(R.string.unit_megabytes_fmt, 64),
+                stringResource(R.string.buffer_desc_default),
+            ),
+            Triple(
+                128,
+                stringResource(R.string.unit_megabytes_fmt, 128),
+                stringResource(R.string.buffer_desc_slow_networks),
+            ),
+            Triple(
+                256,
+                stringResource(R.string.unit_megabytes_fmt, 256),
+                stringResource(R.string.buffer_desc_high),
+            ),
+            Triple(
+                512,
+                stringResource(R.string.unit_megabytes_fmt, 512),
+                stringResource(R.string.buffer_desc_extreme),
+            ),
         )
 
     val initialIndex = options.indexOfFirst { it.first == selectedSizeMb }.coerceAtLeast(0)

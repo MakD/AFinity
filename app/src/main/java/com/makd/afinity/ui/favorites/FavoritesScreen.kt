@@ -300,7 +300,7 @@ fun FavoritesScreen(
                             if (uiState.favoriteAlbums.isNotEmpty()) {
                                 item {
                                     MusicAlbumRowSection(
-                                        title = "Favorite Albums",
+                                        title = stringResource(R.string.favorites_albums),
                                         albums = uiState.favoriteAlbums,
                                         horizontalPadding = 0.dp,
                                         onAlbumClick = { album ->
@@ -319,7 +319,7 @@ fun FavoritesScreen(
                             if (uiState.favoriteArtists.isNotEmpty()) {
                                 item {
                                     MusicArtistsRow(
-                                        title = "Favorite Artists",
+                                        title = stringResource(R.string.favorites_artists),
                                         artists = uiState.favoriteArtists,
                                         horizontalPadding = 0.dp,
                                         onArtistClick = { artist ->
@@ -564,7 +564,7 @@ private fun FavoriteTracksSection(
     onViewAllClick: (() -> Unit)? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        SectionRowHeader(title = "Favorite Songs", onViewAllClick = onViewAllClick)
+        SectionRowHeader(title = stringResource(R.string.favorites_songs), onViewAllClick = onViewAllClick)
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
@@ -683,7 +683,7 @@ internal fun FavoriteTrackCard(
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text("Play Instant Mix") },
+                            text = { Text(stringResource(R.string.music_action_play_instant_mix)) },
                             onClick = {
                                 showMenu = false
                                 onInstantMix()
@@ -697,7 +697,7 @@ internal fun FavoriteTrackCard(
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text("Play Next") },
+                            text = { Text(stringResource(R.string.music_action_play_next)) },
                             onClick = {
                                 showMenu = false
                                 onAddNext()
@@ -711,7 +711,7 @@ internal fun FavoriteTrackCard(
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text("Add to Queue") },
+                            text = { Text(stringResource(R.string.music_action_add_to_queue)) },
                             onClick = {
                                 showMenu = false
                                 onAddLast()

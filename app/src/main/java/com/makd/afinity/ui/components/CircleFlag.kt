@@ -7,11 +7,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.svg.SvgDecoder
+import com.makd.afinity.R
 import java.util.Locale
 
 internal val languageToCountry: Map<String, String> =
@@ -355,7 +357,7 @@ internal fun CircleFlagIcon(url: String, modifier: Modifier = Modifier, size: Dp
                 .decoderFactory(SvgDecoder.Factory())
                 .crossfade(true)
                 .build(),
-        contentDescription = "Flag",
+        contentDescription = stringResource(R.string.cd_flag),
         modifier = modifier.size(size).clip(CircleShape),
         contentScale = ContentScale.Crop,
     )

@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -71,9 +72,10 @@ import com.makd.afinity.ui.item.components.shared.AdminAction
 import com.makd.afinity.ui.item.components.shared.MediaLanguageFlagsSection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelectionButton
+import com.makd.afinity.util.DateSkeleton
+import com.makd.afinity.util.localizedDateFormat
 import com.makd.afinity.util.rememberStorageLocationProvider
 import org.jellyfin.sdk.model.api.MediaStreamType
-import java.text.SimpleDateFormat
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Date
@@ -282,7 +284,11 @@ fun EpisodeDetailOverlay(
                 if ((episode.partCount ?: 0) > 1) {
                     if (needsSeparator) MetadataDot()
                     Text(
-                        text = stringResource(R.string.meta_parts_fmt, episode.partCount!!),
+                        text = pluralStringResource(
+                                R.plurals.meta_parts_fmt,
+                                episode.partCount!!,
+                                episode.partCount,
+                            ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -666,14 +672,8 @@ private fun getFormattedEndTime(context: Context, totalMs: Long): String {
 
     return if (totalMs > twentyFourHoursMs) {
         val is24Hour = DateFormat.is24HourFormat(context)
-        val pattern =
-            if (is24Hour) {
-                "EEE, dd MMM, HH:mm"
-            } else {
-                "EEE, dd MMM, h:mm a"
-            }
-        val formatter = SimpleDateFormat(pattern, Locale.getDefault())
-        formatter.format(endDate)
+        val skeleton = DateSkeleton.withTime(DateSkeleton.WEEKDAY_MONTH_DAY, is24Hour)
+        localizedDateFormat(Locale.getDefault(), skeleton).format(endDate)
     } else {
         DateFormat.getTimeFormat(context).format(endDate)
     }

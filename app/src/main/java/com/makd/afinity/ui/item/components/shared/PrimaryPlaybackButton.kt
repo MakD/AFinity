@@ -96,7 +96,7 @@ fun PrimaryPlaybackButton(
                     modifier = Modifier.size(24.dp),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("No playable item found on server")
+                Text(stringResource(R.string.play_error_missing_source))
             }
         }
         return

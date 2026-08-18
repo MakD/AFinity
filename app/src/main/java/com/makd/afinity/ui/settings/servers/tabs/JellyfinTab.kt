@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -98,9 +99,11 @@ internal fun JellyfinTabContent(
                 ) {
                     Text(
                         text =
-                            if (otherCount > 1)
-                                stringResource(R.string.server_more_users_plural_fmt, otherCount)
-                            else stringResource(R.string.server_more_users_fmt, otherCount),
+                            pluralStringResource(
+                                R.plurals.server_more_users,
+                                otherCount,
+                                otherCount,
+                            ),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),

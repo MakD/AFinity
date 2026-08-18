@@ -38,6 +38,7 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.segments.SegmentsRepository
 import com.makd.afinity.di.DownloadClient
+import com.makd.afinity.util.formatFileSize
 import com.makd.afinity.util.parseDashlessUuid
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -926,9 +927,15 @@ constructor(
     private fun ensureNotificationChannel() {
         val channelId = "download_channel"
         val channel =
-            NotificationChannel(channelId, "Downloads", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Background download tasks"
-            }
+            NotificationChannel(
+                    channelId,
+                    applicationContext.getString(R.string.notif_channel_downloads),
+                    NotificationManager.IMPORTANCE_LOW,
+                )
+                .apply {
+                    description =
+                        applicationContext.getString(R.string.notif_channel_downloads_desc)
+                }
         (applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
             .createNotificationChannel(channel)
     }
@@ -943,7 +950,7 @@ constructor(
         val notification =
             NotificationCompat.Builder(context, channelId)
                 .setContentTitle(title)
-                .setContentText("Queued")
+                .setContentText(context.getString(R.string.download_status_queued))
                 .apply { if (!subText.isNullOrBlank()) setSubText(subText) }
                 .setSmallIcon(R.drawable.ic_download)
                 .setOngoing(true)
@@ -951,12 +958,12 @@ constructor(
                 .setContentIntent(downloadNotificationManager.downloadsContentIntent())
                 .addAction(
                     R.drawable.ic_player_pause_filled,
-                    "Pause",
+                    context.getString(R.string.notif_action_pause),
                     downloadNotificationManager.pauseActionIntent(downloadId),
                 )
                 .addAction(
                     R.drawable.ic_cancel,
-                    "Cancel",
+                    context.getString(R.string.action_cancel),
                     downloadNotificationManager.cancelActionIntent(downloadId),
                 )
                 .setProgress(0, 0, true)
@@ -983,9 +990,13 @@ constructor(
         val progressText =
             if (totalBytes > 0) {
                 "${downloadedBytes * 100 / totalBytes}% • " +
-                    "${formatBytes(downloadedBytes)} / ${formatBytes(totalBytes)}"
+                    context.getString(
+                        R.string.notif_download_progress_fmt,
+                        formatFileSize(context, downloadedBytes),
+                        formatFileSize(context, totalBytes),
+                    )
             } else {
-                "Starting..."
+                context.getString(R.string.notif_download_starting)
             }
 
         val notification =
@@ -1009,12 +1020,12 @@ constructor(
                 .setContentIntent(downloadNotificationManager.downloadsContentIntent())
                 .addAction(
                     R.drawable.ic_player_pause_filled,
-                    "Pause",
+                    context.getString(R.string.notif_action_pause),
                     downloadNotificationManager.pauseActionIntent(downloadId),
                 )
                 .addAction(
                     R.drawable.ic_cancel,
-                    "Cancel",
+                    context.getString(R.string.action_cancel),
                     downloadNotificationManager.cancelActionIntent(downloadId),
                 )
                 .setProgress(
@@ -1105,14 +1116,4 @@ constructor(
             null
         }
     }
-
-    private fun formatBytes(bytes: Long): String =
-        when {
-            bytes < 1024 -> "$bytes B"
-            bytes < 1024 * 1024 -> String.format(Locale.getDefault(), "%.1f KB", bytes / 1024.0)
-            bytes < 1024L * 1024 * 1024 ->
-                String.format(Locale.getDefault(), "%.1f MB", bytes / (1024.0 * 1024.0))
-            else ->
-                String.format(Locale.getDefault(), "%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0))
-        }
 }

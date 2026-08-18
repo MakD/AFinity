@@ -41,6 +41,7 @@ import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -62,8 +63,9 @@ import com.makd.afinity.data.models.jellyseerr.RequestStatus
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
 import com.makd.afinity.data.models.jellyseerr.ServiceTag
 import com.makd.afinity.data.models.jellyseerr.SonarrSeries
+import com.makd.afinity.util.DateSkeleton
+import com.makd.afinity.util.localizedDateFormatter
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.Locale
 
@@ -480,7 +482,7 @@ fun RequestConfirmationDialog(
                                 )
                             } else {
                                 Text(
-                                    text = "Seasons: All / First available",
+                                    text = stringResource(R.string.seerr_seasons_all_first_available),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -497,7 +499,7 @@ fun RequestConfirmationDialog(
                             )
                         } else if (is4k) {
                             Text(
-                                text = "Quality: 4K UHD",
+                                text = stringResource(R.string.seerr_quality_4k),
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary,
@@ -939,9 +941,10 @@ private fun QuotaIndicator(
             )
             Text(
                 text =
-                    stringResource(
-                        if (mediaType == MediaType.TV) R.string.request_quota_tv_remaining_fmt
-                        else R.string.request_quota_movie_remaining_fmt,
+                    pluralStringResource(
+                        if (mediaType == MediaType.TV) R.plurals.request_quota_tv_remaining_fmt
+                        else R.plurals.request_quota_movie_remaining_fmt,
+                        limit,
                         remaining,
                         limit,
                     ),
@@ -952,7 +955,7 @@ private fun QuotaIndicator(
                 ?.takeIf { it > 0 }
                 ?.let {
                     Text(
-                        text = stringResource(R.string.request_quota_period_fmt, it),
+                        text = pluralStringResource(R.plurals.request_quota_period_fmt, it, it),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1011,7 +1014,7 @@ fun <T> MinimalSelectionTile(
                 Spacer(modifier = Modifier.height(2.dp))
                 if (isLoading) {
                     Text(
-                        text = "Loading...",
+                        text = stringResource(R.string.status_loading),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     )
@@ -1029,7 +1032,7 @@ fun <T> MinimalSelectionTile(
 
             Icon(
                 painterResource(id = R.drawable.ic_keyboard_arrow_down),
-                contentDescription = "Select",
+                contentDescription = stringResource(R.string.cd_select),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp),
             )
@@ -1111,7 +1114,7 @@ fun <T> MinimalMultiSelectTile(
 
             Icon(
                 painterResource(id = R.drawable.ic_keyboard_arrow_down),
-                contentDescription = "Select",
+                contentDescription = stringResource(R.string.cd_select),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp),
             )
@@ -1278,7 +1281,7 @@ private fun formatReleaseDate(dateString: String): String {
     if (dateString.isBlank()) return ""
     return try {
         val date = LocalDate.parse(dateString)
-        date.format(DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.US))
+        date.format(localizedDateFormatter(Locale.getDefault(), DateSkeleton.MONTH_DAY_YEAR))
     } catch (e: DateTimeParseException) {
         dateString
     }

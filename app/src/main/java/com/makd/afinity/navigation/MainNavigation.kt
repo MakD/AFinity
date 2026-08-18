@@ -332,13 +332,13 @@ fun MainNavigation(
                                                 destination.unselectedIconRes
                                             }
                                     ),
-                                contentDescription = destination.title,
+                                contentDescription = stringResource(destination.titleRes),
                             )
                         },
                         label = {
                             if (selected) {
                                 Text(
-                                    text = destination.title,
+                                    text = stringResource(destination.titleRes),
                                     style = MaterialTheme.typography.labelSmall,
                                 )
                             }

@@ -202,7 +202,7 @@ private fun PresetSpeedItem(speed: Float, isSelected: Boolean, onClick: () -> Un
 
         if (speed == 1.0f) {
             Text(
-                text = "Normal",
+                text = stringResource(R.string.abs_speed_normal),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

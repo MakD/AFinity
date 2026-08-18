@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -215,7 +216,11 @@ internal fun ActiveConnectionCard(
                 if (totalAddresses > 1) {
                     Text(
                         text =
-                            stringResource(R.string.server_backup_routes_fmt, totalAddresses - 1),
+                            pluralStringResource(
+                                R.plurals.server_backup_routes_fmt,
+                                totalAddresses - 1,
+                                totalAddresses - 1,
+                            ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 2.dp),
@@ -593,8 +598,9 @@ internal fun DeleteServerConfirmationDialog(
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
                                 text =
-                                    stringResource(
-                                        R.string.dialog_delete_server_warning_fmt,
+                                    pluralStringResource(
+                                        R.plurals.dialog_delete_server_warning_fmt,
+                                        serverWithCount.userCount,
                                         serverWithCount.userCount,
                                     ),
                                 style = MaterialTheme.typography.bodyMedium,

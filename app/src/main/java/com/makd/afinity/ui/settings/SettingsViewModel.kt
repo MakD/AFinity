@@ -644,7 +644,7 @@ constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setDefaultVideoZoomMode(mode)
-                Timber.d("Default video zoom mode set to: ${mode.getDisplayName()}")
+                Timber.d("Default video zoom mode set to: ${mode.name}")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set default video zoom mode")
             }
@@ -655,7 +655,7 @@ constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setMpvGpuApi(gpuApi)
-                Timber.d("MPV GPU API set to: ${gpuApi.getDisplayName()}")
+                Timber.d("MPV GPU API set to: ${gpuApi.value}")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set MPV GPU API")
             }
@@ -666,7 +666,7 @@ constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setMpvHdrOutput(hdrOutput)
-                Timber.d("MPV HDR output set to: ${hdrOutput.getDisplayName()}")
+                Timber.d("MPV HDR output set to: ${hdrOutput.value}")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set MPV HDR output")
             }
@@ -677,7 +677,7 @@ constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setAssRenderMode(mode)
-                Timber.d("ASS render mode set to: ${mode.getDisplayName()}")
+                Timber.d("ASS render mode set to: ${mode.value}")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set ASS render mode")
             }
@@ -688,7 +688,7 @@ constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setMpvToneMapping(toneMapping)
-                Timber.d("MPV tone mapping set to: ${toneMapping.getDisplayName()}")
+                Timber.d("MPV tone mapping set to: ${toneMapping.value}")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set MPV tone mapping")
             }
@@ -710,7 +710,7 @@ constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setMpvHwDec(hwDec)
-                Timber.d("MPV hardware decoding set to: ${hwDec.getDisplayName()}")
+                Timber.d("MPV hardware decoding set to: ${hwDec.value}")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set MPV hardware decoding")
             }
@@ -721,7 +721,7 @@ constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setMpvVideoOutput(videoOutput)
-                Timber.d("MPV video output set to: ${videoOutput.getDisplayName()}")
+                Timber.d("MPV video output set to: ${videoOutput.value}")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set MPV video output")
             }
@@ -732,7 +732,7 @@ constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setMpvAudioOutput(audioOutput)
-                Timber.d("MPV audio output set to: ${audioOutput.getDisplayName()}")
+                Timber.d("MPV audio output set to: ${audioOutput.value}")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set MPV audio output")
             }

@@ -22,7 +22,6 @@ constructor(@param:ApplicationContext private val context: Context) {
 
     companion object {
         private const val CHANNEL_ID = "app_updates"
-        private const val CHANNEL_NAME = "App Updates"
         private const val NOTIFICATION_ID = 1001
         const val EXTRA_AUTO_DOWNLOAD_UPDATE = "auto_download_update"
     }
@@ -33,9 +32,13 @@ constructor(@param:ApplicationContext private val context: Context) {
 
     private fun createNotificationChannel() {
         val channel =
-            NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT)
+            NotificationChannel(
+                    CHANNEL_ID,
+                    context.getString(R.string.notif_channel_updates),
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                )
                 .apply {
-                    description = "Notifications for app updates"
+                    description = context.getString(R.string.notif_channel_updates_desc)
                     enableLights(true)
                     enableVibration(true)
                 }
@@ -70,11 +73,18 @@ constructor(@param:ApplicationContext private val context: Context) {
         val notification =
             NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_system_update)
-                .setContentTitle("Update Available")
-                .setContentText("Version ${release.tagName} is now available")
+                .setContentTitle(context.getString(R.string.notif_update_available_title))
+                .setContentText(
+                    context.getString(R.string.notif_update_available_fmt, release.tagName)
+                )
                 .setStyle(
                     NotificationCompat.BigTextStyle()
-                        .bigText("Version ${release.tagName} is now available. Tap to download.")
+                        .bigText(
+                            context.getString(
+                                R.string.notif_update_tap_to_download_fmt,
+                                release.tagName,
+                            )
+                        )
                 )
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setContentIntent(pendingIntent)

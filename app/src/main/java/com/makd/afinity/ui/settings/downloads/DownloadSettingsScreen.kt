@@ -60,6 +60,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -115,8 +116,9 @@ fun DownloadSettingsScreen(
             if (usage.isEmpty) {
                 stringResource(R.string.pref_clear_cache_empty)
             } else {
-                stringResource(
-                    R.string.pref_clear_cache_usage_total_fmt,
+                pluralStringResource(
+                    R.plurals.pref_clear_cache_usage_total_fmt,
+                    usage.metadataEntries,
                     android.text.format.Formatter.formatShortFileSize(context, usage.totalBytes),
                     usage.metadataEntries,
                 )
@@ -1394,7 +1396,12 @@ fun AbsPodcastGroupRow(
     val totalBytes = episodes.sumOf { it.bytesDownloaded }
     val count = episodes.size
     val subtitleText =
-        "$count episode${if (count > 1) "s" else ""} \u00B7 ${formatSize(totalBytes)}"
+        pluralStringResource(
+            R.plurals.download_group_episodes_fmt,
+            count,
+            count,
+            formatSize(totalBytes),
+        )
 
     DownloadListItemRow(
         imageUrl = first.coverUrl,
@@ -1546,7 +1553,13 @@ fun MusicAlbumGroupRow(
     val albumName = first.seriesName?.takeIf { it.isNotBlank() } ?: first.itemName
     val totalBytes = tracks.sumOf { it.totalBytes }
     val count = tracks.size
-    val subtitleText = "$count track${if (count > 1) "s" else ""} · ${formatSize(totalBytes)}"
+    val subtitleText =
+        pluralStringResource(
+            R.plurals.download_group_tracks_fmt,
+            count,
+            count,
+            formatSize(totalBytes),
+        )
 
     DownloadListItemRow(imageUrl = first.imageUrl, title = albumName, onDelete = onDelete) {
         Text(
@@ -1699,7 +1712,7 @@ private fun CacheSectionPicker(
                 if (bytes > 0L) {
                     android.text.format.Formatter.formatShortFileSize(context, bytes)
                 } else {
-                    stringResource(R.string.cache_entries_fmt, entries)
+                    pluralStringResource(R.plurals.cache_entries_fmt, entries, entries)
                 }
 
             Row(

@@ -82,7 +82,7 @@ fun EqualizerBottomSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "EQUALIZER",
+                    text = stringResource(R.string.abs_equalizer_header),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 2.sp,
@@ -155,7 +155,7 @@ fun EqualizerBottomSheet(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Auto-skip quiet sections",
+                            text = stringResource(R.string.abs_skip_silence_summary),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -208,12 +208,12 @@ fun EqualizerBottomSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = "0 dB",
+                    text = stringResource(R.string.unit_decibels_fmt, "0"),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "+10 dB",
+                    text = stringResource(R.string.unit_decibels_fmt, "+10"),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

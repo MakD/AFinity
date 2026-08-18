@@ -151,7 +151,7 @@ fun AudiobookshelfSeriesScreen(
                             item {
                                 Spacer(modifier = Modifier.statusBarsPadding())
                                 Text(
-                                    text = "Books",
+                                    text = stringResource(R.string.abs_books),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     modifier =
@@ -193,7 +193,7 @@ fun AudiobookshelfSeriesScreen(
 
                         item {
                             Text(
-                                text = "Books",
+                                text = stringResource(R.string.abs_books),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 modifier =

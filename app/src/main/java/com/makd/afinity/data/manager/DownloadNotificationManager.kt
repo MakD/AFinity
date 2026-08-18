@@ -11,9 +11,9 @@ import androidx.core.app.NotificationManagerCompat
 import com.makd.afinity.MainActivity
 import com.makd.afinity.R
 import com.makd.afinity.data.workers.DownloadActionReceiver
+import com.makd.afinity.util.formatFileSize
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
-import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -80,7 +80,7 @@ constructor(@param:ApplicationContext private val context: Context) {
         val notification =
             NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_download)
-                .setContentTitle("Downloads in progress")
+                .setContentTitle(context.getString(R.string.notif_downloads_in_progress))
                 .setGroup(GROUP_ACTIVE)
                 .setGroupSummary(true)
                 .setSilent(true)
@@ -123,12 +123,18 @@ constructor(@param:ApplicationContext private val context: Context) {
         sizeBytes: Long,
     ) {
         ensureChannel()
-        val sizeSuffix = if (sizeBytes > 0) " • ${formatBytes(sizeBytes)}" else ""
+        val completeText =
+            if (sizeBytes > 0)
+                context.getString(
+                    R.string.notif_download_complete_size_fmt,
+                    formatFileSize(context, sizeBytes),
+                )
+            else context.getString(R.string.notif_download_complete)
         val notification =
             NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_download)
                 .setContentTitle(title)
-                .setContentText("Download complete$sizeSuffix")
+                .setContentText(completeText)
                 .apply {
                     if (!subText.isNullOrBlank()) setSubText(subText)
                     if (largeIcon != null) setLargeIcon(largeIcon)
@@ -144,12 +150,15 @@ constructor(@param:ApplicationContext private val context: Context) {
 
     fun postFailed(notificationId: Int, title: String, subText: String?, error: String?) {
         ensureChannel()
-        val reason = error?.takeIf { it.isNotBlank() }?.let { ": $it" } ?: ""
+        val failedText =
+            error?.takeIf { it.isNotBlank() }?.let {
+                context.getString(R.string.notif_download_failed_reason_fmt, it)
+            } ?: context.getString(R.string.notif_download_failed)
         val notification =
             NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_download)
                 .setContentTitle(title)
-                .setContentText("Download failed$reason")
+                .setContentText(failedText)
                 .apply { if (!subText.isNullOrBlank()) setSubText(subText) }
                 .setGroup(GROUP_FINISHED)
                 .setAutoCancel(true)
@@ -164,7 +173,7 @@ constructor(@param:ApplicationContext private val context: Context) {
         val notification =
             NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_download)
-                .setContentTitle("Downloads finished")
+                .setContentTitle(context.getString(R.string.notif_downloads_finished))
                 .setGroup(GROUP_FINISHED)
                 .setGroupSummary(true)
                 .setAutoCancel(true)
@@ -176,9 +185,12 @@ constructor(@param:ApplicationContext private val context: Context) {
 
     private fun ensureChannel() {
         val channel =
-            NotificationChannel(CHANNEL_ID, "Downloads", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Background download tasks"
-            }
+            NotificationChannel(
+                    CHANNEL_ID,
+                    context.getString(R.string.notif_channel_downloads),
+                    NotificationManager.IMPORTANCE_LOW,
+                )
+                .apply { description = context.getString(R.string.notif_channel_downloads_desc) }
         notificationManager.createNotificationChannel(channel)
     }
 
@@ -195,14 +207,4 @@ constructor(@param:ApplicationContext private val context: Context) {
             Timber.w(e, "Notification permission missing, skipping download notification")
         }
     }
-
-    private fun formatBytes(bytes: Long): String =
-        when {
-            bytes < 1024 -> "$bytes B"
-            bytes < 1024 * 1024 -> String.format(Locale.getDefault(), "%.1f KB", bytes / 1024.0)
-            bytes < 1024L * 1024 * 1024 ->
-                String.format(Locale.getDefault(), "%.1f MB", bytes / (1024.0 * 1024.0))
-            else ->
-                String.format(Locale.getDefault(), "%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0))
-        }
 }

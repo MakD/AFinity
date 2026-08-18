@@ -159,7 +159,7 @@ private fun TimerTile(minutes: Int, onClick: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                text = "min",
+                text = stringResource(R.string.unit_minutes_short),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

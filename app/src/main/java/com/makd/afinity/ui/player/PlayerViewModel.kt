@@ -87,6 +87,7 @@ import com.makd.afinity.player.common.TrackMapping
 import com.makd.afinity.player.common.TrackSelection
 import com.makd.afinity.player.mpv.MPVPlayer
 import com.makd.afinity.ui.player.utils.VolumeManager
+import com.makd.afinity.util.formatFileSize
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.peerless2012.ass.media.AssHandler
@@ -1282,7 +1283,11 @@ constructor(
                     droppedFrames = exoDroppedFrames,
                     hwDec = exoVideoDecoder,
                     bufferHealth =
-                        context.getString(R.string.playback_stats_value_seconds_fmt, bufferSeconds),
+                        context.resources.getQuantityString(
+                    R.plurals.playback_stats_value_seconds_fmt,
+                    bufferSeconds.toInt(),
+                    bufferSeconds,
+                ),
                     videoBitrate = videoBitrate,
                 )
             }
@@ -1370,7 +1375,11 @@ constructor(
                     hwDec =
                         if ((hwdecCurrent ?: "no").contains("mediacodec")) "H/W Dec" else "S/W Dec",
                     bufferHealth =
-                        context.getString(R.string.playback_stats_value_seconds_fmt, bufferSeconds),
+                        context.resources.getQuantityString(
+                    R.plurals.playback_stats_value_seconds_fmt,
+                    bufferSeconds.toInt(),
+                    bufferSeconds,
+                ),
                     videoBitrate =
                         if (bitrateMbps > 0) String.format(Locale.US, "%.1f Mbps", bitrateMbps)
                         else "Unknown",
@@ -1459,13 +1468,7 @@ constructor(
             ""
         }
 
-    private fun formatSize(bytes: Long): String =
-        when {
-            bytes >= 1024L * 1024 * 1024 ->
-                String.format(Locale.US, "%.1f GB", bytes / (1024f * 1024f * 1024f))
-            bytes >= 1024 * 1024 -> String.format(Locale.US, "%.0f MB", bytes / (1024f * 1024f))
-            else -> "$bytes B"
-        }
+    private fun formatSize(bytes: Long): String = formatFileSize(context, bytes)
 
     private fun currentPlayMethod(): String {
         val state = _uiState.value

@@ -44,11 +44,11 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
 import com.makd.afinity.ui.components.ListPickerDialog
-import java.text.SimpleDateFormat
+import com.makd.afinity.util.DateSkeleton
+import com.makd.afinity.util.localizedDateFormat
 import java.util.Date
 import java.util.Locale
 
-private val episodeDateFormatter = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
 
 fun LazyListScope.episodeListItems(
     episodes: List<PodcastEpisode>,
@@ -332,7 +332,8 @@ fun HtmlText(
 }
 
 private fun formatDate(timestamp: Long): String {
-    return episodeDateFormatter.format(Date(timestamp))
+    val locale = Locale.getDefault()
+    return localizedDateFormat(locale, DateSkeleton.MONTH_DAY_YEAR).format(Date(timestamp))
 }
 
 private fun formatDuration(seconds: Double): String {

@@ -1,5 +1,6 @@
 package com.makd.afinity.data.models
 
+import androidx.annotation.StringRes
 import com.makd.afinity.R
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
@@ -45,13 +46,13 @@ enum class CustomSectionItemType(
     }
 }
 
-enum class CustomSectionSourceType {
-    GENRE,
-    STUDIO,
-    TAG,
-    COLLECTION,
-    PLAYLIST,
-    LIBRARY;
+enum class CustomSectionSourceType(@param:StringRes val labelRes: Int) {
+    GENRE(R.string.custom_sections_source_genre),
+    STUDIO(R.string.custom_sections_source_studio),
+    TAG(R.string.custom_sections_source_tag),
+    COLLECTION(R.string.custom_sections_source_collection),
+    PLAYLIST(R.string.custom_sections_source_playlist),
+    LIBRARY(R.string.custom_sections_source_library);
 
     val supportsMultipleSources: Boolean
         get() = this == GENRE || this == STUDIO || this == TAG
@@ -82,11 +83,11 @@ fun LibraryFilters.scopedTo(sourceType: CustomSectionSourceType): LibraryFilters
         )
     }
 
-enum class CustomSectionCardStyle {
-    PORTRAIT,
-    LANDSCAPE,
-    SQUARE,
-    SPOTLIGHT,
+enum class CustomSectionCardStyle(@param:StringRes val labelRes: Int) {
+    PORTRAIT(R.string.custom_sections_card_portrait),
+    LANDSCAPE(R.string.custom_sections_card_landscape),
+    SQUARE(R.string.custom_sections_card_square),
+    SPOTLIGHT(R.string.custom_sections_card_spotlight),
 }
 
 data class CustomHomeSection(

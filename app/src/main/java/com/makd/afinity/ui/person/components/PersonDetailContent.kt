@@ -58,6 +58,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -491,8 +492,9 @@ private fun PersonMetadataSection(
                                         java.time.LocalDate.now(),
                                     )
                                     .years
-                            stringResource(
-                                R.string.person_born_fmt,
+                            pluralStringResource(
+                                R.plurals.person_born_fmt,
+                                age,
                                 birthday.format(formatter),
                                 age,
                             )
@@ -511,8 +513,9 @@ private fun PersonMetadataSection(
                 Text(
                     text =
                         if (age != null) {
-                            stringResource(
-                                R.string.person_died_fmt,
+                            pluralStringResource(
+                                R.plurals.person_died_fmt,
+                                age,
                                 deathDate.format(formatter),
                                 age,
                             )

@@ -59,10 +59,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -99,6 +101,8 @@ import com.makd.afinity.ui.components.SettingsSwitchItem
 import com.makd.afinity.ui.components.filter.SearchableChipMultiSelect
 import com.makd.afinity.ui.library.LibraryFilterBottomSheet
 import com.makd.afinity.ui.library.LibraryFilterCapabilities
+import com.makd.afinity.util.DateSkeleton
+import com.makd.afinity.util.localizedDateFormatter
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import java.time.LocalDate
@@ -117,6 +121,7 @@ fun CustomSectionsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val playerOffset = LocalPlayerOffset.current
     val locale = LocalConfiguration.current.locales[0]
+    val context = LocalContext.current
 
     var editing by remember { mutableStateOf<CustomHomeSection?>(null) }
     var editingIsNew by remember { mutableStateOf(false) }
@@ -301,7 +306,7 @@ fun CustomSectionsScreen(
                 editingIsNew = true
                 choosingTemplate = false
             },
-            onPreset = { viewModel.requestPreset(it) },
+            onPreset = { viewModel.requestPreset(it, context.getString(it.titleRes)) },
             onDismiss = { choosingTemplate = false },
         )
     }
@@ -403,7 +408,7 @@ private fun CustomSectionRow(
                 Text(
                     text =
                         listOfNotNull(
-                                sourceTypeLabel(section.sourceType, locale),
+                                stringResource(section.sourceType.labelRes),
                                 sourceLabels?.takeIf { it.isNotEmpty() }?.joinToString(", "),
                             )
                             .joinToString(" · "),
@@ -468,7 +473,6 @@ private fun ColumnScope.CustomSectionEditor(
     onSave: (CustomHomeSection) -> Unit,
     onDelete: (() -> Unit)?,
 ) {
-    val locale = LocalConfiguration.current.locales[0]
     var draft by remember(section.id) { mutableStateOf(section.withSanitizedItemTypes()) }
     var sourceQuery by remember(section.id) { mutableStateOf("") }
     val options = optionsFor(draft.sourceType)
@@ -538,8 +542,8 @@ private fun ColumnScope.CustomSectionEditor(
             SettingsDivider()
             DropdownSelectorItem(
                 title = stringResource(R.string.custom_sections_field_source_type),
-                selectedLabel = sourceTypeLabel(draft.sourceType, locale),
-                entries = CustomSectionSourceType.entries.map { sourceTypeLabel(it, locale) to it },
+                selectedLabel = stringResource(draft.sourceType.labelRes),
+                entries = CustomSectionSourceType.entries.map { stringResource(it.labelRes) to it },
                 isSelected = { it == draft.sourceType },
                 onSelect = {
                     draft = draft.withSourceType(it)
@@ -616,11 +620,11 @@ private fun ColumnScope.CustomSectionEditor(
             if (lockedStyle == null) {
                 DropdownSelectorItem(
                     title = stringResource(R.string.custom_sections_field_card_style),
-                    selectedLabel = cardStyleLabel(draft.cardStyle, locale),
+                    selectedLabel = stringResource(draft.cardStyle.labelRes),
                     entries =
                         CustomSectionCardStyle.entries
                             .filterNot { it == CustomSectionCardStyle.SQUARE }
-                            .map { cardStyleLabel(it, locale) to it },
+                            .map { stringResource(it.labelRes) to it },
                     isSelected = { it == draft.cardStyle },
                     onSelect = { draft = draft.copy(cardStyle = it) },
                 )
@@ -630,7 +634,7 @@ private fun ColumnScope.CustomSectionEditor(
                     subtitle =
                         stringResource(
                             R.string.custom_sections_card_style_locked_fmt,
-                            cardStyleLabel(lockedStyle, locale),
+                            stringResource(lockedStyle.labelRes),
                         ),
                 )
             }
@@ -639,12 +643,12 @@ private fun ColumnScope.CustomSectionEditor(
                 title = stringResource(R.string.custom_sections_field_sort),
                 selectedLabel =
                     if (draft.randomOrder) stringResource(R.string.custom_sections_sort_random)
-                    else sortLabel(draft.sortBy, locale),
+                    else stringResource(draft.sortBy.labelRes),
                 entries =
                     listOf(stringResource(R.string.custom_sections_sort_random) to null) +
                         SortBy.entries
                             .filterNot { it == SortBy.RANDOM }
-                            .map { sortLabel(it, locale) to it },
+                            .map { stringResource(it.labelRes) to it },
                 isSelected = {
                     if (it == null) draft.randomOrder else !draft.randomOrder && it == draft.sortBy
                 },
@@ -756,7 +760,12 @@ private fun refineSummary(filters: LibraryFilters): String {
     return if (filters.activeCount <= 2) {
         lead
     } else {
-        stringResource(R.string.custom_sections_refine_summary_fmt, lead, filters.activeCount)
+        pluralStringResource(
+            R.plurals.custom_sections_refine_summary_fmt,
+            filters.activeCount,
+            lead,
+            filters.activeCount,
+        )
     }
 }
 
@@ -860,7 +869,7 @@ private fun AddSectionDialog(
             SeasonalPreset.entries.forEachIndexed { index, preset ->
                 if (index > 0) SettingsDivider()
                 SettingsItem(
-                    title = preset.defaultTitle,
+                    title = stringResource(preset.titleRes),
                     subtitle =
                         stringResource(
                             R.string.custom_sections_preset_range_fmt,
@@ -874,10 +883,19 @@ private fun AddSectionDialog(
     }
 }
 
+private fun monthDayLabel(
+    month: Int,
+    day: Int,
+    locale: Locale,
+    skeleton: String = DateSkeleton.MONTH_DAY,
+): String =
+    MonthDay.of(month, day.coerceIn(1, Month.of(month).maxLength()))
+        .format(localizedDateFormatter(locale, skeleton))
+
 private fun monthDayLabel(value: String, locale: Locale): String {
     val month = value.substringBefore('-').toIntOrNull()?.coerceIn(1, 12) ?: 1
-    val day = value.substringAfter('-', "").toIntOrNull()?.coerceIn(1, 31) ?: 1
-    return "${Month.of(month).getDisplayName(TextStyle.SHORT, locale)} $day"
+    val day = value.substringAfter('-', "").toIntOrNull() ?: 1
+    return monthDayLabel(month, day, locale)
 }
 
 @Composable
@@ -1153,7 +1171,7 @@ private fun MonthDayPickerItem(label: String, value: String, onValueChange: (Str
 
     SettingsItem(
         title = label,
-        subtitle = "${Month.of(month).getDisplayName(TextStyle.FULL, locale)} $day",
+        subtitle = monthDayLabel(month, day, locale, DateSkeleton.MONTH_DAY_LONG),
         onClick = { picking = true },
     )
 
@@ -1420,8 +1438,7 @@ private fun formatSeasonRange(start: String, end: String, locale: Locale): Strin
         val month = value.substringBefore('-').toIntOrNull() ?: return null
         val day = value.substringAfter('-', "").toIntOrNull() ?: return null
         if (month !in 1..12) return null
-        val monthName = Month.of(month).getDisplayName(TextStyle.SHORT, locale)
-        return "$monthName $day"
+        return monthDayLabel(month, day, locale)
     }
     val from = label(start)
     val to = label(end)
@@ -1430,15 +1447,3 @@ private fun formatSeasonRange(start: String, end: String, locale: Locale): Strin
 
 private fun formatMonthDay(month: Int, day: Int): String = "%02d-%02d".format(Locale.US, month, day)
 
-private fun titleCaseWords(raw: String, locale: Locale): String =
-    raw.split('_').joinToString(" ") { word ->
-        word.lowercase(locale).replaceFirstChar { it.titlecase(locale) }
-    }
-
-private fun sourceTypeLabel(type: CustomSectionSourceType, locale: Locale): String =
-    titleCaseWords(type.name, locale)
-
-private fun cardStyleLabel(style: CustomSectionCardStyle, locale: Locale): String =
-    titleCaseWords(style.name, locale)
-
-private fun sortLabel(sortBy: SortBy, locale: Locale): String = titleCaseWords(sortBy.name, locale)

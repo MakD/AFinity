@@ -1,6 +1,7 @@
 package com.makd.afinity.ui.settings.update
 
 import android.content.Context
+import android.text.format.DateFormat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.BuildConfig
@@ -11,6 +12,8 @@ import com.makd.afinity.data.updater.UpdateScheduler
 import com.makd.afinity.data.updater.models.GitHubRelease
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import com.makd.afinity.data.updater.models.UpdateState
+import com.makd.afinity.util.DateSkeleton
+import com.makd.afinity.util.localizedDateFormat
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +21,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
@@ -103,8 +105,12 @@ constructor(
     }
 
     private fun formatTimestamp(timestamp: Long): String {
-        val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
-        return sdf.format(Date(timestamp))
+        val skeleton =
+            DateSkeleton.withTime(
+                DateSkeleton.MONTH_DAY_YEAR,
+                DateFormat.is24HourFormat(context),
+            )
+        return localizedDateFormat(Locale.getDefault(), skeleton).format(Date(timestamp))
     }
 }
 

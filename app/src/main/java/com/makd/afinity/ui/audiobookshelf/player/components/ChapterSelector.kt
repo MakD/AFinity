@@ -65,7 +65,7 @@ fun ChapterSelector(
     ) {
         Column(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f).padding(top = 24.dp)) {
             Text(
-                text = "CHAPTERS",
+                text = stringResource(R.string.abs_chapters_header),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 modifier = Modifier.fillMaxWidth(),

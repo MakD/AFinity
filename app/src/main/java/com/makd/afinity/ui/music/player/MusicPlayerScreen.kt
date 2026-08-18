@@ -542,7 +542,7 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                         Icon(
                             painter = painterResource(R.drawable.ic_radio),
-                            contentDescription = "Start Radio",
+                            contentDescription = stringResource(R.string.cd_start_radio),
                             tint =
                                 if (isRadioActive) animatedColor
                                 else
@@ -698,7 +698,7 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_cast_devices),
-                                contentDescription = "Cast",
+                                contentDescription = stringResource(R.string.cd_cast),
                                 tint =
                                     if (isMusicCasting) animatedColor
                                     else Color.White.copy(alpha = 0.8f),

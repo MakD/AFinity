@@ -32,10 +32,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.makd.afinity.R
 import com.makd.afinity.data.models.syncplay.SyncPlayState
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.player.SyncPlayUiState
@@ -96,7 +99,7 @@ private fun InGroupContent(
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)) {
         Text(
-            text = "Watch Party",
+            text = stringResource(R.string.syncplay_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
         )
@@ -120,7 +123,11 @@ private fun InGroupContent(
 
         Text(
             text =
-                "${syncPlayState.members.size} member${if (syncPlayState.members.size == 1) "" else "s"}",
+                pluralStringResource(
+                    R.plurals.syncplay_member_count,
+                    syncPlayState.members.size,
+                    syncPlayState.members.size,
+                ),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
         )
@@ -148,7 +155,7 @@ private fun InGroupContent(
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(text = "Leave group")
+            Text(text = stringResource(R.string.syncplay_leave_group))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -168,7 +175,7 @@ private fun NotInGroupContent(
 
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)) {
         Text(
-            text = "Watch Party",
+            text = stringResource(R.string.syncplay_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
         )
@@ -178,7 +185,7 @@ private fun NotInGroupContent(
         AfinityTextField(
             value = groupName,
             onValueChange = { groupName = it },
-            label = "Group name",
+            label = stringResource(R.string.syncplay_group_name),
             enabled = !isJoining,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -197,9 +204,9 @@ private fun NotInGroupContent(
                     color = MaterialTheme.colorScheme.onPrimary,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "Joining…")
+                Text(text = stringResource(R.string.syncplay_joining))
             } else {
-                Text(text = "Create group")
+                Text(text = stringResource(R.string.syncplay_create_group))
             }
         }
 
@@ -222,11 +229,13 @@ private fun NotInGroupContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Active groups",
+                text = stringResource(R.string.syncplay_active_groups),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             )
-            TextButton(onClick = onRefreshGroups, enabled = !isJoining) { Text(text = "Refresh") }
+            TextButton(onClick = onRefreshGroups, enabled = !isJoining) {
+                Text(text = stringResource(R.string.action_refresh))
+            }
         }
 
         if (uiState.isLoadingGroups) {
@@ -239,7 +248,7 @@ private fun NotInGroupContent(
         } else if (uiState.availableGroups.isEmpty()) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "No active groups",
+                text = stringResource(R.string.syncplay_no_active_groups),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 modifier = Modifier.padding(vertical = 8.dp),
@@ -263,7 +272,7 @@ private fun NotInGroupContent(
             enabled = !isJoining,
             modifier = Modifier.align(Alignment.End),
         ) {
-            Text(text = "Cancel")
+            Text(text = stringResource(R.string.action_cancel))
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -289,7 +298,11 @@ private fun GroupRow(
             )
             Text(
                 text =
-                    "${group.participants.size} member${if (group.participants.size == 1) "" else "s"}",
+                    pluralStringResource(
+                        R.plurals.syncplay_member_count,
+                        group.participants.size,
+                        group.participants.size,
+                    ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             )
@@ -312,22 +325,22 @@ private fun GroupRow(
                     strokeWidth = 2.dp,
                 )
             } else {
-                Text(text = "Join")
+                Text(text = stringResource(R.string.action_join))
             }
         }
     }
 }
 
+@Composable
 private fun relativeTime(dateTime: LocalDateTime): String {
     val now = LocalDateTime.now()
     val minutes = ChronoUnit.MINUTES.between(dateTime, now).coerceAtLeast(0)
+    val hours = minutes / 60
     return when {
-        minutes < 1 -> "Active just now"
-        minutes < 60 -> "Active ${minutes}m ago"
-        else -> {
-            val hours = minutes / 60
-            if (hours < 24) "Active ${hours}h ago" else "Active ${hours / 24}d ago"
-        }
+        minutes < 1 -> stringResource(R.string.syncplay_active_just_now)
+        minutes < 60 -> stringResource(R.string.syncplay_active_minutes_fmt, minutes.toInt())
+        hours < 24 -> stringResource(R.string.syncplay_active_hours_fmt, hours.toInt())
+        else -> stringResource(R.string.syncplay_active_days_fmt, (hours / 24).toInt())
     }
 }
 
@@ -335,11 +348,17 @@ private fun relativeTime(dateTime: LocalDateTime): String {
 private fun GroupStateChip(state: GroupStateType) {
     val (label, color) =
         when (state) {
-            GroupStateType.IDLE -> "Ready" to MaterialTheme.colorScheme.secondary
-            GroupStateType.WAITING -> "Waiting…" to MaterialTheme.colorScheme.tertiary
-            GroupStateType.PAUSED -> "Paused" to MaterialTheme.colorScheme.outline
-            GroupStateType.PLAYING -> "Playing" to MaterialTheme.colorScheme.primary
-            else -> "Unknown" to MaterialTheme.colorScheme.outline
+            GroupStateType.IDLE ->
+                stringResource(R.string.syncplay_state_ready) to MaterialTheme.colorScheme.secondary
+            GroupStateType.WAITING ->
+                stringResource(R.string.syncplay_state_waiting) to
+                    MaterialTheme.colorScheme.tertiary
+            GroupStateType.PAUSED ->
+                stringResource(R.string.syncplay_state_paused) to MaterialTheme.colorScheme.outline
+            GroupStateType.PLAYING ->
+                stringResource(R.string.syncplay_state_playing) to MaterialTheme.colorScheme.primary
+            else ->
+                stringResource(R.string.syncplay_state_unknown) to MaterialTheme.colorScheme.outline
         }
     SuggestionChip(
         onClick = {},

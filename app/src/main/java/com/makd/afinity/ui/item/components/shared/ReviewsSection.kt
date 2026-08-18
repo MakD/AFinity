@@ -68,7 +68,7 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
-            text = "Reviews",
+            text = stringResource(R.string.reviews_title),
             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
         )
@@ -126,7 +126,7 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_star),
-                                contentDescription = "Rating",
+                                contentDescription = stringResource(R.string.cd_rating),
                                 tint = Color(0xFFFFD700),
                                 modifier = Modifier.size(18.dp),
                             )
@@ -201,7 +201,7 @@ private fun ReviewCard(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_star),
-                            contentDescription = "Rating",
+                            contentDescription = stringResource(R.string.cd_rating),
                             tint = Color(0xFFFFD700),
                             modifier = Modifier.size(16.dp),
                         )

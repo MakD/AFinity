@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -118,8 +119,9 @@ fun LiveTvChannelsTab(
                                 )
                                 Text(
                                     text =
-                                        stringResource(
-                                            R.string.livetv_count_fmt,
+                                        pluralStringResource(
+                                            R.plurals.livetv_count_fmt,
+                                            uiState.channels.size,
                                             uiState.channels.size,
                                         ),
                                     style = MaterialTheme.typography.bodyMedium,

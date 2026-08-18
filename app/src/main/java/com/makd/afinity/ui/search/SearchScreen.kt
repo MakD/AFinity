@@ -69,6 +69,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -483,7 +484,7 @@ private fun SearchTopBar(
         IconButton(onClick = onBackClick) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_chevron_left),
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.cd_back),
                 tint = MaterialTheme.colorScheme.onBackground,
             )
         }
@@ -779,7 +780,11 @@ private fun SearchResultsContent(
     ) {
         item {
             Text(
-                text = stringResource(R.string.search_results_count_fmt, results.size),
+                text = pluralStringResource(
+                        R.plurals.search_results_count_fmt,
+                        results.size,
+                        results.size,
+                    ),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1073,7 +1078,11 @@ private fun JellyseerrSearchResultsContent(
     ) {
         item {
             Text(
-                text = stringResource(R.string.search_results_count_fmt, results.size),
+                text = pluralStringResource(
+                        R.plurals.search_results_count_fmt,
+                        results.size,
+                        results.size,
+                    ),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1438,7 +1447,11 @@ private fun AudiobookshelfSearchResultsContent(
     ) {
         item {
             Text(
-                text = stringResource(R.string.search_results_count_fmt, results.size),
+                text = pluralStringResource(
+                        R.plurals.search_results_count_fmt,
+                        results.size,
+                        results.size,
+                    ),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

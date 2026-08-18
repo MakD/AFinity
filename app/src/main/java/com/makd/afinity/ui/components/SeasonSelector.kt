@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -42,7 +43,11 @@ fun SeasonSelector(
         if (disabledSeasons.isNotEmpty()) {
             Text(
                 text =
-                    "Season${if (disabledSeasons.size > 1) "s" else ""} ${disabledSeasons.joinToString(", ")} already available",
+                    pluralStringResource(
+                        R.plurals.season_already_available,
+                        disabledSeasons.size,
+                        disabledSeasons.joinToString(", "),
+                    ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.tertiary,
                 fontWeight = FontWeight.Medium,
@@ -109,7 +114,7 @@ fun SeasonSelector(
                                 if (isDisabled) {
                                     Icon(
                                         painter = painterResource(id = R.drawable.ic_check),
-                                        contentDescription = "Included",
+                                        contentDescription = stringResource(R.string.cd_included),
                                         modifier = Modifier.size(16.dp),
                                     )
                                 }
@@ -120,7 +125,7 @@ fun SeasonSelector(
             }
         } else {
             Text(
-                text = "No season information available. All seasons will be requested.",
+                text = stringResource(R.string.season_no_info),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = 4.dp),

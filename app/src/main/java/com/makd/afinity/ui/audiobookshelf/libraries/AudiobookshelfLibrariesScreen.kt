@@ -71,7 +71,7 @@ fun AudiobookshelfLibrariesScreen(
                 AfinityTopAppBar(
                     title = {
                         Text(
-                            text = "Audiobooks",
+                            text = stringResource(R.string.nav_audiobooks),
                             style =
                                 MaterialTheme.typography.headlineLarge.copy(
                                     fontWeight = FontWeight.Bold
@@ -111,7 +111,7 @@ fun AudiobookshelfLibrariesScreen(
             AfinityTopAppBar(
                 title = {
                     Text(
-                        text = "Audiobooks",
+                        text = stringResource(R.string.nav_audiobooks),
                         style =
                             MaterialTheme.typography.headlineLarge.copy(
                                 fontWeight = FontWeight.Bold

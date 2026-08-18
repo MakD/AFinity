@@ -1,53 +1,54 @@
 package com.makd.afinity.navigation
 
+import androidx.annotation.StringRes
 import com.makd.afinity.R
 import java.net.URLEncoder
 
 enum class Destination(
     val route: String,
-    val title: String,
+    @param:StringRes val titleRes: Int,
     val selectedIconRes: Int,
     val unselectedIconRes: Int,
 ) {
     HOME(
         route = "home",
-        title = "Home",
+        titleRes = R.string.nav_home,
         selectedIconRes = R.drawable.ic_home_filled,
         unselectedIconRes = R.drawable.ic_home,
     ),
     LIBRARIES(
         route = "libraries",
-        title = "Libraries",
+        titleRes = R.string.libraries_title,
         selectedIconRes = R.drawable.ic_video_library_filled,
         unselectedIconRes = R.drawable.ic_video_library,
     ),
     LIVE_TV(
         route = "live_tv",
-        title = "Live TV",
+        titleRes = R.string.livetv_title,
         selectedIconRes = R.drawable.ic_live_tv_filled_nav,
         unselectedIconRes = R.drawable.ic_live_tv_nav,
     ),
     FAVORITES(
         route = "favorites",
-        title = "Favorites",
+        titleRes = R.string.favorites_title,
         selectedIconRes = R.drawable.ic_favorite_filled,
         unselectedIconRes = R.drawable.ic_favorite,
     ),
     WATCHLIST(
         route = "watchlist",
-        title = "Watchlist",
+        titleRes = R.string.watchlist_title,
         selectedIconRes = R.drawable.ic_bookmarks_filled,
         unselectedIconRes = R.drawable.ic_bookmarks,
     ),
     REQUESTS(
         route = "requests",
-        title = "Requests",
+        titleRes = R.string.requests_title,
         selectedIconRes = R.drawable.ic_plus_filled,
         unselectedIconRes = R.drawable.ic_plus,
     ),
     AUDIOBOOKS(
         route = "audiobookshelf/libraries",
-        title = "Audiobooks",
+        titleRes = R.string.nav_audiobooks,
         selectedIconRes = R.drawable.ic_books_filled,
         unselectedIconRes = R.drawable.ic_books,
     );

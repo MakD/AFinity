@@ -392,7 +392,7 @@ fun PlayerControls(
                                 AsyncImage(
                                     imageUrl =
                                         displayItem.images.logoImageUrlWithTransparency.toString(),
-                                    contentDescription = "Logo",
+                                    contentDescription = stringResource(R.string.cd_logo),
                                     modifier = Modifier.height(60.dp).widthIn(max = 200.dp),
                                     contentScale = ContentScale.Fit,
                                     blurHash = null,
@@ -847,7 +847,7 @@ fun PlayerControls(
                                 androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp),
                         ) {
                             Text(
-                                text = "Manage group",
+                                text = stringResource(R.string.syncplay_manage_group),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.primary,
@@ -927,7 +927,7 @@ private fun TopControls(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_users_group),
-                            contentDescription = "Watch party",
+                            contentDescription = stringResource(R.string.cd_watch_party),
                             tint =
                                 if (isSyncPlay) MaterialTheme.colorScheme.primary else Color.White,
                             modifier = Modifier.size(24.dp),

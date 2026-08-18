@@ -717,7 +717,7 @@ private fun CastOptionsRow(
         IconButton(onClick = onShowQuality) {
             Icon(
                 painter = painterResource(R.drawable.ic_settings),
-                contentDescription = "Quality",
+                contentDescription = stringResource(R.string.cd_quality),
                 tint = Color.White.copy(alpha = 0.8f),
                 modifier = Modifier.size(24.dp),
             )
@@ -733,7 +733,7 @@ private fun CastOptionsRow(
         IconButton(onClick = onShowSubtitle) {
             Icon(
                 painter = painterResource(R.drawable.ic_subtitles),
-                contentDescription = "Subtitles",
+                contentDescription = stringResource(R.string.cd_subtitles),
                 tint = Color.White.copy(alpha = 0.8f),
                 modifier = Modifier.size(24.dp),
             )

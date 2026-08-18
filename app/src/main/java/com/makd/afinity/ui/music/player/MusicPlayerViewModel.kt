@@ -121,7 +121,11 @@ constructor(
             audioChannels = audioFormat?.channelCount ?: 0,
             audioSampleRate = audioFormat?.sampleRate ?: 0,
             bufferHealth =
-                context.getString(R.string.playback_stats_value_seconds_fmt, bufferSeconds),
+                context.resources.getQuantityString(
+                    R.plurals.playback_stats_value_seconds_fmt,
+                    bufferSeconds.toInt(),
+                    bufferSeconds,
+                ),
             audioBitrate =
                 if (bitrateKbps > 0) String.format(Locale.US, "%.0f kbps", bitrateKbps) else "",
             hwDec = playbackManager.currentAudioDecoder.value,

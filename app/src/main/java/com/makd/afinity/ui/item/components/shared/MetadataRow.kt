@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -45,8 +46,9 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.ui.components.formatRuntimeTicks
 import com.makd.afinity.ui.components.ticksToTotalMinutes
+import com.makd.afinity.util.DateSkeleton
+import com.makd.afinity.util.localizedDateFormat
 import org.jellyfin.sdk.model.api.MediaStreamType
-import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
@@ -274,7 +276,7 @@ fun MetadataRow(
             if (item is AfinityBoxSet) {
                 item.itemCount?.let { count ->
                     Text(
-                        text = stringResource(R.string.meta_boxset_count, count),
+                        text = pluralStringResource(R.plurals.meta_boxset_count, count, count),
                         style =
                             MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = FontWeight.SemiBold
@@ -302,7 +304,7 @@ fun MetadataRow(
                     ?.takeIf { it > 0 }
                     ?.let { count ->
                         Text(
-                            text = stringResource(R.string.meta_episode_count, count),
+                            text = pluralStringResource(R.plurals.meta_episode_count, count, count),
                             style =
                                 MaterialTheme.typography.bodyMedium.copy(
                                     fontWeight = FontWeight.SemiBold
@@ -407,7 +409,8 @@ fun MetadataRow(
             if ((partCount ?: 0) > 1) {
                 if (needsSeparator) MetadataDot()
                 Text(
-                    text = stringResource(R.string.meta_parts_fmt, partCount!!),
+                    text =
+                        pluralStringResource(R.plurals.meta_parts_fmt, partCount!!, partCount),
                     style =
                         MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
@@ -539,14 +542,8 @@ private fun getFormattedEndTime(context: Context, totalMs: Long): String {
 
     return if (totalMs > twentyFourHoursMs) {
         val is24Hour = DateFormat.is24HourFormat(context)
-        val pattern =
-            if (is24Hour) {
-                "EEE, dd MMM, HH:mm"
-            } else {
-                "EEE, dd MMM, h:mm a"
-            }
-        val formatter = SimpleDateFormat(pattern, Locale.getDefault())
-        formatter.format(endDate)
+        val skeleton = DateSkeleton.withTime(DateSkeleton.WEEKDAY_MONTH_DAY, is24Hour)
+        localizedDateFormat(Locale.getDefault(), skeleton).format(endDate)
     } else {
         DateFormat.getTimeFormat(context).format(endDate)
     }
