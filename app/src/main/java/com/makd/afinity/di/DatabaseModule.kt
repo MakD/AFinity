@@ -13,10 +13,8 @@ import com.makd.afinity.data.database.dao.HomeCacheDao
 import com.makd.afinity.data.database.dao.HomeLayoutPreferenceDao
 import com.makd.afinity.data.database.dao.ItemMetadataCacheDao
 import com.makd.afinity.data.database.dao.JellyfinStatsDao
-import com.makd.afinity.data.database.dao.LibraryCacheDao
 import com.makd.afinity.data.database.dao.MediaStreamDao
 import com.makd.afinity.data.database.dao.MovieDao
-import com.makd.afinity.data.database.dao.MovieSectionDao
 import com.makd.afinity.data.database.dao.MusicAlbumDao
 import com.makd.afinity.data.database.dao.MusicLyricsDao
 import com.makd.afinity.data.database.dao.MusicQueueDao
@@ -110,11 +108,6 @@ object DatabaseModule {
     }
 
     @Provides
-    fun provideLibraryCacheDao(database: AfinityDatabase): LibraryCacheDao {
-        return database.libraryCacheDao()
-    }
-
-    @Provides
     fun provideBoxSetCacheDao(database: AfinityDatabase): BoxSetCacheDao {
         return database.boxSetCacheDao()
     }
@@ -142,11 +135,6 @@ object DatabaseModule {
     @Provides
     fun providePersonSectionDao(database: AfinityDatabase): PersonSectionDao {
         return database.personSectionDao()
-    }
-
-    @Provides
-    fun provideMovieSectionDao(database: AfinityDatabase): MovieSectionDao {
-        return database.movieSectionDao()
     }
 
     @Provides

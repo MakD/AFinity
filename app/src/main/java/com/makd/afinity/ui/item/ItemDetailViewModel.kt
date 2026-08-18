@@ -8,7 +8,6 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
-import androidx.paging.map
 import com.makd.afinity.R
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
@@ -40,7 +39,6 @@ import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.media.toAfinityMovie
 import com.makd.afinity.data.models.media.toAfinityShow
-import com.makd.afinity.data.models.media.withUserDataFrom
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.network.TmdbApiService
 import com.makd.afinity.data.paging.EpisodesPagingSource
@@ -59,6 +57,7 @@ import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.data.storage.StorageVolumeInfo
 import com.makd.afinity.data.store.ItemStore
+import com.makd.afinity.data.store.withUserDataOverlay
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.delegates.ItemDownloadDelegate
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
@@ -152,12 +151,7 @@ constructor(
     private fun applyUpdatesToPagingFlow(
         baseFlow: Flow<PagingData<AfinityEpisode>>
     ): Flow<PagingData<AfinityEpisode>> {
-        return baseFlow.combine(itemStore.overlay) { pagingData, updates ->
-            pagingData.map { episode ->
-                val source = updates[episode.id] ?: return@map episode
-                episode.withUserDataFrom(source) as? AfinityEpisode ?: episode
-            }
-        }
+        return baseFlow.withUserDataOverlay(appDataRepository.userDataOverlay, itemStore)
     }
 
     private var bulkDownloadJob: Job? = null

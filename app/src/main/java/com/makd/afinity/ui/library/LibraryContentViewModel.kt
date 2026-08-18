@@ -8,7 +8,6 @@ import androidx.paging.PagingData
 import androidx.paging.PagingSource
 import androidx.paging.cachedIn
 import androidx.paging.filter
-import androidx.paging.map
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.DownloadPermissions
@@ -25,7 +24,6 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.LibraryFilterOptions
 import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.data.models.media.toAfinityEpisode
-import com.makd.afinity.data.models.media.withUserDataFrom
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.PreferencesRepository
@@ -35,6 +33,7 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.data.store.ItemStore
+import com.makd.afinity.data.store.withUserDataOverlay
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -44,7 +43,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -200,15 +198,12 @@ constructor(
     private fun applyUpdatesToPagingFlow(
         baseFlow: Flow<PagingData<AfinityItem>>
     ): Flow<PagingData<AfinityItem>> {
-        return baseFlow.cachedIn(viewModelScope).combine(itemStore.overlay) { pagingData, updates
-            ->
-            pagingData
-                .map { item ->
-                    val source = updates[item.id] ?: return@map item
-                    source as? AfinityItem ?: item.withUserDataFrom(source)
-                }
-                .filter { item -> matchesStatusFilters(item, currentFilters) }
-        }
+        return baseFlow
+            .cachedIn(viewModelScope)
+            .withUserDataOverlay(appDataRepository.userDataOverlay, itemStore)
+            .map { pagingData ->
+                pagingData.filter { item -> matchesStatusFilters(item, currentFilters) }
+            }
     }
 
     private fun matchesStatusFilters(item: AfinityItem, filters: LibraryFilters): Boolean {
@@ -266,7 +261,6 @@ constructor(
                 currentLibraryPagingSource?.invalidate() ?: loadItems()
             }
         }
-
 
         viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->

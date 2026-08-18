@@ -31,6 +31,7 @@ import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
+import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.repository.home.HomeCacheRepository
 import com.makd.afinity.data.repository.home.HomeLayoutPreferencesRepository
 import com.makd.afinity.data.repository.home.HomeSectionsRepository
@@ -46,6 +47,7 @@ import com.makd.afinity.util.JellyfinImageUrlBuilder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -64,6 +66,8 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -101,8 +105,23 @@ constructor(
     private val itemStore: ItemStore,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val deletedItemsRepository: DeletedItemsRepository,
+    private val databaseRepository: DatabaseRepository,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val userDataOverlay: StateFlow<Map<UUID, AfinityUserDataDto>> =
+        sessionManager.currentSession
+            .flatMapLatest { session ->
+                if (session == null) {
+                    flowOf(emptyMap())
+                } else {
+                    databaseRepository.getAllUserDataFlow(session.userId).map { rows ->
+                        rows.associateBy { it.itemId }
+                    }
+                }
+            }
+            .stateIn(scope, SharingStarted.WhileSubscribed(5_000), emptyMap())
     private var liveDataJob: Job? = null
     private var lastReinsertRefreshAt = 0L
     private var initialLoadJob: Deferred<Unit>? = null

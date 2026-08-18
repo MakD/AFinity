@@ -25,7 +25,6 @@ private const val CRASHES_DIR = "crashes"
 private const val AVATARS_DIR = "user_avatars"
 
 private const val ITEM_METADATA_TTL_MS = 30L * 24 * 60 * 60 * 1000
-private const val LIBRARY_CACHE_TTL_MS = 7L * 24 * 60 * 60 * 1000
 private const val MAX_CRASH_FILES = 5
 
 enum class CacheKind {
@@ -261,11 +260,6 @@ constructor(
                 database.itemMetadataCacheDao().clearOldCache(now - ITEM_METADATA_TTL_MS)
             }
                 .onFailure { Timber.w(it, "Failed to prune item metadata cache") }
-
-            runCatching {
-                database.libraryCacheDao().clearExpiredCache(now - LIBRARY_CACHE_TTL_MS)
-            }
-                .onFailure { Timber.w(it, "Failed to prune library cache") }
 
             runCatching { deletedItemsRepository.prune() }
                 .onFailure { Timber.w(it, "Failed to prune deleted item tombstones") }

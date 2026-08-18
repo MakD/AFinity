@@ -9,17 +9,16 @@ import androidx.paging.PagingData
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import androidx.paging.cachedIn
-import androidx.paging.map
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.resolveChangedItems
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.ItemFilterCriteria
-import com.makd.afinity.data.models.media.withUserDataFrom
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.store.ItemStore
+import com.makd.afinity.data.store.withUserDataOverlay
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.FlowPreview
@@ -27,7 +26,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -61,12 +59,9 @@ constructor(
     private fun applyUpdatesToPagingFlow(
         baseFlow: Flow<PagingData<AfinityItem>>
     ): Flow<PagingData<AfinityItem>> {
-        return baseFlow.cachedIn(viewModelScope).combine(itemStore.overlay) { pagingData, updates ->
-            pagingData.map { item ->
-                val source = updates[item.id] ?: return@map item
-                source as? AfinityItem ?: item.withUserDataFrom(source)
-            }
-        }
+        return baseFlow
+            .cachedIn(viewModelScope)
+            .withUserDataOverlay(appDataRepository.userDataOverlay, itemStore)
     }
 
     init {

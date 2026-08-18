@@ -438,6 +438,8 @@ constructor(
             positionTicks = userData.playbackPositionTicks ?: 0L,
             isFavorite = userData.isFavorite ?: false,
             isLiked = userData.likes ?: false,
+            unplayedItemCount = userData.unplayedItemCount,
+            playCount = userData.playCount,
         )
     }
 

@@ -63,6 +63,7 @@ constructor(
 
     private companion object {
         const val SUBSCRIPTION_RETRY_DELAY_MS = 3_000L
+        const val SUBSCRIPTION_IMMEDIATE_RETRIES = 3
     }
 
     private val _connectionState = MutableStateFlow(WebSocketState.DISCONNECTED)
@@ -168,15 +169,23 @@ constructor(
         subscribe: () -> Flow<T>,
         handler: suspend (T) -> Unit,
     ) {
+        var consecutiveFailures = 0
         while (true) {
             try {
-                subscribe().collect { handler(it) }
+                subscribe().collect {
+                    consecutiveFailures = 0
+                    handler(it)
+                }
+                consecutiveFailures = 0
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Timber.e(e, "$name subscription failed - resubscribing")
+                consecutiveFailures++
+                Timber.e(e, "$name subscription failed ($consecutiveFailures) - resubscribing")
             }
-            delay(SUBSCRIPTION_RETRY_DELAY_MS)
+            if (consecutiveFailures > SUBSCRIPTION_IMMEDIATE_RETRIES) {
+                delay(SUBSCRIPTION_RETRY_DELAY_MS)
+            }
         }
     }
 

@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import kotlinx.coroutines.flow.Flow
@@ -85,17 +86,35 @@ interface UserDataDao {
 
     @Query(
         """
-        UPDATE userdata 
-        SET played = :isPlayed, 
-            playbackPositionTicks = :positionTicks, 
+        UPDATE userdata
+        SET played = :isPlayed,
+            playbackPositionTicks = :positionTicks,
             favorite = :isFavorite,
-            likes = :isLiked
+            likes = :isLiked,
+            unplayedItemCount = COALESCE(:unplayedItemCount, unplayedItemCount),
+            playCount = COALESCE(:playCount, playCount)
         WHERE itemId = :itemId
           AND userId = :userId
           AND serverId = :serverId
           AND toBeSynced = 0
     """
     )
+    suspend fun updateUserDataLocally(
+        itemId: UUID,
+        userId: UUID,
+        serverId: String,
+        isPlayed: Boolean,
+        positionTicks: Long,
+        isFavorite: Boolean,
+        isLiked: Boolean,
+        unplayedItemCount: Int?,
+        playCount: Int?,
+    ): Int
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertUserDataIfAbsent(userData: AfinityUserDataDto): Long
+
+    @Transaction
     suspend fun patchUserDataLocally(
         itemId: UUID,
         userId: UUID,
@@ -104,7 +123,48 @@ interface UserDataDao {
         positionTicks: Long,
         isFavorite: Boolean,
         isLiked: Boolean,
+        unplayedItemCount: Int?,
+        playCount: Int?,
+    ) {
+        val updated =
+            updateUserDataLocally(
+                itemId = itemId,
+                userId = userId,
+                serverId = serverId,
+                isPlayed = isPlayed,
+                positionTicks = positionTicks,
+                isFavorite = isFavorite,
+                isLiked = isLiked,
+                unplayedItemCount = unplayedItemCount,
+                playCount = playCount,
+            )
+        if (updated > 0) return
+        insertUserDataIfAbsent(
+            AfinityUserDataDto(
+                userId = userId,
+                itemId = itemId,
+                serverId = serverId,
+                played = isPlayed,
+                favorite = isFavorite,
+                likes = isLiked,
+                playbackPositionTicks = positionTicks,
+                unplayedItemCount = unplayedItemCount,
+                playCount = playCount,
+            )
+        )
+    }
+
+    @Query(
+        """
+        SELECT * FROM userdata
+        WHERE userId = :userId AND serverId = :serverId AND itemId IN (:itemIds)
+    """
     )
+    fun getUserDataForItemsFlow(
+        userId: UUID,
+        serverId: String,
+        itemIds: Collection<UUID>,
+    ): Flow<List<AfinityUserDataDto>>
 
     @Query("SELECT * FROM userdata WHERE userId = :userId AND serverId = :serverId AND likes = 1")
     fun getWatchlistItemsFlow(userId: UUID, serverId: String): Flow<List<AfinityUserDataDto>>

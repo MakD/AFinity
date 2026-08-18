@@ -1468,6 +1468,24 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_68_69 =
+        object : Migration(68, 69) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `userdata` ADD COLUMN `unplayedItemCount` INTEGER DEFAULT NULL"
+                )
+                db.execSQL("ALTER TABLE `userdata` ADD COLUMN `playCount` INTEGER DEFAULT NULL")
+            }
+        }
+
+    val MIGRATION_69_70 =
+        object : Migration(69, 70) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP TABLE IF EXISTS `library_cache`")
+                db.execSQL("DROP TABLE IF EXISTS `movie_section_cache`")
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1537,5 +1555,7 @@ object DatabaseMigrations {
             MIGRATION_65_66,
             MIGRATION_66_67,
             MIGRATION_67_68,
+            MIGRATION_68_69,
+            MIGRATION_69_70,
         )
 }
