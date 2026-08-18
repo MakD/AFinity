@@ -62,7 +62,9 @@
     <string name="hero_btn_play_trailer">Смотреть трейлер</string>
     <string name="hero_btn_play_media">Воспроизвести</string>
     <string name="hero_btn_watch_now">Смотреть сейчас</string>
-    <string name="hero_season_plural">%1$d сезонов</string>
+    <plurals name="hero_season_plural">
+        <item quantity="one">%1$d сезонов</item>
+    </plurals>
     <string name="favorites_title">Избранные</string>
     <string name="error_unknown">Неизвестная ошибка</string>
     <string name="favorites_empty_title">Избранных пока нет</string>
@@ -81,7 +83,9 @@
     <string name="meta_cc">CC</string>
     <string name="meta_time_remaining_hours_minutes">Осталось: %1$d ч %2$d мин</string>
     <string name="meta_time_remaining_minutes">Осталось: %1$d мин</string>
-    <string name="meta_boxset_count">%1$d элементов</string>
+    <plurals name="meta_boxset_count">
+        <item quantity="one">%1$d элементов</item>
+    </plurals>
     <string name="meta_runtime_hours_minutes">%1$d ч %2$d мин</string>
     <string name="meta_runtime_minutes">%1$d мин</string>
     <string name="meta_ends_at">Конец в %1$s</string>
@@ -114,8 +118,12 @@
     <string name="action_see_less">Показать меньше</string>
     <string name="cd_expand">Развернуть</string>
     <string name="cd_collapse">Свернуть</string>
-    <string name="director_prefix">Режиссёр: %1$s</string>
-    <string name="writers_prefix">Сценаристы: %1$s</string>
+    <plurals name="director_prefix">
+        <item quantity="one">Режиссёр: %1$s</item>
+    </plurals>
+    <plurals name="writers_prefix">
+        <item quantity="one">Сценаристы: %1$s</item>
+    </plurals>
     <string name="seasons_title">Сезоны</string>
     <string name="action_play">Воспроизвести</string>
     <string name="action_rewatch">Смотреть еще раз</string>
@@ -168,7 +176,9 @@
     <string name="action_show_all_channels">Показать все каналы</string>
     <string name="livetv_header_letter_fmt">Каналы (%1$s)</string>
     <string name="livetv_header_all">Все каналы</string>
-    <string name="livetv_count_fmt">Найдено %1$d каналов</string>
+    <plurals name="livetv_count_fmt">
+        <item quantity="one">Найдено %1$d каналов</item>
+    </plurals>
     <string name="livetv_guide_date_fmt">EEE, d MMM</string>
     <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
     <string name="action_now">Сейчас</string>
@@ -184,11 +194,17 @@
     <string name="livetv_error_not_available_message">Настройте эфир на вашем сервере Jellyfin</string>
     <string name="person_biography">Биография</string>
     <string name="meta_part_of_fmt">Часть %1$d/%2$d</string>
-    <string name="meta_episode_count">%1$d эпизодов</string>
+    <plurals name="meta_episode_count">
+        <item quantity="one">%1$d эпизодов</item>
+    </plurals>
     <string name="livetv_time_header_pattern">H:00</string>
-    <string name="person_born_fmt">Дата рождения: %1$s (%2$d лет)</string>
+    <plurals name="person_born_fmt">
+        <item quantity="one">Дата рождения: %1$s (%2$d лет)</item>
+    </plurals>
     <string name="person_born_deceased_fmt">Дата рождения: %1$s</string>
-    <string name="person_died_fmt">Дата смерти: %1$s (в %2$d лет)</string>
+    <plurals name="person_died_fmt">
+        <item quantity="one">Дата смерти: %1$s (в %2$d лет)</item>
+    </plurals>
     <string name="person_died_no_age_fmt">Дата смерти: %1$s</string>
     <string name="person_birthplace_fmt">Место рождения: %1$s</string>
     <string name="person_date_fmt">d MMMM yyyy</string>
@@ -308,7 +324,9 @@
     <string name="playback_channel_name">Вопроизведение аудиокниг в AFinity</string>
     <string name="filter_audiobooks">Аудиокниги</string>
     <string name="explore_genres">Исследуйте жанры</string>
-    <string name="search_results_count_fmt">Найдено %1$d результатов</string>
+    <plurals name="search_results_count_fmt">
+        <item quantity="one">Найдено %1$d результатов</item>
+    </plurals>
     <string name="cd_watched">Просмотрено</string>
     <string name="cd_finished">Завершено</string>
     <string name="media_type_book">Книга</string>
@@ -335,7 +353,9 @@
     <string name="layout_vertical">Вертикально</string>
     <string name="pref_downloads_and_storage">Загрузки и хранилище</string>
     <string name="pref_downloads_and_storage_summary">Управление оффлайн-медиа и кэшем изображений</string>
-    <string name="meta_parts_fmt">%1$d частей</string>
+    <plurals name="meta_parts_fmt">
+        <item quantity="one">%1$d частей</item>
+    </plurals>
     <string name="active_downloads_header_fmt">Активные загрузки (%1$d)</string>
     <string name="completed_downloads_header_fmt">Завершённые загрузки (%1$d)</string>
     <string name="download_status_queued">В очереди</string>
@@ -452,7 +472,9 @@
     <string name="empty_servers_message">Коснитесь кнопки «+», чтобы добавить ваш первый сервер Jellyfin.</string>
     <string name="dialog_delete_server_title">Удалить сервер?</string>
     <string name="dialog_delete_server_message_fmt">Вы уверены, что хотите удалить «%1$s»?</string>
-    <string name="dialog_delete_server_warning_fmt">Будут удалены %1$d сохранённ(ый/ых) пользовател(ь/ей) и все связанные данные.</string>
+    <plurals name="dialog_delete_server_warning_fmt">
+        <item quantity="one">Будут удалены %1$d сохранённ(ый/ых) пользовател(ь/ей) и все связанные данные.</item>
+    </plurals>
     <string name="action_delete">Удалить</string>
     <string name="error_load_servers_failed">Не удалось загрузить серверы</string>
     <string name="error_delete_active_server">Нельзя удалить текущий активный сервер. Пожалуйста, сначала переключитесь на другой сервер.</string>
@@ -706,7 +728,9 @@
     <string name="cd_tmdb">TMDB</string>
     <string name="cd_mdblist">MDBList</string>
     <string name="permission_request">Запрос</string>
-    <string name="quota_days_fmt">%1$d / %2$d дней</string>
+    <plurals name="quota_days_fmt">
+        <item quantity="one">%1$d / %2$d дней</item>
+    </plurals>
     <string name="duration_hours_fmt">%.0f ч</string>
     <string name="cd_manage_addresses">Управление адресами</string>
     <string name="cd_add_address">Добавить адрес</string>
@@ -804,7 +828,9 @@
     <string name="service_label_tmdb">TMDB</string>
     <string name="service_label_mdblist">MDBList</string>
     <string name="request_fulfillment_details">Сведения об исполнении</string>
-    <string name="server_backup_routes_fmt">+ %1$d запасн(ой/ых) маршрут(ов)</string>
+    <plurals name="server_backup_routes_fmt">
+        <item quantity="one">+ %1$d запасн(ой/ых) маршрут(ов)</item>
+    </plurals>
     <string name="pref_show_ratings_title">Показать оценки</string>
     <string name="pref_show_ratings_summary">Показывать карточки с оценками IMDb и Rotten Tomatoes</string>
     <string name="cd_admin_manage">Управление</string>
@@ -1009,9 +1035,15 @@
     <string name="pref_cast_max_bitrate_auto">Авто (тест сети)</string>
     <string name="abs_action_browse">Обзор</string>
     <string name="request_all_seasons_note">Будут запрошены все сезоны</string>
-    <string name="request_quota_movie_remaining_fmt">Запросов осталось: %1$d из %2$d</string>
-    <string name="request_quota_tv_remaining_fmt">Запросов сезонов осталось: %1$d из %2$d</string>
-    <string name="request_quota_period_fmt">за %1$d дней</string>
+    <plurals name="request_quota_movie_remaining_fmt">
+        <item quantity="one">Запросов осталось: %1$d из %2$d</item>
+    </plurals>
+    <plurals name="request_quota_tv_remaining_fmt">
+        <item quantity="one">Запросов сезонов осталось: %1$d из %2$d</item>
+    </plurals>
+    <plurals name="request_quota_period_fmt">
+        <item quantity="one">за %1$d дней</item>
+    </plurals>
     <string name="request_quota_exceeded">Достигнут лимит</string>
     <string name="request_language_profile">Профиль языка</string>
     <string name="request_tags">Теги</string>
@@ -1019,7 +1051,9 @@
     <string name="request_as_label">Запросить как</string>
     <string name="request_select_placeholder">Выберите…</string>
     <string name="request_quota_exceeded_message">У вас осталось недостаточно запросов. Ваша квота сбрасывается автоматически.</string>
-    <string name="season_count_fmt">%1$d сезонов</string>
+    <plurals name="season_count_fmt">
+        <item quantity="one">%1$d сезонов</item>
+    </plurals>
     <string name="seerr_recommendations_title">Рекомендации</string>
     <string name="seerr_detail_request">Запросить</string>
     <string name="seerr_detail_open_library">Открыть в Библиотеке</string>
@@ -1055,8 +1089,12 @@
     <string name="tv_status_cancelled">Отменен</string>
     <string name="tv_status_in_production">В производстве</string>
     <string name="discover_filter_select_region">Выберите регион</string>
-    <string name="discover_filter_keywords_included_fmt">%1$d добавлено</string>
-    <string name="discover_filter_keywords_excluded_fmt">%1$d исключено</string>
+    <plurals name="discover_filter_keywords_included_fmt">
+        <item quantity="one">%1$d добавлено</item>
+    </plurals>
+    <plurals name="discover_filter_keywords_excluded_fmt">
+        <item quantity="one">%1$d исключено</item>
+    </plurals>
     <string name="discover_filter_watch_providers">Стриминговые сервисы</string>
     <string name="cd_open_navigation_menu">Открыть меню навигации</string>
     <string name="cd_go_to_home">Вернуться на главную</string>
@@ -1090,7 +1128,9 @@
     <string name="playback_stats_label_cached">Загружено в кэш</string>
     <string name="playback_stats_label_av_sync">Синхронизация аудио/видео</string>
     <string name="playback_stats_label_connection">Подключение</string>
-    <string name="playback_stats_value_seconds_fmt">%1$d секунд</string>
+    <plurals name="playback_stats_value_seconds_fmt">
+        <item quantity="one">%1$d секунд</item>
+    </plurals>
     <string name="playback_stats_value_live">Эфирная трансляция</string>
     <string name="status_blocklisted">Заблокировано</string>
     <string name="status_failed">Ошибка</string>
@@ -1362,8 +1402,12 @@
     <string name="backup_section_library">Библиотека</string>
     <string name="backup_section_downloads">Загрузки</string>
     <string name="backup_section_privacy">Конфиденциальность и обновления</string>
-    <string name="backup_section_home_fmt">%1$d пользовательских разделов, рядов, и настройки нахождения контента</string>
-    <string name="backup_section_settings_fmt">%1$d настроек</string>
+    <plurals name="backup_section_home_fmt">
+        <item quantity="one">%1$d пользовательских разделов, рядов, и настройки нахождения контента</item>
+    </plurals>
+    <plurals name="backup_section_settings_fmt">
+        <item quantity="one">%1$d настроек</item>
+    </plurals>
     <string name="custom_sections_add_blank">Пустой раздел</string>
     <string name="custom_sections_add_blank_summary">Начать с самого начала</string>
     <string name="custom_sections_preset_range_fmt">Сезонный · %1$s – %2$s</string>
@@ -1373,14 +1417,20 @@
     <string name="pref_clear_cache_summary">Будут повторно запрошены ряды, жанры и списки изображений</string>
     <string name="pref_clear_cache_empty">Кэш пуст</string>
     <string name="cache_kind_images">Изображения</string>
-    <string name="cache_entries_fmt">%1$d записей</string>
+    <plurals name="cache_entries_fmt">
+        <item quantity="one">%1$d записей</item>
+    </plurals>
     <string name="pref_clear_cache_confirm">Очистить данные кэша?</string>
     <string name="pref_clear_cache_message">Загрузки, настройки и ваши индивидуальные разделы не будут затронуты. Ряды на главном экране будут созданы заново при следующей загрузке.</string>
     <string name="pref_clear_cache_done">Данные кэша очищены</string>
     <string name="custom_sections_field_refine">Уточнения</string>
     <string name="custom_sections_refine_none">Без дополнительных фильтров</string>
-    <string name="custom_sections_refine_summary_fmt">%1$s · %2$d фильтров</string>
-    <string name="pref_clear_cache_usage_total_fmt">%1$s в кэше · %2$d записей</string>
+    <plurals name="custom_sections_refine_summary_fmt">
+        <item quantity="one">%1$s · %2$d фильтров</item>
+    </plurals>
+    <plurals name="pref_clear_cache_usage_total_fmt">
+        <item quantity="one">%1$s в кэше · %2$d записей</item>
+    </plurals>
     <string name="cache_store_video">Кэш видео</string>
     <string name="cache_store_network">Сетевой кэш</string>
     <string name="cache_store_player">Данные для плеера</string>
@@ -1476,5 +1526,7 @@
     <string name="playlist_download_everything">Скачать все</string>
     <string name="playlist_download_failed">Не удалось начать загрузку</string>
     <string name="playlist_download_failed_fmt">Не удалось начать загрузку: %1$s</string>
-    <string name="playlist_download_partial_fmt">Запущено загрузок: %1$d из %2$d</string>
+    <plurals name="playlist_download_partial_fmt">
+        <item quantity="one">Запущено загрузок: %1$d из %2$d</item>
+    </plurals>
 </resources>
