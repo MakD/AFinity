@@ -58,7 +58,9 @@
     <string name="hero_btn_play_trailer">ट्रेलर चलाएं</string>
     <string name="hero_btn_play_media">मीडिया चलाएं</string>
     <string name="hero_btn_watch_now">अब देखिए</string>
-    <string name="hero_season_plural">%1$d मौसम के</string>
+    <plurals name="hero_season_plural">
+        <item quantity="one">%1$d मौसम के</item>
+    </plurals>
     <string name="favorites_title">पसंदीदा</string>
     <string name="error_unknown">अज्ञात त्रुटि</string>
     <string name="favorites_empty_title">अभी तक कोई पसंदीदा नहीं</string>
@@ -77,11 +79,15 @@
     <string name="meta_cc">सीसी</string>
     <string name="meta_time_remaining_hours_minutes">%1$dh %2$dm बाएँ</string>
     <string name="meta_time_remaining_minutes">%1$dमैं बायां हूं</string>
-    <string name="meta_boxset_count">%1$d सामान</string>
+    <plurals name="meta_boxset_count">
+        <item quantity="one">%1$d सामान</item>
+    </plurals>
     <string name="meta_runtime_hours_minutes">%1$dh %2$dm</string>
     <string name="meta_runtime_minutes">%1$dm</string>
     <string name="meta_ends_at">पर समाप्त होता है %1$s</string>
-    <string name="meta_episode_count">%1$d एपिसोड</string>
+    <plurals name="meta_episode_count">
+        <item quantity="one">%1$d एपिसोड</item>
+    </plurals>
     <string name="similar_items_title">इसे और भी पसंद करें</string>
     <string name="special_features_title">विशेष लक्षण</string>
     <string name="extra_type_clip">क्लिप</string>
@@ -110,8 +116,12 @@
     <string name="action_see_less">कम देखें</string>
     <string name="cd_expand">बढ़ाना</string>
     <string name="cd_collapse">गिर जाना</string>
-    <string name="director_prefix">निदेशक: %1$s</string>
-    <string name="writers_prefix">लेखक: %1$s</string>
+    <plurals name="director_prefix">
+        <item quantity="one">निदेशक: %1$s</item>
+    </plurals>
+    <plurals name="writers_prefix">
+        <item quantity="one">लेखक: %1$s</item>
+    </plurals>
     <string name="seasons_title">मौसम के</string>
     <string name="action_play">खेल</string>
     <string name="action_rewatch">फिर से देखना</string>
@@ -165,7 +175,9 @@
     <string name="action_show_all_channels">सभी चैनल दिखाएं</string>
     <string name="livetv_header_letter_fmt">चैनल (%1$s)</string>
     <string name="livetv_header_all">सभी चैनल</string>
-    <string name="livetv_count_fmt">%1$d चैनल मिले</string>
+    <plurals name="livetv_count_fmt">
+        <item quantity="one">%1$d चैनल मिले</item>
+    </plurals>
     <string name="livetv_guide_date_fmt">ईईई, एमएमएम डी</string>
     <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
     <string name="action_now">अब</string>
@@ -180,9 +192,13 @@
     <string name="livetv_error_not_available_title">लाइव टीवी उपलब्ध नहीं है</string>
     <string name="livetv_error_not_available_message">अपने जेलीफिन सर्वर पर लाइव टीवी कॉन्फ़िगर करें</string>
     <string name="person_biography">जीवनी</string>
-    <string name="person_born_fmt">जन्म: %1$s (%2$d वर्ष पुराना)</string>
+    <plurals name="person_born_fmt">
+        <item quantity="one">जन्म: %1$s (%2$d वर्ष पुराना)</item>
+    </plurals>
     <string name="person_born_deceased_fmt">जन्म: %1$s</string>
-    <string name="person_died_fmt">मृत: %1$s (वृद्ध %2$d)</string>
+    <plurals name="person_died_fmt">
+        <item quantity="one">मृत: %1$s (वृद्ध %2$d)</item>
+    </plurals>
     <string name="person_died_no_age_fmt">मृत: %1$s</string>
     <string name="person_birthplace_fmt">जन्म स्थान: %1$s</string>
     <string name="person_date_fmt">एमएमएमएम डी, वाईय</string>
@@ -298,7 +314,9 @@
     <string name="filter_request">अनुरोध</string>
     <string name="filter_audiobooks">ऑडियो पुस्तकें</string>
     <string name="explore_genres">शैलियों का अन्वेषण करें</string>
-    <string name="search_results_count_fmt">%1$d परिणाम मिले</string>
+    <plurals name="search_results_count_fmt">
+        <item quantity="one">%1$d परिणाम मिले</item>
+    </plurals>
     <string name="cd_watched">देखे</string>
     <string name="cd_finished">खत्म</string>
     <string name="media_type_book">किताब</string>
@@ -433,7 +451,9 @@
     <string name="empty_servers_message">अपना पहला जेलीफ़िन सर्वर जोड़ने के लिए + बटन पर टैप करें।</string>
     <string name="dialog_delete_server_title">सर्वर हटाएं?</string>
     <string name="dialog_delete_server_message_fmt">क्या आप वाकई हटाना चाहते हैं \"%1$s\"?</string>
-    <string name="dialog_delete_server_warning_fmt">यह %1$d सहेजे गए उपयोगकर्ता(ओं) और सभी संबंधित डेटा को हटा देगा।</string>
+    <plurals name="dialog_delete_server_warning_fmt">
+        <item quantity="one">यह %1$d सहेजे गए उपयोगकर्ता(ओं) और सभी संबंधित डेटा को हटा देगा।</item>
+    </plurals>
     <string name="action_delete">मिटाना</string>
     <string name="error_load_servers_failed">सर्वर लोड करने में विफल</string>
     <string name="error_delete_active_server">वर्तमान में सक्रिय सर्वर को हटाया नहीं जा सकता. कृपया पहले किसी अन्य सर्वर पर स्विच करें.</string>
