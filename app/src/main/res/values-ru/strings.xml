@@ -1396,7 +1396,7 @@
     <string name="home_because_you_liked">Вам понравилось: %1$s</string>
     <string name="custom_sections_title">Разделы на главном экране</string>
     <string name="custom_sections_group_always">Отображаются всегда</string>
-    <string name="custom_sections_always_caption">Основные ряды, необходимые каждому клиенту Jellyfin. Их нельзя отключить.</string>
+    <string name="custom_sections_always_caption">Ваши библиотеки и то, что вы смотрели. Эти ряды нельзя отключить.</string>
     <string name="custom_sections_always_on">Всегда включено</string>
     <string name="custom_sections_group_rows">Встроенные ряды</string>
     <string name="custom_sections_rows_caption">Отображаются первыми, в этом порядке. Отключите те, что вы не используете.</string>
@@ -1613,4 +1613,19 @@
     <string name="admin_refresh_mode_replace">Замена всех метаданных</string>
     <string name="admin_refresh_mode_replace_desc">Повторная загрузка все данных, существующие перезаписываются. Ручные изменения будут утеряны.</string>
     <string name="music_mix_radio_title_fmt">Радио «%1$s»</string>
+    <string name="requested_by_multiple_fmt">Запрос от %1$s +%2$d</string>
+    <string name="pref_requires_latest_rows">Необходимо включить «Новые фильмы» или «Новые сериалы»</string>
+    <string name="jellyseerr_username_from_jellyfin">Из вашего аккаунта Jellyfin</string>
+    <string name="jellyseerr_email_hint">Ваша электронная почта для аккаунта Seerr</string>
+    <string name="jellyseerr_connect_subtitle_found_fmt">Найден cервер: %1$s. Войдите, чтобы включить запросы контента.</string>
+    <string name="error_invalid_jellyfin_password">Неверный пароль аккаунта Jellyfin.</string>
+    <string name="error_no_jellyfin_session">Нет активной сессии Jellyfin. Сначала войдите в Jellyfin.</string>
+    <string name="error_seerr_account_setup_failed">Seerr принял ваши учетные данные, но не смог завершить настройку аккаунта. Попросите вашего администратора Seerr проверить логи сервера.</string>
+    <string name="playlist_download_choice_title">Скачать музыку или видео?</string>
+    <string name="playlist_download_songs_only">Только песни</string>
+    <string name="playlist_download_videos_only">Только видео</string>
+    <string name="playlist_download_everything">Скачать все</string>
+    <string name="playlist_download_failed">Не удалось начать загрузку</string>
+    <string name="playlist_download_failed_fmt">Не удалось начать загрузку: %1$s</string>
+    <string name="playlist_download_partial_fmt">Запущено загрузок: %1$d из %2$d</string>
 </resources>
