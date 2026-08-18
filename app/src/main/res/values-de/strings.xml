@@ -465,7 +465,9 @@
     <string name="empty_servers_message">Drücke auf „+“, um deinen ersten Jellyfin-Server hinzuzufügen.</string>
     <string name="server_details_subtitle">Gib die Informationen deines Jellyfin-Servers ein</string>
     <string name="outline_background">Hintergrund-Sammlung</string>
-    <string name="dialog_delete_server_warning_fmt">Hierbei werden %1$d gespeicherte(r) Nutzer und alle dazugehörigen Daten gelöscht.</string>
+    <plurals name="dialog_delete_server_warning_fmt">
+        <item quantity="one">Hierbei werden %1$d gespeicherte(r) Nutzer und alle dazugehörigen Daten gelöscht.</item>
+    </plurals>
     <string name="error_delete_server_failed">Löschen des Servers fehlgeschlagen</string>
     <string name="update_whats_new">Was gibt es neues</string>
     <string name="jellyseerr_connect_subtitle">Gib deine Serverinformationen ein, um Inhaltsanfragen zu aktivieren</string>
@@ -501,7 +503,9 @@
     <string name="pref_cast_hevc_title">HEVC aktivieren</string>
     <string name="pref_cast_hevc_description">Für Chromecast Ultra/Google TV aktivieren</string>
     <string name="pref_cast_max_bitrate_title">Maximale Bitrate</string>
-    <string name="person_died_fmt">Verstorben: %1$s (%2$d Jahre)</string>
+    <plurals name="person_died_fmt">
+        <item quantity="one">Verstorben: %1$s (%2$d Jahre)</item>
+    </plurals>
     <string name="person_died_no_age_fmt">Verstorben: %1$s</string>
     <string name="track_number_fmt">Spur %1$d</string>
     <string name="jellyseerr_connect_message">Logge dich bei Seerr ein um Anfragen für Filmen und Serien zu erstellen</string>
