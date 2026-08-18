@@ -58,7 +58,9 @@
     <string name="hero_btn_play_trailer">Trailer afspelen</string>
     <string name="hero_btn_play_media">Media afspelen</string>
     <string name="hero_btn_watch_now">Nu bekijken</string>
-    <string name="hero_season_plural">%1$d seizoenen</string>
+    <plurals name="hero_season_plural">
+        <item quantity="one">%1$d seizoenen</item>
+    </plurals>
     <string name="favorites_title">Favorieten</string>
     <string name="error_unknown">Onbekende fout</string>
     <string name="favorites_empty_title">Nog geen favorieten</string>
@@ -77,11 +79,15 @@
     <string name="meta_cc">CC</string>
     <string name="meta_time_remaining_hours_minutes">nog %1$d u %2$d m</string>
     <string name="meta_time_remaining_minutes">nog %1$d m</string>
-    <string name="meta_boxset_count">%1$d items</string>
+    <plurals name="meta_boxset_count">
+        <item quantity="one">%1$d items</item>
+    </plurals>
     <string name="meta_runtime_hours_minutes">%1$d u %2$d m</string>
     <string name="meta_runtime_minutes">%1$d m</string>
     <string name="meta_ends_at">Eindigt om %1$s</string>
-    <string name="meta_episode_count">%1$d afleveringen</string>
+    <plurals name="meta_episode_count">
+        <item quantity="one">%1$d afleveringen</item>
+    </plurals>
     <string name="similar_items_title">Vergelijkbaar</string>
     <string name="special_features_title">Extra\'s</string>
     <string name="extra_type_clip">Clip</string>
@@ -110,8 +116,12 @@
     <string name="action_see_less">Minder weergeven</string>
     <string name="cd_expand">Uitklappen</string>
     <string name="cd_collapse">Inklappen</string>
-    <string name="director_prefix">Regie: %1$s</string>
-    <string name="writers_prefix">Scenario: %1$s</string>
+    <plurals name="director_prefix">
+        <item quantity="one">Regie: %1$s</item>
+    </plurals>
+    <plurals name="writers_prefix">
+        <item quantity="one">Scenario: %1$s</item>
+    </plurals>
     <string name="seasons_title">Seizoenen</string>
     <string name="action_play">Afspelen</string>
     <string name="action_rewatch">Opnieuw bekijken</string>
@@ -165,7 +175,9 @@
     <string name="action_show_all_channels">Alle zenders tonen</string>
     <string name="livetv_header_letter_fmt">Zenders (%1$s)</string>
     <string name="livetv_header_all">Alle zenders</string>
-    <string name="livetv_count_fmt">%1$d zenders gevonden</string>
+    <plurals name="livetv_count_fmt">
+        <item quantity="one">%1$d zenders gevonden</item>
+    </plurals>
     <string name="livetv_guide_date_fmt">EEE d MMM</string>
     <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
     <string name="action_now">Nu</string>
@@ -180,9 +192,13 @@
     <string name="livetv_error_not_available_title">Live TV niet beschikbaar</string>
     <string name="livetv_error_not_available_message">Configureer Live TV op je Jellyfin-server</string>
     <string name="person_biography">Biografie</string>
-    <string name="person_born_fmt">Geboren: %1$s (%2$d jaar)</string>
+    <plurals name="person_born_fmt">
+        <item quantity="one">Geboren: %1$s (%2$d jaar)</item>
+    </plurals>
     <string name="person_born_deceased_fmt">Geboren: %1$s</string>
-    <string name="person_died_fmt">Overleden: %1$s (%2$d jaar)</string>
+    <plurals name="person_died_fmt">
+        <item quantity="one">Overleden: %1$s (%2$d jaar)</item>
+    </plurals>
     <string name="person_died_no_age_fmt">Overleden: %1$s</string>
     <string name="person_birthplace_fmt">Geboorteplaats: %1$s</string>
     <string name="person_date_fmt">d MMMM yyyy</string>
@@ -298,7 +314,9 @@
     <string name="filter_request">Aanvraag</string>
     <string name="filter_audiobooks">Luisterboeken</string>
     <string name="explore_genres">Genres verkennen</string>
-    <string name="search_results_count_fmt">%1$d resultaten gevonden</string>
+    <plurals name="search_results_count_fmt">
+        <item quantity="one">%1$d resultaten gevonden</item>
+    </plurals>
     <string name="cd_watched">Bekeken</string>
     <string name="cd_finished">Voltooid</string>
     <string name="media_type_book">Boek</string>
@@ -433,7 +451,9 @@
     <string name="empty_servers_message">Tik op de +-knop om je eerste Jellyfin-server toe te voegen.</string>
     <string name="dialog_delete_server_title">Server verwijderen?</string>
     <string name="dialog_delete_server_message_fmt">Weet je zeker dat je \"%1$s\" wilt verwijderen?</string>
-    <string name="dialog_delete_server_warning_fmt">Hierdoor worden %1$d opgeslagen gebruiker(s) en alle bijbehorende gegevens verwijderd.</string>
+    <plurals name="dialog_delete_server_warning_fmt">
+        <item quantity="one">Hierdoor worden %1$d opgeslagen gebruiker(s) en alle bijbehorende gegevens verwijderd.</item>
+    </plurals>
     <string name="action_delete">Verwijderen</string>
     <string name="error_load_servers_failed">Kan servers niet laden</string>
     <string name="error_delete_active_server">Kan de momenteel actieve server niet verwijderen. Schakel eerst over naar een andere server.</string>
@@ -561,7 +581,9 @@
     <string name="action_close">Sluiten</string>
     <string name="abs_server_url_placeholder">https://abs.example.com</string>
     <string name="cd_remote_connection">Verbinding op afstand</string>
-    <string name="meta_parts_fmt">%1$d delen</string>
+    <plurals name="meta_parts_fmt">
+        <item quantity="one">%1$d delen</item>
+    </plurals>
     <string name="meta_part_of_fmt">Deel %1$d/%2$d</string>
     <string name="parts_title">Delen</string>
     <string name="section_available_requests">Beschikbare aanvragen</string>
@@ -722,12 +744,16 @@
     <string name="pref_clear_cache">Gecachte gegevens wissen</string>
     <string name="pref_clear_cache_summary">Startschermrijen, genres en afbeeldingenlijsten worden opnieuw opgehaald</string>
     <string name="pref_clear_cache_empty">Niets gecacht</string>
-    <string name="pref_clear_cache_usage_total_fmt">%1$s gecacht · %2$d items</string>
+    <plurals name="pref_clear_cache_usage_total_fmt">
+        <item quantity="one">%1$s gecacht · %2$d items</item>
+    </plurals>
     <string name="cache_kind_images">Afbeeldingen</string>
     <string name="cache_store_video">Videocache</string>
     <string name="cache_store_network">Netwerkcache</string>
     <string name="cache_store_player">Spelergegevens</string>
-    <string name="cache_entries_fmt">%1$d items</string>
+    <plurals name="cache_entries_fmt">
+        <item quantity="one">%1$d items</item>
+    </plurals>
     <string name="pref_clear_cache_confirm">Gecachte gegevens wissen?</string>
     <string name="pref_clear_cache_message">Downloads, instellingen en je aangepaste secties worden niet beïnvloed. Startschermrijen worden opnieuw opgebouwd zodra ze laden.</string>
     <string name="pref_clear_cache_done">Gecachte gegevens gewist</string>
@@ -754,8 +780,12 @@
     <string name="backup_section_library">Bibliotheek</string>
     <string name="backup_section_downloads">Downloads</string>
     <string name="backup_section_privacy">Privacy en updates</string>
-    <string name="backup_section_home_fmt">%1$d aangepaste secties, rijen en Ontdekken</string>
-    <string name="backup_section_settings_fmt">%1$d instellingen</string>
+    <plurals name="backup_section_home_fmt">
+        <item quantity="one">%1$d aangepaste secties, rijen en Ontdekken</item>
+    </plurals>
+    <plurals name="backup_section_settings_fmt">
+        <item quantity="one">%1$d instellingen</item>
+    </plurals>
     <string name="custom_sections_add_blank">Lege sectie</string>
     <string name="custom_sections_add_blank_summary">Vanaf nul beginnen</string>
     <string name="custom_sections_preset_range_fmt">Seizoensgebonden · %1$s – %2$s</string>
@@ -783,7 +813,9 @@
     <string name="custom_sections_card_style_locked_fmt">%1$s — automatisch ingesteld voor dit type rij</string>
     <string name="custom_sections_field_refine">Verfijnen</string>
     <string name="custom_sections_refine_none">Geen extra filters</string>
-    <string name="custom_sections_refine_summary_fmt">%1$s · %2$d filters</string>
+    <plurals name="custom_sections_refine_summary_fmt">
+        <item quantity="one">%1$s · %2$d filters</item>
+    </plurals>
     <string name="custom_sections_group_content">Inhoud</string>
     <string name="custom_sections_group_display">Weergave</string>
     <string name="custom_sections_group_schedule">Planning</string>
@@ -848,8 +880,12 @@
     <string name="discover_filter_keywords">Trefwoorden</string>
     <string name="discover_filter_keyword_include">Insluiten</string>
     <string name="discover_filter_keyword_exclude">Uitsluiten</string>
-    <string name="discover_filter_keywords_included_fmt">%1$d ingesloten</string>
-    <string name="discover_filter_keywords_excluded_fmt">%1$d uitgesloten</string>
+    <plurals name="discover_filter_keywords_included_fmt">
+        <item quantity="one">%1$d ingesloten</item>
+    </plurals>
+    <plurals name="discover_filter_keywords_excluded_fmt">
+        <item quantity="one">%1$d uitgesloten</item>
+    </plurals>
     <string name="discover_filter_keyword_search_hint">Trefwoorden zoeken…</string>
     <string name="discover_filter_select_region">Selecteer regio</string>
     <string name="tv_status_returning_series">Terugkerende serie</string>
@@ -859,7 +895,9 @@
     <string name="tv_status_cancelled">Gecanceld</string>
     <string name="tv_status_pilot">Pilot</string>
     <string name="home_more_from_artist_fmt">Meer van %1$s</string>
-    <string name="playback_stats_value_seconds_fmt">%1$d seconden</string>
+    <plurals name="playback_stats_value_seconds_fmt">
+        <item quantity="one">%1$d seconden</item>
+    </plurals>
     <string name="playback_stats_value_bitrate_container_fmt">%1$s Mbps (container)</string>
     <string name="playback_stats_label_connection">Verbinding</string>
     <string name="playback_stats_label_decoder">Decoder</string>
@@ -972,7 +1010,9 @@
     <string name="cd_tmdb">TMDb</string>
     <string name="cd_mdblist">MDBList</string>
     <string name="permission_request">Aanvraag</string>
-    <string name="quota_days_fmt">%1$d / %2$d dagen</string>
+    <plurals name="quota_days_fmt">
+        <item quantity="one">%1$d / %2$d dagen</item>
+    </plurals>
     <string name="duration_hours_fmt">%.0f uur</string>
     <string name="media_route_menu_title">Casten</string>
     <string name="pref_cast_max_bitrate_auto">Auto (netwerktest)</string>
@@ -1052,9 +1092,15 @@
     <string name="request_approve">Goedkeuren</string>
     <string name="request_decline">Afwijzen</string>
     <string name="request_all_seasons_note">Alle seizoenen worden aangevraagd</string>
-    <string name="request_quota_movie_remaining_fmt">nog %1$d van %2$d filmaanvragen over</string>
-    <string name="request_quota_tv_remaining_fmt">nog %1$d van %2$d seizoensaanvragen over</string>
-    <string name="request_quota_period_fmt">per %1$d dagen</string>
+    <plurals name="request_quota_movie_remaining_fmt">
+        <item quantity="one">nog %1$d van %2$d filmaanvragen over</item>
+    </plurals>
+    <plurals name="request_quota_tv_remaining_fmt">
+        <item quantity="one">nog %1$d van %2$d seizoensaanvragen over</item>
+    </plurals>
+    <plurals name="request_quota_period_fmt">
+        <item quantity="one">per %1$d dagen</item>
+    </plurals>
     <string name="request_quota_exceeded">Limiet bereikt</string>
     <string name="request_language_profile">Taalprofiel</string>
     <string name="request_tags">Tags</string>
@@ -1065,7 +1111,9 @@
     <string name="seerr_detail_request">Aanvragen</string>
     <string name="seerr_detail_open_library">Openen in bibliotheek</string>
     <string name="seerr_collection_fallback">Collectie</string>
-    <string name="season_count_fmt">%1$d seizoenen</string>
+    <plurals name="season_count_fmt">
+        <item quantity="one">%1$d seizoenen</item>
+    </plurals>
     <string name="seerr_recommendations_title">Aanbevelingen</string>
     <string name="seerr_details_title">Details</string>
     <string name="request_quota_exceeded_message">Je hebt niet genoeg resterende aanvragen. Je quota wordt automatisch gereset.</string>
@@ -1116,7 +1164,9 @@
     <string name="cd_server_options">Serveropties</string>
     <string name="cd_security_warning">Beveiligingswaarschuwing</string>
     <string name="server_primary_connection">Primaire verbinding</string>
-    <string name="server_backup_routes_fmt">+ %1$d reserve-route(s)</string>
+    <plurals name="server_backup_routes_fmt">
+        <item quantity="one">+ %1$d reserve-route(s)</item>
+    </plurals>
     <string name="service_label_seerr">Seerr</string>
     <string name="service_label_abs">ABS</string>
     <string name="service_label_tmdb">TMDb</string>
