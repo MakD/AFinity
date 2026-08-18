@@ -85,7 +85,9 @@
     <string name="meta_runtime_hours_minutes">%1$dh %2$dm</string>
     <string name="meta_runtime_minutes">%1$dm</string>
     <string name="meta_ends_at">Termina en %1$s</string>
-    <string name="meta_episode_count">%1$d episodios</string>
+    <plurals name="meta_episode_count">
+        <item quantity="one">%1$d episodios</item>
+    </plurals>
     <string name="similar_items_title">Más como esto</string>
     <string name="special_features_title">Características especiales</string>
     <string name="extra_type_clip">Clip</string>
@@ -114,8 +116,12 @@
     <string name="action_see_less">Ver menos</string>
     <string name="cd_expand">Expandir</string>
     <string name="cd_collapse">Colapsar</string>
-    <string name="director_prefix">Director: %1$s</string>
-    <string name="writers_prefix">Escritores: %1$s</string>
+    <plurals name="director_prefix">
+        <item quantity="one">Director: %1$s</item>
+    </plurals>
+    <plurals name="writers_prefix">
+        <item quantity="one">Escritores: %1$s</item>
+    </plurals>
     <string name="seasons_title">Temporadas</string>
     <string name="action_play">Reproducir</string>
     <string name="action_rewatch">Volver a ver</string>
@@ -169,7 +175,9 @@
     <string name="action_show_all_channels">Mostrar todos los canales</string>
     <string name="livetv_header_letter_fmt">Canales (%1$s)</string>
     <string name="livetv_header_all">Todos los canales</string>
-    <string name="livetv_count_fmt">%1$d canales encontrados</string>
+    <plurals name="livetv_count_fmt">
+        <item quantity="one">%1$d canales encontrados</item>
+    </plurals>
     <string name="livetv_guide_date_fmt">EEE, MMM d</string>
     <string name="livetv_guide_time_range_fmt">%1$d:00 – %2$d:00</string>
     <string name="action_now">Ahora</string>
@@ -306,7 +314,9 @@
     <string name="filter_request">Pedido</string>
     <string name="filter_audiobooks">Audio‐libros</string>
     <string name="explore_genres">Explorar géneros</string>
-    <string name="search_results_count_fmt">%1$d resultados encontrados</string>
+    <plurals name="search_results_count_fmt">
+        <item quantity="one">%1$d resultados encontrados</item>
+    </plurals>
     <string name="cd_watched">Vigilado</string>
     <string name="cd_finished">Finalizado</string>
     <string name="media_type_book">Libro</string>
