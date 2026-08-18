@@ -576,7 +576,9 @@
     <string name="pref_send_logs">Enviar bitácoras</string>
     <string name="pref_send_logs_summary">Compartir bitácoras diagnosticadas para reportes de fallo</string>
     <string name="home_upcoming_episodes">Próximos episodios</string>
-    <string name="meta_parts_fmt">%1$d Partes</string>
+    <plurals name="meta_parts_fmt">
+        <item quantity="one">%1$d Partes</item>
+    </plurals>
     <string name="meta_part_of_fmt">Parte %1$d/%2$d</string>
     <string name="parts_title">Partes</string>
     <string name="cd_playback_info">Estadísticas de reproducción</string>
@@ -619,7 +621,9 @@
     <string name="cd_jellyseerr">Jellyserr</string>
     <string name="cd_audiobookshelf">Audiobookshelf</string>
     <string name="permission_request">Solicitud</string>
-    <string name="quota_days_fmt">%1$d / %2$d días</string>
+    <plurals name="quota_days_fmt">
+        <item quantity="one">%1$d / %2$d días</item>
+    </plurals>
     <string name="duration_hours_fmt">%.0f horas</string>
     <string name="cd_manage_addresses">Administrar direcciones</string>
     <string name="cd_add_address">Agregar dirección</string>
