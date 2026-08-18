@@ -61,7 +61,9 @@
     <string name="hero_btn_play_trailer">Odtwórz zwiastun</string>
     <string name="hero_btn_play_media">Odtwórz media</string>
     <string name="hero_btn_watch_now">Oglądaj teraz</string>
-    <string name="hero_season_plural">%1$d sezony</string>
+    <plurals name="hero_season_plural">
+        <item quantity="one">%1$d sezony</item>
+    </plurals>
     <string name="favorites_title">Ulubione</string>
     <string name="error_unknown">Nieznany błąd</string>
     <string name="favorites_empty_title">Brak ulubionych</string>
@@ -80,14 +82,20 @@
     <string name="meta_cc">Napisy</string>
     <string name="meta_time_remaining_hours_minutes">%1$dh %2$dm pozostało</string>
     <string name="meta_time_remaining_minutes">%1$dm pozostało</string>
-    <string name="meta_boxset_count">%1$d elementów</string>
+    <plurals name="meta_boxset_count">
+        <item quantity="one">%1$d elementów</item>
+    </plurals>
     <string name="abs_server_url_placeholder">https://abs.example.com</string>
     <string name="meta_runtime_hours_minutes">%1$dh %2$dm</string>
     <string name="meta_runtime_minutes">%1$dm</string>
-    <string name="meta_parts_fmt">%1$d części</string>
+    <plurals name="meta_parts_fmt">
+        <item quantity="one">%1$d części</item>
+    </plurals>
     <string name="meta_part_of_fmt">Część %1$d/%2$d</string>
     <string name="meta_ends_at">Kończy się o %1$s</string>
-    <string name="meta_episode_count">%1$d odcinki</string>
+    <plurals name="meta_episode_count">
+        <item quantity="one">%1$d odcinki</item>
+    </plurals>
     <string name="similar_items_title">Podobne</string>
     <string name="special_features_title">Zawartość specjalna</string>
     <string name="extra_type_clip">Klip</string>
@@ -119,8 +127,12 @@
     <string name="action_see_less">Pokaż mniej</string>
     <string name="cd_expand">Rozszerz</string>
     <string name="cd_collapse">Zwiń</string>
-    <string name="director_prefix">Reżyser: %1$s</string>
-    <string name="writers_prefix">Scenarzysta: %1$s</string>
+    <plurals name="director_prefix">
+        <item quantity="one">Reżyser: %1$s</item>
+    </plurals>
+    <plurals name="writers_prefix">
+        <item quantity="one">Scenarzysta: %1$s</item>
+    </plurals>
     <string name="seasons_title">Sezony</string>
     <string name="action_play">Odtwórz</string>
     <string name="action_rewatch">Obejrzyj ponownie</string>
@@ -175,7 +187,9 @@
     <string name="action_show_all_channels">Pokaż wszystkie kanały</string>
     <string name="livetv_header_letter_fmt">Kanały (%1$s)</string>
     <string name="livetv_header_all">Wszystkie kanały</string>
-    <string name="livetv_count_fmt">Znaleziono %1$d kanałów</string>
+    <plurals name="livetv_count_fmt">
+        <item quantity="one">Znaleziono %1$d kanałów</item>
+    </plurals>
     <string name="livetv_guide_date_fmt">EEE, MMM d</string>
     <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
     <string name="action_now">Teraz</string>
@@ -190,9 +204,13 @@
     <string name="livetv_error_not_available_title">Telewizja na żywo niedostępna</string>
     <string name="livetv_error_not_available_message">Skonfiguruj telewizję na żywo na swoim serwerze Jellyfin</string>
     <string name="person_biography">Biografia</string>
-    <string name="person_born_fmt">Urodzony: %1$s (%2$d lat)</string>
+    <plurals name="person_born_fmt">
+        <item quantity="one">Urodzony: %1$s (%2$d lat)</item>
+    </plurals>
     <string name="person_born_deceased_fmt">Urodzony: %1$s</string>
-    <string name="person_died_fmt">Zmarł: %1$s (w wieku %2$d)</string>
+    <plurals name="person_died_fmt">
+        <item quantity="one">Zmarł: %1$s (w wieku %2$d)</item>
+    </plurals>
     <string name="person_died_no_age_fmt">Zmarł: %1$s</string>
     <string name="person_birthplace_fmt">Miejsce urodzenia: %1$s</string>
     <string name="person_date_fmt">MMMM d, yyyy</string>
@@ -311,7 +329,9 @@
     <string name="filter_request">Prośba</string>
     <string name="filter_audiobooks">Audiobooki</string>
     <string name="explore_genres">Odkryj gatunki</string>
-    <string name="search_results_count_fmt">Znaleziono %1$d wyników</string>
+    <plurals name="search_results_count_fmt">
+        <item quantity="one">Znaleziono %1$d wyników</item>
+    </plurals>
     <string name="cd_watched">Obejrzane</string>
     <string name="cd_finished">Skończony</string>
     <string name="media_type_book">Książka</string>
@@ -470,7 +490,9 @@
     <string name="empty_servers_message">Dotknij przycisku +, aby dodać swój pierwszy serwer Jellyfin.</string>
     <string name="dialog_delete_server_title">Usunąć serwer?</string>
     <string name="dialog_delete_server_message_fmt">Czy na pewno chcesz usunąć \"%1$s\"?</string>
-    <string name="dialog_delete_server_warning_fmt">To spowoduje usunięcie %1$d zapisanego użytkownika(ów) i wszystkich powiązanych danych.</string>
+    <plurals name="dialog_delete_server_warning_fmt">
+        <item quantity="one">To spowoduje usunięcie %1$d zapisanego użytkownika(ów) i wszystkich powiązanych danych.</item>
+    </plurals>
     <string name="action_delete">Usuń</string>
     <string name="error_load_servers_failed">Nie udało się załadować serwerów</string>
     <string name="error_delete_active_server">Nie możesz usunąć aktualnie aktywnego serwera. Najpierw przejdź na inny serwer.</string>
@@ -633,7 +655,9 @@
     <string name="cd_tmdb">TMDB</string>
     <string name="cd_mdblist">MDBList</string>
     <string name="permission_request">Prośba</string>
-    <string name="quota_days_fmt">%1$d / %2$d dni</string>
+    <plurals name="quota_days_fmt">
+        <item quantity="one">%1$d / %2$d dni</item>
+    </plurals>
     <string name="duration_hours_fmt">%.0f godz.</string>
     <string name="cd_manage_addresses">Zarządzaj adresami</string>
     <string name="cd_add_address">Dodaj adres</string>
@@ -772,7 +796,9 @@
     <string name="cd_server_options">Opcje serwera</string>
     <string name="cd_security_warning">Ostrzeżenie bezpieczeństwa</string>
     <string name="server_primary_connection">Połączenie podstawowe</string>
-    <string name="server_backup_routes_fmt">+ %1$d alternatywna trasa(y)</string>
+    <plurals name="server_backup_routes_fmt">
+        <item quantity="one">+ %1$d alternatywna trasa(y)</item>
+    </plurals>
     <string name="service_label_seerr">Seerr</string>
     <string name="service_label_abs">ABS</string>
     <string name="service_label_tmdb">TMDB</string>
@@ -982,9 +1008,15 @@
     <string name="update_console_status_mismatch">MISMATCH — plik został usunięty, pobierz ponownie</string>
     <string name="update_console_status_error">BŁĄD — nie można odczytać pliku, pobierz ponownie</string>
     <string name="request_all_seasons_note">Wszystkie sezony zostaną zażądane</string>
-    <string name="request_quota_movie_remaining_fmt">Pozostało %1$d z %2$d żądań</string>
-    <string name="request_quota_tv_remaining_fmt">Pozostało %1$d z %2$d żądań sezonów</string>
-    <string name="request_quota_period_fmt">na %1$d dni</string>
+    <plurals name="request_quota_movie_remaining_fmt">
+        <item quantity="one">Pozostało %1$d z %2$d żądań</item>
+    </plurals>
+    <plurals name="request_quota_tv_remaining_fmt">
+        <item quantity="one">Pozostało %1$d z %2$d żądań sezonów</item>
+    </plurals>
+    <plurals name="request_quota_period_fmt">
+        <item quantity="one">na %1$d dni</item>
+    </plurals>
     <string name="request_quota_exceeded">Osiągnięto limit</string>
     <string name="request_language_profile">Profil językowy</string>
     <string name="request_tags">Tagi</string>
@@ -995,7 +1027,9 @@
     <string name="seerr_detail_request">Poproś</string>
     <string name="seerr_detail_open_library">Otwórz w bibliotece</string>
     <string name="seerr_collection_fallback">Kolekcja</string>
-    <string name="season_count_fmt">%1$d sezonów</string>
+    <plurals name="season_count_fmt">
+        <item quantity="one">%1$d sezonów</item>
+    </plurals>
     <string name="seerr_recommendations_title">Polecane</string>
     <string name="seerr_details_title">Szczegóły</string>
     <string name="request_quota_exceeded_message">Nie masz wystarczającej liczby żądań. Twój limit zostanie automatycznie zresetowany.</string>
