@@ -53,7 +53,9 @@
     <string name="hero_btn_play_trailer">Regarder la bande-annonce</string>
     <string name="hero_btn_play_media">Lancer la lecture</string>
     <string name="hero_btn_watch_now">Regarder maintenant</string>
-    <string name="hero_season_plural">%1$d Saisons</string>
+    <plurals name="hero_season_plural">
+        <item quantity="one">%1$d Saisons</item>
+    </plurals>
     <string name="favorites_title">Favoris</string>
     <string name="error_unknown">Erreur inconnue</string>
     <string name="favorites_empty_title">Aucun favori pour le moment</string>
@@ -83,8 +85,12 @@
     <string name="action_see_more">Voir plus</string>
     <string name="action_see_less">Voir moins</string>
     <string name="cd_expand">Développer</string>
-    <string name="director_prefix">Réalisateur : %1$s</string>
-    <string name="writers_prefix">Auteurs :%1$s</string>
+    <plurals name="director_prefix">
+        <item quantity="one">Réalisateur : %1$s</item>
+    </plurals>
+    <plurals name="writers_prefix">
+        <item quantity="one">Auteurs :%1$s</item>
+    </plurals>
     <string name="seasons_title">Saisons</string>
     <string name="action_play">Lancer</string>
     <string name="action_rewatch">Revoir</string>
@@ -135,7 +141,9 @@
     <string name="action_show_all_channels">Afficher tous les canaux</string>
     <string name="livetv_header_letter_fmt">Canaux (%1$s)</string>
     <string name="livetv_header_all">Toutes les chaînes</string>
-    <string name="livetv_count_fmt">%1$d canaux trouvés</string>
+    <plurals name="livetv_count_fmt">
+        <item quantity="one">%1$d canaux trouvés</item>
+    </plurals>
     <string name="action_now">Maintenant</string>
     <string name="cd_guide_previous_time">Temps précédent</string>
     <string name="cd_guide_next_time">Prochaine étape</string>
@@ -148,7 +156,9 @@
     <string name="livetv_error_not_available_title">TV en direct non disponible</string>
     <string name="livetv_error_not_available_message">Configurez Live TV sur votre serveur Jellyfin</string>
     <string name="person_biography">Biographie</string>
-    <string name="person_born_fmt">Né(e) : %1$s (%2$d ans)</string>
+    <plurals name="person_born_fmt">
+        <item quantity="one">Né(e) : %1$s (%2$d ans)</item>
+    </plurals>
     <string name="person_birthplace_fmt">Lieu de naissance :%1$s</string>
     <string name="action_show_more">Afficher plus</string>
     <string name="action_show_less">Montrer moins</string>
@@ -252,7 +262,9 @@
     <string name="filter_request">Demande</string>
     <string name="filter_audiobooks">Livres audio</string>
     <string name="explore_genres">Explorer les genres</string>
-    <string name="search_results_count_fmt">%1$d résultats trouvés</string>
+    <plurals name="search_results_count_fmt">
+        <item quantity="one">%1$d résultats trouvés</item>
+    </plurals>
     <string name="cd_watched">Regardé</string>
     <string name="home_episode_count_fmt">%1$d EP</string>
     <string name="home_episode_count_plus">99+ EP</string>
@@ -260,7 +272,9 @@
     <string name="meta_cc">CC</string>
     <string name="meta_time_remaining_hours_minutes">%1$dh %2$dm left</string>
     <string name="meta_time_remaining_minutes">%1$dm left</string>
-    <string name="meta_boxset_count">%1$d contenus</string>
+    <plurals name="meta_boxset_count">
+        <item quantity="one">%1$d contenus</item>
+    </plurals>
     <string name="meta_runtime_hours_minutes">%1$dh %2$dm</string>
     <string name="meta_runtime_minutes">%1$dm</string>
     <string name="episode_season_episode_fmt">S%1$d:E%2$s • %3$s</string>
@@ -411,7 +425,9 @@
     <string name="empty_servers_message">Appuyez sur le bouton + pour ajouter votre premier serveur Jellyfin.</string>
     <string name="dialog_delete_server_title">Supprimer le serveur ?</string>
     <string name="dialog_delete_server_message_fmt">Êtes-vous sûr de vouloir supprimer \"%1$s\" ?</string>
-    <string name="dialog_delete_server_warning_fmt">Cela supprimera %1$d les utilisateurs enregistrés et toutes les données associées.</string>
+    <plurals name="dialog_delete_server_warning_fmt">
+        <item quantity="one">Cela supprimera %1$d les utilisateurs enregistrés et toutes les données associées.</item>
+    </plurals>
     <string name="action_delete">Supprimer</string>
     <string name="error_load_servers_failed">Impossible de charger les serveurs</string>
     <string name="error_delete_active_server">Ne peut pas supprimer le serveur actuellement actif. S\'il vous plaît passer à un autre serveur d\'abord.</string>
@@ -513,7 +529,9 @@
     <string name="section_seasons">Saisons</string>
     <string name="section_episodes">Épisodes</string>
     <string name="meta_ends_at">Se termine à %1$s</string>
-    <string name="meta_episode_count">%1$d épisodes</string>
+    <plurals name="meta_episode_count">
+        <item quantity="one">%1$d épisodes</item>
+    </plurals>
     <string name="extra_type_clip">Extrait</string>
     <string name="extra_type_trailer">Bande-annonce</string>
     <string name="extra_type_behind_the_scenes">Coulisses</string>
@@ -524,7 +542,9 @@
     <string name="extra_type_featurette">Making-of</string>
     <string name="extra_type_short">Court métrage</string>
     <string name="person_born_deceased_fmt">Né : %1$s</string>
-    <string name="person_died_fmt">Décédé : %1$s (à l’âge de %2$d ans)</string>
+    <plurals name="person_died_fmt">
+        <item quantity="one">Décédé : %1$s (à l’âge de %2$d ans)</item>
+    </plurals>
     <string name="person_died_no_age_fmt">Décédé : %1$s</string>
     <string name="player_version_title">Version</string>
     <string name="player_version_default_label">Par défaut</string>
