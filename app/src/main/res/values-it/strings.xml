@@ -55,7 +55,9 @@
     <string name="hero_btn_play_trailer">Riproduci il Trailer</string>
     <string name="hero_btn_play_media">Riproduci il Contenuto</string>
     <string name="hero_btn_watch_now">Guarda Adesso</string>
-    <string name="hero_season_plural">%1$d Stagioni</string>
+    <plurals name="hero_season_plural">
+        <item quantity="one">%1$d Stagioni</item>
+    </plurals>
     <string name="favorites_title">Preferiti</string>
     <string name="error_unknown">Errore Sconosciuto</string>
     <string name="favorites_empty_message">Gli elementi marcati come preferiti appariranno qui</string>
@@ -270,8 +272,12 @@
     <string name="meta_vision">Vision</string>
     <string name="meta_digital">Digital</string>
     <string name="meta_digital_plus">Digital+</string>
-    <string name="meta_boxset_count">%1$d elementi</string>
-    <string name="meta_parts_fmt">%1$d Parti</string>
+    <plurals name="meta_boxset_count">
+        <item quantity="one">%1$d elementi</item>
+    </plurals>
+    <plurals name="meta_parts_fmt">
+        <item quantity="one">%1$d Parti</item>
+    </plurals>
     <string name="meta_part_of_fmt">Parte %1$d/%2$d</string>
     <string name="abs_server_url_placeholder">https://abs.example.com</string>
     <string name="livetv_header_letter_fmt">Canali (%1$s)</string>
