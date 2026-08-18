@@ -2,9 +2,9 @@
 <resources>
     <string name="splash_powered_by">Jellyfin altyapısıyla yapılmıştır</string>
     <string name="splash_progress_fmt">%1$d%%</string>
-    <string name="splash_status_authenticating">Doğrulanıyor...</string>
+    <string name="splash_status_authenticating">Doğrulanıyor…</string>
     <string name="loading_phase_offline">Hazır (çevrimdışı modu)</string>
-    <string name="loading_phase_connecting">Sunucuya bağlanıyor...</string>
+    <string name="loading_phase_connecting">Sunucuya bağlanıyor. . .</string>
     <string name="loading_phase_fetching">İçerik yükleniyor...</string>
     <string name="loading_phase_processing">Kütüphane işleniyor...</string>
     <string name="loading_phase_finalizing">Ana ekran tamamlanıyor...</string>
