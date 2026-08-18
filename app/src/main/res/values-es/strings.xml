@@ -79,7 +79,9 @@
     <string name="meta_cc">CC</string>
     <string name="meta_time_remaining_hours_minutes">queda %1$dh %2$dm</string>
     <string name="meta_time_remaining_minutes">queda %1$dm</string>
-    <string name="meta_boxset_count">%1$d elementos</string>
+    <plurals name="meta_boxset_count">
+        <item quantity="one">%1$d elementos</item>
+    </plurals>
     <string name="meta_runtime_hours_minutes">%1$dh %2$dm</string>
     <string name="meta_runtime_minutes">%1$dm</string>
     <string name="meta_ends_at">Termina en %1$s</string>
@@ -182,9 +184,13 @@
     <string name="livetv_error_not_available_title">TV en vivo no disponible</string>
     <string name="livetv_error_not_available_message">Configure la TV en directo en su servidor Jellyfin</string>
     <string name="person_biography">Biografía</string>
-    <string name="person_born_fmt">Nacimiento: %1$s (%2$d años)</string>
+    <plurals name="person_born_fmt">
+        <item quantity="one">Nacimiento: %1$s (%2$d años)</item>
+    </plurals>
     <string name="person_born_deceased_fmt">Nacimiento: %1$s</string>
-    <string name="person_died_fmt">Defunción: %1$s (edad %2$d)</string>
+    <plurals name="person_died_fmt">
+        <item quantity="one">Defunción: %1$s (edad %2$d)</item>
+    </plurals>
     <string name="person_died_no_age_fmt">Defunción: %1$s</string>
     <string name="person_birthplace_fmt">Lugar de nacimiento: %1$s</string>
     <string name="person_date_fmt">MMMM d, aaaa</string>
@@ -435,7 +441,9 @@
     <string name="empty_servers_message">Toque el botón + para agregar su primer servidor Jellyfin.</string>
     <string name="dialog_delete_server_title">¿Eliminar servidor?</string>
     <string name="dialog_delete_server_message_fmt">¿Está seguro que desea eliminar “%1$s”?</string>
-    <string name="dialog_delete_server_warning_fmt">Esto eliminará %1$d los usuario(s) guardado(s) y todos los datos asociados.</string>
+    <plurals name="dialog_delete_server_warning_fmt">
+        <item quantity="one">Esto eliminará %1$d los usuario(s) guardado(s) y todos los datos asociados.</item>
+    </plurals>
     <string name="action_delete">Eliminar</string>
     <string name="error_load_servers_failed">No se pudieron cargar los servidores</string>
     <string name="error_delete_active_server">No se puede eliminar el servidor actualmente activo. Primero cambie a otro servidor.</string>
