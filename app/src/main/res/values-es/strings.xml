@@ -684,7 +684,9 @@
     <string name="playback_stats_title">Estadísticas de reproducción</string>
     <string name="playback_stats_value_direct_play_local">Reproducción directa (archivo local)</string>
     <string name="playback_stats_value_direct_streaming">Transmisión directa</string>
-    <string name="playback_stats_value_seconds_fmt">%1$d segundos</string>
+    <plurals name="playback_stats_value_seconds_fmt">
+        <item quantity="one">%1$d segundos</item>
+    </plurals>
     <string name="playback_stats_value_hdr_output">Se reproduce en HDR</string>
     <string name="playback_stats_value_hdr_tonemapped">Convertido a SDR mediante mapeo de tonos</string>
     <string name="play_error_missing_source">No se encontró ningún elemento reproducible en el servidor</string>
