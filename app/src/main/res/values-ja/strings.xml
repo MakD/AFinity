@@ -58,7 +58,9 @@
     <string name="hero_btn_play_trailer">トレーラーを再生する</string>
     <string name="hero_btn_play_media">メディアを再生する</string>
     <string name="hero_btn_watch_now">今すぐ見る</string>
-    <string name="hero_season_plural">%1$d 季節</string>
+    <plurals name="hero_season_plural">
+        <item quantity="other">%1$d 季節</item>
+    </plurals>
     <string name="favorites_title">お気に入り</string>
     <string name="error_unknown">不明なエラー</string>
     <string name="favorites_empty_title">お気に入りはまだありません</string>
@@ -77,11 +79,15 @@
     <string name="meta_cc">CC</string>
     <string name="meta_time_remaining_hours_minutes">%1$dh %2$dm 左</string>
     <string name="meta_time_remaining_minutes">%1$d残りm</string>
-    <string name="meta_boxset_count">%1$d アイテム</string>
+    <plurals name="meta_boxset_count">
+        <item quantity="other">%1$d アイテム</item>
+    </plurals>
     <string name="meta_runtime_hours_minutes">%1$dh %2$dメートル</string>
     <string name="meta_runtime_minutes">%1$dm</string>
     <string name="meta_ends_at">で終了 %1$s</string>
-    <string name="meta_episode_count">%1$d エピソード</string>
+    <plurals name="meta_episode_count">
+        <item quantity="other">%1$d エピソード</item>
+    </plurals>
     <string name="similar_items_title">もっと似たもの</string>
     <string name="special_features_title">特別な機能</string>
     <string name="extra_type_clip">クリップ</string>
@@ -110,8 +116,12 @@
     <string name="action_see_less">もっと見る</string>
     <string name="cd_expand">拡大する</string>
     <string name="cd_collapse">崩壊</string>
-    <string name="director_prefix">監督： %1$s</string>
-    <string name="writers_prefix">ライター: %1$s</string>
+    <plurals name="director_prefix">
+        <item quantity="other">監督： %1$s</item>
+    </plurals>
+    <plurals name="writers_prefix">
+        <item quantity="other">ライター: %1$s</item>
+    </plurals>
     <string name="seasons_title">季節</string>
     <string name="action_play">遊ぶ</string>
     <string name="action_rewatch">もう一度見る</string>
@@ -165,7 +175,9 @@
     <string name="action_show_all_channels">すべてのチャンネルを表示</string>
     <string name="livetv_header_letter_fmt">チャンネル (%1$s)</string>
     <string name="livetv_header_all">すべてのチャンネル</string>
-    <string name="livetv_count_fmt">%1$d チャンネルが見つかりました</string>
+    <plurals name="livetv_count_fmt">
+        <item quantity="other">%1$d チャンネルが見つかりました</item>
+    </plurals>
     <string name="livetv_guide_date_fmt">えー、うーん</string>
     <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
     <string name="action_now">今</string>
@@ -180,9 +192,13 @@
     <string name="livetv_error_not_available_title">生放送は利用できません</string>
     <string name="livetv_error_not_available_message">Jellyfin サーバーでライブ TV を構成する</string>
     <string name="person_biography">バイオグラフィー</string>
-    <string name="person_born_fmt">生まれ: %1$s (%2$d 歳)</string>
+    <plurals name="person_born_fmt">
+        <item quantity="other">生まれ: %1$s (%2$d 歳)</item>
+    </plurals>
     <string name="person_born_deceased_fmt">生まれる： %1$s</string>
-    <string name="person_died_fmt">死亡: %1$s (高齢 %2$d)</string>
+    <plurals name="person_died_fmt">
+        <item quantity="other">死亡: %1$s (高齢 %2$d)</item>
+    </plurals>
     <string name="person_died_no_age_fmt">死亡: %1$s</string>
     <string name="person_birthplace_fmt">出生地: %1$s</string>
     <string name="person_date_fmt">MMMM d、yyyy</string>
@@ -298,7 +314,9 @@
     <string name="filter_request">リクエスト</string>
     <string name="filter_audiobooks">オーディオブック</string>
     <string name="explore_genres">ジャンルを調べる</string>
-    <string name="search_results_count_fmt">%1$d 結果が見つかりました</string>
+    <plurals name="search_results_count_fmt">
+        <item quantity="other">%1$d 結果が見つかりました</item>
+    </plurals>
     <string name="cd_watched">見た</string>
     <string name="cd_finished">終了した</string>
     <string name="media_type_book">本</string>
@@ -433,7 +451,9 @@
     <string name="empty_servers_message">+ ボタンをタップして、最初の Jellyfin サーバーを追加します。</string>
     <string name="dialog_delete_server_title">サーバーを削除しますか?</string>
     <string name="dialog_delete_server_message_fmt">削除してもよろしいですか \"%1$s\"?</string>
-    <string name="dialog_delete_server_warning_fmt">これで削除されます %1$d 保存されたユーザーとすべての関連データ。</string>
+    <plurals name="dialog_delete_server_warning_fmt">
+        <item quantity="other">これで削除されます %1$d 保存されたユーザーとすべての関連データ。</item>
+    </plurals>
     <string name="action_delete">消去</string>
     <string name="error_load_servers_failed">サーバーのロードに失敗しました</string>
     <string name="error_delete_active_server">現在アクティブなサーバーを削除できません。まず別のサーバーに切り替えてください。</string>
