@@ -9,6 +9,7 @@ import javax.inject.Singleton
 enum class RefreshTrigger {
     USER_DATA_CHANGED,
     LIBRARY_CHANGED,
+    CONTENT_RESYNC,
 }
 
 @Singleton

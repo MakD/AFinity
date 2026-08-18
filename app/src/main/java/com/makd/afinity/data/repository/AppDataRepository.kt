@@ -39,6 +39,7 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
+import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.util.ItemIds
 import com.makd.afinity.util.JellyfinImageUrlBuilder
@@ -97,15 +98,20 @@ constructor(
     private val homeCacheRepository: HomeCacheRepository,
     private val homeSectionsRepository: HomeSectionsRepository,
     private val homeLayoutPreferencesRepository: HomeLayoutPreferencesRepository,
+    private val itemStore: ItemStore,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val deletedItemsRepository: DeletedItemsRepository,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
     private var liveDataJob: Job? = null
+    private var lastReinsertRefreshAt = 0L
     private var initialLoadJob: Deferred<Unit>? = null
     private val initialLoadMutex = Mutex()
     private val _lastUserDataChangedAt = MutableStateFlow(0L)
     val lastUserDataChangedAt: StateFlow<Long> = _lastUserDataChangedAt.asStateFlow()
+
+    private val _lastResyncAt = MutableStateFlow(0L)
+    val lastResyncAt: StateFlow<Long> = _lastResyncAt.asStateFlow()
 
     private val _sessionCleared = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val sessionCleared: SharedFlow<Unit> = _sessionCleared.asSharedFlow()
@@ -587,7 +593,21 @@ constructor(
                     .collect {
                         if (!_isInitialDataLoaded.value) return@collect
                         Timber.d("Bus: library changed — refreshing library sections")
+                        itemStore.clear()
                         refreshLibrarySections()
+                    }
+            }
+
+            launch {
+                mediaRefreshBus.events
+                    .filter { it == RefreshTrigger.CONTENT_RESYNC }
+                    .debounce(1_500L)
+                    .collect {
+                        if (!_isInitialDataLoaded.value) return@collect
+                        Timber.d("Bus: content resync — refreshing library sections")
+                        itemStore.clear()
+                        refreshLibrarySections()
+                        _lastResyncAt.value = System.currentTimeMillis()
                     }
             }
 
@@ -607,10 +627,12 @@ constructor(
 
             launch {
                 mediaChangeManager.batches.collect { batch ->
-                    if (batch.changes.any { it.mayReenterLatest() }) {
-                        Timber.d("Item marked unplayed — refreshing library sections for re-insert")
-                        refreshLibrarySections()
-                    }
+                    if (!batch.changes.any { it.mayReenterLatest() }) return@collect
+                    val now = System.currentTimeMillis()
+                    if (now - lastReinsertRefreshAt < REINSERT_REFRESH_COOLDOWN_MS) return@collect
+                    lastReinsertRefreshAt = now
+                    Timber.d("Item marked unplayed — refreshing library sections for re-insert")
+                    refreshLibrarySections()
                 }
             }
 
@@ -886,12 +908,16 @@ constructor(
             _separateMovieLibrarySections.value =
                 movieResults
                     .filter { it.second.isNotEmpty() }
-                    .map { (library, movies) -> library to movies.take(LATEST_RETAINED) }
+                    .map { (library, movies) ->
+                        library to mergeStoreUserData(movies.take(LATEST_RETAINED))
+                    }
 
             _separateTvLibrarySections.value =
                 showResults
                     .filter { it.second.isNotEmpty() }
-                    .map { (library, shows) -> library to shows.take(LATEST_RETAINED) }
+                    .map { (library, shows) ->
+                        library to mergeStoreUserData(shows.take(LATEST_RETAINED))
+                    }
 
             val allLatestMovies = movieResults.flatMap { it.second }
             val allLatestSeries = showResults.flatMap { it.second }
@@ -912,7 +938,7 @@ constructor(
                     allLatestSeries.sortedByDescending { it.premiereDate }.take(LATEST_RETAINED)
                 }
 
-            Pair(latestMovies, latestTvSeries)
+            Pair(mergeStoreUserData(latestMovies), mergeStoreUserData(latestTvSeries))
         } catch (e: Exception) {
             Timber.e(e, "Failed to load home specific data")
             Pair(emptyList(), emptyList())
@@ -1118,21 +1144,22 @@ constructor(
     private fun <T : AfinityItem> List<T>.replacedWith(item: T): List<T> =
         if (none { it.id == item.id }) this else map { if (it.id == item.id) item else it }
 
+    private fun <T : AfinityItem> mergeStoreUserData(items: List<T>): List<T> =
+        itemStore.merge(items)
+
     private fun MediaChangeEvent.mayReenterLatest(): Boolean {
+        if (userData == null && patch == null) return false
+        val item = updatedItem ?: return false
+        if (item !is AfinityMovie && item !is AfinityShow) return false
         val data = userData
-        val item = updatedItem
         val played: Boolean
         val position: Long
-        when {
-            data != null -> {
-                played = data.played
-                position = data.playbackPositionTicks
-            }
-            item != null -> {
-                played = item.played
-                position = item.playbackPositionTicks
-            }
-            else -> return false
+        if (data != null) {
+            played = data.played
+            position = data.playbackPositionTicks
+        } else {
+            played = item.played
+            position = item.playbackPositionTicks
         }
         if (played || position != 0L) return false
         return _latestMovies.value.none { it.id == itemId } &&
@@ -1140,15 +1167,21 @@ constructor(
     }
 
     private fun heldItemById(id: UUID): AfinityItem? {
-        _latestMovies.value.firstOrNull { it.id == id }?.let {
-            return it
-        }
-        _latestTvSeries.value.firstOrNull { it.id == id }?.let {
-            return it
-        }
-        _heroCarouselItems.value.firstOrNull { it.id == id }?.let {
-            return it
-        }
+        _latestMovies.value
+            .firstOrNull { it.id == id }
+            ?.let {
+                return it
+            }
+        _latestTvSeries.value
+            .firstOrNull { it.id == id }
+            ?.let {
+                return it
+            }
+        _heroCarouselItems.value
+            .firstOrNull { it.id == id }
+            ?.let {
+                return it
+            }
         _separateMovieLibrarySections.value
             .firstNotNullOfOrNull { (_, movies) -> movies.firstOrNull { it.id == id } }
             ?.let {
@@ -1271,6 +1304,7 @@ constructor(
         liveDataJob?.cancel()
         homeSectionsRepository.clearAllData()
         mediaRepository.clearPlaybackCaches()
+        itemStore.clear()
         _heroCarouselItems.value = emptyList()
         _libraries.value = emptyList()
         _latestMovies.value = emptyList()
@@ -1299,6 +1333,7 @@ constructor(
         const val LATEST_RETAINED = 25
         const val LATEST_DISPLAYED = 15
         const val COMBINED_LATEST_FETCH = 60
+        private const val REINSERT_REFRESH_COOLDOWN_MS = 5_000L
         private val LATEST_ROWS = setOf(HomeRow.LATEST_MOVIES, HomeRow.LATEST_TV)
     }
 }

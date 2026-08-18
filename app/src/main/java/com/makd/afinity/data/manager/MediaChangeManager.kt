@@ -3,9 +3,11 @@ package com.makd.afinity.data.manager
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
+import com.makd.afinity.data.models.media.UserDataPatch
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.di.ApplicationScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,6 +32,7 @@ constructor(
     private val databaseRepository: DatabaseRepository,
     private val sessionManager: SessionManager,
     private val mediaRefreshBus: MediaRefreshBus,
+    private val itemStore: ItemStore,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
 
@@ -75,6 +78,7 @@ constructor(
         seriesId: UUID? = null,
         seasonId: UUID? = null,
         source: MediaChangeSource = MediaChangeSource.MANUAL,
+        patch: UserDataPatch? = null,
     ) {
         scope.launch {
             refreshAndPublish(
@@ -82,6 +86,7 @@ constructor(
                 knownSeriesId = seriesId,
                 knownSeasonId = seasonId,
                 source = source,
+                patch = patch,
             )
         }
     }
@@ -90,8 +95,17 @@ constructor(
         applyUserDataChangesBatch(listOf(userData))
     }
 
+    private suspend fun emitBatch(batch: MediaChangeBatch) {
+        itemStore.put(
+            batch.changes.flatMap {
+                listOfNotNull(it.updatedItem, it.parentItem, it.seasonItem)
+            }
+        )
+        _batches.emit(batch)
+    }
+
     private suspend fun emitSingle(change: MediaChangeEvent) {
-        _batches.emit(MediaChangeBatch(listOf(change), change.source))
+        emitBatch(MediaChangeBatch(listOf(change), change.source))
     }
 
     suspend fun publishContentChanges(ids: List<UUID>) {
@@ -117,7 +131,7 @@ constructor(
                     source = MediaChangeSource.WEBSOCKET,
                 )
             }
-        _batches.emit(MediaChangeBatch(changes, MediaChangeSource.WEBSOCKET))
+        emitBatch(MediaChangeBatch(changes, MediaChangeSource.WEBSOCKET))
     }
 
     companion object {
@@ -143,6 +157,8 @@ constructor(
         }
         mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
         if (userDataByItemId.isEmpty()) return
+
+        userDataByItemId.forEach { (itemId, data) -> itemStore.applyUserData(itemId, data) }
 
         val itemIds = userDataByItemId.keys.toList()
         val resolvedById =
@@ -202,7 +218,7 @@ constructor(
         }
 
         if (changes.isNotEmpty()) {
-            _batches.emit(MediaChangeBatch(changes, MediaChangeSource.WEBSOCKET))
+            emitBatch(MediaChangeBatch(changes, MediaChangeSource.WEBSOCKET))
         }
     }
 
@@ -212,10 +228,19 @@ constructor(
         knownSeasonId: UUID? = null,
         source: MediaChangeSource = MediaChangeSource.MANUAL,
         userData: UserItemDataDto? = null,
+        patch: UserDataPatch? = null,
     ): AfinityItem? {
         return try {
+            val storeOwner = patch?.let { itemStore.get(itemId) }
+            if (patch != null && storeOwner != null) {
+                itemStore.applyPatch(itemId, patch)
+            }
             val updatedItem =
-                mediaRepository.refreshItemUserData(itemId, FieldSets.REFRESH_USER_DATA)
+                if (storeOwner != null) {
+                    itemStore.get(itemId) as? AfinityItem
+                } else {
+                    mediaRepository.refreshItemUserData(itemId, FieldSets.REFRESH_USER_DATA)
+                }
             val parentItem = resolveParentItem(updatedItem, knownSeriesId)
             val seasonItem = resolveSeasonItem(updatedItem, knownSeasonId)
 
@@ -245,6 +270,7 @@ constructor(
                     seasonId = resolvedSeasonId,
                     source = source,
                     userData = userData,
+                    patch = patch,
                 )
             )
 
@@ -258,6 +284,7 @@ constructor(
                     seasonId = knownSeasonId,
                     source = source,
                     userData = userData,
+                    patch = patch,
                 )
             )
             null
@@ -372,6 +399,7 @@ data class MediaChangeEvent(
     val seasonId: UUID? = null,
     val source: MediaChangeSource,
     val userData: UserItemDataDto? = null,
+    val patch: UserDataPatch? = null,
 )
 
 enum class MediaChangeSource {

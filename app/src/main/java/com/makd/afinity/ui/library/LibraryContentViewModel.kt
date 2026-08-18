@@ -25,6 +25,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.LibraryFilterOptions
 import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.data.models.media.toAfinityEpisode
+import com.makd.afinity.data.models.media.withUserDataFrom
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.PreferencesRepository
@@ -33,18 +34,17 @@ import com.makd.afinity.data.repository.home.CustomHomeSectionsRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
+import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -76,6 +76,7 @@ constructor(
     private val userDataRepository: UserDataRepository,
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val downloadPermissions: DownloadPermissions,
+    private val itemStore: ItemStore,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -194,17 +195,18 @@ constructor(
         )
     val uiState: StateFlow<LibraryContentUiState> = _uiState.asStateFlow()
 
-    private val _itemUpdates = MutableStateFlow<Map<UUID, AfinityItem>>(emptyMap())
-    private val pendingUpdates = mutableMapOf<UUID, AfinityItem>()
-    private val libraryUpdateTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     private var lastLoadedAt = 0L
 
     private fun applyUpdatesToPagingFlow(
         baseFlow: Flow<PagingData<AfinityItem>>
     ): Flow<PagingData<AfinityItem>> {
-        return baseFlow.cachedIn(viewModelScope).combine(_itemUpdates) { pagingData, updates ->
+        return baseFlow.cachedIn(viewModelScope).combine(itemStore.overlay) { pagingData, updates
+            ->
             pagingData
-                .map { item -> updates[item.id] ?: item }
+                .map { item ->
+                    val source = updates[item.id] ?: return@map item
+                    source as? AfinityItem ?: item.withUserDataFrom(source)
+                }
                 .filter { item -> matchesStatusFilters(item, currentFilters) }
         }
     }
@@ -256,16 +258,6 @@ constructor(
                 _uiState.update { it.copy(userProfileImageUrl = url) }
             }
         }
-        viewModelScope.launch {
-            libraryUpdateTrigger.debounce(300L).collect {
-                if (pendingUpdates.isNotEmpty()) {
-                    _itemUpdates.value += pendingUpdates
-                    pendingUpdates.clear()
-                    Timber.d("Applied batched PagingData updates to Library")
-                }
-            }
-        }
-
         viewModelScope.launch { adminChangeBroadcaster.itemChanged.collect { loadItems() } }
 
         viewModelScope.launch {
@@ -275,16 +267,16 @@ constructor(
             }
         }
 
+
         viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
                 val resolved =
                     event.resolveChangedItems(
                         mediaRepository = mediaRepository,
-                        heldItem = { id -> pendingUpdates[id] ?: _itemUpdates.value[id] },
+                        heldItem = { id -> itemStore.get(id) as? AfinityItem },
                     )
                 if (resolved.isNotEmpty()) {
-                    resolved.forEach { pendingUpdates[it.id] = it }
-                    libraryUpdateTrigger.tryEmit(Unit)
+                    itemStore.put(resolved)
                 }
             }
         }
@@ -317,7 +309,6 @@ constructor(
 
     private fun loadItems() {
         val type = libraryType ?: return
-        _itemUpdates.value = emptyMap()
 
         val baseFlow =
             mediaRepository.getItemsPaging(
@@ -516,7 +507,6 @@ constructor(
                     }
 
                 _uiState.value = _uiState.value.copy(selectedLetter = letter)
-                _itemUpdates.value = emptyMap()
 
                 val baseFlow =
                     mediaRepository.getItemsPaging(

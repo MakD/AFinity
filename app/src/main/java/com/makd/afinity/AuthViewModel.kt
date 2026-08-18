@@ -3,7 +3,6 @@ package com.makd.afinity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.repository.auth.AuthRepository
-import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,10 +23,7 @@ sealed class AuthenticationState {
 @HiltViewModel
 class AuthViewModel
 @Inject
-constructor(
-    private val authRepository: AuthRepository,
-    private val webSocketManager: JellyfinWebSocketManager,
-) : ViewModel() {
+constructor(private val authRepository: AuthRepository) : ViewModel() {
 
     private val _authenticationState =
         MutableStateFlow<AuthenticationState>(AuthenticationState.Loading)
@@ -87,14 +83,12 @@ constructor(
                     ) {
                         Timber.d("User authenticated via auth repository")
                         _authenticationState.value = AuthenticationState.Authenticated
-                        webSocketManager.connect()
                     } else if (
                         !isAuthenticated &&
                             _authenticationState.value == AuthenticationState.Authenticated
                     ) {
                         Timber.d("User logged out via auth repository")
                         _authenticationState.value = AuthenticationState.NotAuthenticated
-                        webSocketManager.disconnect()
                     }
                 }
         }

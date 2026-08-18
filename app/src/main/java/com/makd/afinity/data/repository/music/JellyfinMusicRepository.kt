@@ -11,6 +11,7 @@ import com.makd.afinity.data.models.extensions.toAfinityTrack
 import com.makd.afinity.data.models.extensions.toRecentlyPlayedAlbums
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.PlaylistEntry
+import com.makd.afinity.data.models.media.UserDataPatch
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityLyricLine
@@ -814,6 +815,7 @@ constructor(
                 userLibraryApi.unmarkFavoriteItem(itemId = itemId, userId = userId)
             }
         }
+        mediaChangeManager.notifyItemChanged(itemId, patch = UserDataPatch(favorite = favorite))
     }
 
     override suspend fun getRecentlyPlayedTracks(limit: Int): List<AfinityTrack> =

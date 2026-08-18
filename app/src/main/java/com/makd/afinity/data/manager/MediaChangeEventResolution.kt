@@ -4,6 +4,7 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.withUserData
+import com.makd.afinity.data.models.media.withUserDataPatch
 import com.makd.afinity.data.repository.media.MediaRepository
 import timber.log.Timber
 import java.util.UUID
@@ -71,7 +72,12 @@ private fun MediaChangeEvent.patchedFromHeld(
     heldItem: ((UUID) -> AfinityItem?)?,
 ): AfinityItem? {
     if (id != itemId) return null
-    val data = userData ?: return null
+    val data = userData
+    if (data != null) {
+        val held = heldItem?.invoke(id) ?: return null
+        return held.withUserData(data)
+    }
+    val partial = patch ?: return null
     val held = heldItem?.invoke(id) ?: return null
-    return held.withUserData(data)
+    return held.withUserDataPatch(partial)
 }

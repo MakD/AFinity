@@ -12,6 +12,7 @@ import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.music.MusicRepository
+import com.makd.afinity.data.store.ItemStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,6 +43,7 @@ constructor(
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val appDataRepository: AppDataRepository,
     private val downloadPermissions: DownloadPermissions,
+    private val itemStore: ItemStore,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -57,6 +59,34 @@ constructor(
     init {
         load()
         observeDownloads()
+
+        viewModelScope.launch {
+            itemStore.overlay.collect { overlay ->
+                if (overlay.isEmpty()) return@collect
+                _uiState.update { state ->
+                    val topTracks = itemStore.mergeOwners(state.topTracks)
+                    val albums = itemStore.mergeOwners(state.albums)
+                    val appearsOn = itemStore.mergeOwners(state.appearsOn)
+                    val artist =
+                        state.artist?.let { itemStore.mergeOwners(listOf(it)).first() }
+                    if (
+                        topTracks === state.topTracks &&
+                            albums === state.albums &&
+                            appearsOn === state.appearsOn &&
+                            artist === state.artist
+                    ) {
+                        state
+                    } else {
+                        state.copy(
+                            topTracks = topTracks,
+                            albums = albums,
+                            appearsOn = appearsOn,
+                            artist = artist,
+                        )
+                    }
+                }
+            }
+        }
     }
 
     private fun observeDownloads() {
@@ -85,12 +115,19 @@ constructor(
                 val albumsDeferred = async { musicRepository.getArtistAlbums(artistId) }
                 val appearsDeferred = async { musicRepository.getArtistAppearsOn(artistId) }
 
+                val artist = artistDeferred.await()
+                val topTracks = tracksDeferred.await()
+                val albums = albumsDeferred.await()
+                val appearsOn = appearsDeferred.await()
+                itemStore.putIfAbsent(
+                    topTracks + albums + appearsOn + listOfNotNull(artist)
+                )
                 _uiState.update {
                     it.copy(
-                        artist = artistDeferred.await(),
-                        topTracks = tracksDeferred.await(),
-                        albums = albumsDeferred.await(),
-                        appearsOn = appearsDeferred.await(),
+                        artist = artist?.let { a -> itemStore.mergeOwners(listOf(a)).first() },
+                        topTracks = itemStore.mergeOwners(topTracks),
+                        albums = itemStore.mergeOwners(albums),
+                        appearsOn = itemStore.mergeOwners(appearsOn),
                         isLoading = false,
                     )
                 }

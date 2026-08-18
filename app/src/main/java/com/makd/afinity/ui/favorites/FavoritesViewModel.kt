@@ -6,7 +6,6 @@ import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.AdminChangeKind
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.MediaChangeManager
-import com.makd.afinity.data.manager.resolveChangedItems
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.media.AfinityBoxSet
@@ -28,6 +27,7 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
+import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -62,6 +62,7 @@ constructor(
     private val appDataRepository: AppDataRepository,
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val downloadPermissions: DownloadPermissions,
+    private val itemStore: ItemStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FavoritesUiState())
@@ -92,18 +93,28 @@ constructor(
 
         viewModelScope.launch {
             appDataRepository.favoritesData.collect { data ->
+                itemStore.putIfAbsent(
+                    data.movies +
+                        data.shows +
+                        data.seasons +
+                        data.episodes +
+                        data.boxSets +
+                        data.favoriteAlbums +
+                        data.favoriteArtists +
+                        data.favoriteTracks
+                )
                 _uiState.update {
                     it.copy(
-                        movies = data.movies,
-                        shows = data.shows,
-                        seasons = data.seasons,
-                        episodes = data.episodes,
-                        boxSets = data.boxSets,
+                        movies = itemStore.merge(data.movies),
+                        shows = itemStore.merge(data.shows),
+                        seasons = itemStore.merge(data.seasons),
+                        episodes = itemStore.merge(data.episodes),
+                        boxSets = itemStore.merge(data.boxSets),
                         channels = data.channels,
                         people = data.people,
-                        favoriteAlbums = data.favoriteAlbums,
-                        favoriteArtists = data.favoriteArtists,
-                        favoriteTracks = data.favoriteTracks,
+                        favoriteAlbums = itemStore.mergeOwners(data.favoriteAlbums),
+                        favoriteArtists = itemStore.mergeOwners(data.favoriteArtists),
+                        favoriteTracks = itemStore.mergeOwners(data.favoriteTracks),
                         favoritePlaylists = data.favoritePlaylists,
                         isLoading = false,
                         error = null,
@@ -120,75 +131,46 @@ constructor(
         }
 
         viewModelScope.launch {
-            mediaChangeManager.mediaChanges.collect { event ->
-                val currentState = _uiState.value
-                val displayedIds = buildSet {
-                    currentState.movies.forEach { add(it.id) }
-                    currentState.shows.forEach { add(it.id) }
-                    currentState.seasons.forEach { add(it.id) }
-                    currentState.episodes.forEach { add(it.id) }
-                }
+            appDataRepository.lastResyncAt.collect { at ->
+                if (at <= lastFavoritesLoadedAt) return@collect
+                lastFavoritesLoadedAt = System.currentTimeMillis()
+                loadFavorites()
+            }
+        }
 
-                val resolved =
-                    event.resolveChangedItems(
-                        mediaRepository = mediaRepository,
-                        displayedIds = displayedIds,
-                        heldItem = { id ->
-                            currentState.movies.firstOrNull { it.id == id }
-                                ?: currentState.shows.firstOrNull { it.id == id }
-                                ?: currentState.seasons.firstOrNull { it.id == id }
-                                ?: currentState.episodes.firstOrNull { it.id == id }
-                        },
-                    )
-                if (resolved.isEmpty()) return@collect
-
-                val newMovies = currentState.movies.toMutableList()
-                val newShows = currentState.shows.toMutableList()
-                val newSeasons = currentState.seasons.toMutableList()
-                val newEpisodes = currentState.episodes.toMutableList()
-                var hasChanges = false
-
-                for (freshItem in resolved) {
-                    when (freshItem) {
-                        is AfinityMovie -> {
-                            val idx = newMovies.indexOfFirst { it.id == freshItem.id }
-                            if (idx != -1 && newMovies[idx] !== freshItem) {
-                                newMovies[idx] = freshItem
-                                hasChanges = true
-                            }
-                        }
-                        is AfinityShow -> {
-                            val idx = newShows.indexOfFirst { it.id == freshItem.id }
-                            if (idx != -1 && newShows[idx] !== freshItem) {
-                                newShows[idx] = freshItem
-                                hasChanges = true
-                            }
-                        }
-                        is AfinitySeason -> {
-                            val idx = newSeasons.indexOfFirst { it.id == freshItem.id }
-                            if (idx != -1 && newSeasons[idx] !== freshItem) {
-                                newSeasons[idx] = freshItem
-                                hasChanges = true
-                            }
-                        }
-                        is AfinityEpisode -> {
-                            val idx = newEpisodes.indexOfFirst { it.id == freshItem.id }
-                            if (idx != -1 && newEpisodes[idx] !== freshItem) {
-                                newEpisodes[idx] = freshItem
-                                hasChanges = true
-                            }
-                        }
-                        else -> {}
-                    }
-                }
-
-                if (hasChanges) {
-                    _uiState.update {
-                        it.copy(
-                            movies = newMovies,
-                            shows = newShows,
-                            seasons = newSeasons,
-                            episodes = newEpisodes,
+        viewModelScope.launch {
+            itemStore.overlay.collect { overlay ->
+                if (overlay.isEmpty()) return@collect
+                _uiState.update { state ->
+                    val movies = itemStore.merge(state.movies)
+                    val shows = itemStore.merge(state.shows)
+                    val seasons = itemStore.merge(state.seasons)
+                    val episodes = itemStore.merge(state.episodes)
+                    val boxSets = itemStore.merge(state.boxSets)
+                    val albums = itemStore.mergeOwners(state.favoriteAlbums)
+                    val artists = itemStore.mergeOwners(state.favoriteArtists)
+                    val tracks = itemStore.mergeOwners(state.favoriteTracks)
+                    if (
+                        movies === state.movies &&
+                            shows === state.shows &&
+                            seasons === state.seasons &&
+                            episodes === state.episodes &&
+                            boxSets === state.boxSets &&
+                            albums === state.favoriteAlbums &&
+                            artists === state.favoriteArtists &&
+                            tracks === state.favoriteTracks
+                    ) {
+                        state
+                    } else {
+                        state.copy(
+                            movies = movies,
+                            shows = shows,
+                            seasons = seasons,
+                            episodes = episodes,
+                            boxSets = boxSets,
+                            favoriteAlbums = albums,
+                            favoriteArtists = artists,
+                            favoriteTracks = tracks,
                         )
                     }
                 }
@@ -199,6 +181,7 @@ constructor(
     fun onScreenResumed() {
         if (appDataRepository.lastUserDataChangedAt.value > lastFavoritesLoadedAt) {
             lastFavoritesLoadedAt = System.currentTimeMillis()
+            loadFavorites()
         }
     }
 

@@ -6,6 +6,67 @@ import com.makd.afinity.data.models.music.AfinityTrack
 import org.jellyfin.sdk.model.api.UserItemDataDto
 import java.util.UUID
 
+data class UserDataPatch(
+    val played: Boolean? = null,
+    val favorite: Boolean? = null,
+    val liked: Boolean? = null,
+    val playbackPositionTicks: Long? = null,
+)
+
+private data class UserDataSnapshot(
+    override val id: UUID,
+    override val played: Boolean,
+    override val favorite: Boolean,
+    override val liked: Boolean,
+    override val playbackPositionTicks: Long,
+) : AfinityUserDataOwner
+
+fun AfinityItem.withUserDataPatch(patch: UserDataPatch): AfinityItem =
+    withUserDataFrom(
+        UserDataSnapshot(
+            id = id,
+            played = patch.played ?: played,
+            favorite = patch.favorite ?: favorite,
+            liked = patch.liked ?: liked,
+            playbackPositionTicks = patch.playbackPositionTicks ?: playbackPositionTicks,
+        )
+    )
+
+fun AfinityUserDataOwner.patchedWith(patch: UserDataPatch): AfinityUserDataOwner {
+    val nextPlayed = patch.played ?: played
+    val nextFavorite = patch.favorite ?: favorite
+    val nextLiked = patch.liked ?: liked
+    val nextTicks = patch.playbackPositionTicks ?: playbackPositionTicks
+    if (
+        nextPlayed == played &&
+            nextFavorite == favorite &&
+            nextLiked == liked &&
+            nextTicks == playbackPositionTicks
+    ) {
+        return this
+    }
+    return when (val owner = this) {
+        is AfinityItem -> owner.withUserDataPatch(patch)
+        is AfinityTrack ->
+            owner.copy(
+                played = nextPlayed,
+                favorite = nextFavorite,
+                liked = nextLiked,
+                playbackPositionTicks = nextTicks,
+            )
+        is AfinityAlbum ->
+            owner.copy(
+                played = nextPlayed,
+                favorite = nextFavorite,
+                liked = nextLiked,
+                playbackPositionTicks = nextTicks,
+            )
+        is AfinityArtist ->
+            owner.copy(played = nextPlayed, favorite = nextFavorite, liked = nextLiked)
+        else -> owner
+    }
+}
+
 fun AfinityUserDataOwner.patchedWithUserData(data: UserItemDataDto): AfinityUserDataOwner =
     when (val owner = this) {
         is AfinityItem -> owner.withUserData(data)
@@ -166,4 +227,67 @@ fun <T : AfinityItem> List<T>.withUserData(itemId: UUID, data: UserItemDataDto):
             }
         }
     return if (changed) patched else this
+}
+fun AfinityItem.withUserDataFrom(source: AfinityUserDataOwner): AfinityItem {
+    val unplayed = (source as? AfinityItem)?.unplayedItemCount ?: unplayedItemCount
+    if (
+        played == source.played &&
+            favorite == source.favorite &&
+            liked == source.liked &&
+            playbackPositionTicks == source.playbackPositionTicks &&
+            unplayedItemCount == unplayed
+    ) {
+        return this
+    }
+    return when (this) {
+        is AfinityMovie ->
+            copy(
+                played = source.played,
+                favorite = source.favorite,
+                liked = source.liked,
+                playbackPositionTicks = source.playbackPositionTicks,
+                unplayedItemCount = unplayed,
+            )
+        is AfinityShow ->
+            copy(
+                played = source.played,
+                favorite = source.favorite,
+                liked = source.liked,
+                playbackPositionTicks = source.playbackPositionTicks,
+                unplayedItemCount = unplayed,
+            )
+        is AfinitySeason ->
+            copy(
+                played = source.played,
+                favorite = source.favorite,
+                liked = source.liked,
+                playbackPositionTicks = source.playbackPositionTicks,
+                unplayedItemCount = unplayed,
+            )
+        is AfinityEpisode ->
+            copy(
+                played = source.played,
+                favorite = source.favorite,
+                liked = source.liked,
+                playbackPositionTicks = source.playbackPositionTicks,
+                unplayedItemCount = unplayed,
+            )
+        is AfinityBoxSet ->
+            copy(
+                played = source.played,
+                favorite = source.favorite,
+                liked = source.liked,
+                playbackPositionTicks = source.playbackPositionTicks,
+                unplayedItemCount = unplayed,
+            )
+        is AfinityVideo ->
+            copy(
+                played = source.played,
+                favorite = source.favorite,
+                liked = source.liked,
+                playbackPositionTicks = source.playbackPositionTicks,
+                unplayedItemCount = unplayed,
+            )
+        else -> this
+    }
 }

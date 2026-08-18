@@ -31,6 +31,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.toAfinityEpisode
+import com.makd.afinity.data.models.media.withUserDataFrom
 import com.makd.afinity.data.models.music.MusicSearchResults
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.AudiobookshelfRepository
@@ -42,6 +43,7 @@ import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
+import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -90,6 +92,7 @@ constructor(
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val musicRepository: MusicRepository,
     private val downloadPermissions: DownloadPermissions,
+    private val itemStore: ItemStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState())
@@ -128,8 +131,6 @@ constructor(
     private var genresJob: Job? = null
 
     private val searchQueryFlow = MutableSharedFlow<String>(extraBufferCapacity = 1)
-    private val pendingItemUpdates = mutableMapOf<UUID, AfinityItem>()
-    private val searchResultsUpdateTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     private var lastQueryAt = 0L
 
     init {
@@ -177,36 +178,33 @@ constructor(
             }
         }
 
+
         viewModelScope.launch {
-            searchResultsUpdateTrigger.debounce(300L).collect {
-                if (pendingItemUpdates.isEmpty()) return@collect
-
-                val currentResults = _uiState.value.searchResults
-                var hasChanges = false
-
-                val newResults = currentResults.map { item ->
-                    pendingItemUpdates[item.id]?.also { hasChanges = true } ?: item
-                }
-
-                var hasEpisodeChanges = false
-                val newEpisodes =
-                    _uiState.value.episodeResults.map { episode ->
-                        (pendingItemUpdates[episode.id] as? AfinityEpisode)?.also {
-                            hasEpisodeChanges = true
-                        } ?: episode
+            itemStore.overlay.collect { overlay ->
+                if (overlay.isEmpty()) return@collect
+                _uiState.update { state ->
+                    var changed = false
+                    val newResults =
+                        state.searchResults.map { item ->
+                            val source = overlay[item.id] ?: return@map item
+                            val next = source as? AfinityItem ?: item.withUserDataFrom(source)
+                            if (next !== item) changed = true
+                            next
+                        }
+                    val newEpisodes =
+                        state.episodeResults.map { episode ->
+                            val source = overlay[episode.id] ?: return@map episode
+                            val next =
+                                episode.withUserDataFrom(source) as? AfinityEpisode ?: episode
+                            if (next !== episode) changed = true
+                            next
+                        }
+                    if (changed) {
+                        state.copy(searchResults = newResults, episodeResults = newEpisodes)
+                    } else {
+                        state
                     }
-
-                if (hasChanges || hasEpisodeChanges) {
-                    _uiState.update {
-                        it.copy(
-                            searchResults = if (hasChanges) newResults else it.searchResults,
-                            episodeResults =
-                                if (hasEpisodeChanges) newEpisodes else it.episodeResults,
-                        )
-                    }
-                    Timber.d("Applied ${pendingItemUpdates.size} background search updates.")
                 }
-                pendingItemUpdates.clear()
             }
         }
 
@@ -216,9 +214,9 @@ constructor(
                     event.resolveChangedItems(
                         mediaRepository = mediaRepository,
                         heldItem = { id ->
-                            pendingItemUpdates[id]
-                                ?: _uiState.value.searchResults.firstOrNull { it.id == id }
+                            _uiState.value.searchResults.firstOrNull { it.id == id }
                                 ?: _uiState.value.episodeResults.firstOrNull { it.id == id }
+                                ?: itemStore.get(id) as? AfinityItem
                         },
                     )
 
@@ -228,7 +226,9 @@ constructor(
                         _selectedEpisode.value = freshEpisode
                     }
                 }
-                resolved.forEach { updateItemInSearchResults(it) }
+                if (resolved.isNotEmpty()) {
+                    itemStore.put(resolved)
+                }
             }
         }
     }

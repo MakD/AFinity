@@ -16,23 +16,21 @@ import com.makd.afinity.data.manager.resolveChangedItems
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.ItemFilterCriteria
+import com.makd.afinity.data.models.media.withUserDataFrom
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.store.ItemStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import timber.log.Timber
-import java.util.UUID
 import javax.inject.Inject
 
 @OptIn(FlowPreview::class)
@@ -45,6 +43,7 @@ constructor(
     private val appDataRepository: AppDataRepository,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
+    private val itemStore: ItemStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GenreResultsUiState())
@@ -59,30 +58,18 @@ constructor(
     private var currentGenre: String? = null
     private var lastLoadedAt = 0L
 
-    private val _itemUpdates = MutableStateFlow<Map<UUID, AfinityItem>>(emptyMap())
-
-    private val pendingUpdates = mutableMapOf<UUID, AfinityItem>()
-    private val genreUpdateTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-
     private fun applyUpdatesToPagingFlow(
         baseFlow: Flow<PagingData<AfinityItem>>
     ): Flow<PagingData<AfinityItem>> {
-        return baseFlow.cachedIn(viewModelScope).combine(_itemUpdates) { pagingData, updates ->
-            pagingData.map { item -> updates[item.id] ?: item }
+        return baseFlow.cachedIn(viewModelScope).combine(itemStore.overlay) { pagingData, updates ->
+            pagingData.map { item ->
+                val source = updates[item.id] ?: return@map item
+                source as? AfinityItem ?: item.withUserDataFrom(source)
+            }
         }
     }
 
     init {
-        viewModelScope.launch {
-            genreUpdateTrigger.debounce(300L).collect {
-                if (pendingUpdates.isNotEmpty()) {
-                    _itemUpdates.value += pendingUpdates
-                    pendingUpdates.clear()
-                    Timber.d("Applied batched PagingData updates to Genre Results")
-                }
-            }
-        }
-
         viewModelScope.launch {
             adminChangeBroadcaster.itemChanged.collect { currentGenre?.let { reloadGenre(it) } }
         }
@@ -92,11 +79,10 @@ constructor(
                 val resolved =
                     event.resolveChangedItems(
                         mediaRepository = mediaRepository,
-                        heldItem = { id -> pendingUpdates[id] ?: _itemUpdates.value[id] },
+                        heldItem = { id -> itemStore.get(id) as? AfinityItem },
                     )
                 if (resolved.isNotEmpty()) {
-                    resolved.forEach { pendingUpdates[it.id] = it }
-                    genreUpdateTrigger.tryEmit(Unit)
+                    itemStore.put(resolved)
                 }
             }
         }
@@ -109,7 +95,6 @@ constructor(
     }
 
     private fun reloadGenre(genre: String) {
-        _itemUpdates.value = emptyMap()
         val moviesBaseFlow =
             Pager(PagingConfig(pageSize = 50)) {
                     GenrePagingSource(mediaRepository, genre, "MOVIE")
