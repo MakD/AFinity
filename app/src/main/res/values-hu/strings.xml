@@ -134,12 +134,16 @@
     <string name="pref_clear_cache">Gyorsítótár törlése</string>
     <string name="pref_clear_cache_summary">A kezdőlap szakaszai, műfajai és a műalkotások listái frissülnek</string>
     <string name="pref_clear_cache_empty">Üres gyorsítótár</string>
-    <string name="pref_clear_cache_usage_total_fmt">%1$s gyorsítótárazva · %2$d bejegyzés</string>
+    <plurals name="pref_clear_cache_usage_total_fmt">
+        <item quantity="one">%1$s gyorsítótárazva · %2$d bejegyzés</item>
+    </plurals>
     <string name="cache_kind_images">Képek</string>
     <string name="cache_store_video">Videó gyorsítótár</string>
     <string name="cache_store_network">Hálózati gyorsítótár</string>
     <string name="cache_store_player">Lejátszó adatok</string>
-    <string name="cache_entries_fmt">%1$d bejegyzés</string>
+    <plurals name="cache_entries_fmt">
+        <item quantity="one">%1$d bejegyzés</item>
+    </plurals>
     <string name="cache_section_jellyfin_metadata">Jellyfin metadata</string>
     <string name="cache_section_jellyseerr">Seerr kérések</string>
     <string name="cache_section_audiobookshelf">Audiobookshelf adatai</string>
@@ -168,8 +172,12 @@
     <string name="backup_section_library">Könyvtár</string>
     <string name="backup_section_downloads">Letöltések</string>
     <string name="backup_section_privacy">Adatvédelem és frissítések</string>
-    <string name="backup_section_home_fmt">%1$d egyéni szakasz, sor és felfedezés</string>
-    <string name="backup_section_settings_fmt">%1$d beállítások</string>
+    <plurals name="backup_section_home_fmt">
+        <item quantity="one">%1$d egyéni szakasz, sor és felfedezés</item>
+    </plurals>
+    <plurals name="backup_section_settings_fmt">
+        <item quantity="one">%1$d beállítások</item>
+    </plurals>
     <string name="custom_sections_add_blank">Üres szakasz</string>
     <string name="custom_sections_add_blank_summary">Kezdjük elölről</string>
     <string name="custom_sections_preset_range_fmt">Szezonális · %1$s – %2$s</string>
@@ -212,7 +220,9 @@
     <string name="custom_sections_card_style_locked_fmt">%1$s (ilyen típusú soroknál automatikusan beállítva)</string>
     <string name="custom_sections_field_refine">Finomítás</string>
     <string name="custom_sections_refine_none">Nincsenek extra szűrők</string>
-    <string name="custom_sections_refine_summary_fmt">%1$s · %2$d szűrő</string>
+    <plurals name="custom_sections_refine_summary_fmt">
+        <item quantity="one">%1$s · %2$d szűrő</item>
+    </plurals>
     <string name="custom_sections_group_content">Tartalom</string>
     <string name="stat_content">Tartalom</string>
     <string name="custom_sections_group_display">Kijelző</string>
@@ -236,7 +246,9 @@
     <string name="hero_btn_play_trailer">Előzetes lejátszása</string>
     <string name="hero_btn_play_media">Média lejátszása</string>
     <string name="hero_btn_watch_now">Nézd meg most</string>
-    <string name="hero_season_plural">%1$d évad</string>
+    <plurals name="hero_season_plural">
+        <item quantity="one">%1$d évad</item>
+    </plurals>
     <string name="favorites_title">Kedvencek</string>
     <string name="error_unknown">Ismeretlen hiba</string>
     <string name="favorites_empty_title">Még nincsenek kedvencek</string>
@@ -255,14 +267,20 @@
     <string name="meta_cc">CC</string>
     <string name="meta_time_remaining_hours_minutes">%1$dó %2$dp maradt</string>
     <string name="meta_time_remaining_minutes">%1$dp maradt</string>
-    <string name="meta_boxset_count">%1$d elem</string>
+    <plurals name="meta_boxset_count">
+        <item quantity="one">%1$d elem</item>
+    </plurals>
     <string name="meta_runtime_hours_minutes">%1$dó %2$dp</string>
     <string name="meta_runtime_minutes">%1$dp</string>
-    <string name="meta_parts_fmt">%1$d részek</string>
+    <plurals name="meta_parts_fmt">
+        <item quantity="one">%1$d részek</item>
+    </plurals>
     <string name="meta_part_of_fmt">Rész %1$d/%2$d</string>
     <string name="chapter_number_fmt">%1$d fejezet</string>
     <string name="meta_ends_at">Befejezés: %1$s</string>
-    <string name="meta_episode_count">%1$d részek</string>
+    <plurals name="meta_episode_count">
+        <item quantity="one">%1$d részek</item>
+    </plurals>
     <string name="similar_items_title">Több ehhez hasonló</string>
     <string name="special_features_title">Extrák</string>
     <string name="extra_type_clip">Klip</string>
@@ -297,8 +315,12 @@
     <string name="action_see_less">Kevesebb megjelenítése</string>
     <string name="cd_expand">Kibontás</string>
     <string name="cd_collapse">Összecsukás</string>
-    <string name="director_prefix">Rendező: %1$s</string>
-    <string name="writers_prefix">Írók: %1$s</string>
+    <plurals name="director_prefix">
+        <item quantity="one">Rendező: %1$s</item>
+    </plurals>
+    <plurals name="writers_prefix">
+        <item quantity="one">Írók: %1$s</item>
+    </plurals>
     <string name="action_play">Lejátszás</string>
     <string name="action_rewatch">Újranézés</string>
     <string name="action_resume_playback">Lejátszás folytatása</string>
@@ -407,8 +429,12 @@
     <string name="discover_filter_keywords">Kulcsszavak</string>
     <string name="discover_filter_keyword_include">Tartalmazza</string>
     <string name="discover_filter_keyword_exclude">Kizárás</string>
-    <string name="discover_filter_keywords_included_fmt">%1$d tartalmazza</string>
-    <string name="discover_filter_keywords_excluded_fmt">%1$d kizárva</string>
+    <plurals name="discover_filter_keywords_included_fmt">
+        <item quantity="one">%1$d tartalmazza</item>
+    </plurals>
+    <plurals name="discover_filter_keywords_excluded_fmt">
+        <item quantity="one">%1$d kizárva</item>
+    </plurals>
     <string name="discover_filter_keyword_search_hint">Keresési kulcsszavak…</string>
     <string name="discover_filter_select_region">Régió kiválasztása</string>
     <string name="tv_status_returning_series">Visszatérő sorozatok</string>
@@ -432,7 +458,9 @@
     <string name="action_show_all_channels">Összes csatorna megjelenítése</string>
     <string name="livetv_header_letter_fmt">Csatornák (%1$s)</string>
     <string name="livetv_header_all">Minden csatorna</string>
-    <string name="livetv_count_fmt">%1$d csatorna található</string>
+    <plurals name="livetv_count_fmt">
+        <item quantity="one">%1$d csatorna található</item>
+    </plurals>
     <string name="action_now">Most</string>
     <string name="cd_guide_previous_time">Előző időblokk</string>
     <string name="cd_guide_next_time">Következő időblokk</string>
@@ -446,9 +474,13 @@
     <string name="livetv_error_not_available_title">Élő TV nem elérhető</string>
     <string name="livetv_error_not_available_message">Élő TV konfigurálása a Jellyfin szerveren</string>
     <string name="person_biography">Életrajz</string>
-    <string name="person_born_fmt">Született: %1$s (%2$d éves)</string>
+    <plurals name="person_born_fmt">
+        <item quantity="one">Született: %1$s (%2$d éves)</item>
+    </plurals>
     <string name="person_born_deceased_fmt">Született: %1$s</string>
-    <string name="person_died_fmt">Elhunyt: %1$s (%2$d évesen)</string>
+    <plurals name="person_died_fmt">
+        <item quantity="one">Elhunyt: %1$s (%2$d évesen)</item>
+    </plurals>
     <string name="person_died_no_age_fmt">Elhunyt: %1$s</string>
     <string name="person_birthplace_fmt">Születési hely: %1$s</string>
     <string name="person_date_fmt">ÉÉÉÉ HHH n</string>
@@ -497,7 +529,9 @@
     <string name="playback_stats_label_video_output">Videó kimenet</string>
     <string name="pref_mpv_video_output_title">Videó kimenet</string>
     <string name="playback_stats_value_direct_play_local">Közvetlen lejátszás (helyi fájl)</string>
-    <string name="playback_stats_value_seconds_fmt">%1$d másodperc</string>
+    <plurals name="playback_stats_value_seconds_fmt">
+        <item quantity="one">%1$d másodperc</item>
+    </plurals>
     <string name="playback_stats_value_bitrate_container_fmt">%1$s Mbps (konténer)</string>
     <string name="playback_stats_label_connection">Kapcsolat</string>
     <string name="playback_stats_label_decoder">Dekóder</string>
@@ -663,7 +697,9 @@
     <string name="section_download_podcasts">PODCASTOK</string>
     <string name="stat_podcasts">Podcastok</string>
     <string name="explore_genres">Műfajok felfedezése</string>
-    <string name="search_results_count_fmt">%1$d találat</string>
+    <plurals name="search_results_count_fmt">
+        <item quantity="one">%1$d találat</item>
+    </plurals>
     <string name="cd_finished">Befejezett</string>
     <string name="abs_finished">Befejezett</string>
     <string name="media_type_book">Könyv</string>
@@ -881,7 +917,9 @@
     <string name="role_user">Felhasználó</string>
     <string name="dialog_delete_server_title">Törli a szervert?</string>
     <string name="dialog_delete_server_message_fmt">Biztos, hogy törlöd \"%1$s\"?</string>
-    <string name="dialog_delete_server_warning_fmt">Ezzel %1$d mentett felhasználó és az összes kapcsolódó adat törlésre kerül.</string>
+    <plurals name="dialog_delete_server_warning_fmt">
+        <item quantity="one">Ezzel %1$d mentett felhasználó és az összes kapcsolódó adat törlésre kerül.</item>
+    </plurals>
     <string name="error_load_servers_failed">Nem sikerült betölteni a szervereket</string>
     <string name="error_delete_active_server">A jelenleg aktív szerver nem törölhető. Kérjük, először váltson egy másik szerverre.</string>
     <string name="error_delete_server_failed">Szerver törlése sikertelen</string>
@@ -1051,7 +1089,9 @@
     <string name="service_label_tmdb">TMDB</string>
     <string name="cd_mdblist">MDBList</string>
     <string name="service_label_mdblist">MDBList</string>
-    <string name="quota_days_fmt">%1$d / %2$d napok</string>
+    <plurals name="quota_days_fmt">
+        <item quantity="one">%1$d / %2$d napok</item>
+    </plurals>
     <string name="duration_hours_fmt">%.0f óra</string>
     <string name="cd_manage_addresses">Címek kezelése</string>
     <string name="cd_add_address">Cím hozzáadása</string>
@@ -1146,9 +1186,15 @@
     <string name="request_sonarr_server">Sonarr Szerver</string>
     <string name="request_delete_action">Kérés törlése</string>
     <string name="request_all_seasons_note">Minden évad kérve lesz</string>
-    <string name="request_quota_movie_remaining_fmt">%1$d maradt %2$d kérésből</string>
-    <string name="request_quota_tv_remaining_fmt">%2$d maradt %2$d évad kérésből</string>
-    <string name="request_quota_period_fmt">%1$d naponta</string>
+    <plurals name="request_quota_movie_remaining_fmt">
+        <item quantity="one">%1$d maradt %2$d kérésből</item>
+    </plurals>
+    <plurals name="request_quota_tv_remaining_fmt">
+        <item quantity="one">%2$d maradt %2$d évad kérésből</item>
+    </plurals>
+    <plurals name="request_quota_period_fmt">
+        <item quantity="one">%1$d naponta</item>
+    </plurals>
     <string name="request_quota_exceeded">Elérte a limitet</string>
     <string name="request_language_profile">Nyelvi profil</string>
     <string name="request_as_label">Kérelem mint</string>
@@ -1156,7 +1202,9 @@
     <string name="request_select_placeholder">Válasszon…</string>
     <string name="seerr_detail_open_library">Megnyitás a könyvtárban</string>
     <string name="seerr_collection_fallback">Gyűjtemény</string>
-    <string name="season_count_fmt">%1$d évad</string>
+    <plurals name="season_count_fmt">
+        <item quantity="one">%1$d évad</item>
+    </plurals>
     <string name="seerr_recommendations_title">Ajánlások</string>
     <string name="request_quota_exceeded_message">Nincs elég fennmaradó kérésed. A kvótád automatikusan visszaáll.</string>
     <string name="season_selector_title">Évad választása</string>
@@ -1201,7 +1249,9 @@
     <string name="time_this_month">Hónapban</string>
     <string name="cd_security_warning">Biztonsági figyelmeztetés</string>
     <string name="server_primary_connection">Elsődleges kapcsolat</string>
-    <string name="server_backup_routes_fmt">+ %1$d tartalék útvonal</string>
+    <plurals name="server_backup_routes_fmt">
+        <item quantity="one">+ %1$d tartalék útvonal</item>
+    </plurals>
     <string name="websocket_server_restarting">A szerver újraindul, automatikusan újracsatlakozik…</string>
     <string name="websocket_server_shutdown">A szerver leállt</string>
     <string name="stat_items">Elemek</string>
