@@ -185,7 +185,9 @@
     <string name="action_show_all_channels">Tüm kanalları göster</string>
     <string name="livetv_header_letter_fmt">Kanallar (%1$s)</string>
     <string name="livetv_header_all">Tüm kanallar</string>
-    <string name="livetv_count_fmt">%1$d kanal bulundu</string>
+    <plurals name="livetv_count_fmt">
+        <item quantity="one">%1$d kanal bulundu</item>
+    </plurals>
     <string name="livetv_guide_date_fmt">EEE, MMM d</string>
     <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
     <string name="action_now">Şimdi</string>
@@ -200,9 +202,13 @@
     <string name="livetv_error_not_available_title">Canlı yayın yok</string>
     <string name="livetv_error_not_available_message">Jellyfin sunucumuzda canlı yayını yapılandırın</string>
     <string name="person_biography">Biyografi</string>
-    <string name="person_born_fmt">Doğum tarihi:%1$s (%2$d yaşında)</string>
+    <plurals name="person_born_fmt">
+        <item quantity="one">Doğum tarihi:%1$s (%2$d yaşında)</item>
+    </plurals>
     <string name="person_born_deceased_fmt">Doğum tarihi: %1$s</string>
-    <string name="person_died_fmt">Ölüm tarihi: %1$s (%2$d yaşında)</string>
+    <plurals name="person_died_fmt">
+        <item quantity="one">Ölüm tarihi: %1$s (%2$d yaşında)</item>
+    </plurals>
     <string name="person_died_no_age_fmt">Ölüm tarihi: %1$s</string>
     <string name="person_birthplace_fmt">Doğum yeri: %1$s</string>
     <string name="person_date_fmt">AAAA d, yyyy</string>
@@ -321,7 +327,9 @@
     <string name="filter_request">İstek</string>
     <string name="filter_audiobooks">Sesli kitaplar</string>
     <string name="explore_genres">Türleri Keşfet</string>
-    <string name="search_results_count_fmt">%1$d sonuç bulundu</string>
+    <plurals name="search_results_count_fmt">
+        <item quantity="one">%1$d sonuç bulundu</item>
+    </plurals>
     <string name="cd_watched">İzlendi</string>
     <string name="cd_finished">Bitti</string>
     <string name="media_type_book">Kitap</string>
@@ -464,7 +472,9 @@
     <string name="empty_servers_message">İlk Jellyfin sunucunu eklemek için + butonuna bas.</string>
     <string name="dialog_delete_server_title">Sunucuyu Sil?</string>
     <string name="dialog_delete_server_message_fmt">%1$s Silmek istediğinden emin misin?</string>
-    <string name="dialog_delete_server_warning_fmt">Bu eylem, %1$d kullanıcısını ve onunla ilişkilendirilen tüm verileri silecektir.</string>
+    <plurals name="dialog_delete_server_warning_fmt">
+        <item quantity="one">Bu eylem, %1$d kullanıcısını ve onunla ilişkilendirilen tüm verileri silecektir.</item>
+    </plurals>
     <string name="action_delete">Sil</string>
     <string name="error_load_servers_failed">Sunucuları yükleme başarısız oldu</string>
     <string name="error_delete_active_server">Şu anki aktif sunucu silinemez. Lütfen ilk önca başka sunucuya geçin.</string>
@@ -618,7 +628,9 @@
     <string name="cd_tmdb">TMDB</string>
     <string name="cd_mdblist">MDBList</string>
     <string name="permission_request">İzin iste</string>
-    <string name="quota_days_fmt">%1$d / %2$d gün</string>
+    <plurals name="quota_days_fmt">
+        <item quantity="one">%1$d / %2$d gün</item>
+    </plurals>
     <string name="duration_hours_fmt">%.0f saat</string>
     <string name="cd_manage_addresses">Adresi yönet</string>
     <string name="cd_add_address">Adres ekle</string>
@@ -748,7 +760,9 @@
     <string name="cd_server_options">Sunucu seçenekleri</string>
     <string name="cd_security_warning">Güvenlik uyarısı</string>
     <string name="server_primary_connection">Birincil Bağlantı</string>
-    <string name="server_backup_routes_fmt">+ %1$d yedek rotaları</string>
+    <plurals name="server_backup_routes_fmt">
+        <item quantity="one">+ %1$d yedek rotaları</item>
+    </plurals>
     <string name="service_label_seerr">Seerr</string>
     <string name="service_label_abs">ABS</string>
     <string name="service_label_tmdb">TMDB</string>
