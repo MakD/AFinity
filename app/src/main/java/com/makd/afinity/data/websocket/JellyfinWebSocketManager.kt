@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.api.client.ApiClient
@@ -87,8 +88,16 @@ constructor(
     init {
         scope.launch {
             ProcessLifecycleOwner.get().lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                combine(sessionManager.currentSession, restartEpoch) { session, _ -> session }
-                    .collectLatest { session ->
+                combine(sessionManager.currentSession, restartEpoch) { session, epoch ->
+                        session to epoch
+                    }
+                    .distinctUntilChanged { (oldSession, oldEpoch), (newSession, newEpoch) ->
+                        oldEpoch == newEpoch &&
+                            oldSession?.userId == newSession?.userId &&
+                            oldSession?.serverId == newSession?.serverId &&
+                            oldSession?.serverUrl == newSession?.serverUrl
+                    }
+                    .collectLatest { (session, _) ->
                         reconnectJob?.cancel()
                         reconnectJob = null
                         hasConnectedBefore = false
@@ -111,7 +120,9 @@ constructor(
                 launch { monitorSocketState(currentApiClient) }
                 launch { subscribeToLibraryChanges(currentApiClient) }
                 launch { subscribeToUserDataChanges(currentApiClient) }
-                launch { subscribeToSessionChanges(currentApiClient) }
+                if (sessionManager.currentSession.value?.isAdmin == true) {
+                    launch { subscribeToSessionChanges(currentApiClient) }
+                }
                 launch { subscribeToPlayCommands(currentApiClient) }
                 launch { subscribeToServerMessages(currentApiClient) }
                 launch { subscribeToTaskChanges(currentApiClient) }
@@ -123,7 +134,6 @@ constructor(
             _connectionState.value = WebSocketState.DISCONNECTED
         }
     }
-
 
     private suspend fun monitorSocketState(apiClient: ApiClient) {
         try {
@@ -176,7 +186,8 @@ constructor(
                     consecutiveFailures = 0
                     handler(it)
                 }
-                consecutiveFailures = 0
+                consecutiveFailures++
+                Timber.w("$name subscription ended without error - resubscribing")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
