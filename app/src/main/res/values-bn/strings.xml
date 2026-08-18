@@ -58,7 +58,9 @@
     <string name="hero_btn_play_trailer">ট্রেলার চালান</string>
     <string name="hero_btn_play_media">মিডিয়া প্লে করুন</string>
     <string name="hero_btn_watch_now">এখন দেখুন</string>
-    <string name="hero_season_plural">%1$d ঋতু</string>
+    <plurals name="hero_season_plural">
+        <item quantity="one">%1$d ঋতু</item>
+    </plurals>
     <string name="favorites_title">প্রিয়</string>
     <string name="error_unknown">অজানা ত্রুটি</string>
     <string name="favorites_empty_title">এখনও কোন প্রিয়</string>
@@ -77,11 +79,15 @@
     <string name="meta_cc">সিসি</string>
     <string name="meta_time_remaining_hours_minutes">%1$dh %2$dm বাকি</string>
     <string name="meta_time_remaining_minutes">%1$dm বাকি</string>
-    <string name="meta_boxset_count">%1$d আইটেম</string>
+    <plurals name="meta_boxset_count">
+        <item quantity="one">%1$d আইটেম</item>
+    </plurals>
     <string name="meta_runtime_hours_minutes">%1$dজ %2$dমি</string>
     <string name="meta_runtime_minutes">%1$dm</string>
     <string name="meta_ends_at">এ শেষ হয় %1$s</string>
-    <string name="meta_episode_count">%1$d পর্বগুলি</string>
+    <plurals name="meta_episode_count">
+        <item quantity="one">%1$d পর্বগুলি</item>
+    </plurals>
     <string name="similar_items_title">এই মত আরো</string>
     <string name="special_features_title">বিশেষ বৈশিষ্ট্য</string>
     <string name="extra_type_clip">ক্লিপ</string>
@@ -110,8 +116,12 @@
     <string name="action_see_less">কম দেখুন</string>
     <string name="cd_expand">প্রসারিত করুন</string>
     <string name="cd_collapse">সঙ্কুচিত</string>
-    <string name="director_prefix">পরিচালক: %1$s</string>
-    <string name="writers_prefix">লেখক: %1$s</string>
+    <plurals name="director_prefix">
+        <item quantity="one">পরিচালক: %1$s</item>
+    </plurals>
+    <plurals name="writers_prefix">
+        <item quantity="one">লেখক: %1$s</item>
+    </plurals>
     <string name="seasons_title">ঋতু</string>
     <string name="action_play">খেলা</string>
     <string name="action_rewatch">রিওয়াচ</string>
@@ -165,7 +175,9 @@
     <string name="action_show_all_channels">সমস্ত চ্যানেল দেখান</string>
     <string name="livetv_header_letter_fmt">চ্যানেল (%1$s)</string>
     <string name="livetv_header_all">সমস্ত চ্যানেল</string>
-    <string name="livetv_count_fmt">%1$d চ্যানেল পাওয়া গেছে</string>
+    <plurals name="livetv_count_fmt">
+        <item quantity="one">%1$d চ্যানেল পাওয়া গেছে</item>
+    </plurals>
     <string name="livetv_guide_date_fmt">EEE, MMM d</string>
     <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
     <string name="action_now">এখন</string>
@@ -180,9 +192,13 @@
     <string name="livetv_error_not_available_title">লাইভ টিভি উপলব্ধ নেই</string>
     <string name="livetv_error_not_available_message">আপনার Jellyfin সার্ভারে লাইভ টিভি কনফিগার করুন</string>
     <string name="person_biography">জীবনী</string>
-    <string name="person_born_fmt">জন্ম: %1$s (%2$d বছর বয়সী)</string>
+    <plurals name="person_born_fmt">
+        <item quantity="one">জন্ম: %1$s (%2$d বছর বয়সী)</item>
+    </plurals>
     <string name="person_born_deceased_fmt">জন্ম: %1$s</string>
-    <string name="person_died_fmt">মারা গেছেন: %1$s (বৃদ্ধ %2$d)</string>
+    <plurals name="person_died_fmt">
+        <item quantity="one">মারা গেছেন: %1$s (বৃদ্ধ %2$d)</item>
+    </plurals>
     <string name="person_died_no_age_fmt">মৃত্যু: %1$s</string>
     <string name="person_birthplace_fmt">জন্মস্থান: %1$s</string>
     <string name="person_date_fmt">MMMM d, yyyy</string>
@@ -298,7 +314,9 @@
     <string name="filter_request">অনুরোধ</string>
     <string name="filter_audiobooks">অডিওবুক</string>
     <string name="explore_genres">জেনারগুলি অন্বেষণ করুন</string>
-    <string name="search_results_count_fmt">%1$d ফলাফল পাওয়া গেছে</string>
+    <plurals name="search_results_count_fmt">
+        <item quantity="one">%1$d ফলাফল পাওয়া গেছে</item>
+    </plurals>
     <string name="cd_watched">দেখেছে</string>
     <string name="cd_finished">সমাপ্ত</string>
     <string name="media_type_book">বই</string>
@@ -433,7 +451,9 @@
     <string name="empty_servers_message">আপনার প্রথম জেলিফিন সার্ভার যোগ করতে + বোতামে আলতো চাপুন।</string>
     <string name="dialog_delete_server_title">সার্ভার মুছবেন?</string>
     <string name="dialog_delete_server_message_fmt">আপনি কি মুছে ফেলার বিষয়ে নিশ্চিত \"%1$s\"?</string>
-    <string name="dialog_delete_server_warning_fmt">এটি  %1$d  সংরক্ষিত ব্যবহারকারী(দের) এবং সমস্ত সম্পর্কিত ডেটা সরিয়ে দেবে।</string>
+    <plurals name="dialog_delete_server_warning_fmt">
+        <item quantity="one">এটি %1$d সংরক্ষিত ব্যবহারকারী(দের) এবং সমস্ত সম্পর্কিত ডেটা সরিয়ে দেবে।</item>
+    </plurals>
     <string name="action_delete">মুছে দিন</string>
     <string name="error_load_servers_failed">সার্ভার লোড করতে ব্যর্থ হয়েছে৷</string>
     <string name="error_delete_active_server">বর্তমানে সক্রিয় সার্ভার মুছে ফেলা যাবে না. অনুগ্রহ করে প্রথমে অন্য সার্ভারে স্যুইচ করুন।</string>
