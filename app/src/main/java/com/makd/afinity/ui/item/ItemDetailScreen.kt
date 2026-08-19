@@ -89,6 +89,7 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.AfinityVideoPlaylist
 import com.makd.afinity.data.models.tmdb.TmdbReview
+import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.admin.refresh.RefreshMetadataDialog
@@ -208,6 +209,7 @@ fun ItemDetailScreen(
                     mdbRatings = uiState.mdbRatings,
                     mdbRatingBadges = uiState.mdbRatingBadges,
                     omdbAwards = uiState.omdbAwards,
+                    wikidataAwards = uiState.wikidataAwards,
                     isRatingsFromCache = uiState.isRatingsFromCache,
                     movieParts = uiState.movieParts,
                     onPlayClick = { item, selection -> interceptPlayClick(item, selection) },
@@ -416,6 +418,7 @@ private fun ItemDetailContent(
     mdbRatings: List<MdbListRating>,
     mdbRatingBadges: MdbListRatingBadges,
     omdbAwards: String?,
+    wikidataAwards: WikidataAwards?,
     isRatingsFromCache: Boolean,
     movieParts: List<AfinityItem>,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
@@ -451,6 +454,7 @@ private fun ItemDetailContent(
                 mdbRatings = mdbRatings,
                 mdbRatingBadges = mdbRatingBadges,
                 omdbAwards = omdbAwards,
+                wikidataAwards = wikidataAwards,
                 isRatingsFromCache = isRatingsFromCache,
                 movieParts = movieParts,
                 onPlayClick = onPlayClick,
@@ -480,6 +484,7 @@ private fun ItemDetailContent(
                 mdbRatings = mdbRatings,
                 mdbRatingBadges = mdbRatingBadges,
                 omdbAwards = omdbAwards,
+                wikidataAwards = wikidataAwards,
                 isRatingsFromCache = isRatingsFromCache,
                 movieParts = movieParts,
                 onPlayClick = onPlayClick,
@@ -524,6 +529,7 @@ private fun LandscapeItemDetailContent(
     mdbRatings: List<MdbListRating>,
     mdbRatingBadges: MdbListRatingBadges,
     omdbAwards: String?,
+    wikidataAwards: WikidataAwards?,
     isRatingsFromCache: Boolean,
     movieParts: List<AfinityItem>,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
@@ -791,6 +797,7 @@ private fun LandscapeItemDetailContent(
                             mdbRatings = mdbRatings,
                             mdbRatingBadges = mdbRatingBadges,
                             omdbAwards = omdbAwards,
+                            wikidataAwards = wikidataAwards,
                             isRatingsFromCache = isRatingsFromCache,
                             movieParts = movieParts,
                             onPlayClick = onPlayClick,
@@ -826,6 +833,7 @@ private fun PortraitItemDetailContent(
     mdbRatings: List<MdbListRating>,
     mdbRatingBadges: MdbListRatingBadges,
     omdbAwards: String?,
+    wikidataAwards: WikidataAwards?,
     isRatingsFromCache: Boolean,
     movieParts: List<AfinityItem>,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
@@ -999,6 +1007,7 @@ private fun PortraitItemDetailContent(
                     mdbRatings = mdbRatings,
                     mdbRatingBadges = mdbRatingBadges,
                     omdbAwards = omdbAwards,
+                    wikidataAwards = wikidataAwards,
                     isRatingsFromCache = isRatingsFromCache,
                     movieParts = movieParts,
                     onPlayClick = onPlayClick,
@@ -1074,6 +1083,7 @@ private fun TypeSpecificContent(
     mdbRatings: List<MdbListRating>,
     mdbRatingBadges: MdbListRatingBadges,
     omdbAwards: String?,
+    wikidataAwards: WikidataAwards?,
     isRatingsFromCache: Boolean,
     movieParts: List<AfinityItem>,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
@@ -1098,6 +1108,7 @@ private fun TypeSpecificContent(
                 mdbRatings = mdbRatings,
                 mdbRatingBadges = mdbRatingBadges,
                 omdbAwards = omdbAwards,
+                wikidataAwards = wikidataAwards,
                 isRatingsFromCache = isRatingsFromCache,
                 onEpisodeClick = { ep ->
                     val mediaSourceId = ep.sources.firstOrNull()?.id ?: return@SeriesDetailContent
@@ -1145,6 +1156,7 @@ private fun TypeSpecificContent(
                 tmdbReviews = tmdbReviews,
                 mdbRatings = mdbRatings,
                 mdbRatingBadges = mdbRatingBadges,
+                wikidataAwards = wikidataAwards,
                 isRatingsFromCache = isRatingsFromCache,
                 onEpisodeClick = { ep -> viewModel.selectEpisode(ep) },
                 onSpecialFeatureClick = onSpecialFeatureClick,
@@ -1162,6 +1174,7 @@ private fun TypeSpecificContent(
                 mdbRatings = mdbRatings,
                 mdbRatingBadges = mdbRatingBadges,
                 omdbAwards = omdbAwards,
+                wikidataAwards = wikidataAwards,
                 isRatingsFromCache = isRatingsFromCache,
                 parts = movieParts,
                 onSpecialFeatureClick = onSpecialFeatureClick,

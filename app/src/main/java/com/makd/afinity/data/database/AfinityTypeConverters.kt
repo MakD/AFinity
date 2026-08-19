@@ -15,6 +15,7 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.tmdb.TmdbReview
+import com.makd.afinity.data.models.wikidata.WikidataAward
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.MediaStreamType
@@ -491,6 +492,20 @@ class AfinityTypeConverters {
     fun toMdbRatingBadges(badgesString: String?): MdbListRatingBadges? = badgesString?.let {
         try {
             json.decodeFromString<MdbListRatingBadges>(it)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    @TypeConverter
+    fun fromWikidataAwardList(awards: List<WikidataAward>?): String? = awards?.let {
+        json.encodeToString(it)
+    }
+
+    @TypeConverter
+    fun toWikidataAwardList(awardsString: String?): List<WikidataAward>? = awardsString?.let {
+        try {
+            json.decodeFromString<List<WikidataAward>>(it)
         } catch (e: Exception) {
             null
         }

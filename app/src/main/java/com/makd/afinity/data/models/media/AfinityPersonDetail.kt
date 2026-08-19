@@ -12,5 +12,6 @@ data class AfinityPersonDetail(
     val endDate: LocalDateTime?,
     val productionLocations: List<String>,
     val externalUrls: List<AfinityExternalUrl>?,
+    val providerIds: Map<String, String>? = null,
     val favorite: Boolean = false,
 )

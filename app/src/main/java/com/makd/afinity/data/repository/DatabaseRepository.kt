@@ -3,6 +3,7 @@ package com.makd.afinity.data.repository
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
+import com.makd.afinity.data.database.entities.WikidataAwardsCacheEntity
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -268,6 +269,10 @@ interface DatabaseRepository {
     ): ItemMetadataCacheEntity?
 
     suspend fun insertItemMetadata(metadata: ItemMetadataCacheEntity)
+
+    suspend fun getWikidataAwards(subjectType: String, tmdbId: String): WikidataAwardsCacheEntity?
+
+    suspend fun insertWikidataAwards(awards: WikidataAwardsCacheEntity)
 
     suspend fun insertMusicTrack(track: AfinityTrack, serverId: String, userId: String)
 

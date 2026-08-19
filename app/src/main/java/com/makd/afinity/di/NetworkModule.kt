@@ -12,10 +12,12 @@ import com.makd.afinity.data.network.MdbListApiService
 import com.makd.afinity.data.network.OmdbApiService
 import com.makd.afinity.data.network.SeerrCookieJar
 import com.makd.afinity.data.network.TmdbApiService
+import com.makd.afinity.data.network.WikidataApiService
 import com.makd.afinity.data.network.resolveDynamicBaseUrl
 import com.makd.afinity.data.network.rewriteWithRequestPathAndQuery
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.util.NetworkConnectivityMonitor
+import com.makd.afinity.util.redactSecrets
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -75,6 +77,8 @@ import kotlin.time.Duration.Companion.seconds
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class AudnexusClient
 
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class ProberClient
+
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class WikidataClient
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -143,11 +147,7 @@ object NetworkModule {
 
         if (BuildConfig.DEBUG) {
             val loggingInterceptor = HttpLoggingInterceptor { message ->
-                val sanitizedMessage =
-                    message.replace(
-                        Regex("(?i)(api_key|token|accessToken)=[^&\\s]+"),
-                        "$1=[REDACTED]",
-                    )
+                val sanitizedMessage = redactSecrets(message)
                 Timber.tag("Jellyfin-HTTP").d(sanitizedMessage)
             }
                 .apply {
@@ -167,6 +167,9 @@ object NetworkModule {
 
     private val apiUserAgent =
         "AFinity/${BuildConfig.VERSION_NAME} (Android ${Build.VERSION.RELEASE}; ${Build.MODEL})"
+
+    private val wikidataUserAgent =
+        "AFinity/${BuildConfig.VERSION_NAME} (https://github.com/MakD/AFinity; award lookups, cached client-side)"
 
     @Provides
     @Singleton
@@ -267,11 +270,7 @@ object NetworkModule {
 
         if (BuildConfig.DEBUG) {
             val loggingInterceptor = HttpLoggingInterceptor { message ->
-                val sanitizedMessage =
-                    message.replace(
-                        Regex("(?i)(api_key|token|accessToken)=[^&\\s]+"),
-                        "$1=[REDACTED]",
-                    )
+                val sanitizedMessage = redactSecrets(message)
 
                 if (
                     sanitizedMessage.contains("ERROR") ||
@@ -768,5 +767,46 @@ object NetworkModule {
     @Singleton
     fun provideAudnexusApiService(@AudnexusClient retrofit: Retrofit): AudnexusApiService {
         return retrofit.create(AudnexusApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    @WikidataClient
+    fun provideWikidataRetrofit(baseOkHttpClient: OkHttpClient): Retrofit {
+        val contentType = "application/json".toMediaType()
+        val json = Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+        }
+
+        val wikidataClient =
+            baseOkHttpClient
+                .newBuilder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(20, TimeUnit.SECONDS)
+                .callTimeout(25, TimeUnit.SECONDS)
+                .addInterceptor { chain ->
+                    chain.proceed(
+                        chain
+                            .request()
+                            .newBuilder()
+                            .header("User-Agent", wikidataUserAgent)
+                            .header("Accept", "application/sparql-results+json")
+                            .build()
+                    )
+                }
+                .build()
+
+        return Retrofit.Builder()
+            .baseUrl("https://query.wikidata.org/")
+            .client(wikidataClient)
+            .addConverterFactory(json.asConverterFactory(contentType))
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideWikidataApiService(@WikidataClient retrofit: Retrofit): WikidataApiService {
+        return retrofit.create(WikidataApiService::class.java)
     }
 }

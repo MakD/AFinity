@@ -72,6 +72,7 @@ object FieldSets {
             ItemFields.OVERVIEW,
             ItemFields.EXTERNAL_URLS,
             ItemFields.PRODUCTION_LOCATIONS,
+            ItemFields.PROVIDER_IDS,
         )
 
     val REFRESH_USER_DATA = emptyList<ItemFields>()

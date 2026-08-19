@@ -40,6 +40,7 @@ import com.makd.afinity.data.repository.segments.SegmentsRepository
 import com.makd.afinity.di.DownloadClient
 import com.makd.afinity.util.formatFileSize
 import com.makd.afinity.util.parseDashlessUuid
+import com.makd.afinity.util.redactUrl
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
@@ -289,7 +290,7 @@ constructor(
 
                         val existingFileSize = if (outputFile.exists()) outputFile.length() else 0L
 
-                        Timber.d("Downloading from: $downloadUrl")
+                        Timber.d("Downloading from: ${redactUrl(downloadUrl)}")
                         Timber.d("Saving to: ${outputFile.absolutePath}")
                         Timber.d("Resuming from byte: $existingFileSize")
 

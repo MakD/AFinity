@@ -13,6 +13,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.util.redactUrl
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.async
@@ -109,7 +110,9 @@ constructor(
 
                 val playbackInfo = playbackInfoDeferred.await()
                 if (playbackInfo != null) {
-                    Timber.d("PlayerWrapperViewModel: Got stream URL: ${playbackInfo.streamUrl}")
+                    Timber.d(
+                        "PlayerWrapperViewModel: Got stream URL: ${redactUrl(playbackInfo.streamUrl)}"
+                    )
                     _livePlaybackInfo.value = playbackInfo
                     _liveStreamUrl.value = playbackInfo.streamUrl
                 } else {

@@ -33,6 +33,7 @@ import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.navigation.LocalShowAwards
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.theme.AFinityTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -141,6 +142,8 @@ class PlayerActivity : AppCompatActivity() {
                 preferencesRepository.getDynamicColorsFlow().collectAsState(initial = true)
             val showRatings by
                 preferencesRepository.getShowRatingsFlow().collectAsState(initial = true)
+            val showAwards by
+                preferencesRepository.getShowAwardsFlow().collectAsState(initial = true)
 
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -163,7 +166,10 @@ class PlayerActivity : AppCompatActivity() {
             }
 
             AFinityTheme(themeMode = themeMode, dynamicColor = dynamicColors) {
-                CompositionLocalProvider(LocalShowRatings provides showRatings) {
+                CompositionLocalProvider(
+                    LocalShowRatings provides showRatings,
+                    LocalShowAwards provides showAwards,
+                ) {
                     PlayerScreenWrapper(
                         itemId = itemId,
                         mediaSourceId = mediaSourceId,

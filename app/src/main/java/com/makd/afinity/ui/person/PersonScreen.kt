@@ -64,6 +64,7 @@ fun PersonScreen(
                     person = uiState.person!!,
                     movies = uiState.movies,
                     shows = uiState.shows,
+                    awards = uiState.awards,
                     onItemClick = { item ->
                         val route =
                             Destination.createItemDetailRoute(

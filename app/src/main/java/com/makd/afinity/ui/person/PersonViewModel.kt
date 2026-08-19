@@ -13,9 +13,13 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.withUserDataFrom
+import com.makd.afinity.data.models.wikidata.WikidataAwards
+import com.makd.afinity.data.models.wikidata.WikidataSubjectType
 import com.makd.afinity.data.repository.AppDataRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
+import com.makd.afinity.data.repository.wikidata.WikidataAwardsRepository
 import com.makd.afinity.data.store.ItemStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -41,6 +45,8 @@ constructor(
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val mediaChangeManager: MediaChangeManager,
     private val itemStore: ItemStore,
+    private val wikidataAwardsRepository: WikidataAwardsRepository,
+    private val preferencesRepository: PreferencesRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -57,6 +63,8 @@ constructor(
     val uiState: StateFlow<PersonUiState> = _uiState.asStateFlow()
 
     private var lastLoadedAt = 0L
+
+    private var awardsTmdbId: String? = null
 
     init {
         viewModelScope.launch { adminChangeBroadcaster.itemChanged.collect { loadPersonDetails() } }
@@ -188,6 +196,7 @@ constructor(
 
                     _uiState.update { it.copy(person = person, isLoading = false) }
                     lastLoadedAt = System.currentTimeMillis()
+                    loadAwardsFor(person)
 
                     if (person.hasIncompleteMetadata()) {
                         val rechecked = mediaRepository.getPersonWithoutRefresh(personId)
@@ -212,6 +221,33 @@ constructor(
                             },
                     )
                 }
+            }
+        }
+    }
+
+    private fun loadAwardsFor(person: AfinityPersonDetail) {
+        val tmdbId = person.providerIds?.get("Tmdb")
+        if (tmdbId.isNullOrBlank()) {
+            awardsTmdbId = null
+            _uiState.update { it.copy(awards = null, isLoadingAwards = false) }
+            return
+        }
+        if (tmdbId == awardsTmdbId && _uiState.value.awards != null) return
+        awardsTmdbId = tmdbId
+
+        viewModelScope.launch {
+            if (
+                !preferencesRepository.getShowAwards() ||
+                    !preferencesRepository.getWikidataEnabled()
+            ) {
+                _uiState.update { it.copy(awards = null, isLoadingAwards = false) }
+                return@launch
+            }
+            _uiState.update { it.copy(isLoadingAwards = true) }
+            val awards = wikidataAwardsRepository.getAwards(WikidataSubjectType.PERSON, tmdbId)
+            if (awardsTmdbId != tmdbId) return@launch
+            _uiState.update {
+                it.copy(awards = awards.takeIf { loaded -> loaded.found }, isLoadingAwards = false)
             }
         }
     }
@@ -271,4 +307,6 @@ data class PersonUiState(
     val shows: List<AfinityShow> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
+    val awards: WikidataAwards? = null,
+    val isLoadingAwards: Boolean = false,
 )

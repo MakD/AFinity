@@ -15,6 +15,7 @@ import com.makd.afinity.data.database.dao.ShowDao
 import com.makd.afinity.data.database.dao.SourceDao
 import com.makd.afinity.data.database.dao.UserDao
 import com.makd.afinity.data.database.dao.UserDataDao
+import com.makd.afinity.data.database.dao.WikidataAwardsDao
 import com.makd.afinity.data.database.entities.AfinityEpisodeDto
 import com.makd.afinity.data.database.entities.AfinityMovieDto
 import com.makd.afinity.data.database.entities.AfinitySeasonDto
@@ -23,6 +24,7 @@ import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
 import com.makd.afinity.data.database.entities.MusicLyricsEntity
+import com.makd.afinity.data.database.entities.WikidataAwardsCacheEntity
 import com.makd.afinity.data.database.entities.toAfinityAlbum
 import com.makd.afinity.data.database.entities.toAfinityEpisodeDto
 import com.makd.afinity.data.database.entities.toAfinityMediaStreamDto
@@ -90,6 +92,7 @@ constructor(
     private val userDataDao: UserDataDao,
     private val serverDatabaseDao: ServerDatabaseDao,
     private val itemMetadataCacheDao: ItemMetadataCacheDao,
+    private val wikidataAwardsDao: WikidataAwardsDao,
     private val musicTrackDao: MusicTrackDao,
     private val musicAlbumDao: MusicAlbumDao,
     private val musicLyricsDao: MusicLyricsDao,
@@ -856,6 +859,17 @@ constructor(
 
     override suspend fun insertItemMetadata(metadata: ItemMetadataCacheEntity) {
         itemMetadataCacheDao.insertOrUpdateMetadata(metadata)
+    }
+
+    override suspend fun getWikidataAwards(
+        subjectType: String,
+        tmdbId: String,
+    ): WikidataAwardsCacheEntity? {
+        return wikidataAwardsDao.getAwards(subjectType, tmdbId)
+    }
+
+    override suspend fun insertWikidataAwards(awards: WikidataAwardsCacheEntity) {
+        wikidataAwardsDao.insertOrUpdateAwards(awards)
     }
 
     override suspend fun insertMusicTrack(track: AfinityTrack, serverId: String, userId: String) {

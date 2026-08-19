@@ -29,6 +29,7 @@ import com.makd.afinity.data.database.dao.SourceDao
 import com.makd.afinity.data.database.dao.TopPeopleDao
 import com.makd.afinity.data.database.dao.UserDao
 import com.makd.afinity.data.database.dao.UserDataDao
+import com.makd.afinity.data.database.dao.WikidataAwardsDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -115,6 +116,11 @@ object DatabaseModule {
     @Provides
     fun provideItemMetadataCacheDao(database: AfinityDatabase): ItemMetadataCacheDao {
         return database.itemMetadataCacheDao()
+    }
+
+    @Provides
+    fun provideWikidataAwardsDao(database: AfinityDatabase): WikidataAwardsDao {
+        return database.wikidataAwardsDao()
     }
 
     @Provides

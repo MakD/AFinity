@@ -355,6 +355,7 @@ fun BaseItemDto.toAfinityPersonDetail(baseUrl: String): AfinityPersonDetail {
         endDate = endDate,
         productionLocations = productionLocations ?: emptyList(),
         externalUrls = externalUrls?.map { it.toAfinityExternalUrl() },
+        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
         favorite = userData?.isFavorite ?: false,
     )
 }

@@ -12,6 +12,7 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.di.NetworkModule
 import com.makd.afinity.util.MediaCapabilities
+import com.makd.afinity.util.redactUrl
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.operations.LiveTvApi
@@ -379,7 +380,7 @@ constructor(
                 }
             }
 
-            Timber.d("Selected Live TV stream: method=$playMethod, url=$streamUrl")
+            Timber.d("Selected Live TV stream: method=$playMethod, url=${redactUrl(streamUrl)}")
             LiveTvPlaybackInfo(
                 streamUrl = streamUrl,
                 mediaSourceId = mediaSourceId,

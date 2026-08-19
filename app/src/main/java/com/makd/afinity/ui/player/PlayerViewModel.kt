@@ -88,6 +88,7 @@ import com.makd.afinity.player.common.TrackSelection
 import com.makd.afinity.player.mpv.MPVPlayer
 import com.makd.afinity.ui.player.utils.VolumeManager
 import com.makd.afinity.util.formatFileSize
+import com.makd.afinity.util.redactUrl
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.peerless2012.ass.media.AssHandler
@@ -1918,7 +1919,7 @@ constructor(
 
         try {
             Timber.d("Loading live channel: $channelName ($channelId)")
-            Timber.d("Stream URL: $streamUrl")
+            Timber.d("Stream URL: ${redactUrl(streamUrl)}")
             val userAgent = "AFinity/${BuildConfig.VERSION_NAME} (Android; ExoPlayer)"
 
             if (player is MPVPlayer) {

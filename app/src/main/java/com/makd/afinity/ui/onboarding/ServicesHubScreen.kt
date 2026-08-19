@@ -38,6 +38,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -65,6 +66,7 @@ import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.connectionIndicatorColor
 import com.makd.afinity.ui.components.connectionLabel
+import com.makd.afinity.ui.item.components.shared.AwardGold
 import com.makd.afinity.ui.settings.SettingsViewModel
 import com.makd.afinity.ui.settings.servers.AudiobookshelfColor
 import com.makd.afinity.ui.settings.servers.CancelColor
@@ -191,10 +193,21 @@ fun ServicesHubScreen(
     val seerrSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val absSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    var showWikidataSheet by remember { mutableStateOf(false) }
+    var showWikidataDisconnect by remember { mutableStateOf(false) }
+    val wikidataSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val wikidataEnabled by settingsViewModel.wikidataEnabled.collectAsStateWithLifecycle()
+    val onWikidataTile = {
+        if (wikidataEnabled) showWikidataDisconnect = true else showWikidataSheet = true
+    }
+
     val onSeerrTile = { if (seerrConnected) selected = EditorKind.SEERR else showSeerrSheet = true }
     val onAbsTile = { if (absConnected) selected = EditorKind.ABS else showAbsSheet = true }
     val onRemoteTile = { selected = EditorKind.JELLYFIN }
-    val onRatingsTile = { selected = EditorKind.RATINGS }
+    val onRatingsTile = {
+        settingsViewModel.refreshMdbListUsage()
+        selected = EditorKind.RATINGS
+    }
 
     BoxWithConstraints(
         modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
@@ -256,6 +269,8 @@ fun ServicesHubScreen(
                             onAbs = onAbsTile,
                             onRemote = onRemoteTile,
                             onRatings = onRatingsTile,
+                            wikidataEnabled = wikidataEnabled,
+                            onWikidata = onWikidataTile,
                             onFinish = onFinish,
                             onServerManagement = onNavigateToServerManagement,
                             markDone = viewModel::markFirstRunDone,
@@ -317,6 +332,8 @@ fun ServicesHubScreen(
                         onAbs = onAbsTile,
                         onRemote = onRemoteTile,
                         onRatings = onRatingsTile,
+                        wikidataEnabled = wikidataEnabled,
+                        onWikidata = onWikidataTile,
                         onFinish = onFinish,
                         onServerManagement = onNavigateToServerManagement,
                         markDone = viewModel::markFirstRunDone,
@@ -366,6 +383,38 @@ fun ServicesHubScreen(
             }
         }
 
+        if (showWikidataDisconnect) {
+            AlertDialog(
+                onDismissRequest = { showWikidataDisconnect = false },
+                title = { Text(stringResource(R.string.wikidata_disconnect_title)) },
+                text = { Text(stringResource(R.string.wikidata_disconnect_message)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            settingsViewModel.setWikidataEnabled(false)
+                            showWikidataDisconnect = false
+                        }
+                    ) {
+                        Text(stringResource(R.string.wikidata_disconnect_action))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showWikidataDisconnect = false }) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                },
+            )
+        }
+        if (showWikidataSheet) {
+            WikidataConnectSheet(
+                sheetState = wikidataSheetState,
+                onDismiss = { showWikidataSheet = false },
+                onEnable = {
+                    settingsViewModel.setWikidataEnabled(true)
+                    showWikidataSheet = false
+                },
+            )
+        }
         if (showSeerrSheet) {
             com.makd.afinity.ui.settings.JellyseerrBottomSheet(
                 onDismiss = { showSeerrSheet = false },
@@ -438,6 +487,8 @@ private fun HubList(
     onAbs: () -> Unit,
     onRemote: () -> Unit,
     onRatings: () -> Unit,
+    wikidataEnabled: Boolean,
+    onWikidata: () -> Unit,
     onFinish: () -> Unit,
     onServerManagement: () -> Unit,
     markDone: () -> Unit,
@@ -542,6 +593,25 @@ private fun HubList(
                 } else {
                     Spacer(Modifier.weight(1f))
                 }
+            }
+
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                ServiceTile(
+                    iconRes = R.drawable.ic_laurel,
+                    name = stringResource(R.string.services_hub_tile_wikidata),
+                    connected = wikidataEnabled,
+                    accent = AwardGold,
+                    statusText =
+                        stringResource(
+                            if (wikidataEnabled) R.string.services_hub_status_connected
+                            else R.string.services_hub_status_not_set_up
+                        ),
+                    isSelected = false,
+                    onClick = onWikidata,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.weight(1f))
             }
 
             Spacer(Modifier.height(24.dp))
@@ -874,6 +944,8 @@ private fun RatingsKeys(viewModel: SettingsViewModel) {
         onEditingChange = { editingLabel = if (it) "TMDB" else null },
         onSave = { viewModel.validateAndSaveTmdbKey(it) { editingLabel = null } },
     )
+    val mdbUsage by viewModel.mdbListUsage.collectAsStateWithLifecycle()
+
     RatingKeyRow(
         label = "MDBList",
         labelColor = mdblistColor,
@@ -882,7 +954,15 @@ private fun RatingsKeys(viewModel: SettingsViewModel) {
         error = uiState.mdbListKeyValidationError,
         editing = editingLabel == "MDBList",
         onEditingChange = { editingLabel = if (it) "MDBList" else null },
-        onSave = { viewModel.validateAndSaveMdbListKey(it) { editingLabel = null } },
+        onSave = {
+            viewModel.validateAndSaveMdbListKey(it) {
+                editingLabel = null
+                viewModel.refreshMdbListUsage()
+            }
+        },
+        meta =
+            mdbUsage?.let { stringResource(R.string.mdblist_usage_fmt, it.remaining, it.limit) }
+                ?: stringResource(R.string.mdblist_usage_unknown),
     )
     RatingKeyRow(
         label = "OMDb",
@@ -906,6 +986,7 @@ private fun RatingKeyRow(
     editing: Boolean,
     onEditingChange: (Boolean) -> Unit,
     onSave: (String) -> Unit,
+    meta: String? = null,
 ) {
     var input by remember(currentKey) { mutableStateOf(currentKey) }
 
@@ -931,6 +1012,15 @@ private fun RatingKeyRow(
                         text = maskKey(currentKey),
                         style = MaterialTheme.typography.bodyLarge,
                         maxLines = 1,
+                    )
+                }
+                if (meta != null) {
+                    Text(
+                        text = meta,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        modifier = Modifier.padding(end = 4.dp),
                     )
                 }
                 IconButton(
@@ -974,6 +1064,19 @@ private fun RatingKeyRow(
                         modifier = Modifier.padding(end = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        if (input.isNotBlank()) {
+                            IconButton(
+                                onClick = { input = "" },
+                                modifier = Modifier.size(36.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_clear),
+                                    contentDescription = stringResource(R.string.action_remove),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+                        }
                         IconButton(
                             onClick = { onEditingChange(false) },
                             modifier = Modifier.size(36.dp),
@@ -1115,4 +1218,93 @@ private fun DisconnectDialog(serviceName: String, onConfirm: () -> Unit, onDismi
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WikidataConnectSheet(
+    sheetState: SheetState,
+    onDismiss: () -> Unit,
+    onEnable: () -> Unit,
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_laurel),
+                    contentDescription = null,
+                    tint = AwardGold,
+                    modifier = Modifier.size(28.dp),
+                )
+                Text(
+                    text = stringResource(R.string.wikidata_connect_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+
+            Text(
+                text = stringResource(R.string.wikidata_connect_blurb),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            WikidataDisclosureBlock(
+                title = stringResource(R.string.wikidata_connect_sends_title),
+                body = stringResource(R.string.wikidata_connect_sends_body),
+            )
+            WikidataDisclosureBlock(
+                title = stringResource(R.string.wikidata_connect_never_title),
+                body = stringResource(R.string.wikidata_connect_never_body),
+            )
+
+            Text(
+                text = stringResource(R.string.wikidata_scope_note),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Button(onClick = onEnable, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.wikidata_connect_action))
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun WikidataDisclosureBlock(title: String, body: String) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
 }

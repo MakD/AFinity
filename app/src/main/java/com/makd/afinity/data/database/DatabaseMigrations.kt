@@ -1486,6 +1486,21 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_70_71 =
+        object : Migration(70, 71) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `wikidata_awards_cache` (" +
+                        "`subjectType` TEXT NOT NULL, " +
+                        "`tmdbId` TEXT NOT NULL, " +
+                        "`awards` TEXT NOT NULL, " +
+                        "`confirmed` INTEGER NOT NULL, " +
+                        "`fetchedAt` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`subjectType`, `tmdbId`))"
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1557,5 +1572,6 @@ object DatabaseMigrations {
             MIGRATION_67_68,
             MIGRATION_68_69,
             MIGRATION_69_70,
+            MIGRATION_70_71,
         )
 }

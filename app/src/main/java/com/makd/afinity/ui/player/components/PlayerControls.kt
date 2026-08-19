@@ -91,6 +91,7 @@ import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.models.syncplay.SyncPlayMemberInfo
+import com.makd.afinity.navigation.LocalShowAwards
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.player.common.TrackMapping
 import com.makd.afinity.ui.components.AfinityBadge
@@ -101,6 +102,7 @@ import com.makd.afinity.ui.components.ratings.criticRatingOf
 import com.makd.afinity.ui.components.ratings.displayPriority
 import com.makd.afinity.ui.components.ratings.excludingSupersededBy
 import com.makd.afinity.ui.components.ratings.toDisplay
+import com.makd.afinity.ui.item.components.shared.omdbAwardsHeadline
 import com.makd.afinity.ui.livetv.components.LiveBadge
 import com.makd.afinity.ui.player.PlayerViewModel
 import com.makd.afinity.ui.player.toLocalizedLanguageName
@@ -1651,16 +1653,14 @@ private fun PauseDetailsOverlay(
                 emptyList()
             } else {
                 (listOfNotNull(communityRatingOf(communityRating), criticRatingOf(criticRating)) +
-                        uiState.mdbRatings
-                            .excludingSupersededBy(criticRating)
-                            .sortedBy { it.displayPriority() })
+                        uiState.mdbRatings.excludingSupersededBy(criticRating).sortedBy {
+                            it.displayPriority()
+                        })
                     .mapNotNull { it.toDisplay() }
             }
         }
     val awardsHighlight =
-        uiState.omdbAwards
-            ?.takeIf { it.isNotBlank() }
-            ?.let { it.split(".", limit = 2).firstOrNull()?.trim() ?: it }
+        if (LocalShowAwards.current) omdbAwardsHeadline(uiState.omdbAwards) else null
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f))) {
         Column(
