@@ -1,17 +1,18 @@
 package com.makd.afinity.ui.home.components
 
 import android.content.res.Configuration
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.carousel.CarouselDefaults
+import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
+import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -20,8 +21,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -30,6 +29,9 @@ import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.utils.shimmerEffect
 
+private const val SPOTLIGHT_PLACEHOLDER_COUNT = 3
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PendingSection(
     title: String,
@@ -68,18 +70,19 @@ fun PendingSection(
                         maxHeight = CardDimensions.spotlightMaxHeight(containerWidth),
                     )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth().height(itemSize.height).clipToBounds(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                HorizontalMultiBrowseCarousel(
+                    state = rememberCarouselState { SPOTLIGHT_PLACEHOLDER_COUNT },
+                    preferredItemWidth = itemSize.width,
+                    modifier = Modifier.height(itemSize.height),
+                    itemSpacing = 12.dp,
+                    maxSmallItemWidth = CarouselDefaults.MinSmallItemSize,
                 ) {
-                    repeat(2) {
-                        Box(
-                            modifier =
-                                Modifier.width(itemSize.width)
-                                    .fillMaxHeight()
-                                    .clip(MaterialTheme.shapes.extraLarge)
-                                    .shimmerEffect()
-                        )
+                    Box(
+                        modifier =
+                            Modifier.height(itemSize.height)
+                                .maskClip(MaterialTheme.shapes.extraLarge)
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize().shimmerEffect())
                     }
                 }
             }

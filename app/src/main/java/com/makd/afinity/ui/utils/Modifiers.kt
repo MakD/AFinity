@@ -6,48 +6,59 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Dp
 
 @Composable
-fun Modifier.shimmerEffect(): Modifier = composed {
-    val transition = rememberInfiniteTransition(label = "shimmer")
+fun Modifier.shimmerEffect(): Modifier {
+    val progress =
+        rememberInfiniteTransition(label = "shimmer")
+            .animateFloat(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec =
+                    infiniteRepeatable(
+                        animation = tween(durationMillis = 1400, easing = LinearEasing),
+                        repeatMode = RepeatMode.Restart,
+                    ),
+                label = "shimmerProgress",
+            )
 
-    val translateAnimation by
-        transition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1000f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation = tween(durationMillis = 1000, easing = LinearEasing),
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "shimmerTranslate",
-        )
+    val base = MaterialTheme.colorScheme.surfaceVariant
+    val highlight = lerp(base, MaterialTheme.colorScheme.onSurfaceVariant, 0.12f)
 
-    val shimmerColors =
-        listOf(
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-        )
+    return this.drawWithCache {
+        val band = size.width * 0.5f
+        val travel = size.width + size.height + band * 2f
+        val brush =
+            if (band > 0f) {
+                Brush.linearGradient(
+                    colors = listOf(base, highlight, base),
+                    start = Offset.Zero,
+                    end = Offset(band, band),
+                )
+            } else {
+                null
+            }
 
-    val brush =
-        Brush.linearGradient(
-            colors = shimmerColors,
-            start = Offset.Zero,
-            end = Offset(x = translateAnimation, y = translateAnimation),
-        )
+        onDrawBehind {
+            drawRect(color = base)
+            if (brush == null) return@onDrawBehind
 
-    background(brush)
+            val offset = progress.value * travel - band * 2f
+            translate(left = offset) {
+                drawRect(brush = brush, topLeft = Offset(-offset, 0f), size = size)
+            }
+        }
+    }
 }
 
 fun Modifier.verticalLayoutOffset(yOffset: Dp) =
