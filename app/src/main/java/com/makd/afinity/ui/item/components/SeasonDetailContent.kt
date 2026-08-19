@@ -38,6 +38,7 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.tmdb.TmdbReview
+import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.ContinueWatchingCard
@@ -56,6 +57,7 @@ fun SeasonDetailContent(
     tmdbReviews: List<TmdbReview> = emptyList(),
     mdbRatings: List<MdbListRating> = emptyList(),
     mdbRatingBadges: MdbListRatingBadges = MdbListRatingBadges(),
+    wikidataAwards: WikidataAwards? = null,
     isRatingsFromCache: Boolean = false,
     onEpisodeClick: (AfinityEpisode) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
@@ -75,6 +77,7 @@ fun SeasonDetailContent(
         tmdbReviews = tmdbReviews,
         mdbRatings = mdbRatings,
         mdbRatingBadges = mdbRatingBadges,
+        wikidataAwards = wikidataAwards,
         isRatingsFromCache = isRatingsFromCache,
         onSpecialFeatureClick = onSpecialFeatureClick,
         onBoxSetClick = { boxSet ->

@@ -330,6 +330,18 @@ interface PreferencesRepository {
 
     fun getShowRatingsFlow(): Flow<Boolean>
 
+    suspend fun setShowAwards(enabled: Boolean)
+
+    suspend fun getShowAwards(): Boolean
+
+    fun getShowAwardsFlow(): Flow<Boolean>
+
+    suspend fun setWikidataEnabled(enabled: Boolean)
+
+    suspend fun getWikidataEnabled(): Boolean
+
+    fun getWikidataEnabledFlow(): Flow<Boolean>
+
     suspend fun setNotificationPermissionDeclined(declined: Boolean)
 
     suspend fun getNotificationPermissionDeclined(): Boolean

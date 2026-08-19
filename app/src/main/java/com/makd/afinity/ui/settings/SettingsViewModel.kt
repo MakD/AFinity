@@ -8,6 +8,7 @@ import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.HomeRow
 import com.makd.afinity.data.models.common.EpisodeLayout
+import com.makd.afinity.data.models.mdblist.MdbListUsage
 import com.makd.afinity.data.models.player.AssRenderMode
 import com.makd.afinity.data.models.player.MpvAudioOutput
 import com.makd.afinity.data.models.player.MpvGpuApi
@@ -171,6 +172,24 @@ constructor(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = true,
+            )
+
+    val showAwards: StateFlow<Boolean> =
+        preferencesRepository
+            .getShowAwardsFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = true,
+            )
+
+    val wikidataEnabled: StateFlow<Boolean> =
+        preferencesRepository
+            .getWikidataEnabledFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = false,
             )
 
     init {
@@ -1081,6 +1100,38 @@ constructor(
 
     fun setAppFont(fontName: String) {
         viewModelScope.launch { preferencesRepository.setAppFont(fontName) }
+    }
+
+    fun toggleShowAwards(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setShowAwards(enabled) }
+    }
+
+    fun setWikidataEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setWikidataEnabled(enabled) }
+    }
+
+    private val _mdbListUsage = MutableStateFlow<MdbListUsage?>(null)
+    val mdbListUsage: StateFlow<MdbListUsage?> = _mdbListUsage.asStateFlow()
+
+    fun refreshMdbListUsage() {
+        val key = mdbListApiKey.value
+        if (key.isBlank()) {
+            _mdbListUsage.value = null
+            return
+        }
+
+        viewModelScope.launch {
+            _mdbListUsage.value =
+                try {
+                    val user = mdbListApiService.getUser(key)
+                    user.apiRequests?.let {
+                        MdbListUsage(used = user.apiRequestsCount ?: 0, limit = it)
+                    }
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to load MDBList usage")
+                    null
+                }
+        }
     }
 
     fun toggleShowRatings(enabled: Boolean) {

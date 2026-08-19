@@ -74,6 +74,15 @@ constructor(
                 initialValue = true,
             )
 
+    val showAwards =
+        preferencesRepository
+            .getShowAwardsFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = true,
+            )
+
     val navigationDrawerEnabled =
         preferencesRepository
             .getNavigationDrawerEnabledFlow()

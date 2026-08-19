@@ -41,6 +41,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.tmdb.TmdbReview
+import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.MediaCountBadge
@@ -61,6 +62,7 @@ fun SeriesDetailContent(
     mdbRatings: List<MdbListRating> = emptyList(),
     mdbRatingBadges: MdbListRatingBadges = MdbListRatingBadges(),
     omdbAwards: String? = null,
+    wikidataAwards: WikidataAwards? = null,
     isRatingsFromCache: Boolean = false,
     onEpisodeClick: (AfinityEpisode) -> Unit,
     onEpisodeMoreClick: (AfinityEpisode) -> Unit,
@@ -76,6 +78,7 @@ fun SeriesDetailContent(
         mdbRatings = mdbRatings,
         mdbRatingBadges = mdbRatingBadges,
         omdbAwards = omdbAwards,
+        wikidataAwards = wikidataAwards,
         isRatingsFromCache = isRatingsFromCache,
         onSpecialFeatureClick = onSpecialFeatureClick,
         onBoxSetClick = { boxSet ->

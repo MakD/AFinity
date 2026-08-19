@@ -44,6 +44,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.getChapterImageUrl
 import com.makd.afinity.data.models.tmdb.TmdbReview
+import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.item.components.shared.BaseMediaDetailContent
@@ -63,6 +64,7 @@ fun MovieDetailContent(
     mdbRatings: List<MdbListRating> = emptyList(),
     mdbRatingBadges: MdbListRatingBadges = MdbListRatingBadges(),
     omdbAwards: String? = null,
+    wikidataAwards: WikidataAwards? = null,
     isRatingsFromCache: Boolean = false,
     parts: List<AfinityItem> = emptyList(),
     onSpecialFeatureClick: (AfinityItem) -> Unit,
@@ -81,6 +83,7 @@ fun MovieDetailContent(
         mdbRatings = mdbRatings,
         mdbRatingBadges = mdbRatingBadges,
         omdbAwards = omdbAwards,
+        wikidataAwards = wikidataAwards,
         isRatingsFromCache = isRatingsFromCache,
         onSpecialFeatureClick = onSpecialFeatureClick,
         onBoxSetClick = { boxSet ->

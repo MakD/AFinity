@@ -59,6 +59,7 @@ fun AppearanceOptionsScreen(
     val librariesInDrawer by viewModel.librariesInDrawer.collectAsStateWithLifecycle()
     val episodeLayout by viewModel.episodeLayout.collectAsStateWithLifecycle()
     val showRatings by viewModel.showRatings.collectAsStateWithLifecycle()
+    val showAwards by viewModel.showAwards.collectAsStateWithLifecycle()
     val appFont by viewModel.appFont.collectAsStateWithLifecycle()
     val playerOffset = LocalPlayerOffset.current
 
@@ -195,6 +196,14 @@ fun AppearanceOptionsScreen(
                         subtitle = stringResource(R.string.pref_show_ratings_summary),
                         checked = showRatings,
                         onCheckedChange = viewModel::toggleShowRatings,
+                    )
+                    SettingsDivider()
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_laurel),
+                        title = stringResource(R.string.pref_show_awards_title),
+                        subtitle = stringResource(R.string.pref_show_awards_summary),
+                        checked = showAwards,
+                        onCheckedChange = viewModel::toggleShowAwards,
                     )
                 }
             }

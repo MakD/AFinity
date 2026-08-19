@@ -123,6 +123,8 @@ import timber.log.Timber
 val LocalPlayerOffset = compositionLocalOf { 0.dp }
 val LocalShowRatings = compositionLocalOf { true }
 
+val LocalShowAwards = compositionLocalOf { true }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainNavigation(
@@ -149,6 +151,7 @@ fun MainNavigation(
         viewModel.audiobookshelfPlaybackManager.playbackState.collectAsStateWithLifecycle()
     val musicPlaybackState by viewModel.musicPlaybackManager.state.collectAsStateWithLifecycle()
     val showRatings by viewModel.showRatings.collectAsStateWithLifecycle()
+    val showAwards by viewModel.showAwards.collectAsStateWithLifecycle()
     val navigationDrawerEnabled by viewModel.navigationDrawerEnabled.collectAsStateWithLifecycle()
     val librariesInDrawer by viewModel.librariesInDrawer.collectAsStateWithLifecycle()
     val serverName by viewModel.serverName.collectAsStateWithLifecycle()
@@ -396,6 +399,7 @@ fun MainNavigation(
                 CompositionLocalProvider(
                     LocalPlayerOffset provides globalPlayerOffset,
                     LocalShowRatings provides showRatings,
+                    LocalShowAwards provides showAwards,
                 ) {
                     SharedTransitionLayout {
                         Box(modifier = Modifier.fillMaxSize()) {

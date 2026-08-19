@@ -73,10 +73,14 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.navigation.LocalShowAwards
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FavoriteToggleButton
 import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.ui.item.components.shared.AwardsSectionStyle
+import com.makd.afinity.ui.item.components.shared.WikidataAwardsSection
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import com.makd.afinity.ui.utils.htmlToAnnotatedString
 import com.makd.afinity.ui.utils.verticalLayoutOffset
@@ -88,6 +92,7 @@ fun PersonDetailContent(
     shows: List<AfinityShow>,
     onItemClick: (AfinityItem) -> Unit,
     onToggleFavorite: () -> Unit,
+    awards: WikidataAwards?,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
@@ -102,6 +107,7 @@ fun PersonDetailContent(
             shows = shows,
             onItemClick = onItemClick,
             onToggleFavorite = onToggleFavorite,
+            awards = awards,
             modifier = modifier,
             lazyListState = lazyListState,
         )
@@ -112,6 +118,7 @@ fun PersonDetailContent(
             shows = shows,
             onItemClick = onItemClick,
             onToggleFavorite = onToggleFavorite,
+            awards = awards,
             widthSizeClass = widthSizeClass,
             modifier = modifier,
             lazyListState = lazyListState,
@@ -126,6 +133,7 @@ private fun LandscapePersonDetailContent(
     shows: List<AfinityShow>,
     onItemClick: (AfinityItem) -> Unit,
     onToggleFavorite: () -> Unit,
+    awards: WikidataAwards?,
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
 ) {
@@ -204,6 +212,7 @@ private fun LandscapePersonDetailContent(
                             shows = shows,
                             onItemClick = onItemClick,
                             cardWidth = 140.dp,
+                            awards = awards,
                         )
                     }
                 }
@@ -220,6 +229,7 @@ private fun PortraitPersonDetailContent(
     shows: List<AfinityShow>,
     onItemClick: (AfinityItem) -> Unit,
     onToggleFavorite: () -> Unit,
+    awards: WikidataAwards?,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
@@ -262,6 +272,7 @@ private fun PortraitPersonDetailContent(
                     shows = shows,
                     onItemClick = onItemClick,
                     cardWidth = cardWidth,
+                    awards = awards,
                 )
             }
         }
@@ -275,9 +286,14 @@ private fun PersonSharedContentBlocks(
     shows: List<AfinityShow>,
     onItemClick: (AfinityItem) -> Unit,
     cardWidth: Dp,
+    awards: WikidataAwards?,
 ) {
     if (person.overview.isNotBlank()) {
         PersonOverviewSection(overview = person.overview)
+    }
+
+    if (awards != null && LocalShowAwards.current) {
+        WikidataAwardsSection(awards = awards, style = AwardsSectionStyle.OPEN_LIST)
     }
 
     if (movies.isNotEmpty()) {

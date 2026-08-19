@@ -41,6 +41,8 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.tmdb.TmdbReview
+import com.makd.afinity.data.models.wikidata.WikidataAwards
+import com.makd.afinity.navigation.LocalShowAwards
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.ratings.communityRatingOf
 import com.makd.afinity.ui.components.ratings.criticRatingOf
@@ -58,6 +60,7 @@ fun BaseMediaDetailContent(
     mdbRatings: List<MdbListRating> = emptyList(),
     mdbRatingBadges: MdbListRatingBadges = MdbListRatingBadges(),
     omdbAwards: String? = null,
+    wikidataAwards: WikidataAwards? = null,
     isRatingsFromCache: Boolean = false,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     onBoxSetClick: (AfinityBoxSet) -> Unit,
@@ -80,8 +83,25 @@ fun BaseMediaDetailContent(
 
         CastSection(item = item, onPersonClick = onPersonClick, widthSizeClass = widthSizeClass)
 
-        if (!omdbAwards.isNullOrBlank()) {
-            AwardSection(awards = omdbAwards, isFromCache = isRatingsFromCache)
+        if (LocalShowAwards.current) {
+            val omdbHeadline = omdbAwardsHeadline(omdbAwards)
+            val headline =
+                if (omdbHeadline == null && wikidataAwards != null) {
+                    derivedAwardsHeadline(wikidataAwards)
+                } else {
+                    omdbHeadline
+                }
+
+            if (headline != null) {
+                AwardBanner(headline = headline, isFromCache = isRatingsFromCache)
+            }
+
+            if (wikidataAwards != null) {
+                WikidataAwardsSection(
+                    awards = wikidataAwards,
+                    style = AwardsSectionStyle.COLLAPSED_BAR,
+                )
+            }
         }
 
         if (LocalShowRatings.current) {
@@ -89,7 +109,6 @@ fun BaseMediaDetailContent(
                 item = item,
                 mdbRatings = mdbRatings,
                 mdbRatingBadges = mdbRatingBadges,
-                omdbAwards = omdbAwards,
                 tmdbReviews = tmdbReviews,
                 isRatingsFromCache = isRatingsFromCache,
             )
@@ -114,7 +133,6 @@ private fun RatingsAndReviews(
     item: AfinityItem,
     mdbRatings: List<MdbListRating>,
     mdbRatingBadges: MdbListRatingBadges,
-    omdbAwards: String?,
     tmdbReviews: List<TmdbReview>,
     isRatingsFromCache: Boolean,
 ) {
@@ -138,9 +156,8 @@ private fun RatingsAndReviews(
 
     val hasRatings = mdbRatingBadges.hasAny || orderedRatings.isNotEmpty()
     val hasReviews = tmdbReviews.isNotEmpty()
-    val hasAwards = !omdbAwards.isNullOrBlank()
 
-    if (!hasRatings && !hasReviews && !hasAwards) return
+    if (!hasRatings && !hasReviews) return
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -202,9 +219,9 @@ private fun RatingsAndReviews(
 }
 
 @Composable
-private fun AwardSection(awards: String, isFromCache: Boolean) {
-    val mainHighlight = awards.split(".", limit = 2).firstOrNull()?.trim() ?: awards
-    val goldAccent = Color(0xFFD4AF37)
+private fun AwardBanner(headline: String, isFromCache: Boolean) {
+    val mainHighlight = headline
+    val goldAccent = AwardGold
 
     AnimatedVisibility(
         visible = true,

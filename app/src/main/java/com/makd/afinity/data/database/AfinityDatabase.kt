@@ -32,6 +32,7 @@ import com.makd.afinity.data.database.dao.SourceDao
 import com.makd.afinity.data.database.dao.TopPeopleDao
 import com.makd.afinity.data.database.dao.UserDao
 import com.makd.afinity.data.database.dao.UserDataDao
+import com.makd.afinity.data.database.dao.WikidataAwardsDao
 import com.makd.afinity.data.database.entities.AbsDownloadEntity
 import com.makd.afinity.data.database.entities.AfinityEpisodeDto
 import com.makd.afinity.data.database.entities.AfinityMediaStreamDto
@@ -71,6 +72,7 @@ import com.makd.afinity.data.database.entities.MusicTrackEntity
 import com.makd.afinity.data.database.entities.PersonSectionCacheEntity
 import com.makd.afinity.data.database.entities.ShowGenreCacheEntity
 import com.makd.afinity.data.database.entities.TopPeopleCacheEntity
+import com.makd.afinity.data.database.entities.WikidataAwardsCacheEntity
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.server.ServerAddress
 import com.makd.afinity.data.models.user.AfinityUserDataDto
@@ -122,8 +124,9 @@ import com.makd.afinity.data.models.user.User
             CustomHomeSectionEntity::class,
             HomeLayoutPreferenceEntity::class,
             DeletedItemEntity::class,
+            WikidataAwardsCacheEntity::class,
         ],
-    version = 70,
+    version = 71,
     exportSchema = false,
 )
 @TypeConverters(AfinityTypeConverters::class)
@@ -184,6 +187,8 @@ abstract class AfinityDatabase : RoomDatabase() {
     abstract fun customHomeSectionDao(): CustomHomeSectionDao
 
     abstract fun homeLayoutPreferenceDao(): HomeLayoutPreferenceDao
+
+    abstract fun wikidataAwardsDao(): WikidataAwardsDao
 
     abstract fun deletedItemDao(): DeletedItemDao
 }

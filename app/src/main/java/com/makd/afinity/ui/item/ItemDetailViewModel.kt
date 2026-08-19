@@ -40,6 +40,8 @@ import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.media.toAfinityMovie
 import com.makd.afinity.data.models.media.toAfinityShow
 import com.makd.afinity.data.models.tmdb.TmdbReview
+import com.makd.afinity.data.models.wikidata.WikidataAwards
+import com.makd.afinity.data.models.wikidata.WikidataSubjectType
 import com.makd.afinity.data.network.TmdbApiService
 import com.makd.afinity.data.paging.EpisodesPagingSource
 import com.makd.afinity.data.repository.AppDataRepository
@@ -54,6 +56,7 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.metadata.ItemRatingsLoader
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
+import com.makd.afinity.data.repository.wikidata.WikidataAwardsRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.data.storage.StorageVolumeInfo
 import com.makd.afinity.data.store.ItemStore
@@ -92,10 +95,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
+
+private const val POPULATED_METADATA_TTL_MS = 48L * 60L * 60L * 1000L
+private const val EMPTY_METADATA_TTL_MS = 6L * 60L * 60L * 1000L
 
 @OptIn(FlowPreview::class)
 @HiltViewModel
@@ -126,6 +133,7 @@ constructor(
     private val networkMonitor: NetworkConnectivityMonitor,
     private val downloadPermissions: DownloadPermissions,
     private val itemStore: ItemStore,
+    private val wikidataAwardsRepository: WikidataAwardsRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -207,6 +215,12 @@ constructor(
                             _uiState.value.nextEpisode == null
                     ) {
                         fetchNextEpisodeFor(item)
+                    }
+                    if (
+                        _uiState.value.wikidataAwards == null &&
+                            !_uiState.value.isLoadingWikidataAwards
+                    ) {
+                        loadWikidataAwards(item, hasInternet = true)
                     }
                     if (item !is AfinityMovie && item !is AfinityShow) return@collect
                     val s = _uiState.value
@@ -832,6 +846,9 @@ constructor(
                         fetchNextEpisodeFor(item)
                     }
                 }
+                if (item is AfinityMovie || item is AfinityShow || item is AfinitySeason) {
+                    launch { loadWikidataAwards(item, hasInternet) }
+                }
                 if (item is AfinityMovie || item is AfinityShow) {
                     if (hasInternet) {
                         launch { loadReviewsAndRatings(item) }
@@ -1069,6 +1086,54 @@ constructor(
         }
     }
 
+    private suspend fun loadWikidataAwards(item: AfinityItem, hasInternet: Boolean) {
+        if (!preferencesRepository.getShowAwards() || !preferencesRepository.getWikidataEnabled()) {
+            _uiState.update { it.copy(wikidataAwards = null, isLoadingWikidataAwards = false) }
+            return
+        }
+
+        val subject = wikidataSubjectFor(item)
+        val tmdbId = subject?.second
+        if (subject == null || tmdbId == null) {
+            _uiState.update { it.copy(wikidataAwards = null, isLoadingWikidataAwards = false) }
+            return
+        }
+
+        _uiState.update { it.copy(isLoadingWikidataAwards = true) }
+
+        val awards =
+            if (hasInternet) wikidataAwardsRepository.getAwards(subject.first, tmdbId)
+            else wikidataAwardsRepository.cachedAwards(subject.first, tmdbId)
+
+        if (_uiState.value.item?.id != item.id) return
+
+        _uiState.update {
+            it.copy(
+                wikidataAwards = awards?.takeIf { loaded -> loaded.found },
+                isLoadingWikidataAwards = false,
+            )
+        }
+    }
+
+    private suspend fun wikidataSubjectFor(item: AfinityItem): Pair<WikidataSubjectType, String?>? =
+        when (item) {
+            is AfinityMovie -> WikidataSubjectType.MOVIE to item.providerIds?.get("Tmdb")
+            is AfinityShow -> WikidataSubjectType.TV to item.providerIds?.get("Tmdb")
+            is AfinitySeason -> WikidataSubjectType.TV to seriesTmdbId(item.seriesId)
+            else -> null
+        }
+
+    private suspend fun seriesTmdbId(seriesId: UUID): String? =
+        wikidataAwardsRepository.resolveSeriesTmdbId(seriesId) {
+            runCatching {
+                mediaRepository
+                    .getItem(seriesId, listOf(ItemFields.PROVIDER_IDS))
+                    ?.providerIds
+                    ?.get("Tmdb")
+            }
+                .getOrNull()
+        }
+
     private suspend fun loadReviewsAndRatings(item: AfinityItem) {
         val userId = sessionManager.currentSession.value?.userId
         try {
@@ -1084,16 +1149,16 @@ constructor(
                 } else null
 
             val cacheAgeMs = System.currentTimeMillis() - (cachedMetadata?.lastUpdated ?: 0L)
-            val isCacheValid = cacheAgeMs < 48 * 60 * 60 * 1000L
-
-            if (
+            val cachedHasData =
                 cachedMetadata != null &&
-                    isCacheValid &&
                     (cachedMetadata.tmdbReviews.isNotEmpty() ||
                         cachedMetadata.mdbRatings.isNotEmpty() ||
                         cachedMetadata.mdbRatingBadges.hasAny ||
-                        cachedMetadata.omdbAwards != null)
-            ) {
+                        !cachedMetadata.omdbAwards.isNullOrBlank())
+            val cacheTtlMs = if (cachedHasData) POPULATED_METADATA_TTL_MS else EMPTY_METADATA_TTL_MS
+            val isCacheValid = cacheAgeMs < cacheTtlMs
+
+            if (cachedMetadata != null && isCacheValid) {
                 _uiState.update {
                     it.copy(
                         tmdbReviews = cachedMetadata.tmdbReviews,
@@ -1166,12 +1231,7 @@ constructor(
                     )
                 }
 
-                if (
-                    (fetchedReviews.isNotEmpty() ||
-                        fetchedRatings.isNotEmpty() ||
-                        fetchedRatingBadges.hasAny ||
-                        fetchedOmdbAwards != null) && session != null
-                ) {
+                if (session != null) {
                     databaseRepository.insertItemMetadata(
                         ItemMetadataCacheEntity(
                             itemId = item.id,
@@ -1655,6 +1715,8 @@ data class ItemDetailUiState(
     val mdbRatings: List<MdbListRating> = emptyList(),
     val mdbRatingBadges: MdbListRatingBadges = MdbListRatingBadges(),
     val omdbAwards: String? = null,
+    val wikidataAwards: WikidataAwards? = null,
+    val isLoadingWikidataAwards: Boolean = false,
     val isRatingsFromCache: Boolean = false,
     val movieParts: List<AfinityItem> = emptyList(),
 ) {

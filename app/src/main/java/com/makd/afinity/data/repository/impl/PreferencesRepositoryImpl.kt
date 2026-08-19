@@ -136,6 +136,8 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val BUFFER_SIZE_MB = intPreferencesKey("buffer_size_mb")
 
         val SHOW_RATINGS = booleanPreferencesKey("show_ratings")
+        val SHOW_AWARDS = booleanPreferencesKey("show_awards")
+        val WIKIDATA_ENABLED = booleanPreferencesKey("wikidata_enabled")
     }
 
     override suspend fun setCurrentServerId(serverId: String?) {
@@ -943,6 +945,30 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
     override suspend fun getShowRatings(): Boolean {
         return dataStore.data.first()[Keys.SHOW_RATINGS] ?: true
+    }
+
+    override suspend fun setShowAwards(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.SHOW_AWARDS] = enabled }
+    }
+
+    override suspend fun getShowAwards(): Boolean {
+        return dataStore.data.first()[Keys.SHOW_AWARDS] ?: true
+    }
+
+    override fun getShowAwardsFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences -> preferences[Keys.SHOW_AWARDS] ?: true }
+    }
+
+    override suspend fun setWikidataEnabled(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.WIKIDATA_ENABLED] = enabled }
+    }
+
+    override suspend fun getWikidataEnabled(): Boolean {
+        return dataStore.data.first()[Keys.WIKIDATA_ENABLED] ?: false
+    }
+
+    override fun getWikidataEnabledFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences -> preferences[Keys.WIKIDATA_ENABLED] ?: false }
     }
 
     override fun getShowRatingsFlow(): Flow<Boolean> {
