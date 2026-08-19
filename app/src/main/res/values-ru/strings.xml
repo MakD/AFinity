@@ -63,7 +63,10 @@
     <string name="hero_btn_play_media">Воспроизвести</string>
     <string name="hero_btn_watch_now">Смотреть сейчас</string>
     <plurals name="hero_season_plural">
-        <item quantity="one">%1$d сезонов</item>
+        <item quantity="one">%1$d сезон</item>
+        <item quantity="few">%1$d сезона</item>
+        <item quantity="many">%1$d сезонов</item>
+        <item quantity="other">%1$d сезонов</item>
     </plurals>
     <string name="favorites_title">Избранные</string>
     <string name="error_unknown">Неизвестная ошибка</string>
@@ -84,7 +87,10 @@
     <string name="meta_time_remaining_hours_minutes">Осталось: %1$d ч %2$d мин</string>
     <string name="meta_time_remaining_minutes">Осталось: %1$d мин</string>
     <plurals name="meta_boxset_count">
-        <item quantity="one">%1$d элементов</item>
+        <item quantity="one">%1$d элемент</item>
+        <item quantity="few">%1$d элемента</item>
+        <item quantity="many">%1$d элементов</item>
+        <item quantity="other">%1$d элементов</item>
     </plurals>
     <string name="meta_runtime_hours_minutes">%1$d ч %2$d мин</string>
     <string name="meta_runtime_minutes">%1$d мин</string>
@@ -120,9 +126,15 @@
     <string name="cd_collapse">Свернуть</string>
     <plurals name="director_prefix">
         <item quantity="one">Режиссёр: %1$s</item>
+        <item quantity="few">Режиссёры: %1$s</item>
+        <item quantity="many">Режиссёры: %1$s</item>
+        <item quantity="other">Режиссёры: %1$s</item>
     </plurals>
     <plurals name="writers_prefix">
-        <item quantity="one">Сценаристы: %1$s</item>
+        <item quantity="one">Сценарист: %1$s</item>
+        <item quantity="few">Сценаристы: %1$s</item>
+        <item quantity="many">Сценаристы: %1$s</item>
+        <item quantity="other">Сценаристы: %1$s</item>
     </plurals>
     <string name="seasons_title">Сезоны</string>
     <string name="action_play">Воспроизвести</string>
@@ -177,7 +189,10 @@
     <string name="livetv_header_letter_fmt">Каналы (%1$s)</string>
     <string name="livetv_header_all">Все каналы</string>
     <plurals name="livetv_count_fmt">
-        <item quantity="one">Найдено %1$d каналов</item>
+        <item quantity="one">Найден %1$d канал</item>
+        <item quantity="few">Найдено %1$d канала</item>
+        <item quantity="many">Найдено %1$d каналов</item>
+        <item quantity="other">Найдено %1$d каналов</item>
     </plurals>
     <string name="livetv_guide_date_fmt">EEE, d MMM</string>
     <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
@@ -195,15 +210,24 @@
     <string name="person_biography">Биография</string>
     <string name="meta_part_of_fmt">Часть %1$d/%2$d</string>
     <plurals name="meta_episode_count">
-        <item quantity="one">%1$d эпизодов</item>
+        <item quantity="one">%1$d эпизод</item>
+        <item quantity="few">%1$d эпизода</item>
+        <item quantity="many">%1$d эпизодов</item>
+        <item quantity="other">%1$d эпизодов</item>
     </plurals>
     <string name="livetv_time_header_pattern">H:00</string>
     <plurals name="person_born_fmt">
-        <item quantity="one">Дата рождения: %1$s (%2$d лет)</item>
+        <item quantity="one">Дата рождения: %1$s (%2$d год)</item>
+        <item quantity="few">Дата рождения: %1$s (%2$d года)</item>
+        <item quantity="many">Дата рождения: %1$s (%2$d лет)</item>
+        <item quantity="other">Дата рождения: %1$s (%2$d лет)</item>
     </plurals>
     <string name="person_born_deceased_fmt">Дата рождения: %1$s</string>
     <plurals name="person_died_fmt">
-        <item quantity="one">Дата смерти: %1$s (в %2$d лет)</item>
+        <item quantity="one">Дата смерти: %1$s (в %2$d год)</item>
+        <item quantity="few">Дата смерти: %1$s (в %2$d года)</item>
+        <item quantity="many">Дата смерти: %1$s (в %2$d лет)</item>
+        <item quantity="other">Дата смерти: %1$s (в %2$d лет)</item>
     </plurals>
     <string name="person_died_no_age_fmt">Дата смерти: %1$s</string>
     <string name="person_birthplace_fmt">Место рождения: %1$s</string>
@@ -325,7 +349,10 @@
     <string name="filter_audiobooks">Аудиокниги</string>
     <string name="explore_genres">Исследуйте жанры</string>
     <plurals name="search_results_count_fmt">
-        <item quantity="one">Найдено %1$d результатов</item>
+        <item quantity="one">Найден %1$d результат</item>
+        <item quantity="few">Найдено %1$d результата</item>
+        <item quantity="many">Найдено %1$d результатов</item>
+        <item quantity="other">Найдено %1$d результатов</item>
     </plurals>
     <string name="cd_watched">Просмотрено</string>
     <string name="cd_finished">Завершено</string>
@@ -354,7 +381,10 @@
     <string name="pref_downloads_and_storage">Загрузки и хранилище</string>
     <string name="pref_downloads_and_storage_summary">Управление оффлайн-медиа и кэшем изображений</string>
     <plurals name="meta_parts_fmt">
-        <item quantity="one">%1$d частей</item>
+        <item quantity="one">%1$d часть</item>
+        <item quantity="few">%1$d части</item>
+        <item quantity="many">%1$d частей</item>
+        <item quantity="other">%1$d частей</item>
     </plurals>
     <string name="active_downloads_header_fmt">Активные загрузки (%1$d)</string>
     <string name="completed_downloads_header_fmt">Завершённые загрузки (%1$d)</string>
@@ -473,7 +503,10 @@
     <string name="dialog_delete_server_title">Удалить сервер?</string>
     <string name="dialog_delete_server_message_fmt">Вы уверены, что хотите удалить «%1$s»?</string>
     <plurals name="dialog_delete_server_warning_fmt">
-        <item quantity="one">Будут удалены %1$d сохранённ(ый/ых) пользовател(ь/ей) и все связанные данные.</item>
+        <item quantity="one">Будет удален %1$d сохранённый пользователь и все связанные данные.</item>
+        <item quantity="few">Будут удалены %1$d сохранённых пользователя и все связанные данные.</item>
+        <item quantity="many">Будут удалены %1$d сохранённых пользователей и все связанные данные.</item>
+        <item quantity="other">Будут удалены %1$d сохранённых пользователей и все связанные данные.</item>
     </plurals>
     <string name="action_delete">Удалить</string>
     <string name="error_load_servers_failed">Не удалось загрузить серверы</string>
@@ -729,7 +762,10 @@
     <string name="cd_mdblist">MDBList</string>
     <string name="permission_request">Запрос</string>
     <plurals name="quota_days_fmt">
-        <item quantity="one">%1$d / %2$d дней</item>
+        <item quantity="one">%1$d / %2$d день</item>
+        <item quantity="few">%1$d / %2$d дня</item>
+        <item quantity="many">%1$d / %2$d дней</item>
+        <item quantity="other">%1$d / %2$d дней</item>
     </plurals>
     <string name="duration_hours_fmt">%.0f ч</string>
     <string name="cd_manage_addresses">Управление адресами</string>
@@ -829,7 +865,10 @@
     <string name="service_label_mdblist">MDBList</string>
     <string name="request_fulfillment_details">Сведения об исполнении</string>
     <plurals name="server_backup_routes_fmt">
-        <item quantity="one">+ %1$d запасн(ой/ых) маршрут(ов)</item>
+        <item quantity="one">+ %1$d запасной маршрут</item>
+        <item quantity="few">+ %1$d запасных маршрута</item>
+        <item quantity="many">+ %1$d запасных маршрутов</item>
+        <item quantity="other">+ %1$d запасных маршрутов</item>
     </plurals>
     <string name="pref_show_ratings_title">Показать оценки</string>
     <string name="pref_show_ratings_summary">Показывать карточки с оценками IMDb и Rotten Tomatoes</string>
@@ -1036,13 +1075,22 @@
     <string name="abs_action_browse">Обзор</string>
     <string name="request_all_seasons_note">Будут запрошены все сезоны</string>
     <plurals name="request_quota_movie_remaining_fmt">
-        <item quantity="one">Запросов осталось: %1$d из %2$d</item>
+        <item quantity="one">Осталось: %1$d из %2$d запроса</item>
+        <item quantity="few">Осталось: %1$d из %2$d запросов</item>
+        <item quantity="many">Осталось: %1$d из %2$d запросов</item>
+        <item quantity="other">Осталось: %1$d из %2$d запросов</item>
     </plurals>
     <plurals name="request_quota_tv_remaining_fmt">
-        <item quantity="one">Запросов сезонов осталось: %1$d из %2$d</item>
+        <item quantity="one">Осталось: %1$d из %2$d запроса сезонов</item>
+        <item quantity="few">Осталось: %1$d из %2$d запросов сезонов</item>
+        <item quantity="many">Осталось: %1$d из %2$d запросов сезонов</item>
+        <item quantity="other">Осталось: %1$d из %2$d запросов сезонов</item>
     </plurals>
     <plurals name="request_quota_period_fmt">
-        <item quantity="one">за %1$d дней</item>
+        <item quantity="one">за %1$d день</item>
+        <item quantity="few">за %1$d дня</item>
+        <item quantity="many">за %1$d дней</item>
+        <item quantity="other">за %1$d дней</item>
     </plurals>
     <string name="request_quota_exceeded">Достигнут лимит</string>
     <string name="request_language_profile">Профиль языка</string>
@@ -1052,7 +1100,10 @@
     <string name="request_select_placeholder">Выберите…</string>
     <string name="request_quota_exceeded_message">У вас осталось недостаточно запросов. Ваша квота сбрасывается автоматически.</string>
     <plurals name="season_count_fmt">
-        <item quantity="one">%1$d сезонов</item>
+        <item quantity="one">%1$d сезон</item>
+        <item quantity="few">%1$d сезона</item>
+        <item quantity="many">%1$d сезонов</item>
+        <item quantity="other">%1$d сезонов</item>
     </plurals>
     <string name="seerr_recommendations_title">Рекомендации</string>
     <string name="seerr_detail_request">Запросить</string>
@@ -1090,10 +1141,16 @@
     <string name="tv_status_in_production">В производстве</string>
     <string name="discover_filter_select_region">Выберите регион</string>
     <plurals name="discover_filter_keywords_included_fmt">
-        <item quantity="one">%1$d добавлено</item>
+        <item quantity="one">%1$d добавлен</item>
+        <item quantity="few">%1$d добавлено</item>
+        <item quantity="many">%1$d добавлено</item>
+        <item quantity="other">%1$d добавлено</item>
     </plurals>
     <plurals name="discover_filter_keywords_excluded_fmt">
-        <item quantity="one">%1$d исключено</item>
+        <item quantity="one">%1$d исключен</item>
+        <item quantity="few">%1$d исключено</item>
+        <item quantity="many">%1$d исключено</item>
+        <item quantity="other">%1$d исключено</item>
     </plurals>
     <string name="discover_filter_watch_providers">Стриминговые сервисы</string>
     <string name="cd_open_navigation_menu">Открыть меню навигации</string>
@@ -1129,7 +1186,10 @@
     <string name="playback_stats_label_av_sync">Синхронизация аудио/видео</string>
     <string name="playback_stats_label_connection">Подключение</string>
     <plurals name="playback_stats_value_seconds_fmt">
-        <item quantity="one">%1$d секунд</item>
+        <item quantity="one">%1$d секунда</item>
+        <item quantity="few">%1$d секунды</item>
+        <item quantity="many">%1$d секунд</item>
+        <item quantity="other">%1$d секунд</item>
     </plurals>
     <string name="playback_stats_value_live">Эфирная трансляция</string>
     <string name="status_blocklisted">Заблокировано</string>
@@ -1403,10 +1463,16 @@
     <string name="backup_section_downloads">Загрузки</string>
     <string name="backup_section_privacy">Конфиденциальность и обновления</string>
     <plurals name="backup_section_home_fmt">
-        <item quantity="one">%1$d пользовательских разделов, рядов, и настройки нахождения контента</item>
+        <item quantity="one">%1$d пользовательский раздел, ряд, и настройки нахождения контента</item>
+        <item quantity="few">%1$d пользовательских раздела, ряда, и настройки нахождения контента</item>
+        <item quantity="many">%1$d пользовательских разделов, рядов, и настройки нахождения контента</item>
+        <item quantity="other">%1$d пользовательских разделов, рядов, и настройки нахождения контента</item>
     </plurals>
     <plurals name="backup_section_settings_fmt">
         <item quantity="one">%1$d настроек</item>
+        <item quantity="few">%1$d настройки</item>
+        <item quantity="many">%1$d настроек</item>
+        <item quantity="other">%1$d настроек</item>
     </plurals>
     <string name="custom_sections_add_blank">Пустой раздел</string>
     <string name="custom_sections_add_blank_summary">Начать с самого начала</string>
@@ -1418,7 +1484,10 @@
     <string name="pref_clear_cache_empty">Кэш пуст</string>
     <string name="cache_kind_images">Изображения</string>
     <plurals name="cache_entries_fmt">
-        <item quantity="one">%1$d записей</item>
+        <item quantity="one">%1$d запись</item>
+        <item quantity="few">%1$d записи</item>
+        <item quantity="many">%1$d записей</item>
+        <item quantity="other">%1$d записей</item>
     </plurals>
     <string name="pref_clear_cache_confirm">Очистить данные кэша?</string>
     <string name="pref_clear_cache_message">Загрузки, настройки и ваши индивидуальные разделы не будут затронуты. Ряды на главном экране будут созданы заново при следующей загрузке.</string>
@@ -1426,10 +1495,16 @@
     <string name="custom_sections_field_refine">Уточнения</string>
     <string name="custom_sections_refine_none">Без дополнительных фильтров</string>
     <plurals name="custom_sections_refine_summary_fmt">
-        <item quantity="one">%1$s · %2$d фильтров</item>
+        <item quantity="one">%1$s · %2$d фильтр</item>
+        <item quantity="few">%1$s · %2$d фильтра</item>
+        <item quantity="many">%1$s · %2$d фильтров</item>
+        <item quantity="other">%1$s · %2$d фильтров</item>
     </plurals>
     <plurals name="pref_clear_cache_usage_total_fmt">
-        <item quantity="one">%1$s в кэше · %2$d записей</item>
+        <item quantity="one">%1$s в кэше · %2$d запись</item>
+        <item quantity="few">%1$s в кэше · %2$d записи</item>
+        <item quantity="many">%1$s в кэше · %2$d записей</item>
+        <item quantity="other">%1$s в кэше · %2$d записей</item>
     </plurals>
     <string name="cache_store_video">Кэш видео</string>
     <string name="cache_store_network">Сетевой кэш</string>
@@ -1527,6 +1602,158 @@
     <string name="playlist_download_failed">Не удалось начать загрузку</string>
     <string name="playlist_download_failed_fmt">Не удалось начать загрузку: %1$s</string>
     <plurals name="playlist_download_partial_fmt">
-        <item quantity="one">Запущено загрузок: %1$d из %2$d</item>
+        <item quantity="one">Запущено: %1$d из %2$d загрузки</item>
+        <item quantity="few">Запущено: %1$d из %2$d загрузок</item>
+        <item quantity="many">Запущено: %1$d из %2$d загрузок</item>
+        <item quantity="other">Запущено: %1$d из %2$d загрузок</item>
     </plurals>
+    <string name="custom_sections_source_genre">Жанр</string>
+    <string name="custom_sections_source_studio">Студия</string>
+    <string name="custom_sections_source_tag">Тег</string>
+    <string name="custom_sections_source_collection">Коллекция</string>
+    <string name="custom_sections_source_playlist">Плейлист</string>
+    <string name="custom_sections_source_library">Библиотека</string>
+    <string name="custom_sections_card_portrait">Портретный</string>
+    <string name="custom_sections_card_landscape">Альбомный</string>
+    <string name="custom_sections_card_square">Квадратный</string>
+    <string name="custom_sections_card_spotlight">Баннер</string>
+    <string name="custom_sections_preset_halloween">Хеллоуин</string>
+    <string name="custom_sections_preset_christmas">Рождество</string>
+    <string name="custom_sections_preset_new_year">Новый год</string>
+    <string name="custom_sections_preset_valentines">День святого Валентина</string>
+    <string name="file_size_b_fmt">%1$d Б</string>
+    <string name="file_size_kb_fmt">%1$.1f КБ</string>
+    <string name="file_size_mb_fmt">%1$.1f МБ</string>
+    <string name="file_size_gb_fmt">%1$.2f ГБ</string>
+    <plurals name="season_already_available">
+        <item quantity="one">Сезон %1$s уже доступен</item>
+        <item quantity="few">Сезоны %1$s уже доступны</item>
+        <item quantity="many">Сезоны %1$s уже доступны</item>
+        <item quantity="other">Сезоны %1$s уже доступны</item>
+    </plurals>
+    <string name="abs_on_audible">в Audible</string>
+    <string name="abs_books">Книги</string>
+    <string name="abs_chapters_header">ГЛАВЫ</string>
+    <string name="abs_equalizer_header">ЭКВАЛАЙЗЕР</string>
+    <string name="abs_skip_silence_summary">Автоматически пропускать тишину</string>
+    <string name="abs_speed_normal">Нормальная</string>
+    <string name="sort_option_series_date_played">Дата воспроизведения серии</string>
+    <string name="sort_option_date_last_content_added">Дата добавления контента</string>
+    <string name="sort_option_random">Случайно</string>
+    <string name="unit_mbps_fmt">%1$d Мбит/с</string>
+    <string name="unit_megabytes_fmt">%1$d МБ</string>
+    <string name="syncplay_title">Совместный просмотр</string>
+    <string name="syncplay_manage_group">Управление группой</string>
+    <string name="syncplay_leave_group">Покинуть группу</string>
+    <string name="syncplay_group_name">Название группы</string>
+    <string name="syncplay_joining">Добавление…</string>
+    <string name="syncplay_create_group">Создать группу</string>
+    <string name="syncplay_active_groups">Активные группы</string>
+    <string name="syncplay_no_active_groups">Нет активных групп</string>
+    <string name="syncplay_state_paused">Пауза</string>
+    <string name="syncplay_state_ready">Готово</string>
+    <string name="syncplay_state_waiting">Ожидание…</string>
+    <string name="syncplay_state_playing">Воспроизведение</string>
+    <string name="syncplay_state_unknown">Неизвестно</string>
+    <string name="syncplay_active_just_now">Была активна только что</string>
+    <string name="syncplay_active_minutes_fmt">Была активна %1$d мин назад</string>
+    <string name="syncplay_active_hours_fmt">Была активна %1$d ч назад</string>
+    <string name="syncplay_active_days_fmt">Была активна %1$d дн назад</string>
+    <string name="action_join">Присоединиться</string>
+    <string name="action_refresh">Обновить</string>
+    <plurals name="syncplay_member_count">
+        <item quantity="one">%1$d участник</item>
+        <item quantity="few">%1$d участника</item>
+        <item quantity="many">%1$d участников</item>
+        <item quantity="other">%1$d участников</item>
+    </plurals>
+    <string name="pref_mpv_hwdec_disabled">Отключено</string>
+    <string name="pref_mpv_gpu_api_opengl">OpenGL (по умолчанию)</string>
+    <string name="pref_mpv_gpu_api_vulkan">Vulkan (экспериментально)</string>
+    <string name="pref_mpv_hdr_auto">Авто (проброс HDR)</string>
+    <string name="pref_mpv_hdr_tone_map">Всегда преобразовывать в SDR</string>
+    <string name="pref_mpv_tone_auto">Авто</string>
+    <string name="cd_flag">Флаг</string>
+    <string name="cd_rating">Оценка</string>
+    <string name="cd_select">Выбрать</string>
+    <string name="cd_included">Добавлено</string>
+    <string name="cd_mask_overlay">Наложение маски</string>
+    <string name="cd_start_radio">Запустить радио</string>
+    <string name="cd_watch_party">Совместный просмотр</string>
+    <string name="cd_quality">Качество</string>
+    <string name="cd_subtitles">Субтитры</string>
+    <string name="unit_minutes_short">мин</string>
+    <string name="unit_decibels_fmt">%1$s дБ</string>
+    <string name="reviews_title">Рецензии</string>
+    <string name="rt_certified_fresh">Сертифицированный Свежий</string>
+    <string name="rt_verified_hot">Подтвержденный Горячий</string>
+    <string name="favorites_albums">Избранные альбомы</string>
+    <string name="favorites_artists">Избранные исполнители</string>
+    <string name="favorites_songs">Избранные песни</string>
+    <string name="home_downloaded_albums">Скачанные альбомы</string>
+    <string name="home_downloaded_tracks">Скачанные треки</string>
+    <string name="music_action_play_instant_mix">Включить автомикс</string>
+    <string name="music_no_playlists_yet">Плейлистов пока нет. Создайте его по кнопке ниже.</string>
+    <plurals name="episodes_downloaded_fmt">
+        <item quantity="one">Загружен %1$d эпизод</item>
+        <item quantity="few">Загружено %1$d эпизода</item>
+        <item quantity="many">Загружено %1$d эпизодов</item>
+        <item quantity="other">Загружено %1$d эпизодов</item>
+    </plurals>
+    <plurals name="download_group_episodes_fmt">
+        <item quantity="one">%1$d эпизод · %2$s</item>
+        <item quantity="few">%1$d эпизода · %2$s</item>
+        <item quantity="many">%1$d эпизодов · %2$s</item>
+        <item quantity="other">%1$d эпизодов · %2$s</item>
+    </plurals>
+    <plurals name="download_group_tracks_fmt">
+        <item quantity="one">%1$d трек · %2$s</item>
+        <item quantity="few">%1$d трека · %2$s</item>
+        <item quantity="many">%1$d треков · %2$s</item>
+        <item quantity="other">%1$d треков · %2$s</item>
+    </plurals>
+    <string name="pref_ass_render_off">Отключен (обычный текст)</string>
+    <string name="pref_ass_render_cues">Стандартный</string>
+    <string name="pref_ass_render_overlay">Плавные анимации (экспериментально)</string>
+    <string name="seerr_ratings">Оценки</string>
+    <string name="seerr_seasons_all_first_available">Сезоны: Все / Первый доступный</string>
+    <string name="seerr_quality_4k">Качество: 4K UHD</string>
+    <string name="seerr_detail_original_title">Оригинальное название</string>
+    <string name="seerr_detail_status">Статус</string>
+    <string name="seerr_detail_series_type">Тип сериала</string>
+    <string name="seerr_detail_first_air_date">Первый выход в эфир</string>
+    <string name="seerr_detail_next_air_date">Следующий выход в эфир</string>
+    <string name="seerr_detail_episode_runtime">Длительность эпизода</string>
+    <string name="seerr_detail_networks">Телесети</string>
+    <string name="seerr_detail_release_theatrical">Дата выхода (в кинотеатрах)</string>
+    <string name="seerr_detail_release_digital">Дата выхода (в цифровом формате)</string>
+    <string name="seerr_detail_release_date">Дата выхода</string>
+    <string name="seerr_detail_budget">Бюджет</string>
+    <string name="seerr_detail_revenue">Доход</string>
+    <string name="seerr_detail_production_country">Страна производства</string>
+    <string name="seerr_runtime_minutes_fmt">%1$d мин</string>
+    <string name="season_no_info">Информация о сезонах недоступна. Будут запрошены все сезоны.</string>
+    <plurals name="server_more_users">
+        <item quantity="one">+%1$d пользователь</item>
+        <item quantity="few">+%1$d пользователя</item>
+        <item quantity="many">+%1$d пользователей</item>
+        <item quantity="other">+%1$d пользователей</item>
+    </plurals>
+    <string name="notif_channel_downloads">Загрузки</string>
+    <string name="notif_channel_audiobook_downloads">Загрузки аудиокниг</string>
+    <string name="notif_channel_updates">Обновления приложения</string>
+    <string name="notif_downloads_in_progress">Активные загрузки</string>
+    <string name="notif_downloads_finished">Загрузки завершены</string>
+    <string name="notif_download_complete">Загрузка завершена</string>
+    <string name="notif_download_complete_size_fmt">Загрузка завершена • %1$s</string>
+    <string name="notif_download_failed">Загрузка не удалась</string>
+    <string name="notif_download_failed_reason_fmt">Загрузка не удалась: %1$s</string>
+    <string name="notif_untitled_audiobook">Аудиокнига</string>
+    <string name="notif_track_progress_fmt">Трек %1$d/%2$d</string>
+    <string name="notif_download_progress_fmt">%1$s / %2$s</string>
+    <string name="notif_download_starting">Запуск…</string>
+    <string name="notif_action_pause">Пауза</string>
+    <string name="notif_update_available_title">Доступно обновление</string>
+    <string name="nav_home">Главная</string>
+    <string name="nav_audiobooks">Аудиокниги</string>
 </resources>
