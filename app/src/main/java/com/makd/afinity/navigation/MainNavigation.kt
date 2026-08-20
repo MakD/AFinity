@@ -979,6 +979,11 @@ fun MainNavigation(
                                                 )
                                             navController.navigate(route)
                                         },
+                                        onPersonClick = { personId ->
+                                            navController.navigate(
+                                                Destination.createPersonRoute(personId)
+                                            )
+                                        },
                                         onGenreClick = { genre ->
                                             val route = Destination.createGenreResultsRoute(genre)
                                             navController.navigate(route)

@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySources
@@ -116,6 +117,84 @@ fun MediaLanguageFlagsSection(
                 label = stringResource(R.string.media_languages_subtitles),
                 chips = subtitles,
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun MediaLanguageFlagsCompact(
+    item: AfinityItem,
+    modifier: Modifier = Modifier,
+    selectedSourceId: String? = null,
+) {
+    val audio =
+        remember(item, selectedSourceId) {
+            languageChips(item, MediaStreamType.AUDIO, selectedSourceId)
+        }
+    val subtitles =
+        remember(item, selectedSourceId) {
+            languageChips(item, MediaStreamType.SUBTITLE, selectedSourceId)
+        }
+    if (audio.isEmpty() && subtitles.isEmpty()) return
+
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (audio.isNotEmpty()) {
+            LanguageCluster(
+                label = stringResource(R.string.media_languages_audio),
+                chips = audio,
+            )
+        }
+        if (subtitles.isNotEmpty()) {
+            LanguageCluster(
+                label = stringResource(R.string.media_languages_subtitles),
+                chips = subtitles,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun LanguageCluster(label: String, chips: List<LanguageChip>) {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 0.8.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.align(Alignment.CenterVertically),
+        )
+
+        chips.forEach { chip ->
+            when (chip) {
+                is LanguageChip.Flag ->
+                    CircleFlagIcon(
+                        url = chip.assetUrl,
+                        size = 16.dp,
+                        modifier = Modifier.align(Alignment.CenterVertically),
+                    )
+                LanguageChip.NoLanguage ->
+                    LanguageCodeChip(
+                        text = stringResource(R.string.media_language_none),
+                        modifier = Modifier.align(Alignment.CenterVertically),
+                    )
+                LanguageChip.Unidentified ->
+                    LanguageCodeChip(
+                        text = stringResource(R.string.media_language_unidentified),
+                        modifier = Modifier.align(Alignment.CenterVertically),
+                    )
+                is LanguageChip.Code ->
+                    LanguageCodeChip(
+                        text = chip.text,
+                        modifier = Modifier.align(Alignment.CenterVertically),
+                    )
+            }
         }
     }
 }

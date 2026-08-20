@@ -76,12 +76,19 @@ fun BaseMediaDetailContent(
 
         DirectorSection(item = item)
         WriterSection(item = item)
+        ProducerSection(item = item)
 
         MediaLanguageFlagsSection(item = item, selectedSourceId = selectedSourceId)
 
         typeSpecificContent()
 
         CastSection(item = item, onPersonClick = onPersonClick, widthSizeClass = widthSizeClass)
+
+        GuestStarSection(
+            item = item,
+            onPersonClick = onPersonClick,
+            widthSizeClass = widthSizeClass,
+        )
 
         if (LocalShowAwards.current) {
             val omdbHeadline = omdbAwardsHeadline(omdbAwards)

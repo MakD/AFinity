@@ -859,6 +859,9 @@ fun HomeScreen(
                     Destination.createItemDetailRoute(itemId = seriesId, itemType = "Series")
                 )
             },
+            onNavigateToPerson = { personId ->
+                navController.navigate(Destination.createPersonRoute(personId))
+            },
         )
     }
 }

@@ -28,15 +28,32 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.data.models.media.AfinityBoxSet
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import org.jellyfin.sdk.model.api.PersonKind
 import java.util.UUID
+
+fun AfinityItem.displayPeople(): List<AfinityPerson> =
+    when (this) {
+        is AfinityMovie -> people
+        is AfinityShow -> people
+        is AfinitySeason -> people
+        is AfinityEpisode -> people
+        is AfinityVideo -> people
+        is AfinityBoxSet -> people
+        else -> emptyList()
+    }
+
+fun AfinityItem.peopleOfKind(kind: PersonKind): List<AfinityPerson> =
+    displayPeople().filter { it.type == kind }.distinctBy { it.id to it.role }
 
 @Composable
 fun CastSection(
@@ -44,35 +61,56 @@ fun CastSection(
     onPersonClick: (UUID) -> Unit = {},
     widthSizeClass: WindowWidthSizeClass,
 ) {
-    val cast =
-        when (item) {
-            is AfinityMovie -> item.people.filter { it.type == PersonKind.ACTOR }
-            is AfinityShow -> item.people.filter { it.type == PersonKind.ACTOR }
-            is AfinitySeason -> item.people.filter { it.type == PersonKind.ACTOR }
-            else -> emptyList()
-        }.distinctBy { it.id }
+    PeopleRow(
+        title = stringResource(R.string.cast_section_title),
+        people = item.peopleOfKind(PersonKind.ACTOR),
+        onPersonClick = onPersonClick,
+        widthSizeClass = widthSizeClass,
+    )
+}
+
+@Composable
+fun GuestStarSection(
+    item: AfinityItem,
+    onPersonClick: (UUID) -> Unit = {},
+    widthSizeClass: WindowWidthSizeClass,
+) {
+    PeopleRow(
+        title = stringResource(R.string.guest_stars_section_title),
+        people = item.peopleOfKind(PersonKind.GUEST_STAR),
+        onPersonClick = onPersonClick,
+        widthSizeClass = widthSizeClass,
+    )
+}
+
+@Composable
+private fun PeopleRow(
+    title: String,
+    people: List<AfinityPerson>,
+    onPersonClick: (UUID) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
+) {
+    if (people.isEmpty()) return
 
     val cardWidth = widthSizeClass.portraitWidth
 
-    if (cast.isNotEmpty()) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                text = stringResource(R.string.cast_section_title),
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onBackground,
-            )
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
+        )
 
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 0.dp),
-            ) {
-                items(cast.take(10), key = { it.id.toString() }) { person ->
-                    CastMemberCard(
-                        person = person,
-                        onPersonClick = onPersonClick,
-                        cardWidth = cardWidth,
-                    )
-                }
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 0.dp),
+        ) {
+            items(people, key = { "${it.id}|${it.role}" }) { person ->
+                CastMemberCard(
+                    person = person,
+                    onPersonClick = onPersonClick,
+                    cardWidth = cardWidth,
+                )
             }
         }
     }

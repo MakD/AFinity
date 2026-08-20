@@ -20,6 +20,7 @@ import com.makd.afinity.ui.item.components.QualitySelectionDialog
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.util.rememberItemDownloadDelegate
 import kotlinx.coroutines.delay
+import java.util.UUID
 
 @Composable
 fun EpisodeOverlayHandler(
@@ -33,11 +34,13 @@ fun EpisodeOverlayHandler(
     onToggleWatchlist: (AfinityEpisode) -> Unit,
     onToggleWatched: (AfinityEpisode) -> Unit,
     onNavigateToSeries: (seriesId: String) -> Unit,
+    onNavigateToPerson: ((personId: String) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val downloadDelegate = rememberItemDownloadDelegate()
     var pendingNavigationSeriesId by remember { mutableStateOf<String?>(null) }
+    var pendingNavigationPersonId by remember { mutableStateOf<String?>(null) }
 
     var showQualityDialog by remember { mutableStateOf(false) }
     var volumes by remember { mutableStateOf<List<StorageVolumeInfo>>(emptyList()) }
@@ -91,6 +94,13 @@ fun EpisodeOverlayHandler(
                 onClearSelection()
                 pendingNavigationSeriesId = episode.seriesId?.toString()
             },
+            onPersonClick =
+                onNavigateToPerson?.let {
+                    { personId: UUID ->
+                        onClearSelection()
+                        pendingNavigationPersonId = personId.toString()
+                    }
+                },
         )
     }
 
@@ -123,6 +133,14 @@ fun EpisodeOverlayHandler(
             delay(300)
             onNavigateToSeries(pendingNavigationSeriesId!!)
             pendingNavigationSeriesId = null
+        }
+    }
+
+    LaunchedEffect(selectedEpisode, pendingNavigationPersonId) {
+        if (selectedEpisode == null && pendingNavigationPersonId != null) {
+            delay(300)
+            onNavigateToPerson?.invoke(pendingNavigationPersonId!!)
+            pendingNavigationPersonId = null
         }
     }
 }

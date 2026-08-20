@@ -71,6 +71,27 @@ fun Modifier.verticalLayoutOffset(yOffset: Dp) =
         }
     }
 
+fun Modifier.horizontalBleed(amount: Dp) =
+    this.layout { measurable, constraints ->
+        if (!constraints.hasBoundedWidth) {
+            val placeable = measurable.measure(constraints)
+            return@layout layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+        }
+
+        val extraPx = amount.roundToPx() * 2
+        val placeable =
+            measurable.measure(
+                constraints.copy(
+                    minWidth = constraints.minWidth + extraPx,
+                    maxWidth = constraints.maxWidth + extraPx,
+                )
+            )
+
+        layout((placeable.width - extraPx).coerceAtLeast(0), placeable.height) {
+            placeable.placeRelative(-amount.roundToPx(), 0)
+        }
+    }
+
 fun Modifier.bottomOverlap(overlap: Dp) =
     this.layout { measurable, constraints ->
         val placeable = measurable.measure(constraints)

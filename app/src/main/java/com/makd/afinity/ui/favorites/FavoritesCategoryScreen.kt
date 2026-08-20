@@ -323,6 +323,9 @@ fun FavoritesCategoryScreen(
                 Destination.createItemDetailRoute(itemId = seriesId, itemType = "Series")
             )
         },
+        onNavigateToPerson = { personId ->
+            navController.navigate(Destination.createPersonRoute(personId))
+        },
     )
 }
 

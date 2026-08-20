@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityShow
 import org.jellyfin.sdk.model.api.PersonKind
 
@@ -118,45 +119,38 @@ fun TaglineSection(item: AfinityItem) {
 
 @Composable
 fun DirectorSection(item: AfinityItem) {
-    val directors =
-        when (item) {
-            is AfinityMovie -> item.people.filter { it.type == PersonKind.DIRECTOR }
-            is AfinityShow -> item.people.filter { it.type == PersonKind.DIRECTOR }
-            else -> emptyList()
-        }
-
-    if (directors.isNotEmpty()) {
-        Text(
-            text =
-                pluralStringResource(
-                    R.plurals.director_prefix,
-                    directors.size,
-                    directors.joinToString(", ") { it.name },
-                ),
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
+    CreditLine(
+        people = item.peopleOfKind(PersonKind.DIRECTOR),
+        pluralRes = R.plurals.director_prefix,
+    )
 }
 
 @Composable
 fun WriterSection(item: AfinityItem) {
-    val writers =
-        when (item) {
-            is AfinityMovie -> item.people.filter { it.type == PersonKind.WRITER }
-            is AfinityShow -> item.people.filter { it.type == PersonKind.WRITER }
-            else -> emptyList()
-        }
+    CreditLine(people = item.peopleOfKind(PersonKind.WRITER), pluralRes = R.plurals.writers_prefix)
+}
 
-    if (writers.isNotEmpty()) {
-        Text(
-            text = pluralStringResource(
-                    R.plurals.writers_prefix,
-                    writers.size,
-                    writers.joinToString(", ") { it.name },
-                ),
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
+@Composable
+fun ProducerSection(item: AfinityItem) {
+    CreditLine(
+        people = item.peopleOfKind(PersonKind.PRODUCER),
+        pluralRes = R.plurals.producers_prefix,
+    )
+}
+
+@Composable
+private fun CreditLine(people: List<AfinityPerson>, pluralRes: Int) {
+    val named = people.distinctBy { it.id }
+    if (named.isEmpty()) return
+
+    Text(
+        text =
+            pluralStringResource(
+                pluralRes,
+                named.size,
+                named.joinToString(", ") { it.name },
+            ),
+        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }

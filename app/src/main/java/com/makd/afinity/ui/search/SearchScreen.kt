@@ -126,6 +126,7 @@ fun SearchScreen(
     onAudiobookshelfItemClick: (String) -> Unit,
     onAudiobookshelfGenreClick: (String) -> Unit,
     onSeriesClick: (String) -> Unit = {},
+    onPersonClick: (String) -> Unit = {},
     onMusicAlbumClick: (String) -> Unit = {},
     onMusicArtistClick: (String) -> Unit = {},
     onMusicPlaylistClick: (String) -> Unit = {},
@@ -448,6 +449,7 @@ fun SearchScreen(
             onToggleWatchlist = { episode -> viewModel.toggleEpisodeWatchlist(episode) },
             onToggleWatched = { episode -> viewModel.toggleEpisodeWatched(episode) },
             onNavigateToSeries = { seriesId -> onSeriesClick(seriesId) },
+            onNavigateToPerson = { personId -> onPersonClick(personId) },
         )
     }
 }

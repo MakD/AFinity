@@ -164,6 +164,7 @@ fun ItemDetailScreen(
     var pendingPlaySelection by remember { mutableStateOf<PlaybackSelection?>(null) }
     var showVersionPickerForPlay by remember { mutableStateOf(false) }
     var pendingNavigationSeriesId by remember { mutableStateOf<String?>(null) }
+    var pendingNavigationPersonId by remember { mutableStateOf<String?>(null) }
 
     fun interceptPlayClick(item: AfinityItem, selection: PlaybackSelection?) {
         val remoteSources =
@@ -301,6 +302,10 @@ fun ItemDetailScreen(
                         AdminAction.Delete -> showEpisodeDeleteDialog = true
                     }
                 },
+                onPersonClick = { personId ->
+                    viewModel.clearSelectedEpisode()
+                    pendingNavigationPersonId = personId.toString()
+                },
             )
 
             if (showEpisodeRefreshDialog) {
@@ -332,6 +337,16 @@ fun ItemDetailScreen(
                     )
                 navController.navigate(route)
                 pendingNavigationSeriesId = null
+            }
+        }
+
+        LaunchedEffect(selectedEpisode, pendingNavigationPersonId) {
+            if (selectedEpisode == null && pendingNavigationPersonId != null) {
+                kotlinx.coroutines.delay(300)
+                navController.navigate(
+                    Destination.createPersonRoute(pendingNavigationPersonId!!)
+                )
+                pendingNavigationPersonId = null
             }
         }
 

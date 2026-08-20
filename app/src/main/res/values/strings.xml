@@ -266,7 +266,11 @@
     <string name="favorites_empty_message">Items you mark as favorites will appear here</string>
     <!--Item Screen Cast Section-->
     <string name="cast_section_title">Cast</string>
+    <string name="guest_stars_section_title">Guest Starring</string>
     <string name="cast_role_format">as %1$s</string>
+    <string name="people_dialog_title">Cast &amp; Crew</string>
+    <string name="people_group_header_fmt">%1$s · %2$d</string>
+    <string name="people_facepile_overflow_fmt">+%1$d</string>
 
     <string name="external_link_default_name">External Link</string>
 
@@ -353,6 +357,10 @@
     <plurals name="writers_prefix">
         <item quantity="one">Writer: %1$s</item>
         <item quantity="other">Writers: %1$s</item>
+    </plurals>
+    <plurals name="producers_prefix">
+        <item quantity="one">Producer: %1$s</item>
+        <item quantity="other">Producers: %1$s</item>
     </plurals>
 
     <string name="seasons_title">Seasons</string>
