@@ -1833,4 +1833,14 @@
         <item quantity="many">%1$d премий «Выбор критиков»</item>
         <item quantity="other">%1$d премий «Выбор критиков»</item>
     </plurals>
+    <string name="guest_stars_section_title">Прилгашенные звезды</string>
+    <string name="people_dialog_title">Актеры и съемочная группа</string>
+    <string name="people_group_header_fmt">%1$s · %2$d</string>
+    <string name="people_facepile_overflow_fmt">+%1$d</string>
+    <plurals name="producers_prefix">
+        <item quantity="one">Продюсер: %1$s</item>
+        <item quantity="few">Продюсеры: %1$s</item>
+        <item quantity="many">Продюсеры: %1$s</item>
+        <item quantity="other">Продюсеры: %1$s</item>
+    </plurals>
 </resources>
