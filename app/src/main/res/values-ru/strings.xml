@@ -1756,4 +1756,91 @@
     <string name="notif_update_available_title">Доступно обновление</string>
     <string name="nav_home">Главная</string>
     <string name="nav_audiobooks">Аудиокниги</string>
+    <string name="section_awards">Награды</string>
+    <plurals name="awards_wins_fmt">
+        <item quantity="one">%1$d победа</item>
+        <item quantity="few">%1$d победы</item>
+        <item quantity="many">%1$d побед</item>
+        <item quantity="other">%1$d побед</item>
+    </plurals>
+    <plurals name="awards_nominations_fmt">
+        <item quantity="one">%1$d номинация</item>
+        <item quantity="few">%1$d номинации</item>
+        <item quantity="many">%1$d номинаций</item>
+        <item quantity="other">%1$d номинаций</item>
+    </plurals>
+    <string name="awards_summary_fmt">%1$s · %2$s</string>
+    <string name="awards_result_won">ПОБ</string>
+    <string name="awards_result_nominated">НОМ</string>
+    <plurals name="awards_show_all_fmt">
+        <item quantity="one">Показать %1$d награду</item>
+        <item quantity="few">Показать все %1$d награды</item>
+        <item quantity="many">Показать все %1$d наград</item>
+        <item quantity="other">Показать все %1$d наград</item>
+    </plurals>
+    <string name="cd_awards_open">Открыть награды</string>
+    <string name="mdblist_usage_fmt">Осталось: %1$d/%2$d</string>
+    <string name="mdblist_usage_unknown">—</string>
+    <string name="services_hub_tile_wikidata">Викиданные</string>
+    <string name="wikidata_connect_title">Подключить Викиданные</string>
+    <string name="wikidata_connect_blurb">Награды и номинации для фильмов, сериалов и персон. Бесплатно и открыто для всех — без регистраций и ключей API.</string>
+    <string name="wikidata_connect_sends_title">Что AFinity передает</string>
+    <string name="wikidata_connect_sends_body">Идентификатор элемента в TMDB при открытии страницы с подробностями, и ваш IP-адрес, в общедоступный сервис запросов Викимедиа.</string>
+    <string name="wikidata_connect_never_title">Что никогда не передается</string>
+    <string name="wikidata_connect_never_body">Ничего с вашего сервера Jellyfin — данные аккаунта, токен, адрес сервера, или историю просмотров.</string>
+    <string name="wikidata_connect_action">Включить</string>
+    <string name="wikidata_scope_note">Эта настройка применяется ко всем серверам и профилям на этом устройстве, а не только к тому, в который вы вошли.</string>
+    <string name="wikidata_disconnect_title">Отключиться от Викиданных?</string>
+    <string name="wikidata_disconnect_message">История наград перестанет загружаться на всех серверах и профилях на этом устройстве. Сохраненные данные не будут удалены.</string>
+    <string name="wikidata_disconnect_action">Отключиться</string>
+    <string name="pref_show_awards_title">Показать награды</string>
+    <string name="pref_show_awards_summary">Награды и история побед на экране с подробностями</string>
+    <string name="awards_headline_won_fmt">Получил %1$s</string>
+    <string name="awards_headline_nominated_fmt">Номинирован на %1$s</string>
+    <plurals name="awards_body_oscar_fmt">
+        <item quantity="one">%1$d «Оскар»</item>
+        <item quantity="few">%1$d «Оскара»</item>
+        <item quantity="many">%1$d «Оскаров»</item>
+        <item quantity="other">%1$d «Оскаров»</item>
+    </plurals>
+    <plurals name="awards_body_emmy_fmt">
+        <item quantity="one">%1$d премию «Эмми»</item>
+        <item quantity="few">%1$d премии «Эмми»</item>
+        <item quantity="many">%1$d премий «Эмми»</item>
+        <item quantity="other">%1$d премий «Эмми»</item>
+    </plurals>
+    <plurals name="awards_body_golden_globe_fmt">
+        <item quantity="one">%1$d «Золотой глобус»</item>
+        <item quantity="few">%1$d «Золотых глобуса»</item>
+        <item quantity="many">%1$d «Золотых глобусов»</item>
+        <item quantity="other">%1$d «Золотых глобусов»</item>
+    </plurals>
+    <plurals name="awards_body_bafta_fmt">
+        <item quantity="one">%1$d премию BAFTA</item>
+        <item quantity="few">%1$d премии BAFTA</item>
+        <item quantity="many">%1$d премий BAFTA</item>
+        <item quantity="other">%1$d премий BAFTA</item>
+    </plurals>
+    <plurals name="awards_body_sag_fmt">
+        <item quantity="one">%1$d премию Гильдии киноактеров США</item>
+        <item quantity="few">%1$d премии Гильдии киноактеров США</item>
+        <item quantity="many">%1$d премий Гильдии киноактеров США</item>
+        <item quantity="other">%1$d премий Гильдии киноактеров США</item>
+    </plurals>
+    <plurals name="awards_body_critics_choice_fmt">
+        <item quantity="one">%1$d премию «Выбор критиков»</item>
+        <item quantity="few">%1$d премии «Выбор критиков»</item>
+        <item quantity="many">%1$d премий «Выбор критиков»</item>
+        <item quantity="other">%1$d премий «Выбор критиков»</item>
+    </plurals>
+    <string name="guest_stars_section_title">Прилгашенные звезды</string>
+    <string name="people_dialog_title">Актеры и съемочная группа</string>
+    <string name="people_group_header_fmt">%1$s · %2$d</string>
+    <string name="people_facepile_overflow_fmt">+%1$d</string>
+    <plurals name="producers_prefix">
+        <item quantity="one">Продюсер: %1$s</item>
+        <item quantity="few">Продюсеры: %1$s</item>
+        <item quantity="many">Продюсеры: %1$s</item>
+        <item quantity="other">Продюсеры: %1$s</item>
+    </plurals>
 </resources>
