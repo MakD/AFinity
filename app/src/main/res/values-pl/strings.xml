@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="splash_status_authenticating">Uwierzytelnianie...</string>
+    <string name="splash_status_authenticating">Uwierzytelnianie…</string>
     <string name="loading_phase_offline">Gotowy (Tryb offline)</string>
-    <string name="loading_phase_connecting">Łączenie z serwerem...</string>
-    <string name="loading_phase_fetching">Pobieranie zawartości...</string>
-    <string name="loading_phase_processing">Przetwarzanie bibliotek...</string>
-    <string name="loading_phase_finalizing">Finalizowanie ekranu głównego...</string>
+    <string name="loading_phase_connecting">Łączenie z serwerem…</string>
+    <string name="loading_phase_fetching">Pobieranie zawartości…</string>
+    <string name="loading_phase_processing">Przetwarzanie bibliotek…</string>
+    <string name="loading_phase_finalizing">Finalizowanie ekranu głównego…</string>
     <string name="login_connect_to_jellyfin">Połącz z Jellyfin</string>
     <string name="loading_phase_ready">Gotowy!</string>
     <string name="login_welcome_back">Witaj ponownie</string>
@@ -1033,4 +1033,22 @@
     <string name="seerr_recommendations_title">Polecane</string>
     <string name="seerr_details_title">Szczegóły</string>
     <string name="request_quota_exceeded_message">Nie masz wystarczającej liczby żądań. Twój limit zostanie automatycznie zresetowany.</string>
+    <string name="cd_random_item">Odtwórz coś losowego</string>
+    <string name="random_item_none">Nic nowego do obejrzenia</string>
+    <string name="cd_vpn_connection">Połączenie VPN</string>
+    <string name="cd_retry_connection">Ponów próbę połączenia</string>
+    <string name="connection_retry">Ponów</string>
+    <string name="connection_retrying">Łączenie…</string>
+    <string name="cd_scroll_to_top">Przewiń do góry</string>
+    <string name="cd_open_navigation_menu">Otwórz panel nawigacji</string>
+    <string name="cd_go_to_home">Wróć do panelu głównego</string>
+    <string name="cd_switch_account">Zmień konto</string>
+    <string name="connection_label_local">Lokalny</string>
+    <string name="connection_label_tailscale">Tailscale</string>
+    <string name="connection_label_vpn">VPN</string>
+    <string name="connection_label_remote">Zdalny</string>
+    <string name="connection_label_offline">Offline</string>
+    <string name="drawer_admin_badge">Administrator</string>
+    <string name="drawer_app_version">AFinity v%1$s</string>
+    <string name="home_because_you_liked">Ponieważ polubiłeś %1$s</string>
 </resources>
