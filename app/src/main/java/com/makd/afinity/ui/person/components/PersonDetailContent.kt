@@ -590,6 +590,7 @@ private fun PersonExternalLinksSection(
 
             val iconRes =
                 when {
+                    "anidb" in lowerUrl -> R.drawable.ic_anidb
                     "imdb" in lowerUrl -> R.drawable.ic_imdb_logo
                     "themoviedb.org" in lowerUrl -> R.drawable.ic_tmdb
                     "tvdb" in lowerUrl -> R.drawable.ic_tvdb
