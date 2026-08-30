@@ -3,6 +3,7 @@ package com.makd.afinity.ui.settings.servers
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.server.ServerStorage
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.websocket.JellyfinWebSocketManager
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
@@ -61,6 +63,9 @@ constructor(
                 initialValue = false,
             )
 
+    private val _serverStorage = MutableStateFlow<ServerStorage?>(null)
+    val serverStorage: StateFlow<ServerStorage?> = _serverStorage.asStateFlow()
+
     private val _activeSessions = MutableStateFlow<List<SessionInfoDto>?>(null)
     val activeSessions: StateFlow<List<SessionInfoDto>?> = _activeSessions.asStateFlow()
 
@@ -77,6 +82,7 @@ constructor(
             )
 
     private var pollingJob: Job? = null
+    private var storageJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -98,6 +104,8 @@ constructor(
         currentServerId = serverId
         taskCache[serverId]?.let { updateTasksState(it) }
         _activeSessions.value = null
+        _serverStorage.value = null
+        loadServerStorage(serverId)
         pollingJob?.cancel()
         pollingJob = viewModelScope.launch {
             pollTasksNow()
@@ -162,6 +170,16 @@ constructor(
         return "library" in text || "scan" in text || "refresh" in text
     }
 
+    private fun loadServerStorage(serverId: String) {
+        storageJob?.cancel()
+        storageJob = viewModelScope.launch {
+            if (isAdmin.first { it != null } != true) return@launch
+            jellyfinRepository.getServerStorageFlow(serverId).collect { storage ->
+                _serverStorage.value = storage
+            }
+        }
+    }
+
     fun restartServer() {
         viewModelScope.launch { jellyfinRepository.restartServer() }
     }
@@ -219,5 +237,6 @@ constructor(
     override fun onCleared() {
         super.onCleared()
         pollingJob?.cancel()
+        storageJob?.cancel()
     }
 }

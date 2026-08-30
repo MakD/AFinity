@@ -14,6 +14,7 @@ data class MusicQueueEntity(
     val durationMs: Long,
     val imageUrl: String?,
     val normalizationGain: Float?,
+    val albumNormalizationGain: Float? = null,
     val indexNumber: Int?,
     val discNumber: Int?,
     val serverId: String,

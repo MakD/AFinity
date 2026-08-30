@@ -6,7 +6,6 @@ import androidx.room.TypeConverters
 import com.makd.afinity.data.database.dao.AbsDownloadDao
 import com.makd.afinity.data.database.dao.AudibleRatingDao
 import com.makd.afinity.data.database.dao.AudiobookshelfDao
-import com.makd.afinity.data.database.dao.BoxSetCacheDao
 import com.makd.afinity.data.database.dao.CustomHomeSectionDao
 import com.makd.afinity.data.database.dao.DeletedItemDao
 import com.makd.afinity.data.database.dao.EpisodeDao
@@ -27,6 +26,7 @@ import com.makd.afinity.data.database.dao.SeasonDao
 import com.makd.afinity.data.database.dao.ServerAddressDao
 import com.makd.afinity.data.database.dao.ServerDao
 import com.makd.afinity.data.database.dao.ServerDatabaseDao
+import com.makd.afinity.data.database.dao.ServerStorageDao
 import com.makd.afinity.data.database.dao.ShowDao
 import com.makd.afinity.data.database.dao.SourceDao
 import com.makd.afinity.data.database.dao.TopPeopleDao
@@ -49,8 +49,6 @@ import com.makd.afinity.data.database.entities.AudiobookshelfEpisodeEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfItemEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfLibraryEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfProgressEntity
-import com.makd.afinity.data.database.entities.BoxSetCacheEntity
-import com.makd.afinity.data.database.entities.BoxSetCacheMetadata
 import com.makd.afinity.data.database.entities.CustomHomeSectionEntity
 import com.makd.afinity.data.database.entities.DeletedItemEntity
 import com.makd.afinity.data.database.entities.DownloadDto
@@ -70,6 +68,7 @@ import com.makd.afinity.data.database.entities.MusicLyricsEntity
 import com.makd.afinity.data.database.entities.MusicQueueEntity
 import com.makd.afinity.data.database.entities.MusicTrackEntity
 import com.makd.afinity.data.database.entities.PersonSectionCacheEntity
+import com.makd.afinity.data.database.entities.ServerStorageCacheEntity
 import com.makd.afinity.data.database.entities.ShowGenreCacheEntity
 import com.makd.afinity.data.database.entities.TopPeopleCacheEntity
 import com.makd.afinity.data.database.entities.WikidataAwardsCacheEntity
@@ -84,8 +83,6 @@ import com.makd.afinity.data.models.user.User
             Server::class,
             ServerAddress::class,
             User::class,
-            BoxSetCacheEntity::class,
-            BoxSetCacheMetadata::class,
             GenreCacheEntity::class,
             GenreMovieCacheEntity::class,
             ShowGenreCacheEntity::class,
@@ -124,9 +121,10 @@ import com.makd.afinity.data.models.user.User
             CustomHomeSectionEntity::class,
             HomeLayoutPreferenceEntity::class,
             DeletedItemEntity::class,
+            ServerStorageCacheEntity::class,
             WikidataAwardsCacheEntity::class,
         ],
-    version = 71,
+    version = 77,
     exportSchema = false,
 )
 @TypeConverters(AfinityTypeConverters::class)
@@ -154,8 +152,6 @@ abstract class AfinityDatabase : RoomDatabase() {
 
     abstract fun serverDatabaseDao(): ServerDatabaseDao
 
-    abstract fun boxSetCacheDao(): BoxSetCacheDao
-
     abstract fun genreCacheDao(): GenreCacheDao
 
     abstract fun topPeopleDao(): TopPeopleDao
@@ -169,6 +165,8 @@ abstract class AfinityDatabase : RoomDatabase() {
     abstract fun itemMetadataCacheDao(): ItemMetadataCacheDao
 
     abstract fun jellyfinStatsDao(): JellyfinStatsDao
+
+    abstract fun serverStorageDao(): ServerStorageDao
 
     abstract fun absDownloadDao(): AbsDownloadDao
 

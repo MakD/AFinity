@@ -33,6 +33,7 @@ import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.ItemFilterCriteria
 import com.makd.afinity.data.models.media.LibraryFilterOptions
 import com.makd.afinity.data.models.media.LibraryFilters
+import com.makd.afinity.data.models.media.LibraryLanguageOption
 import com.makd.afinity.data.models.media.PlaylistEntry
 import com.makd.afinity.data.models.media.toAfinityCollection
 import com.makd.afinity.data.models.media.withPatchedImages
@@ -49,6 +50,7 @@ import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -83,6 +85,7 @@ import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.MediaType
+import org.jellyfin.sdk.model.api.NameValuePair
 import org.jellyfin.sdk.model.api.SeriesStatus
 import org.jellyfin.sdk.model.api.SortOrder
 import org.jellyfin.sdk.model.api.VideoType
@@ -98,7 +101,6 @@ class JellyfinMediaRepository
 constructor(
     private val sessionManager: SessionManager,
     @param:ApplicationContext private val context: Context,
-    private val boxSetCache: BoxSetCache,
     private val mdbListApiService: MdbListApiService,
     private val omdbApiService: OmdbApiService,
     private val securePreferencesRepository: SecurePreferencesRepository,
@@ -419,21 +421,60 @@ constructor(
                     }
                 }
 
-        val content =
-            FilterApi(apiClient)
-                .getQueryFiltersLegacy(
-                    userId = userId,
-                    parentId = parentId,
-                    includeItemTypes = requestedTypes.ifEmpty { null },
-                )
-                .content
+        val filterApi = FilterApi(apiClient)
+        val types = requestedTypes.ifEmpty { null }
+
+        val (legacy, modern) =
+            coroutineScope {
+                val legacyDeferred = async {
+                    filterApi
+                        .getQueryFiltersLegacy(
+                            userId = userId,
+                            parentId = parentId,
+                            includeItemTypes = types,
+                        )
+                        .content
+                }
+                val modernDeferred = async {
+                    try {
+                        filterApi
+                            .getQueryFilters(
+                                userId = userId,
+                                parentId = parentId,
+                                includeItemTypes = types,
+                            )
+                            .content
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Timber.w(e, "Language filter options unavailable")
+                        null
+                    }
+                }
+                legacyDeferred.await() to modernDeferred.await()
+            }
+
         LibraryFilterOptions(
-            genres = content.genres.orEmpty(),
-            tags = content.tags.orEmpty(),
-            officialRatings = content.officialRatings.orEmpty(),
-            years = content.years.orEmpty().sortedDescending(),
+            genres = legacy.genres.orEmpty(),
+            tags = legacy.tags.orEmpty(),
+            officialRatings = legacy.officialRatings.orEmpty(),
+            years = legacy.years.orEmpty().sortedDescending(),
+            audioLanguages = modern?.audioLanguages.toLanguageOptions(),
+            subtitleLanguages = modern?.subtitleLanguages.toLanguageOptions(),
         )
     }
+
+    private fun List<NameValuePair>?.toLanguageOptions(): List<LibraryLanguageOption> =
+        orEmpty()
+            .mapNotNull { pair ->
+                val code = pair.value?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                LibraryLanguageOption(
+                    name = pair.name?.takeIf { it.isNotBlank() } ?: code,
+                    code = code,
+                )
+            }
+            .distinctBy { it.code }
+            .sortedBy { it.name.lowercase() }
 
     override suspend fun getLibraries(): List<AfinityCollection> =
         getLibrariesResult().getOrElse { e ->
@@ -624,6 +665,8 @@ constructor(
                 studios = criteria.studios.ifEmpty { null },
                 officialRatings = criteria.officialRatings.ifEmpty { null },
                 tags = criteria.tags.ifEmpty { null },
+                audioLanguages = criteria.audioLanguages.ifEmpty { null },
+                subtitleLanguages = criteria.subtitleLanguages.ifEmpty { null },
                 videoTypes =
                     criteria.videoTypes
                         .mapNotNull { VideoType.fromNameOrNull(it) }
@@ -1564,27 +1607,6 @@ constructor(
             .also { Timber.d("Returning ${it.size} studios after filtering") }
     }
 
-    override suspend fun ensureBoxSetCacheBuilt() =
-        withContext(Dispatchers.IO) {
-            try {
-                if (boxSetCache.isEmpty() || boxSetCache.isStale()) {
-                    val stats = boxSetCache.getStats()
-                    Timber.d(
-                        "BoxSet cache needs rebuild - Empty: ${stats.isEmpty}, Stale: ${stats.isStale}, Age: ${stats.ageMs}ms"
-                    )
-
-                    boxSetCache.buildCache { fetchAllBoxSetsWithChildren() }
-                } else {
-                    val stats = boxSetCache.getStats()
-                    Timber.d(
-                        "BoxSet cache is fresh - ${stats.itemCount} items cached, Age: ${stats.ageMs}ms"
-                    )
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to ensure BoxSet cache is built")
-            }
-        }
-
     override suspend fun getBoxSetsForSpotlight(
         minChildCount: Int,
         maxBoxSets: Int,
@@ -1656,92 +1678,20 @@ constructor(
             }
         }
 
-    private suspend fun fetchAllBoxSetsWithChildren(): List<BoxSetWithChildren> {
-        val apiClient = sessionManager.getCurrentApiClient() ?: return emptyList()
-        val userId = getCurrentUserId() ?: return emptyList()
-        val libraryApi = LibraryApi(apiClient)
-
-        val boxSetsResponse =
-            libraryApi.getItems(
-                userId = userId,
-                includeItemTypes = listOf(BaseItemKind.BOX_SET),
-                recursive = true,
-                fields = listOf(ItemFields.CHILD_COUNT),
-                enableImages = false,
-                enableUserData = false,
-                limit = null,
-                enableTotalRecordCount = false,
-            )
-
-        val allBoxSets = boxSetsResponse.content.items
-        Timber.d("Fetching children for ${allBoxSets.size} BoxSets")
-
-        val nonEmptyBoxSets = allBoxSets.filter { (it.childCount ?: 0) > 0 }
-
-        val semaphore = Semaphore(10)
-        return coroutineScope {
-            nonEmptyBoxSets
-                .map { boxSetDto ->
-                    async {
-                        semaphore.withPermit {
-                            try {
-                                val childrenResponse =
-                                    libraryApi.getItems(
-                                        userId = userId,
-                                        parentId = boxSetDto.id,
-                                        recursive = false,
-                                        fields = emptyList(),
-                                        enableImages = false,
-                                        enableUserData = false,
-                                        enableTotalRecordCount = false,
-                                    )
-
-                                val childItemIds = childrenResponse.content.items.map { it.id }
-
-                                BoxSetWithChildren(
-                                    boxSetId = boxSetDto.id,
-                                    childItemIds = childItemIds,
-                                )
-                            } catch (e: Exception) {
-                                Timber.w(e, "Failed to fetch children for BoxSet ${boxSetDto.name}")
-                                BoxSetWithChildren(boxSetDto.id, emptyList())
-                            }
-                        }
-                    }
-                }
-                .awaitAll()
-        }
-    }
-
     override suspend fun getBoxSetsContaining(
         itemId: UUID,
         fields: List<ItemFields>?,
     ): List<AfinityBoxSet> =
         apiCall(emptyList(), "Failed to get BoxSets containing item $itemId") { apiClient, userId ->
-            ensureBoxSetCacheBuilt()
-
-            val boxSetIds = boxSetCache.getBoxSetIdsForItem(itemId)
-            if (boxSetIds.isEmpty()) {
-                Timber.d("Item $itemId is not in any BoxSets (cache lookup)")
-                return@apiCall emptyList()
-            }
-
-            val boxSets =
-                LibraryApi(apiClient)
-                    .getItems(
-                        userId = userId,
-                        ids = boxSetIds,
-                        fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
-                        enableImages = true,
-                        enableUserData = true,
-                        enableTotalRecordCount = false,
-                    )
-                    .content
-                    .items
-                    .map { boxSetDto -> boxSetDto.toAfinityBoxSet(getBaseUrl()) }
-
-            Timber.d("Item $itemId is in ${boxSets.size} BoxSets (cache lookup)")
-            boxSets
+            LibraryApi(apiClient)
+                .getItemCollections(
+                    itemId = itemId,
+                    userId = userId,
+                    fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                )
+                .content
+                .items
+                .map { boxSetDto -> boxSetDto.toAfinityBoxSet(getBaseUrl()) }
         }
 
     override fun getLibrariesFlow(): Flow<List<AfinityCollection>> = libraries

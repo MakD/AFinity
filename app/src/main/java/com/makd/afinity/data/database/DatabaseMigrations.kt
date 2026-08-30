@@ -1501,6 +1501,108 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_71_72 =
+        object : Migration(71, 72) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `mediastreams` ADD COLUMN `isOriginal` INTEGER NOT NULL DEFAULT 0"
+                )
+                db.execSQL(
+                    "ALTER TABLE `mediastreams` ADD COLUMN `localizedLanguage` TEXT DEFAULT NULL"
+                )
+                db.execSQL(
+                    "ALTER TABLE `mediastreams` ADD COLUMN `localizedForced` TEXT DEFAULT NULL"
+                )
+                db.execSQL(
+                    "ALTER TABLE `mediastreams` ADD COLUMN `localizedExternal` TEXT DEFAULT NULL"
+                )
+                db.execSQL(
+                    "ALTER TABLE `mediastreams` ADD COLUMN `localizedHearingImpaired` TEXT DEFAULT NULL"
+                )
+                db.execSQL(
+                    "ALTER TABLE `mediastreams` ADD COLUMN `localizedOriginal` TEXT DEFAULT NULL"
+                )
+            }
+        }
+
+    val MIGRATION_72_73 =
+        object : Migration(72, 73) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `music_tracks` ADD COLUMN `normalizationGain` REAL DEFAULT NULL"
+                )
+                db.execSQL(
+                    "ALTER TABLE `music_tracks` ADD COLUMN `albumNormalizationGain` REAL DEFAULT NULL"
+                )
+                db.execSQL(
+                    "ALTER TABLE `music_queue` ADD COLUMN `albumNormalizationGain` REAL DEFAULT NULL"
+                )
+            }
+        }
+
+    val MIGRATION_73_74 =
+        object : Migration(73, 74) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP TABLE IF EXISTS `boxset_cache`")
+                db.execSQL("DROP TABLE IF EXISTS `boxset_cache_metadata`")
+            }
+        }
+
+    val MIGRATION_74_75 =
+        object : Migration(74, 75) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                listOf(
+                        "albumCount",
+                        "songCount",
+                        "artistCount",
+                        "musicVideoCount",
+                        "bookCount",
+                        "trailerCount",
+                        "programCount",
+                        "itemCount",
+                    )
+                    .forEach { column ->
+                        db.execSQL(
+                            "ALTER TABLE `jellyfin_stats_cache` ADD COLUMN `$column` INTEGER NOT NULL DEFAULT 0"
+                        )
+                    }
+            }
+        }
+
+    val MIGRATION_75_76 =
+        object : Migration(75, 76) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS server_storage_cache (
+                        serverId TEXT NOT NULL PRIMARY KEY,
+                        payload TEXT NOT NULL,
+                        lastUpdated INTEGER NOT NULL
+                    )
+                    """
+                        .trimIndent()
+                )
+            }
+        }
+
+    val MIGRATION_76_77 =
+        object : Migration(76, 77) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `mediastreams` ADD COLUMN `hdr10PlusPresentFlag` INTEGER NOT NULL DEFAULT 0"
+                )
+                db.execSQL("UPDATE `mediastreams` SET `videoRangeType` = 'HDR10Plus' WHERE `videoRangeType` = 'HDR10_PLUS'")
+                db.execSQL("UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithHDR10' WHERE `videoRangeType` = 'DOVI_WITH_HDR10'")
+                db.execSQL("UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithHLG' WHERE `videoRangeType` = 'DOVI_WITH_HLG'")
+                db.execSQL("UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithSDR' WHERE `videoRangeType` = 'DOVI_WITH_SDR'")
+                db.execSQL("UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithEL' WHERE `videoRangeType` = 'DOVI_WITH_EL'")
+                db.execSQL("UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithHDR10Plus' WHERE `videoRangeType` = 'DOVI_WITH_HDR10_PLUS'")
+                db.execSQL("UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithELHDR10Plus' WHERE `videoRangeType` = 'DOVI_WITH_ELHDR10_PLUS'")
+                db.execSQL("UPDATE `mediastreams` SET `videoRangeType` = 'DOVIInvalid' WHERE `videoRangeType` = 'DOVI_INVALID'")
+                db.execSQL("UPDATE `mediastreams` SET `videoRangeType` = 'Unknown' WHERE `videoRangeType` = 'UNKNOWN'")
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1573,5 +1675,11 @@ object DatabaseMigrations {
             MIGRATION_68_69,
             MIGRATION_69_70,
             MIGRATION_70_71,
+            MIGRATION_71_72,
+            MIGRATION_72_73,
+            MIGRATION_73_74,
+            MIGRATION_74_75,
+            MIGRATION_75_76,
+            MIGRATION_76_77,
         )
 }

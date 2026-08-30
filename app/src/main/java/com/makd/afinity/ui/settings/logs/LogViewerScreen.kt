@@ -48,7 +48,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.navigation.LocalPlayerOffset
@@ -248,7 +248,9 @@ private fun GroupingBar(
     onToggle: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 12.dp),
+        modifier =
+            Modifier.fillMaxWidth()
+                .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -264,10 +266,7 @@ private fun GroupingBar(
             modifier = Modifier.weight(1f),
         )
         Text(
-            text =
-                stringResource(
-                    if (grouped) R.string.logs_expand else R.string.logs_collapse
-                ),
+            text = stringResource(if (grouped) R.string.logs_expand else R.string.logs_collapse),
             style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary,

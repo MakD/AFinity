@@ -283,8 +283,6 @@ interface MediaRepository {
         fields: List<ItemFields>? = null,
     ): List<AfinityBoxSet>
 
-    suspend fun ensureBoxSetCacheBuilt()
-
     suspend fun getBoxSetsForSpotlight(
         minChildCount: Int = 3,
         maxBoxSets: Int = 15,

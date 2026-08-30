@@ -92,6 +92,14 @@ data class JellyfinStats(
     val seriesCount: Int = 0,
     val episodeCount: Int = 0,
     val boxsetCount: Int = 0,
+    val albumCount: Int = 0,
+    val songCount: Int = 0,
+    val artistCount: Int = 0,
+    val musicVideoCount: Int = 0,
+    val bookCount: Int = 0,
+    val trailerCount: Int = 0,
+    val programCount: Int = 0,
+    val itemCount: Int = 0,
 )
 
 data class JellyseerrStats(

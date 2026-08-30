@@ -3,7 +3,6 @@ package com.makd.afinity.ui.item.components.shared
 import android.content.Context
 import android.content.res.Configuration
 import android.text.format.DateFormat
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -12,11 +11,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -48,7 +43,6 @@ import com.makd.afinity.ui.components.formatRuntimeTicks
 import com.makd.afinity.ui.components.ticksToTotalMinutes
 import com.makd.afinity.util.DateSkeleton
 import com.makd.afinity.util.localizedDateFormat
-import org.jellyfin.sdk.model.api.MediaStreamType
 import java.util.Date
 import java.util.Locale
 
@@ -104,115 +98,7 @@ fun MetadataRow(
                 val source =
                     item.sources.find { it.id == selectedSourceId } ?: item.sources.firstOrNull()
 
-                source
-                    ?.mediaStreams
-                    ?.firstOrNull { it.type == MediaStreamType.VIDEO }
-                    ?.let { videoStream ->
-                        val resolution =
-                            when {
-                                (videoStream.height ?: 0) <= 2160 &&
-                                    (videoStream.width ?: 0) <= 3840 &&
-                                    ((videoStream.height ?: 0) > 1080 ||
-                                        (videoStream.width ?: 0) > 1920) ->
-                                    stringResource(R.string.meta_res_4k)
-
-                                (videoStream.height ?: 0) <= 1080 &&
-                                    (videoStream.width ?: 0) <= 1920 &&
-                                    ((videoStream.height ?: 0) > 720 ||
-                                        (videoStream.width ?: 0) > 1280) ->
-                                    stringResource(R.string.meta_res_hd)
-
-                                else -> stringResource(R.string.meta_res_sd)
-                            }
-
-                        VideoMetadataChip(text = resolution)
-                    }
-
-                source
-                    ?.mediaStreams
-                    ?.firstOrNull { it.type == MediaStreamType.VIDEO }
-                    ?.codec
-                    ?.takeIf { it.isNotEmpty() }
-                    ?.let { codec -> VideoMetadataChip(text = codec.uppercase()) }
-
-                source
-                    ?.mediaStreams
-                    ?.firstOrNull { it.type == MediaStreamType.VIDEO }
-                    ?.let { videoStream ->
-                        if (videoStream.videoDoViTitle != null) {
-                            VideoMetadataChipWithIcon(
-                                text = stringResource(R.string.meta_vision),
-                                iconRes = R.drawable.ic_brand_dolby_digital,
-                            )
-                        } else {
-                            videoStream.videoRangeType?.let { rangeType ->
-                                val hdrType =
-                                    when (rangeType.name) {
-                                        "HDR10" -> "HDR10"
-                                        "HDR10Plus" -> "HDR10+"
-                                        "HLG" -> "HLG"
-                                        else -> null
-                                    }
-                                hdrType?.let { VideoMetadataChip(text = it) }
-                            }
-                        }
-                    }
-
-                source
-                    ?.mediaStreams
-                    ?.firstOrNull { it.type == MediaStreamType.AUDIO }
-                    ?.let { audioStream ->
-                        val isAtmos =
-                            audioStream.profile?.contains("Atmos", ignoreCase = true) == true
-                        val codec = audioStream.codec.takeIf { it.isNotEmpty() } ?: return@let
-                        when {
-                            isAtmos ->
-                                VideoMetadataChipWithIcon(
-                                    text = "Atmos",
-                                    iconRes = R.drawable.ic_brand_dolby_digital,
-                                )
-                            codec.lowercase() == "ac3" ->
-                                VideoMetadataChipWithIcon(
-                                    text = stringResource(R.string.meta_digital),
-                                    iconRes = R.drawable.ic_brand_dolby_digital,
-                                )
-                            codec.lowercase() == "eac3" ->
-                                VideoMetadataChipWithIcon(
-                                    text = stringResource(R.string.meta_digital_plus),
-                                    iconRes = R.drawable.ic_brand_dolby_digital,
-                                )
-                            codec.lowercase() == "truehd" ->
-                                VideoMetadataChipWithIcon(
-                                    text = stringResource(R.string.meta_truehd),
-                                    iconRes = R.drawable.ic_brand_dolby_digital,
-                                )
-                            codec.lowercase() == "dts" -> VideoMetadataChip(text = "DTS")
-                            else -> VideoMetadataChip(text = codec.uppercase())
-                        }
-                    }
-
-                source
-                    ?.mediaStreams
-                    ?.firstOrNull { it.type == MediaStreamType.AUDIO }
-                    ?.channelLayout
-                    ?.let { layout ->
-                        val channels =
-                            when {
-                                layout.contains("7.1") -> "7.1"
-                                layout.contains("5.1") -> "5.1"
-                                layout.contains("2.1") -> "2.1"
-                                layout.contains("2.0") || layout.contains("stereo") -> "2.0"
-                                else -> null
-                            }
-                        channels?.let { VideoMetadataChip(text = it) }
-                    }
-
-                val hasSubtitles =
-                    source?.mediaStreams?.any { it.type == MediaStreamType.SUBTITLE } == true
-
-                if (hasSubtitles) {
-                    VideoMetadataChip(text = stringResource(R.string.meta_cc))
-                }
+                MediaStreamBadges(source = source)
             }
         }
 
@@ -409,8 +295,7 @@ fun MetadataRow(
             if ((partCount ?: 0) > 1) {
                 if (needsSeparator) MetadataDot()
                 Text(
-                    text =
-                        pluralStringResource(R.plurals.meta_parts_fmt, partCount!!, partCount),
+                    text = pluralStringResource(R.plurals.meta_parts_fmt, partCount!!, partCount),
                     style =
                         MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
@@ -493,47 +378,6 @@ private fun MetadataDot() {
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
         textAlign = TextAlign.Center,
     )
-}
-
-@Composable
-private fun VideoMetadataChip(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
-        modifier =
-            Modifier.background(
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
-                    RoundedCornerShape(4.dp),
-                )
-                .padding(horizontal = 6.dp, vertical = 2.dp),
-    )
-}
-
-@Composable
-private fun VideoMetadataChipWithIcon(text: String, iconRes: Int) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        modifier =
-            Modifier.background(
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
-                    RoundedCornerShape(4.dp),
-                )
-                .padding(horizontal = 6.dp, vertical = 2.dp),
-    ) {
-        Icon(
-            painter = painterResource(id = iconRes),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.size(16.dp),
-        )
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
-        )
-    }
 }
 
 private fun getFormattedEndTime(context: Context, totalMs: Long): String {

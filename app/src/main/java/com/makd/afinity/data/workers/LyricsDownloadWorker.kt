@@ -6,12 +6,13 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.music.encodeLyricsJson
+import com.makd.afinity.data.models.music.toAfinityLyricLine
 import com.makd.afinity.data.repository.DatabaseRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.api.operations.LyricApi
 import timber.log.Timber
 import java.util.UUID
@@ -70,12 +71,7 @@ constructor(
                 }
 
                 val lyricsJson =
-                    Json.encodeToString(
-                        lines.mapNotNull { line ->
-                            val start = line.start ?: return@mapNotNull null
-                            listOf(line.text ?: "", (start / 10_000_000.0).toString())
-                        }
-                    )
+                    encodeLyricsJson(lines.mapNotNull { it.toAfinityLyricLine() })
 
                 databaseRepository.insertMusicLyrics(
                     trackId = itemId,

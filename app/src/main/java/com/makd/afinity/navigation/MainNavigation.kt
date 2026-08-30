@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.WideNavigationRailDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberWideNavigationRailState
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
@@ -34,8 +35,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.compositeOver
@@ -105,7 +109,9 @@ import com.makd.afinity.ui.requests.FilteredMediaScreen
 import com.makd.afinity.ui.requests.RequestsScreen
 import com.makd.afinity.ui.search.GenreResultsScreen
 import com.makd.afinity.ui.search.SearchScreen
+import com.makd.afinity.ui.components.UnsupportedServerDialog
 import com.makd.afinity.ui.settings.LicensesScreen
+import com.makd.afinity.ui.settings.SessionSwitcherBottomSheet
 import com.makd.afinity.ui.settings.SettingsScreen
 import com.makd.afinity.ui.settings.appearance.AppearanceOptionsScreen
 import com.makd.afinity.ui.settings.downloads.DownloadSettingsScreen
@@ -1659,6 +1665,40 @@ fun MainNavigation(
     }
     if (!isPreAuth) {
         GlobalUpdateDialog(updateManager = updateManager)
+
+        val unsupportedServerVersion by
+            viewModel.unsupportedServerVersion.collectAsStateWithLifecycle()
+
+        val onEscapeRoute =
+            currentRoute == Destination.SERVER_MANAGEMENT_ROUTE ||
+                currentRoute == Destination.ADD_EDIT_SERVER_ROUTE ||
+                currentRoute == Destination.LOGIN_ROUTE
+
+        if (unsupportedServerVersion != null && !onEscapeRoute) {
+            var showSessionSwitcher by rememberSaveable { mutableStateOf(false) }
+            val sessionSwitcherSheetState = rememberModalBottomSheetState()
+
+            UnsupportedServerDialog(
+                version = unsupportedServerVersion,
+                onSwitchAccount = { showSessionSwitcher = true },
+                onServerSettings = {
+                    navController.navigate(Destination.createServerManagementRoute())
+                },
+            )
+
+            if (showSessionSwitcher) {
+                SessionSwitcherBottomSheet(
+                    onDismiss = { showSessionSwitcher = false },
+                    onAddAccountClick = { server ->
+                        showSessionSwitcher = false
+                        navController.navigate(
+                            Destination.createLoginRoute(serverUrl = server.address)
+                        )
+                    },
+                    sheetState = sessionSwitcherSheetState,
+                )
+            }
+        }
     }
 }
 

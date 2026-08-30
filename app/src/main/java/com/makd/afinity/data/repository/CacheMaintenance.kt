@@ -5,7 +5,6 @@ import coil3.SingletonImageLoader
 import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.repository.home.HomeCacheRepository
 import com.makd.afinity.data.repository.home.HomeSectionsRepository
-import com.makd.afinity.data.repository.media.BoxSetCache
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.di.GitHubClient
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -32,7 +31,6 @@ enum class CacheKind {
     GENRES,
     PEOPLE,
     PERSON_DETAILS,
-    BOX_SETS,
     ITEM_METADATA,
     JELLYFIN_STATS,
     JELLYSEERR_REQUESTS,
@@ -75,7 +73,6 @@ enum class CacheSection {
                         CacheKind.GENRES,
                         CacheKind.PEOPLE,
                         CacheKind.PERSON_DETAILS,
-                        CacheKind.BOX_SETS,
                         CacheKind.ITEM_METADATA,
                         CacheKind.JELLYFIN_STATS,
                     )
@@ -114,7 +111,6 @@ constructor(
     private val mediaRepository: MediaRepository,
     private val genreRepository: GenreRepository,
     private val peopleRepository: PeopleRepository,
-    private val boxSetCache: BoxSetCache,
     private val appDataRepository: AppDataRepository,
     private val videoCacheCleaner: VideoCacheCleaner,
     private val okHttpClient: OkHttpClient,
@@ -147,7 +143,6 @@ constructor(
                     CacheKind.GENRES to { database.genreCacheDao().cachedEntryCount() },
                     CacheKind.PEOPLE to { database.topPeopleDao().cachedEntryCount() },
                     CacheKind.PERSON_DETAILS to { database.personSectionDao().cachedEntryCount() },
-                    CacheKind.BOX_SETS to { database.boxSetCacheDao().cachedEntryCount() },
                     CacheKind.JELLYSEERR_REQUESTS to
                         {
                             database.jellyseerrDao().cachedEntryCount()
@@ -208,8 +203,6 @@ constructor(
                     .onFailure { Timber.e(it, "Failed to clear genre cache") }
                 runCatching { peopleRepository.clearAllData() }
                     .onFailure { Timber.e(it, "Failed to clear people cache") }
-                runCatching { boxSetCache.clear() }
-                    .onFailure { Timber.e(it, "Failed to clear boxset cache") }
                 runCatching { mediaRepository.invalidateAllCaches() }
                     .onFailure { Timber.e(it, "Failed to invalidate media caches") }
                 runCatching { homeSectionsRepository.clearAllData() }
@@ -218,6 +211,8 @@ constructor(
                     .onFailure { Timber.e(it, "Failed to clear item metadata cache") }
                 runCatching { database.jellyfinStatsDao().clearAll() }
                     .onFailure { Timber.e(it, "Failed to clear Jellyfin stats cache") }
+                runCatching { database.serverStorageDao().clearAll() }
+                    .onFailure { Timber.e(it, "Failed to clear server storage cache") }
                 runCatching { deletedItemsRepository.clear() }
                     .onFailure { Timber.e(it, "Failed to clear deleted item tombstones") }
             }

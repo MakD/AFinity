@@ -89,6 +89,8 @@ import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.hdrLabel
+import com.makd.afinity.data.models.media.isDolbyVision
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.models.syncplay.SyncPlayMemberInfo
 import com.makd.afinity.navigation.LocalShowAwards
@@ -160,9 +162,22 @@ fun PlayerControls(
     val currentItem = uiState.currentItem
 
     val unknownLang = stringResource(R.string.track_unknown)
+    val trackTags =
+        TrackTagLabels(
+            forced = stringResource(R.string.track_tag_forced),
+            hearingImpaired = stringResource(R.string.track_tag_sdh),
+            external = stringResource(R.string.track_tag_external),
+            original = stringResource(R.string.track_tag_original),
+        )
 
     val audioStreamOptions =
-        remember(currentItem, uiState.currentMediaSourceId, player.currentTracks, unknownLang) {
+        remember(
+            currentItem,
+            uiState.currentMediaSourceId,
+            player.currentTracks,
+            unknownLang,
+            trackTags,
+        ) {
             val currentSource =
                 currentItem?.sources?.firstOrNull { it.id == uiState.currentMediaSourceId }
                     ?: currentItem?.sources?.firstOrNull()
@@ -185,16 +200,20 @@ fun PlayerControls(
                         val stream =
                             embeddedAudioStreams.getOrNull(ordinal) ?: return@mapIndexedNotNull null
                         val localizedLang =
-                            if (stream.language.isNotEmpty() && stream.language != "und") {
-                                stream.language.toLocalizedLanguageName()
-                                    ?: stream.language.uppercase()
-                            } else {
-                                unknownLang
-                            }
+                            stream.localizedLanguage?.takeIf { it.isNotBlank() }
+                                ?: if (stream.language.isNotEmpty() && stream.language != "und") {
+                                    stream.language.toLocalizedLanguageName()
+                                        ?: stream.language.uppercase()
+                                } else {
+                                    unknownLang
+                                }
                         val channelStr = formatAudioChannels(stream)
                         val profileStr = prettyAudioProfile(stream.profile, stream.codec)
                         val displayName = buildString {
                             append(localizedLang)
+                            if (stream.isOriginal) {
+                                append(" [${stream.localizedOriginal ?: trackTags.original}]")
+                            }
                             if (stream.codec.isNotBlank()) append(" • ${stream.codec.uppercase()}")
                             if (channelStr != null) append(" $channelStr")
                             if (profileStr != null) append(" • $profileStr")
@@ -221,6 +240,7 @@ fun PlayerControls(
             player.currentTracks,
             noneText,
             trackFmt,
+            trackTags,
         ) {
             val currentSource =
                 currentItem?.sources?.firstOrNull { it.id == uiState.currentMediaSourceId }
@@ -267,16 +287,32 @@ fun PlayerControls(
                             val langCode =
                                 serverStream.language.ifEmpty { format.language.orEmpty() }
                             val localizedLang =
-                                if (langCode.isNotEmpty() && langCode != "und") {
-                                    langCode.toLocalizedLanguageName() ?: langCode.uppercase()
-                                } else {
-                                    String.format(trackFmt, index + 1)
-                                }
+                                serverStream.localizedLanguage?.takeIf { it.isNotBlank() }
+                                    ?: if (langCode.isNotEmpty() && langCode != "und") {
+                                        langCode.toLocalizedLanguageName() ?: langCode.uppercase()
+                                    } else {
+                                        String.format(trackFmt, index + 1)
+                                    }
                             buildString {
                                 append(localizedLang)
-                                if (serverStream.isForced) append(" [Forced]")
-                                if (serverStream.isHearingImpaired) append(" [SDH]")
-                                if (serverStream.isExternal) append(" [External]")
+                                if (serverStream.isOriginal) {
+                                    append(
+                                        " [${serverStream.localizedOriginal ?: trackTags.original}]"
+                                    )
+                                }
+                                if (serverStream.isForced) {
+                                    append(" [${serverStream.localizedForced ?: trackTags.forced}]")
+                                }
+                                if (serverStream.isHearingImpaired) {
+                                    append(
+                                        " [${serverStream.localizedHearingImpaired ?: trackTags.hearingImpaired}]"
+                                    )
+                                }
+                                if (serverStream.isExternal) {
+                                    append(
+                                        " [${serverStream.localizedExternal ?: trackTags.external}]"
+                                    )
+                                }
                             }
                         } else {
                             val langCode = format.language.orEmpty()
@@ -1558,17 +1594,9 @@ private fun PauseDetailsOverlay(
     }
     val hdr =
         when {
-            videoStream?.videoDoViTitle != null -> "Dolby Vision"
-            else ->
-                videoStream?.videoRangeType?.name?.uppercase()?.let { n ->
-                    when {
-                        n.contains("HDR10") && n.contains("PLUS") -> "HDR10+"
-                        n.contains("HDR10") -> "HDR10"
-                        n.contains("DOVI") || n.contains("DOLBY") -> "Dolby Vision"
-                        n.contains("HLG") -> "HLG"
-                        else -> null
-                    }
-                }
+            videoStream == null -> null
+            videoStream.isDolbyVision() -> "Dolby Vision"
+            else -> videoStream.hdrLabel()
         }
     val audioLabel = formatAudioChannels(audioStream)
 
@@ -2044,6 +2072,13 @@ private fun prettySubtitleCodec(codec: String?): String? =
 
 private fun subtitleFileName(path: String?): String? =
     path?.substringAfterLast('/')?.substringAfterLast('\\')?.takeIf { it.isNotBlank() }
+
+private data class TrackTagLabels(
+    val forced: String,
+    val hearingImpaired: String,
+    val external: String,
+    val original: String,
+)
 
 private fun strippedDisplayTitle(stream: AfinityMediaStream?): String? {
     val raw = stream?.displayTitle?.takeIf { it.isNotBlank() } ?: return null

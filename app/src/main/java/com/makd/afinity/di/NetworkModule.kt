@@ -1,5 +1,6 @@
 package com.makd.afinity.di
 
+import android.app.LocaleManager
 import android.content.Context
 import android.os.Build
 import com.makd.afinity.BuildConfig
@@ -95,7 +96,19 @@ object NetworkModule {
         return base.copy(
             id = "${base.id}-${BuildConfig.APPLICATION_ID}",
             name = "${base.name} (${BuildConfig.BUILD_TYPE})",
+            languages = preferredLanguages(context),
         )
+    }
+
+    private fun preferredLanguages(context: Context): List<String> {
+        val appLocales =
+            context.getSystemService(LocaleManager::class.java)?.applicationLocales?.takeUnless {
+                it.isEmpty
+            }
+        val locales = appLocales ?: context.resources.configuration.locales
+        return (0 until locales.size()).mapNotNull { index ->
+            locales[index]?.toLanguageTag()?.takeUnless { it.isBlank() || it == "und" }
+        }
     }
 
     @Provides

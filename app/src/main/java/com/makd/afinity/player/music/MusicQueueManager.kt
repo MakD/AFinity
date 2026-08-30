@@ -388,6 +388,7 @@ private fun AfinityTrack.toEntity(position: Int, serverId: String) =
         durationMs = runtimeTicks / 10_000L,
         imageUrl = images.primary?.toString(),
         normalizationGain = normalizationGain,
+        albumNormalizationGain = albumNormalizationGain,
         indexNumber = indexNumber,
         discNumber = discNumber,
         serverId = serverId,
@@ -411,5 +412,6 @@ private fun MusicQueueEntity.toAfinityTrack() =
         favorite = false,
         playCount = null,
         normalizationGain = normalizationGain,
+        albumNormalizationGain = albumNormalizationGain,
         images = AfinityImages(primary = imageUrl?.toUri()),
     )

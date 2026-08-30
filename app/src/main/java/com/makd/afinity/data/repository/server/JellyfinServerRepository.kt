@@ -1,11 +1,13 @@
 package com.makd.afinity.data.repository.server
 
+import android.content.Context
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.di.ProberClient
 import com.makd.afinity.util.NetworkConnectivityMonitor
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -42,6 +44,7 @@ import javax.inject.Singleton
 class JellyfinServerRepository
 @Inject
 constructor(
+    @param:ApplicationContext private val context: Context,
     private val jellyfin: Jellyfin,
     @param:ProberClient private val proberJellyfin: Jellyfin,
     private val apiClient: ApiClient,
@@ -66,6 +69,10 @@ constructor(
 
     private val _currentServer = MutableStateFlow<Server?>(null)
     override val currentServer: StateFlow<Server?> = _currentServer.asStateFlow()
+
+    private val _unsupportedServerVersion = MutableStateFlow<String?>(null)
+    override val unsupportedServerVersion: StateFlow<String?> =
+        _unsupportedServerVersion.asStateFlow()
 
     private val reconnectMutex = Mutex()
 
@@ -199,6 +206,7 @@ constructor(
 
             _currentBaseUrl.value = baseUrl
             _isConnected.value = sessionManager.isServerReachable.value
+            _unsupportedServerVersion.value = null
 
             Timber.d("Updated base URL to: $baseUrl")
         } catch (e: Exception) {
@@ -274,6 +282,17 @@ constructor(
                     val systemInfo = response.content
 
                     if (systemInfo != null) {
+                        if (!ServerVersionSupport.isSupported(systemInfo.version)) {
+                            Timber.w(
+                                "Rejecting server at $url: version ${systemInfo.version} is below ${ServerVersionSupport.minimum}"
+                            )
+                            return@withContext ServerConnectionResult.Error(
+                                ServerVersionSupport.unsupportedMessage(
+                                    context,
+                                    systemInfo.version,
+                                )
+                            )
+                        }
                         val server =
                             Server(
                                 id = systemInfo.id ?: UUID.randomUUID().toString(),
@@ -366,6 +385,15 @@ constructor(
                         )
                     _currentServer.value = server
                     _isConnected.value = true
+                    _unsupportedServerVersion.value =
+                        if (ServerVersionSupport.isSupported(systemInfo.version)) {
+                            null
+                        } else {
+                            Timber.e(
+                                "Connected server is Jellyfin ${systemInfo.version}, below the required ${ServerVersionSupport.minimum}"
+                            )
+                            systemInfo.version
+                        }
                     Timber.d("Server info refreshed: ${server.name}")
                 } else {
                     Timber.e("Failed to refresh server info - no system info returned")
@@ -384,6 +412,7 @@ constructor(
         _isConnected.value = false
         _currentServer.value = null
         _currentBaseUrl.value = ""
+        _unsupportedServerVersion.value = null
     }
 
     override fun buildImageUrl(

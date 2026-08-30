@@ -103,6 +103,7 @@ internal fun ServerDetailContent(
     var selectedTabIndex by remember(serverWithCount.server.id) { mutableIntStateOf(0) }
     var dialogView by remember(serverWithCount.server.id) { mutableStateOf(DialogView.STATS) }
     val isAdmin by controlPanelViewModel.isAdmin.collectAsStateWithLifecycle()
+    val serverStorage by controlPanelViewModel.serverStorage.collectAsStateWithLifecycle()
 
     LaunchedEffect(serverWithCount.server.id) {
         controlPanelViewModel.initialize(serverWithCount.server.id)
@@ -220,6 +221,7 @@ internal fun ServerDetailContent(
                                         serverWithCount = serverWithCount,
                                         jellyfinStats = stats?.jellyfinStats,
                                         statsLoading = statsLoading,
+                                        serverStorage = serverStorage,
                                         isAdmin = isAdmin,
                                         onControlPanelClick = {
                                             dialogView = DialogView.CONTROL_PANEL

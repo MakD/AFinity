@@ -35,6 +35,7 @@ private data class CachedTrack(
     val favorite: Boolean = false,
     val playCount: Int? = null,
     val normalizationGain: Float? = null,
+    val albumNormalizationGain: Float? = null,
     val primary: String? = null,
     val blurHash: String? = null,
 )
@@ -155,6 +156,7 @@ constructor(
             favorite = favorite,
             playCount = playCount,
             normalizationGain = normalizationGain,
+            albumNormalizationGain = albumNormalizationGain,
             primary = images.primary?.toString(),
             blurHash = images.primaryImageBlurHash,
         )
@@ -178,6 +180,7 @@ constructor(
             favorite = favorite,
             playCount = playCount,
             normalizationGain = normalizationGain,
+            albumNormalizationGain = albumNormalizationGain,
             images =
                 AfinityImages(
                     primary = primary?.toUri(),

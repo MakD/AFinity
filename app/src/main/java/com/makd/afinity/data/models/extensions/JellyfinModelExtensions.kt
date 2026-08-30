@@ -12,7 +12,6 @@ import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityFolder
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityPersonDetail
@@ -24,6 +23,7 @@ import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.AfinityVideoPlaylist
 import com.makd.afinity.data.models.media.toAfinityExternalUrl
+import com.makd.afinity.data.models.media.toAfinityMediaStream
 import com.makd.afinity.data.models.media.toAfinityTrickplayInfo
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -62,33 +62,7 @@ private fun BaseItemDto.toAfinitySources(baseUrl: String): List<AfinitySource> =
             container = mediaSource.container,
             mediaStreams =
                 mediaSource.mediaStreams?.map { mediaStream ->
-                    AfinityMediaStream(
-                        title = mediaStream.title.orEmpty(),
-                        displayTitle = mediaStream.displayTitle,
-                        language = mediaStream.language.orEmpty(),
-                        type = mediaStream.type,
-                        codec = mediaStream.codec.orEmpty(),
-                        isExternal = mediaStream.isExternal,
-                        path =
-                            if (
-                                mediaStream.isExternal && !mediaStream.deliveryUrl.isNullOrBlank()
-                            ) {
-                                baseUrl + mediaStream.deliveryUrl
-                            } else {
-                                null
-                            },
-                        channelLayout = mediaStream.channelLayout,
-                        videoRangeType = mediaStream.videoRangeType,
-                        height = mediaStream.height,
-                        width = mediaStream.width,
-                        videoDoViTitle = mediaStream.videoDoViTitle,
-                        index = mediaStream.index,
-                        channels = mediaStream.channels,
-                        isDefault = mediaStream.isDefault,
-                        isForced = mediaStream.isForced,
-                        isHearingImpaired = mediaStream.isHearingImpaired,
-                        profile = mediaStream.profile,
-                    )
+                    mediaStream.toAfinityMediaStream(baseUrl)
                 } ?: emptyList(),
         )
     } ?: emptyList()
@@ -217,34 +191,7 @@ fun BaseItemDto.toAfinityEpisode(baseUrl: String): AfinityEpisode? {
                         container = mediaSource.container,
                         mediaStreams =
                             mediaSource.mediaStreams?.map { mediaStream ->
-                                AfinityMediaStream(
-                                    title = mediaStream.title.orEmpty(),
-                                    displayTitle = mediaStream.displayTitle,
-                                    language = mediaStream.language.orEmpty(),
-                                    type = mediaStream.type,
-                                    codec = mediaStream.codec.orEmpty(),
-                                    isExternal = mediaStream.isExternal,
-                                    path =
-                                        if (
-                                            mediaStream.isExternal &&
-                                                !mediaStream.deliveryUrl.isNullOrBlank()
-                                        ) {
-                                            baseUrl + mediaStream.deliveryUrl
-                                        } else {
-                                            null
-                                        },
-                                    channelLayout = mediaStream.channelLayout,
-                                    videoRangeType = mediaStream.videoRangeType,
-                                    height = mediaStream.height,
-                                    width = mediaStream.width,
-                                    videoDoViTitle = mediaStream.videoDoViTitle,
-                                    index = mediaStream.index,
-                                    channels = mediaStream.channels,
-                                    isDefault = mediaStream.isDefault,
-                                    isForced = mediaStream.isForced,
-                                    isHearingImpaired = mediaStream.isHearingImpaired,
-                                    profile = mediaStream.profile,
-                                )
+                                mediaStream.toAfinityMediaStream(baseUrl)
                             } ?: emptyList(),
                     )
                 } ?: emptyList(),

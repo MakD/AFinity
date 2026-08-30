@@ -68,13 +68,13 @@ import com.makd.afinity.ui.item.components.shared.AdminAction
 import com.makd.afinity.ui.item.components.shared.CastRibbon
 import com.makd.afinity.ui.item.components.shared.EpisodeFrame
 import com.makd.afinity.ui.item.components.shared.MediaLanguageFlagsCompact
+import com.makd.afinity.ui.item.components.shared.MediaStreamBadges
 import com.makd.afinity.ui.item.components.shared.PeopleDialog
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelectionButton
 import com.makd.afinity.util.DateSkeleton
 import com.makd.afinity.util.localizedDateFormat
 import com.makd.afinity.util.rememberStorageLocationProvider
-import org.jellyfin.sdk.model.api.MediaStreamType
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Date
@@ -294,115 +294,7 @@ fun EpisodeDetailOverlay(
                             Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        val source = episode.sources.firstOrNull()
-
-                        source
-                            ?.mediaStreams
-                            ?.firstOrNull { it.type == MediaStreamType.VIDEO }
-                            ?.let { videoStream ->
-                                val resolution =
-                                    when {
-                                        (videoStream.height ?: 0) <= 2160 &&
-                                            (videoStream.width ?: 0) <= 3840 &&
-                                            ((videoStream.height ?: 0) > 1080 ||
-                                                (videoStream.width ?: 0) > 1920) ->
-                                            stringResource(R.string.meta_res_4k)
-
-                                        (videoStream.height ?: 0) <= 1080 &&
-                                            (videoStream.width ?: 0) <= 1920 &&
-                                            ((videoStream.height ?: 0) > 720 ||
-                                                (videoStream.width ?: 0) > 1280) ->
-                                            stringResource(R.string.meta_res_hd)
-
-                                        else -> stringResource(R.string.meta_res_sd)
-                                    }
-
-                                VideoMetadataChip(text = resolution)
-                            }
-
-                        source
-                            ?.mediaStreams
-                            ?.firstOrNull { it.type == MediaStreamType.VIDEO }
-                            ?.codec
-                            ?.takeIf { it.isNotEmpty() }
-                            ?.let { codec -> VideoMetadataChip(text = codec.uppercase()) }
-
-                        source
-                            ?.mediaStreams
-                            ?.firstOrNull { it.type == MediaStreamType.VIDEO }
-                            ?.let { videoStream ->
-                                if (videoStream.videoDoViTitle != null) {
-                                    VideoMetadataChipWithIcon(
-                                        stringResource(R.string.meta_vision),
-                                        iconRes = R.drawable.ic_brand_dolby_digital,
-                                    )
-                                } else {
-                                    videoStream.videoRangeType?.let { rangeType ->
-                                        val hdrType =
-                                            when (rangeType.name) {
-                                                "HDR10" -> "HDR10"
-                                                "HDR10Plus" -> "HDR10+"
-                                                "HLG" -> "HLG"
-                                                else -> null
-                                            }
-                                        hdrType?.let { VideoMetadataChip(text = it) }
-                                    }
-                                }
-                            }
-
-                        source
-                            ?.mediaStreams
-                            ?.firstOrNull { it.type == MediaStreamType.AUDIO }
-                            ?.codec
-                            ?.takeIf { it.isNotEmpty() }
-                            ?.let { codec ->
-                                when (codec.lowercase()) {
-                                    "ac3" ->
-                                        VideoMetadataChipWithIcon(
-                                            text = stringResource(R.string.meta_digital),
-                                            iconRes = R.drawable.ic_brand_dolby_digital,
-                                        )
-
-                                    "eac3" ->
-                                        VideoMetadataChipWithIcon(
-                                            text = stringResource(R.string.meta_digital_plus),
-                                            iconRes = R.drawable.ic_brand_dolby_digital,
-                                        )
-
-                                    "truehd" ->
-                                        VideoMetadataChipWithIcon(
-                                            text = stringResource(R.string.meta_truehd),
-                                            iconRes = R.drawable.ic_brand_dolby_digital,
-                                        )
-
-                                    "dts" -> VideoMetadataChip(text = "DTS")
-                                    else -> VideoMetadataChip(text = codec.uppercase())
-                                }
-                            }
-
-                        source
-                            ?.mediaStreams
-                            ?.firstOrNull { it.type == MediaStreamType.AUDIO }
-                            ?.channelLayout
-                            ?.let { layout ->
-                                val channels =
-                                    when {
-                                        layout.contains("7.1") -> "7.1"
-                                        layout.contains("5.1") -> "5.1"
-                                        layout.contains("2.1") -> "2.1"
-                                        layout.contains("2.0") || layout.contains("stereo") -> "2.0"
-                                        else -> null
-                                    }
-                                channels?.let { VideoMetadataChip(text = it) }
-                            }
-
-                        val hasSubtitles =
-                            source?.mediaStreams?.any { it.type == MediaStreamType.SUBTITLE } ==
-                                true
-
-                        if (hasSubtitles) {
-                            VideoMetadataChip(text = stringResource(R.string.meta_cc))
-                        }
+                        MediaStreamBadges(source = episode.sources.firstOrNull())
                     }
                 }
 
@@ -653,47 +545,6 @@ private fun MetadataDot() {
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
     )
-}
-
-@Composable
-private fun VideoMetadataChip(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
-        modifier =
-            Modifier.background(
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
-                    RoundedCornerShape(4.dp),
-                )
-                .padding(horizontal = 6.dp, vertical = 2.dp),
-    )
-}
-
-@Composable
-private fun VideoMetadataChipWithIcon(text: String, iconRes: Int) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        modifier =
-            Modifier.background(
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
-                    RoundedCornerShape(4.dp),
-                )
-                .padding(horizontal = 6.dp, vertical = 2.dp),
-    ) {
-        Icon(
-            painter = painterResource(id = iconRes),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.size(16.dp).padding(bottom = 1.dp),
-        )
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
-        )
-    }
 }
 
 private fun getFormattedEndTime(context: Context, totalMs: Long): String {

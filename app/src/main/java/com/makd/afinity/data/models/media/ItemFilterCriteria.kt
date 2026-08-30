@@ -21,6 +21,8 @@ data class ItemFilterCriteria(
     val isHd: Boolean? = null,
     val is4k: Boolean? = null,
     val is3d: Boolean? = null,
+    val audioLanguages: List<String> = emptyList(),
+    val subtitleLanguages: List<String> = emptyList(),
 )
 
 fun LibraryFilters.toItemFilterCriteria(studios: List<String> = emptyList()): ItemFilterCriteria =
@@ -39,6 +41,8 @@ fun LibraryFilters.toItemFilterCriteria(studios: List<String> = emptyList()): It
         studios = studios,
         officialRatings = officialRatings.toList(),
         tags = tags.toList(),
+        audioLanguages = audioLanguages.toList(),
+        subtitleLanguages = subtitleLanguages.toList(),
         videoTypes =
             buildList {
                 if (VideoTypeFilter.BLU_RAY in videoTypes) add("BluRay")

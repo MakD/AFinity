@@ -45,6 +45,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.makd.afinity.MainActivity
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.RepeatMode
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
@@ -479,7 +480,7 @@ class AudioService : MediaSessionService() {
                 val track = musicQueueManager.currentTrack
                 musicPlaybackManager.updateTrack(track)
                 if (track != null) {
-                    applyNormalizationGain(track.normalizationGain)
+                    applyNormalizationGain(track)
                     musicProgressReporter.onPlaybackStarted(track.id, 0L)
                 }
                 radioManager.onTrackChanged(track)
@@ -633,9 +634,21 @@ class AudioService : MediaSessionService() {
         positionUpdateJob = null
     }
 
-    private fun applyNormalizationGain(gainDb: Float?) {
+    private fun applyNormalizationGain(track: AfinityTrack?) {
         val player = exoPlayer ?: return
+        val gainDb = if (track != null && isPlayingSingleAlbum()) {
+            track.albumNormalizationGain ?: track.normalizationGain
+        } else {
+            track?.normalizationGain
+        }
         player.volume = if (gainDb == null) 1f else (10f.pow(gainDb / 20f)).coerceIn(0f, 1f)
+    }
+
+    private fun isPlayingSingleAlbum(): Boolean {
+        val queue = musicQueueManager.queue.value
+        if (queue.size < 2) return false
+        val albumId = queue.first().albumId ?: return false
+        return queue.all { it.albumId == albumId }
     }
 
     private fun absCustomLayout() =

@@ -10,6 +10,8 @@ interface ServerRepository {
     val isConnected: StateFlow<Boolean>
     val currentServer: StateFlow<Server?>
 
+    val unsupportedServerVersion: StateFlow<String?>
+
     suspend fun refreshServerInfo()
 
     suspend fun forceReconnect(): Boolean

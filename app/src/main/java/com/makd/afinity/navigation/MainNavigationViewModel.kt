@@ -15,6 +15,7 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
@@ -50,7 +51,11 @@ constructor(
     private val sessionManager: SessionManager,
     private val preferencesRepository: PreferencesRepository,
     private val pendingNavigationManager: PendingNavigationManager,
+    serverRepository: ServerRepository,
 ) : ViewModel() {
+
+    val unsupportedServerVersion = serverRepository.unsupportedServerVersion
+
     private val _hasLiveTvAccess = MutableStateFlow(true)
     val hasLiveTvAccess = _hasLiveTvAccess.asStateFlow()
 

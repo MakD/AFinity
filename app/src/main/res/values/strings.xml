@@ -281,6 +281,7 @@
     <string name="meta_res_sd">SD</string>
 
     <string name="meta_vision">Vision</string>
+    <string name="meta_atmos">Atmos</string>
     <string name="meta_digital">Digital</string>
     <string name="meta_digital_plus">Digital+</string>
     <string name="meta_truehd">TrueHD</string>
@@ -342,6 +343,7 @@
     <string name="file_size_kb_fmt">%1$.1f KB</string>
     <string name="file_size_mb_fmt">%1$.1f MB</string>
     <string name="file_size_gb_fmt">%1$.2f GB</string>
+    <string name="file_size_tb_fmt">%1$.2f TB</string>
 
     <string name="season_episodes_title">Episodes</string>
 
@@ -1540,6 +1542,12 @@
     <string name="server_version_fmt">v%1$s</string>
     <string name="server_active_connection">Active Connection</string>
     <string name="server_no_alternate_addresses">No alternate addresses configured.</string>
+    <string name="server_unsupported_version">This server runs Jellyfin %1$s. AFinity needs %2$s or newer.</string>
+    <string name="server_unsupported_version_unknown">This server\'s Jellyfin version could not be read. AFinity needs %1$s or newer.</string>
+    <string name="server_unsupported_title">Server needs updating</string>
+    <string name="server_unsupported_body">This server runs Jellyfin %1$s, and AFinity needs %2$s or newer. Media won\'t load until the server is updated.</string>
+    <string name="server_unsupported_body_unknown">This server\'s Jellyfin version could not be read, and AFinity needs %1$s or newer. Media won\'t load until the server is updated.</string>
+    <string name="server_unsupported_switch_account">Switch account</string>
     <string name="section_library_overview">Library Overview</string>
     <string name="section_active_services">Active Services</string>
     <string name="section_user_profile_header">User Profile</string>
@@ -1585,6 +1593,25 @@
     <string name="service_label_mdblist">MDBList</string>
     <string name="stat_movies">Movies</string>
     <string name="stat_episodes">Episodes</string>
+    <string name="stat_albums">Albums</string>
+    <string name="stat_songs">Songs</string>
+    <string name="stat_artists">Artists</string>
+    <string name="stat_music_videos">Music Videos</string>
+    <string name="stat_books">Books</string>
+    <string name="stat_trailers">Trailers</string>
+    <string name="stat_programs">Programs</string>
+    <string name="stat_all_items">All Items</string>
+    <string name="section_server_storage">Server Storage</string>
+    <string name="storage_folder_program_data">Program data</string>
+    <string name="storage_folder_metadata">Metadata</string>
+    <string name="storage_folder_transcoding_temp">Transcoding temp</string>
+    <string name="storage_folder_cache">Cache</string>
+    <string name="storage_folder_image_cache">Image cache</string>
+    <string name="storage_folder_logs">Logs</string>
+    <string name="storage_folder_web">Web</string>
+    <string name="storage_used_fmt">%1$s used</string>
+    <string name="storage_free_fmt">%1$s free</string>
+    <string name="storage_percent_used_fmt">%1$d%%</string>
     <string name="stat_pending">Pending</string>
     <string name="stat_available">Available</string>
     <string name="stat_items">Items</string>
@@ -1966,6 +1993,15 @@
 
     <string name="pref_view_logs">View logs</string>
     <string name="pref_view_logs_summary">Watch app activity live</string>
+    <string name="library_filter_audio_language">Audio language</string>
+    <string name="library_filter_subtitle_language">Subtitle language</string>
+    <string name="library_filter_language_hint">Search languages</string>
+
+    <string name="track_tag_forced">Forced</string>
+    <string name="track_tag_sdh">SDH</string>
+    <string name="track_tag_external">External</string>
+    <string name="track_tag_original">Original</string>
+
     <string name="logs_title">Logs</string>
     <string name="logs_chip_all">All</string>
     <string name="logs_chip_warnings">Warnings</string>

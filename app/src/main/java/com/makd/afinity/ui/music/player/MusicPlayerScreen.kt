@@ -415,6 +415,7 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                     MusicLyricsView(
                         lyrics = lyrics,
                         positionMs = playbackState.positionMs,
+                        isPlaying = playbackState.isPlaying,
                         isLoading = lyricsLoading,
                         onSeek = viewModel::seekTo,
                         accentColor = animatedColor,
@@ -766,6 +767,7 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                     MusicLyricsView(
                         lyrics = lyrics,
                         positionMs = playbackState.positionMs,
+                        isPlaying = playbackState.isPlaying,
                         isLoading = lyricsLoading,
                         onSeek = viewModel::seekTo,
                         accentColor = animatedColor,

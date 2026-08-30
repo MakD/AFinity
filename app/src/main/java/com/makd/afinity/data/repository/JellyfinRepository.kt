@@ -1,6 +1,7 @@
 package com.makd.afinity.data.repository
 
 import com.makd.afinity.data.models.server.Server
+import com.makd.afinity.data.models.server.ServerStorage
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.ui.settings.servers.JellyfinStats
@@ -74,6 +75,8 @@ interface JellyfinRepository {
     suspend fun refreshAllLibraries(): Result<Unit>
 
     suspend fun getScheduledTasks(): Result<List<TaskInfo>>
+
+    fun getServerStorageFlow(serverId: String): Flow<ServerStorage>
 
     suspend fun startScheduledTask(taskId: String): Result<Unit>
 

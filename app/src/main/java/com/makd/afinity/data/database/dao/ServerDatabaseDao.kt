@@ -251,12 +251,6 @@ abstract class ServerDatabaseDao {
     @Query("DELETE FROM genre_show_cache WHERE serverId = :serverId")
     abstract suspend fun deleteGenreShowCacheByServerId(serverId: String)
 
-    @Query("DELETE FROM boxset_cache WHERE serverId = :serverId")
-    abstract suspend fun deleteBoxSetCacheByServerId(serverId: String)
-
-    @Query("DELETE FROM boxset_cache_metadata WHERE serverId = :serverId")
-    abstract suspend fun deleteBoxSetCacheMetadataByServerId(serverId: String)
-
     @Query("DELETE FROM top_people_cache WHERE serverId = :serverId")
     abstract suspend fun deleteTopPeopleCacheByServerId(serverId: String)
 
@@ -268,6 +262,9 @@ abstract class ServerDatabaseDao {
 
     @Query("DELETE FROM jellyfin_stats_cache WHERE serverId = :serverId")
     abstract suspend fun deleteJellyfinStatsCacheByServerId(serverId: String)
+
+    @Query("DELETE FROM server_storage_cache WHERE serverId = :serverId")
+    abstract suspend fun deleteServerStorageCacheByServerId(serverId: String)
 
     @Query("DELETE FROM jellyseerr_requests WHERE jellyfinServerId = :serverId")
     abstract suspend fun deleteJellyseerrRequestsByServerId(serverId: String)
@@ -289,12 +286,11 @@ abstract class ServerDatabaseDao {
         deleteGenreMovieCacheByServerId(serverId)
         deleteShowGenreCacheByServerId(serverId)
         deleteGenreShowCacheByServerId(serverId)
-        deleteBoxSetCacheByServerId(serverId)
-        deleteBoxSetCacheMetadataByServerId(serverId)
         deleteTopPeopleCacheByServerId(serverId)
         deletePersonSectionCacheByServerId(serverId)
         deleteItemMetadataCacheByServerId(serverId)
         deleteJellyfinStatsCacheByServerId(serverId)
+        deleteServerStorageCacheByServerId(serverId)
         deleteJellyseerrRequestsByServerId(serverId)
         deleteJellyseerrConfigByServerId(serverId)
     }

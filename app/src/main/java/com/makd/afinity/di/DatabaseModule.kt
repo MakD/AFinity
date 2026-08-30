@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.room.Room
 import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.database.DatabaseMigrations
-import com.makd.afinity.data.database.dao.BoxSetCacheDao
 import com.makd.afinity.data.database.dao.CustomHomeSectionDao
 import com.makd.afinity.data.database.dao.DeletedItemDao
 import com.makd.afinity.data.database.dao.EpisodeDao
@@ -24,6 +23,7 @@ import com.makd.afinity.data.database.dao.SeasonDao
 import com.makd.afinity.data.database.dao.ServerAddressDao
 import com.makd.afinity.data.database.dao.ServerDao
 import com.makd.afinity.data.database.dao.ServerDatabaseDao
+import com.makd.afinity.data.database.dao.ServerStorageDao
 import com.makd.afinity.data.database.dao.ShowDao
 import com.makd.afinity.data.database.dao.SourceDao
 import com.makd.afinity.data.database.dao.TopPeopleDao
@@ -109,11 +109,6 @@ object DatabaseModule {
     }
 
     @Provides
-    fun provideBoxSetCacheDao(database: AfinityDatabase): BoxSetCacheDao {
-        return database.boxSetCacheDao()
-    }
-
-    @Provides
     fun provideItemMetadataCacheDao(database: AfinityDatabase): ItemMetadataCacheDao {
         return database.itemMetadataCacheDao()
     }
@@ -126,6 +121,11 @@ object DatabaseModule {
     @Provides
     fun provideJellyfinStatsDao(database: AfinityDatabase): JellyfinStatsDao {
         return database.jellyfinStatsDao()
+    }
+
+    @Provides
+    fun provideServerStorageDao(database: AfinityDatabase): ServerStorageDao {
+        return database.serverStorageDao()
     }
 
     @Provides

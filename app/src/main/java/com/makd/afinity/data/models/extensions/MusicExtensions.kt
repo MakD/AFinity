@@ -75,6 +75,7 @@ fun BaseItemDto.toAfinityTrack(baseUrl: String): AfinityTrack {
         liked = userData?.likes == true,
         playCount = userData?.playCount,
         normalizationGain = normalizationGain,
+        albumNormalizationGain = albumNormalizationGain,
         images =
             AfinityImages(
                 primary = primary,

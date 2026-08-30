@@ -22,6 +22,8 @@ import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicFilterOptions
 import com.makd.afinity.data.models.music.MusicFilters
 import com.makd.afinity.data.models.music.MusicSearchResults
+import com.makd.afinity.data.models.music.decodeLyricsJson
+import com.makd.afinity.data.models.music.toAfinityLyricLine
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinApiInvoker
@@ -35,9 +37,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonPrimitive
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.operations.ArtistApi
@@ -300,6 +299,8 @@ constructor(
             return databaseRepository
                 .getCompletedAudioDownloadsByAlbum(albumId.toString(), serverId, userId)
                 .map { dl ->
+                    val cached =
+                        databaseRepository.getMusicTrack(dl.itemId, serverId, userId.toString())
                     AfinityTrack(
                         id = dl.itemId,
                         name = dl.itemName,
@@ -317,7 +318,8 @@ constructor(
                         played = false,
                         favorite = false,
                         playCount = null,
-                        normalizationGain = null,
+                        normalizationGain = cached?.normalizationGain,
+                        albumNormalizationGain = cached?.albumNormalizationGain,
                         images = AfinityImages(primary = dl.imageUrl?.toUri()),
                         localFilePath = dl.filePath?.let { toFileUri(it) },
                     )
@@ -743,13 +745,7 @@ constructor(
                 val apiClient =
                     sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
                 val response = LyricApi(apiClient).getLyrics(itemId = trackId)
-                response.content.lyrics.mapNotNull { line ->
-                    val start = line.start ?: return@mapNotNull null
-                    AfinityLyricLine(
-                        text = line.text,
-                        startSeconds = start / 10_000_000.0,
-                    )
-                }
+                response.content.lyrics.mapNotNull { it.toAfinityLyricLine() }
             } catch (e: ApiClientException) {
                 Timber.d("No lyrics found for track: $trackId")
                 emptyList()
@@ -1252,19 +1248,11 @@ constructor(
                 session.serverId,
                 session.userId.toString(),
             ) ?: return null
-        return try {
-            val parsed = Json.parseToJsonElement(json).jsonArray
-            parsed.mapNotNull { element ->
-                val pair = element.jsonArray
-                val text = pair[0].jsonPrimitive.content
-                val startSeconds =
-                    pair[1].jsonPrimitive.content.toDoubleOrNull() ?: return@mapNotNull null
-                AfinityLyricLine(text = text, startSeconds = startSeconds)
+        return decodeLyricsJson(json)
+            ?: run {
+                Timber.w("Failed to parse cached lyrics for track $trackId")
+                null
             }
-        } catch (e: Exception) {
-            Timber.w(e, "Failed to parse cached lyrics for track $trackId")
-            null
-        }
     }
 
     private fun parseUuid(raw: String): UUID? {
