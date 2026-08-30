@@ -195,6 +195,7 @@ dependencies {
     implementation(libs.compose.pager.indicator)
     implementation(libs.hilt.android)
     implementation(libs.jellyfin.core)
+    implementation(libs.kotlin.logging)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.libmpv)
     implementation(libs.lottie.compose)
