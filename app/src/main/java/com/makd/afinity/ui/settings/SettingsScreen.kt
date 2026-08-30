@@ -106,6 +106,7 @@ import com.makd.afinity.ui.settings.backup.BackupBottomSheet
 import com.makd.afinity.ui.settings.backup.BackupScreen
 import com.makd.afinity.ui.settings.downloads.DownloadSettingsScreen
 import com.makd.afinity.ui.settings.home.CustomSectionsScreen
+import com.makd.afinity.ui.settings.logs.LogViewerScreen
 import com.makd.afinity.ui.settings.player.PlayerOptionsScreen
 import com.makd.afinity.ui.settings.servers.ControlPanelView
 import com.makd.afinity.ui.settings.servers.ControlPanelViewModel
@@ -639,20 +640,17 @@ fun SettingsScreen(
                                     SettingsDivider()
                                     SettingsItem(
                                         icon = painterResource(id = R.drawable.ic_logs),
-                                        title = stringResource(R.string.pref_send_logs),
-                                        subtitle = stringResource(R.string.pref_send_logs_summary),
-                                        onClick =
-                                            if (uiState.isExportingLogs) null
-                                            else ({ viewModel.exportLogs() }),
-                                        trailing =
-                                            if (uiState.isExportingLogs)
-                                                ({
-                                                    CircularProgressIndicator(
-                                                        modifier = Modifier.size(20.dp),
-                                                        strokeWidth = 2.dp,
-                                                    )
-                                                })
-                                            else null,
+                                        title = stringResource(R.string.pref_view_logs),
+                                        subtitle =
+                                            stringResource(R.string.pref_view_logs_summary),
+                                        onClick = {
+                                            scope.launch {
+                                                navigator.navigateTo(
+                                                    ListDetailPaneScaffoldRole.Detail,
+                                                    SettingsPaneDestination.Logs,
+                                                )
+                                            }
+                                        },
                                     )
                                 }
                             }
@@ -757,6 +755,8 @@ fun SettingsScreen(
                         )
                     is SettingsPaneDestination.Licenses ->
                         LicensesScreen(onBackClick = { scope.launch { navigator.navigateBack() } })
+                    is SettingsPaneDestination.Logs ->
+                        LogViewerScreen(onBackClick = { scope.launch { navigator.navigateBack() } })
                     is SettingsPaneDestination.SessionSwitcher ->
                         SessionSwitcherContent(
                             onDismiss = { scope.launch { navigator.navigateBack() } },

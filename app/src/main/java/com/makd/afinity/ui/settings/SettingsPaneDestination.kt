@@ -18,6 +18,8 @@ sealed interface SettingsPaneDestination : Parcelable {
 
     @Parcelize data object Licenses : SettingsPaneDestination
 
+    @Parcelize data object Logs : SettingsPaneDestination
+
     @Parcelize data object SessionSwitcher : SettingsPaneDestination
 
     @Parcelize data object Language : SettingsPaneDestination

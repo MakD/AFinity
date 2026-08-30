@@ -24,6 +24,7 @@ import com.makd.afinity.di.ImageClient
 import com.makd.afinity.ui.components.IMAGE_CROSSFADE_MILLIS
 import com.makd.afinity.util.logging.CrashFileExporter
 import com.makd.afinity.util.logging.RingBufferTree
+import com.makd.afinity.util.logging.SdkLogBridge
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -69,6 +70,7 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
             Timber.plant(Timber.DebugTree())
             Timber.d("Afinity Application started")
         }
+        SdkLogBridge.install()
 
         Thread.setDefaultUncaughtExceptionHandler(
             CrashFileExporter(this, ringBufferTree, Thread.getDefaultUncaughtExceptionHandler())

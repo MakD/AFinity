@@ -1210,8 +1210,6 @@
 
     <string name="pref_licenses">Licenses</string>
     <string name="pref_licenses_summary">Open source libraries</string>
-    <string name="pref_send_logs">Send Logs</string>
-    <string name="pref_send_logs_summary">Share diagnostic logs for bug reports</string>
 
     <string name="action_logout">Log Out</string>
 
@@ -1965,4 +1963,25 @@
     <string name="unverified_address_title">Can\'t confirm this server</string>
     <string name="unverified_address_message">We reached a server at %1$s, but couldn\'t confirm it\'s the same one you\'re signed in to. Add it anyway?</string>
     <string name="unverified_address_confirm">Add anyway</string>
+
+    <string name="pref_view_logs">View logs</string>
+    <string name="pref_view_logs_summary">Watch app activity live</string>
+    <string name="logs_title">Logs</string>
+    <string name="logs_chip_all">All</string>
+    <string name="logs_chip_warnings">Warnings</string>
+    <string name="logs_chip_errors">Errors</string>
+    <string name="logs_groups_fmt">%1$d events in %2$d groups · repeats collapsed</string>
+    <string name="logs_events_fmt">%1$d events · every occurrence</string>
+    <string name="logs_expand">Expand</string>
+    <string name="logs_collapse">Collapse</string>
+    <string name="logs_buffered_fmt">%1$d / %2$d</string>
+    <string name="logs_paused">paused in history</string>
+    <string name="logs_pause">Pause</string>
+    <string name="logs_back_to_live">Back to live</string>
+    <string name="logs_save_title">Save logs</string>
+    <string name="logs_save_all">Everything in the buffer</string>
+    <string name="logs_save_visible">Just what is on screen</string>
+    <string name="logs_save_lines_fmt">%1$d lines</string>
+    <string name="logs_save_redaction_note">Server addresses, tokens and usernames are replaced with [REDACTED] before the file is written.</string>
+    <string name="logs_save_action">Save &amp; share</string>
 </resources>

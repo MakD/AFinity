@@ -35,7 +35,6 @@ import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.player.common.TrackSelection
 import com.makd.afinity.ui.settings.servers.ServerWithUserCount
 import com.makd.afinity.util.NetworkConnectivityMonitor
-import com.makd.afinity.util.logging.LogExporter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.NonCancellable
@@ -1184,41 +1183,6 @@ constructor(
         _uiState.value = _uiState.value.copy(error = null)
     }
 
-    fun exportLogs() {
-        if (_uiState.value.isExportingLogs) return
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isExportingLogs = true)
-            val app = context.applicationContext as? com.makd.afinity.AfinityApplication
-            val secrets = buildList {
-                _uiState.value.serverUrl?.let { add(it) }
-                securePreferencesRepository.getAccessToken()?.let { add(it) }
-                securePreferencesRepository.getSavedUsername()?.let { add(it) }
-                securePreferencesRepository.getAllServerUserTokens().forEach { token ->
-                    add(token.serverUrl)
-                    add(token.accessToken)
-                    add(token.username)
-                }
-                databaseRepository.getAllServers().forEach { server ->
-                    add(server.address)
-                    databaseRepository.getServerAddresses(server.id).forEach { sa ->
-                        add(sa.address)
-                    }
-                }
-                securePreferencesRepository.getCachedJellyseerrServerUrl()?.let { add(it) }
-                securePreferencesRepository.getCachedJellyseerrCookie()?.let { add(it) }
-                addAll(jellyseerrRepository.getAllKnownAddresses())
-                securePreferencesRepository.getCachedAudiobookshelfServerUrl()?.let { add(it) }
-                securePreferencesRepository.getCachedAudiobookshelfToken()?.let { add(it) }
-                securePreferencesRepository.getCachedAudiobookshelfRefreshToken()?.let { add(it) }
-                addAll(audiobookshelfRepository.getAllKnownAddresses())
-                _tmdbApiKey.value.takeIf { it.isNotBlank() }?.let { add(it) }
-                _mdbListApiKey.value.takeIf { it.isNotBlank() }?.let { add(it) }
-                _omdbApiKey.value.takeIf { it.isNotBlank() }?.let { add(it) }
-            }
-            LogExporter.export(context, app?.ringBufferTree, secrets)
-            _uiState.value = _uiState.value.copy(isExportingLogs = false)
-        }
-    }
 }
 
 data class SettingsUiState(
@@ -1261,7 +1225,6 @@ data class SettingsUiState(
     val bufferSizeMb: Int = 64,
     val isLoading: Boolean = true,
     val isLoggingOut: Boolean = false,
-    val isExportingLogs: Boolean = false,
     val error: String? = null,
     val isTmdbKeyValidating: Boolean = false,
     val tmdbKeyValidationError: String? = null,

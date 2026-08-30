@@ -19,6 +19,7 @@ object LogExporter {
         context: Context,
         ringBufferTree: RingBufferTree?,
         secretsToRedact: List<String> = emptyList(),
+        entries: List<LogEntry>? = null,
     ) =
         withContext(Dispatchers.IO) {
             try {
@@ -39,11 +40,18 @@ object LogExporter {
                     appendLine(buildHeader(context))
                     appendLine("=".repeat(60))
                     appendLine()
-                    appendLine("--- App Logs ---")
-                    appendLine(ringBufferTree?.dump() ?: "(no ring buffer available)")
-                    appendLine()
-                    appendLine("--- System Logcat (this process) ---")
-                    appendLine(captureLogcat())
+                    if (entries != null) {
+                        appendLine("--- App Logs (filtered view, ${entries.size} lines) ---")
+                        appendLine(
+                            ringBufferTree?.format(entries) ?: "(no ring buffer available)"
+                        )
+                    } else {
+                        appendLine("--- App Logs ---")
+                        appendLine(ringBufferTree?.dump() ?: "(no ring buffer available)")
+                        appendLine()
+                        appendLine("--- System Logcat (this process) ---")
+                        appendLine(captureLogcat())
+                    }
                 }
                 secretsToRedact
                     .filter { it.isNotBlank() }
