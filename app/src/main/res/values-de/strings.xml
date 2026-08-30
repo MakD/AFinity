@@ -868,4 +868,19 @@
     <string name="dialog_quickconnect_authorized">Gerät erfolgreich autorisiert</string>
     <string name="action_authorize">Autorisieren</string>
     <string name="section_ratings">Bewertungen</string>
+    <string name="cd_random_item">Spiele etwas zufälliges ab</string>
+    <string name="random_item_none">Nichts neues zu schauen</string>
+    <string name="cd_vpn_connection">VPN Verbindung</string>
+    <string name="cd_retry_connection">Verbindung erneut versuchen</string>
+    <string name="connection_retry">Erneut versuchen</string>
+    <string name="connection_retrying">Verbinden…</string>
+    <string name="cd_scroll_to_top">Zum Seitenanfang</string>
+    <string name="cd_go_to_home">Zurück zur Startseite</string>
+    <string name="connection_label_tailscale">Tailscale</string>
+    <string name="connection_label_vpn">VPN</string>
+    <string name="connection_label_remote">Fernzugriff</string>
+    <string name="home_because_you_liked">Weil dir %1$s gefallen hat</string>
+    <string name="home_directed_by_from_watched">Unter der Regie von %1$s weil Sie %2$s gesehen haben</string>
+    <string name="home_written_by_from_watched">Geschrieben von %1$s weil du %2$s gesehen hast</string>
+    <string name="home_watch_again">Nochmal schauen</string>
 </resources>
