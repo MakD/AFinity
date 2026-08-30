@@ -195,11 +195,11 @@
     <string name="livetv_error_not_available_message">Konfigurasikan TV Langsung di server Jellyfin Anda</string>
     <string name="person_biography">Biografi</string>
     <plurals name="person_born_fmt">
-        <item quantity="other">Lahir: %1$s (%2$d tahun)</item>
+        <item quantity="other">Lahir: %1$s (berusia %2$d tahun)</item>
     </plurals>
     <string name="person_born_deceased_fmt">Lahir: %1$s</string>
     <plurals name="person_died_fmt">
-        <item quantity="other">Wafat: %1$s (usia %2$d)</item>
+        <item quantity="other">Meninggal: %1$s (usia %2$d)</item>
     </plurals>
     <string name="person_died_no_age_fmt">Wafat: %1$s</string>
     <string name="person_birthplace_fmt">Tempat Lahir: %1$s</string>
@@ -459,7 +459,7 @@
     <string name="dialog_delete_server_title">Hapus Server?</string>
     <string name="dialog_delete_server_message_fmt">Apakah Anda yakin ingin menghapus \"%1$s\"?</string>
     <plurals name="dialog_delete_server_warning_fmt">
-        <item quantity="other">Ini akan menghapus %1$d pengguna tersimpan beserta semua data terkait.</item>
+        <item quantity="other">Ini akan menghapus %1$d pengguna tersimpan dan semua data terkait.</item>
     </plurals>
     <string name="action_delete">Hapus</string>
     <string name="error_load_servers_failed">Gagal memuat server</string>
@@ -1091,7 +1091,7 @@
         <item quantity="other">%1$d dari %2$d permintaan tersisa</item>
     </plurals>
     <plurals name="request_quota_tv_remaining_fmt">
-        <item quantity="other">%1$d dari %2$d permintaan season tersisa</item>
+        <item quantity="other">%1$d dari %2$d permintaan musim tersisa</item>
     </plurals>
     <plurals name="request_quota_period_fmt">
         <item quantity="other">per %1$d hari</item>
@@ -1107,7 +1107,7 @@
     <string name="seerr_detail_open_library">Buka di pustaka</string>
     <string name="seerr_collection_fallback">Koleksi</string>
     <plurals name="season_count_fmt">
-        <item quantity="other">%1$d Season</item>
+        <item quantity="other">%1$d Musim</item>
     </plurals>
     <string name="seerr_recommendations_title">Rekomendasi</string>
     <string name="seerr_details_title">Detail</string>
@@ -1213,7 +1213,7 @@
     <string name="home_watch_again">Tonton Lagi</string>
     <string name="custom_sections_title">Bagian Beranda Kustom</string>
     <string name="custom_sections_group_always">Selalu ditampilkan</string>
-    <string name="custom_sections_always_caption">Baris inti yang dibutuhkan setiap klien Jellyfin. Tidak dapat dinonaktifkan.</string>
+    <string name="custom_sections_always_caption">Perpustakaan Anda dan apa yang Anda tonton. Ini tidak dapat dimatikan.</string>
     <string name="custom_sections_always_on">Selalu aktif</string>
     <string name="custom_sections_group_rows">Baris bawaan</string>
     <string name="custom_sections_rows_caption">Ditampilkan di bagian atas, dalam urutan ini. Nonaktifkan yang tidak Anda gunakan.</string>
@@ -1270,7 +1270,7 @@
     <string name="pref_clear_cache_summary">Daftar baris beranda, genre, dan karya seni akan diambil ulang</string>
     <string name="pref_clear_cache_empty">Tidak ada tembolok</string>
     <plurals name="pref_clear_cache_usage_total_fmt">
-        <item quantity="other">%1$s dalam tembolok · %2$d entri</item>
+        <item quantity="other">%1$s di-cache · %2$d entri</item>
     </plurals>
     <string name="cache_kind_images">Gambar</string>
     <string name="cache_store_video">Tembolok video</string>
@@ -1306,7 +1306,7 @@
     <string name="backup_section_downloads">Unduhan</string>
     <string name="backup_section_privacy">Privasi dan pembaruan</string>
     <plurals name="backup_section_home_fmt">
-        <item quantity="other">%1$d bagian kustom, baris, dan Penemuan</item>
+        <item quantity="other">%1$d bagian, baris, dan Discovery yang disesuaikan</item>
     </plurals>
     <plurals name="backup_section_settings_fmt">
         <item quantity="other">%1$d pengaturan</item>
@@ -1458,4 +1458,245 @@
     <string name="section_music">Musik</string>
     <string name="filter_all_libraries">Semua pustaka</string>
     <string name="filter_all_audiobooks">Semua buku audio</string>
+    <string name="cd_vpn_connection">Koneksi VPN</string>
+    <string name="connection_label_vpn">VPN</string>
+    <string name="custom_sections_source_genre">Genre</string>
+    <string name="custom_sections_source_studio">Studio</string>
+    <string name="custom_sections_source_tag">Tag</string>
+    <string name="custom_sections_source_collection">Koleksi</string>
+    <string name="custom_sections_source_playlist">Daftar Putar</string>
+    <string name="custom_sections_source_library">Perpustakaan</string>
+    <string name="custom_sections_card_portrait">Potret</string>
+    <string name="custom_sections_card_landscape">Lanskap</string>
+    <string name="custom_sections_card_square">Persegi</string>
+    <string name="custom_sections_card_spotlight">Sorotan</string>
+    <string name="custom_sections_preset_halloween">Halloween</string>
+    <string name="custom_sections_preset_christmas">Natal</string>
+    <string name="custom_sections_preset_new_year">Tahun Baru</string>
+    <string name="custom_sections_preset_valentines">Valentine</string>
+    <string name="guest_stars_section_title">Bintang Tamu</string>
+    <string name="people_dialog_title">Pemeran &amp; Kru</string>
+    <string name="people_group_header_fmt">%1$s · %2$d</string>
+    <string name="people_facepile_overflow_fmt">+%1$d</string>
+    <string name="file_size_b_fmt">%1$d B</string>
+    <string name="file_size_kb_fmt">%1$.1f KB</string>
+    <string name="file_size_mb_fmt">%1$.1f MB</string>
+    <string name="file_size_gb_fmt">%1$.2f GB</string>
+    <plurals name="producers_prefix">
+        <item quantity="other">Produser: %1$s</item>
+    </plurals>
+    <plurals name="season_already_available">
+        <item quantity="other">Musim %1$s sudah tersedia</item>
+    </plurals>
+    <string name="abs_on_audible">di Audible</string>
+    <string name="abs_books">Buku</string>
+    <string name="abs_chapters_header">BAB</string>
+    <string name="abs_equalizer_header">EQUALIZER</string>
+    <string name="abs_skip_silence_summary">Otomatis lewati bagian senyap</string>
+    <string name="abs_speed_normal">Normal</string>
+    <string name="sort_option_series_date_played">Tanggal Seri Diputar</string>
+    <string name="sort_option_date_last_content_added">Tanggal Konten Terakhir Ditambahkan</string>
+    <string name="sort_option_random">Acak</string>
+    <string name="unit_mbps_fmt">%1$d Mbps</string>
+    <string name="unit_megabytes_fmt">%1$d MB</string>
+    <string name="syncplay_title">Watch Party</string>
+    <string name="syncplay_manage_group">Kelola grup</string>
+    <string name="syncplay_leave_group">Tinggalkan grup</string>
+    <string name="syncplay_group_name">Nama grup</string>
+    <string name="syncplay_joining">Bergabung…</string>
+    <string name="syncplay_create_group">Buat grup</string>
+    <string name="syncplay_active_groups">Grup aktif</string>
+    <string name="syncplay_no_active_groups">Tidak ada grup aktif</string>
+    <string name="syncplay_state_paused">Dijeda</string>
+    <string name="syncplay_state_ready">Siap</string>
+    <string name="syncplay_state_waiting">Menunggu…</string>
+    <string name="syncplay_state_playing">Memutar</string>
+    <string name="syncplay_state_unknown">Tidak diketahui</string>
+    <string name="syncplay_active_just_now">Aktif baru saja</string>
+    <string name="syncplay_active_minutes_fmt">Aktif %1$dm yang lalu</string>
+    <string name="syncplay_active_hours_fmt">Aktif %1$dh yang lalu</string>
+    <string name="syncplay_active_days_fmt">Aktif %1$dd yang lalu</string>
+    <string name="action_join">Gabung</string>
+    <string name="action_refresh">Segarkan</string>
+    <plurals name="syncplay_member_count">
+        <item quantity="other">%1$d anggota</item>
+    </plurals>
+    <string name="pref_mpv_hwdec_disabled">Dinonaktifkan</string>
+    <string name="pref_mpv_gpu_api_opengl">OpenGL (bawaan)</string>
+    <string name="pref_mpv_gpu_api_vulkan">Vulkan (eksperimental)</string>
+    <string name="pref_mpv_hdr_auto">Otomatis (HDR passthrough)</string>
+    <string name="pref_mpv_hdr_tone_map">Selalu tone-map ke SDR</string>
+    <string name="pref_mpv_tone_auto">Otomatis</string>
+    <string name="cd_flag">Bendera</string>
+    <string name="cd_rating">Peringkat</string>
+    <string name="cd_select">Pilih</string>
+    <string name="cd_included">Disertakan</string>
+    <string name="cd_mask_overlay">Overlay topeng</string>
+    <string name="cd_start_radio">Mulai Radio</string>
+    <string name="cd_watch_party">Watch party</string>
+    <string name="cd_quality">Kualitas</string>
+    <string name="cd_subtitles">Subtitel</string>
+    <string name="unit_minutes_short">mnt</string>
+    <string name="unit_decibels_fmt">%1$s dB</string>
+    <string name="reviews_title">Ulasan</string>
+    <string name="rt_certified_fresh">Certified Fresh</string>
+    <string name="rt_verified_hot">Verified Hot</string>
+    <string name="favorites_albums">Album Favorit</string>
+    <string name="favorites_artists">Artis Favorit</string>
+    <string name="favorites_songs">Lagu Favorit</string>
+    <string name="home_downloaded_albums">Album yang Diunduh</string>
+    <string name="home_downloaded_tracks">Lagu yang Diunduh</string>
+    <string name="music_action_play_instant_mix">Putar Mix Instan</string>
+    <string name="music_no_playlists_yet">Belum ada daftar putar. Buat satu di bawah ini.</string>
+    <string name="requested_by_multiple_fmt">Diminta oleh %1$s +%2$d</string>
+    <string name="pref_requires_latest_rows">Aktifkan Film Terbaru atau TV Terbaru untuk menggunakan ini</string>
+    <plurals name="episodes_downloaded_fmt">
+        <item quantity="other">%1$d episode diunduh</item>
+    </plurals>
+    <plurals name="download_group_episodes_fmt">
+        <item quantity="other">%1$d episode · %2$s</item>
+    </plurals>
+    <plurals name="download_group_tracks_fmt">
+        <item quantity="other">%1$d trek · %2$s</item>
+    </plurals>
+    <string name="pref_ass_render_off">Mati (teks biasa)</string>
+    <string name="pref_ass_render_cues">Standar</string>
+    <string name="pref_ass_render_overlay">Animasi halus (eksperimental)</string>
+    <string name="section_awards">Penghargaan</string>
+    <plurals name="awards_wins_fmt">
+        <item quantity="other">%1$d kemenangan</item>
+    </plurals>
+    <plurals name="awards_nominations_fmt">
+        <item quantity="other">%1$d nominasi</item>
+    </plurals>
+    <string name="awards_summary_fmt">%1$s · %2$s</string>
+    <string name="awards_result_won">MENANG</string>
+    <string name="awards_result_nominated">NOM</string>
+    <plurals name="awards_show_all_fmt">
+        <item quantity="other">Tampilkan semua %1$d penghargaan</item>
+    </plurals>
+    <string name="cd_awards_open">Buka penghargaan</string>
+    <string name="mdblist_usage_fmt">%1$d/%2$d tersisa</string>
+    <string name="mdblist_usage_unknown">—</string>
+    <string name="services_hub_tile_wikidata">Wikidata</string>
+    <string name="wikidata_connect_title">Hubungkan Wikidata</string>
+    <string name="wikidata_connect_blurb">Kemenangan dan nominasi penghargaan untuk film, acara, dan orang. Gratis dan publik — tidak perlu akun atau kunci API.</string>
+    <string name="wikidata_connect_sends_title">Apa yang dikirim AFinity</string>
+    <string name="wikidata_connect_sends_body">ID TMDB dari sebuah item saat Anda membuka layar detailnya, dan alamat IP Anda, ke layanan kueri publik Wikimedia.</string>
+    <string name="wikidata_connect_never_title">Apa yang tidak pernah dikirim</string>
+    <string name="wikidata_connect_never_body">Tidak ada apa pun dari server Jellyfin Anda — tidak ada akun, token, alamat server, atau riwayat tontonan.</string>
+    <string name="wikidata_connect_action">Aktifkan</string>
+    <string name="wikidata_scope_note">Ini berlaku untuk setiap server dan profil di perangkat ini, bukan hanya yang Anda masuki.</string>
+    <string name="wikidata_disconnect_title">Putuskan Wikidata?</string>
+    <string name="wikidata_disconnect_message">Riwayat penghargaan akan berhenti dimuat di setiap server dan profil di perangkat ini. Tidak ada yang sudah tersimpan dihapus.</string>
+    <string name="wikidata_disconnect_action">Putuskan</string>
+    <string name="pref_show_awards_title">Tampilkan penghargaan</string>
+    <string name="pref_show_awards_summary">Spanduk penghargaan dan riwayat kemenangan di layar detail</string>
+    <string name="awards_headline_won_fmt">Memenangkan %1$s</string>
+    <string name="awards_headline_nominated_fmt">Dinominasikan untuk %1$s</string>
+    <plurals name="awards_body_oscar_fmt">
+        <item quantity="other">%1$d Oscar</item>
+    </plurals>
+    <plurals name="awards_body_emmy_fmt">
+        <item quantity="other">%1$d Emmy</item>
+    </plurals>
+    <plurals name="awards_body_golden_globe_fmt">
+        <item quantity="other">%1$d Golden Globe</item>
+    </plurals>
+    <plurals name="awards_body_bafta_fmt">
+        <item quantity="other">%1$d BAFTA</item>
+    </plurals>
+    <plurals name="awards_body_sag_fmt">
+        <item quantity="other">%1$d SAG Awards</item>
+    </plurals>
+    <plurals name="awards_body_critics_choice_fmt">
+        <item quantity="other">%1$d Critics\' Choice Awards</item>
+    </plurals>
+    <string name="seerr_ratings">Peringkat</string>
+    <string name="seerr_seasons_all_first_available">Musim: Semua / Tersedia pertama</string>
+    <string name="seerr_quality_4k">Kualitas: 4K UHD</string>
+    <string name="seerr_detail_original_title">Judul Asli</string>
+    <string name="seerr_detail_status">Status</string>
+    <string name="seerr_detail_series_type">Tipe Seri</string>
+    <string name="seerr_detail_first_air_date">Tanggal Tayang Pertama</string>
+    <string name="seerr_detail_next_air_date">Tanggal Tayang Berikutnya</string>
+    <string name="seerr_detail_episode_runtime">Durasi Episode</string>
+    <string name="seerr_detail_networks">Jaringan</string>
+    <string name="seerr_detail_release_theatrical">Rilis (Teatrikal)</string>
+    <string name="seerr_detail_release_digital">Rilis (Digital)</string>
+    <string name="seerr_detail_release_date">Tanggal Rilis</string>
+    <string name="seerr_detail_budget">Anggaran</string>
+    <string name="seerr_detail_revenue">Pendapatan</string>
+    <string name="seerr_detail_production_country">Negara Produksi</string>
+    <string name="seerr_runtime_minutes_fmt">%1$d mnt</string>
+    <string name="season_no_info">Tidak ada informasi musim yang tersedia. Semua musim akan diminta.</string>
+    <plurals name="server_more_users">
+        <item quantity="other">+%1$d pengguna lainnya</item>
+    </plurals>
+    <string name="notif_channel_downloads">Unduhan</string>
+    <string name="notif_channel_audiobook_downloads">Unduhan Buku Audio</string>
+    <string name="notif_channel_updates">Pembaruan Aplikasi</string>
+    <string name="notif_downloads_in_progress">Unduhan sedang berlangsung</string>
+    <string name="notif_downloads_finished">Unduhan selesai</string>
+    <string name="notif_download_complete">Unduhan selesai</string>
+    <string name="notif_download_complete_size_fmt">"Unduhan selesai -  %1$s"</string>
+    <string name="notif_download_failed">Unduhan gagal</string>
+    <string name="notif_download_failed_reason_fmt">Unduhan gagal: %1$s</string>
+    <string name="notif_untitled_audiobook">Buku Audio</string>
+    <string name="notif_track_progress_fmt">Trek %1$d/%2$d</string>
+    <string name="notif_download_progress_fmt">%1$s / %2$s</string>
+    <string name="notif_download_starting">Memulai…</string>
+    <string name="notif_action_pause">Jeda</string>
+    <string name="notif_update_available_title">Pembaruan Tersedia</string>
+    <string name="jellyseerr_username_from_jellyfin">Dari akun Jellyfin Anda</string>
+    <string name="jellyseerr_email_hint">Email akun Seerr Anda</string>
+    <string name="jellyseerr_connect_subtitle_found_fmt">Ditemukan %1$s. Masuk untuk mengaktifkan permintaan konten.</string>
+    <string name="error_invalid_jellyfin_password">Kata sandi salah untuk akun Jellyfin Anda.</string>
+    <string name="error_no_jellyfin_session">Tidak ada sesi Jellyfin yang aktif. Masuk ke Jellyfin terlebih dahulu.</string>
+    <string name="error_seerr_account_setup_failed">Seerr menerima kredensial Anda tetapi tidak dapat menyelesaikan pengaturan akun Anda. Minta administrator Seerr Anda untuk memeriksa log server.</string>
+    <string name="admin_refresh_mode_scan">Pindai file baru dan yang diperbarui</string>
+    <string name="admin_refresh_mode_scan_desc">Membaca ulang file di disk. Hanya akan online jika ada perubahan.</string>
+    <string name="admin_refresh_mode_missing">Cari metadata yang hilang</string>
+    <string name="admin_refresh_mode_missing_desc">Meminta apa pun yang kosong dari penyedia Anda. Detail yang ada tetap dipertahankan.</string>
+    <string name="admin_refresh_mode_replace">Ganti semua metadata</string>
+    <string name="admin_refresh_mode_replace_desc">Mengunduh ulang semuanya dan menimpa yang ada. Suntingan manual akan hilang.</string>
+    <string name="nav_home">Beranda</string>
+    <string name="nav_audiobooks">Buku Audio</string>
+    <string name="music_mix_radio_title_fmt">Radio %1$s</string>
+    <string name="playlist_entry_episode_fmt">S%1$dE%2$d</string>
+    <string name="playlist_entry_kind_movie">Film</string>
+    <plurals name="playlist_item_count">
+        <item quantity="other">%1$d item</item>
+    </plurals>
+    <string name="playlist_play_choice_title">Putar musik atau video?</string>
+    <string name="playlist_play_choice_message">Daftar putar ini memiliki %1$s dan %2$s.</string>
+    <plurals name="playlist_choice_songs">
+        <item quantity="other">%1$d lagu</item>
+    </plurals>
+    <plurals name="playlist_choice_videos">
+        <item quantity="other">%1$d video</item>
+    </plurals>
+    <string name="playlist_play_music">Putar musik</string>
+    <string name="playlist_play_videos">Putar video</string>
+    <string name="playlist_download_choice_title">Unduh musik atau video?</string>
+    <string name="playlist_download_songs_only">Hanya lagu</string>
+    <string name="playlist_download_videos_only">Hanya video</string>
+    <string name="playlist_download_everything">Semua</string>
+    <plurals name="playlist_download_partial_fmt">
+        <item quantity="other">Dimulai %1$d dari %2$d unduhan</item>
+    </plurals>
+    <string name="playlist_download_failed">Tidak dapat memulai unduhan</string>
+    <string name="playlist_download_failed_fmt">Tidak dapat memulai unduhan: %1$s</string>
+    <plurals name="music_playlist_song_count">
+        <item quantity="other">%1$d lagu</item>
+    </plurals>
+    <plurals name="music_playlist_hidden_videos">
+        <item quantity="other">%1$d item video disembunyikan</item>
+    </plurals>
+    <string name="music_playlist_video_only_title">Tidak ada musik di daftar putar ini</string>
+    <plurals name="music_playlist_video_only_message">
+        <item quantity="other">Daftar putar ini berisi %1$d item video, yang tidak dapat diputar di sini.</item>
+    </plurals>
+    <string name="music_playlist_empty_title">Daftar putar ini kosong</string>
+    <string name="music_playlist_empty_message">Tambahkan lagu untuk mulai mendengarkan.</string>
 </resources>
