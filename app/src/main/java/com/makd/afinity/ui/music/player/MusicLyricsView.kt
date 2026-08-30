@@ -210,12 +210,15 @@ private fun ContentDrawScope.drawKaraokeFill(layout: TextLayoutResult?, progress
     val length = layout.layoutInput.text.length
     if (length == 0 || progress <= 0f) return
 
+    val content = this
     val clamped = progress.coerceIn(0f, length.toFloat())
     val index = clamped.toInt().coerceIn(0, length)
     val lineIndex = layout.getLineForOffset(index.coerceAtMost(length - 1))
 
     if (lineIndex > 0) {
-        clipRect(0f, 0f, size.width, layout.getLineBottom(lineIndex - 1)) { drawContent() }
+        clipRect(0f, 0f, size.width, layout.getLineBottom(lineIndex - 1)) {
+            content.drawContent()
+        }
     }
 
     val start = layout.getHorizontalPosition(index, usePrimaryDirection = true)
@@ -227,7 +230,9 @@ private fun ContentDrawScope.drawKaraokeFill(layout: TextLayoutResult?, progress
         }
     val x = start + (end - start) * (clamped - index)
 
-    clipRect(0f, layout.getLineTop(lineIndex), x, layout.getLineBottom(lineIndex)) { drawContent() }
+    clipRect(0f, layout.getLineTop(lineIndex), x, layout.getLineBottom(lineIndex)) {
+        content.drawContent()
+    }
 }
 
 private fun lineIndexAt(lyrics: List<AfinityLyricLine>, seconds: Double): Int {
