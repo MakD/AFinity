@@ -123,7 +123,9 @@ fun BaseItemDto.toAfinityMovie(baseUrl: String): AfinityMovie {
         trickplayInfo =
             trickplay
                 ?.flatMap { (_, widthMap) ->
-                    widthMap.map { (width, info) -> width to info.toAfinityTrickplayInfo() }
+                    widthMap.orEmpty().map { (width, info) ->
+                        width to info.toAfinityTrickplayInfo()
+                    }
                 }
                 ?.toMap(),
         providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
@@ -266,7 +268,9 @@ fun BaseItemDto.toAfinityEpisode(baseUrl: String): AfinityEpisode? {
             trickplayInfo =
                 trickplay
                     ?.flatMap { (_, widthMap) ->
-                        widthMap.map { (width, info) -> width to info.toAfinityTrickplayInfo() }
+                        widthMap.orEmpty().map { (width, info) ->
+                        width to info.toAfinityTrickplayInfo()
+                    }
                     }
                     ?.toMap(),
             providerIds =

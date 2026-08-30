@@ -10,7 +10,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.api.operations.TimeSyncApi
+import org.jellyfin.sdk.api.operations.SystemApi
 import org.jellyfin.sdk.model.DateTime
 import timber.log.Timber
 import java.time.ZoneOffset
@@ -104,9 +104,9 @@ constructor(
         }
     }
 
-    private fun timeSyncApi(): TimeSyncApi? {
+    private fun timeSyncApi(): SystemApi? {
         val client = sessionManager.getCurrentApiClient() ?: return null
-        return TimeSyncApi(client)
+        return SystemApi(client)
     }
 }
 

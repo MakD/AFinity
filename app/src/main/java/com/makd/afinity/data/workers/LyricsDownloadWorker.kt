@@ -12,7 +12,7 @@ import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import org.jellyfin.sdk.api.operations.LyricsApi
+import org.jellyfin.sdk.api.operations.LyricApi
 import timber.log.Timber
 import java.util.UUID
 
@@ -61,7 +61,7 @@ constructor(
                     sessionManager.getOrRestoreApiClient(session.serverId)
                         ?: return@withContext Result.failure(workDataOf("error" to "No API client"))
 
-                val response = LyricsApi(apiClient).getLyrics(itemId = itemId)
+                val response = LyricApi(apiClient).getLyrics(itemId = itemId)
                 val lines = response.content.lyrics ?: emptyList()
 
                 if (lines.isEmpty()) {

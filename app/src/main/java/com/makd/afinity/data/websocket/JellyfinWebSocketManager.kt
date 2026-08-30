@@ -39,7 +39,7 @@ import org.jellyfin.sdk.model.api.ServerShuttingDownMessage
 import org.jellyfin.sdk.model.api.SessionInfoDto
 import org.jellyfin.sdk.model.api.SessionsMessage
 import org.jellyfin.sdk.model.api.SyncPlayCommandMessage
-import org.jellyfin.sdk.model.api.SyncPlayGroupUpdateCommandMessage
+import org.jellyfin.sdk.model.api.SyncPlayGroupUpdateMessage
 import org.jellyfin.sdk.model.api.TaskInfo
 import org.jellyfin.sdk.model.api.TaskState
 import org.jellyfin.sdk.model.api.UserDataChangedMessage
@@ -403,16 +403,15 @@ constructor(
     private suspend fun subscribeToSyncPlayGroupUpdates(apiClient: ApiClient) {
         collectWithRetry(
             "SyncPlay group updates",
-            { apiClient.webSocket.subscribe(SyncPlayGroupUpdateCommandMessage::class) },
+            { apiClient.webSocket.subscribe(SyncPlayGroupUpdateMessage::class) },
         ) { message ->
-            message.data?.let { groupUpdate ->
-                _syncPlayGroupUpdates.emit(
-                    SyncPlayGroupUpdate(
-                        type = groupUpdate.type,
-                        groupId = groupUpdate.groupId,
-                    )
+            val groupUpdate = message.data
+            _syncPlayGroupUpdates.emit(
+                SyncPlayGroupUpdate(
+                    type = groupUpdate.type,
+                    groupId = groupUpdate.groupId,
                 )
-            }
+            )
         }
     }
 }

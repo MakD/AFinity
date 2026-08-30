@@ -6,12 +6,12 @@ import com.makd.afinity.data.database.dao.ServerDatabaseDao
 import com.makd.afinity.data.database.entities.AfinityEpisodeDto
 import com.makd.afinity.data.models.extensions.toAfinityImages
 import com.makd.afinity.data.models.extensions.toAfinityPerson
-import java.util.UUID
 import org.jellyfin.sdk.model.DateTime
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.LocationType
 import org.jellyfin.sdk.model.api.PlayAccess
+import java.util.UUID
 
 data class AfinityEpisode(
     override val id: UUID,
@@ -90,7 +90,9 @@ suspend fun BaseItemDto.toAfinityEpisode(
             images = toAfinityImages(baseUrl),
             chapters = toAfinityChapters(),
             trickplayInfo =
-                trickplay?.mapValues { it.value[it.value.keys.max()]!!.toAfinityTrickplayInfo() },
+                trickplay?.mapValues { (_, widthMap) ->
+                    widthMap!![widthMap.keys.max()]!!.toAfinityTrickplayInfo()
+                },
             providerIds =
                 providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
             externalUrls = externalUrls?.map { it.toAfinityExternalUrl() },

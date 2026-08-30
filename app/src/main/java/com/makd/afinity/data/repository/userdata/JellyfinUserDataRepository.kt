@@ -10,12 +10,16 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.exception.ApiClientException
-import org.jellyfin.sdk.api.operations.ItemsApi
-import org.jellyfin.sdk.api.operations.PlayStateApi
-import org.jellyfin.sdk.api.operations.UserLibraryApi
+import org.jellyfin.sdk.api.operations.LibraryApi
+import org.jellyfin.sdk.api.operations.SessionApi
+import org.jellyfin.sdk.api.operations.UserDataApi
 import org.jellyfin.sdk.model.DateTime
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
+import org.jellyfin.sdk.model.api.PlayMethod
+import org.jellyfin.sdk.model.api.PlaybackOrder
+import org.jellyfin.sdk.model.api.PlaybackProgressInfo
+import org.jellyfin.sdk.model.api.RepeatMode
 import org.jellyfin.sdk.model.api.UpdateUserItemDataDto
 import org.jellyfin.sdk.model.api.UserItemDataDto
 import timber.log.Timber
@@ -79,9 +83,9 @@ constructor(
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val playStateApi = PlayStateApi(apiClient)
+                val userDataApi = UserDataApi(apiClient)
 
-                playStateApi.markPlayedItem(
+                userDataApi.markPlayedItem(
                     itemId = itemId,
                     userId = userId,
                     datePlayed = DateTime.now(),
@@ -108,9 +112,9 @@ constructor(
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val playStateApi = PlayStateApi(apiClient)
+                val userDataApi = UserDataApi(apiClient)
 
-                playStateApi.markUnplayedItem(itemId = itemId, userId = userId)
+                userDataApi.markUnplayedItem(itemId = itemId, userId = userId)
                 updateLocalDatabasePlayedStatus(itemId, userId, false)
                 databaseRepository.markUserDataSynced(userId, itemId)
                 mediaChangeManager.notifyItemChanged(
@@ -132,12 +136,19 @@ constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val playStateApi = PlayStateApi(apiClient)
+                val sessionApi = SessionApi(apiClient)
 
-                playStateApi.onPlaybackProgress(
-                    itemId = itemId,
-                    positionTicks = positionTicks,
-                    isPaused = true,
+                sessionApi.reportPlaybackProgress(
+                    PlaybackProgressInfo(
+                        itemId = itemId,
+                        positionTicks = positionTicks,
+                        isPaused = true,
+                        isMuted = false,
+                        canSeek = true,
+                        playMethod = PlayMethod.DIRECT_PLAY,
+                        repeatMode = RepeatMode.REPEAT_NONE,
+                        playbackOrder = PlaybackOrder.DEFAULT,
+                    )
                 )
                 true
             } catch (e: ApiClientException) {
@@ -155,9 +166,9 @@ constructor(
             try {
                 val userId = getCurrentUserId() ?: return@withContext null
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
-                val itemsApi = ItemsApi(apiClient)
+                val userDataApi = UserDataApi(apiClient)
 
-                val response = itemsApi.getItemUserData(itemId = itemId, userId = userId)
+                val response = userDataApi.getItemUserData(itemId = itemId, userId = userId)
                 response.content
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get user data for item: $itemId")
@@ -174,9 +185,9 @@ constructor(
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val userLibraryApi = UserLibraryApi(apiClient)
+                val userDataApi = UserDataApi(apiClient)
 
-                userLibraryApi.markFavoriteItem(itemId = itemId, userId = userId)
+                userDataApi.markFavoriteItem(itemId = itemId, userId = userId)
                 true
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to add item to favorites: $itemId")
@@ -193,9 +204,9 @@ constructor(
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val userLibraryApi = UserLibraryApi(apiClient)
+                val userDataApi = UserDataApi(apiClient)
 
-                userLibraryApi.unmarkFavoriteItem(itemId = itemId, userId = userId)
+                userDataApi.unmarkFavoriteItem(itemId = itemId, userId = userId)
                 true
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to remove item from favorites: $itemId")
@@ -217,10 +228,10 @@ constructor(
                 val userId = getCurrentUserId() ?: return@withContext emptyList()
                 val apiClient =
                     sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val itemsApi = ItemsApi(apiClient)
+                val libraryApi = LibraryApi(apiClient)
 
                 val response =
-                    itemsApi.getItems(
+                    libraryApi.getItems(
                         userId = userId,
                         isFavorite = true,
                         includeItemTypes =
@@ -254,11 +265,11 @@ constructor(
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val itemsApi = ItemsApi(apiClient)
+                val userDataApi = UserDataApi(apiClient)
 
                 val jellyfinRating = rating.coerceIn(0, 10)
 
-                itemsApi.updateItemUserData(
+                userDataApi.updateItemUserData(
                     itemId = itemId,
                     userId = userId,
                     data = UpdateUserItemDataDto(rating = jellyfinRating.toDouble()),
@@ -279,9 +290,9 @@ constructor(
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val itemsApi = ItemsApi(apiClient)
+                val userDataApi = UserDataApi(apiClient)
 
-                itemsApi.updateItemUserData(
+                userDataApi.updateItemUserData(
                     itemId = itemId,
                     userId = userId,
                     data = UpdateUserItemDataDto(rating = null),
@@ -302,9 +313,9 @@ constructor(
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val itemsApi = ItemsApi(apiClient)
+                val userDataApi = UserDataApi(apiClient)
 
-                itemsApi.updateItemUserData(
+                userDataApi.updateItemUserData(
                     itemId = itemId,
                     userId = userId,
                     data = UpdateUserItemDataDto(likes = isLiked),
@@ -326,12 +337,12 @@ constructor(
                 val userId = getCurrentUserId() ?: return@withContext false
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 var successCount = 0
-                val itemsApi = ItemsApi(apiClient)
+                val userDataApi = UserDataApi(apiClient)
 
                 items.forEach { userDataDto ->
                     try {
                         userDataDto.itemId?.let { itemId ->
-                            itemsApi.updateItemUserData(
+                            userDataApi.updateItemUserData(
                                 itemId = itemId,
                                 userId = userId,
                                 data =

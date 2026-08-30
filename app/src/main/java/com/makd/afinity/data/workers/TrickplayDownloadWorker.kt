@@ -25,7 +25,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jellyfin.sdk.api.client.ApiClient
-import org.jellyfin.sdk.api.operations.ItemsApi
+import org.jellyfin.sdk.api.operations.LibraryApi
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
@@ -103,10 +103,10 @@ constructor(
                 val userId = download.userId
                 val baseUrl = apiClient.baseUrl ?: ""
 
-                val itemsApi = ItemsApi(apiClient)
+                val libraryApi = LibraryApi(apiClient)
                 val baseItemDto =
                     try {
-                        itemsApi
+                        libraryApi
                             .getItems(
                                 userId = userId,
                                 ids = listOf(itemId),

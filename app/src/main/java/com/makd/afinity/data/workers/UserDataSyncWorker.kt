@@ -16,7 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
-import org.jellyfin.sdk.api.operations.PlayStateApi
+import org.jellyfin.sdk.api.operations.UserDataApi
 import org.jellyfin.sdk.model.DateTime
 import timber.log.Timber
 import java.time.Instant
@@ -93,13 +93,13 @@ constructor(
                             return@forEach
                         }
 
-                        val playStateApi = PlayStateApi(apiClient)
+                        val userDataApi = UserDataApi(apiClient)
 
                         for (userData in pending) {
                             when (
                                 uploadUserData(
                                     apiClient = apiClient,
-                                    playStateApi = playStateApi,
+                                    userDataApi = userDataApi,
                                     userId = account.userId,
                                     userData = userData,
                                 )
@@ -173,13 +173,13 @@ constructor(
 
     private suspend fun uploadUserData(
         apiClient: ApiClient,
-        playStateApi: PlayStateApi,
+        userDataApi: UserDataApi,
         userId: UUID,
         userData: AfinityUserDataDto,
     ): UploadResult {
         return try {
             if (userData.played) {
-                playStateApi.markPlayedItem(
+                userDataApi.markPlayedItem(
                     itemId = userData.itemId,
                     userId = userId,
                     datePlayed = userData.lastPlayedAt?.toDateTime(),

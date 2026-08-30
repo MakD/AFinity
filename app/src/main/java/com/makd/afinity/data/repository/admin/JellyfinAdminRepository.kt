@@ -13,11 +13,9 @@ import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.operations.ImageApi
 import org.jellyfin.sdk.api.operations.ItemLookupApi
-import org.jellyfin.sdk.api.operations.ItemRefreshApi
 import org.jellyfin.sdk.api.operations.ItemUpdateApi
 import org.jellyfin.sdk.api.operations.LibraryApi
 import org.jellyfin.sdk.api.operations.RemoteImageApi
-import org.jellyfin.sdk.api.operations.UserLibraryApi
 import org.jellyfin.sdk.model.FileInfo
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemPerson
@@ -53,11 +51,11 @@ constructor(
             try {
                 val apiClient = getApiClient() ?: return@withContext null
                 val userId = getUserId() ?: return@withContext null
-                val userLibraryApi = UserLibraryApi(apiClient)
+                val libraryApi = LibraryApi(apiClient)
                 val itemUpdateApi = ItemUpdateApi(apiClient)
                 val itemUuid = UUID.fromString(itemId)
 
-                val itemResponse = userLibraryApi.getItem(userId = userId, itemId = itemUuid)
+                val itemResponse = libraryApi.getItem(userId = userId, itemId = itemUuid)
                 val dto = itemResponse.content
 
                 val editorResponse = itemUpdateApi.getMetadataEditorInfo(itemId = itemUuid)
@@ -85,9 +83,9 @@ constructor(
                     getUserId()
                         ?: return@withContext Result.failure(IllegalStateException("No user"))
 
-                val userLibraryApi = UserLibraryApi(apiClient)
+                val libraryApi = LibraryApi(apiClient)
                 val existing =
-                    userLibraryApi
+                    libraryApi
                         .getItem(
                             userId = userId,
                             itemId = UUID.fromString(itemId),
@@ -134,11 +132,7 @@ constructor(
                 val api = ItemLookupApi(getApiClient() ?: return@withContext emptyList())
                 val response = api.getExternalIdInfos(itemId = UUID.fromString(itemId))
                 response.content.map {
-                    ExternalIdProvider(
-                        name = it.name,
-                        key = it.key,
-                        urlFormatString = it.urlFormatString,
-                    )
+                    ExternalIdProvider(name = it.name, key = it.key)
                 }
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get external ID providers for $itemId")
@@ -233,6 +227,7 @@ constructor(
                         searchProviderName = result.searchProviderName,
                         providerIds = result.providerIds,
                         overview = result.overview,
+                        artists = emptyList(),
                     )
                 api.applySearchCriteria(
                     itemId = UUID.fromString(itemId),
@@ -450,7 +445,7 @@ constructor(
         withContext(Dispatchers.IO) {
             try {
                 val api =
-                    ItemRefreshApi(
+                    LibraryApi(
                         getApiClient()
                             ?: return@withContext Result.failure(
                                 IllegalStateException("No API client")
@@ -547,9 +542,7 @@ constructor(
             year = productionYear,
             imageUrl = imageUrl,
             searchProviderName = searchProviderName,
-            providerIds =
-                providerIds?.mapValues { it.value ?: "" }?.filterValues { it.isNotEmpty() }
-                    ?: emptyMap(),
+            providerIds = providerIds.filterValues { it.isNotEmpty() },
             overview = overview,
             premiereDate = premiereDate?.toString(),
         )

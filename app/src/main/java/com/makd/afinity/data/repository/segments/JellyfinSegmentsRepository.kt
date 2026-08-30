@@ -6,7 +6,7 @@ import com.makd.afinity.data.models.media.toAfinitySegment
 import com.makd.afinity.data.repository.DatabaseRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.api.operations.MediaSegmentsApi
+import org.jellyfin.sdk.api.operations.MediaSegmentApi
 import org.jellyfin.sdk.model.api.MediaSegmentType
 import timber.log.Timber
 import java.util.UUID
@@ -38,7 +38,7 @@ constructor(
                 try {
                     val apiClient =
                         sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                    val mediaSegmentsApi = MediaSegmentsApi(apiClient)
+                    val mediaSegmentsApi = MediaSegmentApi(apiClient)
                     val response =
                         mediaSegmentsApi.getItemSegments(
                             itemId = itemId,

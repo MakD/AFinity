@@ -388,8 +388,6 @@ constructor(
                     _effects.emit(SyncPlayEffect.GroupLeft)
                 }
             }
-            GroupUpdateType.CREATE_GROUP_DENIED,
-            GroupUpdateType.JOIN_GROUP_DENIED,
             GroupUpdateType.LIBRARY_ACCESS_DENIED -> {
                 val message = "Access denied: ${update.type.serialName}"
                 syncPlayRepository.updateFromGroupEvent(

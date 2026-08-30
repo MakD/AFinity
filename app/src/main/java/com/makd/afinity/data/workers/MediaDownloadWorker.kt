@@ -56,7 +56,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.libraryApi
-import org.jellyfin.sdk.api.operations.ItemsApi
+import org.jellyfin.sdk.api.operations.LibraryApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
@@ -190,10 +190,10 @@ constructor(
 
                         val notificationIcon = loadNotificationIcon(download, apiClient.accessToken)
 
-                        val itemsApi = ItemsApi(apiClient)
+                        val libraryApi = LibraryApi(apiClient)
                         val baseItemDto =
                             try {
-                                itemsApi
+                                libraryApi
                                     .getItems(
                                         userId = userId,
                                         ids = listOf(itemId),
@@ -521,7 +521,7 @@ constructor(
         try {
             Timber.d("Ensuring item ${baseItemDto.id} is saved to database")
             val baseUrl = apiClient.baseUrl ?: ""
-            val itemsApi = ItemsApi(apiClient)
+            val libraryApi = LibraryApi(apiClient)
 
             when (baseItemDto.type) {
                 BaseItemKind.MOVIE -> {
@@ -541,7 +541,7 @@ constructor(
                                 ?.let { id ->
                                     async {
                                         try {
-                                            itemsApi
+                                            libraryApi
                                                 .getItems(
                                                     userId = userId,
                                                     ids = listOf(id),
@@ -568,7 +568,7 @@ constructor(
                             if (databaseRepository.getSeason(seasonId, userId) == null) {
                                 async {
                                     try {
-                                        itemsApi
+                                        libraryApi
                                             .getItems(
                                                 userId = userId,
                                                 ids = listOf(seasonId),

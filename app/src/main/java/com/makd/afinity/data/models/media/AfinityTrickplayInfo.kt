@@ -1,7 +1,7 @@
 package com.makd.afinity.data.models.media
 
 import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
-import org.jellyfin.sdk.model.api.TrickplayInfo
+import org.jellyfin.sdk.model.api.TrickplayInfoDto
 
 data class AfinityTrickplayInfo(
     val width: Int,
@@ -13,7 +13,7 @@ data class AfinityTrickplayInfo(
     val bandwidth: Int,
 )
 
-fun TrickplayInfo.toAfinityTrickplayInfo(): AfinityTrickplayInfo {
+fun TrickplayInfoDto.toAfinityTrickplayInfo(): AfinityTrickplayInfo {
     return AfinityTrickplayInfo(
         width = width,
         height = height,

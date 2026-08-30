@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.operations.LibraryApi
-import org.jellyfin.sdk.api.operations.ScheduledTasksApi
+import org.jellyfin.sdk.api.operations.ScheduledTaskApi
 import org.jellyfin.sdk.api.operations.SessionApi
 import org.jellyfin.sdk.api.operations.SystemApi
 import org.jellyfin.sdk.model.api.SessionInfoDto
@@ -325,7 +325,7 @@ constructor(
                     ?: return@withContext Result.failure(Exception("No active session"))
             return@withContext try {
                 val tasks =
-                    ScheduledTasksApi(apiClient).getTasks(isHidden = false).content ?: emptyList()
+                    ScheduledTaskApi(apiClient).getTasks(isHidden = false).content ?: emptyList()
                 Result.success(tasks)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get scheduled tasks")
@@ -339,7 +339,7 @@ constructor(
                 sessionManager.getCurrentApiClient()
                     ?: return@withContext Result.failure(Exception("No active session"))
             return@withContext try {
-                ScheduledTasksApi(apiClient).startTask(taskId)
+                ScheduledTaskApi(apiClient).startTask(taskId)
                 Result.success(Unit)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start task $taskId")
@@ -353,7 +353,7 @@ constructor(
                 sessionManager.getCurrentApiClient()
                     ?: return@withContext Result.failure(Exception("No active session"))
             return@withContext try {
-                ScheduledTasksApi(apiClient).stopTask(taskId)
+                ScheduledTaskApi(apiClient).stopTask(taskId)
                 Result.success(Unit)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to stop task $taskId")

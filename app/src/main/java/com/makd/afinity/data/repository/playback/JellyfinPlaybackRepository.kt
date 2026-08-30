@@ -8,14 +8,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.operations.MediaInfoApi
-import org.jellyfin.sdk.api.operations.PlayStateApi
 import org.jellyfin.sdk.api.operations.SessionApi
-import org.jellyfin.sdk.api.operations.VideosApi
+import org.jellyfin.sdk.api.operations.VideoApi
 import org.jellyfin.sdk.model.api.DeviceProfile
 import org.jellyfin.sdk.model.api.MediaSourceInfo
 import org.jellyfin.sdk.model.api.PlayMethod
 import org.jellyfin.sdk.model.api.PlaybackInfoDto
 import org.jellyfin.sdk.model.api.PlaybackInfoResponse
+import org.jellyfin.sdk.model.api.PlaybackOrder
+import org.jellyfin.sdk.model.api.PlaybackProgressInfo
+import org.jellyfin.sdk.model.api.PlaybackStartInfo
+import org.jellyfin.sdk.model.api.PlaybackStopInfo
 import org.jellyfin.sdk.model.api.RepeatMode
 import org.jellyfin.sdk.model.api.SubtitleDeliveryMethod
 import org.jellyfin.sdk.model.api.SubtitleProfile
@@ -165,9 +168,9 @@ constructor(
     ): String? {
         return try {
             val apiClient = sessionManager.getCurrentApiClient() ?: return null
-            val videosApi = VideosApi(apiClient)
+            val videoApi = VideoApi(apiClient)
             val streamUrl =
-                videosApi.getVideoStreamUrl(
+                videoApi.getVideoStreamUrl(
                     itemId = itemId,
                     static = true,
                     mediaSourceId = mediaSourceId,
@@ -199,17 +202,23 @@ constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val playStateApi = PlayStateApi(apiClient)
+                val sessionApi = SessionApi(apiClient)
 
-                playStateApi.onPlaybackStart(
-                    itemId = itemId,
-                    mediaSourceId = mediaSourceId,
-                    audioStreamIndex = audioStreamIndex,
-                    subtitleStreamIndex = subtitleStreamIndex,
-                    playMethod = PlayMethod.fromName(playMethod),
-                    liveStreamId = liveStreamId,
-                    playSessionId = sessionId,
-                    canSeek = canSeek,
+                sessionApi.reportPlaybackStart(
+                    PlaybackStartInfo(
+                        itemId = itemId,
+                        mediaSourceId = mediaSourceId,
+                        audioStreamIndex = audioStreamIndex,
+                        subtitleStreamIndex = subtitleStreamIndex,
+                        playMethod = PlayMethod.fromName(playMethod),
+                        liveStreamId = liveStreamId,
+                        playSessionId = sessionId,
+                        canSeek = canSeek,
+                        isPaused = false,
+                        isMuted = false,
+                        repeatMode = RepeatMode.REPEAT_NONE,
+                        playbackOrder = PlaybackOrder.DEFAULT,
+                    )
                 )
                 true
             } catch (e: ApiClientException) {
@@ -251,19 +260,23 @@ constructor(
                             )
                             return@withContext false
                         }
-                val playStateApi = PlayStateApi(apiClient)
-                playStateApi.onPlaybackProgress(
-                    itemId = itemId,
-                    positionTicks = positionTicks,
-                    audioStreamIndex = audioStreamIndex,
-                    subtitleStreamIndex = subtitleStreamIndex,
-                    volumeLevel = volumeLevel,
-                    playMethod = PlayMethod.fromName(playMethod),
-                    liveStreamId = liveStreamId,
-                    playSessionId = sessionId,
-                    repeatMode = RepeatMode.fromName(repeatMode),
-                    isPaused = isPaused,
-                    isMuted = isMuted,
+                val sessionApi = SessionApi(apiClient)
+                sessionApi.reportPlaybackProgress(
+                    PlaybackProgressInfo(
+                        itemId = itemId,
+                        positionTicks = positionTicks,
+                        audioStreamIndex = audioStreamIndex,
+                        subtitleStreamIndex = subtitleStreamIndex,
+                        volumeLevel = volumeLevel,
+                        playMethod = PlayMethod.fromName(playMethod),
+                        liveStreamId = liveStreamId,
+                        playSessionId = sessionId,
+                        repeatMode = RepeatMode.fromName(repeatMode),
+                        isPaused = isPaused,
+                        isMuted = isMuted,
+                        canSeek = true,
+                        playbackOrder = PlaybackOrder.DEFAULT,
+                    )
                 )
                 true
             } catch (e: ApiClientException) {
@@ -319,15 +332,19 @@ constructor(
                             )
                             return@withContext false
                         }
-                val playStateApi = PlayStateApi(apiClient)
+                val sessionApi = SessionApi(apiClient)
 
-                playStateApi.onPlaybackStopped(
-                    itemId = itemId,
-                    mediaSourceId = mediaSourceId,
-                    nextMediaType = nextMediaType,
-                    positionTicks = positionTicks,
-                    liveStreamId = liveStreamId,
-                    playSessionId = sessionId,
+                sessionApi.reportPlaybackStopped(
+                    PlaybackStopInfo(
+                        itemId = itemId,
+                        mediaSourceId = mediaSourceId,
+                        nextMediaType = nextMediaType,
+                        positionTicks = positionTicks,
+                        liveStreamId = liveStreamId,
+                        playSessionId = sessionId,
+                        playlistItemId = playlistItemId,
+                        failed = false,
+                    )
                 )
                 clearPendingSync(itemId)
                 true
@@ -459,8 +476,8 @@ constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val playStateApi = PlayStateApi(apiClient)
-                playStateApi.pingPlaybackSession(playSessionId = sessionId)
+                val sessionApi = SessionApi(apiClient)
+                sessionApi.pingPlaybackSession(playSessionId = sessionId)
                 true
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to ping session: $sessionId")

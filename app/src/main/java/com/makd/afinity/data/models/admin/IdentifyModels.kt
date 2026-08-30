@@ -10,8 +10,4 @@ data class IdentifyResult(
     val premiereDate: String?,
 )
 
-data class ExternalIdProvider(
-    val name: String,
-    val key: String,
-    val urlFormatString: String?,
-)
+data class ExternalIdProvider(val name: String, val key: String)

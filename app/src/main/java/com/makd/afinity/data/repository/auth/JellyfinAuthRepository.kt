@@ -20,7 +20,7 @@ import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
-import org.jellyfin.sdk.api.operations.QuickConnectApi
+import org.jellyfin.sdk.api.operations.AuthenticationApi
 import org.jellyfin.sdk.api.operations.SessionApi
 import org.jellyfin.sdk.api.operations.UserApi
 import org.jellyfin.sdk.model.DeviceInfo
@@ -157,13 +157,13 @@ constructor(
                         baseUrl = serverUrl,
                         deviceInfo = deviceInfo.forUser(UUID.randomUUID()),
                     )
-                val userApi = UserApi(client)
+                val authenticationApi = AuthenticationApi(client)
                 val authRequest =
                     org.jellyfin.sdk.model.api.AuthenticateUserByName(
                         username = username,
                         pw = password,
                     )
-                val response = userApi.authenticateUserByName(authRequest)
+                val response = authenticationApi.authenticateUserByName(authRequest)
 
                 val authResult = response.content
                 handleSuccessfulAuth(authResult, username, client)
@@ -196,10 +196,10 @@ constructor(
                         baseUrl = serverUrl,
                         deviceInfo = deviceInfo.forUser(UUID.randomUUID()),
                     )
-                val userApi = UserApi(client)
+                val authenticationApi = AuthenticationApi(client)
                 val quickConnectRequest =
                     org.jellyfin.sdk.model.api.QuickConnectDto(secret = secret)
-                val response = userApi.authenticateWithQuickConnect(quickConnectRequest)
+                val response = authenticationApi.authenticateWithQuickConnect(quickConnectRequest)
 
                 val authResult = response.content
                 val username = authResult.user?.name ?: "QuickConnect User"
@@ -220,7 +220,7 @@ constructor(
                         baseUrl = serverUrl,
                         deviceInfo = deviceInfo.forUser(UUID.randomUUID()),
                     )
-                val quickConnectApi = QuickConnectApi(client)
+                val quickConnectApi = AuthenticationApi(client)
                 val result = quickConnectApi.initiateQuickConnect().content
                 QuickConnectState(
                     code = result.code,
@@ -248,7 +248,7 @@ constructor(
                         baseUrl = serverUrl,
                         deviceInfo = deviceInfo.forUser(UUID.randomUUID()),
                     )
-                val quickConnectApi = QuickConnectApi(client)
+                val quickConnectApi = AuthenticationApi(client)
                 val result = quickConnectApi.getQuickConnectState(secret = secret).content
                 QuickConnectState(
                     code = result.code,
@@ -269,7 +269,7 @@ constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val quickConnectApi = QuickConnectApi(apiClient)
+                val quickConnectApi = AuthenticationApi(apiClient)
                 quickConnectApi.authorizeQuickConnect(code = code).content
             } catch (e: ApiClientException) {
                 Timber.e(e, "QuickConnect authorization failed")

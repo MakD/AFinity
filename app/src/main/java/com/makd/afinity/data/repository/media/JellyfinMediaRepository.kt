@@ -66,17 +66,15 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.operations.FilterApi
-import org.jellyfin.sdk.api.operations.GenresApi
-import org.jellyfin.sdk.api.operations.ItemsApi
+import org.jellyfin.sdk.api.operations.GenreApi
 import org.jellyfin.sdk.api.operations.LibraryApi
-import org.jellyfin.sdk.api.operations.PersonsApi
-import org.jellyfin.sdk.api.operations.PlaylistsApi
-import org.jellyfin.sdk.api.operations.StudiosApi
-import org.jellyfin.sdk.api.operations.TrickplayApi
-import org.jellyfin.sdk.api.operations.TvShowsApi
-import org.jellyfin.sdk.api.operations.UserLibraryApi
-import org.jellyfin.sdk.api.operations.UserViewsApi
-import org.jellyfin.sdk.api.operations.VideosApi
+import org.jellyfin.sdk.api.operations.PersonApi
+import org.jellyfin.sdk.api.operations.PlaylistApi
+import org.jellyfin.sdk.api.operations.ShowApi
+import org.jellyfin.sdk.api.operations.StudioApi
+import org.jellyfin.sdk.api.operations.TrickPlayApi
+import org.jellyfin.sdk.api.operations.UserViewApi
+import org.jellyfin.sdk.api.operations.VideoApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -117,9 +115,9 @@ constructor(
             try {
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
                 val userId = getCurrentUserId() ?: return@withContext null
-                val userLibraryApi = UserLibraryApi(apiClient)
+                val libraryApi = LibraryApi(apiClient)
                 val freshItem =
-                    userLibraryApi
+                    libraryApi
                         .getItem(userId = userId, itemId = itemId)
                         .content
                         .toAfinityItem(getBaseUrl())
@@ -229,9 +227,9 @@ constructor(
                 val sessionKeyAtStart = currentSessionKey() ?: return@withContext
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext
                 val userId = getCurrentUserId() ?: return@withContext
-                val itemsApi = ItemsApi(apiClient)
+                val libraryApi = LibraryApi(apiClient)
                 val response =
-                    itemsApi.getResumeItems(
+                    libraryApi.getResumeItems(
                         userId = userId,
                         limit = 12,
                         fields = FieldSets.CACHE_CONTINUE_WATCHING,
@@ -263,9 +261,9 @@ constructor(
                 val sessionKeyAtStart = currentSessionKey() ?: return@withContext
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext
                 val userId = getCurrentUserId() ?: return@withContext
-                val tvShowsApi = TvShowsApi(apiClient)
+                val showApi = ShowApi(apiClient)
                 val response =
-                    tvShowsApi.getNextUp(
+                    showApi.getNextUp(
                         userId = userId,
                         limit = 16,
                         fields = FieldSets.CACHE_NEXT_UP,
@@ -445,7 +443,7 @@ constructor(
 
     override suspend fun getLibrariesResult(): Result<List<AfinityCollection>> =
         apiInvoker.apiResult { apiClient, userId ->
-            val views = UserViewsApi(apiClient).getUserViews(userId = userId).content.items
+            val views = UserViewApi(apiClient).getUserViews(userId = userId).content.items
 
             _hasLiveTvLibrary.value = views.any {
                 it.collectionType == org.jellyfin.sdk.model.api.CollectionType.LIVETV
@@ -478,7 +476,7 @@ constructor(
         includeItemTypes: List<BaseItemKind>?,
     ): List<AfinityItem> =
         apiCall(emptyList(), "Failed to get latest media") { apiClient, userId ->
-            UserLibraryApi(apiClient)
+            LibraryApi(apiClient)
                 .getLatestMedia(
                     userId = userId,
                     parentId = parentId,
@@ -500,7 +498,7 @@ constructor(
         apiCall(emptyList(), "Failed to get continue watching") { apiClient, userId ->
             val sessionKeyAtStart = currentSessionKey()
             val continueWatchingItems =
-                ItemsApi(apiClient)
+                LibraryApi(apiClient)
                     .getResumeItems(
                         userId = userId,
                         limit = limit,
@@ -581,7 +579,7 @@ constructor(
             if (criteria.isResumable == true) add(ItemFilter.IS_RESUMABLE)
         }
 
-        ItemsApi(apiClient)
+        LibraryApi(apiClient)
             .getItems(
                 userId = userId,
                 parentId = parentId,
@@ -679,7 +677,7 @@ constructor(
         fields: List<ItemFields>?,
     ): List<BaseItemDto> =
         apiCall(emptyList(), "Failed to get items for playlist: $playlistId") { apiClient, userId ->
-            PlaylistsApi(apiClient)
+            PlaylistApi(apiClient)
                 .getPlaylistItems(
                     playlistId = playlistId,
                     userId = userId,
@@ -729,7 +727,7 @@ constructor(
     ): Boolean =
         apiCall(false, "Failed to move item $playlistItemId in playlist $playlistId") { apiClient, _
             ->
-            PlaylistsApi(apiClient)
+            PlaylistApi(apiClient)
                 .moveItem(
                     playlistId = playlistId.toString(),
                     itemId = playlistItemId,
@@ -740,7 +738,7 @@ constructor(
 
     override suspend fun getItem(itemId: UUID, fields: List<ItemFields>?): BaseItemDto? =
         apiCall(null, "Failed to get item with id: $itemId") { apiClient, userId ->
-            ItemsApi(apiClient)
+            LibraryApi(apiClient)
                 .getItems(
                     userId = userId,
                     ids = listOf(itemId),
@@ -761,7 +759,7 @@ constructor(
     ): List<AfinityItem> =
         apiCall(emptyList(), "Failed to batch-fetch items by ids") { apiClient, userId ->
             if (ids.isEmpty()) return@apiCall emptyList()
-            ItemsApi(apiClient)
+            LibraryApi(apiClient)
                 .getItems(
                     userId = userId,
                     ids = ids,
@@ -777,7 +775,7 @@ constructor(
 
     override suspend fun getIntros(itemId: UUID): List<AfinityItem> =
         apiCall(emptyList(), "Failed to get intros for item: $itemId") { apiClient, userId ->
-            UserLibraryApi(apiClient)
+            LibraryApi(apiClient)
                 .getIntros(itemId = itemId, userId = userId)
                 .content
                 .items
@@ -788,7 +786,7 @@ constructor(
         apiCall(emptyList(), "[MultiPart] Exception in getAdditionalParts for item: $itemId") {
             apiClient,
             userId ->
-            VideosApi(apiClient)
+            VideoApi(apiClient)
                 .getAdditionalPart(itemId = itemId, userId = userId)
                 .content
                 .items
@@ -827,7 +825,7 @@ constructor(
     ): List<AfinityMovie> =
         apiCall(emptyList(), "Failed to get movies") { apiClient, userId ->
             val filters = buildList { if (isLiked == true) add(ItemFilter.LIKES) }
-            ItemsApi(apiClient)
+            LibraryApi(apiClient)
                 .getItems(
                     userId = userId,
                     parentId = parentId,
@@ -862,7 +860,7 @@ constructor(
         fields: List<ItemFields>?,
     ): List<AfinityMovie> =
         apiCall(emptyList(), "Failed to get movies for genre: $genre") { apiClient, userId ->
-            ItemsApi(apiClient)
+            LibraryApi(apiClient)
                 .getItems(
                     userId = userId,
                     parentId = parentId,
@@ -891,7 +889,7 @@ constructor(
         fields: List<ItemFields>?,
     ): List<AfinityShow> =
         apiCall(emptyList(), "Failed to get shows for genre: $genre") { apiClient, userId ->
-            ItemsApi(apiClient)
+            LibraryApi(apiClient)
                 .getItems(
                     userId = userId,
                     parentId = parentId,
@@ -924,7 +922,7 @@ constructor(
                     GenreType.MOVIE -> listOf(BaseItemKind.MOVIE)
                     GenreType.SHOW -> listOf(BaseItemKind.SERIES)
                 }
-            ItemsApi(apiClient)
+            LibraryApi(apiClient)
                 .getItems(
                     userId = userId,
                     includeItemTypes = includeTypes,
@@ -948,7 +946,7 @@ constructor(
         apiCall(emptyList(), "Failed to get top-rated items for studio: $studioName") {
             apiClient,
             userId ->
-            ItemsApi(apiClient)
+            LibraryApi(apiClient)
                 .getItems(
                     userId = userId,
                     includeItemTypes = listOf(BaseItemKind.MOVIE, BaseItemKind.SERIES),
@@ -982,7 +980,7 @@ constructor(
     ): List<AfinityShow> =
         apiCall(emptyList(), "Failed to get shows") { apiClient, userId ->
             val filters = buildList { if (isLiked == true) add(ItemFilter.LIKES) }
-            ItemsApi(apiClient)
+            LibraryApi(apiClient)
                 .getItems(
                     userId = userId,
                     parentId = parentId,
@@ -1015,7 +1013,7 @@ constructor(
         fields: List<ItemFields>?,
     ): List<AfinitySeason> =
         apiCall(emptyList(), "Failed to get seasons") { apiClient, userId ->
-            TvShowsApi(apiClient)
+            ShowApi(apiClient)
                 .getSeasons(
                     seriesId = seriesId,
                     userId = userId,
@@ -1039,7 +1037,7 @@ constructor(
             val actualSeriesId =
                 seriesId ?: getItem(seasonId)?.seriesId ?: return@apiCall emptyList()
 
-            TvShowsApi(apiClient)
+            ShowApi(apiClient)
                 .getEpisodes(
                     seriesId = actualSeriesId,
                     userId = userId,
@@ -1064,7 +1062,7 @@ constructor(
         limit: Int?,
     ): List<AfinityEpisode> =
         apiCall(emptyList(), "Failed to get series episodes") { apiClient, userId ->
-            TvShowsApi(apiClient)
+            ShowApi(apiClient)
                 .getEpisodes(
                     seriesId = seriesId,
                     userId = userId,
@@ -1082,7 +1080,7 @@ constructor(
 
     override suspend fun getFavoriteMovies(fields: List<ItemFields>?): List<AfinityMovie> =
         apiCall(emptyList(), "Failed to get favorite movies") { apiClient, userId ->
-            ItemsApi(apiClient)
+            LibraryApi(apiClient)
                 .getItems(
                     userId = userId,
                     includeItemTypes = listOf(BaseItemKind.MOVIE),
@@ -1102,7 +1100,7 @@ constructor(
 
     override suspend fun getFavoriteShows(fields: List<ItemFields>?): List<AfinityShow> =
         apiCall(emptyList(), "Failed to get favorite shows") { apiClient, userId ->
-            ItemsApi(apiClient)
+            LibraryApi(apiClient)
                 .getItems(
                     userId = userId,
                     includeItemTypes = listOf(BaseItemKind.SERIES),
@@ -1122,7 +1120,7 @@ constructor(
 
     override suspend fun getFavoriteEpisodes(fields: List<ItemFields>?): List<AfinityEpisode> =
         apiCall(emptyList(), "Failed to get favorite episodes") { apiClient, userId ->
-            ItemsApi(apiClient)
+            LibraryApi(apiClient)
                 .getItems(
                     userId = userId,
                     includeItemTypes = listOf(BaseItemKind.EPISODE),
@@ -1142,7 +1140,7 @@ constructor(
 
     override suspend fun getFavoriteSeasons(fields: List<ItemFields>?): List<AfinitySeason> =
         apiCall(emptyList(), "Failed to get favorite seasons") { apiClient, userId ->
-            ItemsApi(apiClient)
+            LibraryApi(apiClient)
                 .getItems(
                     userId = userId,
                     includeItemTypes = listOf(BaseItemKind.SEASON),
@@ -1162,7 +1160,7 @@ constructor(
 
     override suspend fun getFavoriteBoxSets(fields: List<ItemFields>?): List<AfinityBoxSet> =
         apiCall(emptyList(), "Failed to get favorite box sets") { apiClient, userId ->
-            ItemsApi(apiClient)
+            LibraryApi(apiClient)
                 .getItems(
                     userId = userId,
                     includeItemTypes = listOf(BaseItemKind.BOX_SET),
@@ -1183,7 +1181,7 @@ constructor(
     override suspend fun getFavoriteMedia(fields: List<ItemFields>?): List<AfinityItem> =
         apiCall(emptyList(), "Failed to get favorite media") { apiClient, userId ->
             val baseUrl = getBaseUrl()
-            ItemsApi(apiClient)
+            LibraryApi(apiClient)
                 .getItems(
                     userId = userId,
                     includeItemTypes =
@@ -1210,7 +1208,7 @@ constructor(
 
     override suspend fun getFavoritePeople(fields: List<ItemFields>?): List<AfinityPersonDetail> =
         apiCall(emptyList(), "Failed to get favorite people") { apiClient, userId ->
-            PersonsApi(apiClient)
+            PersonApi(apiClient)
                 .getPersons(
                     userId = userId,
                     isFavorite = true,
@@ -1233,7 +1231,7 @@ constructor(
         apiCall(emptyList(), "Failed to get next up") { apiClient, userId ->
             val sessionKeyAtStart = currentSessionKey()
             val nextUpItems =
-                TvShowsApi(apiClient)
+                ShowApi(apiClient)
                     .getNextUp(
                         userId = userId,
                         seriesId = seriesId,
@@ -1262,7 +1260,7 @@ constructor(
     ): List<AfinityEpisode> =
         apiCall(emptyList(), "Failed to get upcoming episodes") { apiClient, userId ->
             val now = java.time.LocalDateTime.now()
-            TvShowsApi(apiClient)
+            ShowApi(apiClient)
                 .getUpcomingEpisodes(
                     userId = userId,
                     limit = limit,
@@ -1284,7 +1282,7 @@ constructor(
 
     override suspend fun getSpecialFeatures(itemId: UUID, userId: UUID): List<AfinityItem> =
         apiCall(emptyList(), "Failed to get special features for item: $itemId") { apiClient, _ ->
-            UserLibraryApi(apiClient)
+            LibraryApi(apiClient)
                 .getSpecialFeatures(itemId = itemId, userId = userId)
                 .content
                 .mapNotNull { baseItem ->
@@ -1307,7 +1305,7 @@ constructor(
         fields: List<ItemFields>?,
     ): List<AfinityItem> =
         apiCall(emptyList(), "Failed to search items") { apiClient, userId ->
-            ItemsApi(apiClient)
+            LibraryApi(apiClient)
                 .getItems(
                     userId = userId,
                     searchTerm = query,
@@ -1334,7 +1332,7 @@ constructor(
 
     override suspend fun getPerson(personId: UUID): AfinityPersonDetail? =
         apiCall(null, "Failed to get person details for ID: $personId") { apiClient, userId ->
-            UserLibraryApi(apiClient)
+            LibraryApi(apiClient)
                 .getItem(itemId = personId, userId = userId)
                 .content
                 .toAfinityPersonDetail(getBaseUrl())
@@ -1345,7 +1343,7 @@ constructor(
         fields: List<ItemFields>?,
     ): AfinityPersonDetail? =
         apiCall(null, "Failed to get stored person for ID: $personId") { apiClient, userId ->
-            ItemsApi(apiClient)
+            LibraryApi(apiClient)
                 .getItems(
                     userId = userId,
                     ids = listOf(personId),
@@ -1369,7 +1367,7 @@ constructor(
         personTypes: List<String>,
     ): List<AfinityItem> =
         apiCall(emptyList(), "Failed to get person items for ID: $personId") { apiClient, userId ->
-            ItemsApi(apiClient)
+            LibraryApi(apiClient)
                 .getItems(
                     userId = userId,
                     personIds = listOf(personId),
@@ -1451,8 +1449,8 @@ constructor(
             return@withContext try {
                 Timber.d("Fetching trickplay tile from API: $width/$index")
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
-                val trickplayApi = TrickplayApi(apiClient)
-                val response = trickplayApi.getTrickplayTileImage(itemId, width, index)
+                val trickPlayApi = TrickPlayApi(apiClient)
+                val response = trickPlayApi.getTrickplayTileImage(itemId, width, index)
                 Timber.d("Fetched trickplay tile from API: ${response.content.size} bytes")
                 response.content
             } catch (e: Exception) {
@@ -1467,7 +1465,7 @@ constructor(
         includeItemTypes: List<String>,
     ): List<String> =
         apiCall(emptyList(), "Failed to get genres") { apiClient, userId ->
-            GenresApi(apiClient)
+            GenreApi(apiClient)
                 .getGenres(
                     userId = userId,
                     parentId = parentId,
@@ -1513,7 +1511,7 @@ constructor(
         minItemCount: Int,
     ): Result<List<AfinityStudio>> = apiInvoker.apiResult { apiClient, userId ->
         val response =
-            StudiosApi(apiClient)
+            StudioApi(apiClient)
                 .getStudios(
                     userId = userId,
                     parentId = parentId,
@@ -1592,11 +1590,11 @@ constructor(
         maxBoxSets: Int,
     ): List<Pair<AfinityBoxSet, List<AfinityItem>>> =
         apiCall(emptyList(), "Failed to get boxsets for spotlight") { apiClient, userId ->
-            val itemsApi = ItemsApi(apiClient)
+            val libraryApi = LibraryApi(apiClient)
             val baseUrl = getBaseUrl()
 
             val boxSetsResponse =
-                itemsApi.getItems(
+                libraryApi.getItems(
                     userId = userId,
                     includeItemTypes = listOf(BaseItemKind.BOX_SET),
                     recursive = true,
@@ -1624,7 +1622,7 @@ constructor(
                             semaphore.withPermit {
                                 try {
                                     val childrenResponse =
-                                        itemsApi.getItems(
+                                        libraryApi.getItems(
                                             userId = userId,
                                             parentId = boxSetDto.id,
                                             recursive = false,
@@ -1661,10 +1659,10 @@ constructor(
     private suspend fun fetchAllBoxSetsWithChildren(): List<BoxSetWithChildren> {
         val apiClient = sessionManager.getCurrentApiClient() ?: return emptyList()
         val userId = getCurrentUserId() ?: return emptyList()
-        val itemsApi = ItemsApi(apiClient)
+        val libraryApi = LibraryApi(apiClient)
 
         val boxSetsResponse =
-            itemsApi.getItems(
+            libraryApi.getItems(
                 userId = userId,
                 includeItemTypes = listOf(BaseItemKind.BOX_SET),
                 recursive = true,
@@ -1688,7 +1686,7 @@ constructor(
                         semaphore.withPermit {
                             try {
                                 val childrenResponse =
-                                    itemsApi.getItems(
+                                    libraryApi.getItems(
                                         userId = userId,
                                         parentId = boxSetDto.id,
                                         recursive = false,
@@ -1729,7 +1727,7 @@ constructor(
             }
 
             val boxSets =
-                ItemsApi(apiClient)
+                LibraryApi(apiClient)
                     .getItems(
                         userId = userId,
                         ids = boxSetIds,
@@ -1830,7 +1828,7 @@ constructor(
 
     private suspend fun episodesForSelection(seriesId: UUID): List<AfinityEpisode> =
         apiCall(emptyList(), "Failed to scan episodes for series $seriesId") { apiClient, userId ->
-            TvShowsApi(apiClient)
+            ShowApi(apiClient)
                 .getEpisodes(
                     seriesId = seriesId,
                     userId = userId,
