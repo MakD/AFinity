@@ -407,6 +407,12 @@ fun MainNavigation(
                                 navController = navController,
                                 startDestination = Destination.SPLASH_ROUTE,
                                 modifier = Modifier.fillMaxSize(),
+                                predictivePopEnterTransition = {
+                                    fadeIn(animationSpec = tween(700))
+                                },
+                                predictivePopExitTransition = {
+                                    fadeOut(animationSpec = tween(700))
+                                },
                             ) {
                                 composable(Destination.SPLASH_ROUTE) {
                                     LaunchedEffect(authState) {
