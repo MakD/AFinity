@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
+import com.makd.afinity.data.network.UrlCandidates
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -51,40 +52,6 @@ constructor(
         _uiState.value = _uiState.value.copy(password = password, error = null)
     }
 
-    fun testConnection() {
-        val serverUrl = _uiState.value.serverUrl
-        if (serverUrl.isBlank()) {
-            _uiState.value =
-                _uiState.value.copy(error = context.getString(R.string.error_server_url_required))
-            return
-        }
-
-        viewModelScope.launch {
-            _uiState.value =
-                _uiState.value.copy(
-                    isTestingConnection = true,
-                    error = null,
-                    connectionTestSuccess = false,
-                )
-
-            try {
-                audiobookshelfRepository.setServerUrl(normalizeUrl(serverUrl))
-                _uiState.value =
-                    _uiState.value.copy(isTestingConnection = false, connectionTestSuccess = true)
-                Timber.d("Server URL set: $serverUrl")
-            } catch (e: Exception) {
-                _uiState.value =
-                    _uiState.value.copy(
-                        isTestingConnection = false,
-                        connectionTestSuccess = false,
-                        error =
-                            context.getString(R.string.error_set_server_url_fmt, e.message ?: ""),
-                    )
-                Timber.e(e, "Failed to test connection")
-            }
-        }
-    }
-
     fun login() {
         val currentState = _uiState.value
 
@@ -103,7 +70,7 @@ constructor(
             _uiState.value = currentState.copy(isLoggingIn = true, error = null)
 
             val rawUrl = currentState.serverUrl.trim().removeSuffix("/")
-            val candidateUrls = generateCandidateUrls(rawUrl)
+            val candidateUrls = UrlCandidates.audiobookshelf(rawUrl)
 
             var validUrl: String? = null
             for (url in candidateUrls) {
@@ -120,8 +87,7 @@ constructor(
                 _uiState.value =
                     _uiState.value.copy(
                         isLoggingIn = false,
-                        error =
-                            "Could not connect. Please verify this is a valid Audiobookshelf server.",
+                        error = context.getString(R.string.error_abs_server_unreachable),
                     )
                 return@launch
             }
@@ -144,7 +110,7 @@ constructor(
                 val errMsg = lastError?.message ?: ""
                 val finalErrorMessage =
                     if (errMsg.contains("401") || errMsg.contains("403")) {
-                        "Invalid username or password."
+                        context.getString(R.string.error_invalid_username_password)
                     } else {
                         context.getString(R.string.error_login_failed_fmt, errMsg)
                     }
@@ -193,46 +159,12 @@ constructor(
     fun declineNotificationPermission() {
         viewModelScope.launch { preferencesRepository.setNotificationPermissionDeclined(true) }
     }
-
-    private fun generateCandidateUrls(input: String): List<String> {
-        val hasScheme = input.startsWith("http://") || input.startsWith("https://")
-        val withScheme = if (hasScheme) input else "http://$input"
-        val uri = runCatching { java.net.URI(withScheme) }.getOrNull()
-        val host = uri?.host?.takeIf { it.isNotBlank() } ?: input
-        val port = uri?.port ?: -1
-        val scheme = if (hasScheme) uri?.scheme else null
-
-        return when {
-            hasScheme && port != -1 -> listOf(input)
-            !hasScheme && port != -1 -> listOf("https://$input", "http://$input")
-            hasScheme && scheme == "https" -> listOf(input, "https://$host:13378")
-            hasScheme && scheme == "http" -> listOf(input, "http://$host:13378")
-            else ->
-                listOf("https://$host", "https://$host:13378", "http://$host:13378", "http://$host")
-        }
-    }
-
-    private fun normalizeUrl(url: String): String {
-        var normalized = url.trim()
-
-        if (!normalized.startsWith("http://") && !normalized.startsWith("https://")) {
-            normalized = "http://$normalized"
-        }
-
-        if (normalized.endsWith("/")) {
-            normalized = normalized.dropLast(1)
-        }
-
-        return normalized
-    }
 }
 
 data class AudiobookshelfLoginUiState(
     val serverUrl: String = "",
     val username: String = "",
     val password: String = "",
-    val isTestingConnection: Boolean = false,
-    val connectionTestSuccess: Boolean = false,
     val isLoggingIn: Boolean = false,
     val isLoggedIn: Boolean = false,
     val error: String? = null,

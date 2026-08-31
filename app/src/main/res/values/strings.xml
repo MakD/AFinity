@@ -1148,7 +1148,7 @@
     <string name="forget_account_title">Forget %1$s?</string>
     <string name="forget_account_message">This removes the saved login for this account and deletes everything downloaded with it. The account itself is not deleted from the server.</string>
     <string name="forget_account_confirm">Forget</string>
-    <string name="forget_account_failed">Couldn't forget this account. Try again.</string>
+    <string name="forget_account_failed">Couldn\'t forget this account. Try again.</string>
     <string name="empty_sessions_title">No saved sessions</string>
     <string name="empty_sessions_message">Login to a server to create a session</string>
 
@@ -1686,6 +1686,13 @@
     <string name="error_seerr_account_setup_failed">Seerr accepted your credentials but could not finish setting up your account. Ask your Seerr administrator to check the server logs.</string>
     <string name="error_server_connect_failed_fmt">Failed to connect to server: %1$s</string>
     <string name="error_login_failed_fmt">Login failed: %1$s</string>
+    <string name="error_abs_server_unreachable">Could not connect. Please verify this is a valid Audiobookshelf server.</string>
+    <string name="error_invalid_username_password">Invalid username or password.</string>
+    <string name="error_login_check_credentials">Login failed. Please check your credentials.</string>
+    <string name="error_access_forbidden">Access forbidden. Check your permissions.</string>
+    <string name="error_server_not_found">Server not found. Check your server URL.</string>
+    <string name="error_network_check_connection">Network error. Check your connection.</string>
+    <string name="error_connection_timeout">Connection timeout. Please try again.</string>
     <string name="error_username_required">Username is required</string>
     <string name="error_failed_load_channels">Failed to load channels</string>
     <string name="error_failed_check_livetv">Failed to check Live TV access</string>
@@ -1694,7 +1701,6 @@
     <string name="error_person_not_found">Person not found</string>
     <string name="error_server_url_not_available">Server URL not available</string>
     <string name="error_server_url_required">Server URL is required</string>
-    <string name="error_set_server_url_fmt">Failed to set server URL: %1$s</string>
     <string name="error_unexpected_fmt">An unexpected error occurred: %1$s</string>
     <string name="error_not_valid_jellyfin_fmt">Not a valid Jellyfin server: %1$s</string>
     <string name="error_connect_to_server_fmt">Failed to connect to %1$s: %2$s</string>

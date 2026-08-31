@@ -46,13 +46,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
+import com.makd.afinity.data.network.AddressParts
+import com.makd.afinity.data.network.parseAddressParts
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.settings.servers.AudiobookshelfColor
@@ -324,16 +331,19 @@ internal fun SelectableAddressRow(
                     RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary),
                 modifier = Modifier.size(32.dp).padding(end = 8.dp),
             )
+            val parts = remember(address) { parseAddressParts(address) }
+            val contentColor =
+                if (isPrimary) MaterialTheme.colorScheme.onPrimaryContainer
+                else MaterialTheme.colorScheme.onSurface
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = address,
+                    text = addressAnnotated(parts, contentColor),
                     style =
                         MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = if (isPrimary) FontWeight.SemiBold else FontWeight.Normal
                         ),
-                    color =
-                        if (isPrimary) MaterialTheme.colorScheme.onPrimaryContainer
-                        else MaterialTheme.colorScheme.onSurface,
+                    color = contentColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -344,6 +354,10 @@ internal fun SelectableAddressRow(
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
                     )
                 }
+            }
+            parts.port?.let { port ->
+                Spacer(modifier = Modifier.width(8.dp))
+                PortPill(port = port, onTintedSurface = isPrimary)
             }
             if (onDelete != null) {
                 IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
@@ -356,6 +370,40 @@ internal fun SelectableAddressRow(
                 }
             }
         }
+    }
+}
+
+private fun addressAnnotated(parts: AddressParts, contentColor: Color): AnnotatedString =
+    buildAnnotatedString {
+        parts.scheme?.let { scheme ->
+            withStyle(SpanStyle(color = contentColor.copy(alpha = 0.55f))) {
+                append("$scheme://")
+            }
+        }
+        append(parts.hostWithPath)
+    }
+
+@Composable
+private fun PortPill(port: Int, onTintedSurface: Boolean) {
+    Surface(
+        shape = CircleShape,
+        color =
+            if (onTintedSurface) Color.Black.copy(alpha = 0.22f)
+            else MaterialTheme.colorScheme.surfaceContainerHighest,
+    ) {
+        Text(
+            text = port.toString(),
+            style =
+                MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.SemiBold,
+                ),
+            color =
+                if (onTintedSurface) MaterialTheme.colorScheme.onPrimaryContainer
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+        )
     }
 }
 
@@ -383,14 +431,19 @@ internal fun ServiceAddressItem(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
             )
             Spacer(modifier = Modifier.width(12.dp))
+            val parts = remember(address) { parseAddressParts(address) }
             Text(
-                text = address,
+                text = addressAnnotated(parts, MaterialTheme.colorScheme.onSurface),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
+            parts.port?.let { port ->
+                Spacer(modifier = Modifier.width(8.dp))
+                PortPill(port = port, onTintedSurface = false)
+            }
             IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_close),

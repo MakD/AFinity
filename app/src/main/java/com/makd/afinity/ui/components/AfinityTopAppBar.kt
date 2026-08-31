@@ -73,10 +73,6 @@ constructor(
     }
 }
 
-/**
- * Identity for the top bar's avatar. Grouping the three values means a screen cannot show the
- * avatar without also supplying the name it falls back to.
- */
 data class AppBarProfile(val onClick: () -> Unit, val name: String?, val imageUrl: String?)
 
 @OptIn(ExperimentalMaterial3Api::class)

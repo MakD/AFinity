@@ -59,6 +59,7 @@ import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.settings.ServerSessionGroupItem
 import com.makd.afinity.ui.settings.SessionSwitcherViewModel
+import com.makd.afinity.ui.settings.UserSession
 
 @Composable
 fun AppNavigationDrawerContent(
@@ -84,6 +85,15 @@ fun AppNavigationDrawerContent(
 ) {
     val sessionState by sessionSwitcherViewModel.state.collectAsStateWithLifecycle()
     var accountSwitcherExpanded by remember { mutableStateOf(false) }
+    var sessionToForget by remember { mutableStateOf<UserSession?>(null) }
+
+    sessionToForget?.let { session ->
+        ForgetAccountDialog(
+            userName = session.username,
+            onConfirm = { sessionSwitcherViewModel.forgetSession(session) },
+            onDismiss = { sessionToForget = null },
+        )
+    }
     val chevronRotation by
         animateFloatAsState(
             targetValue = if (accountSwitcherExpanded) 180f else 0f,
@@ -226,6 +236,7 @@ fun AppNavigationDrawerContent(
                                     accountSwitcherExpanded = false
                                     onCloseDrawer()
                                 },
+                                onSessionLongClick = { session -> sessionToForget = session },
                                 onAddAccountClick = { onAddAccountClick(sessionGroup.server) },
                             )
                         }

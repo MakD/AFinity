@@ -17,6 +17,7 @@ import com.makd.afinity.data.models.server.AddressCheck
 import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.server.ServerAddress
+import com.makd.afinity.data.network.UrlCandidates
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.JellyfinRepository
@@ -548,13 +549,7 @@ constructor(
 
                 _state.value = _state.value.copy(isLoading = true, error = null)
 
-                val rawAddress = address.trim().removeSuffix("/")
-                val candidateUrls =
-                    if (rawAddress.startsWith("http://") || rawAddress.startsWith("https://")) {
-                        listOf(rawAddress)
-                    } else {
-                        listOf("https://$rawAddress", "http://$rawAddress")
-                    }
+                val candidateUrls = UrlCandidates.jellyseerr(address)
 
                 var validUrl: String? = null
                 val repository = jellyseerrRepositoryProvider.get()
@@ -629,13 +624,7 @@ constructor(
 
                 _state.value = _state.value.copy(isLoading = true, error = null)
 
-                val rawAddress = address.trim().removeSuffix("/")
-                val candidateUrls =
-                    if (rawAddress.startsWith("http://") || rawAddress.startsWith("https://")) {
-                        listOf(rawAddress)
-                    } else {
-                        listOf("https://$rawAddress", "http://$rawAddress")
-                    }
+                val candidateUrls = UrlCandidates.audiobookshelf(address)
 
                 var validUrl: String? = null
                 val repository = audiobookshelfRepositoryProvider.get()

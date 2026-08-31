@@ -328,10 +328,6 @@ abstract class ServerDatabaseDao {
 
     @Query("DELETE FROM users WHERE id = :userId") abstract suspend fun deleteUserRow(userId: UUID)
 
-    /**
-     * Clears every row that belongs to one saved account. Downloaded files are removed by the
-     * caller before this runs, since file IO must not happen inside a Room transaction.
-     */
     @Transaction
     open suspend fun clearAllDataForUser(serverId: String, userId: UUID) {
         val userIdText = userId.toString()

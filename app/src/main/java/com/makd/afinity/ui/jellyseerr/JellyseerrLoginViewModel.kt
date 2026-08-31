@@ -7,6 +7,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.PublicSettings
+import com.makd.afinity.data.network.UrlCandidates
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.jellyseerr.JellyseerrLoginException
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -112,7 +113,7 @@ constructor(
 
         probeJob = viewModelScope.launch {
             delay(PROBE_DEBOUNCE_MS)
-            for (url in generateCandidateUrls(trimmed)) {
+            for (url in UrlCandidates.jellyseerr(trimmed)) {
                 val settings = jellyseerrRepository.verifyServer(url) ?: continue
                 _uiState.update { it.copy(publicSettings = settings) }
                 applyDetectedAuthMode(settings)
@@ -175,7 +176,7 @@ constructor(
                 _uiState.update { it.copy(isLoading = true, error = null) }
 
                 val rawUrl = _uiState.value.serverUrl.trim().removeSuffix("/")
-                val candidateUrls = generateCandidateUrls(rawUrl)
+                val candidateUrls = UrlCandidates.jellyseerr(rawUrl)
 
                 var validUrl: String? = null
                 var resolvedSettings: PublicSettings? = null
@@ -300,24 +301,6 @@ constructor(
         return isValid
     }
 
-    private fun generateCandidateUrls(input: String): List<String> {
-        val hasScheme = input.startsWith("http://") || input.startsWith("https://")
-        val withScheme = if (hasScheme) input else "http://$input"
-        val uri = runCatching { java.net.URI(withScheme) }.getOrNull()
-        val host = uri?.host?.takeIf { it.isNotBlank() } ?: input
-        val port = uri?.port ?: -1
-        val scheme = if (hasScheme) uri?.scheme else null
-
-        return when {
-            hasScheme && port != -1 -> listOf(input)
-            !hasScheme && port != -1 -> listOf("https://$input", "http://$input")
-            hasScheme && scheme == "https" -> listOf(input, "https://$host:5055")
-            hasScheme && scheme == "http" -> listOf(input, "http://$host:5055")
-            else ->
-                listOf("https://$host", "https://$host:5055", "http://$host:5055", "http://$host")
-        }
-    }
-
     private fun isValidUrl(url: String): Boolean {
         val trimmed = url.trim()
         return trimmed.isNotBlank() && !trimmed.contains(" ")
@@ -325,15 +308,15 @@ constructor(
 
     private fun parseErrorMessage(message: String?): String {
         return when {
-            message == null -> "Login failed. Please check your credentials."
-            message.contains("401") -> "Invalid email or password"
-            message.contains("403") -> "Access forbidden. Check your permissions."
-            message.contains("404") -> "Server not found. Check your server URL."
+            message == null -> context.getString(R.string.error_login_check_credentials)
+            message.contains("401") -> context.getString(R.string.error_invalid_credentials)
+            message.contains("403") -> context.getString(R.string.error_access_forbidden)
+            message.contains("404") -> context.getString(R.string.error_server_not_found)
             message.contains("network", ignoreCase = true) ->
-                "Network error. Check your connection."
+                context.getString(R.string.error_network_check_connection)
 
             message.contains("timeout", ignoreCase = true) ->
-                "Connection timeout. Please try again."
+                context.getString(R.string.error_connection_timeout)
 
             else -> message
         }

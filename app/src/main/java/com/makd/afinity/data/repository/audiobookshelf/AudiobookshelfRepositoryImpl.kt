@@ -532,10 +532,6 @@ constructor(
         }
     }
 
-    override suspend fun setServerUrl(url: String) {
-        pendingServerUrl = url
-    }
-
     override suspend fun getServerUrl(): String? {
         return pendingServerUrl ?: _currentConfig.value?.serverUrl
     }
