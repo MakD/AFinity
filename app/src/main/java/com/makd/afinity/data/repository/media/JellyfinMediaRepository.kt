@@ -797,6 +797,11 @@ constructor(
                 .firstOrNull()
         }
 
+    override suspend fun getItemDetail(itemId: UUID): BaseItemDto? =
+        apiCall(null, "Failed to get item detail for id: $itemId") { apiClient, userId ->
+            LibraryApi(apiClient).getItem(itemId = itemId, userId = userId).content
+        }
+
     override suspend fun getItemById(itemId: UUID): AfinityItem? =
         getItem(itemId, FieldSets.ITEM_DETAIL)?.toAfinityItem(getBaseUrl())
 

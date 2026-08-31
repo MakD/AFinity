@@ -164,6 +164,11 @@ constructor(
 
     private var bulkDownloadJob: Job? = null
     private var itemLastLoadedAt = 0L
+    private var itemLastServerFetchAt = 0L
+
+    private companion object {
+        const val SERVER_SYNC_FRESHNESS_MS = 3_000L
+    }
 
     private val _uiState = MutableStateFlow(ItemDetailUiState())
     val uiState: StateFlow<ItemDetailUiState> = _uiState.asStateFlow()
@@ -578,7 +583,7 @@ constructor(
     private fun refreshFromCacheImmediate(skipNetworkSync: Boolean = false) {
         viewModelScope.launch {
             try {
-                val cachedItem = mediaRepository.getItemById(itemId)
+                val cachedItem = loadItemFromDatabase()
                 if (cachedItem != null) {
                     val resolvedItem =
                         if (cachedItem is AfinitySeason && cachedItem.runtimeTicks == 0L) {
@@ -592,49 +597,8 @@ constructor(
                         _uiState.update { state -> state.copy(item = resolvedItem) }
                     }
 
-                    when (resolvedItem) {
-                        is AfinityShow -> {
-                            launch {
-                                try {
-                                    val nextEpisode =
-                                        mediaRepository.getEpisodeToPlay(resolvedItem.id)
-                                    if (nextEpisode != _uiState.value.nextEpisode) {
-                                        _uiState.update { it.copy(nextEpisode = nextEpisode) }
-                                    }
-                                } catch (e: Exception) {
-                                    Timber.w(e, "Failed to get next episode")
-                                }
-                            }
-                            launch {
-                                try {
-                                    val seasons = mediaRepository.getSeasons(resolvedItem.id)
-                                    if (seasons != _uiState.value.seasons) {
-                                        _uiState.update {
-                                            it.copy(seasons = itemStore.merge(seasons))
-                                        }
-                                    }
-                                } catch (e: Exception) {
-                                    Timber.w(e, "Failed to get seasons")
-                                }
-                            }
-                        }
-                        is AfinitySeason -> {
-                            launch {
-                                try {
-                                    val nextEpisode =
-                                        mediaRepository.getEpisodeToPlayForSeason(
-                                            resolvedItem.id,
-                                            resolvedItem.seriesId,
-                                        )
-                                    if (nextEpisode != _uiState.value.nextEpisode) {
-                                        _uiState.update { it.copy(nextEpisode = nextEpisode) }
-                                    }
-                                } catch (e: Exception) {
-                                    Timber.w(e, "Failed to get next episode for season")
-                                }
-                            }
-                        }
-                        is AfinityBoxSet -> loadBoxSetItems(resolvedItem.id)
+                    if (resolvedItem is AfinityBoxSet) {
+                        loadBoxSetItems(resolvedItem.id)
                     }
                 }
 
@@ -648,9 +612,14 @@ constructor(
     }
 
     private suspend fun syncWithServerInBackground() {
+        if (System.currentTimeMillis() - itemLastServerFetchAt < SERVER_SYNC_FRESHNESS_MS) {
+            Timber.d("Skipping background sync — item fetched from server moments ago")
+            return
+        }
         try {
+            itemLastServerFetchAt = System.currentTimeMillis()
             val serverItem =
-                mediaRepository.getItem(itemId, fields = FieldSets.ITEM_DETAIL)?.let { baseItemDto
+                mediaRepository.getItemDetail(itemId)?.let { baseItemDto
                     ->
                     when (baseItemDto.type) {
                         BaseItemKind.MOVIE ->
@@ -774,16 +743,16 @@ constructor(
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)
                 val isOffline = offlineModeManager.isCurrentlyOffline()
                 val hasInternet = offlineModeManager.isInternetAvailable()
-                if (!isOffline) {
-                    launchParallelFetches()
-                }
 
+                var specialFeatureCount = 0
                 val item =
                     if (isOffline) {
                         loadItemFromDatabase()
                     } else {
-                        mediaRepository.getItem(itemId, fields = FieldSets.ITEM_DETAIL)?.let {
+                        mediaRepository.getItemDetail(itemId)?.let {
                             baseItemDto ->
+                            specialFeatureCount = baseItemDto.specialFeatureCount ?: 0
+                            itemLastServerFetchAt = System.currentTimeMillis()
                             when (baseItemDto.type) {
                                 BaseItemKind.MOVIE ->
                                     baseItemDto.toAfinityMovie(mediaRepository.getBaseUrl(), null)
@@ -833,6 +802,10 @@ constructor(
 
                 _uiState.value = _uiState.value.copy(item = item, isLoading = false)
                 itemLastLoadedAt = System.currentTimeMillis()
+
+                if (!isOffline) {
+                    launchParallelFetches(specialFeatureCount)
+                }
 
                 if (!isOffline) {
                     val nextEpisodeFetchCovered =
@@ -937,7 +910,7 @@ constructor(
         }
     }
 
-    private fun launchParallelFetches() {
+    private fun launchParallelFetches(specialFeatureCount: Int) {
         when (itemType?.uppercase()) {
             "SERIES" -> {
                 fetchNextUp()
@@ -957,27 +930,31 @@ constructor(
                         Timber.e(e, "Failed to get seasons")
                     }
                 }
-                viewModelScope.launch {
-                    try {
-                        getCurrentUserId()?.let { id ->
-                            val features = mediaRepository.getSpecialFeatures(itemId, id)
-                            _uiState.update { it.copy(specialFeatures = features) }
+                if (specialFeatureCount > 0) {
+                    viewModelScope.launch {
+                        try {
+                            getCurrentUserId()?.let { id ->
+                                val features = mediaRepository.getSpecialFeatures(itemId, id)
+                                _uiState.update { it.copy(specialFeatures = features) }
+                            }
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to get special features")
                         }
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to get special features")
                     }
                 }
             }
             "SEASON" -> {
                 fetchNextUp()
-                viewModelScope.launch {
-                    try {
-                        getCurrentUserId()?.let { id ->
-                            val features = mediaRepository.getSpecialFeatures(itemId, id)
-                            _uiState.update { it.copy(specialFeatures = features) }
+                if (specialFeatureCount > 0) {
+                    viewModelScope.launch {
+                        try {
+                            getCurrentUserId()?.let { id ->
+                                val features = mediaRepository.getSpecialFeatures(itemId, id)
+                                _uiState.update { it.copy(specialFeatures = features) }
+                            }
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to get special features")
                         }
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to get special features")
                     }
                 }
                 if (seriesId != null) {
@@ -1019,14 +996,16 @@ constructor(
                         Timber.e(e, "Failed to get similar items")
                     }
                 }
-                viewModelScope.launch {
-                    try {
-                        getCurrentUserId()?.let { id ->
-                            val features = mediaRepository.getSpecialFeatures(itemId, id)
-                            _uiState.update { it.copy(specialFeatures = features) }
+                if (specialFeatureCount > 0) {
+                    viewModelScope.launch {
+                        try {
+                            getCurrentUserId()?.let { id ->
+                                val features = mediaRepository.getSpecialFeatures(itemId, id)
+                                _uiState.update { it.copy(specialFeatures = features) }
+                            }
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to get special features")
                         }
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to get special features")
                     }
                 }
             }

@@ -111,6 +111,8 @@ interface MediaRepository {
 
     suspend fun getItem(itemId: UUID, fields: List<ItemFields>? = null): BaseItemDto?
 
+    suspend fun getItemDetail(itemId: UUID): BaseItemDto?
+
     suspend fun getPlaylistItems(
         playlistId: UUID,
         fields: List<ItemFields>? = null,
