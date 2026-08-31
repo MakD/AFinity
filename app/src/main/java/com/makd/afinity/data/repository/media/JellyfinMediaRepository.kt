@@ -95,6 +95,8 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private val RESUMABLE_ITEM_TYPES = listOf(BaseItemKind.MOVIE, BaseItemKind.EPISODE)
+
 @Singleton
 class JellyfinMediaRepository
 @Inject
@@ -235,6 +237,7 @@ constructor(
                         userId = userId,
                         limit = 12,
                         fields = FieldSets.CACHE_CONTINUE_WATCHING,
+                        includeItemTypes = RESUMABLE_ITEM_TYPES,
                         enableImages = true,
                         enableUserData = true,
                         enableTotalRecordCount = false,
@@ -544,6 +547,7 @@ constructor(
                         userId = userId,
                         limit = limit,
                         fields = fields ?: FieldSets.CONTINUE_WATCHING,
+                        includeItemTypes = RESUMABLE_ITEM_TYPES,
                         enableImages = true,
                         enableUserData = true,
                         enableTotalRecordCount = false,

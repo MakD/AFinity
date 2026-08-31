@@ -19,6 +19,7 @@ import com.makd.afinity.data.models.music.AfinityMusicGenre
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityPlaylistContents
 import com.makd.afinity.data.models.music.AfinityTrack
+import com.makd.afinity.data.models.music.CachedLyrics
 import com.makd.afinity.data.models.music.MusicFilterOptions
 import com.makd.afinity.data.models.music.MusicFilters
 import com.makd.afinity.data.models.music.MusicSearchResults
@@ -738,20 +739,21 @@ constructor(
 
     override suspend fun getLyrics(trackId: UUID): List<AfinityLyricLine> =
         withContext(Dispatchers.IO) {
-            val cached = getCachedLyrics(trackId)
-            if (cached != null) return@withContext cached
+            val cached = readCachedLyrics(trackId)
+            if (cached != null && cached.cueAware) return@withContext cached.lines
 
+            val fallback = cached?.lines.orEmpty()
             try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext fallback
                 val response = LyricApi(apiClient).getLyrics(itemId = trackId)
-                response.content.lyrics.mapNotNull { it.toAfinityLyricLine() }
+                val fresh = response.content.lyrics.mapNotNull { it.toAfinityLyricLine() }
+                if (fresh.isEmpty()) fallback else fresh
             } catch (e: ApiClientException) {
                 Timber.d("No lyrics found for track: $trackId")
-                emptyList()
+                fallback
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error fetching lyrics for track: $trackId")
-                emptyList()
+                fallback
             }
         }
 
@@ -1240,7 +1242,10 @@ constructor(
             databaseRepository.getAllMusicAlbumsFlow(session.serverId, session.userId.toString())
         }
 
-    override suspend fun getCachedLyrics(trackId: UUID): List<AfinityLyricLine>? {
+    override suspend fun getCachedLyrics(trackId: UUID): List<AfinityLyricLine>? =
+        readCachedLyrics(trackId)?.lines
+
+    private suspend fun readCachedLyrics(trackId: UUID): CachedLyrics? {
         val session = sessionManager.currentSession.value ?: return null
         val json =
             databaseRepository.getMusicLyricsJson(

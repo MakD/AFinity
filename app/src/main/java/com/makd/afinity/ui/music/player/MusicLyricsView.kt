@@ -32,6 +32,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontWeight
@@ -116,6 +118,7 @@ private fun LyricLineRow(
     seekState: State<(Long) -> Unit>,
     accentColor: Color,
 ) {
+    val readableAccent = remember(accentColor) { accentColor.readableOnDark() }
     val lineAlpha =
         animateFloatAsState(
             targetValue =
@@ -187,7 +190,7 @@ private fun LyricLineRow(
             Text(
                 text = line.text,
                 style = textStyle,
-                color = accentColor,
+                color = readableAccent,
                 onTextLayout = { layoutResult.value = it },
                 modifier =
                     Modifier.fillMaxWidth().drawWithContent {
@@ -199,10 +202,17 @@ private fun LyricLineRow(
         Text(
             text = line.text,
             style = textStyle,
-            color = if (isCurrent) accentColor else Color.White,
+            color = if (isCurrent) readableAccent else Color.White,
             modifier = rowModifier,
         )
     }
+}
+
+private fun Color.readableOnDark(minLuminance: Float = 0.45f): Color {
+    val current = luminance()
+    if (current >= minLuminance) return this
+    val lift = (((minLuminance - current) / minLuminance) * 0.7f).coerceIn(0f, 0.7f)
+    return lerp(this, Color.White, lift)
 }
 
 private fun ContentDrawScope.drawKaraokeFill(layout: TextLayoutResult?, progress: Float) {

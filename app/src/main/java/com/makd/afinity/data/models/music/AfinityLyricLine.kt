@@ -52,22 +52,30 @@ private fun LyricLineCue.toAfinityLyricCue(textLength: Int): AfinityLyricCue? {
     )
 }
 
+data class CachedLyrics(val lines: List<AfinityLyricLine>, val cueAware: Boolean)
+
 fun encodeLyricsJson(lines: List<AfinityLyricLine>): String = lyricJson.encodeToString(lines)
 
-fun decodeLyricsJson(json: String): List<AfinityLyricLine>? =
+fun decodeLyricsJson(json: String): CachedLyrics? =
     runCatching {
             val root = lyricJson.parseToJsonElement(json).jsonArray
             if (root.firstOrNull() is JsonArray) {
-                root.mapNotNull { element ->
-                    val pair = element.jsonArray
-                    val text = pair.getOrNull(0)?.jsonPrimitive?.content ?: return@mapNotNull null
-                    val seconds =
-                        pair.getOrNull(1)?.jsonPrimitive?.content?.toDoubleOrNull()
-                            ?: return@mapNotNull null
-                    AfinityLyricLine(text = text, startSeconds = seconds)
-                }
+                val lines =
+                    root.mapNotNull { element ->
+                        val pair = element.jsonArray
+                        val text =
+                            pair.getOrNull(0)?.jsonPrimitive?.content ?: return@mapNotNull null
+                        val seconds =
+                            pair.getOrNull(1)?.jsonPrimitive?.content?.toDoubleOrNull()
+                                ?: return@mapNotNull null
+                        AfinityLyricLine(text = text, startSeconds = seconds)
+                    }
+                CachedLyrics(lines, cueAware = false)
             } else {
-                lyricJson.decodeFromJsonElement<List<AfinityLyricLine>>(root)
+                CachedLyrics(
+                    lyricJson.decodeFromJsonElement<List<AfinityLyricLine>>(root),
+                    cueAware = true,
+                )
             }
         }
         .getOrNull()
