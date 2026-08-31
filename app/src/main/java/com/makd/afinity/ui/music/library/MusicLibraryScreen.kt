@@ -123,6 +123,7 @@ import java.util.UUID
 enum class LibraryFilter(@StringRes val displayNameRes: Int) {
     Home(R.string.music_tab_home),
     Playlists(R.string.music_tab_playlists),
+    AlbumArtists(R.string.music_tab_album_artists),
     Artists(R.string.music_tab_artists),
     Albums(R.string.music_tab_albums),
     Tracks(R.string.music_tab_tracks),
@@ -840,11 +841,18 @@ private fun LibraryShortcutsRow(
                 gradientEnd = Color(0xFF5A5482),
             ),
             LibraryShortcut(
-                filter = LibraryFilter.Artists,
-                labelRes = R.string.music_nav_artists,
+                filter = LibraryFilter.AlbumArtists,
+                labelRes = R.string.music_nav_album_artists,
                 iconRes = R.drawable.ic_microphone,
                 gradientStart = Color(0xFFE2AE95),
                 gradientEnd = Color(0xFF965243),
+            ),
+            LibraryShortcut(
+                filter = LibraryFilter.Artists,
+                labelRes = R.string.music_nav_artists,
+                iconRes = R.drawable.ic_microphone,
+                gradientStart = Color(0xFFD9B8A2),
+                gradientEnd = Color(0xFF7E5A4E),
             ),
             LibraryShortcut(
                 filter = LibraryFilter.Albums,

@@ -242,6 +242,9 @@ constructor(
     private val _artistLetterFilter = MutableStateFlow<String?>(null)
     val artistLetterFilter: StateFlow<String?> = _artistLetterFilter.asStateFlow()
 
+    private val _allArtistLetterFilter = MutableStateFlow<String?>(null)
+    val allArtistLetterFilter: StateFlow<String?> = _allArtistLetterFilter.asStateFlow()
+
     private val _trackFilters = MutableStateFlow(MusicFilters())
     val trackFilters: StateFlow<MusicFilters> = _trackFilters.asStateFlow()
 
@@ -250,6 +253,9 @@ constructor(
 
     private val _artistFilters = MutableStateFlow(MusicFilters())
     val artistFilters: StateFlow<MusicFilters> = _artistFilters.asStateFlow()
+
+    private val _allArtistFilters = MutableStateFlow(MusicFilters())
+    val allArtistFilters: StateFlow<MusicFilters> = _allArtistFilters.asStateFlow()
 
     val genresPagingFlow: Flow<PagingData<AfinityMusicGenre>> =
         Pager(
@@ -343,6 +349,32 @@ constructor(
                             sortOrder = SortOrder.ASCENDING,
                             filters = filters,
                             nameStartsWith = letter?.let { if (it == "#") "0" else it },
+                            albumArtistsOnly = true,
+                        )
+                    }
+                    .flow
+            }
+            .cachedIn(viewModelScope)
+            .combine(itemStore.overlay) { pagingData, overlay ->
+                if (overlay.isEmpty()) pagingData
+                else pagingData.map { artist -> itemStore.mergeOwner(artist) }
+            }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val allArtistsPagingFlow: Flow<PagingData<AfinityArtist>> =
+        combine(_allArtistFilters, _allArtistLetterFilter, _refreshTrigger) { filters, letter, _ ->
+                Pair(filters, letter)
+            }
+            .flatMapLatest { (filters, letter) ->
+                Pager(PagingConfig(pageSize = PAGE_SIZE, prefetchDistance = PREFETCH_DISTANCE)) {
+                        MusicArtistsPagingSource(
+                            musicRepository = musicRepository,
+                            libraryId = libraryId,
+                            sortBy = ItemSortBy.SORT_NAME,
+                            sortOrder = SortOrder.ASCENDING,
+                            filters = filters,
+                            nameStartsWith = letter?.let { if (it == "#") "0" else it },
+                            albumArtistsOnly = false,
                         )
                     }
                     .flow
@@ -424,6 +456,10 @@ constructor(
         _artistLetterFilter.value = if (_artistLetterFilter.value == letter) null else letter
     }
 
+    fun filterAllArtistsByLetter(letter: String) {
+        _allArtistLetterFilter.value = if (_allArtistLetterFilter.value == letter) null else letter
+    }
+
     fun setTrackFilters(filters: MusicFilters) {
         _trackFilters.value = filters
         persistBrowsePrefs()
@@ -436,6 +472,11 @@ constructor(
 
     fun setArtistFilters(filters: MusicFilters) {
         _artistFilters.value = filters
+        persistBrowsePrefs()
+    }
+
+    fun setAllArtistFilters(filters: MusicFilters) {
+        _allArtistFilters.value = filters
         persistBrowsePrefs()
     }
 
@@ -454,6 +495,7 @@ constructor(
             _albumSortDescending.value = prefs.albumSortDescending
             _albumFilters.value = prefs.albumFilters
             _artistFilters.value = prefs.artistFilters
+            _allArtistFilters.value = prefs.allArtistFilters
             _trackSortField.value = parseSortField(prefs.trackSortField)
             _trackSortDescending.value = prefs.trackSortDescending
             _trackFilters.value = prefs.trackFilters
@@ -468,6 +510,7 @@ constructor(
                     albumSortDescending = _albumSortDescending.value,
                     albumFilters = _albumFilters.value,
                     artistFilters = _artistFilters.value,
+                    allArtistFilters = _allArtistFilters.value,
                     trackSortField = _trackSortField.value.name,
                     trackSortDescending = _trackSortDescending.value,
                     trackFilters = _trackFilters.value,

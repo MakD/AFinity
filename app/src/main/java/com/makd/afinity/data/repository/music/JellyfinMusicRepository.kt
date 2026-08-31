@@ -191,6 +191,7 @@ constructor(
         startIndex: Int,
         limit: Int,
         nameStartsWith: String?,
+        albumArtistsOnly: Boolean,
     ): List<AfinityArtist> =
         apiCall(emptyList(), "Failed to fetch artists for library: $libraryId") { apiClient, userId
             ->
@@ -198,26 +199,49 @@ constructor(
 
             val itemFilters = buildList { if (filters.favoritesOnly) add(ItemFilter.IS_FAVORITE) }
 
-            val response =
-                ArtistApi(apiClient)
-                    .getAlbumArtists(
-                        userId = userId,
-                        parentId = libraryId,
-                        sortBy = listOf(sortBy),
-                        sortOrder = listOf(sortOrder),
-                        filters = itemFilters.ifEmpty { null },
-                        genres = filters.genres.toList().ifEmpty { null },
-                        years = filters.years.toList().ifEmpty { null },
-                        startIndex = startIndex,
-                        limit = limit,
-                        fields = FieldSets.MUSIC_ARTIST,
-                        enableUserData = true,
-                        nameStartsWith = nameStartsWith,
-                        enableTotalRecordCount = false,
-                    )
-            response.content.items.mapNotNull { dto ->
-                runCatching { dto.toAfinityArtist(baseUrl) }.getOrNull()
-            }
+            val items =
+                if (albumArtistsOnly) {
+                    ArtistApi(apiClient)
+                        .getAlbumArtists(
+                            userId = userId,
+                            parentId = libraryId,
+                            sortBy = listOf(sortBy),
+                            sortOrder = listOf(sortOrder),
+                            filters = itemFilters.ifEmpty { null },
+                            genres = filters.genres.toList().ifEmpty { null },
+                            years = filters.years.toList().ifEmpty { null },
+                            startIndex = startIndex,
+                            limit = limit,
+                            fields = FieldSets.MUSIC_ARTIST,
+                            enableUserData = true,
+                            nameStartsWith = nameStartsWith,
+                            enableTotalRecordCount = false,
+                        )
+                        .content
+                        .items
+                } else {
+                    LibraryApi(apiClient)
+                        .getItems(
+                            userId = userId,
+                            parentId = libraryId,
+                            includeItemTypes = listOf(BaseItemKind.MUSIC_ARTIST),
+                            sortBy = listOf(sortBy),
+                            sortOrder = listOf(sortOrder),
+                            filters = itemFilters.ifEmpty { null },
+                            genres = filters.genres.toList().ifEmpty { null },
+                            years = filters.years.toList().ifEmpty { null },
+                            startIndex = startIndex,
+                            limit = limit,
+                            fields = FieldSets.MUSIC_ARTIST,
+                            enableUserData = true,
+                            recursive = true,
+                            nameStartsWith = nameStartsWith,
+                            enableTotalRecordCount = false,
+                        )
+                        .content
+                        .items
+                }
+            items.mapNotNull { dto -> runCatching { dto.toAfinityArtist(baseUrl) }.getOrNull() }
         }
 
     override suspend fun getMusicFilterOptions(

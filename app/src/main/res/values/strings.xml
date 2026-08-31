@@ -1813,6 +1813,7 @@
     <string name="nav_home">Home</string>
     <string name="nav_audiobooks">Audiobooks</string>
     <string name="music_tab_playlists">Playlists</string>
+    <string name="music_tab_album_artists">Album Artists</string>
     <string name="music_tab_artists">Artists</string>
     <string name="music_tab_albums">Albums</string>
     <string name="music_tab_tracks">Tracks</string>
@@ -1918,6 +1919,7 @@
     <!-- Nav Shortcuts -->
     <string name="music_nav_playlists">Playlists</string>
     <string name="music_nav_artists">Artists</string>
+    <string name="music_nav_album_artists">Album Artists</string>
     <string name="music_nav_albums">Albums</string>
     <string name="music_nav_tracks">Tracks</string>
     <string name="music_nav_genres">Genres</string>

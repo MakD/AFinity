@@ -17,6 +17,7 @@ class MusicArtistsPagingSource(
     private val sortOrder: SortOrder,
     private val filters: MusicFilters,
     private val nameStartsWith: String?,
+    private val albumArtistsOnly: Boolean = true,
 ) : PagingSource<Int, AfinityArtist>() {
 
     companion object {
@@ -35,6 +36,7 @@ class MusicArtistsPagingSource(
                     startIndex = page * PAGE_SIZE,
                     limit = PAGE_SIZE,
                     nameStartsWith = nameStartsWith,
+                    albumArtistsOnly = albumArtistsOnly,
                 )
             LoadResult.Page(
                 data = items,

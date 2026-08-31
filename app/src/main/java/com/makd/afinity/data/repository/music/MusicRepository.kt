@@ -51,6 +51,7 @@ interface MusicRepository {
         startIndex: Int = 0,
         limit: Int = 50,
         nameStartsWith: String? = null,
+        albumArtistsOnly: Boolean = true,
     ): List<AfinityArtist>
 
     suspend fun getMusicFilterOptions(

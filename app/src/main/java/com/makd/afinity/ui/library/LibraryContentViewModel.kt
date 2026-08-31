@@ -258,7 +258,11 @@ constructor(
                 _uiState.update { it.copy(userName = name) }
             }
         }
-        viewModelScope.launch { adminChangeBroadcaster.itemChanged.collect { loadItems() } }
+        viewModelScope.launch {
+            adminChangeBroadcaster.itemChanged.collect {
+                currentLibraryPagingSource?.invalidate() ?: loadItems()
+            }
+        }
 
         viewModelScope.launch {
             mediaChangeManager.libraryContentChanges.collect { event ->

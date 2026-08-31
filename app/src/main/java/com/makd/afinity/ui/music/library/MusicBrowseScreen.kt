@@ -70,9 +70,11 @@ fun MusicBrowseScreen(
     val albumFilterOptions by viewModel.albumFilterOptions.collectAsStateWithLifecycle()
     val albumLetterFilter by viewModel.albumLetterFilter.collectAsStateWithLifecycle()
     val artistLetterFilter by viewModel.artistLetterFilter.collectAsStateWithLifecycle()
+    val allArtistLetterFilter by viewModel.allArtistLetterFilter.collectAsStateWithLifecycle()
     val trackFilters by viewModel.trackFilters.collectAsStateWithLifecycle()
     val albumFilters by viewModel.albumFilters.collectAsStateWithLifecycle()
     val artistFilters by viewModel.artistFilters.collectAsStateWithLifecycle()
+    val allArtistFilters by viewModel.allArtistFilters.collectAsStateWithLifecycle()
     val isDownloadAllowedByServer by
         viewModel.isDownloadAllowedByServer.collectAsStateWithLifecycle()
     val canDownloadOnNetwork by viewModel.canDownloadOnNetwork.collectAsStateWithLifecycle()
@@ -85,6 +87,7 @@ fun MusicBrowseScreen(
     var showAlbumSortDialog by remember { mutableStateOf(false) }
     var showAlbumFilterSheet by remember { mutableStateOf(false) }
     var showArtistFilterSheet by remember { mutableStateOf(false) }
+    var showAllArtistFilterSheet by remember { mutableStateOf(false) }
     var showTrackSortDialog by remember { mutableStateOf(false) }
     var showTrackFilterSheet by remember { mutableStateOf(false) }
 
@@ -94,10 +97,12 @@ fun MusicBrowseScreen(
     val lazyTracks = viewModel.tracksPagingFlow.collectAsLazyPagingItems()
     val lazyAlbums = viewModel.albumsPagingFlow.collectAsLazyPagingItems()
     val lazyArtists = viewModel.artistsPagingFlow.collectAsLazyPagingItems()
+    val lazyAllArtists = viewModel.allArtistsPagingFlow.collectAsLazyPagingItems()
 
     val tracksListState = rememberLazyListState()
     val albumsGridState = rememberLazyGridState()
     val artistsGridState = rememberLazyGridState()
+    val allArtistsGridState = rememberLazyGridState()
     val playlistsGridState = rememberLazyGridState()
     val genresGridState = rememberLazyGridState()
 
@@ -146,10 +151,15 @@ fun MusicBrowseScreen(
                                 )
                             }
                         }
-                    LibraryFilter.Artists ->
+                    LibraryFilter.AlbumArtists ->
                         FilterFab(
                             active = artistFilters.isActive,
                             onClick = { showArtistFilterSheet = true },
+                        )
+                    LibraryFilter.Artists ->
+                        FilterFab(
+                            active = allArtistFilters.isActive,
+                            onClick = { showAllArtistFilterSheet = true },
                         )
                     LibraryFilter.Tracks ->
                         Column(
@@ -200,12 +210,25 @@ fun MusicBrowseScreen(
                     },
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
                 )
-            LibraryFilter.Artists ->
+            LibraryFilter.AlbumArtists ->
                 ArtistsGrid(
                     gridState = artistsGridState,
                     artists = lazyArtists,
                     letterFilter = artistLetterFilter,
                     onLetterSelected = viewModel::filterArtistsByLetter,
+                    onArtistClick = { artist ->
+                        navController.navigate(
+                            Destination.createMusicArtistRoute(artist.id.toString())
+                        )
+                    },
+                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                )
+            LibraryFilter.Artists ->
+                ArtistsGrid(
+                    gridState = allArtistsGridState,
+                    artists = lazyAllArtists,
+                    letterFilter = allArtistLetterFilter,
+                    onLetterSelected = viewModel::filterAllArtistsByLetter,
                     onArtistClick = { artist ->
                         navController.navigate(
                             Destination.createMusicArtistRoute(artist.id.toString())
@@ -323,6 +346,15 @@ fun MusicBrowseScreen(
             options = albumFilterOptions,
             onApply = { viewModel.setArtistFilters(it) },
             onDismiss = { showArtistFilterSheet = false },
+        )
+    }
+
+    if (showAllArtistFilterSheet) {
+        MusicFilterBottomSheet(
+            filters = allArtistFilters,
+            options = albumFilterOptions,
+            onApply = { viewModel.setAllArtistFilters(it) },
+            onDismiss = { showAllArtistFilterSheet = false },
         )
     }
 

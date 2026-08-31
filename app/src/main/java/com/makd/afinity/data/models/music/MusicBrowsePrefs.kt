@@ -8,6 +8,7 @@ data class MusicBrowsePrefs(
     val albumSortDescending: Boolean = false,
     val albumFilters: MusicFilters = MusicFilters(),
     val artistFilters: MusicFilters = MusicFilters(),
+    val allArtistFilters: MusicFilters = MusicFilters(),
     val trackSortField: String = "Name",
     val trackSortDescending: Boolean = false,
     val trackFilters: MusicFilters = MusicFilters(),
