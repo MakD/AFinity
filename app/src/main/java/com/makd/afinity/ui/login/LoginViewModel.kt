@@ -5,6 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
+import com.makd.afinity.data.manager.ForgetUserUseCase
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
@@ -40,6 +41,7 @@ constructor(
     private val sessionManager: SessionManager,
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val serverAddressResolver: ServerAddressResolver,
+    private val forgetUser: ForgetUserUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -286,6 +288,14 @@ constructor(
                             ),
                     )
             }
+        }
+    }
+
+    fun forgetSavedUser(user: User) {
+        viewModelScope.launch {
+            forgetUser(user.serverId, user.id)
+                .onSuccess { loadSavedUsers(user.serverId) }
+                .onFailure { Timber.e(it, "Failed to forget saved user ${user.name}") }
         }
     }
 

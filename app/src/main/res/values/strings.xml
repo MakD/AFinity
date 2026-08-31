@@ -1145,6 +1145,10 @@
     <string name="session_switcher_title">Switch Session</string>
     <string name="action_login_server">Login to this server</string>
     <string name="action_add_account">Add another account</string>
+    <string name="forget_account_title">Forget %1$s?</string>
+    <string name="forget_account_message">This removes the saved login for this account and deletes everything downloaded with it. The account itself is not deleted from the server.</string>
+    <string name="forget_account_confirm">Forget</string>
+    <string name="forget_account_failed">Couldn't forget this account. Try again.</string>
     <string name="empty_sessions_title">No saved sessions</string>
     <string name="empty_sessions_message">Login to a server to create a session</string>
 

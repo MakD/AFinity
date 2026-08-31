@@ -272,6 +272,86 @@ abstract class ServerDatabaseDao {
     @Query("DELETE FROM jellyseerr_config WHERE jellyfinServerId = :serverId")
     abstract suspend fun deleteJellyseerrConfigByServerId(serverId: String)
 
+    @Query("SELECT * FROM downloads WHERE serverId = :serverId AND userId = :userId")
+    abstract suspend fun getDownloadsForUser(serverId: String, userId: UUID): List<DownloadDto>
+
+    @Query(
+        "SELECT id FROM abs_downloads WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    abstract suspend fun getAbsDownloadIdsForUser(serverId: String, userId: String): List<UUID>
+
+    @Query("DELETE FROM userdata WHERE userId = :userId AND serverId = :serverId")
+    abstract suspend fun deleteUserDataForUser(userId: UUID, serverId: String)
+
+    @Query("DELETE FROM downloads WHERE serverId = :serverId AND userId = :userId")
+    abstract suspend fun deleteDownloadsForUser(serverId: String, userId: UUID)
+
+    @Query("DELETE FROM abs_downloads WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId")
+    abstract suspend fun deleteAbsDownloadsForUser(serverId: String, userId: String)
+
+    @Query(
+        "DELETE FROM jellyseerr_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    abstract suspend fun deleteJellyseerrConfigForUser(serverId: String, userId: String)
+
+    @Query(
+        "DELETE FROM audiobookshelf_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    abstract suspend fun deleteAudiobookshelfConfigForUser(serverId: String, userId: String)
+
+    @Query(
+        "DELETE FROM audiobookshelf_libraries WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    abstract suspend fun deleteAudiobookshelfLibrariesForUser(serverId: String, userId: String)
+
+    @Query(
+        "DELETE FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    abstract suspend fun deleteAudiobookshelfItemsForUser(serverId: String, userId: String)
+
+    @Query(
+        "DELETE FROM audiobookshelf_progress WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    abstract suspend fun deleteAudiobookshelfProgressForUser(serverId: String, userId: String)
+
+    @Query("DELETE FROM music_tracks WHERE serverId = :serverId AND userId = :userId")
+    abstract suspend fun deleteMusicTracksForUser(serverId: String, userId: String)
+
+    @Query("DELETE FROM music_albums WHERE serverId = :serverId AND userId = :userId")
+    abstract suspend fun deleteMusicAlbumsForUser(serverId: String, userId: String)
+
+    @Query("DELETE FROM music_lyrics WHERE serverId = :serverId AND userId = :userId")
+    abstract suspend fun deleteMusicLyricsForUser(serverId: String, userId: String)
+
+    @Query("DELETE FROM item_metadata_cache WHERE serverId = :serverId AND userId = :userId")
+    abstract suspend fun deleteItemMetadataCacheForUser(serverId: String, userId: String)
+
+    @Query("DELETE FROM users WHERE id = :userId") abstract suspend fun deleteUserRow(userId: UUID)
+
+    /**
+     * Clears every row that belongs to one saved account. Downloaded files are removed by the
+     * caller before this runs, since file IO must not happen inside a Room transaction.
+     */
+    @Transaction
+    open suspend fun clearAllDataForUser(serverId: String, userId: UUID) {
+        val userIdText = userId.toString()
+        deleteUserDataForUser(userId, serverId)
+        deleteDownloadsForUser(serverId, userId)
+        deleteAbsDownloadsForUser(serverId, userIdText)
+        deleteJellyseerrConfigForUser(serverId, userIdText)
+        deleteAudiobookshelfConfigForUser(serverId, userIdText)
+        deleteAudiobookshelfLibrariesForUser(serverId, userIdText)
+        deleteAudiobookshelfItemsForUser(serverId, userIdText)
+        deleteAudiobookshelfProgressForUser(serverId, userIdText)
+        deleteMusicTracksForUser(serverId, userIdText)
+        deleteMusicAlbumsForUser(serverId, userIdText)
+        deleteMusicLyricsForUser(serverId, userIdText)
+        deleteItemMetadataCacheForUser(serverId, userIdText)
+        deleteOrphanedSources()
+        deleteOrphanedMediaStreams()
+        deleteUserRow(userId)
+    }
+
     @Transaction
     open suspend fun clearAllDataForServer(serverId: String) {
         deleteMoviesByServerId(serverId)

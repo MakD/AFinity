@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
+import com.makd.afinity.data.manager.ForgetUserUseCase
 import com.makd.afinity.data.manager.Session
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.manager.UserImageStore
@@ -54,6 +55,7 @@ constructor(
     private val authRepository: AuthRepository,
     private val appDataRepository: AppDataRepository,
     private val userImageStore: UserImageStore,
+    private val forgetUser: ForgetUserUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SessionSwitcherState())
@@ -143,6 +145,17 @@ constructor(
                                 ),
                         )
                 }
+        }
+    }
+
+    fun forgetSession(session: UserSession) {
+        if (session.isCurrent) return
+        viewModelScope.launch {
+            forgetUser(session.serverId, session.userId).onFailure { error ->
+                Timber.e(error, "Failed to forget ${session.username}")
+                _state.value =
+                    _state.value.copy(error = context.getString(R.string.forget_account_failed))
+            }
         }
     }
 

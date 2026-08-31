@@ -13,7 +13,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -95,6 +95,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.ForgetAccountDialog
 import com.makd.afinity.ui.components.LoadingButton
 import com.makd.afinity.util.isInsecurePublicUrl
 
@@ -124,6 +125,15 @@ fun LoginScreen(
         )
     val savedServers by viewModel.savedServers.collectAsStateWithLifecycle()
     val savedUsers by viewModel.savedUsers.collectAsStateWithLifecycle()
+    var userToForget by remember { mutableStateOf<User?>(null) }
+
+    userToForget?.let { user ->
+        ForgetAccountDialog(
+            userName = user.name,
+            onConfirm = { viewModel.forgetSavedUser(user) },
+            onDismiss = { userToForget = null },
+        )
+    }
 
     var selectedLoginMethod by remember { mutableStateOf(LoginMethod.PASSWORD) }
 
@@ -248,6 +258,7 @@ fun LoginScreen(
                                     onMethodChange = { selectedLoginMethod = it },
                                     onUserSelect = viewModel::selectUser,
                                     onSavedUserLogin = viewModel::loginWithSavedUser,
+                                    onForgetSavedUser = { userToForget = it },
                                 )
                                 Spacer(modifier = Modifier.height(expandedBottomSpacer))
                             }
@@ -360,6 +371,7 @@ fun LoginScreen(
                                     onMethodChange = { selectedLoginMethod = it },
                                     onUserSelect = viewModel::selectUser,
                                     onSavedUserLogin = viewModel::loginWithSavedUser,
+                                    onForgetSavedUser = { userToForget = it },
                                 )
                                 Spacer(modifier = Modifier.height(24.dp))
                                 UserLoginForms(
@@ -766,6 +778,7 @@ private fun UserSelectionAndTabs(
     onMethodChange: (LoginMethod) -> Unit,
     onUserSelect: (User) -> Unit,
     onSavedUserLogin: (User) -> Unit,
+    onForgetSavedUser: (User) -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
         val allUsers = (savedUsers + publicUsers).distinctBy { it.id }
@@ -778,19 +791,20 @@ private fun UserSelectionAndTabs(
             ) {
                 items(allUsers, key = { it.id.toString() }) { user ->
                     val isSelected = uiState.selectedUser?.id == user.id
+                    val isSaved = savedUsers.any { it.id == user.id }
                     UserAvatarItem(
                         user = user,
                         isSelected = isSelected,
                         serverUrl = serverUrl,
                         onClick = {
                             if (!uiState.isLoggingIn) {
-                                if (savedUsers.any { it.id == user.id }) {
-                                    onSavedUserLogin(user)
-                                } else {
-                                    onUserSelect(user)
-                                }
+                                if (isSaved) onSavedUserLogin(user) else onUserSelect(user)
                             }
                         },
+                        onLongClick =
+                            if (isSaved && !uiState.isLoggingIn) {
+                                { onForgetSavedUser(user) }
+                            } else null,
                     )
                 }
             }
@@ -851,6 +865,7 @@ private fun UserAvatarItem(
     isSelected: Boolean,
     serverUrl: String,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)?,
 ) {
     val imageUrl =
         user.primaryImageTag?.let {
@@ -861,7 +876,12 @@ private fun UserAvatarItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier =
             Modifier.width(84.dp)
-                .clickable(interactionSource = null, indication = null, onClick = onClick),
+                .combinedClickable(
+                    interactionSource = null,
+                    indication = null,
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                ),
     ) {
         Box(
             modifier =
