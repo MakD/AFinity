@@ -71,6 +71,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
@@ -828,9 +829,12 @@ fun HomeScreen(
                     }
                 }
             },
-            onProfileClick = onProfileClick,
-            userName = mainUiState.userName,
-            userProfileImageUrl = mainUiState.userProfileImageUrl,
+            profile =
+                AppBarProfile(
+                    onClick = onProfileClick,
+                    name = mainUiState.userName,
+                    imageUrl = mainUiState.userProfileImageUrl,
+                ),
             backgroundOpacity = { topBarOpacity },
             isFetchingRandom = isFetchingRandom,
         )

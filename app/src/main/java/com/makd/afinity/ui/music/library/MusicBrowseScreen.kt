@@ -40,6 +40,7 @@ import com.makd.afinity.navigation.Destination.Companion.createSettingsRoute
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
@@ -59,6 +60,7 @@ fun MusicBrowseScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val userProfileImageUrl by viewModel.userProfileImageUrl.collectAsStateWithLifecycle()
+    val userName by viewModel.userName.collectAsStateWithLifecycle()
     val playbackState by playerViewModel.playbackState.collectAsStateWithLifecycle()
     val isOffline by playerViewModel.isOffline.collectAsStateWithLifecycle()
     val trackSortField by viewModel.trackSortField.collectAsStateWithLifecycle()
@@ -116,9 +118,13 @@ fun MusicBrowseScreen(
                     )
                 },
                 backgroundOpacity = { 1f },
-                userProfileImageUrl = userProfileImageUrl,
+                profile =
+                    AppBarProfile(
+                        onClick = { navController.navigate(createSettingsRoute()) },
+                        name = userName,
+                        imageUrl = userProfileImageUrl,
+                    ),
                 onSearchClick = { navController.navigate(createSearchRoute()) },
-                onProfileClick = { navController.navigate(createSettingsRoute()) },
             )
         },
         floatingActionButton = {

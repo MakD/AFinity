@@ -42,6 +42,7 @@ import com.makd.afinity.data.models.jellyseerr.hasPermission
 import com.makd.afinity.data.models.jellyseerr.isAdmin
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
@@ -90,9 +91,12 @@ fun RequestsScreen(
                 },
                 onMenuClick = onMenuClick,
                 onSearchClick = onSearchClick,
-                onProfileClick = onProfileClick,
-                userProfileImageUrl = mainUiState.userProfileImageUrl,
-                userName = mainUiState.userName,
+                profile =
+                    AppBarProfile(
+                        onClick = onProfileClick,
+                        name = mainUiState.userName,
+                        imageUrl = mainUiState.userProfileImageUrl,
+                    ),
             )
         },
         modifier = modifier.fillMaxSize(),

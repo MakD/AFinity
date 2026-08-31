@@ -253,6 +253,11 @@ constructor(
                 _uiState.update { it.copy(userProfileImageUrl = url) }
             }
         }
+        viewModelScope.launch {
+            appDataRepository.userName.collect { name ->
+                _uiState.update { it.copy(userName = name) }
+            }
+        }
         viewModelScope.launch { adminChangeBroadcaster.itemChanged.collect { loadItems() } }
 
         viewModelScope.launch {
@@ -536,6 +541,7 @@ data class LibraryContentUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val userProfileImageUrl: String? = null,
+    val userName: String? = null,
     val currentSortBy: SortBy = SortBy.NAME,
     val currentSortDescending: Boolean = false,
     val currentFilters: LibraryFilters = LibraryFilters(),

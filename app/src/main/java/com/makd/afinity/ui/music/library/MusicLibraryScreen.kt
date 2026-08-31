@@ -97,6 +97,7 @@ import com.makd.afinity.player.AudioService
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AlphabetScroller
+import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.SectionRowHeader
@@ -137,6 +138,7 @@ fun MusicLibraryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val userProfileImageUrl by viewModel.userProfileImageUrl.collectAsStateWithLifecycle()
+    val userName by viewModel.userName.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     val homeListState = rememberLazyListState()
@@ -162,9 +164,13 @@ fun MusicLibraryScreen(
                     )
                 },
                 backgroundOpacity = { topBarOpacity },
-                userProfileImageUrl = userProfileImageUrl,
+                profile =
+                    AppBarProfile(
+                        onClick = { navController.navigate(Destination.createSettingsRoute()) },
+                        name = userName,
+                        imageUrl = userProfileImageUrl,
+                    ),
                 onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
-                onProfileClick = { navController.navigate(Destination.createSettingsRoute()) },
             )
         }
     ) { innerPadding ->

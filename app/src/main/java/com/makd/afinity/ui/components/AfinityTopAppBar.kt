@@ -30,10 +30,8 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -75,6 +73,12 @@ constructor(
     }
 }
 
+/**
+ * Identity for the top bar's avatar. Grouping the three values means a screen cannot show the
+ * avatar without also supplying the name it falls back to.
+ */
+data class AppBarProfile(val onClick: () -> Unit, val name: String?, val imageUrl: String?)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AfinityTopAppBar(
@@ -82,11 +86,9 @@ fun AfinityTopAppBar(
     modifier: Modifier = Modifier,
     onSearchClick: (() -> Unit)? = null,
     onRandomClick: (() -> Unit)? = null,
-    onProfileClick: (() -> Unit)? = null,
+    profile: AppBarProfile? = null,
     onMenuClick: (() -> Unit)? = null,
     onHomeClick: (() -> Unit)? = null,
-    userName: String? = null,
-    userProfileImageUrl: String? = null,
     backgroundOpacity: () -> Float = { 0f },
     actions: @Composable (RowScope.() -> Unit) = {},
     viewModel: AfinityTopAppBarViewModel = hiltViewModel(),
@@ -211,46 +213,22 @@ fun AfinityTopAppBar(
                 Spacer(modifier = Modifier.width(8.dp))
             }
 
-            if (onProfileClick != null) {
+            if (profile != null) {
                 Box(
                     modifier =
                         Modifier.size(42.dp).graphicsLayer {
                             compositingStrategy = CompositingStrategy.Offscreen
                         }
                 ) {
-                    IconButton(onClick = onProfileClick, modifier = Modifier.size(42.dp)) {
-                        Box(
-                            modifier =
-                                Modifier.fillMaxSize()
-                                    .background(Color.Black.copy(alpha = 0.3f), CircleShape)
-                                    .clip(CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            if (userProfileImageUrl != null) {
-                                AsyncImage(
-                                    imageUrl = userProfileImageUrl,
-                                    contentDescription = stringResource(R.string.cd_profile_icon),
-                                    targetWidth = 48.dp,
-                                    targetHeight = 48.dp,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop,
-                                )
-                            } else if (!userName.isNullOrBlank()) {
-                                Text(
-                                    text = userName.take(1).uppercase(),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                )
-                            } else {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_user_circle),
-                                    contentDescription = stringResource(R.string.cd_profile_icon),
-                                    tint = Color.White,
-                                    modifier = Modifier.size(32.dp),
-                                )
-                            }
-                        }
+                    IconButton(onClick = profile.onClick, modifier = Modifier.size(42.dp)) {
+                        UserAvatar(
+                            imageUrl = profile.imageUrl,
+                            name = profile.name,
+                            size = 42.dp,
+                            containerColor = Color.Black.copy(alpha = 0.3f),
+                            contentColor = Color.White,
+                            contentDescription = stringResource(R.string.cd_profile_icon),
+                        )
                     }
 
                     ConnectionIndicatorBadge(

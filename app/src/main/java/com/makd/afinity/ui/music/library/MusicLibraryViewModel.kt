@@ -210,6 +210,8 @@ constructor(
 
     val userProfileImageUrl: StateFlow<String?> = appDataRepository.userProfileImageUrl
 
+    val userName: StateFlow<String?> = appDataRepository.userName
+
     private val _uiState = MutableStateFlow(MusicLibraryUiState())
     val uiState: StateFlow<MusicLibraryUiState> = _uiState.asStateFlow()
 

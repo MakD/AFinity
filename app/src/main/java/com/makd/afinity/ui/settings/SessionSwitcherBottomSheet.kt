@@ -36,7 +36,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -47,7 +46,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.ui.components.AFinitySnackbar
-import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.UserAvatar
 import kotlinx.coroutines.launch
 
 @Composable
@@ -261,31 +260,14 @@ private fun SessionItem(session: UserSession, onClick: () -> Unit, modifier: Mod
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(
-            modifier =
-                Modifier.size(40.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (session.userAvatar != null) {
-                AsyncImage(
-                    imageUrl = session.userAvatar,
-                    contentDescription = stringResource(R.string.cd_user_avatar),
-                    targetWidth = 40.dp,
-                    targetHeight = 40.dp,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(40.dp),
-                )
-            } else {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_user),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-        }
+        UserAvatar(
+            imageUrl = session.userAvatar,
+            name = session.username,
+            size = 40.dp,
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            contentDescription = stringResource(R.string.cd_user_avatar),
+        )
 
         Text(
             text = session.username,

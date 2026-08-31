@@ -77,6 +77,7 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AlphabetScroller
+import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
@@ -148,8 +149,12 @@ fun LibraryContentScreen(
                     )
                 },
                 backgroundOpacity = { 1f },
-                userProfileImageUrl = uiState.userProfileImageUrl,
-                onProfileClick = onProfileClick,
+                profile =
+                    AppBarProfile(
+                        onClick = onProfileClick,
+                        name = uiState.userName,
+                        imageUrl = uiState.userProfileImageUrl,
+                    ),
                 onSearchClick = {
                     val route = Destination.createSearchRoute()
                     navController.navigate(route)
