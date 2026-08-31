@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -502,13 +504,24 @@ fun EpisodeDetailOverlay(
     } else {
         ModalBottomSheet(
             onDismissRequest = onDismiss,
+            modifier =
+                Modifier.windowInsetsPadding(
+                    WindowInsets.systemBars
+                        .union(WindowInsets.displayCutout)
+                        .only(WindowInsetsSides.Horizontal)
+                ),
             sheetState = sheetState,
             containerColor = MaterialTheme.colorScheme.surface,
             contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
             dragHandle = {
                 Box(
                     modifier =
-                        Modifier.padding(vertical = 10.dp)
+                        Modifier.windowInsetsPadding(
+                                WindowInsets.systemBars
+                                    .union(WindowInsets.displayCutout)
+                                    .only(WindowInsetsSides.Top)
+                            )
+                            .padding(vertical = 10.dp)
                             .width(32.dp)
                             .height(4.dp)
                             .clip(RoundedCornerShape(2.dp))
