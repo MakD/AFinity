@@ -7,6 +7,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.HomeRow
+import com.makd.afinity.data.models.auth.QuickConnectAuthorization
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.mdblist.MdbListUsage
 import com.makd.afinity.data.models.player.AssRenderMode
@@ -1146,7 +1147,9 @@ constructor(
                         quickConnectAuthError = null,
                         quickConnectAuthSuccess = false,
                     )
-                val authorized = authRepository.authorizeQuickConnect(code)
+                val authorized =
+                    authRepository.authorizeQuickConnect(code) ==
+                        QuickConnectAuthorization.APPROVED
                 _uiState.value =
                     _uiState.value.copy(
                         isAuthorizingQuickConnect = false,

@@ -12,6 +12,8 @@ import com.makd.afinity.data.models.jellyseerr.LoginResponse
 import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import com.makd.afinity.data.models.jellyseerr.PersonCombinedCreditsResponse
 import com.makd.afinity.data.models.jellyseerr.PublicSettings
+import com.makd.afinity.data.models.jellyseerr.QuickConnectAuthenticateRequest
+import com.makd.afinity.data.models.jellyseerr.QuickConnectInitiateResponse
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.RequestsResponse
 import com.makd.afinity.data.models.jellyseerr.RottenTomatoesRating
@@ -38,6 +40,14 @@ interface JellyseerrApiService {
 
     @POST("api/v1/auth/jellyfin")
     suspend fun loginJellyfin(@Body request: JellyfinLoginRequest): Response<LoginResponse>
+
+    @POST("api/v1/auth/jellyfin/quickconnect/initiate")
+    suspend fun initiateQuickConnect(): Response<QuickConnectInitiateResponse>
+
+    @POST("api/v1/auth/jellyfin/quickconnect/authenticate")
+    suspend fun authenticateQuickConnect(
+        @Body request: QuickConnectAuthenticateRequest
+    ): Response<LoginResponse>
 
     @GET("api/v1/auth/me") suspend fun getCurrentUser(): Response<JellyseerrUser>
 

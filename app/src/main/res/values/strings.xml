@@ -1684,6 +1684,14 @@
     <string name="error_invalid_jellyfin_password">Incorrect password for your Jellyfin account.</string>
     <string name="error_no_jellyfin_session">No active Jellyfin session. Sign in to Jellyfin first.</string>
     <string name="error_seerr_account_setup_failed">Seerr accepted your credentials but could not finish setting up your account. Ask your Seerr administrator to check the server logs.</string>
+    <string name="jellyseerr_quick_connect_button">Sign in with Quick Connect</string>
+    <string name="jellyseerr_quick_connect_description">Sign in using your current Jellyfin session, without entering a password.</string>
+    <string name="jellyseerr_login_divider_or">or</string>
+    <string name="error_seerr_quick_connect_unsupported">This Seerr server is too old for Quick Connect. Seerr 3.4.0 or newer is required.</string>
+    <string name="error_seerr_quick_connect_initiate">Seerr could not start a Quick Connect request. Please try again.</string>
+    <string name="error_seerr_quick_connect_other_server">Seerr is pointed at a different Jellyfin server than the one you are signed in to.</string>
+    <string name="error_seerr_quick_connect_not_approved">Quick Connect request could not be approved. Please try again.</string>
+    <string name="error_seerr_quick_connect_access_denied">Your Jellyfin account has no Seerr account. Ask your Seerr administrator to import it.</string>
     <string name="error_server_connect_failed_fmt">Failed to connect to server: %1$s</string>
     <string name="error_login_failed_fmt">Login failed: %1$s</string>
     <string name="error_abs_server_unreachable">Could not connect. Please verify this is a valid Audiobookshelf server.</string>

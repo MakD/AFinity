@@ -17,12 +17,15 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
 import com.makd.afinity.data.models.jellyseerr.JellyseerrSearchResult
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.LoginRequest
+import com.makd.afinity.data.models.jellyseerr.LoginResponse
 import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import com.makd.afinity.data.models.jellyseerr.MediaInfo
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.PersonCombinedCreditsResponse
 import com.makd.afinity.data.models.jellyseerr.PublicSettings
+import com.makd.afinity.data.models.jellyseerr.QuickConnectAuthenticateRequest
+import com.makd.afinity.data.models.jellyseerr.QuickConnectInitiateResponse
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.RequestStatus
 import com.makd.afinity.data.models.jellyseerr.RequestUser
@@ -62,6 +65,7 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import retrofit2.Response
 import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -356,114 +360,179 @@ constructor(
                         apiService.get().loginLocal(localRequest)
                     }
 
-                if (response.isSuccessful && response.body() != null) {
-                    val loginResponse = response.body()!!
-                    val serverUrl = securePreferencesRepository.getJellyseerrServerUrl() ?: ""
-                    val cookies =
-                        response.headers()["Set-Cookie"]
-                            ?: serverUrl.toHttpUrlOrNull()?.host?.let {
-                                seerrCookieJar.sessionCookieHeader(it)
-                            }
-
-                    if (cookies.isNullOrBlank()) {
-                        Timber.e("Jellyseerr login returned no session cookie")
-                        return@withContext Result.failure(
-                            Exception("Login failed: server did not return a session cookie")
-                        )
-                    }
-
-                    securePreferencesRepository.saveJellyseerrAuthForUser(
-                        jellyfinServerId = currentServerId,
-                        jellyfinUserId = currentUserId,
-                        url = serverUrl,
-                        cookie = cookies,
-                        username = loginResponse.username ?: loginResponse.email ?: "User",
-                    )
-
-                    val existingConfig =
-                        jellyseerrDao.getConfig(currentServerId, currentUserId.toString())
-                    if (
-                        existingConfig != null &&
-                            existingConfig.serverUrl != serverUrl &&
-                            existingConfig.serverUrl.isNotBlank()
-                    ) {
-                        val oldExists =
-                            jellyseerrDao.getAddressByUrl(
-                                currentServerId,
-                                currentUserId.toString(),
-                                existingConfig.serverUrl,
-                            )
-                        if (oldExists == null) {
-                            jellyseerrDao.insertAddress(
-                                JellyseerrAddressEntity(
-                                    id = UUID.randomUUID(),
-                                    jellyfinServerId = currentServerId,
-                                    jellyfinUserId = currentUserId.toString(),
-                                    address = existingConfig.serverUrl,
-                                )
-                            )
-                        }
-                    }
-                    if (serverUrl.isNotBlank()) {
-                        val newExists =
-                            jellyseerrDao.getAddressByUrl(
-                                currentServerId,
-                                currentUserId.toString(),
-                                serverUrl,
-                            )
-                        if (newExists == null) {
-                            jellyseerrDao.insertAddress(
-                                JellyseerrAddressEntity(
-                                    id = UUID.randomUUID(),
-                                    jellyfinServerId = currentServerId,
-                                    jellyfinUserId = currentUserId.toString(),
-                                    address = serverUrl,
-                                )
-                            )
-                        }
-                    }
-
-                    jellyseerrDao.saveConfig(
-                        JellyseerrConfigEntity(
-                            jellyfinServerId = currentServerId,
-                            jellyfinUserId = currentUserId.toString(),
-                            serverUrl = serverUrl,
-                            isLoggedIn = true,
-                            username = loginResponse.username,
-                            userId = loginResponse.id,
-                            permissions = loginResponse.permissions,
-                        )
-                    )
-
-                    _isAuthenticated.value = true
-
-                    val user =
-                        JellyseerrUser(
-                            id = loginResponse.id,
-                            email = loginResponse.email,
-                            username = loginResponse.username,
-                            displayName = loginResponse.displayName,
-                            permissions = loginResponse.permissions,
-                            avatar = loginResponse.avatar,
-                            requestCount = loginResponse.requestCount,
-                            movieQuotaLimit = loginResponse.movieQuotaLimit,
-                            movieQuotaDays = loginResponse.movieQuotaDays,
-                            tvQuotaLimit = loginResponse.tvQuotaLimit,
-                            tvQuotaDays = loginResponse.tvQuotaDays,
-                        )
-
-                    Timber.d("Jellyseerr login successful for user: ${user.username}")
-                    Result.success(user)
-                } else {
-                    val errorMsg = "Login failed: ${response.code()} - ${response.message()}"
-                    Timber.e(errorMsg)
-                    Result.failure(JellyseerrLoginException(response.code(), errorMsg))
-                }
+                persistSession(response, currentServerId, currentUserId)
             } catch (e: Exception) {
                 Timber.e(e, "Jellyseerr login failed")
                 Result.failure(e)
             }
         }
+    }
+
+    override suspend fun initiateQuickConnect(): Result<QuickConnectInitiateResponse> {
+        return withContext(Dispatchers.IO) {
+            if (activeContext == null) {
+                return@withContext Result.failure(Exception("No active Jellyfin session"))
+            }
+
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val response = apiService.get().initiateQuickConnect()
+                val body = response.body()
+
+                if (response.isSuccessful && body != null) {
+                    Result.success(body)
+                } else {
+                    val errorMsg =
+                        "Quick Connect initiate failed: ${response.code()} - ${response.message()}"
+                    Timber.e(errorMsg)
+                    Result.failure(JellyseerrLoginException(response.code(), errorMsg))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Jellyseerr Quick Connect initiate failed")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun authenticateQuickConnect(secret: String): Result<JellyseerrUser> {
+        return withContext(Dispatchers.IO) {
+            val (currentServerId, currentUserId) =
+                activeContext
+                    ?: return@withContext Result.failure(Exception("No active Jellyfin session"))
+
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val response =
+                    apiService
+                        .get()
+                        .authenticateQuickConnect(QuickConnectAuthenticateRequest(secret))
+
+                persistSession(response, currentServerId, currentUserId)
+            } catch (e: Exception) {
+                Timber.e(e, "Jellyseerr Quick Connect authentication failed")
+                Result.failure(e)
+            }
+        }
+    }
+
+    private suspend fun persistSession(
+        response: Response<LoginResponse>,
+        currentServerId: String,
+        currentUserId: UUID,
+    ): Result<JellyseerrUser> {
+        val loginResponse = response.body()
+        if (!response.isSuccessful || loginResponse == null) {
+            val errorMsg = "Login failed: ${response.code()} - ${response.message()}"
+            Timber.e(errorMsg)
+            return Result.failure(JellyseerrLoginException(response.code(), errorMsg))
+        }
+
+        if (activeContext != (currentServerId to currentUserId)) {
+            Timber.w("Jellyfin session changed during Jellyseerr sign-in, discarding result")
+            return Result.failure(Exception("Jellyfin session changed during sign-in"))
+        }
+
+        val serverUrl = securePreferencesRepository.getJellyseerrServerUrl() ?: ""
+        val cookies =
+            response.headers()["Set-Cookie"]
+                ?: serverUrl.toHttpUrlOrNull()?.host?.let {
+                    seerrCookieJar.sessionCookieHeader(it)
+                }
+
+        if (cookies.isNullOrBlank()) {
+            Timber.e("Jellyseerr login returned no session cookie")
+            return Result.failure(
+                Exception("Login failed: server did not return a session cookie")
+            )
+        }
+
+        securePreferencesRepository.saveJellyseerrAuthForUser(
+            jellyfinServerId = currentServerId,
+            jellyfinUserId = currentUserId,
+            url = serverUrl,
+            cookie = cookies,
+            username = loginResponse.username ?: loginResponse.email ?: "User",
+        )
+
+        val existingConfig = jellyseerrDao.getConfig(currentServerId, currentUserId.toString())
+        if (
+            existingConfig != null &&
+                existingConfig.serverUrl != serverUrl &&
+                existingConfig.serverUrl.isNotBlank()
+        ) {
+            val oldExists =
+                jellyseerrDao.getAddressByUrl(
+                    currentServerId,
+                    currentUserId.toString(),
+                    existingConfig.serverUrl,
+                )
+            if (oldExists == null) {
+                jellyseerrDao.insertAddress(
+                    JellyseerrAddressEntity(
+                        id = UUID.randomUUID(),
+                        jellyfinServerId = currentServerId,
+                        jellyfinUserId = currentUserId.toString(),
+                        address = existingConfig.serverUrl,
+                    )
+                )
+            }
+        }
+        if (serverUrl.isNotBlank()) {
+            val newExists =
+                jellyseerrDao.getAddressByUrl(
+                    currentServerId,
+                    currentUserId.toString(),
+                    serverUrl,
+                )
+            if (newExists == null) {
+                jellyseerrDao.insertAddress(
+                    JellyseerrAddressEntity(
+                        id = UUID.randomUUID(),
+                        jellyfinServerId = currentServerId,
+                        jellyfinUserId = currentUserId.toString(),
+                        address = serverUrl,
+                    )
+                )
+            }
+        }
+
+        jellyseerrDao.saveConfig(
+            JellyseerrConfigEntity(
+                jellyfinServerId = currentServerId,
+                jellyfinUserId = currentUserId.toString(),
+                serverUrl = serverUrl,
+                isLoggedIn = true,
+                username = loginResponse.username,
+                userId = loginResponse.id,
+                permissions = loginResponse.permissions,
+            )
+        )
+
+        _isAuthenticated.value = true
+
+        val user =
+            JellyseerrUser(
+                id = loginResponse.id,
+                email = loginResponse.email,
+                username = loginResponse.username,
+                displayName = loginResponse.displayName,
+                permissions = loginResponse.permissions,
+                avatar = loginResponse.avatar,
+                requestCount = loginResponse.requestCount,
+                movieQuotaLimit = loginResponse.movieQuotaLimit,
+                movieQuotaDays = loginResponse.movieQuotaDays,
+                tvQuotaLimit = loginResponse.tvQuotaLimit,
+                tvQuotaDays = loginResponse.tvQuotaDays,
+            )
+
+        Timber.d("Jellyseerr login successful for user: ${user.username}")
+        return Result.success(user)
     }
 
     override suspend fun logout(): Result<Unit> {

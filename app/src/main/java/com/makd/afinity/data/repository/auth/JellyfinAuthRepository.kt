@@ -2,6 +2,7 @@ package com.makd.afinity.data.repository.auth
 
 import com.makd.afinity.core.AppConstants
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.auth.QuickConnectAuthorization
 import com.makd.afinity.data.models.auth.QuickConnectState
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.DatabaseRepository
@@ -265,18 +266,46 @@ constructor(
         }
     }
 
-    override suspend fun authorizeQuickConnect(code: String): Boolean {
+    override suspend fun isQuickConnectEnabled(): Boolean {
         return withContext(Dispatchers.IO) {
             try {
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val quickConnectApi = AuthenticationApi(apiClient)
-                quickConnectApi.authorizeQuickConnect(code = code).content
+                AuthenticationApi(apiClient).getQuickConnectEnabled().content
             } catch (e: ApiClientException) {
-                Timber.e(e, "QuickConnect authorization failed")
+                Timber.e(e, "Failed to read QuickConnect availability")
                 false
             } catch (e: Exception) {
-                Timber.e(e, "Unexpected error during QuickConnect authorization")
+                Timber.e(e, "Unexpected error reading QuickConnect availability")
                 false
+            }
+        }
+    }
+
+    override suspend fun authorizeQuickConnect(code: String): QuickConnectAuthorization {
+        return withContext(Dispatchers.IO) {
+            try {
+                val apiClient =
+                    sessionManager.getCurrentApiClient()
+                        ?: return@withContext QuickConnectAuthorization.FAILED
+                val quickConnectApi = AuthenticationApi(apiClient)
+                if (quickConnectApi.authorizeQuickConnect(code = code).content) {
+                    QuickConnectAuthorization.APPROVED
+                } else {
+                    QuickConnectAuthorization.REFUSED
+                }
+            } catch (e: InvalidStatusException) {
+                if (e.status == 404) {
+                    QuickConnectAuthorization.UNKNOWN_CODE
+                } else {
+                    Timber.e(e, "QuickConnect authorization failed")
+                    QuickConnectAuthorization.FAILED
+                }
+            } catch (e: ApiClientException) {
+                Timber.e(e, "QuickConnect authorization failed")
+                QuickConnectAuthorization.FAILED
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error during QuickConnect authorization")
+                QuickConnectAuthorization.FAILED
             }
         }
     }

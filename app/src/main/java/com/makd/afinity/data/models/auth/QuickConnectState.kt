@@ -5,3 +5,10 @@ data class QuickConnectState(
     val secret: String,
     val authenticated: Boolean = false,
 )
+
+enum class QuickConnectAuthorization {
+    APPROVED,
+    REFUSED,
+    UNKNOWN_CODE,
+    FAILED,
+}

@@ -1,5 +1,6 @@
 package com.makd.afinity.data.repository.auth
 
+import com.makd.afinity.data.models.auth.QuickConnectAuthorization
 import com.makd.afinity.data.models.auth.QuickConnectState
 import com.makd.afinity.data.models.user.User
 import kotlinx.coroutines.flow.StateFlow
@@ -31,7 +32,9 @@ interface AuthRepository {
 
     suspend fun getQuickConnectState(serverUrl: String, secret: String): QuickConnectState?
 
-    suspend fun authorizeQuickConnect(code: String): Boolean
+    suspend fun isQuickConnectEnabled(): Boolean
+
+    suspend fun authorizeQuickConnect(code: String): QuickConnectAuthorization
 
     suspend fun getCurrentUser(): User?
 

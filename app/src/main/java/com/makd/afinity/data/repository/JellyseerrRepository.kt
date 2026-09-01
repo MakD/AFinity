@@ -12,6 +12,7 @@ import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.PersonCombinedCreditsResponse
 import com.makd.afinity.data.models.jellyseerr.PublicSettings
+import com.makd.afinity.data.models.jellyseerr.QuickConnectInitiateResponse
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.ServiceDetailsResponse
@@ -48,6 +49,10 @@ interface JellyseerrRepository {
         password: String,
         useJellyfinAuth: Boolean = false,
     ): Result<JellyseerrUser>
+
+    suspend fun initiateQuickConnect(): Result<QuickConnectInitiateResponse>
+
+    suspend fun authenticateQuickConnect(secret: String): Result<JellyseerrUser>
 
     suspend fun logout(): Result<Unit>
 
