@@ -570,6 +570,9 @@ private fun LandscapeItemDetailContent(
     val displayCutoutLeft = WindowInsets.displayCutout.getLeft(density, LayoutDirection.Ltr)
     val baseColorScheme = MaterialTheme.colorScheme
     val playerOffset = LocalPlayerOffset.current
+    val windowInfo = LocalWindowInfo.current
+    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+    val screenHeightDp = with(density) { windowInfo.containerSize.height.toDp() }
 
     val landscapeColorScheme =
         remember(baseColorScheme) {
@@ -613,8 +616,8 @@ private fun LandscapeItemDetailContent(
                     imageUrl = backdrop.first,
                     contentDescription = stringResource(R.string.cd_backdrop_fmt, item.name),
                     blurHash = backdrop.second,
-                    targetWidth = 1920.dp,
-                    targetHeight = 1080.dp,
+                    targetWidth = screenWidthDp,
+                    targetHeight = screenHeightDp,
                     useLowResPlaceholder = true,
                     onError = {
                         if (backdropIndex < backdropChain.lastIndex) {

@@ -66,6 +66,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideoPlaylist
+import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.data.updater.UpdateManager
 import com.makd.afinity.data.websocket.WebSocketState
 import com.makd.afinity.ui.admin.identify.IdentifyScreen
@@ -81,6 +82,7 @@ import com.makd.afinity.ui.audiobookshelf.player.AudiobookshelfPlayerScreen
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinitySplashScreen
 import com.makd.afinity.ui.components.AppNavigationDrawerContent
+import com.makd.afinity.ui.components.UnsupportedServerDialog
 import com.makd.afinity.ui.favorites.FavoritesCategory
 import com.makd.afinity.ui.favorites.FavoritesCategoryScreen
 import com.makd.afinity.ui.favorites.FavoritesScreen
@@ -109,7 +111,6 @@ import com.makd.afinity.ui.requests.FilteredMediaScreen
 import com.makd.afinity.ui.requests.RequestsScreen
 import com.makd.afinity.ui.search.GenreResultsScreen
 import com.makd.afinity.ui.search.SearchScreen
-import com.makd.afinity.ui.components.UnsupportedServerDialog
 import com.makd.afinity.ui.settings.LicensesScreen
 import com.makd.afinity.ui.settings.SessionSwitcherBottomSheet
 import com.makd.afinity.ui.settings.SettingsScreen
@@ -127,6 +128,7 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 val LocalPlayerOffset = compositionLocalOf { 0.dp }
+val LocalSkipServerImageResize = compositionLocalOf { false }
 val LocalShowRatings = compositionLocalOf { true }
 
 val LocalShowAwards = compositionLocalOf { true }
@@ -404,6 +406,7 @@ fun MainNavigation(
             val drawerBody: @Composable () -> Unit = {
                 CompositionLocalProvider(
                     LocalPlayerOffset provides globalPlayerOffset,
+                    LocalSkipServerImageResize provides (connectionType == ConnectionType.LOCAL),
                     LocalShowRatings provides showRatings,
                     LocalShowAwards provides showAwards,
                 ) {

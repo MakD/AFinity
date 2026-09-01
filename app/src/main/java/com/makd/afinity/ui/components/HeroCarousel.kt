@@ -70,6 +70,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.LocalShowRatings
+import com.makd.afinity.navigation.LocalSkipServerImageResize
 import com.makd.afinity.ui.utils.bottomOverlap
 import kotlinx.coroutines.delay
 import mx.platacard.pagerindicator.PagerIndicatorOrientation
@@ -175,6 +176,7 @@ private fun HeroCarouselAutoScrollAndPrefetch(
 ) {
     val context = LocalContext.current
     val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
+    val skipServerResize = LocalSkipServerImageResize.current
 
     LaunchedEffect(pagerState.settledPage, isScrolling, isDragged) {
         if (!isDragged && !isScrolling && items.size > 1) {
@@ -202,23 +204,18 @@ private fun HeroCarouselAutoScrollAndPrefetch(
         }
     }
 
-    LaunchedEffect(pagerState.currentPage) {
+    LaunchedEffect(pagerState.currentPage, skipServerResize) {
         if (items.isEmpty()) return@LaunchedEffect
-        val currentIndex = pagerState.currentPage % items.size
-        val nextIndex = (currentIndex + 1) % items.size
-        val prevIndex = (currentIndex - 1 + items.size) % items.size
-
-        listOf(nextIndex, prevIndex).forEach { index ->
-            val item = items[index]
-            val rawUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl
-            if (rawUrl != null) {
-                val request =
-                    ImageRequest.Builder(context)
-                        .data(optimizedImageUrl(rawUrl, fillWidthPx))
-                        .size(fillWidthPx, fillHeightPx)
-                        .build()
-                context.imageLoader.enqueue(request)
-            }
+        val nextIndex = (pagerState.currentPage + 1) % items.size
+        val item = items[nextIndex]
+        val rawUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl
+        if (rawUrl != null) {
+            val request =
+                ImageRequest.Builder(context)
+                    .data(optimizedImageUrl(rawUrl, fillWidthPx, skipServerResize))
+                    .size(fillWidthPx, fillHeightPx)
+                    .build()
+            context.imageLoader.enqueue(request)
         }
     }
 }

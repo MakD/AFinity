@@ -552,6 +552,9 @@ private fun SeerrLandscapeContent(
     val displayCutoutLeft = WindowInsets.displayCutout.getLeft(density, LayoutDirection.Ltr)
     val baseColorScheme = MaterialTheme.colorScheme
     val playerOffset = LocalPlayerOffset.current
+    val windowInfo = LocalWindowInfo.current
+    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+    val screenHeightDp = with(density) { windowInfo.containerSize.height.toDp() }
 
     val landscapeColorScheme =
         remember(baseColorScheme) {
@@ -571,8 +574,8 @@ private fun SeerrLandscapeContent(
                     imageUrl = backdropUrl,
                     contentDescription = null,
                     blurHash = null,
-                    targetWidth = 1920.dp,
-                    targetHeight = 1080.dp,
+                    targetWidth = screenWidthDp,
+                    targetHeight = screenHeightDp,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                     alignment = Alignment.Center,

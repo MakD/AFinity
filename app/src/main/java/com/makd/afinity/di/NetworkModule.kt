@@ -150,7 +150,7 @@ object NetworkModule {
                 .dns { hostname ->
                     Dns.SYSTEM.lookup(hostname).sortedBy { if (it is Inet4Address) 0 else 1 }
                 }
-                .connectTimeout(15, TimeUnit.SECONDS)
+                .connectTimeout(6, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)
                 .callTimeout(45, TimeUnit.SECONDS)
@@ -314,7 +314,7 @@ object NetworkModule {
 
     val JELLYFIN_HTTP_OPTIONS =
         HttpClientOptions(
-            connectTimeout = 15.seconds,
+            connectTimeout = 6.seconds,
             requestTimeout = 45.seconds,
             socketTimeout = 30.seconds,
         )
