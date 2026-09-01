@@ -885,7 +885,7 @@ constructor(
             }
         }
 
-    override suspend fun getMusicGenres(limit: Int): List<AfinityMusicGenre> =
+    override suspend fun getMusicGenres(limit: Int, parentId: UUID?): List<AfinityMusicGenre> =
         apiCall(emptyList(), "Failed to fetch music genres") { apiClient, userId ->
             val baseUrl = getBaseUrlInternal()
 
@@ -893,6 +893,7 @@ constructor(
                 GenreApi(apiClient)
                     .getGenres(
                         userId = userId,
+                        parentId = parentId,
                         includeItemTypes = listOf(BaseItemKind.AUDIO, BaseItemKind.MUSIC_ALBUM),
                         sortBy = listOf(ItemSortBy.SORT_NAME),
                         sortOrder = listOf(SortOrder.ASCENDING),
@@ -978,7 +979,11 @@ constructor(
             }
         }
 
-    override suspend fun getArtistsByGenre(genreName: String, limit: Int): List<AfinityArtist> =
+    override suspend fun getArtistsByGenre(
+        genreName: String,
+        limit: Int,
+        parentId: UUID?,
+    ): List<AfinityArtist> =
         apiCall(emptyList(), "Failed to fetch artists for genre: $genreName") { apiClient, userId ->
             val baseUrl = getBaseUrlInternal()
 
@@ -986,6 +991,7 @@ constructor(
                 ArtistApi(apiClient)
                     .getAlbumArtists(
                         userId = userId,
+                        parentId = parentId,
                         genres = listOf(genreName),
                         sortBy = listOf(ItemSortBy.SORT_NAME),
                         sortOrder = listOf(SortOrder.ASCENDING),
@@ -999,7 +1005,7 @@ constructor(
             }
         }
 
-    override suspend fun getFavoriteArtists(limit: Int): List<AfinityArtist> =
+    override suspend fun getFavoriteArtists(limit: Int, parentId: UUID?): List<AfinityArtist> =
         apiCall(emptyList(), "Failed to fetch favorite artists") { apiClient, userId ->
             val baseUrl = getBaseUrlInternal()
 
@@ -1007,6 +1013,7 @@ constructor(
                 ArtistApi(apiClient)
                     .getAlbumArtists(
                         userId = userId,
+                        parentId = parentId,
                         filters = listOf(ItemFilter.IS_FAVORITE),
                         limit = limit,
                         fields = FieldSets.MUSIC_ARTIST,
@@ -1019,7 +1026,7 @@ constructor(
             }
         }
 
-    override suspend fun getTopArtists(limit: Int): List<AfinityArtist> =
+    override suspend fun getTopArtists(limit: Int, parentId: UUID?): List<AfinityArtist> =
         apiCall(emptyList(), "Failed to fetch top artists") { apiClient, userId ->
             val baseUrl = getBaseUrlInternal()
 
@@ -1027,6 +1034,7 @@ constructor(
                 ArtistApi(apiClient)
                     .getAlbumArtists(
                         userId = userId,
+                        parentId = parentId,
                         sortBy = listOf(ItemSortBy.PLAY_COUNT),
                         sortOrder = listOf(SortOrder.DESCENDING),
                         limit = limit,
@@ -1125,13 +1133,14 @@ constructor(
             }
         }
 
-    override suspend fun getRandomArtists(limit: Int): List<AfinityArtist> =
+    override suspend fun getRandomArtists(limit: Int, parentId: UUID?): List<AfinityArtist> =
         apiCall(emptyList(), "Failed to fetch random artists") { apiClient, userId ->
             val baseUrl = getBaseUrlInternal()
             val response =
                 ArtistApi(apiClient)
                     .getAlbumArtists(
                         userId = userId,
+                        parentId = parentId,
                         sortBy = listOf(ItemSortBy.RANDOM),
                         limit = limit,
                         fields = FieldSets.MUSIC_ARTIST,

@@ -724,9 +724,10 @@ constructor(
     }
 
     private suspend fun loadMusicHomeSections() {
-        val hasMusicLibrary =
-            appDataRepository.libraries.value.any { it.type == CollectionType.Music }
-        if (!hasMusicLibrary) return
+        val musicLibraries =
+            appDataRepository.libraries.value.filter { it.type == CollectionType.Music }
+        if (musicLibraries.isEmpty()) return
+        val musicParentId = musicLibraries.singleOrNull()?.id
 
         _uiState.update { it.copy(isLoadingHome = true) }
 
@@ -744,7 +745,8 @@ constructor(
                     .getOrDefault(emptyList())
             }
             val genresJob = async {
-                runCatching { musicRepository.getMusicGenres(limit = 20) }.getOrDefault(emptyList())
+                runCatching { musicRepository.getMusicGenres(limit = 20, parentId = musicParentId) }
+                    .getOrDefault(emptyList())
             }
             val randomAlbumsJob = async {
                 runCatching { musicRepository.getRandomAlbums(limit = MFY_ALBUM_FETCH) }
@@ -765,7 +767,6 @@ constructor(
             val recentTracks = recentTracksJob.await()
             val seedRecentTracks = recentTracks.take(RECENT_TRACKS_DISPLAY)
             val seedRecentAlbums = recentTracks.toRecentlyPlayedAlbums(15)
-            val seedGenres = genresJob.await()
 
             if (seedRecentTracks.isNotEmpty())
                 _uiState.update { it.copy(recentlyPlayedTracks = seedRecentTracks) }
@@ -819,6 +820,7 @@ constructor(
             }
             launch {
                 try {
+                    val seedGenres = genresJob.await()
                     val sections =
                         seedGenres
                             .shuffled()
@@ -849,7 +851,7 @@ constructor(
             }
             launch {
                 runCatching {
-                    val a = musicRepository.getRandomArtists(limit = 20)
+                    val a = musicRepository.getRandomArtists(limit = 20, parentId = musicParentId)
                     if (a.isNotEmpty()) _uiState.update { it.copy(randomArtists = a) }
                 }
             }
@@ -887,13 +889,13 @@ constructor(
             }
             launch {
                 runCatching {
-                    val a = musicRepository.getTopArtists(limit = 15)
+                    val a = musicRepository.getTopArtists(limit = 15, parentId = musicParentId)
                     if (a.isNotEmpty()) _uiState.update { it.copy(topArtists = a) }
                 }
             }
             launch {
                 runCatching {
-                    val a = musicRepository.getFavoriteArtists(limit = 15)
+                    val a = musicRepository.getFavoriteArtists(limit = 15, parentId = musicParentId)
                     if (a.isNotEmpty()) _uiState.update { it.copy(favoriteArtists = a) }
                 }
             }
@@ -934,6 +936,7 @@ constructor(
             }
             launch {
                 try {
+                    val seedGenres = genresJob.await()
                     val sections =
                         seedGenres
                             .shuffled()

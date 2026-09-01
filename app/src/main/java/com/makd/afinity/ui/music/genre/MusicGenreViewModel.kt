@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.DownloadPermissions
+import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
@@ -97,9 +98,21 @@ constructor(
         if (genreName.isBlank()) return
         _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         try {
+            val musicParentId =
+                appDataRepository.libraries.value
+                    .filter { it.type == CollectionType.Music }
+                    .singleOrNull()
+                    ?.id
+
             coroutineScope {
                 val albumsJob = async { musicRepository.getAlbumsByGenre(genreName, limit = 50) }
-                val artistsJob = async { musicRepository.getArtistsByGenre(genreName, limit = 50) }
+                val artistsJob = async {
+                    musicRepository.getArtistsByGenre(
+                        genreName,
+                        limit = 50,
+                        parentId = musicParentId,
+                    )
+                }
                 val tracksJob = async { musicRepository.getTracksByGenre(genreName, limit = 50) }
                 val recentJob = async {
                     musicRepository.getRecentlyAddedAlbumsByGenre(genreName, limit = 20)
