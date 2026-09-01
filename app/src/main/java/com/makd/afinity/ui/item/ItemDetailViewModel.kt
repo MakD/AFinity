@@ -657,24 +657,32 @@ constructor(
                 }
 
                 when (serverItem) {
-                    is AfinityShow -> {
-                        try {
-                            val nextEpisode = mediaRepository.getEpisodeToPlay(serverItem.id)
-                            if (nextEpisode != _uiState.value.nextEpisode) {
-                                _uiState.update { it.copy(nextEpisode = nextEpisode) }
+                    is AfinityShow ->
+                        coroutineScope {
+                            launch {
+                                try {
+                                    val nextEpisode =
+                                        mediaRepository.getEpisodeToPlay(serverItem.id)
+                                    if (nextEpisode != _uiState.value.nextEpisode) {
+                                        _uiState.update { it.copy(nextEpisode = nextEpisode) }
+                                    }
+                                } catch (e: Exception) {
+                                    Timber.w(e, "Failed to refresh next episode in background sync")
+                                }
                             }
-                        } catch (e: Exception) {
-                            Timber.w(e, "Failed to refresh next episode in background sync")
-                        }
-                        try {
-                            val seasons = mediaRepository.getSeasons(serverItem.id)
-                            if (seasons != _uiState.value.seasons) {
-                                _uiState.update { it.copy(seasons = itemStore.merge(seasons)) }
+                            launch {
+                                try {
+                                    val seasons = mediaRepository.getSeasons(serverItem.id)
+                                    if (seasons != _uiState.value.seasons) {
+                                        _uiState.update {
+                                            it.copy(seasons = itemStore.merge(seasons))
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    Timber.w(e, "Failed to refresh seasons in background sync")
+                                }
                             }
-                        } catch (e: Exception) {
-                            Timber.w(e, "Failed to refresh seasons in background sync")
                         }
-                    }
                     is AfinitySeason -> {
                         try {
                             val nextEpisode =
@@ -743,6 +751,10 @@ constructor(
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)
                 val isOffline = offlineModeManager.isCurrentlyOffline()
                 val hasInternet = offlineModeManager.isInternetAvailable()
+
+                if (!isOffline && itemType?.uppercase() in setOf("SERIES", "SEASON")) {
+                    fetchNextUp()
+                }
 
                 var specialFeatureCount = 0
                 val item =
@@ -913,7 +925,6 @@ constructor(
     private fun launchParallelFetches(specialFeatureCount: Int) {
         when (itemType?.uppercase()) {
             "SERIES" -> {
-                fetchNextUp()
                 viewModelScope.launch {
                     try {
                         val similar = mediaRepository.getSimilarItems(itemId)
@@ -944,7 +955,6 @@ constructor(
                 }
             }
             "SEASON" -> {
-                fetchNextUp()
                 if (specialFeatureCount > 0) {
                     viewModelScope.launch {
                         try {
