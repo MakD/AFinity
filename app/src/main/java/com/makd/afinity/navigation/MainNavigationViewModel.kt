@@ -88,6 +88,15 @@ constructor(
                 initialValue = true,
             )
 
+    val sideSheetEnabled =
+        preferencesRepository
+            .getSideSheetEnabledFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = true,
+            )
+
     val navigationDrawerEnabled =
         preferencesRepository
             .getNavigationDrawerEnabledFlow()

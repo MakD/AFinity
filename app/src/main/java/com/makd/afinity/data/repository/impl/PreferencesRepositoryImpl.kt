@@ -70,6 +70,7 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val COMBINE_LIBRARY_SECTIONS = booleanPreferencesKey("combine_library_sections")
         val HOME_SORT_BY_DATE_ADDED = booleanPreferencesKey("home_sort_by_date_added")
         val NAVIGATION_DRAWER_ENABLED = booleanPreferencesKey("navigation_drawer_enabled")
+        val SIDE_SHEET_ENABLED = booleanPreferencesKey("side_sheet_enabled")
         val LIBRARIES_IN_DRAWER = booleanPreferencesKey("libraries_in_drawer")
         val ONBOARDING_FIRST_RUN_DONE = booleanPreferencesKey("onboarding_first_run_done")
 
@@ -288,6 +289,18 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         return dataStore.data.map { preferences ->
             preferences[Keys.NAVIGATION_DRAWER_ENABLED] ?: false
         }
+    }
+
+    override suspend fun setSideSheetEnabled(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.SIDE_SHEET_ENABLED] = enabled }
+    }
+
+    override suspend fun getSideSheetEnabled(): Boolean {
+        return dataStore.data.first()[Keys.SIDE_SHEET_ENABLED] ?: true
+    }
+
+    override fun getSideSheetEnabledFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences -> preferences[Keys.SIDE_SHEET_ENABLED] ?: true }
     }
 
     override suspend fun setOnboardingFirstRunDone(done: Boolean) {

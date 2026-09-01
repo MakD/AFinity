@@ -101,6 +101,15 @@ constructor(
                 initialValue = false,
             )
 
+    val sideSheetEnabled: StateFlow<Boolean> =
+        preferencesRepository
+            .getSideSheetEnabledFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = true,
+            )
+
     val librariesInDrawer: StateFlow<Boolean> =
         preferencesRepository
             .getLibrariesInDrawerFlow()
@@ -500,6 +509,10 @@ constructor(
 
     fun toggleLibrariesInDrawer(enabled: Boolean) {
         viewModelScope.launch { preferencesRepository.setLibrariesInDrawer(enabled) }
+    }
+
+    fun toggleSideSheet(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setSideSheetEnabled(enabled) }
     }
 
     fun toggleAutoPlay(enabled: Boolean) {

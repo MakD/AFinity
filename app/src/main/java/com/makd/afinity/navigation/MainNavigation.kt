@@ -129,6 +129,7 @@ import timber.log.Timber
 
 val LocalPlayerOffset = compositionLocalOf { 0.dp }
 val LocalSkipServerImageResize = compositionLocalOf { false }
+val LocalSideSheetEnabled = compositionLocalOf { true }
 val LocalShowRatings = compositionLocalOf { true }
 
 val LocalShowAwards = compositionLocalOf { true }
@@ -160,6 +161,7 @@ fun MainNavigation(
     val musicPlaybackState by viewModel.musicPlaybackManager.state.collectAsStateWithLifecycle()
     val showRatings by viewModel.showRatings.collectAsStateWithLifecycle()
     val showAwards by viewModel.showAwards.collectAsStateWithLifecycle()
+    val sideSheetEnabled by viewModel.sideSheetEnabled.collectAsStateWithLifecycle()
     val navigationDrawerEnabled by viewModel.navigationDrawerEnabled.collectAsStateWithLifecycle()
     val librariesInDrawer by viewModel.librariesInDrawer.collectAsStateWithLifecycle()
     val serverName by viewModel.serverName.collectAsStateWithLifecycle()
@@ -407,6 +409,7 @@ fun MainNavigation(
                 CompositionLocalProvider(
                     LocalPlayerOffset provides globalPlayerOffset,
                     LocalSkipServerImageResize provides (connectionType == ConnectionType.LOCAL),
+                    LocalSideSheetEnabled provides sideSheetEnabled,
                     LocalShowRatings provides showRatings,
                     LocalShowAwards provides showAwards,
                 ) {

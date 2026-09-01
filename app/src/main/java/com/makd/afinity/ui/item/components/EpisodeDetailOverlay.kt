@@ -59,6 +59,7 @@ import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.navigation.LocalShowRatings
+import com.makd.afinity.navigation.LocalSideSheetEnabled
 import com.makd.afinity.ui.components.FavoriteToggleButton
 import com.makd.afinity.ui.components.ModalSideSheet
 import com.makd.afinity.ui.components.WatchedToggleButton
@@ -107,7 +108,7 @@ fun EpisodeDetailOverlay(
     onPersonClick: ((UUID) -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    val isWide = isWideWindow()
+    val isWide = LocalSideSheetEnabled.current && isWideWindow()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     var showPeopleDialog by remember { mutableStateOf(false) }
     val ratingScale = rememberRatingMetadataScale()
@@ -482,6 +483,7 @@ fun EpisodeDetailOverlay(
                     item = episode,
                     onSeeAllClick = { showPeopleDialog = true },
                     onPersonClick = onPersonClick,
+                    horizontalPadding = 0.dp,
                 )
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f))

@@ -57,6 +57,7 @@ fun AppearanceOptionsScreen(
     val latestRowsVisible by viewModel.latestRowsVisible.collectAsStateWithLifecycle()
     val navigationDrawerEnabled by viewModel.navigationDrawerEnabled.collectAsStateWithLifecycle()
     val librariesInDrawer by viewModel.librariesInDrawer.collectAsStateWithLifecycle()
+    val sideSheetEnabled by viewModel.sideSheetEnabled.collectAsStateWithLifecycle()
     val episodeLayout by viewModel.episodeLayout.collectAsStateWithLifecycle()
     val showRatings by viewModel.showRatings.collectAsStateWithLifecycle()
     val showAwards by viewModel.showAwards.collectAsStateWithLifecycle()
@@ -147,6 +148,14 @@ fun AppearanceOptionsScreen(
                         checked = librariesInDrawer,
                         onCheckedChange = viewModel::toggleLibrariesInDrawer,
                         enabled = navigationDrawerEnabled,
+                    )
+                    SettingsDivider()
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_sidesheet),
+                        title = stringResource(R.string.pref_side_sheet_title),
+                        subtitle = stringResource(R.string.pref_side_sheet_summary),
+                        checked = sideSheetEnabled,
+                        onCheckedChange = viewModel::toggleSideSheet,
                     )
                 }
             }

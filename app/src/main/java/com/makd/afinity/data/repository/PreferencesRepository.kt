@@ -210,6 +210,12 @@ interface PreferencesRepository {
 
     fun getLibrariesInDrawerFlow(): Flow<Boolean>
 
+    suspend fun setSideSheetEnabled(enabled: Boolean)
+
+    suspend fun getSideSheetEnabled(): Boolean
+
+    fun getSideSheetEnabledFlow(): Flow<Boolean>
+
     suspend fun setOnboardingFirstRunDone(done: Boolean)
 
     suspend fun getOnboardingFirstRunDone(): Boolean
