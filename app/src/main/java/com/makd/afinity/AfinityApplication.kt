@@ -26,6 +26,7 @@ import com.makd.afinity.util.logging.CrashFileExporter
 import com.makd.afinity.util.logging.RingBufferTree
 import com.makd.afinity.util.logging.SdkLogBridge
 import dagger.hilt.android.HiltAndroidApp
+import io.github.oshai.kotlinlogging.Level
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -70,7 +71,7 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
             Timber.plant(Timber.DebugTree())
             Timber.d("Afinity Application started")
         }
-        SdkLogBridge.install()
+        SdkLogBridge.install(if (BuildConfig.DEBUG) Level.DEBUG else Level.WARN)
 
         Thread.setDefaultUncaughtExceptionHandler(
             CrashFileExporter(this, ringBufferTree, Thread.getDefaultUncaughtExceptionHandler())
