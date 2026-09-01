@@ -298,6 +298,8 @@ fun CustomSectionsScreen(
         }
     }
 
+    val presetTitles = SeasonalPreset.entries.associateWith { stringResource(it.titleRes) }
+
     if (choosingTemplate) {
         AddSectionDialog(
             locale = locale,
@@ -306,7 +308,11 @@ fun CustomSectionsScreen(
                 editingIsNew = true
                 choosingTemplate = false
             },
-            onPreset = { viewModel.requestPreset(it, context.getString(it.titleRes)) },
+            onPreset = { preset ->
+                val resolvedTitle = presetTitles[preset] ?: ""
+                viewModel.requestPreset(preset, resolvedTitle)
+                choosingTemplate = false
+            },
             onDismiss = { choosingTemplate = false },
         )
     }
@@ -517,6 +523,7 @@ private fun ColumnScope.CustomSectionEditor(
                     videoType = CustomSectionItemType.MOVIE in draft.itemTypes,
                     seriesStatus = CustomSectionItemType.SERIES in draft.itemTypes,
                 ),
+            isLoadingOptions = filterOptions == LibraryFilterOptions(),
             onApply = { draft = draft.copy(filters = it) },
             onDismiss = { showRefineSheet = false },
         )
@@ -1446,4 +1453,3 @@ private fun formatSeasonRange(start: String, end: String, locale: Locale): Strin
 }
 
 private fun formatMonthDay(month: Int, day: Int): String = "%02d-%02d".format(Locale.US, month, day)
-

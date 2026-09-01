@@ -318,7 +318,12 @@ fun LibraryContentScreen(
                             .padding(bottom = 16.dp + playerOffset),
                 ) {
                     if (!uiState.filtersLocked) {
-                        FloatingActionButton(onClick = { showFilterSheet = true }) {
+                        FloatingActionButton(
+                            onClick = {
+                                viewModel.ensureFilterOptionsLoaded()
+                                showFilterSheet = true
+                            }
+                        ) {
                             val activeCount = uiState.currentFilters.activeCount
                             if (activeCount > 0) {
                                 BadgedBox(badge = { Badge { Text(activeCount.toString()) } }) {
@@ -364,6 +369,7 @@ fun LibraryContentScreen(
             filters = uiState.currentFilters,
             options = uiState.filterOptions,
             capabilities = libraryFilterCapabilities(uiState.libraryType),
+            isLoadingOptions = uiState.isLoadingFilterOptions,
             onApply = { viewModel.updateFilters(it) },
             onDismiss = { showFilterSheet = false },
         )

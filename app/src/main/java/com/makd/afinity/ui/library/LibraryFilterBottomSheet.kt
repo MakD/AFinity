@@ -14,10 +14,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -154,6 +156,7 @@ fun LibraryFilterBottomSheet(
     filters: LibraryFilters,
     options: LibraryFilterOptions,
     capabilities: LibraryFilterCapabilities,
+    isLoadingOptions: Boolean,
     onApply: (LibraryFilters) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -232,6 +235,19 @@ fun LibraryFilterBottomSheet(
                                     fontWeight = FontWeight.Bold
                                 ),
                         )
+
+                        if (isLoadingOptions) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(8.dp))
 

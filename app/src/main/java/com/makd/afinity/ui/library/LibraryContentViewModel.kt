@@ -39,6 +39,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -231,6 +232,8 @@ constructor(
 
     private var libraryType: CollectionType? = null
 
+    private var filterOptionsJob: Job? = null
+
     private var currentFilters = LibraryFilters()
 
     init {
@@ -241,8 +244,16 @@ constructor(
                 if (isLoaded) {
                     loadLibraryContent()
                 } else {
+                    filterOptionsJob?.cancel()
+                    filterOptionsJob = null
                     _uiState.update {
-                        it.copy(isLoading = true, error = null, userProfileImageUrl = null)
+                        it.copy(
+                            isLoading = true,
+                            error = null,
+                            userProfileImageUrl = null,
+                            filterOptions = LibraryFilterOptions(),
+                            isLoadingFilterOptions = false,
+                        )
                     }
                     _pagingData.value = emptyFlow()
                 }
@@ -405,7 +416,6 @@ constructor(
                     )
 
                 loadItems()
-                if (section == null) loadFilterOptions(type)
                 lastLoadedAt = System.currentTimeMillis()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load library content")
@@ -429,19 +439,27 @@ constructor(
             runCatching { json.decodeFromString(LibraryFilters.serializer(), stored) }.getOrNull()
         } ?: LibraryFilters()
 
-    private fun loadFilterOptions(type: CollectionType) {
-        viewModelScope.launch {
-            try {
-                val options =
-                    mediaRepository.getFilterOptions(
-                        parentId = libraryId?.let { UUID.fromString(it) },
-                        libraryType = type,
-                    )
-                _uiState.value = _uiState.value.copy(filterOptions = options)
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load filter options")
+    fun ensureFilterOptionsLoaded() {
+        if (sectionId != null || filterOptionsJob?.isActive == true) return
+        if (_uiState.value.filterOptions != LibraryFilterOptions()) return
+
+        filterOptionsJob =
+            viewModelScope.launch {
+                _uiState.value = _uiState.value.copy(isLoadingFilterOptions = true)
+                try {
+                    val type = libraryType ?: determineLibraryType()
+                    val options =
+                        mediaRepository.getFilterOptions(
+                            parentId = libraryId?.let { UUID.fromString(it) },
+                            libraryType = type,
+                        )
+                    _uiState.value = _uiState.value.copy(filterOptions = options)
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to load filter options")
+                } finally {
+                    _uiState.value = _uiState.value.copy(isLoadingFilterOptions = false)
+                }
             }
-        }
     }
 
     fun updateFilters(filters: LibraryFilters) {
@@ -550,6 +568,7 @@ data class LibraryContentUiState(
     val currentSortDescending: Boolean = false,
     val currentFilters: LibraryFilters = LibraryFilters(),
     val filterOptions: LibraryFilterOptions = LibraryFilterOptions(),
+    val isLoadingFilterOptions: Boolean = false,
     val isStudioMode: Boolean = false,
     val selectedLetter: String? = null,
     val filtersLocked: Boolean = false,

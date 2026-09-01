@@ -457,8 +457,11 @@ constructor(
                 legacyDeferred.await() to modernDeferred.await()
             }
 
+        val modernGenres =
+            modern?.genres?.mapNotNull { it.name?.takeIf(String::isNotBlank) }.orEmpty()
+
         LibraryFilterOptions(
-            genres = legacy.genres.orEmpty(),
+            genres = modernGenres.ifEmpty { legacy.genres.orEmpty() },
             tags = legacy.tags.orEmpty(),
             officialRatings = legacy.officialRatings.orEmpty(),
             years = legacy.years.orEmpty().sortedDescending(),
