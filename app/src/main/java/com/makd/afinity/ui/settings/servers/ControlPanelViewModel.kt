@@ -10,20 +10,27 @@ import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.jellyfin.sdk.model.api.GeneralCommandType
+import org.jellyfin.sdk.model.api.PlaystateCommand
 import org.jellyfin.sdk.model.api.SessionInfoDto
 import org.jellyfin.sdk.model.api.TaskInfo
 import org.jellyfin.sdk.model.api.TaskState
 import timber.log.Timber
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -41,6 +48,9 @@ constructor(
     companion object {
         private val taskCache = ConcurrentHashMap<String, List<TaskInfo>>()
         private val sessionCache = ConcurrentHashMap<String, List<SessionInfoDto>>()
+        private const val TICKS_PER_SECOND = 10_000_000L
+        private const val MESSAGE_TIMEOUT_MS = 5_000L
+        private const val APP_NAME = "AFinity"
     }
 
     private var currentServerId: String = ""
@@ -84,11 +94,21 @@ constructor(
     private var pollingJob: Job? = null
     private var storageJob: Job? = null
 
+    private val _pendingPause = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    val pendingPause: StateFlow<Map<String, Boolean>> = _pendingPause.asStateFlow()
+
+    private val _commandError = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val commandError: SharedFlow<Unit> = _commandError.asSharedFlow()
+
+    val currentUserId: UUID?
+        get() = sessionManager.currentSession.value?.userId
+
     init {
         viewModelScope.launch {
             jellyfinWebSocketManager.liveSessions.collect { instantSessions ->
                 _activeSessions.value = instantSessions
                 sessionCache[currentServerId] = instantSessions
+                reconcilePendingPause(instantSessions)
             }
         }
 
@@ -122,6 +142,96 @@ constructor(
                     Timber.e(e, "Failed session fetch")
                 }
                 delay(5000)
+            }
+        }
+    }
+
+    private fun reconcilePendingPause(sessions: List<SessionInfoDto>) {
+        if (_pendingPause.value.isEmpty()) return
+        _pendingPause.update { pending ->
+            pending.filterNot { (sessionId, optimisticPaused) ->
+                val actual =
+                    sessions.firstOrNull { it.id == sessionId }?.playState?.isPaused ?: return@filterNot true
+                actual == optimisticPaused
+            }
+        }
+    }
+
+    fun togglePause(session: SessionInfoDto) {
+        val sessionId = session.id ?: return
+        val target = !(session.playState?.isPaused ?: true)
+        _pendingPause.update { it + (sessionId to target) }
+        dispatch(sessionId) {
+            jellyfinRepository.sendSessionPlaystateCommand(
+                sessionId = sessionId,
+                command = if (target) PlaystateCommand.PAUSE else PlaystateCommand.UNPAUSE,
+            )
+        }
+    }
+
+    fun sendPlaystate(sessionId: String, command: PlaystateCommand) {
+        dispatch(sessionId) {
+            jellyfinRepository.sendSessionPlaystateCommand(sessionId = sessionId, command = command)
+        }
+    }
+
+    fun seekBy(session: SessionInfoDto, deltaSeconds: Long) {
+        val sessionId = session.id ?: return
+        val current = session.playState?.positionTicks ?: 0L
+        val runtime = session.nowPlayingItem?.runTimeTicks
+        val target =
+            (current + deltaSeconds * TICKS_PER_SECOND).coerceAtLeast(0L).let {
+                if (runtime != null && runtime > 0) it.coerceAtMost(runtime) else it
+            }
+        dispatch(sessionId) {
+            jellyfinRepository.sendSessionPlaystateCommand(
+                sessionId = sessionId,
+                command = PlaystateCommand.SEEK,
+                seekPositionTicks = target,
+            )
+        }
+    }
+
+    fun seekTo(sessionId: String, positionTicks: Long) {
+        dispatch(sessionId) {
+            jellyfinRepository.sendSessionPlaystateCommand(
+                sessionId = sessionId,
+                command = PlaystateCommand.SEEK,
+                seekPositionTicks = positionTicks.coerceAtLeast(0L),
+            )
+        }
+    }
+
+    fun setVolume(sessionId: String, volume: Int) {
+        dispatch(sessionId) { jellyfinRepository.setSessionVolume(sessionId, volume) }
+    }
+
+    fun toggleMute(sessionId: String, muted: Boolean) {
+        dispatch(sessionId) {
+            jellyfinRepository.sendSessionGeneralCommand(
+                sessionId = sessionId,
+                command = if (muted) GeneralCommandType.UNMUTE else GeneralCommandType.MUTE,
+            )
+        }
+    }
+
+    fun sendMessage(sessionId: String, text: String) {
+        dispatch(sessionId) {
+            jellyfinRepository.sendSessionMessage(
+                sessionId = sessionId,
+                header = APP_NAME,
+                text = text,
+                timeoutMs = MESSAGE_TIMEOUT_MS,
+            )
+        }
+    }
+
+    private fun dispatch(sessionId: String, block: suspend () -> Result<Unit>) {
+        viewModelScope.launch {
+            val result = block()
+            if (result.isFailure) {
+                _pendingPause.update { it - sessionId }
+                _commandError.tryEmit(Unit)
             }
         }
     }

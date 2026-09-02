@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.RemoteMessagePill
 import com.makd.afinity.ui.player.PlayerViewModel
 import kotlin.math.roundToInt
 
@@ -67,6 +68,11 @@ fun PlayerIndicators(uiState: PlayerViewModel.PlayerUiState, modifier: Modifier 
         SpeedIndicator(
             show = uiState.isSpeedingUp,
             modifier = Modifier.align(Alignment.TopCenter).padding(top = 48.dp),
+        )
+
+        RemoteMessagePill(
+            message = uiState.remoteMessage,
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 24.dp),
         )
     }
 }

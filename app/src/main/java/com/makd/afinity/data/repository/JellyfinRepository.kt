@@ -6,6 +6,8 @@ import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.ui.settings.servers.JellyfinStats
 import kotlinx.coroutines.flow.Flow
+import org.jellyfin.sdk.model.api.GeneralCommandType
+import org.jellyfin.sdk.model.api.PlaystateCommand
 import org.jellyfin.sdk.model.api.SessionInfoDto
 import org.jellyfin.sdk.model.api.TaskInfo
 import java.util.UUID
@@ -67,6 +69,26 @@ interface JellyfinRepository {
     ): String
 
     suspend fun getActiveSessions(): Result<List<SessionInfoDto>>
+
+    suspend fun sendSessionPlaystateCommand(
+        sessionId: String,
+        command: PlaystateCommand,
+        seekPositionTicks: Long? = null,
+    ): Result<Unit>
+
+    suspend fun sendSessionGeneralCommand(
+        sessionId: String,
+        command: GeneralCommandType,
+    ): Result<Unit>
+
+    suspend fun setSessionVolume(sessionId: String, volume: Int): Result<Unit>
+
+    suspend fun sendSessionMessage(
+        sessionId: String,
+        header: String,
+        text: String,
+        timeoutMs: Long? = null,
+    ): Result<Unit>
 
     suspend fun restartServer(): Result<Unit>
 

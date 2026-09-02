@@ -30,6 +30,10 @@ import org.jellyfin.sdk.api.operations.ScheduledTaskApi
 import org.jellyfin.sdk.api.operations.SessionApi
 import org.jellyfin.sdk.api.operations.SystemApi
 import org.jellyfin.sdk.model.api.FolderStorageDto
+import org.jellyfin.sdk.model.api.GeneralCommand
+import org.jellyfin.sdk.model.api.GeneralCommandType
+import org.jellyfin.sdk.model.api.MessageCommand
+import org.jellyfin.sdk.model.api.PlaystateCommand
 import org.jellyfin.sdk.model.api.SessionInfoDto
 import org.jellyfin.sdk.model.api.SystemStorageDto
 import org.jellyfin.sdk.model.api.TaskInfo
@@ -280,6 +284,101 @@ constructor(
                 Result.success(sessions)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get active sessions")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun sendSessionPlaystateCommand(
+        sessionId: String,
+        command: PlaystateCommand,
+        seekPositionTicks: Long?,
+    ): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            val apiClient =
+                sessionManager.getCurrentApiClient()
+                    ?: return@withContext Result.failure(Exception("No active session"))
+            return@withContext try {
+                SessionApi(apiClient)
+                    .sendPlaystateCommand(
+                        sessionId = sessionId,
+                        command = command,
+                        seekPositionTicks = seekPositionTicks,
+                    )
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to send playstate command $command to session $sessionId")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun sendSessionGeneralCommand(
+        sessionId: String,
+        command: GeneralCommandType,
+    ): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            val apiClient =
+                sessionManager.getCurrentApiClient()
+                    ?: return@withContext Result.failure(Exception("No active session"))
+            return@withContext try {
+                SessionApi(apiClient).sendGeneralCommand(sessionId = sessionId, command = command)
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to send general command $command to session $sessionId")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun setSessionVolume(sessionId: String, volume: Int): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            val apiClient =
+                sessionManager.getCurrentApiClient()
+                    ?: return@withContext Result.failure(Exception("No active session"))
+            val controllingUserId =
+                sessionManager.currentSession.value?.userId
+                    ?: return@withContext Result.failure(Exception("No current user"))
+            return@withContext try {
+                SessionApi(apiClient)
+                    .sendFullGeneralCommand(
+                        sessionId = sessionId,
+                        data =
+                            GeneralCommand(
+                                name = GeneralCommandType.SET_VOLUME,
+                                controllingUserId = controllingUserId,
+                                arguments =
+                                    mapOf("Volume" to volume.coerceIn(0, 100).toString()),
+                            ),
+                    )
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set volume on session $sessionId")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun sendSessionMessage(
+        sessionId: String,
+        header: String,
+        text: String,
+        timeoutMs: Long?,
+    ): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            val apiClient =
+                sessionManager.getCurrentApiClient()
+                    ?: return@withContext Result.failure(Exception("No active session"))
+            return@withContext try {
+                SessionApi(apiClient)
+                    .sendMessageCommand(
+                        sessionId = sessionId,
+                        data =
+                            MessageCommand(
+                                header = header,
+                                text = text,
+                                timeoutMs = timeoutMs,
+                            ),
+                    )
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to send message to session $sessionId")
                 Result.failure(e)
             }
         }

@@ -25,10 +25,13 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -57,10 +60,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.settings.servers.components.SectionHeader
+import com.makd.afinity.ui.settings.servers.components.SessionRemoteSheet
 import com.makd.afinity.ui.settings.servers.utils.formatLastRun
 import com.makd.afinity.ui.settings.servers.utils.formatTicks
 import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.ImageType
+import org.jellyfin.sdk.model.api.PlaystateCommand
 import org.jellyfin.sdk.model.api.SessionInfoDto
 import org.jellyfin.sdk.model.api.TaskInfo
 import org.jellyfin.sdk.model.api.TaskState
@@ -74,10 +79,48 @@ internal fun ControlPanelView(
     val tasks by viewModel.scheduledTasks.collectAsStateWithLifecycle()
     val sessions by viewModel.activeSessions.collectAsStateWithLifecycle()
     val isLibraryRefreshing by viewModel.isLibraryRefreshing.collectAsStateWithLifecycle()
+    val pendingPause by viewModel.pendingPause.collectAsStateWithLifecycle()
 
     var showRestartConfirm by remember { mutableStateOf(false) }
     var showShutdownConfirm by remember { mutableStateOf(false) }
+    var remoteSessionId by remember { mutableStateOf<String?>(null) }
     val serverId = serverWithCount.server.id
+
+    val remoteSession = sessions?.firstOrNull { it.id != null && it.id == remoteSessionId }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val commandFailedMessage = stringResource(R.string.session_command_failed)
+
+    LaunchedEffect(Unit) {
+        viewModel.commandError.collect { snackbarHostState.showSnackbar(commandFailedMessage) }
+    }
+
+    if (remoteSession != null) {
+        SessionRemoteSheet(
+            session = remoteSession,
+            baseUrl = viewModel.baseUrl,
+            isOwnSession = remoteSession.userId == viewModel.currentUserId,
+            pendingPause = remoteSession.id?.let { pendingPause[it] },
+            onDismiss = { remoteSessionId = null },
+            onTogglePause = { viewModel.togglePause(remoteSession) },
+            onSeekBy = { viewModel.seekBy(remoteSession, it) },
+            onSeekTo = { ticks -> remoteSession.id?.let { viewModel.seekTo(it, ticks) } },
+            onPlaystate = { command ->
+                remoteSession.id?.let { viewModel.sendPlaystate(it, command) }
+            },
+            onSetVolume = { volume ->
+                remoteSession.id?.let { viewModel.setVolume(it, volume) }
+            },
+            onToggleMute = {
+                remoteSession.id?.let {
+                    viewModel.toggleMute(it, remoteSession.playState?.isMuted == true)
+                }
+            },
+            onSendMessage = { text ->
+                remoteSession.id?.let { viewModel.sendMessage(it, text) }
+            },
+        )
+    }
 
     DisposableEffect(serverId) {
         viewModel.initialize(serverId)
@@ -189,6 +232,7 @@ internal fun ControlPanelView(
         )
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -228,6 +272,11 @@ internal fun ControlPanelView(
                 sessions = sessions ?: emptyList(),
                 baseUrl = viewModel.baseUrl,
                 loading = sessions == null,
+                pendingPause = pendingPause,
+                onTogglePause = viewModel::togglePause,
+                onSeekBy = viewModel::seekBy,
+                onPlaystate = viewModel::sendPlaystate,
+                onOpenRemote = { remoteSessionId = it.id },
             )
 
             Row(
@@ -275,6 +324,11 @@ internal fun ControlPanelView(
                     )
             }
         }
+    }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
+        )
     }
 }
 
@@ -339,6 +393,11 @@ private fun ActiveSessionsSection(
     sessions: List<SessionInfoDto>,
     baseUrl: String,
     loading: Boolean = false,
+    pendingPause: Map<String, Boolean> = emptyMap(),
+    onTogglePause: (SessionInfoDto) -> Unit = {},
+    onSeekBy: (SessionInfoDto, Long) -> Unit = { _, _ -> },
+    onPlaystate: (String, PlaystateCommand) -> Unit = { _, _ -> },
+    onOpenRemote: (SessionInfoDto) -> Unit = {},
 ) {
     val playingSessions = sessions.filter { it.nowPlayingItem != null }
     val idleCount = sessions.count { it.nowPlayingItem == null }
@@ -396,7 +455,16 @@ private fun ActiveSessionsSection(
                     modifier = Modifier.fillMaxWidth(),
                     pageSpacing = 12.dp,
                 ) { page ->
-                    PlayingSessionCard(session = playingSessions[page], baseUrl = baseUrl)
+                    val session = playingSessions[page]
+                    PlayingSessionCard(
+                        session = session,
+                        baseUrl = baseUrl,
+                        pendingPause = session.id?.let { pendingPause[it] },
+                        onTogglePause = { onTogglePause(session) },
+                        onSeekBy = { onSeekBy(session, it) },
+                        onPlaystate = { command -> session.id?.let { onPlaystate(it, command) } },
+                        onOpenRemote = { onOpenRemote(session) },
+                    )
                 }
                 if (playingSessions.size > 1) {
                     Row(
@@ -426,7 +494,15 @@ private fun ActiveSessionsSection(
 }
 
 @Composable
-private fun PlayingSessionCard(session: SessionInfoDto, baseUrl: String) {
+private fun PlayingSessionCard(
+    session: SessionInfoDto,
+    baseUrl: String,
+    pendingPause: Boolean? = null,
+    onTogglePause: () -> Unit = {},
+    onSeekBy: (Long) -> Unit = {},
+    onPlaystate: (PlaystateCommand) -> Unit = {},
+    onOpenRemote: () -> Unit = {},
+) {
     val item = session.nowPlayingItem ?: return
 
     val backdropUrl =
@@ -486,6 +562,7 @@ private fun PlayingSessionCard(session: SessionInfoDto, baseUrl: String) {
     val userName = session.userName ?: stringResource(R.string.unknown_user)
 
     ElevatedCard(
+        onClick = onOpenRemote,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
@@ -619,6 +696,92 @@ private fun PlayingSessionCard(session: SessionInfoDto, baseUrl: String) {
                     )
                 }
             }
+        }
+
+        if (session.supportsRemoteControl) {
+            SessionControlStrip(
+                isPaused = pendingPause ?: isPaused,
+                canSeek = session.playState?.canSeek ?: false,
+                onTogglePause = onTogglePause,
+                onSeekBy = onSeekBy,
+                onPlaystate = onPlaystate,
+                onOpenRemote = onOpenRemote,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SessionControlStrip(
+    isPaused: Boolean,
+    canSeek: Boolean,
+    onTogglePause: () -> Unit,
+    onSeekBy: (Long) -> Unit,
+    onPlaystate: (PlaystateCommand) -> Unit,
+    onOpenRemote: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        IconButton(onClick = { onPlaystate(PlaystateCommand.PREVIOUS_TRACK) }) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_player_skip_back),
+                contentDescription = stringResource(R.string.cd_session_previous),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(22.dp),
+            )
+        }
+        if (canSeek) {
+            IconButton(onClick = { onSeekBy(-10L) }) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_rewind_backward_10),
+                    contentDescription = stringResource(R.string.cd_session_rewind),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+        }
+        FilledIconButton(onClick = onTogglePause) {
+            Icon(
+                painter =
+                    painterResource(
+                        id = if (isPaused) R.drawable.ic_player_play_filled else R.drawable.ic_player_pause_filled
+                    ),
+                contentDescription =
+                    stringResource(
+                        if (isPaused) R.string.cd_session_play else R.string.cd_session_pause
+                    ),
+                modifier = Modifier.size(24.dp),
+            )
+        }
+        if (canSeek) {
+            IconButton(onClick = { onSeekBy(30L) }) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_rewind_forward_30),
+                    contentDescription = stringResource(R.string.cd_session_forward),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+        }
+        IconButton(onClick = { onPlaystate(PlaystateCommand.NEXT_TRACK) }) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_player_skip_forward),
+                contentDescription = stringResource(R.string.cd_session_next),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(22.dp),
+            )
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        IconButton(onClick = onOpenRemote) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_dots_vertical),
+                contentDescription = stringResource(R.string.cd_session_more),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(22.dp),
+            )
         }
     }
 }

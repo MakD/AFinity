@@ -48,6 +48,8 @@ import com.makd.afinity.cast.CastEvent
 import com.makd.afinity.cast.CastManager
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.data.manager.RemoteMessage
+import com.makd.afinity.data.manager.RemoteMessageManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.ChannelType
@@ -82,6 +84,7 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.metadata.ItemRatingsLoader
 import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.data.repository.segments.SegmentsRepository
+import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.player.common.TrackMapping
 import com.makd.afinity.player.common.TrackSelection
@@ -111,8 +114,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.model.api.GeneralCommandType
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.PlayMethod
+import org.jellyfin.sdk.model.api.PlaystateCommand
 import org.jellyfin.sdk.model.api.SubtitlePlaybackMode
 import timber.log.Timber
 import java.util.Locale
@@ -120,6 +125,9 @@ import java.util.UUID
 import javax.inject.Inject
 
 private const val MAX_PENDING_TRACK_ATTEMPTS = 10
+private const val TICKS_PER_MILLISECOND = 10_000L
+private const val REMOTE_SEEK_STEP_MS = 30_000L
+private const val REMOTE_VOLUME_STEP = 10
 
 @UnstableApi
 @HiltViewModel
@@ -144,6 +152,8 @@ constructor(
     private val musicPlaybackManager: com.makd.afinity.player.music.MusicPlaybackManager,
     private val offlineModeManager: OfflineModeManager,
     private val sessionManager: SessionManager,
+    private val jellyfinWebSocketManager: JellyfinWebSocketManager,
+    private val remoteMessageManager: RemoteMessageManager,
 ) : ViewModel(), Player.Listener {
 
     lateinit var player: Player
@@ -165,6 +175,9 @@ constructor(
     private var currentSessionId: String? = null
     private var currentLivePlaybackInfo: LiveTvPlaybackInfo? = null
     private val volumeManager: VolumeManager by lazy { VolumeManager(context) }
+
+    private var isRemoteMuted: Boolean = false
+    private var volumeBeforeRemoteMute: Int = 100
 
     private val _closePlayerEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val closePlayerEvent: SharedFlow<Unit> = _closePlayerEvent.asSharedFlow()
@@ -237,6 +250,13 @@ constructor(
                     player.stop()
                     player.clearMediaItems()
                     updateUiState { PlayerUiState() }
+                }
+            }
+            launch { observeRemotePlaystateCommands() }
+            launch { observeRemoteGeneralCommands() }
+            launch {
+                remoteMessageManager.message.collect { message ->
+                    updateUiState { it.copy(remoteMessage = message) }
                 }
             }
             startPositionUpdateLoop()
@@ -948,6 +968,77 @@ constructor(
             )
     }
 
+    private suspend fun observeRemotePlaystateCommands() {
+        jellyfinWebSocketManager.remotePlaystateCommands.collect { request ->
+            if (!::player.isInitialized) return@collect
+            when (request.command) {
+                PlaystateCommand.PAUSE -> handlePlayerEvent(PlayerEvent.Pause)
+                PlaystateCommand.UNPAUSE -> handlePlayerEvent(PlayerEvent.Play)
+                PlaystateCommand.PLAY_PAUSE ->
+                    handlePlayerEvent(if (player.isPlaying) PlayerEvent.Pause else PlayerEvent.Play)
+                PlaystateCommand.STOP -> handlePlayerEvent(PlayerEvent.Stop)
+                PlaystateCommand.SEEK ->
+                    request.seekPositionTicks?.let {
+                        handlePlayerEvent(PlayerEvent.Seek(it / TICKS_PER_MILLISECOND))
+                    }
+                PlaystateCommand.REWIND ->
+                    handlePlayerEvent(PlayerEvent.SeekRelative(-REMOTE_SEEK_STEP_MS))
+                PlaystateCommand.FAST_FORWARD ->
+                    handlePlayerEvent(PlayerEvent.SeekRelative(REMOTE_SEEK_STEP_MS))
+                PlaystateCommand.NEXT_TRACK -> onNextEpisode()
+                PlaystateCommand.PREVIOUS_TRACK -> onPreviousEpisode()
+            }
+        }
+    }
+
+    private suspend fun observeRemoteGeneralCommands() {
+        jellyfinWebSocketManager.remoteGeneralCommands.collect { command ->
+            if (!::player.isInitialized) return@collect
+            when (command.name) {
+                GeneralCommandType.SET_VOLUME ->
+                    command.arguments["Volume"]?.toIntOrNull()?.let {
+                        handlePlayerEvent(PlayerEvent.SetVolume(it.coerceIn(0, 100)))
+                    }
+                GeneralCommandType.VOLUME_UP ->
+                    handlePlayerEvent(
+                        PlayerEvent.SetVolume(
+                            (volumeManager.getCurrentVolume() + REMOTE_VOLUME_STEP).coerceIn(0, 100)
+                        )
+                    )
+                GeneralCommandType.VOLUME_DOWN ->
+                    handlePlayerEvent(
+                        PlayerEvent.SetVolume(
+                            (volumeManager.getCurrentVolume() - REMOTE_VOLUME_STEP).coerceIn(0, 100)
+                        )
+                    )
+                GeneralCommandType.MUTE -> applyRemoteMute(true)
+                GeneralCommandType.UNMUTE -> applyRemoteMute(false)
+                GeneralCommandType.TOGGLE_MUTE -> applyRemoteMute(!isRemoteMuted)
+                GeneralCommandType.SET_AUDIO_STREAM_INDEX ->
+                    command.arguments["Index"]?.toIntOrNull()?.let {
+                        handlePlayerEvent(PlayerEvent.SwitchToTrack(C.TRACK_TYPE_AUDIO, it))
+                    }
+                GeneralCommandType.SET_SUBTITLE_STREAM_INDEX ->
+                    command.arguments["Index"]?.toIntOrNull()?.let {
+                        handlePlayerEvent(PlayerEvent.SwitchToTrack(C.TRACK_TYPE_TEXT, it))
+                    }
+                GeneralCommandType.DISPLAY_MESSAGE -> Unit
+                else -> Timber.d("Ignoring unsupported remote command ${command.name}")
+            }
+        }
+    }
+
+    private fun applyRemoteMute(muted: Boolean) {
+        if (muted) {
+            volumeBeforeRemoteMute = volumeManager.getCurrentVolume()
+            isRemoteMuted = true
+            handlePlayerEvent(PlayerEvent.SetVolume(0))
+        } else {
+            isRemoteMuted = false
+            handlePlayerEvent(PlayerEvent.SetVolume(volumeBeforeRemoteMute.coerceIn(1, 100)))
+        }
+    }
+
     fun handlePlayerEvent(event: PlayerEvent) {
         viewModelScope.launch {
             if (syncPlayInterceptor?.handle(event) == true) return@launch
@@ -1285,10 +1376,10 @@ constructor(
                     hwDec = exoVideoDecoder,
                     bufferHealth =
                         context.resources.getQuantityString(
-                    R.plurals.playback_stats_value_seconds_fmt,
-                    bufferSeconds.toInt(),
-                    bufferSeconds,
-                ),
+                            R.plurals.playback_stats_value_seconds_fmt,
+                            bufferSeconds.toInt(),
+                            bufferSeconds,
+                        ),
                     videoBitrate = videoBitrate,
                 )
             }
@@ -1377,10 +1468,10 @@ constructor(
                         if ((hwdecCurrent ?: "no").contains("mediacodec")) "H/W Dec" else "S/W Dec",
                     bufferHealth =
                         context.resources.getQuantityString(
-                    R.plurals.playback_stats_value_seconds_fmt,
-                    bufferSeconds.toInt(),
-                    bufferSeconds,
-                ),
+                            R.plurals.playback_stats_value_seconds_fmt,
+                            bufferSeconds.toInt(),
+                            bufferSeconds,
+                        ),
                     videoBitrate =
                         if (bitrateMbps > 0) String.format(Locale.US, "%.1f Mbps", bitrateMbps)
                         else "Unknown",
@@ -3167,6 +3258,7 @@ constructor(
         val showBrightnessIndicator: Boolean = false,
         val showVolumeIndicator: Boolean = false,
         val volumeLevel: Int = 50,
+        val remoteMessage: RemoteMessage? = null,
         val isSeeking: Boolean = false,
         val seekPosition: Long = 0L,
         val dragStartPosition: Long = 0L,

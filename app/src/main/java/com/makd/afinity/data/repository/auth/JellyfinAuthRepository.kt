@@ -34,6 +34,19 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
+internal val SUPPORTED_REMOTE_COMMANDS =
+    listOf(
+        GeneralCommandType.VOLUME_UP,
+        GeneralCommandType.VOLUME_DOWN,
+        GeneralCommandType.TOGGLE_MUTE,
+        GeneralCommandType.MUTE,
+        GeneralCommandType.UNMUTE,
+        GeneralCommandType.SET_VOLUME,
+        GeneralCommandType.SET_AUDIO_STREAM_INDEX,
+        GeneralCommandType.SET_SUBTITLE_STREAM_INDEX,
+        GeneralCommandType.DISPLAY_MESSAGE,
+    )
+
 @Singleton
 class JellyfinAuthRepository
 @Inject
@@ -413,18 +426,7 @@ constructor(
             val capabilities =
                 ClientCapabilitiesDto(
                     playableMediaTypes = listOf(MediaType.VIDEO, MediaType.AUDIO),
-                    supportedCommands =
-                        listOf(
-                            GeneralCommandType.VOLUME_UP,
-                            GeneralCommandType.VOLUME_DOWN,
-                            GeneralCommandType.TOGGLE_MUTE,
-                            GeneralCommandType.MUTE,
-                            GeneralCommandType.UNMUTE,
-                            GeneralCommandType.SET_VOLUME,
-                            GeneralCommandType.SET_AUDIO_STREAM_INDEX,
-                            GeneralCommandType.SET_SUBTITLE_STREAM_INDEX,
-                            GeneralCommandType.DISPLAY_MESSAGE,
-                        ),
+                    supportedCommands = SUPPORTED_REMOTE_COMMANDS,
                     supportsMediaControl = true,
                     supportsPersistentIdentifier = true,
                     deviceProfile = null,
