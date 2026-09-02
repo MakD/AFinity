@@ -117,22 +117,20 @@ constructor(
         }
     }
 
-    private fun loadChannels() {
-        viewModelScope.launch {
-            try {
-                val channels = liveTvRepository.getChannels()
-                allChannelsCache = channels
-                applyFilterToCache(_selectedLetter.value)
+    private suspend fun loadChannels() {
+        try {
+            val channels = liveTvRepository.getChannels()
+            allChannelsCache = channels
+            applyFilterToCache(_selectedLetter.value)
 
-                _uiState.update { it.copy(epgChannels = channels, isLoading = false) }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load channels")
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = context.getString(R.string.error_failed_load_channels),
-                    )
-                }
+            _uiState.update { it.copy(epgChannels = channels, isLoading = false) }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load channels")
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    error = context.getString(R.string.error_failed_load_channels),
+                )
             }
         }
     }
@@ -263,10 +261,10 @@ constructor(
                         .map { batch ->
                             async(Dispatchers.IO) {
                                 try {
-                                    liveTvRepository.getPrograms(
+                                    liveTvRepository.getGuidePrograms(
                                         channelIds = batch.map { it.id },
-                                        minStartDate = startTime,
-                                        maxEndDate = endTime,
+                                        windowStart = startTime,
+                                        windowEnd = endTime,
                                     )
                                 } catch (e: Exception) {
                                     emptyList()
@@ -279,11 +277,15 @@ constructor(
                 val programsByChannel = allPrograms.groupBy { it.channelId }
 
                 _uiState.update {
-                    it.copy(
-                        epgChannels = channels,
-                        epgPrograms = programsByChannel,
-                        isEpgLoading = false,
-                    )
+                    if (it.epgPrograms == programsByChannel && it.epgChannels == channels) {
+                        it.copy(isEpgLoading = false)
+                    } else {
+                        it.copy(
+                            epgChannels = channels,
+                            epgPrograms = programsByChannel,
+                            isEpgLoading = false,
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load EPG data")

@@ -2,12 +2,11 @@ package com.makd.afinity.data.repository.server
 
 import android.content.Context
 import com.makd.afinity.R
-import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.model.ServerVersion
 
 object ServerVersionSupport {
 
-    val minimum: ServerVersion = Jellyfin.minimumVersion
+    val minimum: ServerVersion = ServerVersion(10, 0, 0)
 
     val minimumDisplay: String = minimum.toString(2)
 

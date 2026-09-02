@@ -217,6 +217,29 @@ constructor(
                 ?: emptyList()
         }
 
+    override suspend fun getGuidePrograms(
+        channelIds: List<UUID>,
+        windowStart: LocalDateTime,
+        windowEnd: LocalDateTime,
+    ): List<AfinityProgram> =
+        apiCall(emptyList(), "Failed to get guide programs") { apiClient, _ ->
+            val baseUrl = getBaseUrl()
+
+            LiveTvApi(apiClient)
+                .getLiveTvPrograms(
+                    channelIds = channelIds,
+                    minEndDate = windowStart,
+                    maxStartDate = windowEnd,
+                    sortBy = listOf(ItemSortBy.START_DATE),
+                    sortOrder = listOf(SortOrder.ASCENDING),
+                    enableImages = false,
+                    fields = emptyList(),
+                )
+                .content
+                .items
+                ?.map { programDto -> programDto.toAfinityProgram(baseUrl) } ?: emptyList()
+        }
+
     override suspend fun getCurrentProgram(channelId: UUID): AfinityProgram? {
         val now = LocalDateTime.now()
         return getPrograms(

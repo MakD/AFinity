@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -27,14 +28,13 @@ fun EpgTimeHeader(
     modifier: Modifier = Modifier,
 ) {
     val timePattern = stringResource(R.string.livetv_time_header_pattern)
-    val timeFormatter = DateTimeFormatter.ofPattern(timePattern)
+    val timeFormatter = remember(timePattern) { DateTimeFormatter.ofPattern(timePattern) }
+    val now = rememberCurrentTime()
 
     Row(modifier = modifier.background(MaterialTheme.colorScheme.surface).height(40.dp)) {
         repeat(visibleHours + 1) { hourOffset ->
             val time = startTime.plusHours(hourOffset.toLong())
-            val isNow =
-                LocalDateTime.now().hour == time.hour &&
-                    LocalDateTime.now().toLocalDate() == time.toLocalDate()
+            val isNow = now.hour == time.hour && now.toLocalDate() == time.toLocalDate()
 
             Box(
                 modifier =

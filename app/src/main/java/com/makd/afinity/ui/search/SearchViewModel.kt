@@ -178,7 +178,6 @@ constructor(
             }
         }
 
-
         viewModelScope.launch {
             itemStore.overlay.collect { overlay ->
                 if (overlay.isEmpty()) return@collect
@@ -515,10 +514,10 @@ constructor(
                         val baseUrl = mediaRepository.getBaseUrl()
                         val mappedItems =
                             results.items
-                                ?.filter {
-                                    it.locationType !=
-                                        org.jellyfin.sdk.model.api.LocationType.VIRTUAL
-                                }
+                                //                                ?.filter {
+                                //                                    it.locationType !=
+                                //                                        LocationType.VIRTUAL
+                                //                                }
                                 ?.mapNotNull { baseItemDto ->
                                     try {
                                         val item = baseItemDto.toAfinityItem(baseUrl)
@@ -584,9 +583,10 @@ constructor(
 
                         val baseUrl = mediaRepository.getBaseUrl()
                         results.items
-                            ?.filter {
-                                it.locationType != org.jellyfin.sdk.model.api.LocationType.VIRTUAL
-                            }
+                            //                            ?.filter {
+                            //                                it.locationType !=
+                            // LocationType.VIRTUAL
+                            //                            }
                             ?.mapNotNull { baseItemDto ->
                                 runCatching { baseItemDto.toAfinityItem(baseUrl) }.getOrNull()
                                     as? AfinityEpisode

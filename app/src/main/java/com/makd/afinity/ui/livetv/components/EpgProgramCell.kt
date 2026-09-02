@@ -18,16 +18,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.makd.afinity.R
 import com.makd.afinity.data.models.livetv.AfinityProgram
 import java.time.Duration
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 @Composable
 fun EpgProgramCell(
@@ -39,8 +36,6 @@ fun EpgProgramCell(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val timePattern = stringResource(R.string.livetv_time_pattern)
-    val timeFormatter = DateTimeFormatter.ofPattern(timePattern)
     val isLive = program.isCurrentlyAiring(rememberCurrentTime())
 
     val programStart = program.startDate ?: return
@@ -61,9 +56,8 @@ fun EpgProgramCell(
         modifier =
             modifier
                 .offset(x = offsetDp)
-                .width(widthDp - 2.dp)
+                .width((widthDp - 2.dp).coerceAtLeast(1.dp))
                 .height(cellHeight - 2.dp)
-                .padding(1.dp)
                 .clip(MaterialTheme.shapes.small)
                 .background(
                     if (isLive) MaterialTheme.colorScheme.primaryContainer
@@ -75,46 +69,43 @@ fun EpgProgramCell(
                     shape = MaterialTheme.shapes.small,
                 )
                 .clickable(onClick = onClick)
-                .padding(horizontal = 8.dp, vertical = 4.dp)
+                .padding(horizontal = 4.dp, vertical = 4.dp)
     ) {
-        if (widthDp > 45.dp) {
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (isLive) {
-                        LiveBadge()
-                        Spacer(modifier = Modifier.width(4.dp))
-                    }
-                    Text(
-                        text = program.name,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = if (isLive) FontWeight.Bold else FontWeight.Medium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        color =
-                            if (isLive) MaterialTheme.colorScheme.onPrimaryContainer
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text =
-                        stringResource(
-                            R.string.livetv_epg_time_range,
-                            programStart.format(timeFormatter),
-                            programEnd.format(timeFormatter),
-                        ),
+                    text = program.name,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = if (isLive) FontWeight.Bold else FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color =
+                        if (isLive) MaterialTheme.colorScheme.onPrimaryContainer
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (isLive) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    LiveBadge()
+                }
+            }
+
+            program.episodeTitle?.takeIf { it.isNotBlank() }?.let { episodeTitle ->
+                Text(
+                    text = episodeTitle,
                     style = MaterialTheme.typography.labelSmall,
                     color =
                         if (isLive) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                         else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
+            }
 
-                if (isLive) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Box(modifier = Modifier.fillMaxWidth().height(3.dp)) {
-                        ProgramProgressBar(program = program)
-                    }
+            if (isLive) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Box(modifier = Modifier.fillMaxWidth().height(3.dp)) {
+                    ProgramProgressBar(program = program)
                 }
             }
         }
