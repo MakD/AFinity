@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -602,7 +603,7 @@ fun PlayerControls(
             modifier =
                 Modifier.align(Alignment.BottomEnd)
                     .windowInsetsPadding(
-                        WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                        WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
                     )
                     .padding(end = 16.dp, bottom = 110.dp),
             enter =
@@ -716,9 +717,11 @@ fun PlayerControls(
                     modifier =
                         Modifier.align(Alignment.TopEnd)
                             .windowInsetsPadding(
-                                WindowInsets.displayCutout.only(
-                                    WindowInsetsSides.Horizontal + WindowInsetsSides.Top
-                                )
+                                WindowInsets.safeDrawing
+                                    .only(WindowInsetsSides.Horizontal)
+                                    .union(
+                                        WindowInsets.displayCutout.only(WindowInsetsSides.Top)
+                                    )
                             )
                             .padding(top = 72.dp, end = 16.dp)
                             .clickable(
@@ -920,9 +923,9 @@ private fun TopControls(
                     )
                 )
                 .windowInsetsPadding(
-                    WindowInsets.displayCutout.only(
-                        WindowInsetsSides.Horizontal + WindowInsetsSides.Top
-                    )
+                    WindowInsets.safeDrawing
+                        .only(WindowInsetsSides.Horizontal)
+                        .union(WindowInsets.displayCutout.only(WindowInsetsSides.Top))
                 )
                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 24.dp)
     ) {
