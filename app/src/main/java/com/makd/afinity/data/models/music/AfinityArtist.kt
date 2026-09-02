@@ -1,5 +1,6 @@
 package com.makd.afinity.data.models.music
 
+import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityUserDataOwner
 import java.util.UUID
@@ -8,6 +9,7 @@ data class AfinityArtist(
     override val id: UUID,
     val name: String,
     val overview: String?,
+    val externalUrls: List<AfinityExternalUrl>? = null,
     val albumCount: Int?,
     val genres: List<String>,
     override val favorite: Boolean,

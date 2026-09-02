@@ -80,6 +80,7 @@ fun MusicAlbumCard(
     album: AfinityAlbum,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    showArtist: Boolean = true,
 ) {
     Column(
         modifier =
@@ -117,7 +118,7 @@ fun MusicAlbumCard(
             )
             val subtitle =
                 listOfNotNull(
-                        album.artist ?: album.artists.firstOrNull(),
+                        if (showArtist) album.artist ?: album.artists.firstOrNull() else null,
                         album.productionYear?.toString(),
                     )
                     .joinToString(" · ")

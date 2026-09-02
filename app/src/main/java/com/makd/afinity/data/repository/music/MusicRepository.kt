@@ -67,7 +67,11 @@ interface MusicRepository {
 
     suspend fun getArtistsByIds(artistIds: List<UUID>): List<AfinityArtist>
 
-    suspend fun getArtistAlbums(artistId: UUID, libraryId: UUID? = null): List<AfinityAlbum>
+    suspend fun getArtistAlbums(
+        artistId: UUID,
+        libraryId: UUID? = null,
+        excludeAlbumId: UUID? = null,
+    ): List<AfinityAlbum>
 
     suspend fun getArtistTopTracks(
         artistId: UUID,
@@ -106,7 +110,11 @@ interface MusicRepository {
 
     suspend fun getArtistRadio(artistId: UUID, limit: Int = 50): List<AfinityTrack>
 
-    suspend fun getSimilarAlbums(itemId: UUID, limit: Int = 5): List<AfinityAlbum>
+    suspend fun getSimilarAlbums(
+        itemId: UUID,
+        limit: Int = 5,
+        excludeArtistId: UUID? = null,
+    ): List<AfinityAlbum>
 
     suspend fun getLyrics(trackId: UUID): List<AfinityLyricLine>
 
@@ -126,7 +134,11 @@ interface MusicRepository {
         limit: Int = 100,
     ): List<AfinityMusicGenre>
 
-    suspend fun getAlbumsByGenre(genreName: String, limit: Int = 15): List<AfinityAlbum>
+    suspend fun getAlbumsByGenre(
+        genreName: String,
+        limit: Int = 15,
+        parentId: UUID? = null,
+    ): List<AfinityAlbum>
 
     suspend fun getArtistsByGenre(
         genreName: String,
@@ -137,6 +149,7 @@ interface MusicRepository {
     suspend fun getRecentlyAddedAlbumsByGenre(
         genreName: String,
         limit: Int = 12,
+        parentId: UUID? = null,
     ): List<AfinityAlbum>
 
     suspend fun getFavoriteArtists(limit: Int = 10, parentId: UUID? = null): List<AfinityArtist>
@@ -155,7 +168,11 @@ interface MusicRepository {
 
     suspend fun getRandomArtists(limit: Int = 20, parentId: UUID? = null): List<AfinityArtist>
 
-    suspend fun getTracksByGenre(genreName: String, limit: Int = 15): List<AfinityTrack>
+    suspend fun getTracksByGenre(
+        genreName: String,
+        limit: Int = 15,
+        parentId: UUID? = null,
+    ): List<AfinityTrack>
 
     suspend fun getRandomTracks(limit: Int = 15): List<AfinityTrack>
 

@@ -53,6 +53,35 @@ object IntentUtils {
         }
     }
 
+    fun openMapLocation(context: Context, location: String?) {
+        if (location.isNullOrBlank()) return
+
+        val encoded = Uri.encode(location)
+        try {
+            val mapsIntent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=$encoded"))
+            try {
+                context.startActivity(mapsIntent)
+                Timber.d("Opened location in maps app: $location")
+            } catch (e: ActivityNotFoundException) {
+                val webIntent =
+                    Intent(
+                        Intent.ACTION_VIEW,
+                        Uri.parse("https://www.google.com/maps/search/?api=1&query=$encoded"),
+                    )
+                context.startActivity(webIntent)
+                Timber.d("Opened location in browser: $location")
+            }
+        } catch (e: Exception) {
+            Toast.makeText(
+                    context,
+                    context.getString(R.string.error_unable_open_location),
+                    Toast.LENGTH_SHORT,
+                )
+                .show()
+            Timber.e(e, "Failed to open location: $location")
+        }
+    }
+
     private fun extractYouTubeVideoId(url: String): String? {
         val patterns =
             listOf(

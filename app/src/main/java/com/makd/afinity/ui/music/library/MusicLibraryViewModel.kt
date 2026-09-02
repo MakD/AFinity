@@ -693,6 +693,7 @@ constructor(
                             musicRepository.getTracksByGenre(
                                 genre.name,
                                 MFY_GENRE_TRACKS,
+                                parentId = libraryId,
                             )
                         }
                             .getOrDefault(emptyList())
@@ -727,7 +728,6 @@ constructor(
         val musicLibraries =
             appDataRepository.libraries.value.filter { it.type == CollectionType.Music }
         if (musicLibraries.isEmpty()) return
-        val musicParentId = musicLibraries.singleOrNull()?.id
 
         _uiState.update { it.copy(isLoadingHome = true) }
 
@@ -745,7 +745,7 @@ constructor(
                     .getOrDefault(emptyList())
             }
             val genresJob = async {
-                runCatching { musicRepository.getMusicGenres(limit = 20, parentId = musicParentId) }
+                runCatching { musicRepository.getMusicGenres(limit = 20, parentId = libraryId) }
                     .getOrDefault(emptyList())
             }
             val randomAlbumsJob = async {
@@ -829,7 +829,11 @@ constructor(
                                 async {
                                     runCatching {
                                         val albums =
-                                            musicRepository.getAlbumsByGenre(genre.name, limit = 15)
+                                            musicRepository.getAlbumsByGenre(
+                                                genre.name,
+                                                limit = 15,
+                                                parentId = libraryId,
+                                            )
                                         if (albums.isNotEmpty()) genre.name to albums else null
                                     }
                                         .getOrNull()
@@ -851,7 +855,7 @@ constructor(
             }
             launch {
                 runCatching {
-                    val a = musicRepository.getRandomArtists(limit = 20, parentId = musicParentId)
+                    val a = musicRepository.getRandomArtists(limit = 20, parentId = libraryId)
                     if (a.isNotEmpty()) _uiState.update { it.copy(randomArtists = a) }
                 }
             }
@@ -889,13 +893,13 @@ constructor(
             }
             launch {
                 runCatching {
-                    val a = musicRepository.getTopArtists(limit = 15, parentId = musicParentId)
+                    val a = musicRepository.getTopArtists(limit = 15, parentId = libraryId)
                     if (a.isNotEmpty()) _uiState.update { it.copy(topArtists = a) }
                 }
             }
             launch {
                 runCatching {
-                    val a = musicRepository.getFavoriteArtists(limit = 15, parentId = musicParentId)
+                    val a = musicRepository.getFavoriteArtists(limit = 15, parentId = libraryId)
                     if (a.isNotEmpty()) _uiState.update { it.copy(favoriteArtists = a) }
                 }
             }
@@ -948,6 +952,7 @@ constructor(
                                             musicRepository.getRecentlyAddedAlbumsByGenre(
                                                 genre.name,
                                                 limit = 12,
+                                                parentId = libraryId,
                                             )
                                         if (albums.isNotEmpty()) genre.name to albums else null
                                     }

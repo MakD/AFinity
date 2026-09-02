@@ -2,7 +2,6 @@ package com.makd.afinity.ui.person.components
 
 import android.content.Intent
 import android.content.res.Configuration
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -35,15 +35,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -80,9 +78,10 @@ import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FavoriteToggleButton
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.item.components.shared.AwardsSectionStyle
+import com.makd.afinity.ui.item.components.shared.OverviewSection
 import com.makd.afinity.ui.item.components.shared.WikidataAwardsSection
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
-import com.makd.afinity.ui.utils.htmlToAnnotatedString
+import com.makd.afinity.ui.utils.IntentUtils
 import com.makd.afinity.ui.utils.verticalLayoutOffset
 
 @Composable
@@ -289,7 +288,14 @@ private fun PersonSharedContentBlocks(
     awards: WikidataAwards?,
 ) {
     if (person.overview.isNotBlank()) {
-        PersonOverviewSection(overview = person.overview)
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = stringResource(R.string.person_biography),
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            OverviewSection(overview = person.overview)
+        }
     }
 
     if (awards != null && LocalShowAwards.current) {
@@ -343,95 +349,6 @@ private fun PersonHeroSection(person: AfinityPersonDetail, modifier: Modifier = 
             targetWidth = heroWidthDp,
             targetHeight = heroWidthDp,
         )
-    }
-}
-
-@Composable
-private fun PersonOverviewSection(overview: String, modifier: Modifier = Modifier) {
-    var isExpanded by remember { mutableStateOf(false) }
-    var isEllipsized by remember { mutableStateOf(false) }
-
-    val containsHtml =
-        remember(overview) {
-            overview.contains("<a ", ignoreCase = true) ||
-                overview.contains("</a>", ignoreCase = true) ||
-                overview.contains("<br", ignoreCase = true)
-        }
-
-    val linkColor = MaterialTheme.colorScheme.primary
-    val annotatedText =
-        remember(overview, linkColor) {
-            if (containsHtml) htmlToAnnotatedString(overview, linkColor) else null
-        }
-
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = stringResource(R.string.person_biography),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-
-        @Composable
-        fun OverviewText(text: Any) {
-            val modifier = Modifier.animateContentSize()
-            val style = MaterialTheme.typography.bodyMedium
-            val color = MaterialTheme.colorScheme.onSurfaceVariant
-            val maxLines = if (isExpanded) Int.MAX_VALUE else 4
-            val overflow = if (isExpanded) TextOverflow.Visible else TextOverflow.Ellipsis
-            val lineHeight = 20.sp
-            val onTextLayout: (androidx.compose.ui.text.TextLayoutResult) -> Unit = { result ->
-                if (!isExpanded) {
-                    isEllipsized = result.hasVisualOverflow
-                }
-            }
-
-            if (text is androidx.compose.ui.text.AnnotatedString) {
-                Text(
-                    text = text,
-                    style = style,
-                    color = color,
-                    maxLines = maxLines,
-                    modifier = modifier,
-                    overflow = overflow,
-                    lineHeight = lineHeight,
-                    onTextLayout = onTextLayout,
-                )
-            } else if (text is String) {
-                Text(
-                    text = text,
-                    style = style,
-                    color = color,
-                    maxLines = maxLines,
-                    modifier = modifier,
-                    overflow = overflow,
-                    lineHeight = lineHeight,
-                    onTextLayout = onTextLayout,
-                )
-            }
-        }
-
-        if (containsHtml && annotatedText != null) {
-            OverviewText(text = annotatedText)
-        } else {
-            OverviewText(text = overview)
-        }
-
-        if (isEllipsized || isExpanded) {
-            Text(
-                text =
-                    if (isExpanded) stringResource(R.string.action_show_less)
-                    else stringResource(R.string.action_show_more),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier =
-                    Modifier.clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() },
-                    ) {
-                        isExpanded = !isExpanded
-                    },
-            )
-        }
     }
 }
 
@@ -546,16 +463,31 @@ private fun PersonMetadataSection(
                 )
             }
 
-            if (person.productionLocations.isNotEmpty()) {
-                Text(
-                    text =
-                        stringResource(
-                            R.string.person_birthplace_fmt,
-                            person.productionLocations.first(),
-                        ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            person.productionLocations.firstOrNull()?.let { birthplace ->
+                val context = LocalContext.current
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier =
+                        Modifier.clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() },
+                        ) {
+                            IntentUtils.openMapLocation(context, birthplace)
+                        },
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_map_pin),
+                        contentDescription = stringResource(R.string.cd_birthplace),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Text(
+                        text = stringResource(R.string.person_birthplace_fmt, birthplace),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
 
             if (hasExternalLinks) {

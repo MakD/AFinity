@@ -98,17 +98,19 @@ enum class Destination(
         const val PLAYLIST_ROUTE = "playlist/{playlistId}?audioOnly={audioOnly}"
         const val MUSIC_PLAYER_ROUTE = "music/player"
         const val MUSIC_GENRE_ROUTE =
-            "music/genre/{genreName}?imageUrl={imageUrl}&genreId={genreId}"
+            "music/genre/{genreName}?imageUrl={imageUrl}&genreId={genreId}&libraryId={libraryId}"
 
         fun createMusicGenreRoute(
             genreName: String,
             imageUrl: String? = null,
             genreId: java.util.UUID? = null,
+            libraryId: java.util.UUID? = null,
         ): String {
             val encodedName = genreName.replace("/", "%2F")
             val params = buildList {
                 if (imageUrl != null) add("imageUrl=${URLEncoder.encode(imageUrl, "UTF-8")}")
                 if (genreId != null) add("genreId=$genreId")
+                if (libraryId != null) add("libraryId=$libraryId")
             }
             return if (params.isEmpty()) "music/genre/$encodedName"
             else "music/genre/$encodedName?${params.joinToString("&")}"

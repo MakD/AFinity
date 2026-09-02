@@ -32,6 +32,8 @@ data class MusicAlbumUiState(
     val error: String? = null,
     val albumDownloadInfo: DownloadInfo? = null,
     val trackDownloadInfos: Map<UUID, DownloadInfo> = emptyMap(),
+    val moreFromArtist: List<AfinityAlbum> = emptyList(),
+    val similarAlbums: List<AfinityAlbum> = emptyList(),
 )
 
 @HiltViewModel
@@ -101,10 +103,48 @@ constructor(
                     )
                 }
                 updateDownloadState(lastAllDownloads)
+                album?.let { loadRelatedSections(it) }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load album $albumId")
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
             }
+        }
+    }
+
+    private fun loadRelatedSections(album: AfinityAlbum) {
+        val artistId = album.artistId
+
+        if (artistId != null) {
+            viewModelScope.launch {
+                runCatching {
+                        musicRepository.getArtistAlbums(
+                            artistId = artistId,
+                            excludeAlbumId = album.id,
+                        )
+                    }
+                    .onSuccess { albums ->
+                        if (albums.isNotEmpty()) {
+                            _uiState.update { it.copy(moreFromArtist = albums) }
+                        }
+                    }
+                    .onFailure { Timber.e(it, "Failed to load more albums from artist $artistId") }
+            }
+        }
+
+        viewModelScope.launch {
+            runCatching {
+                    musicRepository.getSimilarAlbums(
+                        itemId = album.id,
+                        limit = 12,
+                        excludeArtistId = artistId,
+                    )
+                }
+                .onSuccess { albums ->
+                    if (albums.isNotEmpty()) {
+                        _uiState.update { it.copy(similarAlbums = albums) }
+                    }
+                }
+                .onFailure { Timber.e(it, "Failed to load similar albums for ${album.id}") }
         }
     }
 

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
@@ -22,13 +23,19 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityItem
 
 @Composable
 fun ExternalLinksSection(item: AfinityItem) {
+    ExternalLinksSection(externalUrls = item.externalUrls)
+}
+
+@Composable
+fun ExternalLinksSection(externalUrls: List<AfinityExternalUrl>?) {
     val context = LocalContext.current
     val defaultLinkName = stringResource(R.string.external_link_default_name)
-    val externalLinks = remember(item) { getExternalLinks(item, defaultLinkName) }
+    val externalLinks = remember(externalUrls) { getExternalLinks(externalUrls, defaultLinkName) }
 
     if (externalLinks.isNotEmpty()) {
         LazyRow(
@@ -54,7 +61,7 @@ fun ExternalLinksSection(item: AfinityItem) {
                         painter = painterResource(id = link.iconRes),
                         contentDescription = link.name,
                         contentScale = ContentScale.Fit,
-                        modifier = Modifier.height(16.dp),
+                        modifier = Modifier.height(20.dp).widthIn(max = 48.dp),
                     )
                 }
             }
@@ -64,10 +71,13 @@ fun ExternalLinksSection(item: AfinityItem) {
 
 private data class ExternalLink(val name: String, val url: String, val iconRes: Int)
 
-private fun getExternalLinks(item: AfinityItem, defaultName: String): List<ExternalLink> {
+private fun getExternalLinks(
+    externalUrls: List<AfinityExternalUrl>?,
+    defaultName: String,
+): List<ExternalLink> {
     val links = mutableListOf<ExternalLink>()
 
-    val externalUrls = item.externalUrls ?: return emptyList()
+    if (externalUrls == null) return emptyList()
 
     externalUrls.forEach { externalUrl ->
         val url = externalUrl.url ?: return@forEach
@@ -76,6 +86,9 @@ private fun getExternalLinks(item: AfinityItem, defaultName: String): List<Exter
         val iconRes =
             when {
                 "anidb" in lowerUrl -> R.drawable.ic_anidb
+                "musicbrainz" in lowerUrl -> R.drawable.ic_musicbrainz_logo
+                "theaudiodb" in lowerUrl -> R.drawable.ic_audiodb
+                "audiodb" in lowerUrl -> R.drawable.ic_audiodb
                 "imdb" in lowerUrl -> R.drawable.ic_imdb_logo
                 "themoviedb.org/collection" in lowerUrl -> R.drawable.ic_tmdb_collection
                 "themoviedb.org/movie" in lowerUrl -> R.drawable.ic_tmdb
@@ -91,5 +104,23 @@ private fun getExternalLinks(item: AfinityItem, defaultName: String): List<Exter
         )
     }
 
-    return links.distinctBy { it.url }
+    val unique = links.distinctBy { it.url }
+    val preferred =
+        unique
+            .filter { it.iconRes != R.drawable.ic_link }
+            .groupBy { it.iconRes }
+            .values
+            .mapNotNull { group -> group.minByOrNull { linkPrecedence(it.url.lowercase()) }?.url }
+            .toSet()
+
+    return unique.filter { it.iconRes == R.drawable.ic_link || it.url in preferred }
 }
+
+private fun linkPrecedence(lowerUrl: String): Int =
+    when {
+        "/release/" in lowerUrl -> 0
+        "/album/" in lowerUrl -> 0
+        "/release-group/" in lowerUrl -> 1
+        "/artist/" in lowerUrl -> 2
+        else -> 0
+    }

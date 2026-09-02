@@ -312,7 +312,12 @@ fun MusicBrowseScreen(
                     genres = lazyGenres,
                     onGenreClick = { genre ->
                         navController.navigate(
-                            Destination.createMusicGenreRoute(genre.name, genre.imageUrl, genre.id)
+                            Destination.createMusicGenreRoute(
+                                genreName = genre.name,
+                                imageUrl = genre.imageUrl,
+                                genreId = genre.id,
+                                libraryId = viewModel.libraryId,
+                            )
                         )
                     },
                     modifier = Modifier.fillMaxSize().padding(innerPadding),

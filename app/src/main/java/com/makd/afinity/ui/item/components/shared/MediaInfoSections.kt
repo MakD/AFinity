@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -31,28 +32,67 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.ui.utils.htmlToAnnotatedString
 import org.jellyfin.sdk.model.api.PersonKind
 
 @Composable
 fun OverviewSection(item: AfinityItem) {
+    OverviewSection(overview = item.overview)
+}
+
+@Composable
+fun OverviewSection(overview: String, modifier: Modifier = Modifier) {
     var isExpanded by remember { mutableStateOf(false) }
     var isEllipsized by remember { mutableStateOf(false) }
 
-    if (item.overview.isNotEmpty()) {
-        Column {
-            Text(
-                text = item.overview,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.onBackground,
-                maxLines = if (isExpanded) Int.MAX_VALUE else 3,
-                overflow = if (isExpanded) TextOverflow.Visible else TextOverflow.Ellipsis,
-                modifier = Modifier.animateContentSize(),
-                onTextLayout = { result ->
-                    if (!isExpanded) {
-                        isEllipsized = result.hasVisualOverflow
-                    }
-                },
-            )
+    val linkColor = MaterialTheme.colorScheme.primary
+    val annotatedOverview =
+        remember(overview, linkColor) {
+            if (
+                overview.contains("<a ", ignoreCase = true) ||
+                    overview.contains("</a>", ignoreCase = true) ||
+                    overview.contains("<br", ignoreCase = true)
+            ) {
+                htmlToAnnotatedString(overview, linkColor)
+            } else {
+                null
+            }
+        }
+
+    if (overview.isNotEmpty()) {
+        Column(modifier = modifier) {
+            val textStyle =
+                MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+            val textColor = MaterialTheme.colorScheme.onBackground
+            val textMaxLines = if (isExpanded) Int.MAX_VALUE else 3
+            val textOverflow = if (isExpanded) TextOverflow.Visible else TextOverflow.Ellipsis
+            val onTextLayout: (TextLayoutResult) -> Unit = { result ->
+                if (!isExpanded) {
+                    isEllipsized = result.hasVisualOverflow
+                }
+            }
+
+            if (annotatedOverview != null) {
+                Text(
+                    text = annotatedOverview,
+                    style = textStyle,
+                    color = textColor,
+                    maxLines = textMaxLines,
+                    overflow = textOverflow,
+                    modifier = Modifier.animateContentSize(),
+                    onTextLayout = onTextLayout,
+                )
+            } else {
+                Text(
+                    text = overview,
+                    style = textStyle,
+                    color = textColor,
+                    maxLines = textMaxLines,
+                    overflow = textOverflow,
+                    modifier = Modifier.animateContentSize(),
+                    onTextLayout = onTextLayout,
+                )
+            }
 
             if (isEllipsized || isExpanded) {
                 Spacer(modifier = Modifier.height(4.dp))

@@ -98,6 +98,7 @@ object FieldSets {
             ItemFields.OVERVIEW,
             ItemFields.GENRES,
             ItemFields.CHILD_COUNT,
+            ItemFields.EXTERNAL_URLS,
         )
 
     val MUSIC_ARTIST =

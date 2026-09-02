@@ -364,6 +364,10 @@
         <item quantity="one">Producer: %1$s</item>
         <item quantity="other">Producers: %1$s</item>
     </plurals>
+    <plurals name="genres_prefix">
+        <item quantity="one">Genre: %1$s</item>
+        <item quantity="other">Genres: %1$s</item>
+    </plurals>
 
     <string name="seasons_title">Seasons</string>
     <plurals name="season_already_available">
@@ -552,6 +556,7 @@
     </plurals>
     <string name="person_died_no_age_fmt">Died: %1$s</string>
     <string name="person_birthplace_fmt">Birth Place: %1$s</string>
+    <string name="cd_birthplace">Open birth place in maps</string>
     <string name="person_date_fmt">MMMM d, yyyy</string>
     <string name="action_show_more">Show more</string>
     <string name="action_show_less">Show less</string>
@@ -850,6 +855,8 @@
     <string name="pref_navigation_drawer_summary">Use a side navigation menu instead of the bottom bar</string>
     <string name="pref_libraries_in_drawer_title">Show Libraries in Menu</string>
     <string name="pref_libraries_in_drawer_summary">List your libraries in the navigation menu instead of on the home screen</string>
+    <string name="pref_side_sheet_title">Side Sheet in Landscape</string>
+    <string name="pref_side_sheet_summary">Show episode details in a side sheet when the screen is wider than it is tall. Turn off to always use a bottom sheet</string>
 
     <string name="settings_group_home_screen">Home Screen</string>
     <string name="pref_combine_library_title">Combine Library Sections</string>
@@ -1651,6 +1658,7 @@
     <!--Trailer Errors (Toast)-->
     <string name="error_no_trailer">No trailer available</string>
     <string name="error_unable_open_trailer">Unable to open trailer</string>
+    <string name="error_unable_open_location">Unable to open maps</string>
 
     <!--Notifications-->
     <string name="notif_channel_downloads">Downloads</string>
@@ -1850,6 +1858,8 @@
     <string name="music_section_artists_to_explore">Artists to Explore</string>
     <string name="music_section_popular">Popular</string>
     <string name="music_section_albums">Albums</string>
+    <string name="music_section_more_from_fmt">More from %1$s</string>
+    <string name="music_section_more_like_this">More like this</string>
     <string name="music_section_appears_on">Appears On</string>
     <string name="music_section_most_played">Most Played</string>
     <!-- Mixes -->

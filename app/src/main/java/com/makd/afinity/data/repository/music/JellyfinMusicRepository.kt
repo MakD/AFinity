@@ -276,18 +276,9 @@ constructor(
         return apiInvoker
             .apiResult { apiClient, userId ->
                 val baseUrl = getBaseUrlInternal()
-                LibraryApi(apiClient)
-                    .getItems(
-                        userId = userId,
-                        ids = listOf(albumId),
-                        fields = FieldSets.MUSIC_ALBUM,
-                        enableUserData = true,
-                        enableTotalRecordCount = false,
-                    )
-                    .content
-                    .items
-                    .firstOrNull()
-                    ?.let { runCatching { it.toAfinityAlbum(baseUrl) }.getOrNull() }
+                LibraryApi(apiClient).getItem(itemId = albumId, userId = userId).content.let {
+                    runCatching { it.toAfinityAlbum(baseUrl) }.getOrNull()
+                }
             }
             .getOrElse { e ->
                 if (e !is NoActiveSessionException) {
@@ -356,7 +347,7 @@ constructor(
             val dbTracks =
                 databaseRepository.getMusicAlbumTracks(albumId, serverId, userId.toString())
             val patched = patchLocalPaths(dbTracks)
-            return if (patched.isNotEmpty()) patched else tracksFromDownloads()
+            return patched.ifEmpty { tracksFromDownloads() }
         }
 
         return apiInvoker
@@ -398,18 +389,9 @@ constructor(
     override suspend fun getArtistById(artistId: UUID): AfinityArtist? =
         apiCall(null, "Failed to fetch artist: $artistId") { apiClient, userId ->
             val baseUrl = getBaseUrlInternal()
-            LibraryApi(apiClient)
-                .getItems(
-                    userId = userId,
-                    ids = listOf(artistId),
-                    fields = FieldSets.MUSIC_ARTIST,
-                    enableUserData = true,
-                    enableTotalRecordCount = false,
-                )
-                .content
-                .items
-                .firstOrNull()
-                ?.let { runCatching { it.toAfinityArtist(baseUrl) }.getOrNull() }
+            LibraryApi(apiClient).getItem(itemId = artistId, userId = userId).content.let {
+                runCatching { it.toAfinityArtist(baseUrl) }.getOrNull()
+            }
         }
 
     override suspend fun getArtistsByIds(artistIds: List<UUID>): List<AfinityArtist> =
@@ -429,7 +411,11 @@ constructor(
                 .mapNotNull { runCatching { it.toAfinityArtist(baseUrl) }.getOrNull() }
         }
 
-    override suspend fun getArtistAlbums(artistId: UUID, libraryId: UUID?): List<AfinityAlbum> =
+    override suspend fun getArtistAlbums(
+        artistId: UUID,
+        libraryId: UUID?,
+        excludeAlbumId: UUID?,
+    ): List<AfinityAlbum> =
         apiCall(emptyList(), "Failed to fetch albums for artist: $artistId") { apiClient, userId ->
             val baseUrl = getBaseUrlInternal()
 
@@ -438,6 +424,7 @@ constructor(
                     .getItems(
                         userId = userId,
                         parentId = libraryId,
+                        excludeItemIds = listOfNotNull(excludeAlbumId),
                         albumArtistIds = listOf(artistId),
                         includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
                         sortBy = listOf(ItemSortBy.PREMIERE_DATE, ItemSortBy.SORT_NAME),
@@ -694,9 +681,7 @@ constructor(
         withContext(Dispatchers.IO) {
             try {
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext
-                org.jellyfin.sdk.api.operations
-                    .LibraryApi(apiClient)
-                    .deleteItem(itemId = playlistId)
+                LibraryApi(apiClient).deleteItem(itemId = playlistId)
                 invalidatePlaylistsCache()
                 mediaChangeManager.notifyLibraryContentChanged("playlist_deleted")
             } catch (e: Exception) {
@@ -743,16 +728,20 @@ constructor(
             }
         }
 
-    override suspend fun getSimilarAlbums(itemId: UUID, limit: Int): List<AfinityAlbum> =
+    override suspend fun getSimilarAlbums(
+        itemId: UUID,
+        limit: Int,
+        excludeArtistId: UUID?,
+    ): List<AfinityAlbum> =
         apiCall(emptyList(), "Failed to get similar albums for item: $itemId") { apiClient, userId
             ->
             val baseUrl = getBaseUrlInternal()
             val response =
-                org.jellyfin.sdk.api.operations
-                    .LibraryApi(apiClient)
+                LibraryApi(apiClient)
                     .getSimilarItems(
                         itemId = itemId,
                         userId = userId,
+                        excludeArtistIds = listOfNotNull(excludeArtistId),
                         limit = limit,
                         fields = FieldSets.MUSIC_ALBUM,
                     )
@@ -771,7 +760,7 @@ constructor(
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext fallback
                 val response = LyricApi(apiClient).getLyrics(itemId = trackId)
                 val fresh = response.content.lyrics.mapNotNull { it.toAfinityLyricLine() }
-                if (fresh.isEmpty()) fallback else fresh
+                fresh.ifEmpty { fallback }
             } catch (e: ApiClientException) {
                 Timber.d("No lyrics found for track: $trackId")
                 fallback
@@ -895,8 +884,7 @@ constructor(
                         userId = userId,
                         parentId = parentId,
                         includeItemTypes = listOf(BaseItemKind.AUDIO, BaseItemKind.MUSIC_ALBUM),
-                        sortBy = listOf(ItemSortBy.SORT_NAME),
-                        sortOrder = listOf(SortOrder.ASCENDING),
+                        sortBy = listOf(ItemSortBy.RANDOM),
                         limit = limit,
                         enableImages = true,
                         enableTotalRecordCount = false,
@@ -957,7 +945,11 @@ constructor(
             }
         }
 
-    override suspend fun getAlbumsByGenre(genreName: String, limit: Int): List<AfinityAlbum> =
+    override suspend fun getAlbumsByGenre(
+        genreName: String,
+        limit: Int,
+        parentId: UUID?,
+    ): List<AfinityAlbum> =
         apiCall(emptyList(), "Failed to fetch albums for genre: $genreName") { apiClient, userId ->
             val baseUrl = getBaseUrlInternal()
 
@@ -966,6 +958,7 @@ constructor(
                     .getItems(
                         userId = userId,
                         includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
+                        parentId = parentId,
                         genres = listOf(genreName),
                         sortBy = listOf(ItemSortBy.RANDOM),
                         limit = limit,
@@ -1152,7 +1145,11 @@ constructor(
             }
         }
 
-    override suspend fun getTracksByGenre(genreName: String, limit: Int): List<AfinityTrack> =
+    override suspend fun getTracksByGenre(
+        genreName: String,
+        limit: Int,
+        parentId: UUID?,
+    ): List<AfinityTrack> =
         apiCall(emptyList(), "Failed to fetch tracks by genre: $genreName") { apiClient, userId ->
             val baseUrl = getBaseUrlInternal()
             val response =
@@ -1160,6 +1157,7 @@ constructor(
                     .getItems(
                         userId = userId,
                         includeItemTypes = listOf(BaseItemKind.AUDIO),
+                        parentId = parentId,
                         genres = listOf(genreName),
                         sortBy = listOf(ItemSortBy.RANDOM),
                         limit = limit,
@@ -1217,6 +1215,7 @@ constructor(
     override suspend fun getRecentlyAddedAlbumsByGenre(
         genreName: String,
         limit: Int,
+        parentId: UUID?,
     ): List<AfinityAlbum> =
         apiCall(emptyList(), "Failed to fetch recently added albums for genre: $genreName") {
             apiClient,
@@ -1227,6 +1226,7 @@ constructor(
                     .getItems(
                         userId = userId,
                         includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
+                        parentId = parentId,
                         genres = listOf(genreName),
                         sortBy = listOf(ItemSortBy.DATE_CREATED),
                         sortOrder = listOf(SortOrder.DESCENDING),

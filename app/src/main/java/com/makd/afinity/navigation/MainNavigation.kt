@@ -1330,6 +1330,11 @@ fun MainNavigation(
                                                 nullable = true
                                                 defaultValue = null
                                             },
+                                            navArgument("libraryId") {
+                                                type = NavType.StringType
+                                                nullable = true
+                                                defaultValue = null
+                                            },
                                         ),
                                 ) {
                                     MusicGenreScreen(navController = navController)

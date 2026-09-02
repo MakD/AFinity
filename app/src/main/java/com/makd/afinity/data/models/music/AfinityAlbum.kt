@@ -1,5 +1,6 @@
 package com.makd.afinity.data.models.music
 
+import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityUserDataOwner
 import java.util.UUID
@@ -15,6 +16,7 @@ data class AfinityAlbum(
     val runtimeTicks: Long,
     val genres: List<String>,
     val overview: String?,
+    val externalUrls: List<AfinityExternalUrl>? = null,
     override val favorite: Boolean,
     override val played: Boolean,
     val playCount: Int?,
