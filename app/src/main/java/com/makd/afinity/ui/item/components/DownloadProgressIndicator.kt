@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -131,7 +130,7 @@ private fun DownloadIndicatorContent(
                     painter = painterResource(id = R.drawable.ic_cancel),
                     contentDescription = stringResource(R.string.cd_cancel_download),
                     modifier = Modifier.size(iconSize * 0.57f),
-                    tint = Color.Red,
+                    tint = MaterialTheme.colorScheme.error,
                 )
             }
         }
@@ -165,7 +164,7 @@ private fun DownloadIndicatorContent(
             Icon(
                 painter = painterResource(id = R.drawable.ic_delete),
                 contentDescription = stringResource(R.string.cd_delete_download),
-                tint = Color.Red,
+                tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier.size(iconSize),
             )
         }

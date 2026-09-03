@@ -159,7 +159,7 @@ fun BookmarksSheet(
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_delete),
                                 contentDescription = stringResource(R.string.abs_bookmark_delete),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(20.dp),
                             )
                         }

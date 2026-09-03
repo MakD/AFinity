@@ -295,6 +295,10 @@ constructor(
             .getBookmarksForItemFlow(itemId)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    init {
+        if (itemId.isNotEmpty()) refreshBookmarks(showLoading = false)
+    }
+
     fun showBookmarks() {
         _uiState.value = _uiState.value.copy(showBookmarks = true)
         refreshBookmarks()
@@ -304,12 +308,12 @@ constructor(
         _uiState.value = _uiState.value.copy(showBookmarks = false)
     }
 
-    private fun refreshBookmarks() {
+    private fun refreshBookmarks(showLoading: Boolean = true) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(bookmarksLoading = true)
+            if (showLoading) _uiState.value = _uiState.value.copy(bookmarksLoading = true)
             audiobookshelfRepository.syncPendingBookmarks()
             audiobookshelfRepository.refreshBookmarks()
-            _uiState.value = _uiState.value.copy(bookmarksLoading = false)
+            if (showLoading) _uiState.value = _uiState.value.copy(bookmarksLoading = false)
         }
     }
 

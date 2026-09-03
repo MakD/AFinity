@@ -65,7 +65,7 @@ fun DownloadListItemRow(
                 Icon(
                     painter = painterResource(id = R.drawable.ic_delete),
                     contentDescription = stringResource(R.string.cd_delete_download),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    tint = MaterialTheme.colorScheme.error,
                 )
             }
         },

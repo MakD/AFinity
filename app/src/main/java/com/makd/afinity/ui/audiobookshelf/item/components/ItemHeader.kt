@@ -466,7 +466,7 @@ fun ItemHeaderContent(
                                     painter = painterResource(id = R.drawable.ic_delete),
                                     contentDescription =
                                         stringResource(R.string.cd_delete_download),
-                                    tint = Color.Red,
+                                    tint = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.size(26.dp),
                                 )
                             }

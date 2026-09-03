@@ -140,6 +140,7 @@ fun PlaylistVideoRow(
                             Icon(
                                 painter = painterResource(R.drawable.ic_delete),
                                 contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(18.dp),
                             )
                         },

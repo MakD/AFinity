@@ -467,6 +467,7 @@ private fun PeopleTab(
                             Icon(
                                 painterResource(R.drawable.ic_delete),
                                 contentDescription = stringResource(R.string.cd_admin_remove),
+                                tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(18.dp),
                             )
                         }
