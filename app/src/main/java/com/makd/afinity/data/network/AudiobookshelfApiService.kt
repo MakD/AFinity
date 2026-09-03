@@ -5,6 +5,8 @@ import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser
 import com.makd.afinity.data.models.audiobookshelf.AuthorizeResponse
 import com.makd.afinity.data.models.audiobookshelf.BatchLocalSessionRequest
 import com.makd.afinity.data.models.audiobookshelf.BatchSyncResponse
+import com.makd.afinity.data.models.audiobookshelf.Bookmark
+import com.makd.afinity.data.models.audiobookshelf.BookmarkRequest
 import com.makd.afinity.data.models.audiobookshelf.FilterDataResponse
 import com.makd.afinity.data.models.audiobookshelf.ItemResponse
 import com.makd.afinity.data.models.audiobookshelf.ItemsInProgressResponse
@@ -26,6 +28,7 @@ import com.makd.afinity.data.models.audiobookshelf.SeriesListResponse
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.POST
@@ -135,6 +138,24 @@ interface AudiobookshelfApiService {
         @Path("itemId") itemId: String,
         @Path("episodeId") episodeId: String,
         @Body progress: ProgressUpdateRequest,
+    ): Response<ResponseBody>
+
+    @POST("api/me/item/{itemId}/bookmark")
+    suspend fun createBookmark(
+        @Path("itemId") itemId: String,
+        @Body bookmark: BookmarkRequest,
+    ): Response<Bookmark>
+
+    @PATCH("api/me/item/{itemId}/bookmark")
+    suspend fun updateBookmark(
+        @Path("itemId") itemId: String,
+        @Body bookmark: BookmarkRequest,
+    ): Response<Bookmark>
+
+    @DELETE("api/me/item/{itemId}/bookmark/{time}")
+    suspend fun deleteBookmark(
+        @Path("itemId") itemId: String,
+        @Path("time") time: Double,
     ): Response<ResponseBody>
 
     @POST("api/items/{itemId}/play")

@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.music.artist
 
-import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.expandVertically
@@ -77,6 +76,7 @@ import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
 import com.makd.afinity.ui.item.components.shared.OverviewSection
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
@@ -115,7 +115,7 @@ fun MusicArtistScreen(
     var showAddToPlaylist by remember { mutableStateOf(false) }
     var radioSeed by remember { mutableStateOf<RadioSeed?>(null) }
     var showAllTracks by remember { mutableStateOf(false) }
-    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
     val portraitListState = rememberLazyListState()
     val landscapeListState = rememberLazyListState()
     val lazyListState = if (isLandscape) landscapeListState else portraitListState

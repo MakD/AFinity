@@ -1603,6 +1603,30 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_77_78 =
+        object : Migration(77, 78) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `audiobookshelf_bookmarks` (
+                        `jellyfinServerId` TEXT NOT NULL,
+                        `jellyfinUserId` TEXT NOT NULL,
+                        `libraryItemId` TEXT NOT NULL,
+                        `time` INTEGER NOT NULL,
+                        `serverTime` REAL NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        `pendingSync` INTEGER NOT NULL DEFAULT 0,
+                        `deleted` INTEGER NOT NULL DEFAULT 0,
+                        `updatedAt` INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(`jellyfinServerId`, `jellyfinUserId`, `libraryItemId`, `time`)
+                    )
+                    """
+                        .trimIndent()
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1681,5 +1705,6 @@ object DatabaseMigrations {
             MIGRATION_74_75,
             MIGRATION_75_76,
             MIGRATION_76_77,
+            MIGRATION_77_78,
         )
 }

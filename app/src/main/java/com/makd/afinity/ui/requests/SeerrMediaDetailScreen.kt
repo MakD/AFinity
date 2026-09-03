@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.requests
 
-import android.content.res.Configuration
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -51,7 +50,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -87,6 +85,7 @@ import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.SeparatedFlowRow
 import com.makd.afinity.ui.components.getAutoFlagUrl
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 import com.makd.afinity.ui.utils.verticalLayoutOffset
@@ -150,8 +149,7 @@ private fun SeerrDetailContent(
     requestsViewModel: RequestsViewModel,
     widthSizeClass: WindowWidthSizeClass,
 ) {
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
     val lazyListState = rememberLazyListState()
     val topBarOpacity by rememberTopBarOpacity(lazyListState)
 

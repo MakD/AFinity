@@ -2,7 +2,6 @@ package com.makd.afinity.ui.music.library
 
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -102,6 +101,7 @@ import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.SectionRowHeader
 import com.makd.afinity.ui.components.focalAlpha
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.home.components.ArtistAlbumsCarousel
 import com.makd.afinity.ui.home.components.LatestAlbumsSection
 import com.makd.afinity.ui.home.components.MostPlayedAlbumsSection
@@ -1016,8 +1016,7 @@ private fun MadeForYouCarousel(
             modifier = Modifier.padding(start = 14.dp, bottom = 12.dp),
         )
 
-        val configuration = LocalConfiguration.current
-        val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        val isLandscape = isLandscapeWindow()
         val containerSize = LocalWindowInfo.current.containerSize
         val density = LocalDensity.current
         val windowWidth = with(density) { containerSize.width.toDp() }
@@ -1230,7 +1229,7 @@ internal fun MusicArtistsRow(
     horizontalPadding: Dp = 16.dp,
     onViewAllClick: (() -> Unit)? = null,
 ) {
-    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
     val cardSize = if (isLandscape) 170.dp else 140.dp
     Column(modifier = modifier) {
         if (onViewAllClick != null) {
@@ -1276,7 +1275,7 @@ fun CompactTrackGridSection(
     onTrackClick: (AfinityTrack) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
     val rowsCount = if (tracks.size >= 6) 3 else if (tracks.size >= 3) 2 else 1
     val rowHeight = if (isLandscape) 70 else 64
     val itemWidth = if (isLandscape) 320.dp else 280.dp

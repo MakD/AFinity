@@ -44,7 +44,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -94,9 +93,7 @@ fun HeroCarousel(
 ) {
     if (items.isEmpty()) return
 
-    val configuration = LocalConfiguration.current
-    val isLandscape =
-        configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
 
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current

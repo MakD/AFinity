@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import com.makd.afinity.data.database.entities.AudiobookshelfAddressEntity
+import com.makd.afinity.data.database.entities.AudiobookshelfBookmarkEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfConfigEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfEpisodeEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfItemEntity
@@ -295,6 +296,53 @@ interface AudiobookshelfDao {
         "DELETE FROM audiobookshelf_progress WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
     )
     suspend fun deleteAllProgress(serverId: String, userId: String)
+
+    @Query(
+        "SELECT * FROM audiobookshelf_bookmarks WHERE libraryItemId = :itemId AND deleted = 0 " +
+            "AND jellyfinServerId = :serverId AND jellyfinUserId = :userId ORDER BY time ASC"
+    )
+    fun getBookmarksForItemFlow(
+        itemId: String,
+        serverId: String,
+        userId: String,
+    ): Flow<List<AudiobookshelfBookmarkEntity>>
+
+    @Query(
+        "SELECT * FROM audiobookshelf_bookmarks WHERE pendingSync = 1 " +
+            "AND jellyfinServerId = :serverId AND jellyfinUserId = :userId ORDER BY updatedAt ASC"
+    )
+    suspend fun getPendingSyncBookmarks(
+        serverId: String,
+        userId: String,
+    ): List<AudiobookshelfBookmarkEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertBookmark(bookmark: AudiobookshelfBookmarkEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertBookmarks(bookmarks: List<AudiobookshelfBookmarkEntity>)
+
+    @Query(
+        "DELETE FROM audiobookshelf_bookmarks WHERE libraryItemId = :itemId AND time = :time " +
+            "AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    suspend fun deleteBookmarkRow(
+        itemId: String,
+        time: Long,
+        serverId: String,
+        userId: String,
+    )
+
+    @Query(
+        "DELETE FROM audiobookshelf_bookmarks WHERE pendingSync = 0 " +
+            "AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    suspend fun deleteSyncedBookmarks(serverId: String, userId: String)
+
+    @Query(
+        "DELETE FROM audiobookshelf_bookmarks WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    suspend fun deleteAllBookmarks(serverId: String, userId: String)
 
     @Query(
         "DELETE FROM audiobookshelf_items WHERE cachedAt < :expiryTime AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"

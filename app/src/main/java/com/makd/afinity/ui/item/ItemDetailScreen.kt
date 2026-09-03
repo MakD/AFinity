@@ -3,7 +3,6 @@
 package com.makd.afinity.ui.item
 
 import android.content.Context
-import android.content.res.Configuration
 import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.compose.foundation.Image
@@ -47,7 +46,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -97,6 +95,7 @@ import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.BoxSetDetailContent
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.item.components.MovieDetailContent
@@ -444,8 +443,7 @@ private fun ItemDetailContent(
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val context = LocalContext.current
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
 
     val lazyListState = rememberLazyListState()
     val topBarOpacity by rememberTopBarOpacity(lazyListState)

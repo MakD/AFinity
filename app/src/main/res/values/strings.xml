@@ -1518,6 +1518,13 @@
     <string name="abs_sleep_timer_set_new">Set New Timer</string>
     <string name="abs_skip_silence">SKIP SILENCE</string>
     <string name="cd_abs_chapters">Chapters</string>
+    <string name="abs_bookmarks_title">Bookmarks</string>
+    <string name="abs_bookmarks_empty">No bookmarks yet for this title.</string>
+    <string name="abs_bookmark_untitled">Untitled bookmark</string>
+    <string name="abs_bookmark_delete">Delete bookmark</string>
+    <string name="abs_bookmark_title_hint">Bookmark name</string>
+    <string name="abs_bookmark_add_at_fmt">Add bookmark at %1$s</string>
+    <string name="cd_abs_bookmarks">Bookmarks</string>
     <string name="abs_skip_silence_title">Skip silence</string>
     <string name="abs_volume_boost_title">Volume boost</string>
     <string name="abs_volume_boost">VOLUME BOOST</string>

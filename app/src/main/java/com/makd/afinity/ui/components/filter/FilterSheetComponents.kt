@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.components.filter
 
-import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
@@ -55,7 +54,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -66,6 +64,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.isLandscapeWindow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -165,7 +164,7 @@ fun <T> SearchableChipMultiSelect(
     val keyboardController = LocalSoftwareKeyboardController.current
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
     val coroutineScope = rememberCoroutineScope()
-    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
 
     LaunchedEffect(editing) {
         if (editing) {

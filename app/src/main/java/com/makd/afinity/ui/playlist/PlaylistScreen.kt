@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.playlist
 
-import android.content.res.Configuration
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -52,7 +51,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -75,6 +73,7 @@ import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.DownloadProgressIndicator
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
@@ -113,7 +112,7 @@ fun PlaylistScreen(
     val scope = rememberCoroutineScope()
     val lazyListState = rememberLazyListState()
     val topBarOpacity by rememberTopBarOpacity(lazyListState)
-    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
 
     var addToPlaylistTrackIds by remember { mutableStateOf<List<UUID>>(emptyList()) }
     var showAddToPlaylist by remember { mutableStateOf(false) }

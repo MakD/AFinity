@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.music.album
 
-import android.content.res.Configuration
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -50,7 +49,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -68,6 +66,7 @@ import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.DownloadProgressIndicator
 import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
 import com.makd.afinity.ui.item.components.shared.OverviewSection
@@ -107,7 +106,7 @@ fun MusicAlbumScreen(
     var radioSeed by remember { mutableStateOf<RadioSeed?>(null) }
     val lazyListState = rememberLazyListState()
     val topBarOpacity by rememberTopBarOpacity(lazyListState)
-    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
 
     if (uiState.isLoading) {
         Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {

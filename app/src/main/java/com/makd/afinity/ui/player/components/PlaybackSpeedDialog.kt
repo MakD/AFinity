@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.player.components
 
-import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -33,7 +32,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -43,6 +41,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.AfinitySlider
+import com.makd.afinity.ui.components.isLandscapeWindow
 import kotlin.math.absoluteValue
 
 @Composable
@@ -51,7 +50,7 @@ fun PlaybackSpeedDialog(
     onSpeedChange: (Float) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
     val cardWidthFraction = if (isLandscape) 0.5f else 0.9f
 
     Dialog(

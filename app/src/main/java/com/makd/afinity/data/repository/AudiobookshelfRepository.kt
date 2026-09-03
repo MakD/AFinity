@@ -3,6 +3,7 @@ package com.makd.afinity.data.repository
 import com.makd.afinity.data.models.audiobookshelf.AudibleRating
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser
+import com.makd.afinity.data.models.audiobookshelf.Bookmark
 import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.LibraryStats
@@ -14,9 +15,9 @@ import com.makd.afinity.data.models.audiobookshelf.PersonalizedView
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
 import com.makd.afinity.data.models.audiobookshelf.SearchResponse
 import com.makd.afinity.data.models.server.AddressCheck
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
-import java.util.UUID
 
 data class ItemWithProgress(val item: LibraryItem, val progress: MediaProgress?)
 
@@ -101,6 +102,22 @@ interface AudiobookshelfRepository {
     ): Result<List<PersonalizedView>>
 
     fun getInProgressItemsFlow(): Flow<List<ItemWithProgress>>
+
+    fun getBookmarksForItemFlow(itemId: String): Flow<List<Bookmark>>
+
+    suspend fun cacheBookmarks(bookmarks: List<Bookmark>)
+
+    suspend fun refreshBookmarks(): Result<List<Bookmark>>
+
+    suspend fun createBookmark(
+        itemId: String,
+        timeSeconds: Long,
+        title: String,
+    ): Result<Unit>
+
+    suspend fun deleteBookmark(itemId: String, serverTime: Double): Result<Unit>
+
+    suspend fun syncPendingBookmarks(): Int
 
     suspend fun refreshProgress(): Result<List<MediaProgress>>
 

@@ -2,7 +2,6 @@ package com.makd.afinity.ui.settings
 
 import android.app.LocaleConfig
 import android.app.LocaleManager
-import android.content.res.Configuration
 import android.os.LocaleList
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -75,7 +74,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
@@ -101,6 +99,7 @@ import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
 import com.makd.afinity.ui.components.connectionIndicatorColor
 import com.makd.afinity.ui.components.connectionLabel
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.settings.appearance.AppearanceOptionsScreen
 import com.makd.afinity.ui.settings.backup.BackupBottomSheet
 import com.makd.afinity.ui.settings.backup.BackupScreen
@@ -153,8 +152,7 @@ fun SettingsScreen(
     val isAdmin by controlPanelViewModel.isAdmin.collectAsStateWithLifecycle()
     val windowAdaptiveInfo = currentWindowAdaptiveInfoV2()
     val defaultDirective = calculatePaneScaffoldDirective(windowAdaptiveInfo)
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
 
     val customDirective =
         PaneScaffoldDirective(

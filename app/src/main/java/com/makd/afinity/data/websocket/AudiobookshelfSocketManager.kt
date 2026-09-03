@@ -3,6 +3,7 @@ package com.makd.afinity.data.websocket
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.makd.afinity.data.models.audiobookshelf.Bookmark
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.repository.AudiobookshelfRepository
@@ -40,7 +41,8 @@ private data class AbsProgressEventPayload(@SerialName("data") val data: MediaPr
 
 @Serializable
 private data class AbsUserUpdatedPayload(
-    @SerialName("mediaProgress") val mediaProgress: List<MediaProgress> = emptyList()
+    @SerialName("mediaProgress") val mediaProgress: List<MediaProgress> = emptyList(),
+    @SerialName("bookmarks") val bookmarks: List<Bookmark> = emptyList(),
 )
 
 @Serializable private data class AbsItemIdPayload(@SerialName("id") val id: String? = null)
@@ -66,7 +68,11 @@ constructor(
     @ApplicationScope private val scope: CoroutineScope,
 ) : DefaultLifecycleObserver {
 
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        coerceInputValues = true
+    }
 
     private var socket: Socket? = null
     private var isForeground = false
@@ -258,10 +264,11 @@ constructor(
         val raw = payload?.toString() ?: return
         scope.launch {
             try {
-                val progressList = json.decodeFromString<AbsUserUpdatedPayload>(raw).mediaProgress
-                if (progressList.isNotEmpty()) {
-                    mergeRemoteProgress(progressList, source = "user_updated")
+                val payload = json.decodeFromString<AbsUserUpdatedPayload>(raw)
+                if (payload.mediaProgress.isNotEmpty()) {
+                    mergeRemoteProgress(payload.mediaProgress, source = "user_updated")
                 }
+                audiobookshelfRepository.cacheBookmarks(payload.bookmarks)
             } catch (e: Exception) {
                 Timber.e("AbsSocket: failed to parse user_updated (${e::class.simpleName})")
             }

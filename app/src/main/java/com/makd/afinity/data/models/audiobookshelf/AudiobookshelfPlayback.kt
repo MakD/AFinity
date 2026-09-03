@@ -10,6 +10,8 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -26,6 +28,23 @@ private object NullableInt : KSerializer<Int?> {
     @OptIn(ExperimentalSerializationApi::class)
     override fun serialize(encoder: Encoder, value: Int?) {
         if (value == null) encoder.encodeNull() else encoder.encodeInt(value)
+    }
+}
+
+private object NullableStringFromAny : KSerializer<String?> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("NullableStringFromAny", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder): String? {
+        val jsonDecoder = decoder as? JsonDecoder ?: return decoder.decodeString()
+        val element = jsonDecoder.decodeJsonElement()
+        val primitive = element as? JsonPrimitive ?: return null
+        return primitive.contentOrNull
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    override fun serialize(encoder: Encoder, value: String?) {
+        if (value == null) encoder.encodeNull() else encoder.encodeString(value)
     }
 }
 
@@ -53,19 +72,31 @@ fun mediaProgressKey(libraryItemId: String, episodeId: String? = null): String =
     if (episodeId.isNullOrEmpty()) libraryItemId else "$libraryItemId|$episodeId"
 
 @Serializable
+enum class AbsMediaItemType {
+    @SerialName("book") BOOK,
+    @SerialName("podcastEpisode") PODCAST_EPISODE,
+    @SerialName("unknown") UNKNOWN,
+}
+
+@Serializable
 data class MediaProgress(
     @SerialName("id") val id: String,
+    @SerialName("userId") val userId: String? = null,
     @SerialName("libraryItemId") val libraryItemId: String,
     @SerialName("episodeId") val episodeId: String? = null,
-    @SerialName("duration") val duration: Double,
-    @SerialName("progress") val progress: Double,
-    @SerialName("currentTime") val currentTime: Double,
-    @SerialName("isFinished") val isFinished: Boolean,
+    @SerialName("mediaItemId") val mediaItemId: String? = null,
+    @SerialName("mediaItemType") val mediaItemType: AbsMediaItemType = AbsMediaItemType.UNKNOWN,
+    @SerialName("duration") val duration: Double = 0.0,
+    @SerialName("progress") val progress: Double = 0.0,
+    @SerialName("currentTime") val currentTime: Double = 0.0,
+    @SerialName("isFinished") val isFinished: Boolean = false,
     @SerialName("hideFromContinueListening") val hideFromContinueListening: Boolean? = null,
-    @SerialName("ebookLocation") val ebookLocation: String? = null,
+    @Serializable(with = NullableStringFromAny::class)
+    @SerialName("ebookLocation")
+    val ebookLocation: String? = null,
     @SerialName("ebookProgress") val ebookProgress: Double? = null,
-    @SerialName("lastUpdate") val lastUpdate: Long,
-    @SerialName("startedAt") val startedAt: Long,
+    @SerialName("lastUpdate") val lastUpdate: Long = 0L,
+    @SerialName("startedAt") val startedAt: Long = 0L,
     @SerialName("finishedAt") val finishedAt: Long? = null,
 )
 

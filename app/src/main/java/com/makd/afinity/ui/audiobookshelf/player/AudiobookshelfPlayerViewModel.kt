@@ -9,6 +9,7 @@ import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.cast.CastEvent
 import com.makd.afinity.cast.CastManager
+import com.makd.afinity.data.models.audiobookshelf.Bookmark
 import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
@@ -289,6 +290,56 @@ constructor(
         _uiState.value = _uiState.value.copy(showEqualizer = false)
     }
 
+    val bookmarks: StateFlow<List<Bookmark>> =
+        audiobookshelfRepository
+            .getBookmarksForItemFlow(itemId)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun showBookmarks() {
+        _uiState.value = _uiState.value.copy(showBookmarks = true)
+        refreshBookmarks()
+    }
+
+    fun dismissBookmarks() {
+        _uiState.value = _uiState.value.copy(showBookmarks = false)
+    }
+
+    private fun refreshBookmarks() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(bookmarksLoading = true)
+            audiobookshelfRepository.syncPendingBookmarks()
+            audiobookshelfRepository.refreshBookmarks()
+            _uiState.value = _uiState.value.copy(bookmarksLoading = false)
+        }
+    }
+
+    fun createBookmarkAtCurrentPosition(title: String) {
+        if (itemId.isEmpty()) return
+        val timeSeconds = playbackManager.playbackState.value.currentTime.toLong()
+        viewModelScope.launch {
+            audiobookshelfRepository.createBookmark(itemId, timeSeconds, title).onFailure {
+                _uiState.value =
+                    _uiState.value.copy(error = it.message ?: "Failed to create bookmark")
+            }
+        }
+    }
+
+    fun deleteBookmark(bookmark: Bookmark) {
+        viewModelScope.launch {
+            audiobookshelfRepository
+                .deleteBookmark(bookmark.libraryItemId, bookmark.time)
+                .onFailure {
+                    _uiState.value =
+                        _uiState.value.copy(error = it.message ?: "Failed to delete bookmark")
+                }
+        }
+    }
+
+    fun seekToBookmark(bookmark: Bookmark) {
+        seekTo(bookmark.time)
+        dismissBookmarks()
+    }
+
     fun setEqEnabled(enabled: Boolean) = equalizerManager.setEnabled(enabled)
 
     fun applyEqPreset(preset: EqualizerPreset) = equalizerManager.applyPreset(preset)
@@ -349,4 +400,6 @@ data class AudiobookshelfPlayerUiState(
     val error: String? = null,
     val showPlaybackStats: Boolean = false,
     val playbackStats: PlaybackStats = PlaybackStats(),
+    val showBookmarks: Boolean = false,
+    val bookmarksLoading: Boolean = false,
 )

@@ -43,6 +43,10 @@ constructor(
                 }
 
             Timber.d("AbsProgressSync: syncing pending progress for serverId=$serverId")
+            val syncedBookmarks = audiobookshelfRepository.get().syncPendingBookmarks()
+            if (syncedBookmarks > 0) {
+                Timber.d("AbsProgressSync: synced $syncedBookmarks bookmark mutations")
+            }
             val result = audiobookshelfRepository.get().syncPendingProgress(serverId, userId)
             return@withContext when {
                 result.isSuccess -> {

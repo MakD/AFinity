@@ -1,7 +1,6 @@
 package com.makd.afinity.ui.person.components
 
 import android.content.Intent
-import android.content.res.Configuration
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -77,6 +76,7 @@ import com.makd.afinity.navigation.LocalShowAwards
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FavoriteToggleButton
 import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.shared.AwardsSectionStyle
 import com.makd.afinity.ui.item.components.shared.OverviewSection
 import com.makd.afinity.ui.item.components.shared.WikidataAwardsSection
@@ -96,8 +96,7 @@ fun PersonDetailContent(
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
 ) {
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
 
     if (isLandscape) {
         LandscapePersonDetailContent(

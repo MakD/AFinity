@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.audiobookshelf.player
 
-import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
@@ -21,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -45,7 +45,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -58,6 +57,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.makd.afinity.R
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackState
+import com.makd.afinity.ui.audiobookshelf.player.components.BookmarksSheet
 import com.makd.afinity.ui.audiobookshelf.player.components.ChapterSelector
 import com.makd.afinity.ui.audiobookshelf.player.components.EqualizerBottomSheet
 import com.makd.afinity.ui.audiobookshelf.player.components.PlaybackSpeedSelector
@@ -66,6 +66,7 @@ import com.makd.afinity.ui.audiobookshelf.player.components.SleepTimerDialog
 import com.makd.afinity.ui.audiobookshelf.player.components.formatSpeed
 import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 import com.makd.afinity.ui.components.AFinitySnackbar
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.components.rememberCastChooserLauncher
 import com.makd.afinity.ui.player.components.AudioPlayerControlRow
 import com.makd.afinity.ui.player.components.AudioPlayerControlSlot
@@ -94,6 +95,7 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
     val equalizerState by viewModel.equalizerState.collectAsStateWithLifecycle()
     val skipSilenceEnabled by viewModel.skipSilenceEnabled.collectAsStateWithLifecycle()
     val isAbsCasting by viewModel.isAbsCasting.collectAsStateWithLifecycle()
+    val bookmarks by viewModel.bookmarks.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val launchCastChooser = rememberCastChooserLauncher()
     var showMoreSheet by remember { mutableStateOf(false) }
@@ -123,8 +125,7 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
         }
     }
 
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
 
     Scaffold(
         snackbarHost = {
@@ -155,6 +156,7 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
                     onCastClick = launchCastChooser,
                     onOpenMore = { showMoreSheet = true },
                     isAbsCasting = isAbsCasting,
+                    hasBookmarks = bookmarks.isNotEmpty(),
                     paddingValues = paddingValues,
                     animatedVisibilityScope = animatedVisibilityScope,
                 )
@@ -167,6 +169,7 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
                     onCastClick = launchCastChooser,
                     onOpenMore = { showMoreSheet = true },
                     isAbsCasting = isAbsCasting,
+                    hasBookmarks = bookmarks.isNotEmpty(),
                     paddingValues = paddingValues,
                     animatedVisibilityScope = animatedVisibilityScope,
                 )
@@ -212,6 +215,18 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
                     },
                 )
             }
+        }
+
+        if (uiState.showBookmarks) {
+            BookmarksSheet(
+                bookmarks = bookmarks,
+                isLoading = uiState.bookmarksLoading,
+                currentTimeSeconds = playbackState.currentTime,
+                onSeekToBookmark = viewModel::seekToBookmark,
+                onDeleteBookmark = viewModel::deleteBookmark,
+                onCreateBookmark = viewModel::createBookmarkAtCurrentPosition,
+                onDismiss = viewModel::dismissBookmarks,
+            )
         }
 
         if (uiState.showChapterSelector) {
@@ -264,6 +279,7 @@ fun SharedTransitionScope.PortraitPlayerContent(
     onCastClick: () -> Unit = {},
     onOpenMore: () -> Unit = {},
     isAbsCasting: Boolean = false,
+    hasBookmarks: Boolean = false,
     paddingValues: PaddingValues,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
@@ -324,14 +340,12 @@ fun SharedTransitionScope.PortraitPlayerContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        val density = LocalDensity.current
         val coverWidthPx =
-            with(density) { (LocalConfiguration.current.screenWidthDp.dp - 48.dp).roundToPx() }
+            with(LocalDensity.current) { AudioPlayerLayout.CoverMaxSize.roundToPx() }
         Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             Surface(
                 modifier =
-                    AudioPlayerLayout.CoverSizeCap
-                        .aspectRatio(1f)
+                    AudioPlayerLayout.CoverSizeCap.aspectRatio(1f)
                         .sharedElement(
                             sharedContentState =
                                 rememberSharedContentState(
@@ -450,6 +464,18 @@ fun SharedTransitionScope.PortraitPlayerContent(
                 active = playbackState.sleepTimerEndTime != null,
                 activeColor = animatedColor,
             )
+            AudioPlayerControlSlot(
+                painter =
+                    painterResource(
+                        id =
+                            if (hasBookmarks) R.drawable.ic_bookmark_filled
+                            else R.drawable.ic_bookmark
+                    ),
+                contentDescription = stringResource(R.string.cd_abs_bookmarks),
+                onClick = viewModel::showBookmarks,
+                active = hasBookmarks,
+                activeColor = animatedColor,
+            )
         }
     }
 }
@@ -463,6 +489,7 @@ fun SharedTransitionScope.LandscapePlayerContent(
     onCastClick: () -> Unit = {},
     onOpenMore: () -> Unit = {},
     isAbsCasting: Boolean = false,
+    hasBookmarks: Boolean = false,
     paddingValues: PaddingValues,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
@@ -474,19 +501,15 @@ fun SharedTransitionScope.LandscapePlayerContent(
         horizontalArrangement = Arrangement.spacedBy(32.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val density = LocalDensity.current
         val coverWidthPx =
-            with(density) {
-                ((LocalConfiguration.current.screenWidthDp.dp - 64.dp) * 0.45f).roundToPx()
-            }
+            with(LocalDensity.current) { AudioPlayerLayout.CoverMaxSize.roundToPx() }
         Box(
             modifier = Modifier.weight(0.45f).fillMaxHeight(),
             contentAlignment = Alignment.Center,
         ) {
             Surface(
                 modifier =
-                    AudioPlayerLayout.CoverSizeCap
-                        .aspectRatio(1f)
+                    AudioPlayerLayout.CoverSizeCap.aspectRatio(1f)
                         .sharedElement(
                             sharedContentState =
                                 rememberSharedContentState(
@@ -635,6 +658,18 @@ fun SharedTransitionScope.LandscapePlayerContent(
                     contentDescription = stringResource(R.string.cd_music_sleep_timer),
                     onClick = viewModel::showSleepTimerDialog,
                     active = playbackState.sleepTimerEndTime != null,
+                    activeColor = animatedColor,
+                )
+                AudioPlayerControlSlot(
+                    painter =
+                        painterResource(
+                            id =
+                                if (hasBookmarks) R.drawable.ic_bookmark_filled
+                                else R.drawable.ic_bookmark
+                        ),
+                    contentDescription = stringResource(R.string.cd_abs_bookmarks),
+                    onClick = viewModel::showBookmarks,
+                    active = hasBookmarks,
                     activeColor = animatedColor,
                 )
             }

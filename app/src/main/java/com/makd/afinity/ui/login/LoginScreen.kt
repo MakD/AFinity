@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.login
 
-import android.content.res.Configuration
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
@@ -70,7 +69,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalAutofillManager
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -97,6 +95,7 @@ import com.makd.afinity.data.models.user.User
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.ForgetAccountDialog
 import com.makd.afinity.ui.components.LoadingButton
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.util.isInsecurePublicUrl
 
 enum class LoginMethod {
@@ -145,8 +144,7 @@ fun LoginScreen(
         }
     }
 
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
     val isExpanded = widthSizeClass == WindowWidthSizeClass.Expanded
     Scaffold(
         modifier = modifier.fillMaxSize(),

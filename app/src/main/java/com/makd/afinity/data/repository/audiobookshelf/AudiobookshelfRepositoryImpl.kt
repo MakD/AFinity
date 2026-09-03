@@ -8,6 +8,7 @@ import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.database.dao.AudibleRatingDao
 import com.makd.afinity.data.database.entities.AudibleRatingEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfAddressEntity
+import com.makd.afinity.data.database.entities.AudiobookshelfBookmarkEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfConfigEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfItemEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfLibraryEntity
@@ -17,6 +18,8 @@ import com.makd.afinity.data.models.audiobookshelf.AudibleRating
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser
 import com.makd.afinity.data.models.audiobookshelf.BatchLocalSessionRequest
+import com.makd.afinity.data.models.audiobookshelf.Bookmark
+import com.makd.afinity.data.models.audiobookshelf.BookmarkRequest
 import com.makd.afinity.data.models.audiobookshelf.DeviceInfo
 import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
@@ -68,6 +71,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import timber.log.Timber
 import java.io.File
+import java.io.IOException
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
@@ -89,7 +93,11 @@ constructor(
 ) : AudiobookshelfRepository {
 
     private val audiobookshelfDao = database.audiobookshelfDao()
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        coerceInputValues = true
+    }
 
     private suspend fun <T> absResult(
         errorMessage: String,
@@ -128,6 +136,8 @@ constructor(
 
     private val _currentConfig = MutableStateFlow<AudiobookshelfConfig?>(null)
     override val currentConfig: StateFlow<AudiobookshelfConfig?> = _currentConfig.asStateFlow()
+
+    @Volatile private var cachedBookmarksSignature: Int? = null
 
     private val _activeContextFlow = MutableStateFlow<Pair<String, UUID>?>(null)
     private var activeContext: Pair<String, UUID>?
@@ -282,6 +292,7 @@ constructor(
         _isAuthenticated.value = false
         _currentConfig.value = null
         clearPersonalizedCache()
+        cachedBookmarksSignature = null
         activeContext = serverId to userId
         _currentSessionId.value = "${serverId}_$userId"
 
@@ -340,6 +351,7 @@ constructor(
 
     override fun clearActiveSession() {
         activeContext = null
+        cachedBookmarksSignature = null
         _currentSessionId.value = null
         securePreferencesRepository.clearActiveAudiobookshelfCache()
         _isAuthenticated.value = false
@@ -1027,6 +1039,216 @@ constructor(
                     }
                 }
             }
+        }
+    }
+
+    private fun Bookmark.toEntity(
+        serverId: String,
+        userId: String,
+        pendingSync: Boolean = false,
+        deleted: Boolean = false,
+        updatedAt: Long = 0L,
+    ) =
+        AudiobookshelfBookmarkEntity(
+            jellyfinServerId = serverId,
+            jellyfinUserId = userId,
+            libraryItemId = libraryItemId,
+            time = time.toLong(),
+            serverTime = time,
+            title = title,
+            createdAt = createdAt,
+            pendingSync = pendingSync,
+            deleted = deleted,
+            updatedAt = updatedAt,
+        )
+
+    private fun AudiobookshelfBookmarkEntity.toBookmark() =
+        Bookmark(
+            libraryItemId = libraryItemId,
+            title = title,
+            time = serverTime,
+            createdAt = createdAt,
+        )
+
+    override fun getBookmarksForItemFlow(itemId: String): Flow<List<Bookmark>> {
+        val (serverId, userId) = activeContext ?: return flowOf(emptyList())
+        return audiobookshelfDao.getBookmarksForItemFlow(itemId, serverId, userId.toString()).map {
+            entities ->
+            entities.map { it.toBookmark() }
+        }
+    }
+
+    override suspend fun cacheBookmarks(bookmarks: List<Bookmark>) {
+        val (serverId, userId) = activeContext ?: return
+        val signature =
+            bookmarks
+                .sortedWith(compareBy({ it.libraryItemId }, { it.time }))
+                .joinToString("|") { "${it.libraryItemId}@${it.time}=${it.title}" }
+                .hashCode()
+        if (signature == cachedBookmarksSignature) return
+
+        withContext(Dispatchers.IO) {
+            runCatching {
+                audiobookshelfDao.deleteSyncedBookmarks(serverId, userId.toString())
+                if (bookmarks.isNotEmpty()) {
+                    audiobookshelfDao.insertBookmarks(
+                        bookmarks.map { it.toEntity(serverId, userId.toString()) }
+                    )
+                }
+                cachedBookmarksSignature = signature
+            }
+                .onFailure {
+                    cachedBookmarksSignature = null
+                    Timber.w(it, "Failed to cache bookmarks")
+                }
+        }
+    }
+
+    override suspend fun refreshBookmarks(): Result<List<Bookmark>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+                val response = apiService.get().getMe()
+                val body = response.body()
+                if (!response.isSuccessful || body == null) {
+                    return@withContext Result.failure(Exception("Failed to load bookmarks"))
+                }
+                val bookmarks = body.bookmarks.orEmpty()
+                cacheBookmarks(bookmarks)
+                Result.success(bookmarks)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to refresh bookmarks")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun createBookmark(
+        itemId: String,
+        timeSeconds: Long,
+        title: String,
+    ): Result<Unit> {
+        val (serverId, userId) = activeContext ?: return Result.failure(Exception("No session"))
+        return withContext(Dispatchers.IO) {
+            val now = System.currentTimeMillis()
+            audiobookshelfDao.insertBookmark(
+                AudiobookshelfBookmarkEntity(
+                    jellyfinServerId = serverId,
+                    jellyfinUserId = userId.toString(),
+                    libraryItemId = itemId,
+                    time = timeSeconds,
+                    serverTime = timeSeconds.toDouble(),
+                    title = title,
+                    createdAt = now,
+                    pendingSync = true,
+                    deleted = false,
+                    updatedAt = now,
+                )
+            )
+            if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                return@withContext Result.success(Unit)
+            }
+            try {
+                val response =
+                    apiService.get().createBookmark(itemId, BookmarkRequest(timeSeconds, title))
+                val body = response.body()
+                if (response.isSuccessful && body != null) {
+                    audiobookshelfDao.insertBookmark(body.toEntity(serverId, userId.toString()))
+                }
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.w(e, "Bookmark create queued for later sync")
+                Result.success(Unit)
+            }
+        }
+    }
+
+    override suspend fun deleteBookmark(itemId: String, serverTime: Double): Result<Unit> {
+        val (serverId, userId) = activeContext ?: return Result.failure(Exception("No session"))
+        return withContext(Dispatchers.IO) {
+            val now = System.currentTimeMillis()
+            val timeSeconds = serverTime.toLong()
+            audiobookshelfDao.insertBookmark(
+                AudiobookshelfBookmarkEntity(
+                    jellyfinServerId = serverId,
+                    jellyfinUserId = userId.toString(),
+                    libraryItemId = itemId,
+                    time = timeSeconds,
+                    serverTime = serverTime,
+                    title = "",
+                    createdAt = now,
+                    pendingSync = true,
+                    deleted = true,
+                    updatedAt = now,
+                )
+            )
+            if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                return@withContext Result.success(Unit)
+            }
+            try {
+                val response = apiService.get().deleteBookmark(itemId, serverTime)
+                if (response.isSuccessful || response.code() == 404) {
+                    audiobookshelfDao.deleteBookmarkRow(
+                        itemId,
+                        timeSeconds,
+                        serverId,
+                        userId.toString(),
+                    )
+                }
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.w(e, "Bookmark delete queued for later sync")
+                Result.success(Unit)
+            }
+        }
+    }
+
+    override suspend fun syncPendingBookmarks(): Int {
+        val (serverId, userId) = activeContext ?: return 0
+        if (!networkConnectivityMonitor.isCurrentlyConnected()) return 0
+        return withContext(Dispatchers.IO) {
+            var synced = 0
+            val pending = audiobookshelfDao.getPendingSyncBookmarks(serverId, userId.toString())
+            for (entry in pending) {
+                try {
+                    if (entry.deleted) {
+                        val response =
+                            apiService.get().deleteBookmark(entry.libraryItemId, entry.serverTime)
+                        if (response.isSuccessful || response.code() == 404) {
+                            audiobookshelfDao.deleteBookmarkRow(
+                                entry.libraryItemId,
+                                entry.time,
+                                serverId,
+                                userId.toString(),
+                            )
+                            synced++
+                        }
+                    } else {
+                        val response =
+                            apiService
+                                .get()
+                                .createBookmark(
+                                    entry.libraryItemId,
+                                    BookmarkRequest(entry.time, entry.title),
+                                )
+                        val body = response.body()
+                        if (response.isSuccessful && body != null) {
+                            audiobookshelfDao.insertBookmark(
+                                body.toEntity(serverId, userId.toString())
+                            )
+                            synced++
+                        }
+                    }
+                } catch (e: IOException) {
+                    Timber.w(e, "Bookmark sync stopped: connectivity")
+                    break
+                } catch (e: Exception) {
+                    Timber.w(e, "Skipping bookmark sync entry")
+                }
+            }
+            synced
         }
     }
 

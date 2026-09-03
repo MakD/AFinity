@@ -1,7 +1,6 @@
 package com.makd.afinity.ui.item.components.shared
 
 import android.content.Context
-import android.content.res.Configuration
 import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,7 +23,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -40,6 +38,7 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.ui.components.formatRuntimeTicks
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.components.ticksToTotalMinutes
 import com.makd.afinity.util.DateSkeleton
 import com.makd.afinity.util.localizedDateFormat
@@ -55,8 +54,7 @@ fun MetadataRow(
     selectedSourceId: String? = null,
 ) {
     val context = LocalContext.current
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
     val horizontalAlignment = if (isLandscape) Alignment.Start else Alignment.CenterHorizontally
 
     var stableRuntimeTicks by remember(item.id) { mutableLongStateOf(item.runtimeTicks) }
