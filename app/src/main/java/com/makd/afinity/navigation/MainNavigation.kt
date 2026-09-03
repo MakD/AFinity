@@ -1120,7 +1120,13 @@ fun MainNavigation(
                                 composable(Destination.APPEARANCE_OPTIONS_ROUTE) {
                                     AppearanceOptionsScreen(
                                         onBackClick =
-                                            dropUnlessResumed { navController.popBackStack() }
+                                            dropUnlessResumed { navController.popBackStack() },
+                                        onCustomSectionsClick =
+                                            dropUnlessResumed {
+                                                navController.navigate(
+                                                    Destination.CUSTOM_SECTIONS_ROUTE
+                                                )
+                                            },
                                     )
                                 }
 

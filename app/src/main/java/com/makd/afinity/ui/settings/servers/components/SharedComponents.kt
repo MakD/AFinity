@@ -56,7 +56,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.data.network.AddressParts
 import com.makd.afinity.data.network.parseAddressParts
@@ -70,11 +69,10 @@ import com.makd.afinity.ui.settings.servers.UserServiceInfo
 @Composable
 internal fun SectionHeader(title: String, modifier: Modifier = Modifier) {
     Text(
-        text = title.uppercase(),
-        style = MaterialTheme.typography.labelMedium,
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
         fontWeight = FontWeight.Bold,
-        letterSpacing = 0.5.sp,
         modifier = modifier.padding(top = 12.dp, bottom = 4.dp, start = 4.dp),
     )
 }

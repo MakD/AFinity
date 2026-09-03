@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -77,13 +78,20 @@ fun SettingsItem(
     icon: Painter? = null,
     subtitle: String? = null,
     onClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
+    subtitleColor: Color? = null,
     trailing: @Composable (() -> Unit)? = null,
 ) {
+    val contentAlpha = if (enabled) 1f else 0.38f
+
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
-                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .then(
+                    if (onClick != null && enabled) Modifier.clickable(onClick = onClick)
+                    else Modifier
+                )
                 .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -91,7 +99,7 @@ fun SettingsItem(
             Icon(
                 painter = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha),
                 modifier = Modifier.size(24.dp),
             )
             Spacer(modifier = Modifier.width(16.dp))
@@ -101,13 +109,15 @@ fun SettingsItem(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onSurface,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
             )
             if (!subtitle.isNullOrBlank()) {
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color =
+                        (subtitleColor ?: MaterialTheme.colorScheme.onSurfaceVariant)
+                            .copy(alpha = contentAlpha),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 2.dp),
@@ -146,6 +156,7 @@ fun SettingsSwitchItem(
             if (enabled) {
                 { onCheckedChange(!checked) }
             } else null,
+        enabled = enabled,
         modifier = modifier,
         trailing = {
             AfinitySwitch(

@@ -298,61 +298,12 @@ fun DownloadSettingsScreen(
                 )
             }
 
-            if (uiState.volumeStorageStats.size > 1) {
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    SectionHeader(
-                        title = stringResource(R.string.section_storage_locations),
-                        modifier = Modifier.padding(horizontal = 24.dp),
-                    )
-                }
-
-                item {
-                    StorageLocationsCard(
-                        stats = uiState.volumeStorageStats,
-                        defaultVolumeId = uiState.defaultStorageVolumeId,
-                        onSetDefault = viewModel::setDefaultStorageVolume,
-                        formatSize = viewModel::formatStorageSize,
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    )
-                }
-            }
-
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 SectionHeader(
-                    title = stringResource(R.string.section_storage_cache),
+                    title = stringResource(R.string.section_downloads),
                     modifier = Modifier.padding(horizontal = 24.dp),
                 )
-            }
-
-            item {
-                ImageCacheSettingsCard(
-                    isCacheEnabled = uiState.isImageCacheEnabled,
-                    cacheSizeMb = uiState.imageCacheSizeMb.toFloat(),
-                    onCacheEnabledChange = viewModel::setImageCacheEnabled,
-                    onCacheSizeChange = { viewModel.setImageCacheSizeMb(it.toInt()) },
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
-            }
-
-            item {
-                VideoCacheSettingsCard(
-                    cacheSizeMb = uiState.videoCacheSizeMb.toFloat(),
-                    onCacheSizeChange = { viewModel.setVideoCacheSizeMb(it.toInt()) },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                )
-            }
-
-            item {
-                SettingsGroup(modifier = Modifier.padding(top = 8.dp)) {
-                    SettingsItem(
-                        icon = painterResource(id = R.drawable.ic_database_off),
-                        title = stringResource(R.string.pref_clear_cache),
-                        subtitle = cacheUsageSubtitle,
-                        onClick = { showClearCacheDialog = true },
-                    )
-                }
             }
 
             val allActiveCount = uiState.activeDownloads.size + uiState.absActiveDownloads.size
@@ -499,6 +450,63 @@ fun DownloadSettingsScreen(
 
             if (allActiveCount == 0 && allCompletedCount == 0) {
                 item { EmptyDownloadsState() }
+            }
+
+            if (uiState.volumeStorageStats.size > 1) {
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    SectionHeader(
+                        title = stringResource(R.string.section_storage_locations),
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                    )
+                }
+
+                item {
+                    StorageLocationsCard(
+                        stats = uiState.volumeStorageStats,
+                        defaultVolumeId = uiState.defaultStorageVolumeId,
+                        onSetDefault = viewModel::setDefaultStorageVolume,
+                        formatSize = viewModel::formatStorageSize,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                SectionHeader(
+                    title = stringResource(R.string.section_storage_cache),
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                )
+            }
+
+            item {
+                ImageCacheSettingsCard(
+                    isCacheEnabled = uiState.isImageCacheEnabled,
+                    cacheSizeMb = uiState.imageCacheSizeMb.toFloat(),
+                    onCacheEnabledChange = viewModel::setImageCacheEnabled,
+                    onCacheSizeChange = { viewModel.setImageCacheSizeMb(it.toInt()) },
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
+
+            item {
+                VideoCacheSettingsCard(
+                    cacheSizeMb = uiState.videoCacheSizeMb.toFloat(),
+                    onCacheSizeChange = { viewModel.setVideoCacheSizeMb(it.toInt()) },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+
+            item {
+                SettingsGroup(modifier = Modifier.padding(top = 8.dp)) {
+                    SettingsItem(
+                        icon = painterResource(id = R.drawable.ic_database_off),
+                        title = stringResource(R.string.pref_clear_cache),
+                        subtitle = cacheUsageSubtitle,
+                        onClick = { showClearCacheDialog = true },
+                    )
+                }
             }
         }
     }

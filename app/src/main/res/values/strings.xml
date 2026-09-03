@@ -707,6 +707,7 @@
     <string name="pref_music_quality_cellular_title">Music quality on mobile data</string>
     <string name="music_player_quality_title">Streaming quality</string>
     <string name="cd_music_quality">Streaming quality</string>
+    <string name="pref_requires_transcoding">Turn off Never transcode to use this</string>
     <string name="pref_never_transcode_title">Never transcode</string>
     <string name="pref_never_transcode_description">Only play files this device can decode itself. Your server will never re-encode, but some files will not play.</string>
     <string name="error_direct_play_blocked">This device can\'t play this file directly, and transcoding is turned off.</string>
@@ -958,8 +959,8 @@
 
     <string name="pref_downloads_and_storage">Downloads &amp; Storage</string>
     <string name="pref_downloads_and_storage_summary">Manage offline media and image caching</string>
-    <string name="active_downloads_header_fmt">Active Downloads (%1$d)</string>
-    <string name="completed_downloads_header_fmt">Completed Downloads (%1$d)</string>
+    <string name="active_downloads_header_fmt">In progress (%1$d)</string>
+    <string name="completed_downloads_header_fmt">On this device (%1$d)</string>
     <string name="download_status_queued">Queued</string>
     <plurals name="episodes_downloaded_fmt">
         <item quantity="one">%1$d episode downloaded</item>
@@ -981,7 +982,7 @@
     <string name="storage_free_on_device_fmt">%1$s free on device</string>
     <string name="storage_this_server">This server</string>
     <string name="storage_all_servers_fmt">%1$s total across all servers</string>
-    <string name="section_storage_locations">STORAGE LOCATIONS</string>
+    <string name="section_storage_locations">Storage locations</string>
     <string name="storage_usage_combined_fmt">%1$s used here • %2$s free of %3$s</string>
     <string name="storage_default_badge">Default</string>
     <string name="storage_set_as_default">Set as default</string>
@@ -1003,7 +1004,21 @@
     <string name="cd_queued_tap_cancel">Queued, tap to cancel</string>
     <string name="cd_delete_download">Delete download</string>
 
-    <string name="player_options_title">Player Options</string>
+    <string name="player_options_title">Playback</string>
+
+    <string name="playback_section_video_quality">Video quality</string>
+    <string name="playback_section_video_quality_summary">Resolution limits, audio channels and HDR</string>
+    <string name="playback_section_music_quality">Music quality</string>
+    <string name="playback_section_music_quality_summary">Bitrate limits for Wi-Fi and mobile data</string>
+    <string name="playback_section_tracks">Audio &amp; subtitle tracks</string>
+    <string name="playback_section_tracks_summary">Which language and subtitles to pick automatically</string>
+    <string name="playback_section_subtitle_appearance">Subtitle appearance</string>
+    <string name="playback_section_subtitle_appearance_summary">Size, color, outline and position</string>
+    <string name="playback_section_controls">Player controls</string>
+    <string name="playback_section_controls_summary">Gestures, skip buttons, pause screen and zoom</string>
+    <string name="playback_section_cast_summary">Quality and codecs when casting</string>
+    <string name="playback_section_advanced">Advanced</string>
+    <string name="playback_section_advanced_summary">Playback engine, buffering and MPV config</string>
 
     <string name="pref_group_engine">Engine &amp; Behavior</string>
     <string name="pref_use_exoplayer_title">Use ExoPlayer</string>
@@ -1275,6 +1290,8 @@
     <string name="error_quickconnect_invalid_code">Invalid or expired code. Please try again.</string>
     <string name="error_quickconnect_failed_fmt">Authorization failed: %1$s</string>
 
+    <string name="pref_group_account">Account &amp; servers</string>
+    <string name="pref_group_playback_downloads">Playback &amp; downloads</string>
     <string name="pref_group_connections">Connections</string>
     <string name="pref_manage_servers">Manage Servers</string>
     <string name="pref_manage_servers_summary">Add or remove Jellyfin servers</string>
@@ -1486,6 +1503,7 @@
     <string name="pref_cast_max_bitrate_title">Max Bitrate</string>
     <string name="pref_cast_max_bitrate_auto">Auto (network test)</string>
     <string name="pref_buffer_size_title">Video Buffer Size</string>
+    <string name="pref_buffer_size_value_fmt">%1$s · %2$s</string>
 
     <!--Audiobookshelf Libraries / Item Screens-->
     <string name="abs_connect_title">Connect to Audiobookshelf</string>
@@ -1646,11 +1664,12 @@
     <string name="action_save">Save</string>
 
     <!--Download Settings Sections-->
-    <string name="section_storage_cache">STORAGE &amp; CACHE</string>
-    <string name="section_videos">VIDEOS</string>
-    <string name="section_download_audiobooks">AUDIOBOOKS</string>
-    <string name="section_download_podcasts">PODCASTS</string>
-    <string name="section_download_music">MUSIC</string>
+    <string name="section_downloads">Downloads</string>
+    <string name="section_storage_cache">Storage &amp; cache</string>
+    <string name="section_videos">Videos</string>
+    <string name="section_download_audiobooks">Audiobooks</string>
+    <string name="section_download_podcasts">Podcasts</string>
+    <string name="section_download_music">Music</string>
 
     <!--Server Management-->
     <string name="server_version_fmt">v%1$s</string>

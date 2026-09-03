@@ -405,18 +405,33 @@ fun SettingsScreen(
                                     )
                                     SettingsDivider()
                                     SettingsItem(
-                                        icon = painterResource(id = R.drawable.ic_database),
-                                        title = stringResource(R.string.pref_downloads_and_storage),
-                                        subtitle =
-                                            stringResource(
-                                                R.string.pref_downloads_and_storage_summary
-                                            ),
+                                        icon = painterResource(id = R.drawable.ic_color_swatch),
+                                        title = stringResource(R.string.pref_appearance),
+                                        subtitle = stringResource(R.string.pref_appearance_summary),
                                         onClick = {
                                             scope.launch {
                                                 navigator.navigateTo(
                                                     ListDetailPaneScaffoldRole.Detail,
-                                                    SettingsPaneDestination.Downloads,
+                                                    SettingsPaneDestination.Appearance,
                                                 )
+                                            }
+                                        },
+                                    )
+                                    SettingsDivider()
+                                    SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_language),
+                                        title = stringResource(R.string.pref_app_language),
+                                        subtitle = appLanguageSubtitle,
+                                        onClick = {
+                                            if (isDualPane) {
+                                                scope.launch {
+                                                    navigator.navigateTo(
+                                                        ListDetailPaneScaffoldRole.Detail,
+                                                        SettingsPaneDestination.Language,
+                                                    )
+                                                }
+                                            } else {
+                                                showLanguageDialog = true
                                             }
                                         },
                                     )
@@ -438,7 +453,54 @@ fun SettingsScreen(
                                             }
                                         },
                                     )
+                                }
+                            }
+
+                            item {
+                                SettingsGroup(
+                                    title =
+                                        stringResource(R.string.pref_group_playback_downloads),
+                                    endPadding = listEndPadding,
+                                ) {
+                                    SettingsItem(
+                                        icon =
+                                            painterResource(id = R.drawable.ic_playback_settings),
+                                        title = stringResource(R.string.pref_playback),
+                                        subtitle = stringResource(R.string.pref_playback_summary),
+                                        onClick = {
+                                            scope.launch {
+                                                navigator.navigateTo(
+                                                    ListDetailPaneScaffoldRole.Detail,
+                                                    SettingsPaneDestination.Player,
+                                                )
+                                            }
+                                        },
+                                    )
                                     SettingsDivider()
+                                    SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_database),
+                                        title = stringResource(R.string.pref_downloads_and_storage),
+                                        subtitle =
+                                            stringResource(
+                                                R.string.pref_downloads_and_storage_summary
+                                            ),
+                                        onClick = {
+                                            scope.launch {
+                                                navigator.navigateTo(
+                                                    ListDetailPaneScaffoldRole.Detail,
+                                                    SettingsPaneDestination.Downloads,
+                                                )
+                                            }
+                                        },
+                                    )
+                                }
+                            }
+
+                            item {
+                                SettingsGroup(
+                                    title = stringResource(R.string.pref_group_account),
+                                    endPadding = listEndPadding,
+                                ) {
                                     SettingsItem(
                                         icon = painterResource(id = R.drawable.ic_user),
                                         title = stringResource(R.string.pref_switch_session),
@@ -462,39 +524,6 @@ fun SettingsScreen(
                                             } else null,
                                     )
                                     SettingsDivider()
-                                    SettingsItem(
-                                        icon = painterResource(id = R.drawable.ic_quickconnect),
-                                        title =
-                                            stringResource(R.string.pref_authorize_quickconnect),
-                                        subtitle =
-                                            stringResource(
-                                                R.string.pref_authorize_quickconnect_summary
-                                            ),
-                                        onClick =
-                                            if (!effectiveOfflineMode) {
-                                                {
-                                                    if (isDualPane) {
-                                                        scope.launch {
-                                                            navigator.navigateTo(
-                                                                ListDetailPaneScaffoldRole.Detail,
-                                                                SettingsPaneDestination
-                                                                    .QuickConnect,
-                                                            )
-                                                        }
-                                                    } else {
-                                                        showQuickConnectDialog = true
-                                                    }
-                                                }
-                                            } else null,
-                                    )
-                                }
-                            }
-
-                            item {
-                                SettingsGroup(
-                                    title = stringResource(R.string.pref_group_connections),
-                                    endPadding = listEndPadding,
-                                ) {
                                     SettingsItem(
                                         icon = painterResource(id = R.drawable.ic_server),
                                         title = stringResource(R.string.pref_manage_servers),
@@ -521,76 +550,31 @@ fun SettingsScreen(
                                             )
                                         },
                                     )
-                                }
-                            }
-
-                            item {
-                                SettingsGroup(
-                                    title = stringResource(R.string.pref_group_preferences),
-                                    endPadding = listEndPadding,
-                                ) {
-                                    SettingsItem(
-                                        icon = painterResource(id = R.drawable.ic_color_swatch),
-                                        title = stringResource(R.string.pref_appearance),
-                                        subtitle = stringResource(R.string.pref_appearance_summary),
-                                        onClick = {
-                                            scope.launch {
-                                                navigator.navigateTo(
-                                                    ListDetailPaneScaffoldRole.Detail,
-                                                    SettingsPaneDestination.Appearance,
-                                                )
-                                            }
-                                        },
-                                    )
                                     SettingsDivider()
                                     SettingsItem(
-                                        icon = painterResource(id = R.drawable.ic_row_custom),
-                                        title = stringResource(R.string.custom_sections_title),
+                                        icon = painterResource(id = R.drawable.ic_quickconnect),
+                                        title =
+                                            stringResource(R.string.pref_authorize_quickconnect),
                                         subtitle =
                                             stringResource(
-                                                R.string.custom_sections_settings_summary
+                                                R.string.pref_authorize_quickconnect_summary
                                             ),
-                                        onClick = {
-                                            scope.launch {
-                                                navigator.navigateTo(
-                                                    ListDetailPaneScaffoldRole.Detail,
-                                                    SettingsPaneDestination.CustomSections,
-                                                )
-                                            }
-                                        },
-                                    )
-                                    SettingsDivider()
-                                    SettingsItem(
-                                        icon = painterResource(id = R.drawable.ic_language),
-                                        title = stringResource(R.string.pref_app_language),
-                                        subtitle = appLanguageSubtitle,
-                                        onClick = {
-                                            if (isDualPane) {
-                                                scope.launch {
-                                                    navigator.navigateTo(
-                                                        ListDetailPaneScaffoldRole.Detail,
-                                                        SettingsPaneDestination.Language,
-                                                    )
+                                        onClick =
+                                            if (!effectiveOfflineMode) {
+                                                {
+                                                    if (isDualPane) {
+                                                        scope.launch {
+                                                            navigator.navigateTo(
+                                                                ListDetailPaneScaffoldRole.Detail,
+                                                                SettingsPaneDestination
+                                                                    .QuickConnect,
+                                                            )
+                                                        }
+                                                    } else {
+                                                        showQuickConnectDialog = true
+                                                    }
                                                 }
-                                            } else {
-                                                showLanguageDialog = true
-                                            }
-                                        },
-                                    )
-                                    SettingsDivider()
-                                    SettingsItem(
-                                        icon =
-                                            painterResource(id = R.drawable.ic_playback_settings),
-                                        title = stringResource(R.string.pref_playback),
-                                        subtitle = stringResource(R.string.pref_playback_summary),
-                                        onClick = {
-                                            scope.launch {
-                                                navigator.navigateTo(
-                                                    ListDetailPaneScaffoldRole.Detail,
-                                                    SettingsPaneDestination.Player,
-                                                )
-                                            }
-                                        },
+                                            } else null,
                                     )
                                 }
                             }
@@ -715,7 +699,15 @@ fun SettingsScreen(
                 when (navigator.currentDestination?.contentKey) {
                     is SettingsPaneDestination.Appearance ->
                         AppearanceOptionsScreen(
-                            onBackClick = { scope.launch { navigator.navigateBack() } }
+                            onBackClick = { scope.launch { navigator.navigateBack() } },
+                            onCustomSectionsClick = {
+                                scope.launch {
+                                    navigator.navigateTo(
+                                        ListDetailPaneScaffoldRole.Detail,
+                                        SettingsPaneDestination.CustomSections,
+                                    )
+                                }
+                            },
                         )
                     is SettingsPaneDestination.CustomSections ->
                         CustomSectionsScreen(
