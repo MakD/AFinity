@@ -1,7 +1,6 @@
 package com.makd.afinity.ui.audiobookshelf.player
 
 import android.content.res.Configuration
-import android.view.View
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
@@ -42,13 +41,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -56,11 +53,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import com.google.android.gms.cast.framework.CastButtonFactory
 import com.makd.afinity.R
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackState
 import com.makd.afinity.ui.audiobookshelf.player.components.ChapterSelector
@@ -68,9 +63,18 @@ import com.makd.afinity.ui.audiobookshelf.player.components.EqualizerBottomSheet
 import com.makd.afinity.ui.audiobookshelf.player.components.PlaybackSpeedSelector
 import com.makd.afinity.ui.audiobookshelf.player.components.PlayerControls
 import com.makd.afinity.ui.audiobookshelf.player.components.SleepTimerDialog
+import com.makd.afinity.ui.audiobookshelf.player.components.formatSpeed
 import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 import com.makd.afinity.ui.components.AFinitySnackbar
+import com.makd.afinity.ui.components.rememberCastChooserLauncher
+import com.makd.afinity.ui.player.components.AudioPlayerControlRow
+import com.makd.afinity.ui.player.components.AudioPlayerControlSlot
+import com.makd.afinity.ui.player.components.AudioPlayerLayout
+import com.makd.afinity.ui.player.components.AudioPlayerValueSlot
 import com.makd.afinity.ui.player.components.PlaybackStatsOverlay
+import com.makd.afinity.ui.player.components.PlayerMoreRow
+import com.makd.afinity.ui.player.components.PlayerMoreSectionHeader
+import com.makd.afinity.ui.player.components.PlayerMoreSheet
 
 private fun String.withAbsWidth(px: Int): String {
     if (startsWith("file://")) return this
@@ -91,21 +95,8 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
     val skipSilenceEnabled by viewModel.skipSilenceEnabled.collectAsStateWithLifecycle()
     val isAbsCasting by viewModel.isAbsCasting.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    var showCastChooser by remember { mutableStateOf(false) }
-    val context = LocalContext.current
-    val mediaRouteButton = remember {
-        androidx.mediarouter.app.MediaRouteButton(context).also { button ->
-            CastButtonFactory.setUpMediaRouteButton(context, button)
-            button.visibility = View.GONE
-        }
-    }
-    LaunchedEffect(showCastChooser) {
-        if (showCastChooser) {
-            mediaRouteButton.performClick()
-            showCastChooser = false
-        }
-    }
-    AndroidView(factory = { mediaRouteButton }, modifier = androidx.compose.ui.Modifier)
+    val launchCastChooser = rememberCastChooserLauncher()
+    var showMoreSheet by remember { mutableStateOf(false) }
 
     val defaultColor = MaterialTheme.colorScheme.surface
     val dominantColor = rememberDominantColor(playbackState.coverUrl, defaultColor)
@@ -161,7 +152,8 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
                     viewModel = viewModel,
                     animatedColor = animatedColor,
                     onNavigateBack = onNavigateBack,
-                    onCastClick = { showCastChooser = true },
+                    onCastClick = launchCastChooser,
+                    onOpenMore = { showMoreSheet = true },
                     isAbsCasting = isAbsCasting,
                     paddingValues = paddingValues,
                     animatedVisibilityScope = animatedVisibilityScope,
@@ -172,7 +164,8 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
                     viewModel = viewModel,
                     animatedColor = animatedColor,
                     onNavigateBack = onNavigateBack,
-                    onCastClick = { showCastChooser = true },
+                    onCastClick = launchCastChooser,
+                    onOpenMore = { showMoreSheet = true },
                     isAbsCasting = isAbsCasting,
                     paddingValues = paddingValues,
                     animatedVisibilityScope = animatedVisibilityScope,
@@ -184,6 +177,41 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
                 stats = uiState.playbackStats,
                 onClose = viewModel::togglePlaybackStats,
             )
+        }
+
+        if (showMoreSheet) {
+            PlayerMoreSheet(onDismiss = { showMoreSheet = false }) {
+                PlayerMoreSectionHeader(stringResource(R.string.abs_more_section_audio))
+                PlayerMoreRow(
+                    painter = painterResource(id = R.drawable.ic_equalizer),
+                    title = stringResource(R.string.cd_equalizer),
+                    value =
+                        stringResource(
+                            if (equalizerState.isEnabled) R.string.state_on else R.string.state_off
+                        ),
+                    onClick = {
+                        showMoreSheet = false
+                        viewModel.showEqualizer()
+                    },
+                )
+                PlayerMoreRow(
+                    painter = painterResource(id = R.drawable.ic_volume_up),
+                    title = stringResource(R.string.abs_skip_silence_title),
+                    value =
+                        stringResource(
+                            if (skipSilenceEnabled) R.string.state_on else R.string.state_off
+                        ),
+                    onClick = { viewModel.setSkipSilence(!skipSilenceEnabled) },
+                )
+                PlayerMoreRow(
+                    painter = painterResource(id = R.drawable.ic_info),
+                    title = stringResource(R.string.cd_playback_info),
+                    onClick = {
+                        showMoreSheet = false
+                        viewModel.togglePlaybackStats()
+                    },
+                )
+            }
         }
 
         if (uiState.showChapterSelector) {
@@ -234,6 +262,7 @@ fun SharedTransitionScope.PortraitPlayerContent(
     animatedColor: Color,
     onNavigateBack: () -> Unit,
     onCastClick: () -> Unit = {},
+    onOpenMore: () -> Unit = {},
     isAbsCasting: Boolean = false,
     paddingValues: PaddingValues,
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -263,15 +292,33 @@ fun SharedTransitionScope.PortraitPlayerContent(
                 modifier = Modifier.align(Alignment.Center),
             )
 
-            IconButton(
-                onClick = viewModel::togglePlaybackStats,
+            Row(
                 modifier = Modifier.align(Alignment.CenterEnd),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    painterResource(id = R.drawable.ic_info),
-                    contentDescription = stringResource(R.string.cd_playback_info),
-                    tint = Color.White,
-                )
+                IconButton(onClick = onCastClick) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_cast_devices),
+                            contentDescription = stringResource(R.string.cd_cast),
+                            tint = if (isAbsCasting) animatedColor else Color.White,
+                        )
+                        Box(
+                            modifier =
+                                Modifier.size(4.dp)
+                                    .align(Alignment.BottomCenter)
+                                    .alpha(if (isAbsCasting) 1f else 0f)
+                                    .background(animatedColor, CircleShape)
+                        )
+                    }
+                }
+                IconButton(onClick = onOpenMore) {
+                    Icon(
+                        painterResource(id = R.drawable.ic_dots_vertical),
+                        contentDescription = stringResource(R.string.cd_music_more_options),
+                        tint = Color.White,
+                    )
+                }
             }
         }
 
@@ -280,11 +327,11 @@ fun SharedTransitionScope.PortraitPlayerContent(
         val density = LocalDensity.current
         val coverWidthPx =
             with(density) { (LocalConfiguration.current.screenWidthDp.dp - 48.dp).roundToPx() }
-
         Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             Surface(
                 modifier =
-                    Modifier.aspectRatio(1f)
+                    AudioPlayerLayout.CoverSizeCap
+                        .aspectRatio(1f)
                         .sharedElement(
                             sharedContentState =
                                 rememberSharedContentState(
@@ -379,90 +426,30 @@ fun SharedTransitionScope.PortraitPlayerContent(
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                IconButton(onClick = viewModel::showEqualizer) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_equalizer),
-                        contentDescription = stringResource(R.string.cd_equalizer),
-                        tint = Color.White.copy(alpha = 0.8f),
-                    )
-                }
-            }
-
-            Row(
-                modifier =
-                    Modifier.clip(RoundedCornerShape(50))
-                        .background(Color.White.copy(alpha = 0.1f))
-                        .padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = viewModel::showSpeedSelector) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            painterResource(id = R.drawable.ic_speed),
-                            null,
-                            tint = Color.White.copy(alpha = 0.8f),
-                        )
-                        if (playbackState.playbackSpeed != 1.0f) {
-                            Box(
-                                modifier =
-                                    Modifier.size(4.dp)
-                                        .background(
-                                            Color.White,
-                                            androidx.compose.foundation.shape.CircleShape,
-                                        )
-                                        .align(Alignment.TopEnd)
-                            )
-                        }
-                    }
-                }
-                IconButton(onClick = viewModel::showSleepTimerDialog) {
-                    Icon(
-                        painter =
-                            if (playbackState.sleepTimerEndTime != null)
-                                painterResource(id = R.drawable.ic_moon_filled)
-                            else painterResource(id = R.drawable.ic_moon),
-                        contentDescription = null,
-                        tint =
-                            if (playbackState.sleepTimerEndTime != null) animatedColor
-                            else Color.White.copy(alpha = 0.8f),
-                    )
-                }
-                IconButton(onClick = viewModel::showChapterSelector) {
-                    Icon(
-                        painterResource(id = R.drawable.ic_playlist_alt),
-                        null,
-                        tint = Color.White.copy(alpha = 0.8f),
-                    )
-                }
-            }
-
-            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-                IconButton(onClick = onCastClick) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_cast_devices),
-                            contentDescription = stringResource(R.string.cd_cast),
-                            tint =
-                                if (isAbsCasting) animatedColor else Color.White.copy(alpha = 0.8f),
-                        )
-                        Box(
-                            modifier =
-                                Modifier.size(4.dp)
-                                    .align(Alignment.BottomCenter)
-                                    .alpha(if (isAbsCasting) 1f else 0f)
-                                    .background(
-                                        animatedColor,
-                                        androidx.compose.foundation.shape.CircleShape,
-                                    )
-                        )
-                    }
-                }
-            }
+        AudioPlayerControlRow(modifier = Modifier.padding(bottom = 16.dp)) {
+            AudioPlayerValueSlot(
+                value = "${formatSpeed(playbackState.playbackSpeed)}x",
+                contentDescription = stringResource(R.string.abs_playback_speed_label),
+                onClick = viewModel::showSpeedSelector,
+                active = playbackState.playbackSpeed != 1.0f,
+                activeColor = animatedColor,
+            )
+            AudioPlayerControlSlot(
+                painter = painterResource(id = R.drawable.ic_playlist_alt),
+                contentDescription = stringResource(R.string.cd_abs_chapters),
+                onClick = viewModel::showChapterSelector,
+            )
+            AudioPlayerControlSlot(
+                painter =
+                    painterResource(
+                        if (playbackState.sleepTimerEndTime != null) R.drawable.ic_moon_filled
+                        else R.drawable.ic_moon
+                    ),
+                contentDescription = stringResource(R.string.cd_music_sleep_timer),
+                onClick = viewModel::showSleepTimerDialog,
+                active = playbackState.sleepTimerEndTime != null,
+                activeColor = animatedColor,
+            )
         }
     }
 }
@@ -474,6 +461,7 @@ fun SharedTransitionScope.LandscapePlayerContent(
     animatedColor: Color,
     onNavigateBack: () -> Unit,
     onCastClick: () -> Unit = {},
+    onOpenMore: () -> Unit = {},
     isAbsCasting: Boolean = false,
     paddingValues: PaddingValues,
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -491,14 +479,14 @@ fun SharedTransitionScope.LandscapePlayerContent(
             with(density) {
                 ((LocalConfiguration.current.screenWidthDp.dp - 64.dp) * 0.45f).roundToPx()
             }
-
         Box(
             modifier = Modifier.weight(0.45f).fillMaxHeight(),
             contentAlignment = Alignment.Center,
         ) {
             Surface(
                 modifier =
-                    Modifier.aspectRatio(1f)
+                    AudioPlayerLayout.CoverSizeCap
+                        .aspectRatio(1f)
                         .sharedElement(
                             sharedContentState =
                                 rememberSharedContentState(
@@ -625,87 +613,30 @@ fun SharedTransitionScope.LandscapePlayerContent(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                    IconButton(onClick = viewModel::showEqualizer) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_equalizer),
-                                contentDescription = stringResource(R.string.cd_equalizer),
-                                tint = Color.White.copy(alpha = 0.8f),
-                            )
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Spacer(modifier = Modifier.size(4.dp))
-                        }
-                    }
-                }
-
-                Row(
-                    modifier =
-                        Modifier.clip(RoundedCornerShape(50))
-                            .background(Color.White.copy(alpha = 0.1f))
-                            .padding(horizontal = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    IconButton(onClick = viewModel::showSpeedSelector) {
-                        Icon(
-                            painterResource(id = R.drawable.ic_speed),
-                            null,
-                            tint = Color.White.copy(alpha = 0.8f),
-                        )
-                    }
-                    IconButton(onClick = viewModel::showSleepTimerDialog) {
-                        Icon(
-                            if (playbackState.sleepTimerEndTime != null)
-                                painterResource(id = R.drawable.ic_moon_filled)
-                            else painterResource(id = R.drawable.ic_moon),
-                            null,
-                            tint =
-                                if (playbackState.sleepTimerEndTime != null) animatedColor
-                                else Color.White.copy(alpha = 0.8f),
-                        )
-                    }
-                    IconButton(onClick = viewModel::showChapterSelector) {
-                        Icon(
-                            painterResource(id = R.drawable.ic_playlist_alt),
-                            null,
-                            tint = Color.White.copy(alpha = 0.8f),
-                        )
-                    }
-                }
-
-                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-                    IconButton(onClick = onCastClick) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_cast_devices),
-                                contentDescription = stringResource(R.string.cd_cast),
-                                tint =
-                                    if (isAbsCasting) animatedColor
-                                    else Color.White.copy(alpha = 0.8f),
-                            )
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Box(
-                                modifier =
-                                    Modifier.size(4.dp)
-                                        .alpha(if (isAbsCasting) 1f else 0f)
-                                        .background(
-                                            animatedColor,
-                                            androidx.compose.foundation.shape.CircleShape,
-                                        )
-                            )
-                        }
-                    }
-                }
+            AudioPlayerControlRow {
+                AudioPlayerValueSlot(
+                    value = "${formatSpeed(playbackState.playbackSpeed)}x",
+                    contentDescription = stringResource(R.string.abs_playback_speed_label),
+                    onClick = viewModel::showSpeedSelector,
+                    active = playbackState.playbackSpeed != 1.0f,
+                    activeColor = animatedColor,
+                )
+                AudioPlayerControlSlot(
+                    painter = painterResource(id = R.drawable.ic_playlist_alt),
+                    contentDescription = stringResource(R.string.cd_abs_chapters),
+                    onClick = viewModel::showChapterSelector,
+                )
+                AudioPlayerControlSlot(
+                    painter =
+                        painterResource(
+                            if (playbackState.sleepTimerEndTime != null) R.drawable.ic_moon_filled
+                            else R.drawable.ic_moon
+                        ),
+                    contentDescription = stringResource(R.string.cd_music_sleep_timer),
+                    onClick = viewModel::showSleepTimerDialog,
+                    active = playbackState.sleepTimerEndTime != null,
+                    activeColor = animatedColor,
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))

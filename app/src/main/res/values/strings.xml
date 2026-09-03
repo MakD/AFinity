@@ -697,6 +697,11 @@
     <string name="pref_transcode_channels_2">Stereo</string>
     <string name="music_quality_opus_fmt">Opus %1$d kbps</string>
     <string name="music_quality_short_original">Original</string>
+    <string name="music_more_section_audio">AUDIO</string>
+    <string name="music_more_section_track">THIS TRACK</string>
+    <string name="abs_more_section_audio">AUDIO</string>
+    <string name="state_on">On</string>
+    <string name="state_off">Off</string>
     <string name="music_quality_short_kbps_fmt">%1$dk</string>
     <string name="pref_music_quality_wifi_title">Music quality on Wi-Fi</string>
     <string name="pref_music_quality_cellular_title">Music quality on mobile data</string>
@@ -1512,6 +1517,9 @@
     <string name="abs_sleep_timer_stop">Stop Timer</string>
     <string name="abs_sleep_timer_set_new">Set New Timer</string>
     <string name="abs_skip_silence">SKIP SILENCE</string>
+    <string name="cd_abs_chapters">Chapters</string>
+    <string name="abs_skip_silence_title">Skip silence</string>
+    <string name="abs_volume_boost_title">Volume boost</string>
     <string name="abs_volume_boost">VOLUME BOOST</string>
     <string name="abs_playback_speed_label">PLAYBACK SPEED</string>
     <string name="abs_total_listening_time">TOTAL LISTENING TIME</string>

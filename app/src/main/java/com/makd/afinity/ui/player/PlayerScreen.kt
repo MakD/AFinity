@@ -42,6 +42,7 @@ import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.models.player.SubtitlePreferences
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.player.mpv.MPVPlayer
+import com.makd.afinity.ui.components.rememberCastChooserLauncher
 import com.makd.afinity.ui.player.cast.CastRemoteControllerScreen
 import com.makd.afinity.ui.player.components.BufferingIndicator
 import com.makd.afinity.ui.player.components.ErrorIndicator
@@ -206,19 +207,10 @@ fun PlayerScreen(
     val castState by viewModel.castManager.castState.collectAsStateWithLifecycle()
     val isDarkTheme = isSystemInDarkTheme()
 
-    val mediaRouteButton = remember {
-        androidx.mediarouter.app.MediaRouteButton(context).also { button ->
-            com.google.android.gms.cast.framework.CastButtonFactory.setUpMediaRouteButton(
-                context,
-                button,
-            )
-            button.visibility = android.view.View.GONE
-        }
-    }
-    AndroidView(factory = { mediaRouteButton })
+    val launchCastChooser = rememberCastChooserLauncher()
     LaunchedEffect(uiState.showCastChooser) {
         if (uiState.showCastChooser) {
-            mediaRouteButton.performClick()
+            launchCastChooser()
             viewModel.dismissCastChooser()
         }
     }

@@ -212,6 +212,6 @@ private fun PresetSpeedItem(speed: Float, isSelected: Boolean, onClick: () -> Un
     }
 }
 
-private fun formatSpeed(speed: Float): String {
+internal fun formatSpeed(speed: Float): String {
     return if (speed == speed.toLong().toFloat()) "${speed.toLong()}" else "$speed"
 }
