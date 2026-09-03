@@ -552,7 +552,15 @@ fun HomeScreen(
                             items(
                                 items = uiState.pinnedSections,
                                 key = { section -> section.key },
-                                contentType = { section -> section::class },
+                                contentType = { section ->
+                                    when (section) {
+                                        is HomeSection.Items ->
+                                            section::class to section.cardStyle
+                                        is HomeSection.Pending ->
+                                            section::class to section.cardStyle
+                                        else -> section::class
+                                    }
+                                },
                             ) { section ->
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     when (section) {
@@ -615,7 +623,15 @@ fun HomeScreen(
                             items(
                                 items = uiState.combinedSections,
                                 key = { section -> section.key },
-                                contentType = { section -> section::class },
+                                contentType = { section ->
+                                    when (section) {
+                                        is HomeSection.Items ->
+                                            section::class to section.cardStyle
+                                        is HomeSection.Pending ->
+                                            section::class to section.cardStyle
+                                        else -> section::class
+                                    }
+                                },
                             ) { section ->
                                 val hideSection =
                                     section is HomeSection.Genre &&

@@ -540,6 +540,35 @@ constructor(
         if (rendered.isNotEmpty()) enqueueHydration(rendered, refresh = true)
     }
 
+    fun refreshContent(reason: String) {
+        if (sessionKey() == null) return
+        if (_layout.value.isEmpty() && _pinnedLayout.value.isEmpty()) {
+            ensureLayout()
+            return
+        }
+        seasonRecheck.update { it + 1 }
+        ensureWatchAgain(force = true)
+        ensureCriticsChoice(force = true)
+        ensurePopularStudios(force = true)
+        refreshPinnedSections(reason)
+        refreshDiscoverySections(reason)
+    }
+
+    private fun refreshDiscoverySections(reason: String) {
+        val keys = _layout.value.map { it.key }
+        if (keys.isEmpty()) return
+        val (rendered, offScreen) = keys.partition { _content.value.containsKey(it) }
+        Timber.d(
+            "Refreshing discovery home sections ($reason): ${rendered.size} on screen, ${offScreen.size} deferred"
+        )
+        if (offScreen.isNotEmpty()) {
+            scope.launch(Dispatchers.IO) {
+                hydrationMutex.withLock { hydrationRefreshKeys.addAll(offScreen) }
+            }
+        }
+        if (rendered.isNotEmpty()) enqueueHydration(rendered, refresh = true)
+    }
+
     fun updateItem(updatedItem: AfinityItem) {
         _watchAgain.update { items ->
             if (items.none { it.id == updatedItem.id }) items
@@ -1551,15 +1580,26 @@ constructor(
         recommendations: List<HomeSectionDescriptor>,
         spotlights: List<HomeSectionDescriptor>,
     ): List<HomeSectionDescriptor> {
-        val finalLayout = mergeProportionally(genres, recommendations).toMutableList()
+        val base = mergeProportionally(genres, recommendations)
+        if (spotlights.isEmpty()) return base
+        if (base.isEmpty()) return spotlights.take(1)
 
-        if (spotlights.isNotEmpty()) {
-            val positions = computeSpotlightPositions(finalLayout.size, spotlights.size)
-            positions.sorted().forEachIndexed { offset, pos ->
-                finalLayout.add((pos + offset).coerceIn(0, finalLayout.size), spotlights[offset])
+        val placeable = minOf(spotlights.size, base.size)
+        val stride = base.size.toFloat() / (placeable + 1)
+
+        val result = ArrayList<HomeSectionDescriptor>(base.size + placeable)
+        var placed = 0
+        base.forEachIndexed { index, descriptor ->
+            result.add(descriptor)
+            if (placed < placeable) {
+                val target = ((placed + 1) * stride).toInt().coerceIn(1, base.size)
+                if (index + 1 >= target) {
+                    result.add(spotlights[placed])
+                    placed++
+                }
             }
         }
-        return finalLayout
+        return result
     }
 
     private fun mergeProportionally(
@@ -1593,30 +1633,6 @@ constructor(
             }
         }
         return merged
-    }
-
-    private fun computeSpotlightPositions(listSize: Int, count: Int): List<Int> {
-        if (listSize == 0 || count == 0) return emptyList()
-        val chunkSize = (listSize / (count + 1)).coerceAtLeast(1)
-
-        val rawPositions =
-            (1..count)
-                .map { i -> (i * chunkSize + (-2..2).random()).coerceIn(1, listSize) }
-                .sorted()
-
-        val adjustedPositions = mutableListOf<Int>()
-        var lastPos = -2
-
-        for (i in rawPositions.indices) {
-            val pos = rawPositions[i]
-            var newPos = if (pos <= lastPos + 1) lastPos + 2 else pos
-            val itemsLeft = count - 1 - i
-            val maxAllowedPos = (listSize - (itemsLeft * 2)).coerceAtLeast(0)
-            newPos = newPos.coerceIn(0, maxAllowedPos)
-            adjustedPositions.add(newPos)
-            lastPos = newPos
-        }
-        return adjustedPositions
     }
 
     private suspend fun getRandomFavoriteMovie(excludedMovies: Set<UUID>): AfinityMovie? {

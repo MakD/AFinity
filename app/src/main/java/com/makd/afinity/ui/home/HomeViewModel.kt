@@ -457,7 +457,7 @@ constructor(
                         launch { loadUpcomingEpisodes() }
                     }
                     if (!offlineModeManager.isOffline.first()) {
-                        homeSectionsRepository.ensureLayout(force = true)
+                        homeSectionsRepository.refreshContent(event.reason)
                     }
                 }
             }
