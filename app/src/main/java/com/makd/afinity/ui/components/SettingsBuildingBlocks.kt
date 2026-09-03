@@ -35,10 +35,11 @@ import com.makd.afinity.R
 fun SettingsGroup(
     modifier: Modifier = Modifier,
     title: String? = null,
+    startPadding: Dp = 16.dp,
     endPadding: Dp = 16.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(modifier = modifier.fillMaxWidth().padding(start = 16.dp, end = endPadding)) {
+    Column(modifier = modifier.fillMaxWidth().padding(start = startPadding, end = endPadding)) {
         if (title != null) {
             SettingsGroupTitle(title = title)
         }

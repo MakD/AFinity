@@ -104,6 +104,7 @@ import com.makd.afinity.ui.settings.appearance.AppearanceOptionsScreen
 import com.makd.afinity.ui.settings.backup.BackupBottomSheet
 import com.makd.afinity.ui.settings.backup.BackupScreen
 import com.makd.afinity.ui.settings.downloads.DownloadSettingsScreen
+import com.makd.afinity.ui.settings.downloads.StorageSettingsScreen
 import com.makd.afinity.ui.settings.home.CustomSectionsScreen
 import com.makd.afinity.ui.settings.logs.LogViewerScreen
 import com.makd.afinity.ui.settings.player.PlayerOptionsScreen
@@ -727,6 +728,18 @@ fun SettingsScreen(
                                     Destination.createAudiobookshelfItemRoute(itemId)
                                 )
                             },
+                            onStorageSettingsClick = {
+                                scope.launch {
+                                    navigator.navigateTo(
+                                        ListDetailPaneScaffoldRole.Detail,
+                                        SettingsPaneDestination.StorageSettings,
+                                    )
+                                }
+                            },
+                        )
+                    is SettingsPaneDestination.StorageSettings ->
+                        StorageSettingsScreen(
+                            onBackClick = { scope.launch { navigator.navigateBack() } }
                         )
                     is SettingsPaneDestination.ServerManagement ->
                         ServerManagementScreen(

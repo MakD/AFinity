@@ -64,6 +64,7 @@ enum class Destination(
         const val GENRE_RESULTS_ROUTE = "genre_results/{genre}"
         const val SETTINGS_ROUTE = "settings"
         const val DOWNLOAD_SETTINGS_ROUTE = "download_settings"
+        const val STORAGE_SETTINGS_ROUTE = "storage_settings"
         const val PLAYER_OPTIONS_ROUTE = "player_options"
         const val APPEARANCE_OPTIONS_ROUTE = "appearance_options"
         const val CUSTOM_SECTIONS_ROUTE = "custom_sections"

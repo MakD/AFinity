@@ -966,6 +966,34 @@
         <item quantity="one">%1$d episode downloaded</item>
         <item quantity="other">%1$d episodes downloaded</item>
     </plurals>
+    <plurals name="download_count_episodes">
+        <item quantity="one">%1$d episode</item>
+        <item quantity="other">%1$d episodes</item>
+    </plurals>
+    <plurals name="download_count_tracks">
+        <item quantity="one">%1$d track</item>
+        <item quantity="other">%1$d tracks</item>
+    </plurals>
+    <string name="downloads_storage_used_fmt">%1$s used by downloads</string>
+    <string name="downloads_group_summary_fmt">%1$d items · %2$s</string>
+    <string name="downloads_delete_frees_fmt">Frees up %1$s</string>
+    <string name="downloads_delete_all">Delete all</string>
+    <string name="downloads_selected_fmt">%1$d selected</string>
+    <string name="downloads_select_all">Select all</string>
+    <string name="downloads_frees_up">Frees up</string>
+    <string name="downloads_delete_selected_message_fmt">This frees up %1$s. You can download these again later.</string>
+    <string name="cd_downloads_exit_selection">Leave selection</string>
+    <plurals name="downloads_delete_selected_fmt">
+        <item quantity="one">Delete %1$d item</item>
+        <item quantity="other">Delete %1$d items</item>
+    </plurals>
+    <string name="downloads_open_item">Open in library</string>
+    <string name="downloads_storage_free_fmt">%1$s free</string>
+    <string name="downloads_sort_recent">Recently added</string>
+    <string name="downloads_sort_largest">Largest first</string>
+    <string name="downloads_sort_title">A to Z</string>
+    <string name="cd_downloads_sort">Sort downloads</string>
+    <string name="cd_downloads_settings">Storage and download settings</string>
     <plurals name="download_group_episodes_fmt">
         <item quantity="one">%1$d episode · %2$s</item>
         <item quantity="other">%1$d episodes · %2$s</item>

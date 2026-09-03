@@ -23,9 +23,13 @@ import com.makd.afinity.util.formatFileSize
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.UUID
@@ -83,6 +87,63 @@ constructor(
 
     private val _uiState = MutableStateFlow(DownloadsUiState())
     val uiState: StateFlow<DownloadsUiState> = _uiState.asStateFlow()
+
+    private val _sortOrder = MutableStateFlow(DownloadSort.RECENT)
+    val sortOrder: StateFlow<DownloadSort> = _sortOrder.asStateFlow()
+
+    private val _categoryFilter = MutableStateFlow<DownloadCategory?>(null)
+    val categoryFilter: StateFlow<DownloadCategory?> = _categoryFilter.asStateFlow()
+
+    val catalog: StateFlow<List<DownloadCatalogEntry>> =
+        combine(_uiState, _sortOrder, _categoryFilter) { state, sort, filter ->
+                val unavailableVolumeIds =
+                    state.volumeStorageStats.filter { !it.isAvailable }.map { it.volumeId }.toSet()
+
+                buildDownloadCatalog(
+                        jellyfinDownloads = state.completedDownloads,
+                        absDownloads = state.absCompletedDownloads,
+                        unavailableVolumeIds = unavailableVolumeIds,
+                    )
+                    .filter { filter == null || it.category == filter }
+                    .sortedForCatalog(sort)
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val availableCategories: StateFlow<List<DownloadCategory>> =
+        _uiState
+            .map { state ->
+                buildDownloadCatalog(
+                        jellyfinDownloads = state.completedDownloads,
+                        absDownloads = state.absCompletedDownloads,
+                        unavailableVolumeIds = emptySet(),
+                    )
+                    .map { it.category }
+                    .distinct()
+                    .sortedBy { it.ordinal }
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun setSortOrder(sort: DownloadSort) {
+        _sortOrder.value = sort
+    }
+
+    fun setCategoryFilter(category: DownloadCategory?) {
+        _categoryFilter.value = category
+    }
+
+    fun deleteCatalogEntries(entries: List<DownloadCatalogEntry>) {
+        entries.forEach { deleteCatalogEntry(it) }
+    }
+
+    fun deleteCatalogEntry(entry: DownloadCatalogEntry) {
+        when (val ref = entry.ref) {
+            is DownloadCatalogRef.JellyfinItem -> deleteDownload(ref.downloadId)
+            is DownloadCatalogRef.JellyfinSeries -> entry.childIds.forEach { deleteDownload(it) }
+            is DownloadCatalogRef.MusicAlbum -> deleteMusicAlbum(ref.albumId)
+            is DownloadCatalogRef.AbsBook -> entry.childIds.forEach { deleteAbsDownload(it) }
+            is DownloadCatalogRef.AbsPodcast -> deleteAbsPodcast(ref.libraryItemId)
+        }
+    }
 
     private data class SpeedSample(val bytes: Long, val timestampMs: Long, val speedBps: Long)
 

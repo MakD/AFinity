@@ -116,6 +116,7 @@ import com.makd.afinity.ui.settings.SessionSwitcherBottomSheet
 import com.makd.afinity.ui.settings.SettingsScreen
 import com.makd.afinity.ui.settings.appearance.AppearanceOptionsScreen
 import com.makd.afinity.ui.settings.downloads.DownloadSettingsScreen
+import com.makd.afinity.ui.settings.downloads.StorageSettingsScreen
 import com.makd.afinity.ui.settings.home.CustomSectionsScreen
 import com.makd.afinity.ui.settings.player.PlayerOptionsScreen
 import com.makd.afinity.ui.settings.servers.AddEditServerScreen
@@ -1105,6 +1106,20 @@ fun MainNavigation(
                                                 Destination.createAudiobookshelfItemRoute(itemId)
                                             )
                                         },
+                                        onStorageSettingsClick =
+                                            dropUnlessResumed {
+                                                navController.navigate(
+                                                    Destination.STORAGE_SETTINGS_ROUTE
+                                                )
+                                            },
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                }
+
+                                composable(Destination.STORAGE_SETTINGS_ROUTE) {
+                                    StorageSettingsScreen(
+                                        onBackClick =
+                                            dropUnlessResumed { navController.popBackStack() },
                                         modifier = Modifier.fillMaxSize(),
                                     )
                                 }
