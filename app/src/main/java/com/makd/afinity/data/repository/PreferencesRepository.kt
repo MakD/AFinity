@@ -58,6 +58,48 @@ interface PreferencesRepository {
 
     suspend fun getMaxBitrate(): Int?
 
+    suspend fun setVideoQualityWifi(bitrate: Int)
+
+    suspend fun getVideoQualityWifi(): Int
+
+    fun getVideoQualityWifiFlow(): Flow<Int>
+
+    suspend fun setVideoQualityCellular(bitrate: Int)
+
+    suspend fun getVideoQualityCellular(): Int
+
+    fun getVideoQualityCellularFlow(): Flow<Int>
+
+    suspend fun setTranscodeMaxAudioChannels(channels: Int)
+
+    suspend fun getTranscodeMaxAudioChannels(): Int
+
+    fun getTranscodeMaxAudioChannelsFlow(): Flow<Int>
+
+    suspend fun setAllowHdrPassthrough(allow: Boolean)
+
+    suspend fun getAllowHdrPassthrough(): Boolean
+
+    fun getAllowHdrPassthroughFlow(): Flow<Boolean>
+
+    suspend fun setMusicQualityWifi(bitrate: Int)
+
+    suspend fun getMusicQualityWifi(): Int
+
+    fun getMusicQualityWifiFlow(): Flow<Int>
+
+    suspend fun setMusicQualityCellular(bitrate: Int)
+
+    suspend fun getMusicQualityCellular(): Int
+
+    fun getMusicQualityCellularFlow(): Flow<Int>
+
+    suspend fun setNeverTranscode(never: Boolean)
+
+    suspend fun getNeverTranscode(): Boolean
+
+    fun getNeverTranscodeFlow(): Flow<Boolean>
+
     suspend fun setSkipIntroMode(mode: SkipMode)
 
     suspend fun getSkipIntroMode(): SkipMode

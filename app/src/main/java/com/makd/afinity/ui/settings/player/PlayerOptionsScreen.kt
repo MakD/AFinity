@@ -43,8 +43,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -84,19 +82,24 @@ import com.makd.afinity.data.models.player.AssRenderMode
 import com.makd.afinity.data.models.player.MpvAudioOutput
 import com.makd.afinity.data.models.player.MpvHwDec
 import com.makd.afinity.data.models.player.MpvVideoOutput
+import com.makd.afinity.data.models.player.MusicQuality
 import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.SubtitleHorizontalAlignment
 import com.makd.afinity.data.models.player.SubtitleOutlineStyle
 import com.makd.afinity.data.models.player.SubtitlePreferences
 import com.makd.afinity.data.models.player.SubtitleVerticalPosition
+import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.di.PreferencesEntryPoint
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.ui.components.AfinitySlider
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.SettingsDivider
 import com.makd.afinity.ui.components.SettingsGroup
 import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
+import com.makd.afinity.ui.player.components.musicQualityLabel
+import com.makd.afinity.ui.player.components.settingsQualityLabel
 import com.makd.afinity.ui.settings.SettingsViewModel
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
@@ -478,6 +481,104 @@ fun PlayerOptionsScreen(
             }
 
             item {
+                SettingsGroup(title = stringResource(R.string.pref_group_streaming_quality)) {
+                    val qualityOptions = VideoQuality.settingsLadder()
+                    val qualityLabels = qualityOptions.associate { quality ->
+                        quality.maxBitrate to settingsQualityLabel(quality)
+                    }
+
+                    SubtitleDropdownItem(
+                        title = stringResource(R.string.pref_quality_wifi_title),
+                        selectedOption = uiState.videoQualityWifi,
+                        options = qualityOptions.map { it.maxBitrate },
+                        onValueChange = viewModel::setVideoQualityWifi,
+                        labelProvider = { bitrate -> qualityLabels[bitrate].orEmpty() },
+                        icon = painterResource(id = R.drawable.ic_wifi),
+                    )
+
+                    SettingsDivider()
+
+                    SubtitleDropdownItem(
+                        title = stringResource(R.string.pref_quality_cellular_title),
+                        selectedOption = uiState.videoQualityCellular,
+                        options = qualityOptions.map { it.maxBitrate },
+                        onValueChange = viewModel::setVideoQualityCellular,
+                        labelProvider = { bitrate -> qualityLabels[bitrate].orEmpty() },
+                        icon = painterResource(id = R.drawable.ic_cellular_data),
+                    )
+
+                    SettingsDivider()
+
+                    val channelOptions =
+                        listOf(
+                            8 to stringResource(R.string.pref_transcode_channels_8),
+                            6 to stringResource(R.string.pref_transcode_channels_6),
+                            2 to stringResource(R.string.pref_transcode_channels_2),
+                        )
+
+                    SubtitleDropdownItem(
+                        title = stringResource(R.string.pref_transcode_channels_title),
+                        selectedOption = uiState.transcodeMaxAudioChannels,
+                        options = channelOptions.map { it.first },
+                        onValueChange = viewModel::setTranscodeMaxAudioChannels,
+                        labelProvider = { channels ->
+                            channelOptions.find { it.first == channels }?.second.orEmpty()
+                        },
+                        icon = painterResource(id = R.drawable.ic_speaker),
+                    )
+
+                    SettingsDivider()
+
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_hdr),
+                        title = stringResource(R.string.pref_hdr_passthrough_title),
+                        subtitle = stringResource(R.string.pref_hdr_passthrough_description),
+                        checked = uiState.allowHdrPassthrough,
+                        onCheckedChange = { viewModel.setAllowHdrPassthrough(it) },
+                    )
+
+                    SettingsDivider()
+
+                    SettingsDivider()
+
+                    val musicOptions = MusicQuality.options()
+                    val musicLabels = musicOptions.associate {
+                        it.maxBitrate to musicQualityLabel(it)
+                    }
+
+                    SubtitleDropdownItem(
+                        title = stringResource(R.string.pref_music_quality_wifi_title),
+                        selectedOption = uiState.musicQualityWifi,
+                        options = musicOptions.map { it.maxBitrate },
+                        onValueChange = viewModel::setMusicQualityWifi,
+                        labelProvider = { bitrate -> musicLabels[bitrate].orEmpty() },
+                        icon = painterResource(id = R.drawable.ic_wifi),
+                    )
+
+                    SettingsDivider()
+
+                    SubtitleDropdownItem(
+                        title = stringResource(R.string.pref_music_quality_cellular_title),
+                        selectedOption = uiState.musicQualityCellular,
+                        options = musicOptions.map { it.maxBitrate },
+                        onValueChange = viewModel::setMusicQualityCellular,
+                        labelProvider = { bitrate -> musicLabels[bitrate].orEmpty() },
+                        icon = painterResource(id = R.drawable.ic_cellular_data),
+                    )
+
+                    SettingsDivider()
+
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_video_off),
+                        title = stringResource(R.string.pref_never_transcode_title),
+                        subtitle = stringResource(R.string.pref_never_transcode_description),
+                        checked = uiState.neverTranscode,
+                        onCheckedChange = { viewModel.setNeverTranscode(it) },
+                    )
+                }
+            }
+
+            item {
                 SettingsGroup(title = stringResource(R.string.pref_group_chromecast)) {
                     SettingsSwitchItem(
                         icon = painterResource(id = R.drawable.ic_cast),
@@ -783,7 +884,7 @@ private fun BufferSizeSelectorItem(selectedSizeMb: Int, onSizeSelected: (Int) ->
         }
 
         Spacer(modifier = Modifier.height(8.dp))
-        Slider(
+        AfinitySlider(
             value = sliderIndex,
             onValueChange = { sliderIndex = it },
             onValueChangeFinished = {
@@ -792,14 +893,6 @@ private fun BufferSizeSelectorItem(selectedSizeMb: Int, onSizeSelected: (Int) ->
             },
             valueRange = 0f..(options.size - 1).toFloat(),
             steps = options.size - 2,
-            colors =
-                SliderDefaults.colors(
-                    thumbColor = MaterialTheme.colorScheme.primary,
-                    activeTrackColor = MaterialTheme.colorScheme.primary,
-                    inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    activeTickColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
-                    inactiveTickColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                ),
             modifier = Modifier.height(24.dp),
         )
     }
@@ -1289,19 +1382,11 @@ private fun SubtitleSliderItem(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Slider(
+        AfinitySlider(
             value = value,
             onValueChange = onValueChange,
             valueRange = valueRange,
             steps = steps,
-            colors =
-                SliderDefaults.colors(
-                    thumbColor = MaterialTheme.colorScheme.primary,
-                    activeTrackColor = MaterialTheme.colorScheme.primary,
-                    inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    activeTickColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
-                    inactiveTickColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                ),
             modifier = Modifier.height(24.dp),
         )
     }

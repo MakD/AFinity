@@ -67,7 +67,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.painter.Painter
@@ -93,6 +92,7 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.hdrLabel
 import com.makd.afinity.data.models.media.isDolbyVision
 import com.makd.afinity.data.models.player.PlayerEvent
+import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.models.syncplay.SyncPlayMemberInfo
 import com.makd.afinity.navigation.LocalShowAwards
 import com.makd.afinity.navigation.LocalShowRatings
@@ -112,6 +112,7 @@ import com.makd.afinity.ui.player.toLocalizedLanguageName
 import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.PersonKind
+import org.jellyfin.sdk.model.api.PlayMethod
 import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
@@ -146,6 +147,7 @@ fun PlayerControls(
     playlistQueue: List<AfinityItem> = emptyList(),
     currentPlaylistIndex: Int = -1,
     playlistContentStartIndex: Int = 0,
+    playlistCollectionName: String? = null,
     onJumpToEpisode: (java.util.UUID) -> Unit = {},
     onVersionToggleRequest: () -> Unit = {},
     isSyncPlay: Boolean = false,
@@ -171,11 +173,14 @@ fun PlayerControls(
             original = stringResource(R.string.track_tag_original),
         )
 
+    val isServerTranscoding = uiState.playMethod == PlayMethod.TRANSCODE
+
     val audioStreamOptions =
         remember(
             currentItem,
             uiState.currentMediaSourceId,
             player.currentTracks,
+            isServerTranscoding,
             unknownLang,
             trackTags,
         ) {
@@ -189,44 +194,51 @@ fun PlayerControls(
                     ?.filter { it.type == MediaStreamType.AUDIO && !it.isExternal }
                     .orEmpty()
 
-            val streams =
-                player.currentTracks.groups
-                    .filter { it.type == C.TRACK_TYPE_AUDIO }
-                    .sortedBy { group ->
-                        val formatId = group.mediaTrackGroup.getFormat(0).id
-                        formatId?.toIntOrNull()?.let { id -> "%05d".format(id) } ?: formatId
-                    }
-                    .mapIndexedNotNull { ordinal, group ->
-                        if (!group.isSupported) return@mapIndexedNotNull null
-                        val stream =
-                            embeddedAudioStreams.getOrNull(ordinal) ?: return@mapIndexedNotNull null
-                        val localizedLang =
-                            stream.localizedLanguage?.takeIf { it.isNotBlank() }
-                                ?: if (stream.language.isNotEmpty() && stream.language != "und") {
-                                    stream.language.toLocalizedLanguageName()
-                                        ?: stream.language.uppercase()
-                                } else {
-                                    unknownLang
-                                }
-                        val channelStr = formatAudioChannels(stream)
-                        val profileStr = prettyAudioProfile(stream.profile, stream.codec)
-                        val displayName = buildString {
-                            append(localizedLang)
-                            if (stream.isOriginal) {
-                                append(" [${stream.localizedOriginal ?: trackTags.original}]")
-                            }
-                            if (stream.codec.isNotBlank()) append(" • ${stream.codec.uppercase()}")
-                            if (channelStr != null) append(" $channelStr")
-                            if (profileStr != null) append(" • $profileStr")
+            val selectableStreams =
+                if (isServerTranscoding) {
+                    embeddedAudioStreams
+                } else {
+                    player.currentTracks.groups
+                        .filter { it.type == C.TRACK_TYPE_AUDIO }
+                        .sortedBy { group ->
+                            val formatId = group.mediaTrackGroup.getFormat(0).id
+                            formatId?.toIntOrNull()?.let { id -> "%05d".format(id) } ?: formatId
                         }
-                        AudioStreamOption(
-                            stream = stream,
-                            displayName = displayName,
-                            isDefault = stream.isDefault,
-                            position = stream.index,
-                            secondaryName = trackTitle(stream, null, localizedLang),
-                        )
+                        .mapIndexedNotNull { ordinal, group ->
+                            if (!group.isSupported) return@mapIndexedNotNull null
+                            embeddedAudioStreams.getOrNull(ordinal)
+                        }
+                }
+
+            val streams =
+                selectableStreams.map { stream ->
+                    val localizedLang =
+                        stream.localizedLanguage?.takeIf { it.isNotBlank() }
+                            ?: if (stream.language.isNotEmpty() && stream.language != "und") {
+                                stream.language.toLocalizedLanguageName()
+                                    ?: stream.language.uppercase()
+                            } else {
+                                unknownLang
+                            }
+                    val channelStr = formatAudioChannels(stream)
+                    val profileStr = prettyAudioProfile(stream.profile, stream.codec)
+                    val displayName = buildString {
+                        append(localizedLang)
+                        if (stream.isOriginal) {
+                            append(" [${stream.localizedOriginal ?: trackTags.original}]")
+                        }
+                        if (stream.codec.isNotBlank()) append(" • ${stream.codec.uppercase()}")
+                        if (channelStr != null) append(" $channelStr")
+                        if (profileStr != null) append(" • $profileStr")
                     }
+                    AudioStreamOption(
+                        stream = stream,
+                        displayName = displayName,
+                        isDefault = stream.isDefault,
+                        position = stream.index,
+                        secondaryName = trackTitle(stream, null, localizedLang),
+                    )
+                }
             assertAudioOptions(streams)
         }
 
@@ -401,11 +413,6 @@ fun PlayerControls(
                 modifier =
                     Modifier.align(Alignment.TopStart)
                         .fillMaxWidth()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent)
-                            )
-                        )
                         .windowInsetsPadding(
                             WindowInsets.displayCutout.only(
                                 WindowInsetsSides.Horizontal + WindowInsetsSides.Top
@@ -579,12 +586,6 @@ fun PlayerControls(
                 Column(
                     modifier =
                         Modifier.fillMaxWidth()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors =
-                                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))
-                                )
-                            )
                             .windowInsetsPadding(
                                 WindowInsets.safeDrawing.only(
                                     WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
@@ -654,12 +655,40 @@ fun PlayerControls(
 
         if (showTrackPanel) {
             TrackPanel(
+                uiState = uiState,
                 audioOptions = audioStreamOptions,
                 subtitleOptions = subtitleStreamOptions,
                 currentAudioIndex = uiState.audioStreamIndex ?: -1,
                 currentSubtitleIndex = uiState.subtitleStreamIndex ?: -1,
                 onSelectTrack = { trackType, index ->
-                    onPlayerEvent(PlayerEvent.SwitchToTrack(trackType, index))
+                    val subtitleOption = subtitleStreamOptions.firstOrNull { it.index == index }
+                    val needsServer =
+                        isServerTranscoding &&
+                            when {
+                                trackType == C.TRACK_TYPE_AUDIO -> true
+                                trackType != C.TRACK_TYPE_TEXT -> false
+                                subtitleOption?.stream?.index?.let {
+                                    it in uiState.clientRenderedSubtitles
+                                } == true -> false
+                                subtitleOption?.stream?.isExternal == true -> false
+                                subtitleOption?.isNone == true ->
+                                    uiState.burnedInSubtitleIndex != null
+                                else -> true
+                            }
+                    if (needsServer) {
+                        onPlayerEvent(
+                            if (trackType == C.TRACK_TYPE_AUDIO) {
+                                PlayerEvent.RenegotiateTracks(audioStreamIndex = index)
+                            } else {
+                                PlayerEvent.RenegotiateTracks(subtitleStreamIndex = index)
+                            }
+                        )
+                    } else {
+                        onPlayerEvent(PlayerEvent.SwitchToTrack(trackType, index))
+                    }
+                },
+                onSelectQuality = { quality ->
+                    onPlayerEvent(PlayerEvent.SelectVideoQuality(quality))
                 },
                 onDismiss = { showTrackPanel = false },
             )
@@ -695,6 +724,7 @@ fun PlayerControls(
                 episodes = switcherQueue,
                 currentIndex = switcherIndex,
                 isPlaying = uiState.isPlaying,
+                collectionName = playlistCollectionName,
                 onEpisodeClick = { episodeId ->
                     onJumpToEpisode(episodeId)
                     showEpisodeSwitcher = false
@@ -917,11 +947,6 @@ private fun TopControls(
         modifier =
             modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent)
-                    )
-                )
                 .windowInsetsPadding(
                     WindowInsets.safeDrawing
                         .only(WindowInsetsSides.Horizontal)
@@ -935,14 +960,14 @@ private fun TopControls(
                     painter = painterResource(R.drawable.ic_chevron_left),
                     contentDescription = stringResource(R.string.cd_back),
                     tint = Color.White,
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(20.dp),
                 )
             }
 
             Spacer(modifier = Modifier.weight(1f))
 
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onLockToggle, modifier = Modifier.size(40.dp)) {
@@ -956,8 +981,8 @@ private fun TopControls(
                         contentDescription =
                             if (uiState.isControlsLocked) stringResource(R.string.cd_unlock)
                             else stringResource(R.string.cd_lock),
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp),
+                        tint = Color.White.copy(alpha = 0.72f),
+                        modifier = Modifier.size(20.dp),
                     )
                 }
 
@@ -970,8 +995,9 @@ private fun TopControls(
                             painter = painterResource(id = R.drawable.ic_users_group),
                             contentDescription = stringResource(R.string.cd_watch_party),
                             tint =
-                                if (isSyncPlay) MaterialTheme.colorScheme.primary else Color.White,
-                            modifier = Modifier.size(24.dp),
+                                if (isSyncPlay) MaterialTheme.colorScheme.primary
+                                else Color.White.copy(alpha = 0.72f),
+                            modifier = Modifier.size(20.dp),
                         )
                     }
 
@@ -989,8 +1015,8 @@ private fun TopControls(
                             contentDescription = stringResource(R.string.cd_cast),
                             tint =
                                 if (uiState.isCasting) MaterialTheme.colorScheme.primary
-                                else Color.White,
-                            modifier = Modifier.size(24.dp),
+                                else Color.White.copy(alpha = 0.72f),
+                            modifier = Modifier.size(20.dp),
                         )
                     }
 
@@ -998,8 +1024,8 @@ private fun TopControls(
                         Icon(
                             painter = painterResource(id = R.drawable.ic_pip),
                             contentDescription = stringResource(R.string.cd_enter_pip),
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp),
+                            tint = Color.White.copy(alpha = 0.72f),
+                            modifier = Modifier.size(20.dp),
                         )
                     }
 
@@ -1010,8 +1036,8 @@ private fun TopControls(
                         Icon(
                             painter = uiState.videoZoomMode.getIconPainter(),
                             contentDescription = stringResource(R.string.cd_aspect_ratio),
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp),
+                            tint = Color.White.copy(alpha = 0.72f),
+                            modifier = Modifier.size(20.dp),
                         )
                     }
                 }
@@ -1133,11 +1159,6 @@ private fun BottomControls(
         modifier =
             modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))
-                    )
-                )
                 .windowInsetsPadding(
                     WindowInsets.safeDrawing.only(
                         WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
@@ -1162,7 +1183,7 @@ private fun BottomControls(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         val tracksActive =
@@ -1172,7 +1193,7 @@ private fun BottomControls(
                             label = stringResource(R.string.player_tracks_label),
                             tint =
                                 if (tracksActive) MaterialTheme.colorScheme.primary
-                                else Color.White,
+                                else Color.White.copy(alpha = 0.72f),
                             showLabel = false,
                             onClick = onTrackPanelToggle,
                         )
@@ -1187,9 +1208,11 @@ private fun BottomControls(
                     Spacer(modifier = Modifier.weight(1f))
 
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        PlaybackBadges(uiState = uiState)
+
                         if (uiState.availableSources.size > 1) {
                             LabeledControl(
                                 painter = painterResource(id = R.drawable.ic_versions),
@@ -1234,11 +1257,38 @@ private fun BottomControls(
 }
 
 @Composable
+private fun PlaybackBadges(uiState: PlayerViewModel.PlayerUiState) {
+    val resolution = resolutionLabelFor(uiState.outputVideoWidth, uiState.outputVideoHeight)
+    val playMethod = uiState.playMethod
+    if (resolution == null && playMethod == null) return
+
+    val showPlayMethod = playMethod != null && !uiState.isLiveChannel
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(end = 10.dp),
+    ) {
+        resolution?.let { ResolutionLabel(label = it) }
+        if (resolution != null && showPlayMethod) {
+            Box(
+                modifier =
+                    Modifier.size(width = 1.dp, height = 10.dp)
+                        .background(Color.White.copy(alpha = 0.22f))
+            )
+        }
+        if (showPlayMethod) {
+            PlayMethodBadge(isTranscoding = playMethod == PlayMethod.TRANSCODE)
+        }
+    }
+}
+
+@Composable
 private fun LabeledControl(
     painter: Painter,
     label: String,
     modifier: Modifier = Modifier,
-    tint: Color = Color.White,
+    tint: Color = Color.White.copy(alpha = 0.72f),
     showLabel: Boolean = true,
     onClick: () -> Unit,
 ) {
@@ -1255,7 +1305,7 @@ private fun LabeledControl(
             painter = painter,
             contentDescription = if (showLabel) null else label,
             tint = tint,
-            modifier = Modifier.size(22.dp),
+            modifier = Modifier.size(21.dp),
         )
         if (showLabel) {
             Text(
@@ -1417,13 +1467,27 @@ private fun SeekBar(
 @OptIn(UnstableApi::class)
 @Composable
 private fun TrackPanel(
+    uiState: PlayerViewModel.PlayerUiState,
     audioOptions: List<AudioStreamOption>,
     subtitleOptions: List<SubtitleStreamOption>,
     currentAudioIndex: Int,
     currentSubtitleIndex: Int,
     onSelectTrack: (Int, Int) -> Unit,
+    onSelectQuality: (VideoQuality) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val qualityOptions = uiState.availableQualities
+    val showQuality = qualityOptions.size > 1 && !uiState.isLiveChannel
+    val currentSource =
+        uiState.currentItem?.sources?.firstOrNull { it.id == uiState.currentMediaSourceId }
+    val sourceVideoStream =
+        currentSource?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+    val reasonText =
+        if (uiState.playMethod == PlayMethod.TRANSCODE) {
+            transcodeReasonText(uiState.transcodeReasons)
+        } else {
+            null
+        }
     Box(
         modifier =
             Modifier.fillMaxSize().clickable(
@@ -1444,12 +1508,16 @@ private fun TrackPanel(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
                     ) {}
-                    .widthIn(min = 340.dp, max = 600.dp)
-                    .heightIn(max = 400.dp),
+                    .widthIn(min = 340.dp, max = 640.dp)
+                    .heightIn(max = 440.dp),
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Text(
-                    text = stringResource(R.string.player_tracks_label),
+                    text =
+                        stringResource(
+                            if (showQuality) R.string.player_track_panel_title
+                            else R.string.player_tracks_label
+                        ),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 16.dp),
@@ -1476,6 +1544,9 @@ private fun TrackPanel(
                         modifier = Modifier.weight(1f),
                     ) {
                         subtitleOptions.forEach { option ->
+                            val burnedIn =
+                                uiState.burnedInSubtitleIndex != null &&
+                                    uiState.burnedInSubtitleIndex == option.index
                             TrackRow(
                                 label = option.displayName,
                                 selected = currentSubtitleIndex == option.index,
@@ -1483,9 +1554,58 @@ private fun TrackPanel(
                                     onSelectTrack(C.TRACK_TYPE_TEXT, option.index)
                                     onDismiss()
                                 },
-                                secondaryLabel = option.secondaryName,
+                                secondaryLabel =
+                                    if (burnedIn) {
+                                        stringResource(R.string.player_subtitle_burned_in)
+                                    } else {
+                                        option.secondaryName
+                                    },
                             )
                         }
+                    }
+                    if (showQuality) {
+                        TrackColumn(
+                            title = stringResource(R.string.player_quality_title),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            qualityOptions.forEach { option ->
+                                TrackRow(
+                                    label = qualityLabel(option),
+                                    selected = uiState.videoQuality == option,
+                                    onClick = {
+                                        onSelectQuality(option)
+                                        onDismiss()
+                                    },
+                                    secondaryLabel =
+                                        qualitySecondaryLabel(
+                                            quality = option,
+                                            sourceWidth = sourceVideoStream?.width,
+                                            sourceHeight = sourceVideoStream?.height,
+                                            sourceBitrate = currentSource?.bitrate?.toInt(),
+                                        ),
+                                )
+                            }
+                        }
+                    }
+                }
+                if (reasonText != null) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(top = 16.dp, bottom = 12.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_info),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = reasonText,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
             }

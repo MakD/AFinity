@@ -92,11 +92,6 @@ constructor(
 
     override fun getBaseUrl(): String = getBaseUrlInternal()
 
-    override fun getStreamUrl(trackId: UUID): String {
-        val baseUrl = getBaseUrlInternal()
-        return "$baseUrl/Audio/$trackId/universal?audioCodec=flac,mp3,aac,opus,ogg&container=flac,mp3,aac,ogg,opus"
-    }
-
     override suspend fun getTracks(
         libraryId: UUID,
         sortBy: ItemSortBy,

@@ -65,7 +65,6 @@ import com.makd.afinity.ui.settings.servers.utils.formatLastRun
 import com.makd.afinity.ui.settings.servers.utils.formatTicks
 import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.ImageType
-import org.jellyfin.sdk.model.api.PlaystateCommand
 import org.jellyfin.sdk.model.api.SessionInfoDto
 import org.jellyfin.sdk.model.api.TaskInfo
 import org.jellyfin.sdk.model.api.TaskState
@@ -274,8 +273,6 @@ internal fun ControlPanelView(
                 loading = sessions == null,
                 pendingPause = pendingPause,
                 onTogglePause = viewModel::togglePause,
-                onSeekBy = viewModel::seekBy,
-                onPlaystate = viewModel::sendPlaystate,
                 onOpenRemote = { remoteSessionId = it.id },
             )
 
@@ -395,8 +392,6 @@ private fun ActiveSessionsSection(
     loading: Boolean = false,
     pendingPause: Map<String, Boolean> = emptyMap(),
     onTogglePause: (SessionInfoDto) -> Unit = {},
-    onSeekBy: (SessionInfoDto, Long) -> Unit = { _, _ -> },
-    onPlaystate: (String, PlaystateCommand) -> Unit = { _, _ -> },
     onOpenRemote: (SessionInfoDto) -> Unit = {},
 ) {
     val playingSessions = sessions.filter { it.nowPlayingItem != null }
@@ -461,8 +456,6 @@ private fun ActiveSessionsSection(
                         baseUrl = baseUrl,
                         pendingPause = session.id?.let { pendingPause[it] },
                         onTogglePause = { onTogglePause(session) },
-                        onSeekBy = { onSeekBy(session, it) },
-                        onPlaystate = { command -> session.id?.let { onPlaystate(it, command) } },
                         onOpenRemote = { onOpenRemote(session) },
                     )
                 }
@@ -499,8 +492,6 @@ private fun PlayingSessionCard(
     baseUrl: String,
     pendingPause: Boolean? = null,
     onTogglePause: () -> Unit = {},
-    onSeekBy: (Long) -> Unit = {},
-    onPlaystate: (PlaystateCommand) -> Unit = {},
     onOpenRemote: () -> Unit = {},
 ) {
     val item = session.nowPlayingItem ?: return
@@ -530,6 +521,7 @@ private fun PlayingSessionCard(
 
     val basePositionTicks = session.playState?.positionTicks ?: 0L
     val isPaused = session.playState?.isPaused ?: true
+    val displayPaused = pendingPause ?: isPaused
 
     session.playState?.positionTicks
     val runtimeTicks = item.runTimeTicks
@@ -624,164 +616,115 @@ private fun PlayingSessionCard(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = Color.White,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text(
-                        text = year ?: "",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.7f),
-                    )
-                    if (timeText != null) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = timeText,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.9f),
+                            text = title,
+                            style =
+                                MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                            color = Color.White,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
                         )
-                    }
-                }
 
-                if (progress != null) {
-                    LinearProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp).height(3.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = Color.White.copy(alpha = 0.25f),
-                    )
-                }
-
-                Row(
-                    modifier = Modifier.padding(top = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    if (userAvatarUrl != null) {
-                        AsyncImage(
-                            imageUrl = userAvatarUrl,
-                            contentDescription = null,
-                            modifier = Modifier.size(22.dp).clip(CircleShape),
-                            contentScale = ContentScale.Crop,
-                        )
-                    } else {
-                        Box(
-                            modifier =
-                                Modifier.size(22.dp)
-                                    .background(MaterialTheme.colorScheme.primary, CircleShape),
-                            contentAlignment = Alignment.Center,
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                text = userName.first().uppercaseChar().toString(),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimary,
+                                text = year ?: "",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.7f),
+                            )
+                            if (timeText != null) {
+                                Text(
+                                    text = timeText,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.9f),
+                                )
+                            }
+                        }
+
+                        if (progress != null) {
+                            LinearProgressIndicator(
+                                progress = { progress },
+                                modifier =
+                                    Modifier.fillMaxWidth().padding(top = 6.dp).height(3.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = Color.White.copy(alpha = 0.25f),
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.padding(top = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            if (userAvatarUrl != null) {
+                                AsyncImage(
+                                    imageUrl = userAvatarUrl,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(22.dp).clip(CircleShape),
+                                    contentScale = ContentScale.Crop,
+                                )
+                            } else {
+                                Box(
+                                    modifier =
+                                        Modifier.size(22.dp)
+                                            .background(
+                                                MaterialTheme.colorScheme.primary,
+                                                CircleShape,
+                                            ),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = userName.first().uppercaseChar().toString(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                    )
+                                }
+                            }
+                            Text(
+                                text = userName,
+                                style =
+                                    MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
+                                color = Color.White,
                             )
                         }
                     }
-                    Text(
-                        text = userName,
-                        style =
-                            MaterialTheme.typography.labelMedium.copy(
-                                fontWeight = FontWeight.SemiBold
-                            ),
-                        color = Color.White,
-                    )
+
+                    if (session.supportsRemoteControl) {
+                        FilledIconButton(
+                            onClick = onTogglePause,
+                            modifier = Modifier.size(52.dp),
+                        ) {
+                            Icon(
+                                painter =
+                                    painterResource(
+                                        id =
+                                            if (displayPaused) R.drawable.ic_player_play_filled
+                                            else R.drawable.ic_player_pause_filled
+                                    ),
+                                contentDescription =
+                                    stringResource(
+                                        if (displayPaused) R.string.cd_session_play
+                                        else R.string.cd_session_pause
+                                    ),
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+                    }
                 }
             }
-        }
-
-        if (session.supportsRemoteControl) {
-            SessionControlStrip(
-                isPaused = pendingPause ?: isPaused,
-                canSeek = session.playState?.canSeek ?: false,
-                onTogglePause = onTogglePause,
-                onSeekBy = onSeekBy,
-                onPlaystate = onPlaystate,
-                onOpenRemote = onOpenRemote,
-            )
-        }
-    }
-}
-
-@Composable
-private fun SessionControlStrip(
-    isPaused: Boolean,
-    canSeek: Boolean,
-    onTogglePause: () -> Unit,
-    onSeekBy: (Long) -> Unit,
-    onPlaystate: (PlaystateCommand) -> Unit,
-    onOpenRemote: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        IconButton(onClick = { onPlaystate(PlaystateCommand.PREVIOUS_TRACK) }) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_player_skip_back),
-                contentDescription = stringResource(R.string.cd_session_previous),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(22.dp),
-            )
-        }
-        if (canSeek) {
-            IconButton(onClick = { onSeekBy(-10L) }) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_rewind_backward_10),
-                    contentDescription = stringResource(R.string.cd_session_rewind),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-        }
-        FilledIconButton(onClick = onTogglePause) {
-            Icon(
-                painter =
-                    painterResource(
-                        id = if (isPaused) R.drawable.ic_player_play_filled else R.drawable.ic_player_pause_filled
-                    ),
-                contentDescription =
-                    stringResource(
-                        if (isPaused) R.string.cd_session_play else R.string.cd_session_pause
-                    ),
-                modifier = Modifier.size(24.dp),
-            )
-        }
-        if (canSeek) {
-            IconButton(onClick = { onSeekBy(30L) }) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_rewind_forward_30),
-                    contentDescription = stringResource(R.string.cd_session_forward),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-        }
-        IconButton(onClick = { onPlaystate(PlaystateCommand.NEXT_TRACK) }) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_player_skip_forward),
-                contentDescription = stringResource(R.string.cd_session_next),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(22.dp),
-            )
-        }
-        Spacer(modifier = Modifier.weight(1f))
-        IconButton(onClick = onOpenRemote) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_dots_vertical),
-                contentDescription = stringResource(R.string.cd_session_more),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(22.dp),
-            )
         }
     }
 }

@@ -1,18 +1,25 @@
 package com.makd.afinity.data.repository.playback
 
+import com.makd.afinity.data.models.player.StreamDecision
+import com.makd.afinity.data.models.player.VideoQuality
 import org.jellyfin.sdk.model.api.DeviceProfile
+import org.jellyfin.sdk.model.api.MediaSourceInfo
 import org.jellyfin.sdk.model.api.PlaybackInfoResponse
+import org.jellyfin.sdk.model.api.TranscodingInfo
 import java.util.UUID
 
 interface PlaybackRepository {
 
     suspend fun getPlaybackInfo(
         itemId: UUID,
-        maxStreamingBitrate: Int? = null,
+        quality: VideoQuality = VideoQuality.ORIGINAL,
         maxAudioChannels: Int? = null,
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
         mediaSourceId: String? = null,
+        startTimeTicks: Long = 0L,
+        enableDirectPlay: Boolean = true,
+        allowTranscoding: Boolean = true,
     ): PlaybackInfoResponse?
 
     suspend fun getStreamUrl(
@@ -27,14 +34,23 @@ interface PlaybackRepository {
         tag: String? = null,
     ): String?
 
+    suspend fun resolveStream(
+        itemId: UUID,
+        source: MediaSourceInfo,
+        audioStreamIndex: Int? = null,
+        subtitleStreamIndex: Int? = null,
+        startTimeTicks: Long? = null,
+        playSessionId: String? = null,
+    ): StreamDecision?
+
     suspend fun getMediaSources(
         itemId: UUID,
-        maxStreamingBitrate: Int? = null,
+        quality: VideoQuality = VideoQuality.ORIGINAL,
         maxAudioChannels: Int? = null,
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
         mediaSourceId: String? = null,
-    ): List<org.jellyfin.sdk.model.api.MediaSourceInfo>
+    ): List<MediaSourceInfo>
 
     suspend fun reportPlaybackStart(
         itemId: UUID,
@@ -83,6 +99,8 @@ interface PlaybackRepository {
     suspend fun pingSession(sessionId: String): Boolean
 
     suspend fun getActiveSession(): String?
+
+    suspend fun getTranscodingInfo(): TranscodingInfo?
 
     suspend fun endSession(sessionId: String): Boolean
 

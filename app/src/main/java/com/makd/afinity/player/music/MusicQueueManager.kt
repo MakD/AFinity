@@ -18,7 +18,10 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.RepeatMode
+import com.makd.afinity.data.models.player.MusicQuality
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.player.AudioService
+import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +37,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -54,6 +58,9 @@ private val KEY_REPEAT_MODE = stringPreferencesKey("music_repeat_mode")
 private val KEY_SHUFFLED = booleanPreferencesKey("music_shuffled")
 
 private const val MAX_QUEUE_SIZE = 5000
+private const val STREAM_KEY_LOCAL = Int.MIN_VALUE
+private const val PLAY_METHOD_DIRECT = "DirectPlay"
+private const val PLAY_METHOD_TRANSCODE = "Transcode"
 
 @Singleton
 class MusicQueueManager
@@ -64,6 +71,8 @@ constructor(
     private val sessionManager: SessionManager,
     private val playbackManager: MusicPlaybackManager,
     private val dataStore: DataStore<Preferences>,
+    private val preferencesRepository: PreferencesRepository,
+    private val networkConnectivityMonitor: NetworkConnectivityMonitor,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -93,8 +102,50 @@ constructor(
     val currentTrack: AfinityTrack?
         get() = _queue.value.getOrNull(_currentIndex.value)
 
+    @Volatile private var wifiMusicQualityBitrate = MusicQuality.ORIGINAL_BITRATE
+    @Volatile private var cellularMusicQualityBitrate = MusicQuality.CELLULAR_DEFAULT_BITRATE
+    @Volatile private var sessionMusicQualityBitrate: Int? = null
+
+    private data class StreamSession(val key: Int, val playSessionId: String, val isDirect: Boolean)
+
+    private val streamSessions = ConcurrentHashMap<UUID, StreamSession>()
+
+    private val activeMusicQualityBitrate: Int
+        get() =
+            sessionMusicQualityBitrate
+                ?: if (networkConnectivityMonitor.isOnWifi()) wifiMusicQualityBitrate
+                else cellularMusicQualityBitrate
+
+    val musicQuality: MusicQuality
+        get() = MusicQuality.fromBitrate(activeMusicQualityBitrate)
+
+    fun setSessionMusicQuality(quality: MusicQuality?) {
+        if (quality?.maxBitrate == sessionMusicQualityBitrate) return
+        sessionMusicQualityBitrate = quality?.maxBitrate
+
+        val tracks = _queue.value
+        if (tracks.isEmpty()) return
+        emitLoadEvent(
+            tracks = tracks,
+            startIndex = _currentIndex.value,
+            startPositionMs = playbackManager.state.value.positionMs,
+        )
+    }
+
     init {
         scope.launch { restoreFromRoom() }
+
+        scope.launch {
+            preferencesRepository.getMusicQualityWifiFlow().collect {
+                wifiMusicQualityBitrate = it
+            }
+        }
+
+        scope.launch {
+            preferencesRepository.getMusicQualityCellularFlow().collect {
+                cellularMusicQualityBitrate = it
+            }
+        }
 
         scope.launch {
             var previousKey: String? = null
@@ -255,8 +306,15 @@ constructor(
     fun clearQueue() {
         _queue.value = emptyList()
         _currentIndex.value = 0
+        streamSessions.clear()
         scope.launch { musicQueueDao.clearQueue() }
     }
+
+    fun playSessionIdFor(trackId: UUID): String? = streamSessions[trackId]?.playSessionId
+
+    fun playMethodFor(trackId: UUID): String =
+        if (streamSessions[trackId]?.isDirect != false) PLAY_METHOD_DIRECT
+        else PLAY_METHOD_TRANSCODE
 
     fun onTrackChanged(newIndex: Int) {
         _currentIndex.value = newIndex.coerceIn(0, (_queue.value.size - 1).coerceAtLeast(0))
@@ -339,10 +397,42 @@ constructor(
         val localPath = track.localFilePath
         if (!localPath.isNullOrBlank()) {
             val localUri = localPath.toUri()
-            if (localUri.scheme == "file") return localUri
+            if (localUri.scheme == "file") {
+                registerStreamSession(track.id, STREAM_KEY_LOCAL, isDirect = true)
+                return localUri
+            }
         }
-        val baseUrl = sessionManager.currentSession.value?.serverUrl?.trimEnd('/') ?: ""
-        return "$baseUrl/Audio/${track.id}/stream?static=true".toUri()
+        val session = sessionManager.currentSession.value
+        val baseUrl = session?.serverUrl?.trimEnd('/') ?: ""
+        val quality = MusicQuality.fromBitrate(activeMusicQualityBitrate)
+
+        if (quality.isOriginal) {
+            registerStreamSession(track.id, MusicQuality.ORIGINAL_BITRATE, isDirect = true)
+            return "$baseUrl/Audio/${track.id}/stream?static=true".toUri()
+        }
+
+        val playSessionId = registerStreamSession(track.id, quality.maxBitrate, isDirect = false)
+        val userId = session?.userId?.toString().orEmpty()
+        val deviceId = sessionManager.getCurrentApiClient()?.deviceInfo?.id.orEmpty()
+        return Uri.parse("$baseUrl/Audio/${track.id}/universal")
+            .buildUpon()
+            .appendQueryParameter("userId", userId)
+            .appendQueryParameter("deviceId", deviceId)
+            .appendQueryParameter("audioCodec", MusicQuality.AUDIO_CODECS)
+            .appendQueryParameter("container", MusicQuality.CONTAINERS)
+            .appendQueryParameter("transcodingContainer", MusicQuality.TRANSCODING_CONTAINER)
+            .appendQueryParameter("transcodingProtocol", MusicQuality.TRANSCODING_PROTOCOL)
+            .appendQueryParameter("maxStreamingBitrate", quality.streamingBitrate.toString())
+            .appendQueryParameter("playSessionId", playSessionId)
+            .build()
+    }
+
+    private fun registerStreamSession(trackId: UUID, key: Int, isDirect: Boolean): String {
+        val existing = streamSessions[trackId]
+        if (existing != null && existing.key == key) return existing.playSessionId
+        val fresh = StreamSession(key, UUID.randomUUID().toString(), isDirect)
+        streamSessions[trackId] = fresh
+        return fresh.playSessionId
     }
 
     private suspend fun persistQueue(tracks: List<AfinityTrack>) {

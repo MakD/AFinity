@@ -57,6 +57,8 @@ fun ErrorIndicator(
     errorMessage: String?,
     onRetryClick: () -> Unit,
     modifier: Modifier = Modifier,
+    canPlayAnyway: Boolean = false,
+    onPlayAnywayClick: () -> Unit = {},
 ) {
     AnimatedVisibility(
         visible = isVisible,
@@ -89,11 +91,25 @@ fun ErrorIndicator(
                     )
                 }
 
+                if (canPlayAnyway) {
+                    Button(
+                        onClick = onPlayAnywayClick,
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            ),
+                    ) {
+                        Text(text = stringResource(R.string.player_play_anyway))
+                    }
+                }
+
                 Button(
                     onClick = onRetryClick,
                     colors =
                         ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
+                            containerColor =
+                                if (canPlayAnyway) MaterialTheme.colorScheme.secondaryContainer
+                                else MaterialTheme.colorScheme.primary
                         ),
                 ) {
                     Text(

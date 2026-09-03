@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.player.PlaybackStats
@@ -183,6 +184,46 @@ fun PlaybackStatsOverlay(stats: PlaybackStats, onClose: () -> Unit) {
                     modifier = Modifier.padding(vertical = 16.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
                 )
+                if (stats.isTranscoding) {
+                    InfoSectionTitle(stringResource(R.string.playback_stats_section_transcoding))
+                    if (stats.transcodeOutput.isNotBlank()) {
+                        InfoRow(
+                            stringResource(R.string.playback_stats_label_transcode_output),
+                            stats.transcodeOutput,
+                        )
+                    }
+                    if (stats.transcodeVideo.isNotBlank()) {
+                        InfoRow(
+                            stringResource(R.string.playback_stats_label_transcode_video),
+                            stats.transcodeVideo,
+                        )
+                    }
+                    if (stats.transcodeAudio.isNotBlank()) {
+                        InfoRow(
+                            stringResource(R.string.playback_stats_label_transcode_audio),
+                            stats.transcodeAudio,
+                        )
+                    }
+                    if (stats.transcodeSpeed.isNotBlank()) {
+                        InfoRow(
+                            stringResource(R.string.playback_stats_label_transcode_speed),
+                            stats.transcodeSpeed,
+                        )
+                    }
+                    if (stats.transcodeHardware.isNotBlank()) {
+                        InfoRow(
+                            stringResource(R.string.playback_stats_label_transcode_hardware),
+                            stats.transcodeHardware,
+                        )
+                    }
+                    if (stats.transcodeReasons.isNotEmpty()) {
+                        InfoRowList(
+                            stringResource(R.string.playback_stats_label_transcode_reasons),
+                            stats.transcodeReasons,
+                        )
+                    }
+                }
+
                 InfoSectionTitle(stringResource(R.string.playback_stats_section_media_info))
                 if (stats.container.isNotBlank()) {
                     InfoRow(
@@ -243,7 +284,7 @@ private fun InfoSectionTitle(title: String) {
 private fun InfoRow(label: String, value: String) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -256,6 +297,29 @@ private fun InfoRow(label: String, value: String) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f),
         )
+    }
+}
+
+@Composable
+private fun InfoRowList(label: String, values: List<String>) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        values.forEach { value ->
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+            )
+        }
     }
 }

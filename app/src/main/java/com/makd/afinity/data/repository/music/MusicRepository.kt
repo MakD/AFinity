@@ -21,8 +21,6 @@ interface MusicRepository {
 
     fun getBaseUrl(): String
 
-    fun getStreamUrl(trackId: UUID): String
-
     suspend fun getTracks(
         libraryId: UUID,
         sortBy: ItemSortBy = ItemSortBy.SORT_NAME,

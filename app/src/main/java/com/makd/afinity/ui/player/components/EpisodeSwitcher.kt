@@ -81,6 +81,7 @@ fun EpisodeSwitcher(
     onEpisodeClick: (UUID) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    collectionName: String? = null,
 ) {
     val displayEpisodes = episodes
 
@@ -165,7 +166,12 @@ fun EpisodeSwitcher(
                     ) {
                         Column {
                             Text(
-                                text = stringResource(R.string.player_up_next),
+                                text =
+                                    if (collectionName != null) {
+                                        stringResource(R.string.player_collection_title)
+                                    } else {
+                                        stringResource(R.string.player_up_next)
+                                    },
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -174,13 +180,19 @@ fun EpisodeSwitcher(
                             val currentSeason =
                                 (displayEpisodes.getOrNull(activeEpisodeIndex) as? AfinityEpisode)
                                     ?.parentIndexNumber
-                            if (currentSeason != null) {
+                            val subtitle =
+                                collectionName
+                                    ?: currentSeason?.let {
+                                        stringResource(R.string.player_season_fmt, it)
+                                    }
+                            if (subtitle != null) {
                                 Text(
-                                    text =
-                                        stringResource(R.string.player_season_fmt, currentSeason),
+                                    text = subtitle,
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
                                 )
                             }
                         }

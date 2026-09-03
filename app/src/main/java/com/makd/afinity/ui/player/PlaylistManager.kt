@@ -1,13 +1,16 @@
 package com.makd.afinity.ui.player
 
+import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.PlaylistEntry
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -20,6 +23,7 @@ data class PlaylistState(
     val hasPrevious: Boolean = false,
     val currentItem: AfinityItem? = null,
     val contentStartIndex: Int = 0,
+    val collectionName: String? = null,
 )
 
 @Singleton
@@ -32,6 +36,8 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
     private var currentSeriesId: UUID? = null
     private var isJellyfinPlaylistQueue: Boolean = false
     private var contentStartIndex: Int = 0
+    private var isJumpOnlyQueue: Boolean = false
+    private var collectionName: String? = null
 
     suspend fun initializePlaylist(
         startingItem: AfinityItem,
@@ -196,6 +202,66 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
         }
     }
 
+    suspend fun enrichWithCollectionQueue(item: AfinityItem): Boolean {
+        val skipReason =
+            when {
+                item !is AfinityMovie -> "not a movie (${item.javaClass.simpleName})"
+                isJellyfinPlaylistQueue -> "jellyfin playlist queue"
+                currentSeriesId != null -> "series queue"
+                currentQueue.size - contentStartIndex > 1 -> "content queue already has siblings"
+                getCurrentItem()?.id != item.id ->
+                    "current item is ${getCurrentItem()?.name} not ${item.name}"
+                else -> null
+            }
+        if (skipReason != null) {
+            Timber.d("Collection queue skipped for ${item.name}: $skipReason")
+            return false
+        }
+
+        return try {
+            val boxSets = mediaRepository.getBoxSetsContaining(item.id, FieldSets.MEDIA_ITEM_CARDS)
+            val boxSet =
+                boxSets.filter { (it.itemCount ?: 0) > 1 }.minByOrNull { it.itemCount ?: Int.MAX_VALUE }
+            if (boxSet == null) {
+                Timber.d(
+                    "Collection queue: no usable boxset for ${item.name} " +
+                        "(${boxSets.size} found: ${boxSets.joinToString { "${it.name}=${it.itemCount}" }})"
+                )
+                return false
+            }
+
+            val siblings =
+                mediaRepository.getMovies(
+                    parentId = boxSet.id,
+                    sortBy = SortBy.RELEASE_DATE,
+                    fields = FieldSets.PLAYABLE_EPISODE + ItemFields.OVERVIEW,
+                )
+
+            val startIndex = siblings.indexOfFirst { it.id == item.id }
+            if (siblings.size <= 1 || startIndex == -1) {
+                Timber.d(
+                    "Collection queue: \"${boxSet.name}\" returned ${siblings.size} movies, " +
+                        "index of ${item.name} = $startIndex"
+                )
+                return false
+            }
+            if (getCurrentItem()?.id != item.id) return false
+
+            setQueue(siblings, startIndex)
+            isJumpOnlyQueue = true
+            collectionName = boxSet.name
+            updatePlaylistState()
+            Timber.d(
+                "Collection queue: ${siblings.size} items from \"${boxSet.name}\", " +
+                    "current at $startIndex (jump only)"
+            )
+            true
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to build collection queue for ${item.name}")
+            false
+        }
+    }
+
     private fun initializeSingleItemQueue(item: AfinityItem, intros: List<AfinityItem>): Boolean {
         Timber.d("Initializing single item queue for: ${item.name} with ${intros.size} intros")
 
@@ -212,6 +278,8 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
         currentQueue.addAll(queue)
         currentIndex = startIndex.coerceIn(0, queue.size - 1)
         contentStartIndex = contentStart.coerceIn(0, queue.size)
+        isJumpOnlyQueue = false
+        collectionName = null
 
         updatePlaylistState()
 
@@ -250,6 +318,11 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
 
     fun hasNext(): Boolean {
         return currentIndex >= 0 && currentIndex < currentQueue.size - 1
+    }
+
+    fun canAutoAdvance(): Boolean {
+        if (!hasNext()) return false
+        return !(isJumpOnlyQueue && currentIndex >= contentStartIndex)
     }
 
     fun hasPrevious(): Boolean {
@@ -293,9 +366,12 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
 
     fun markCurrentItemAsPlayed() {
         val item = currentQueue.getOrNull(currentIndex) ?: return
-        if (item is AfinityEpisode) {
-            currentQueue[currentIndex] = item.copy(played = true, playbackPositionTicks = 0)
-        }
+        currentQueue[currentIndex] =
+            when (item) {
+                is AfinityEpisode -> item.copy(played = true, playbackPositionTicks = 0)
+                is AfinityMovie -> item.copy(played = true, playbackPositionTicks = 0)
+                else -> return
+            }
     }
 
     fun clearQueue() {
@@ -304,6 +380,8 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
         currentSeriesId = null
         isJellyfinPlaylistQueue = false
         contentStartIndex = 0
+        isJumpOnlyQueue = false
+        collectionName = null
         updatePlaylistState()
         Timber.d("Queue cleared")
     }
@@ -379,6 +457,7 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
                 hasPrevious = hasPrevious(),
                 currentItem = getCurrentItem(),
                 contentStartIndex = contentStartIndex,
+                collectionName = collectionName,
             )
 
         Timber.d(

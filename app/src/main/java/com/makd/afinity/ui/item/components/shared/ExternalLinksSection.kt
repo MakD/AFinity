@@ -10,13 +10,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -25,6 +25,12 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityItem
+import kotlin.math.pow
+
+private const val LOGO_BASE_HEIGHT_DP = 16f
+private const val LOGO_REFERENCE_ASPECT = 1.4f
+private const val LOGO_ASPECT_COMPENSATION = 0.35f
+private const val LOGO_MAX_HEIGHT_DP = 20f
 
 @Composable
 fun ExternalLinksSection(item: AfinityItem) {
@@ -44,6 +50,19 @@ fun ExternalLinksSection(externalUrls: List<AfinityExternalUrl>?) {
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(externalLinks, key = { it.url }) { link ->
+                val painter = painterResource(id = link.iconRes)
+                val intrinsic = painter.intrinsicSize
+                val aspect =
+                    if (intrinsic.isSpecified && intrinsic.height > 0f) {
+                        intrinsic.width / intrinsic.height
+                    } else 1f
+                val narrowBoost =
+                    (LOGO_REFERENCE_ASPECT / aspect)
+                        .coerceAtLeast(1f)
+                        .pow(LOGO_ASPECT_COMPENSATION)
+                val logoHeight =
+                    (LOGO_BASE_HEIGHT_DP * narrowBoost).coerceAtMost(LOGO_MAX_HEIGHT_DP).dp
+
                 Box(
                     modifier =
                         Modifier.clickable(
@@ -58,10 +77,10 @@ fun ExternalLinksSection(externalUrls: List<AfinityExternalUrl>?) {
                     contentAlignment = Alignment.Center,
                 ) {
                     Image(
-                        painter = painterResource(id = link.iconRes),
+                        painter = painter,
                         contentDescription = link.name,
                         contentScale = ContentScale.Fit,
-                        modifier = Modifier.height(20.dp).widthIn(max = 48.dp),
+                        modifier = Modifier.height(logoHeight),
                     )
                 }
             }

@@ -73,8 +73,10 @@ import com.makd.afinity.data.models.player.MpvHdrOutput
 import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.models.player.SkipMode
+import com.makd.afinity.data.models.player.StreamDecision
 import com.makd.afinity.data.models.player.SubtitleOutlineStyle
 import com.makd.afinity.data.models.player.SubtitlePreferences
+import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.data.repository.AppDataRepository
@@ -83,6 +85,7 @@ import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.metadata.ItemRatingsLoader
 import com.makd.afinity.data.repository.playback.PlaybackRepository
+import com.makd.afinity.data.repository.playback.TranscodingUrl
 import com.makd.afinity.data.repository.segments.SegmentsRepository
 import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
@@ -90,6 +93,7 @@ import com.makd.afinity.player.common.TrackMapping
 import com.makd.afinity.player.common.TrackSelection
 import com.makd.afinity.player.mpv.MPVPlayer
 import com.makd.afinity.ui.player.utils.VolumeManager
+import com.makd.afinity.util.NetworkConnectivityMonitor
 import com.makd.afinity.util.formatFileSize
 import com.makd.afinity.util.redactUrl
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -115,10 +119,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.model.api.GeneralCommandType
+import org.jellyfin.sdk.model.api.MediaStreamProtocol
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.PlayMethod
 import org.jellyfin.sdk.model.api.PlaystateCommand
+import org.jellyfin.sdk.model.api.SubtitleDeliveryMethod
 import org.jellyfin.sdk.model.api.SubtitlePlaybackMode
+import org.jellyfin.sdk.model.api.TranscodeReason
+import org.jellyfin.sdk.model.api.TranscodingInfo
 import timber.log.Timber
 import java.util.Locale
 import java.util.UUID
@@ -154,6 +162,7 @@ constructor(
     private val sessionManager: SessionManager,
     private val jellyfinWebSocketManager: JellyfinWebSocketManager,
     private val remoteMessageManager: RemoteMessageManager,
+    private val networkConnectivityMonitor: NetworkConnectivityMonitor,
 ) : ViewModel(), Player.Listener {
 
     lateinit var player: Player
@@ -174,6 +183,12 @@ constructor(
     private var hasStoppedPlayback = false
     private var currentSessionId: String? = null
     private var currentLivePlaybackInfo: LiveTvPlaybackInfo? = null
+    private var currentStreamDecision: StreamDecision? = null
+    private var sessionVideoQuality: VideoQuality? = null
+    private var forceTranscodeFallback = false
+    private var sessionAllowTranscoding: Boolean? = null
+    private var currentTranscodingInfo: TranscodingInfo? = null
+    private var httpDataSourceFactory: DefaultHttpDataSource.Factory? = null
     private val volumeManager: VolumeManager by lazy { VolumeManager(context) }
 
     private var isRemoteMuted: Boolean = false
@@ -560,7 +575,11 @@ constructor(
                                 isPaused = isPaused,
                                 audioStreamIndex = jfAudioIndex,
                                 subtitleStreamIndex = jfSubIndex,
-                                playMethod = livePlaybackInfo?.playMethod ?: "DirectPlay",
+                                playMethod =
+                                    livePlaybackInfo?.playMethod
+                                        ?: (currentStreamDecision?.playMethod
+                                                ?: PlayMethod.DIRECT_PLAY)
+                                            .serialName,
                                 liveStreamId = livePlaybackInfo?.liveStreamId,
                                 repeatMode = "RepeatNone",
                             )
@@ -637,9 +656,8 @@ constructor(
                 .setUserAgent(userAgent)
                 .setAllowCrossProtocolRedirects(true)
                 .setTransferListener(bandwidthMeter)
-                .setDefaultRequestProperties(
-                    mapOf("Authorization" to "MediaBrowser Token=\"${apiClient.accessToken}\"")
-                )
+        httpDataSourceFactory = upstreamFactory
+        refreshStreamAuthHeader()
 
         val cacheKeyFactory = CacheKeyFactory { dataSpec -> streamCacheKey(dataSpec.uri) }
 
@@ -855,8 +873,51 @@ constructor(
         Timber.e(error, "Player error")
         if (currentLivePlaybackInfo?.playMethod == PlayMethod.DIRECT_PLAY.serialName) {
             _liveStreamFailedEvent.tryEmit(Unit)
+            return
         }
+        if (retryWithTranscodeFallback(error)) return
     }
+
+    private fun retryWithTranscodeFallback(error: PlaybackException): Boolean {
+        if (forceTranscodeFallback) return false
+        if (_uiState.value.isLiveChannel) return false
+        if (currentStreamDecision !is StreamDecision.DirectPlay) return false
+
+        val state = _uiState.value
+        val item = currentItem ?: return false
+        val sourceId = state.currentMediaSourceId ?: return false
+        val source = item.sources.firstOrNull { it.id == sourceId }
+        if (source?.type == AfinitySourceType.LOCAL) return false
+        if (!isDecodeFailure(error)) return false
+
+        Timber.w(
+            "Direct play failed (${error.errorCodeName}); re-negotiating with transcoding forced"
+        )
+        forceTranscodeFallback = true
+        val resumePosition = player.currentPosition.coerceAtLeast(0L)
+        viewModelScope.launch {
+            loadMedia(
+                item = item,
+                mediaSourceId = sourceId,
+                audioStreamIndex = state.audioStreamIndex,
+                subtitleStreamIndex = state.subtitleStreamIndex,
+                startPositionMs = resumePosition,
+            )
+        }
+        return true
+    }
+
+    private fun isDecodeFailure(error: PlaybackException): Boolean =
+        error.errorCode in
+            setOf(
+                PlaybackException.ERROR_CODE_DECODING_FAILED,
+                PlaybackException.ERROR_CODE_DECODER_INIT_FAILED,
+                PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED,
+                PlaybackException.ERROR_CODE_DECODING_FORMAT_EXCEEDS_CAPABILITIES,
+                PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED,
+                PlaybackException.ERROR_CODE_PARSING_MANIFEST_UNSUPPORTED,
+                PlaybackException.ERROR_CODE_AUDIO_TRACK_INIT_FAILED,
+            )
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         if (isPlaying) {
@@ -885,7 +946,10 @@ constructor(
             viewModelScope.launch {
                 val isIntro = _uiState.value.isPlayingIntro
                 val autoPlay = preferencesRepository.getAutoPlay()
-                val nextItem = if (isIntro || autoPlay) playlistManager.next() else null
+                val nextItem =
+                    if ((isIntro || autoPlay) && playlistManager.canAutoAdvance()) {
+                        playlistManager.next()
+                    } else null
                 when {
                     nextItem != null -> {
                         Timber.d("Episode ended, auto-advancing to: ${nextItem.name}")
@@ -1121,7 +1185,10 @@ constructor(
 
                     if (event.segment.type == AfinitySegmentType.OUTRO) {
                         viewModelScope.launch {
-                            val nextItem = playlistManager.getNextItem()
+                            val nextItem =
+                                if (playlistManager.canAutoAdvance()) {
+                                    playlistManager.getNextItem()
+                                } else null
                             if (nextItem != null) {
                                 val originalVolume = getInternalVolume()
                                 val steps = 10
@@ -1222,6 +1289,41 @@ constructor(
                         statsPollingJob?.cancel()
                     }
                 }
+
+                is PlayerEvent.SelectVideoQuality -> {
+                    if (event.quality == _uiState.value.videoQuality) return@launch
+                    sessionVideoQuality = event.quality
+                    forceTranscodeFallback = false
+                    reloadAtCurrentPosition()
+                }
+
+                is PlayerEvent.PlayAnywayWithTranscoding -> {
+                    val item = currentItem ?: return@launch
+                    val sourceId = _uiState.value.currentMediaSourceId ?: return@launch
+                    sessionAllowTranscoding = true
+                    updateUiState {
+                        it.copy(
+                            showError = false,
+                            errorMessage = null,
+                            canPlayAnywayWithTranscoding = false,
+                            isLoading = true,
+                        )
+                    }
+                    loadMedia(
+                        item = item,
+                        mediaSourceId = sourceId,
+                        audioStreamIndex = _uiState.value.audioStreamIndex,
+                        subtitleStreamIndex = _uiState.value.subtitleStreamIndex,
+                        startPositionMs = 0L,
+                    )
+                }
+
+                is PlayerEvent.RenegotiateTracks -> {
+                    reloadAtCurrentPosition(
+                        audioStreamIndex = event.audioStreamIndex,
+                        subtitleStreamIndex = event.subtitleStreamIndex,
+                    )
+                }
             }
         }
     }
@@ -1241,9 +1343,21 @@ constructor(
     private fun startStatsPolling() {
         statsPollingJob?.cancel()
         statsPollingJob = viewModelScope.launch {
+            var tick = 0
             while (true) {
                 if (_uiState.value.showPlaybackStats) {
+                    if (_uiState.value.playMethod == PlayMethod.TRANSCODE) {
+                        if (tick % SERVER_STATS_INTERVAL_TICKS == 0) {
+                            currentTranscodingInfo = playbackRepository.getTranscodingInfo()
+                        }
+                    } else {
+                        currentTranscodingInfo = null
+                    }
                     updateUiState { it.copy(playbackStats = gatherPlaybackStats()) }
+                    tick++
+                } else {
+                    tick = 0
+                    currentTranscodingInfo = null
                 }
                 delay(1000L)
             }
@@ -1266,6 +1380,7 @@ constructor(
                 ?.takeIf { it.size > 0 }
                 ?.let { "${it.container?.uppercase() ?: "?"} • ${formatSize(it.size)}" } ?: ""
         val playMethod = currentPlayMethod()
+        val transcode = transcodeStatsFields()
         val connection = connectionLabel()
         val subtitleTrack = subtitleTrackLabel(currentSource)
         val displayRefresh = displayRefreshLabel()
@@ -1381,6 +1496,12 @@ constructor(
                             bufferSeconds,
                         ),
                     videoBitrate = videoBitrate,
+                    transcodeOutput = transcode.output,
+                    transcodeVideo = transcode.video,
+                    transcodeAudio = transcode.audio,
+                    transcodeSpeed = transcode.speed,
+                    transcodeHardware = transcode.hardware,
+                    transcodeReasons = transcode.reasons,
                 )
             }
             is MPVPlayer -> {
@@ -1475,13 +1596,70 @@ constructor(
                     videoBitrate =
                         if (bitrateMbps > 0) String.format(Locale.US, "%.1f Mbps", bitrateMbps)
                         else "Unknown",
+                    transcodeOutput = transcode.output,
+                    transcodeVideo = transcode.video,
+                    transcodeAudio = transcode.audio,
+                    transcodeSpeed = transcode.speed,
+                    transcodeHardware = transcode.hardware,
+                    transcodeReasons = transcode.reasons,
                 )
             }
             else -> PlaybackStats()
         }
     }
 
+    private data class TranscodeStatsFields(
+        val output: String = "",
+        val video: String = "",
+        val audio: String = "",
+        val speed: String = "",
+        val hardware: String = "",
+        val reasons: List<String> = emptyList(),
+    )
+
+    private fun transcodeStatsFields(): TranscodeStatsFields {
+        if (_uiState.value.playMethod != PlayMethod.TRANSCODE) return TranscodeStatsFields()
+        val info = currentTranscodingInfo ?: return TranscodeStatsFields()
+        val width = info.width ?: 0
+        val height = info.height ?: 0
+        val output = buildString {
+            if (width > 0 && height > 0) append("${width}x${height}")
+            info.bitrate?.takeIf { it > 0 }?.let {
+                if (isNotEmpty()) append(" • ")
+                append(String.format(Locale.US, "%.1f Mbps", it / 1_000_000.0))
+            }
+        }
+        val contentFps = (player as? ExoPlayer)?.videoFormat?.frameRate?.takeIf { it > 0f }
+        val speed =
+            info.framerate?.takeIf { it > 0f }?.let { encoderFps ->
+                if (contentFps != null && contentFps > 0) {
+                    String.format(Locale.US, "%.1fx realtime", encoderFps / contentFps)
+                } else {
+                    String.format(Locale.US, "%.0f fps", encoderFps)
+                }
+            } ?: ""
+        val directLabel = context.getString(R.string.playback_stats_value_stream_copy)
+        return TranscodeStatsFields(
+            output = output,
+            video =
+                if (info.isVideoDirect) directLabel
+                else info.videoCodec?.uppercase().orEmpty(),
+            audio =
+                if (info.isAudioDirect) directLabel
+                else
+                    listOfNotNull(
+                            info.audioCodec?.uppercase(),
+                            info.audioChannels?.takeIf { it > 0 }?.let { "${it}ch" },
+                        )
+                        .joinToString(" "),
+            speed = speed,
+            hardware = info.hardwareAccelerationType?.serialName.orEmpty(),
+            reasons = info.transcodeReasons.mapNotNull { transcodeReasonLabel(it) }.distinct(),
+        )
+    }
+
     private fun streamCacheKey(uri: Uri): String {
+        if (isTranscodedStream(uri)) return uri.toString()
         val mediaSourceId = uri.getQueryParameter("mediaSourceId")
         return if (mediaSourceId != null) {
             buildString {
@@ -1496,6 +1674,25 @@ constructor(
         } else {
             uri.toString()
         }
+    }
+
+    private fun refreshStreamAuthHeader() {
+        val factory = httpDataSourceFactory ?: return
+        val token =
+            sessionManager.getCurrentApiClient()?.accessToken?.takeIf { it.isNotBlank() }
+                ?: apiClient.accessToken?.takeIf { it.isNotBlank() }
+        if (token == null) {
+            Timber.w("No access token available for stream requests")
+            return
+        }
+        factory.setDefaultRequestProperties(
+            mapOf("Authorization" to "MediaBrowser Token=\"$token\"")
+        )
+    }
+
+    private fun isTranscodedStream(uri: Uri): Boolean {
+        val path = uri.path?.lowercase() ?: return false
+        return path.endsWith(".m3u8") || path.contains("/hls1/") || path.contains("/hls/")
     }
 
     private fun connectionLabel(): String =
@@ -1570,8 +1767,123 @@ constructor(
         return when {
             state.isLiveChannel -> context.getString(R.string.playback_stats_value_live)
             isLocal -> context.getString(R.string.playback_stats_value_direct_play_local)
+            state.playMethod == PlayMethod.TRANSCODE ->
+                context.getString(R.string.playback_stats_value_transcoding)
+            state.playMethod == PlayMethod.DIRECT_PLAY ->
+                context.getString(R.string.playback_stats_value_direct_play)
             else -> context.getString(R.string.playback_stats_value_direct_streaming)
         }
+    }
+
+    private suspend fun diagnoseDirectPlayFailure(
+        itemId: UUID,
+        mediaSourceId: String,
+    ): List<TranscodeReason> {
+        val probe =
+            playbackRepository.getPlaybackInfo(
+                itemId = itemId,
+                quality = resolveVideoQuality(),
+                mediaSourceId = mediaSourceId,
+                allowTranscoding = true,
+            ) ?: return emptyList()
+        val source =
+            probe.mediaSources?.firstOrNull { it.id == mediaSourceId }
+                ?: probe.mediaSources?.firstOrNull()
+        val url = source?.transcodingUrl ?: return emptyList()
+        return TranscodingUrl.transcodeReasons(url)
+    }
+
+    private fun directPlayBlockedMessage(reasons: List<TranscodeReason>): String {
+        val detail =
+            reasons
+                .mapNotNull { transcodeReasonLabel(it) }
+                .distinct()
+                .takeIf { it.isNotEmpty() }
+                ?.joinToString(", ")
+        return if (detail == null) {
+            context.getString(R.string.error_direct_play_blocked)
+        } else {
+            context.getString(R.string.error_direct_play_blocked_fmt, detail)
+        }
+    }
+
+    private fun transcodeReasonLabel(reason: TranscodeReason): String? {
+        val resId =
+            when (reason) {
+                TranscodeReason.AUDIO_CODEC_NOT_SUPPORTED ->
+                    R.string.player_transcode_reason_audio_codec
+                TranscodeReason.VIDEO_CODEC_NOT_SUPPORTED ->
+                    R.string.player_transcode_reason_video_codec
+                TranscodeReason.CONTAINER_NOT_SUPPORTED ->
+                    R.string.player_transcode_reason_container
+                TranscodeReason.SUBTITLE_CODEC_NOT_SUPPORTED ->
+                    R.string.player_transcode_reason_subtitle_codec
+                TranscodeReason.CONTAINER_BITRATE_EXCEEDS_LIMIT ->
+                    R.string.player_transcode_reason_bitrate_limit
+                TranscodeReason.VIDEO_RESOLUTION_NOT_SUPPORTED ->
+                    R.string.player_transcode_reason_resolution
+                TranscodeReason.VIDEO_RANGE_TYPE_NOT_SUPPORTED ->
+                    R.string.player_transcode_reason_video_range
+                TranscodeReason.VIDEO_PROFILE_NOT_SUPPORTED ->
+                    R.string.player_transcode_reason_video_profile
+                TranscodeReason.VIDEO_LEVEL_NOT_SUPPORTED ->
+                    R.string.player_transcode_reason_video_level
+                TranscodeReason.AUDIO_CHANNELS_NOT_SUPPORTED ->
+                    R.string.player_transcode_reason_audio_channels
+                TranscodeReason.VIDEO_BIT_DEPTH_NOT_SUPPORTED ->
+                    R.string.player_transcode_reason_bit_depth
+                TranscodeReason.VIDEO_FRAMERATE_NOT_SUPPORTED ->
+                    R.string.player_transcode_reason_framerate
+                else -> null
+            }
+        return resId?.let { context.getString(it) }
+    }
+
+    private suspend fun reloadAtCurrentPosition(
+        audioStreamIndex: Int? = null,
+        subtitleStreamIndex: Int? = null,
+    ) {
+        val state = _uiState.value
+        val item = currentItem ?: return
+        val sourceId = state.currentMediaSourceId ?: return
+        val resumePosition = player.currentPosition.coerceAtLeast(0L)
+        updateUiState { it.copy(isLoading = true) }
+        reportCurrentItemStopped(isEnded = false)
+        loadMedia(
+            item = item,
+            mediaSourceId = sourceId,
+            audioStreamIndex = audioStreamIndex ?: state.audioStreamIndex,
+            subtitleStreamIndex = subtitleStreamIndex ?: state.subtitleStreamIndex,
+            startPositionMs = resumePosition,
+        )
+    }
+
+    private fun serverSubtitleStreamIndex(
+        selectedIndex: Int?,
+        subtitleStreams: List<AfinityMediaStream>,
+        clientRendered: Set<Int>,
+    ): Int {
+        if (selectedIndex == null || selectedIndex == TrackSelection.NO_SUBTITLE) {
+            return TrackSelection.NO_SUBTITLE
+        }
+        if (selectedIndex in clientRendered) return TrackSelection.NO_SUBTITLE
+        val stream =
+            subtitleStreams.firstOrNull { it.index == selectedIndex }
+                ?: return TrackSelection.NO_SUBTITLE
+        return if (stream.isExternal) TrackSelection.NO_SUBTITLE else selectedIndex
+    }
+
+    private suspend fun resolveVideoQuality(): VideoQuality {
+        sessionVideoQuality?.let {
+            return it
+        }
+        val bitrate =
+            if (networkConnectivityMonitor.isOnWifi()) {
+                preferencesRepository.getVideoQualityWifi()
+            } else {
+                preferencesRepository.getVideoQualityCellular()
+            }
+        return VideoQuality.fromBitrate(bitrate)
     }
 
     private fun applyZoomMode(mode: VideoZoomMode, saveAsCurrent: Boolean = true) {
@@ -1641,6 +1953,7 @@ constructor(
             "webvtt" -> MimeTypes.TEXT_VTT
             "ass",
             "ssa" -> MimeTypes.TEXT_SSA
+            "ttml" -> MimeTypes.APPLICATION_TTML
             else -> null
         }
 
@@ -1650,6 +1963,7 @@ constructor(
             "webvtt" -> "vtt"
             "ass" -> "ass"
             "ssa" -> "ssa"
+            "ttml" -> "ttml"
             else -> "srt"
         }
 
@@ -1669,6 +1983,10 @@ constructor(
 
             val fullItem: AfinityItem = item
 
+            if (currentItem?.id != fullItem.id) {
+                forceTranscodeFallback = false
+                sessionAllowTranscoding = null
+            }
             currentItem = fullItem
 
             val chapters = fullItem.chapters
@@ -1719,14 +2037,44 @@ constructor(
                 }
             }
 
+            refreshStreamAuthHeader()
+
+            val quality = resolveVideoQuality()
+            val allowTranscoding =
+                sessionAllowTranscoding ?: !preferencesRepository.getNeverTranscode()
             val playbackInfo =
                 playbackRepository.getPlaybackInfo(
                     itemId = fullItem.id,
+                    quality = quality,
                     mediaSourceId = actualMediaSourceId,
+                    enableDirectPlay = !forceTranscodeFallback,
+                    allowTranscoding = allowTranscoding,
                 )
             val negotiatedSource =
                 playbackInfo?.mediaSources?.firstOrNull { it.id == actualMediaSourceId }
                     ?: playbackInfo?.mediaSources?.firstOrNull()
+
+            val negotiatedSubtitleDelivery =
+                negotiatedSource
+                    ?.mediaStreams
+                    .orEmpty()
+                    .filter { it.type == MediaStreamType.SUBTITLE }
+                    .mapNotNull { stream ->
+                        stream.deliveryMethod?.let { stream.index to it }
+                    }
+                    .toMap()
+
+            val clientRenderedSubtitles =
+                negotiatedSubtitleDelivery
+                    .filterValues { it == SubtitleDeliveryMethod.EXTERNAL }
+                    .keys
+                    .toSet()
+
+            val serverBurnedSubtitle =
+                negotiatedSubtitleDelivery
+                    .entries
+                    .firstOrNull { it.value == SubtitleDeliveryMethod.ENCODE }
+                    ?.key
 
             val serverSavedAudioIndex = negotiatedSource?.defaultAudioStreamIndex
             val serverSavedSubtitleIndex = negotiatedSource?.defaultSubtitleStreamIndex
@@ -1773,6 +2121,16 @@ constructor(
                     subtitleUserSelected = false,
                     availableSources = fullItem.sources,
                     currentMediaSourceId = actualMediaSourceId,
+                    videoQuality = quality,
+                    availableQualities =
+                        if (mediaSource.type == AfinitySourceType.LOCAL) {
+                            emptyList()
+                        } else {
+                            VideoQuality.optionsFor(
+                                sourceBitrate = mediaSource.bitrate?.toInt(),
+                                sourceWidth = videoStream?.width,
+                            )
+                        },
                     mdbRatings = emptyList(),
                     omdbAwards = null,
                 )
@@ -1793,28 +2151,71 @@ constructor(
             playbackStateManager.trackCurrentItem(fullItem.id)
             coroutineScope {
                 val useLocalSource = mediaSource.type == AfinitySourceType.LOCAL
-                val streamUrl =
-                    if (useLocalSource) {
-                        mediaSource.path?.let { "file://$it" }
-                    } else {
-                        playbackRepository.getStreamUrl(
-                            itemId = fullItem.id,
-                            mediaSourceId = actualMediaSourceId,
-                            audioStreamIndex = targetAudioStreamIndex,
-                            subtitleStreamIndex = targetSubtitleStreamIndex,
-                            playSessionId = currentSessionId,
-                            tag = negotiatedSource?.eTag,
-                        )
+                val streamDecision =
+                    when {
+                        useLocalSource ->
+                            mediaSource.path?.let { StreamDecision.DirectPlay("file://$it") }
+                        negotiatedSource != null ->
+                            playbackRepository.resolveStream(
+                                itemId = fullItem.id,
+                                source = negotiatedSource,
+                                audioStreamIndex = targetAudioStreamIndex,
+                                subtitleStreamIndex =
+                                    serverSubtitleStreamIndex(
+                                        targetSubtitleStreamIndex,
+                                        subtitleStreams,
+                                        clientRenderedSubtitles,
+                                    ),
+                                playSessionId = currentSessionId,
+                            )
+                        else ->
+                            playbackRepository
+                                .getStreamUrl(
+                                    itemId = fullItem.id,
+                                    mediaSourceId = actualMediaSourceId,
+                                    audioStreamIndex = targetAudioStreamIndex,
+                                    subtitleStreamIndex = targetSubtitleStreamIndex,
+                                    playSessionId = currentSessionId,
+                                )
+                                ?.let { StreamDecision.DirectPlay(it) }
                     }
+                currentStreamDecision = streamDecision
+                currentTranscodingInfo = null
+                updateUiState {
+                    it.copy(
+                        playMethod = streamDecision?.playMethod,
+                        transcodeReasons = streamDecision?.transcodeReasons.orEmpty(),
+                        burnedInSubtitleIndex =
+                            serverBurnedSubtitle ?: streamDecision?.burnedInSubtitleIndex,
+                        clientRenderedSubtitles =
+                            if (streamDecision is StreamDecision.DirectPlay) emptySet()
+                            else clientRenderedSubtitles,
+                    )
+                }
+                val streamUrl = streamDecision?.url
 
                 if (streamUrl.isNullOrBlank()) {
-                    Timber.e("Stream URL is null or empty")
-                    updateUiState {
-                        it.copy(
-                            isLoading = false,
-                            showError = true,
-                            errorMessage = context.getString(R.string.error_load_stream),
-                        )
+                    val blockedByPreference = !allowTranscoding && !useLocalSource
+                    if (blockedByPreference) {
+                        val reasons = diagnoseDirectPlayFailure(fullItem.id, actualMediaSourceId)
+                        Timber.w("Direct play not possible and transcoding is disabled: $reasons")
+                        updateUiState {
+                            it.copy(
+                                isLoading = false,
+                                showError = true,
+                                errorMessage = directPlayBlockedMessage(reasons),
+                                canPlayAnywayWithTranscoding = true,
+                            )
+                        }
+                    } else {
+                        Timber.e("Stream URL is null or empty")
+                        updateUiState {
+                            it.copy(
+                                isLoading = false,
+                                showError = true,
+                                errorMessage = context.getString(R.string.error_load_stream),
+                            )
+                        }
                     }
                     return@coroutineScope
                 }
@@ -1860,6 +2261,9 @@ constructor(
                             emptyList()
                         }
                     } else {
+                        val containerDropsSubtitles =
+                            streamDecision !is StreamDecision.DirectPlay
+
                         val negotiatedDeliveryUrls =
                             negotiatedSource
                                 ?.mediaStreams
@@ -1873,7 +2277,10 @@ constructor(
 
                         mediaSource.mediaStreams
                             .filter { stream ->
-                                stream.type == MediaStreamType.SUBTITLE && stream.isExternal
+                                stream.type == MediaStreamType.SUBTITLE &&
+                                    (stream.isExternal ||
+                                        (containerDropsSubtitles &&
+                                            stream.index in clientRenderedSubtitles))
                             }
                             .mapNotNull { stream ->
                                 try {
@@ -1942,6 +2349,11 @@ constructor(
                     MediaItem.Builder()
                         .setMediaId(fullItem.id.toString())
                         .setUri(streamUrl)
+                        .apply {
+                            if (streamDecision?.protocol == MediaStreamProtocol.HLS) {
+                                setMimeType(MimeTypes.APPLICATION_M3U8)
+                            }
+                        }
                         .setMediaMetadata(MediaMetadata.Builder().setTitle(fullItem.name).build())
                         .setSubtitleConfigurations(externalSubtitles)
                         .build()
@@ -2163,7 +2575,13 @@ constructor(
             Timber.d(
                 "Video size changed: ${videoSize.width}x${videoSize.height}, isPortrait=$isVideoPortrait"
             )
-            updateUiState { it.copy(videoAspectRatio = aspectRatio) }
+            updateUiState {
+                it.copy(
+                    videoAspectRatio = aspectRatio,
+                    outputVideoWidth = videoSize.width,
+                    outputVideoHeight = videoSize.height,
+                )
+            }
             if (!isOrientationOverridden) {
                 updateUiState { it.copy(resolvedOrientation = computeOrientation(isVideoPortrait)) }
             }
@@ -2493,7 +2911,8 @@ constructor(
                     mediaSourceId = sourceId,
                     audioStreamIndex = jfAudioIndex,
                     subtitleStreamIndex = jfSubIndex,
-                    playMethod = "DirectPlay",
+                    playMethod =
+                        (currentStreamDecision?.playMethod ?: PlayMethod.DIRECT_PLAY).serialName,
                     canSeek = true,
                 )
             }
@@ -2712,6 +3131,8 @@ constructor(
                     )
                 )
             }
+
+            launch { playlistManager.enrichWithCollectionQueue(item) }
         }
     }
 
@@ -2919,6 +3340,7 @@ constructor(
                     startPositionMs = options.startPositionMs,
                 )
             )
+            viewModelScope.launch { playlistManager.enrichWithCollectionQueue(fullItem) }
             return
         }
 
@@ -3240,9 +3662,18 @@ constructor(
         val audioStreamIndex: Int? = null,
         val subtitleStreamIndex: Int? = null,
         val subtitleUserSelected: Boolean = false,
+        val playMethod: PlayMethod? = null,
+        val transcodeReasons: List<TranscodeReason> = emptyList(),
+        val burnedInSubtitleIndex: Int? = null,
+        val clientRenderedSubtitles: Set<Int> = emptySet(),
+        val videoQuality: VideoQuality = VideoQuality.ORIGINAL,
+        val availableQualities: List<VideoQuality> = emptyList(),
+        val outputVideoWidth: Int = 0,
+        val outputVideoHeight: Int = 0,
         val showPlayButton: Boolean = true,
         val showBuffering: Boolean = false,
         val showError: Boolean = false,
+        val canPlayAnywayWithTranscoding: Boolean = false,
         val errorMessage: String? = null,
         val brightnessLevel: Float = -1.0f,
         val showTrickplayPreview: Boolean = false,
@@ -3294,6 +3725,10 @@ constructor(
         val subtitleStreamIndex: Int?,
         val startPositionMs: Long,
     )
+
+    private companion object {
+        const val SERVER_STATS_INTERVAL_TICKS = 5
+    }
 }
 
 private data class MpvPrefsSnapshot(

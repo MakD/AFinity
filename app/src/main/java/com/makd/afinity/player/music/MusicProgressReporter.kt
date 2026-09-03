@@ -21,17 +21,25 @@ constructor(private val playbackRepository: PlaybackRepository) {
     private var progressJob: Job? = null
     private var currentTrackId: UUID? = null
     private var playSessionId: String = UUID.randomUUID().toString()
+    private var playMethod: String = "DirectPlay"
 
-    fun onPlaybackStarted(trackId: UUID, startPositionMs: Long) {
-        playSessionId = UUID.randomUUID().toString()
+    fun onPlaybackStarted(
+        trackId: UUID,
+        startPositionMs: Long,
+        playSessionId: String? = null,
+        playMethod: String = "DirectPlay",
+    ) {
+        this.playSessionId = playSessionId ?: UUID.randomUUID().toString()
+        this.playMethod = playMethod
         currentTrackId = trackId
+        val sessionId = this.playSessionId
         scope.launch {
             runCatching {
                 playbackRepository.reportPlaybackStart(
                     itemId = trackId,
-                    sessionId = playSessionId,
+                    sessionId = sessionId,
                     mediaSourceId = trackId.toString(),
-                    playMethod = "DirectPlay",
+                    playMethod = playMethod,
                     canSeek = true,
                 )
             }
@@ -51,7 +59,7 @@ constructor(private val playbackRepository: PlaybackRepository) {
                         sessionId = playSessionId,
                         positionTicks = getPositionMs() * 10_000L,
                         isPaused = isPaused(),
-                        playMethod = "DirectPlay",
+                        playMethod = playMethod,
                     )
                 }
                     .onFailure { Timber.w(it, "Failed to report playback progress") }

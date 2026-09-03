@@ -6,7 +6,7 @@ import org.jellyfin.sdk.model.ServerVersion
 
 object ServerVersionSupport {
 
-    val minimum: ServerVersion = ServerVersion(10, 0, 0)
+    val minimum: ServerVersion = ServerVersion(12, 0, 0)
 
     val minimumDisplay: String = minimum.toString(2)
 

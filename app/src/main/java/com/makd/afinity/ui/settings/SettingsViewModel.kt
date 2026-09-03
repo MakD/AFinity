@@ -17,7 +17,9 @@ import com.makd.afinity.data.models.player.MpvHdrOutput
 import com.makd.afinity.data.models.player.MpvHwDec
 import com.makd.afinity.data.models.player.MpvToneMapping
 import com.makd.afinity.data.models.player.MpvVideoOutput
+import com.makd.afinity.data.models.player.MusicQuality
 import com.makd.afinity.data.models.player.SkipMode
+import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.network.MdbListApiService
@@ -471,6 +473,48 @@ constructor(
                 _uiState.value = _uiState.value.copy(bufferSizeMb = it)
             }
         }
+
+        viewModelScope.launch {
+            preferencesRepository.getVideoQualityWifiFlow().collect {
+                _uiState.value = _uiState.value.copy(videoQualityWifi = it)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getVideoQualityCellularFlow().collect {
+                _uiState.value = _uiState.value.copy(videoQualityCellular = it)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getTranscodeMaxAudioChannelsFlow().collect {
+                _uiState.value = _uiState.value.copy(transcodeMaxAudioChannels = it)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getAllowHdrPassthroughFlow().collect {
+                _uiState.value = _uiState.value.copy(allowHdrPassthrough = it)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getMusicQualityWifiFlow().collect {
+                _uiState.value = _uiState.value.copy(musicQualityWifi = it)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getMusicQualityCellularFlow().collect {
+                _uiState.value = _uiState.value.copy(musicQualityCellular = it)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getNeverTranscodeFlow().collect {
+                _uiState.value = _uiState.value.copy(neverTranscode = it)
+            }
+        }
     }
 
     fun setThemeMode(mode: String) {
@@ -832,6 +876,76 @@ constructor(
                 Timber.d("Cast max bitrate set to: $bitrate")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set cast max bitrate")
+            }
+        }
+    }
+
+    fun setVideoQualityWifi(bitrate: Int) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setVideoQualityWifi(bitrate)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set Wi-Fi video quality")
+            }
+        }
+    }
+
+    fun setVideoQualityCellular(bitrate: Int) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setVideoQualityCellular(bitrate)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set cellular video quality")
+            }
+        }
+    }
+
+    fun setTranscodeMaxAudioChannels(channels: Int) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setTranscodeMaxAudioChannels(channels)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set transcode audio channels")
+            }
+        }
+    }
+
+    fun setMusicQualityWifi(bitrate: Int) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setMusicQualityWifi(bitrate)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set Wi-Fi music quality")
+            }
+        }
+    }
+
+    fun setMusicQualityCellular(bitrate: Int) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setMusicQualityCellular(bitrate)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set cellular music quality")
+            }
+        }
+    }
+
+    fun setNeverTranscode(never: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setNeverTranscode(never)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set never transcode")
+            }
+        }
+    }
+
+    fun setAllowHdrPassthrough(allow: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setAllowHdrPassthrough(allow)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set HDR passthrough")
             }
         }
     }
@@ -1238,6 +1352,13 @@ data class SettingsUiState(
     val sdhPreferenceApplies: Boolean = true,
     val castHevcEnabled: Boolean = false,
     val castMaxBitrate: Int = 16_000_000,
+    val videoQualityWifi: Int = VideoQuality.ORIGINAL_BITRATE,
+    val videoQualityCellular: Int = VideoQuality.ORIGINAL_BITRATE,
+    val transcodeMaxAudioChannels: Int = 6,
+    val allowHdrPassthrough: Boolean = true,
+    val neverTranscode: Boolean = false,
+    val musicQualityWifi: Int = MusicQuality.ORIGINAL_BITRATE,
+    val musicQualityCellular: Int = MusicQuality.CELLULAR_DEFAULT_BITRATE,
     val bufferSizeMb: Int = 64,
     val isLoading: Boolean = true,
     val isLoggingOut: Boolean = false,

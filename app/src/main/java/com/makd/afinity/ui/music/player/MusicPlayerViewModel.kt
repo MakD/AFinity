@@ -19,15 +19,18 @@ import com.makd.afinity.data.models.music.RadioMode
 import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.data.models.music.RadioState
 import com.makd.afinity.data.models.music.RepeatMode
+import com.makd.afinity.data.models.player.MusicQuality
 import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.music.MusicRepository
+import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.player.AudioService
 import com.makd.afinity.player.common.EqualizerPreset
 import com.makd.afinity.player.music.MusicEqualizerManager
 import com.makd.afinity.player.music.MusicPlaybackManager
 import com.makd.afinity.player.music.MusicQueueManager
 import com.makd.afinity.player.music.RadioManager
+import com.makd.afinity.ui.player.components.transcodeReasonRes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
@@ -58,6 +61,7 @@ constructor(
     private val radioManager: RadioManager,
     private val equalizerManager: MusicEqualizerManager,
     private val appDataRepository: AppDataRepository,
+    private val playbackRepository: PlaybackRepository,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -75,6 +79,14 @@ constructor(
     val playbackStats: StateFlow<PlaybackStats> = _playbackStats.asStateFlow()
 
     private var statsPollingJob: Job? = null
+
+    private val _musicQuality = MutableStateFlow(queueManager.musicQuality)
+    val musicQuality: StateFlow<MusicQuality> = _musicQuality.asStateFlow()
+
+    fun setMusicQuality(quality: MusicQuality) {
+        queueManager.setSessionMusicQuality(quality)
+        _musicQuality.value = queueManager.musicQuality
+    }
 
     fun togglePlaybackStats() {
         val willShow = !_showPlaybackStats.value
@@ -99,7 +111,7 @@ constructor(
     }
 
     @OptIn(UnstableApi::class)
-    private fun gatherPlaybackStats(): PlaybackStats {
+    private suspend fun gatherPlaybackStats(): PlaybackStats {
         val player =
             playbackManager.getPlayer()
                 ?: return PlaybackStats(playerType = "Music Service (Initializing)")
@@ -108,15 +120,32 @@ constructor(
         val bufferSeconds =
             ((player.bufferedPosition - player.currentPosition) / 1000L).coerceAtLeast(0)
         val bitrateKbps = (audioFormat?.bitrate ?: 0) / 1000f
-        val isLocal = player.currentMediaItem?.localConfiguration?.uri?.scheme == "file"
+
+        val uri = player.currentMediaItem?.localConfiguration?.uri
+        val isLocal = uri?.scheme == "file"
+        val isUniversal = uri?.path?.endsWith("/universal") == true
+
+        val transcoding =
+            if (isUniversal) {
+                runCatching { playbackRepository.getTranscodingInfo() }.getOrNull()
+            } else null
+
         val playMethod =
-            if (isLocal) context.getString(R.string.playback_stats_value_direct_play_local)
-            else context.getString(R.string.playback_stats_value_direct_streaming)
+            when {
+                isLocal -> context.getString(R.string.playback_stats_value_direct_play_local)
+                !isUniversal -> context.getString(R.string.playback_stats_value_direct_play)
+                transcoding?.isAudioDirect == false ->
+                    context.getString(R.string.playback_stats_value_transcoding)
+                else -> context.getString(R.string.playback_stats_value_direct_streaming)
+            }
+
+        val streamCopy = context.getString(R.string.playback_stats_value_stream_copy)
 
         return PlaybackStats(
             playerType = "ExoPlayer (Music Service)",
             playMethod = playMethod,
             videoResolution = "0x0",
+            container = transcoding?.container?.uppercase().orEmpty(),
             audioCodec = PlaybackStats.friendlyCodecName(audioFormat?.sampleMimeType),
             audioChannels = audioFormat?.channelCount ?: 0,
             audioSampleRate = audioFormat?.sampleRate ?: 0,
@@ -129,6 +158,26 @@ constructor(
             audioBitrate =
                 if (bitrateKbps > 0) String.format(Locale.US, "%.0f kbps", bitrateKbps) else "",
             hwDec = playbackManager.currentAudioDecoder.value,
+            transcodeOutput =
+                transcoding?.bitrate?.takeIf { it > 0 }?.let { "${it / 1000} kbps" }.orEmpty(),
+            transcodeAudio =
+                when {
+                    transcoding == null -> ""
+                    transcoding.isAudioDirect -> streamCopy
+                    else ->
+                        listOfNotNull(
+                                transcoding.audioCodec?.uppercase(),
+                                transcoding.audioChannels?.takeIf { it > 0 }?.let { "${it}ch" },
+                            )
+                            .joinToString(" ")
+                },
+            transcodeHardware = transcoding?.hardwareAccelerationType?.serialName.orEmpty(),
+            transcodeReasons =
+                transcoding
+                    ?.transcodeReasons
+                    ?.map { context.getString(transcodeReasonRes(it)) }
+                    ?.distinct()
+                    .orEmpty(),
         )
     }
 

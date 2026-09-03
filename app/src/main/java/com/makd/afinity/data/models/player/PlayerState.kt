@@ -94,6 +94,15 @@ sealed class PlayerEvent {
     data object TogglePlaybackStats : PlayerEvent()
 
     data object ToggleVersionPicker : PlayerEvent()
+
+    data class SelectVideoQuality(val quality: VideoQuality) : PlayerEvent()
+
+    data object PlayAnywayWithTranscoding : PlayerEvent()
+
+    data class RenegotiateTracks(
+        val audioStreamIndex: Int? = null,
+        val subtitleStreamIndex: Int? = null,
+    ) : PlayerEvent()
 }
 
 data class PlaybackStats(
@@ -120,7 +129,19 @@ data class PlaybackStats(
     val hwDec: String = "Unknown",
     val bufferHealth: String = "Unknown",
     val videoBitrate: String = "Unknown",
+    val transcodeOutput: String = "",
+    val transcodeVideo: String = "",
+    val transcodeAudio: String = "",
+    val transcodeSpeed: String = "",
+    val transcodeHardware: String = "",
+    val transcodeReasons: List<String> = emptyList(),
 ) {
+    val isTranscoding: Boolean
+        get() =
+            transcodeOutput.isNotBlank() ||
+                transcodeVideo.isNotBlank() ||
+                transcodeAudio.isNotBlank()
+
     val hasVideo: Boolean
         get() = !videoResolution.startsWith("0x0") && videoResolution != "Unknown"
 

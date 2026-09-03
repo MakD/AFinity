@@ -366,6 +366,7 @@ fun PlayerScreen(
                 playlistQueue = playlistState.queue,
                 currentPlaylistIndex = playlistState.currentIndex,
                 playlistContentStartIndex = playlistState.contentStartIndex,
+                playlistCollectionName = playlistState.collectionName,
                 onJumpToEpisode = viewModel::jumpToEpisode,
                 onVersionToggleRequest = { showVersionPicker = !showVersionPicker },
                 isSyncPlay = syncPlayState.isInGroup,
@@ -403,6 +404,10 @@ fun PlayerScreen(
                             startPositionMs = startPositionMs,
                         )
                     )
+                },
+                canPlayAnyway = uiState.canPlayAnywayWithTranscoding,
+                onPlayAnywayClick = {
+                    viewModel.handlePlayerEvent(PlayerEvent.PlayAnywayWithTranscoding)
                 },
                 modifier = Modifier.align(Alignment.Center),
             )

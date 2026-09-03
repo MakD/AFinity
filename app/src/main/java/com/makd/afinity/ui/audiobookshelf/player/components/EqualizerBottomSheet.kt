@@ -23,7 +23,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -46,6 +45,7 @@ import com.makd.afinity.player.common.EQ_MAX_DB
 import com.makd.afinity.player.common.EQ_MIN_DB
 import com.makd.afinity.player.common.EqualizerPreset
 import com.makd.afinity.player.common.EqualizerState
+import com.makd.afinity.ui.components.AfinitySlider
 import com.makd.afinity.ui.components.AfinitySwitch
 import kotlin.math.roundToInt
 
@@ -195,7 +195,7 @@ fun EqualizerBottomSheet(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Slider(
+            AfinitySlider(
                 value = state.volumeBoostDb.toFloat(),
                 onValueChange = { onVolumeBoostChanged(it.roundToInt()) },
                 valueRange = 0f..10f,
@@ -279,7 +279,7 @@ private fun BandColumn(
             textAlign = TextAlign.Center,
         )
 
-        Slider(
+        AfinitySlider(
             value = gainDb.toFloat(),
             onValueChange = { onGainChanged(it.roundToInt()) },
             valueRange = EQ_MIN_DB.toFloat()..EQ_MAX_DB.toFloat(),

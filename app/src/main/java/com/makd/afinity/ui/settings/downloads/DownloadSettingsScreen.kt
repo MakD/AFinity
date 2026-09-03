@@ -34,8 +34,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -79,6 +77,7 @@ import com.makd.afinity.data.repository.CacheSection
 import com.makd.afinity.data.repository.CacheUsage
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
+import com.makd.afinity.ui.components.AfinitySlider
 import com.makd.afinity.ui.components.AfinitySwitch
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.DownloadListItemRow
@@ -1519,22 +1518,11 @@ fun ImageCacheSettingsCard(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Slider(
+                    AfinitySlider(
                         value = cacheSizeMb,
                         onValueChange = onCacheSizeChange,
                         valueRange = 256f..2048f,
                         steps = 6,
-                        colors =
-                            SliderDefaults.colors(
-                                thumbColor = MaterialTheme.colorScheme.primary,
-                                activeTrackColor = MaterialTheme.colorScheme.primary,
-                                inactiveTrackColor =
-                                    MaterialTheme.colorScheme.surfaceContainerHighest,
-                                activeTickColor =
-                                    MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
-                                inactiveTickColor =
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                            ),
                         modifier = Modifier.height(24.dp),
                     )
                 }
@@ -1675,19 +1663,11 @@ fun VideoCacheSettingsCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Slider(
+            AfinitySlider(
                 value = cacheSizeMb,
                 onValueChange = onCacheSizeChange,
                 valueRange = 256f..4096f,
                 steps = 6,
-                colors =
-                    SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.primary,
-                        activeTrackColor = MaterialTheme.colorScheme.primary,
-                        inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        activeTickColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
-                        inactiveTickColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                    ),
                 modifier = Modifier.height(24.dp),
             )
         }

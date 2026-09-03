@@ -392,18 +392,26 @@ constructor(
 
                     if (item.id == currentItem.id) {
                         _uiState.update { it.copy(item = item) }
-                        launch {
-                            try {
-                                val freshBoxSets =
-                                    mediaRepository.getBoxSetsContaining(
-                                        itemId = currentItem.id,
-                                        fields = FieldSets.MEDIA_ITEM_CARDS,
-                                    )
-                                if (freshBoxSets != _uiState.value.containingBoxSets) {
-                                    _uiState.update { it.copy(containingBoxSets = freshBoxSets) }
+                        val membershipMayHaveChanged =
+                            event.source != MediaChangeSource.PLAYBACK &&
+                                event.userData == null &&
+                                event.patch == null
+                        if (membershipMayHaveChanged) {
+                            launch {
+                                try {
+                                    val freshBoxSets =
+                                        mediaRepository.getBoxSetsContaining(
+                                            itemId = currentItem.id,
+                                            fields = FieldSets.MEDIA_ITEM_CARDS,
+                                        )
+                                    if (freshBoxSets != _uiState.value.containingBoxSets) {
+                                        _uiState.update {
+                                            it.copy(containingBoxSets = freshBoxSets)
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    Timber.e(e, "Failed to refresh containing BoxSets")
                                 }
-                            } catch (e: Exception) {
-                                Timber.e(e, "Failed to refresh containing BoxSets")
                             }
                         }
                     }

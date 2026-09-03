@@ -13,6 +13,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -68,6 +69,7 @@ import com.google.android.gms.cast.framework.CastButtonFactory
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.data.models.music.RepeatMode
+import com.makd.afinity.data.models.player.MusicQuality
 import com.makd.afinity.ui.audiobookshelf.player.components.EqualizerBottomSheet
 import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 import com.makd.afinity.ui.components.AFinitySnackbar
@@ -77,6 +79,7 @@ import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
 import com.makd.afinity.ui.music.player.components.MusicPlayerControls
 import com.makd.afinity.ui.player.components.PlaybackStatsOverlay
+import com.makd.afinity.ui.player.components.musicQualityShortLabel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
@@ -89,6 +92,7 @@ fun SharedTransitionScope.MusicPlayerScreen(
 ) {
     val playbackState by viewModel.playbackState.collectAsStateWithLifecycle()
     val equalizerState by viewModel.equalizerState.collectAsStateWithLifecycle()
+    val musicQuality by viewModel.musicQuality.collectAsStateWithLifecycle()
     val lyrics by viewModel.lyrics.collectAsStateWithLifecycle()
     val showLyrics by viewModel.showLyrics.collectAsStateWithLifecycle()
     val lyricsLoading by viewModel.lyricsLoading.collectAsStateWithLifecycle()
@@ -103,6 +107,7 @@ fun SharedTransitionScope.MusicPlayerScreen(
     var showQueue by remember { mutableStateOf(false) }
     var showSleepTimer by remember { mutableStateOf(false) }
     var showEqualizer by remember { mutableStateOf(false) }
+    var showQualitySheet by remember { mutableStateOf(false) }
     var showAddToPlaylist by remember { mutableStateOf(false) }
     var showCastChooser by remember { mutableStateOf(false) }
     var radioSeed by remember { mutableStateOf<RadioSeed?>(null) }
@@ -204,6 +209,7 @@ fun SharedTransitionScope.MusicPlayerScreen(
                             }),
                     isRadioActive = radioState.isActive,
                     onOpenEqualizer = { showEqualizer = true },
+                    onOpenQuality = { showQualitySheet = true },
                     onCastClick = { showCastChooser = true },
                     isMusicCasting = isMusicCasting,
                     paddingValues = paddingValues,
@@ -249,6 +255,7 @@ fun SharedTransitionScope.MusicPlayerScreen(
                             }),
                     isRadioActive = radioState.isActive,
                     onOpenEqualizer = { showEqualizer = true },
+                    onOpenQuality = { showQualitySheet = true },
                     onCastClick = { showCastChooser = true },
                     isMusicCasting = isMusicCasting,
                     paddingValues = paddingValues,
@@ -277,6 +284,14 @@ fun SharedTransitionScope.MusicPlayerScreen(
                 onVolumeBoostChanged = viewModel::setVolumeBoost,
                 onDismiss = { showEqualizer = false },
                 presets = viewModel.equalizerPresets,
+            )
+        }
+
+        if (showQualitySheet) {
+            MusicQualitySheet(
+                currentQuality = musicQuality,
+                onSelect = viewModel::setMusicQuality,
+                onDismiss = { showQualitySheet = false },
             )
         }
 
@@ -344,6 +359,7 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
     onStartRadio: (() -> Unit)? = null,
     isRadioActive: Boolean = false,
     onOpenEqualizer: () -> Unit = {},
+    onOpenQuality: () -> Unit = {},
     onCastClick: () -> Unit = {},
     isMusicCasting: Boolean = false,
     paddingValues: PaddingValues,
@@ -351,6 +367,7 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
 ) {
     val playbackState by viewModel.playbackState.collectAsStateWithLifecycle()
     val equalizerState by viewModel.equalizerState.collectAsStateWithLifecycle()
+    val musicQuality by viewModel.musicQuality.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 24.dp),
@@ -597,6 +614,11 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
                                 else Color.White.copy(alpha = 0.8f),
                         )
                     }
+                    MusicQualityPill(
+                        quality = musicQuality,
+                        onClick = onOpenQuality,
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                    )
                     IconButton(onClick = viewModel::toggleCurrentTrackFavorite) {
                         Icon(
                             painter =
@@ -737,6 +759,7 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
     onStartRadio: (() -> Unit)? = null,
     isRadioActive: Boolean = false,
     onOpenEqualizer: () -> Unit = {},
+    onOpenQuality: () -> Unit = {},
     onCastClick: () -> Unit = {},
     isMusicCasting: Boolean = false,
     paddingValues: PaddingValues,
@@ -744,6 +767,7 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
 ) {
     val playbackState by viewModel.playbackState.collectAsStateWithLifecycle()
     val equalizerState by viewModel.equalizerState.collectAsStateWithLifecycle()
+    val musicQuality by viewModel.musicQuality.collectAsStateWithLifecycle()
 
     Row(
         modifier =
@@ -1004,6 +1028,11 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                                     else Color.White.copy(alpha = 0.8f),
                             )
                         }
+                        MusicQualityPill(
+                            quality = musicQuality,
+                            onClick = onOpenQuality,
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                        )
                         IconButton(onClick = viewModel::toggleCurrentTrackFavorite) {
                             Icon(
                                 painter =
@@ -1137,5 +1166,33 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
 
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+}
+
+@Composable
+private fun MusicQualityPill(
+    quality: MusicQuality,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(50))
+                .background(Color.White.copy(alpha = 0.1f))
+                .clickable(
+                    onClickLabel = stringResource(R.string.cd_music_quality),
+                    onClick = onClick,
+                )
+                .padding(horizontal = 12.dp, vertical = 7.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = musicQualityShortLabel(quality),
+            style =
+                MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = Color.White.copy(alpha = 0.8f),
+            maxLines = 1,
+        )
     }
 }

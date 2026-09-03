@@ -1,10 +1,14 @@
 package com.makd.afinity.data.repository.playback
 
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.player.StreamDecision
+import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.player.profile.AndroidDeviceProfileFactory
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.operations.MediaInfoApi
@@ -20,8 +24,7 @@ import org.jellyfin.sdk.model.api.PlaybackProgressInfo
 import org.jellyfin.sdk.model.api.PlaybackStartInfo
 import org.jellyfin.sdk.model.api.PlaybackStopInfo
 import org.jellyfin.sdk.model.api.RepeatMode
-import org.jellyfin.sdk.model.api.SubtitleDeliveryMethod
-import org.jellyfin.sdk.model.api.SubtitleProfile
+import org.jellyfin.sdk.model.api.TranscodingInfo
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -34,39 +37,46 @@ constructor(
     private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
     private val preferencesRepository: PreferencesRepository,
+    private val deviceProfileFactory: AndroidDeviceProfileFactory,
 ) : PlaybackRepository {
 
     private suspend fun getCurrentUserId(): UUID? {
         return sessionManager.currentSession.value?.userId
     }
 
-    private fun buildDeviceProfile(maxStreamingBitrate: Int?): DeviceProfile =
-        DeviceProfile(
-            name = "Direct play all",
-            maxStaticBitrate = maxStreamingBitrate ?: 1_000_000_000,
-            maxStreamingBitrate = maxStreamingBitrate ?: 1_000_000_000,
-            codecProfiles = emptyList(),
-            containerProfiles = emptyList(),
-            directPlayProfiles = emptyList(),
-            transcodingProfiles = emptyList(),
-            subtitleProfiles =
-                listOf(
-                    SubtitleProfile("srt", SubtitleDeliveryMethod.EXTERNAL),
-                    SubtitleProfile("ass", SubtitleDeliveryMethod.EXTERNAL),
-                    SubtitleProfile("ssa", SubtitleDeliveryMethod.EXTERNAL),
-                    SubtitleProfile("vtt", SubtitleDeliveryMethod.EXTERNAL),
-                    SubtitleProfile("sub", SubtitleDeliveryMethod.EXTERNAL),
-                    SubtitleProfile("idx", SubtitleDeliveryMethod.EXTERNAL),
-                ),
-        )
+    private suspend fun buildDeviceProfile(
+        quality: VideoQuality,
+        allowTranscoding: Boolean,
+    ): DeviceProfile {
+        val maxAudioChannels = preferencesRepository.getTranscodeMaxAudioChannels()
+        val allowHdrPassthrough = preferencesRepository.getAllowHdrPassthrough()
+        return if (preferencesRepository.useExoPlayer.first()) {
+            deviceProfileFactory.createExoPlayerProfile(
+                quality = quality,
+                maxAudioChannels = maxAudioChannels,
+                allowHdrPassthrough = allowHdrPassthrough,
+                allowTranscoding = allowTranscoding,
+            )
+        } else {
+            deviceProfileFactory.createMpvProfile(
+                quality = quality,
+                maxAudioChannels = maxAudioChannels,
+                allowHdrPassthrough = allowHdrPassthrough,
+                allowTranscoding = allowTranscoding,
+            )
+        }
+    }
 
     override suspend fun getPlaybackInfo(
         itemId: UUID,
-        maxStreamingBitrate: Int?,
+        quality: VideoQuality,
         maxAudioChannels: Int?,
         audioStreamIndex: Int?,
         subtitleStreamIndex: Int?,
         mediaSourceId: String?,
+        startTimeTicks: Long,
+        enableDirectPlay: Boolean,
+        allowTranscoding: Boolean,
     ): PlaybackInfoResponse? {
         return withContext(Dispatchers.IO) {
             try {
@@ -77,18 +87,18 @@ constructor(
                 val playbackInfoDto =
                     PlaybackInfoDto(
                         userId = userId,
-                        maxStreamingBitrate = maxStreamingBitrate,
-                        startTimeTicks = 0L,
+                        maxStreamingBitrate = quality.maxBitrate.takeIf { it > 0 },
+                        startTimeTicks = startTimeTicks,
                         audioStreamIndex = audioStreamIndex,
                         subtitleStreamIndex = subtitleStreamIndex,
                         maxAudioChannels = maxAudioChannels,
                         mediaSourceId = mediaSourceId,
-                        deviceProfile = buildDeviceProfile(maxStreamingBitrate),
-                        enableDirectPlay = true,
-                        enableDirectStream = true,
-                        enableTranscoding = true,
-                        allowVideoStreamCopy = true,
-                        allowAudioStreamCopy = true,
+                        deviceProfile = buildDeviceProfile(quality, allowTranscoding),
+                        enableDirectPlay = enableDirectPlay,
+                        enableDirectStream = enableDirectPlay,
+                        enableTranscoding = allowTranscoding,
+                        allowVideoStreamCopy = enableDirectPlay,
+                        allowAudioStreamCopy = enableDirectPlay,
                     )
 
                 val response =
@@ -111,7 +121,7 @@ constructor(
 
     override suspend fun getMediaSources(
         itemId: UUID,
-        maxStreamingBitrate: Int?,
+        quality: VideoQuality,
         maxAudioChannels: Int?,
         audioStreamIndex: Int?,
         subtitleStreamIndex: Int?,
@@ -127,13 +137,13 @@ constructor(
                 val playbackInfoDto =
                     PlaybackInfoDto(
                         userId = userId,
-                        maxStreamingBitrate = maxStreamingBitrate,
+                        maxStreamingBitrate = quality.maxBitrate.takeIf { it > 0 },
                         startTimeTicks = 0L,
                         audioStreamIndex = audioStreamIndex,
                         subtitleStreamIndex = subtitleStreamIndex,
                         maxAudioChannels = maxAudioChannels,
                         mediaSourceId = mediaSourceId,
-                        deviceProfile = buildDeviceProfile(maxStreamingBitrate),
+                        deviceProfile = buildDeviceProfile(quality, true),
                         enableDirectPlay = true,
                         enableDirectStream = true,
                         enableTranscoding = true,
@@ -186,6 +196,84 @@ constructor(
         } catch (e: Exception) {
             Timber.e(e, "Failed to build stream URL for item: $itemId")
             null
+        }
+    }
+
+    override suspend fun resolveStream(
+        itemId: UUID,
+        source: MediaSourceInfo,
+        audioStreamIndex: Int?,
+        subtitleStreamIndex: Int?,
+        startTimeTicks: Long?,
+        playSessionId: String?,
+    ): StreamDecision? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
+                val mediaSourceId = source.id ?: return@withContext null
+
+                if (source.supportsDirectPlay) {
+                    val url =
+                        getStreamUrl(
+                            itemId = itemId,
+                            mediaSourceId = mediaSourceId,
+                            audioStreamIndex = audioStreamIndex,
+                            subtitleStreamIndex = subtitleStreamIndex,
+                            startTimeTicks = startTimeTicks,
+                            playSessionId = playSessionId,
+                            tag = source.eTag,
+                        ) ?: return@withContext null
+                    return@withContext StreamDecision.DirectPlay(url)
+                }
+
+                val transcodingUrl = source.transcodingUrl?.takeIf { it.isNotBlank() }
+                if (transcodingUrl == null) {
+                    Timber.e("Source ${source.id} supports neither direct play nor transcoding")
+                    return@withContext null
+                }
+
+                val rewritten =
+                    TranscodingUrl.withSubtitleStreamIndex(transcodingUrl, subtitleStreamIndex).let {
+                        if (audioStreamIndex != null) {
+                            TranscodingUrl.withAudioStreamIndex(it, audioStreamIndex)
+                        } else {
+                            it
+                        }
+                    }
+                        .let {
+                            if (startTimeTicks != null && startTimeTicks > 0L) {
+                                TranscodingUrl.withStartTimeTicks(it, startTimeTicks)
+                            } else {
+                                it
+                            }
+                        }
+
+                val absolute = apiClient.createUrl(rewritten, ignorePathParameters = true)
+                val reasons = TranscodingUrl.transcodeReasons(rewritten)
+                val burnedIn = TranscodingUrl.burnedInSubtitleIndex(rewritten)
+
+                Timber.d(
+                    "Resolved stream for $itemId: directStream=${source.supportsDirectStream} protocol=${source.transcodingSubProtocol} reasons=$reasons burnedIn=$burnedIn"
+                )
+
+                if (source.supportsDirectStream) {
+                    StreamDecision.DirectStream(
+                        url = absolute,
+                        protocol = source.transcodingSubProtocol,
+                        transcodeReasons = reasons,
+                    )
+                } else {
+                    StreamDecision.Transcode(
+                        url = absolute,
+                        protocol = source.transcodingSubProtocol,
+                        transcodeReasons = reasons,
+                        burnedInSubtitleIndex = burnedIn,
+                    )
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to resolve stream for item: $itemId")
+                null
+            }
         }
     }
 
@@ -503,6 +591,32 @@ constructor(
                 null
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting active session")
+                null
+            }
+        }
+    }
+
+    override suspend fun getTranscodingInfo(): TranscodingInfo? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
+                val deviceId = apiClient.deviceInfo?.id ?: return@withContext null
+                val sessionApi = SessionApi(apiClient)
+                val sessions = sessionApi.getSessions(deviceId = deviceId).content.orEmpty()
+                val info =
+                    sessions.firstOrNull { it.transcodingInfo != null }?.transcodingInfo
+                        ?: sessions.firstOrNull { it.deviceId == deviceId }?.transcodingInfo
+                if (info == null) {
+                    Timber.d(
+                        "No transcoding info for deviceId=$deviceId (sessions=${sessions.size})"
+                    )
+                }
+                info
+            } catch (e: ApiClientException) {
+                Timber.e(e, "Failed to read transcoding info")
+                null
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error reading transcoding info")
                 null
             }
         }

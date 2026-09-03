@@ -481,7 +481,12 @@ class AudioService : MediaSessionService() {
                 musicPlaybackManager.updateTrack(track)
                 if (track != null) {
                     applyNormalizationGain(track)
-                    musicProgressReporter.onPlaybackStarted(track.id, 0L)
+                    musicProgressReporter.onPlaybackStarted(
+                        trackId = track.id,
+                        startPositionMs = 0L,
+                        playSessionId = musicQueueManager.playSessionIdFor(track.id),
+                        playMethod = musicQueueManager.playMethodFor(track.id),
+                    )
                 }
                 radioManager.onTrackChanged(track)
             }

@@ -38,9 +38,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RangeSlider
-import androidx.compose.material3.SliderColors
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -75,6 +72,7 @@ import com.makd.afinity.data.models.jellyseerr.TmdbKeyword
 import com.makd.afinity.data.models.jellyseerr.TvStatus
 import com.makd.afinity.data.models.jellyseerr.WatchProviderDetails
 import com.makd.afinity.data.models.jellyseerr.WatchProviderRegion
+import com.makd.afinity.ui.components.AfinityRangeSlider
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.filter.FilterAccordionSection
 import com.makd.afinity.ui.components.filter.FilterSectionHeader
@@ -337,11 +335,10 @@ fun DiscoverFilterBottomSheet(
                             FilterSectionHeader(
                                 "${stringResource(R.string.discover_filter_runtime)}  ${runtimeRange.start.roundToInt()}–${runtimeRange.endInclusive.roundToInt()} min"
                             )
-                            RangeSlider(
+                            AfinityRangeSlider(
                                 value = runtimeRange,
                                 onValueChange = { runtimeRange = it },
                                 valueRange = 0f..400f,
-                                colors = discoverSliderColors(),
                                 modifier = Modifier.fillMaxWidth().height(24.dp),
                             )
 
@@ -350,11 +347,10 @@ fun DiscoverFilterBottomSheet(
                             FilterSectionHeader(
                                 "${stringResource(R.string.discover_filter_rating)}  ${"%.1f".format(ratingRange.start)}–${"%.1f".format(ratingRange.endInclusive)}"
                             )
-                            RangeSlider(
+                            AfinityRangeSlider(
                                 value = ratingRange,
                                 onValueChange = { ratingRange = it },
                                 valueRange = 0f..10f,
-                                colors = discoverSliderColors(),
                                 modifier = Modifier.fillMaxWidth().height(24.dp),
                             )
 
@@ -363,11 +359,10 @@ fun DiscoverFilterBottomSheet(
                             FilterSectionHeader(
                                 "${stringResource(R.string.discover_filter_vote_count)}  ${voteCountRange.start.roundToInt()}–${voteCountRange.endInclusive.roundToInt()}"
                             )
-                            RangeSlider(
+                            AfinityRangeSlider(
                                 value = voteCountRange,
                                 onValueChange = { voteCountRange = it },
                                 valueRange = 0f..1000f,
-                                colors = discoverSliderColors(),
                                 modifier = Modifier.fillMaxWidth().height(24.dp),
                             )
                         }
@@ -734,16 +729,6 @@ fun DiscoverFilterBottomSheet(
         )
     }
 }
-
-@Composable
-private fun discoverSliderColors(): SliderColors =
-    SliderDefaults.colors(
-        thumbColor = MaterialTheme.colorScheme.primary,
-        activeTrackColor = MaterialTheme.colorScheme.primary,
-        inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-        activeTickColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
-        inactiveTickColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-    )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

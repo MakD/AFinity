@@ -53,6 +53,7 @@ import timber.log.Timber
 import java.io.File
 import java.io.IOException
 import java.net.Inet4Address
+import java.util.UUID
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
@@ -84,6 +85,10 @@ import kotlin.time.Duration.Companion.seconds
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+
+    private const val DEVICE_PREFS = "afinity_device"
+    private const val KEY_DEVICE_ID = "device_id"
+
     @Provides
     @Singleton
     fun provideClientInfo(): ClientInfo =
@@ -94,10 +99,26 @@ object NetworkModule {
     fun provideDeviceInfo(@ApplicationContext context: Context): DeviceInfo {
         val base = androidDevice(context)
         return base.copy(
-            id = "${base.id}-${BuildConfig.APPLICATION_ID}",
+            id = persistentDeviceId(context, base.id),
             name = "${base.name} (${BuildConfig.BUILD_TYPE})",
             languages = preferredLanguages(context),
         )
+    }
+
+    private fun persistentDeviceId(context: Context, hardwareId: String?): String {
+        val prefs = context.getSharedPreferences(DEVICE_PREFS, Context.MODE_PRIVATE)
+        prefs
+            .getString(KEY_DEVICE_ID, null)
+            ?.takeIf { it.isNotBlank() }
+            ?.let {
+                return it
+            }
+        val seed =
+            hardwareId?.takeIf { it.isNotBlank() && it != "null" }
+                ?: UUID.randomUUID().toString().replace("-", "")
+        val deviceId = "$seed-${BuildConfig.APPLICATION_ID}"
+        prefs.edit().putString(KEY_DEVICE_ID, deviceId).apply()
+        return deviceId
     }
 
     private fun preferredLanguages(context: Context): List<String> {

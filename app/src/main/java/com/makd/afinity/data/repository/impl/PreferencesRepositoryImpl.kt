@@ -18,11 +18,13 @@ import com.makd.afinity.data.models.player.MpvHdrOutput
 import com.makd.afinity.data.models.player.MpvHwDec
 import com.makd.afinity.data.models.player.MpvToneMapping
 import com.makd.afinity.data.models.player.MpvVideoOutput
+import com.makd.afinity.data.models.player.MusicQuality
 import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.SubtitleHorizontalAlignment
 import com.makd.afinity.data.models.player.SubtitleOutlineStyle
 import com.makd.afinity.data.models.player.SubtitlePreferences
 import com.makd.afinity.data.models.player.SubtitleVerticalPosition
+import com.makd.afinity.data.models.player.VideoQuality
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.di.AppPreferences
@@ -52,6 +54,13 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
         val AUTO_PLAY = booleanPreferencesKey("auto_play")
         val MAX_BITRATE = intPreferencesKey("max_bitrate")
+        val VIDEO_QUALITY_WIFI = intPreferencesKey("video_quality_wifi")
+        val VIDEO_QUALITY_CELLULAR = intPreferencesKey("video_quality_cellular")
+        val TRANSCODE_MAX_AUDIO_CHANNELS = intPreferencesKey("transcode_max_audio_channels")
+        val ALLOW_HDR_PASSTHROUGH = booleanPreferencesKey("allow_hdr_passthrough")
+        val NEVER_TRANSCODE = booleanPreferencesKey("never_transcode")
+        val MUSIC_QUALITY_WIFI = intPreferencesKey("music_quality_wifi")
+        val MUSIC_QUALITY_CELLULAR = intPreferencesKey("music_quality_cellular")
         val SKIP_INTRO_ENABLED_LEGACY = booleanPreferencesKey("skip_intro_enabled")
         val SKIP_OUTRO_ENABLED_LEGACY = booleanPreferencesKey("skip_outro_enabled")
         val SKIP_INTRO_MODE = stringPreferencesKey("skip_intro_mode")
@@ -245,6 +254,95 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
     override suspend fun getMaxBitrate(): Int? {
         return dataStore.data.first()[Keys.MAX_BITRATE]
+    }
+
+    override suspend fun setVideoQualityWifi(bitrate: Int) {
+        dataStore.edit { preferences -> preferences[Keys.VIDEO_QUALITY_WIFI] = bitrate }
+    }
+
+    override suspend fun getVideoQualityWifi(): Int {
+        return dataStore.data.first()[Keys.VIDEO_QUALITY_WIFI] ?: VideoQuality.ORIGINAL_BITRATE
+    }
+
+    override fun getVideoQualityWifiFlow(): Flow<Int> {
+        return dataStore.data.map { it[Keys.VIDEO_QUALITY_WIFI] ?: VideoQuality.ORIGINAL_BITRATE }
+    }
+
+    override suspend fun setVideoQualityCellular(bitrate: Int) {
+        dataStore.edit { preferences -> preferences[Keys.VIDEO_QUALITY_CELLULAR] = bitrate }
+    }
+
+    override suspend fun getVideoQualityCellular(): Int {
+        return dataStore.data.first()[Keys.VIDEO_QUALITY_CELLULAR] ?: VideoQuality.ORIGINAL_BITRATE
+    }
+
+    override fun getVideoQualityCellularFlow(): Flow<Int> {
+        return dataStore.data.map {
+            it[Keys.VIDEO_QUALITY_CELLULAR] ?: VideoQuality.ORIGINAL_BITRATE
+        }
+    }
+
+    override suspend fun setTranscodeMaxAudioChannels(channels: Int) {
+        dataStore.edit { preferences -> preferences[Keys.TRANSCODE_MAX_AUDIO_CHANNELS] = channels }
+    }
+
+    override suspend fun getTranscodeMaxAudioChannels(): Int {
+        return dataStore.data.first()[Keys.TRANSCODE_MAX_AUDIO_CHANNELS] ?: 6
+    }
+
+    override fun getTranscodeMaxAudioChannelsFlow(): Flow<Int> {
+        return dataStore.data.map { it[Keys.TRANSCODE_MAX_AUDIO_CHANNELS] ?: 6 }
+    }
+
+    override suspend fun setAllowHdrPassthrough(allow: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.ALLOW_HDR_PASSTHROUGH] = allow }
+    }
+
+    override suspend fun getAllowHdrPassthrough(): Boolean {
+        return dataStore.data.first()[Keys.ALLOW_HDR_PASSTHROUGH] ?: true
+    }
+
+    override fun getAllowHdrPassthroughFlow(): Flow<Boolean> {
+        return dataStore.data.map { it[Keys.ALLOW_HDR_PASSTHROUGH] ?: true }
+    }
+
+    override suspend fun setMusicQualityWifi(bitrate: Int) {
+        dataStore.edit { preferences -> preferences[Keys.MUSIC_QUALITY_WIFI] = bitrate }
+    }
+
+    override suspend fun getMusicQualityWifi(): Int {
+        return dataStore.data.first()[Keys.MUSIC_QUALITY_WIFI] ?: MusicQuality.ORIGINAL_BITRATE
+    }
+
+    override fun getMusicQualityWifiFlow(): Flow<Int> {
+        return dataStore.data.map { it[Keys.MUSIC_QUALITY_WIFI] ?: MusicQuality.ORIGINAL_BITRATE }
+    }
+
+    override suspend fun setMusicQualityCellular(bitrate: Int) {
+        dataStore.edit { preferences -> preferences[Keys.MUSIC_QUALITY_CELLULAR] = bitrate }
+    }
+
+    override suspend fun getMusicQualityCellular(): Int {
+        return dataStore.data.first()[Keys.MUSIC_QUALITY_CELLULAR]
+            ?: MusicQuality.CELLULAR_DEFAULT_BITRATE
+    }
+
+    override fun getMusicQualityCellularFlow(): Flow<Int> {
+        return dataStore.data.map {
+            it[Keys.MUSIC_QUALITY_CELLULAR] ?: MusicQuality.CELLULAR_DEFAULT_BITRATE
+        }
+    }
+
+    override suspend fun setNeverTranscode(never: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.NEVER_TRANSCODE] = never }
+    }
+
+    override suspend fun getNeverTranscode(): Boolean {
+        return dataStore.data.first()[Keys.NEVER_TRANSCODE] ?: false
+    }
+
+    override fun getNeverTranscodeFlow(): Flow<Boolean> {
+        return dataStore.data.map { it[Keys.NEVER_TRANSCODE] ?: false }
     }
 
     override suspend fun setCombineLibrarySections(combine: Boolean) {
