@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
+import com.makd.afinity.data.discovery.AfinityServiceTypes
+import com.makd.afinity.data.discovery.DiscoveredService
+import com.makd.afinity.data.discovery.LocalServiceDiscovery
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.auth.QuickConnectAuthorization
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
@@ -32,12 +35,27 @@ constructor(
     private val jellyseerrRepository: JellyseerrRepository,
     private val authRepository: AuthRepository,
     private val sessionManager: SessionManager,
+    private val localServiceDiscovery: LocalServiceDiscovery,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(JellyseerrLoginUiState())
     val uiState: StateFlow<JellyseerrLoginUiState> = _uiState.asStateFlow()
 
+    private val _discoveredServices = MutableStateFlow<List<DiscoveredService>>(emptyList())
+    val discoveredServices: StateFlow<List<DiscoveredService>> = _discoveredServices.asStateFlow()
+
     private var probeJob: Job? = null
+    private var discoveryJob: Job? = null
+
+    fun discoverLocalServers() {
+        discoveryJob?.cancel()
+        discoveryJob =
+            viewModelScope.launch {
+                localServiceDiscovery.discover(AfinityServiceTypes.JELLYSEERR).collect { services ->
+                    _discoveredServices.value = services
+                }
+            }
+    }
 
     private companion object {
         const val MEDIA_SERVER_TYPE_JELLYFIN = 2

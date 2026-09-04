@@ -32,6 +32,7 @@
     <string name="login_btn_generate_code">Generate Code</string>
     <string name="login_quick_connect_instructions">Enter this code in your browser</string>
     <string name="cd_server_icon">Server Icon</string>
+    <string name="discovery_found_on_network">Found on your network</string>
 
     <!--TopAppBar-->
     <string name="cd_search_icon">Search</string>

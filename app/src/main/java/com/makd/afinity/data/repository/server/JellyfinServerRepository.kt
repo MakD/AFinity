@@ -1,6 +1,8 @@
 package com.makd.afinity.data.repository.server
 
 import android.content.Context
+import com.makd.afinity.data.discovery.AfinityServiceTypes
+import com.makd.afinity.data.discovery.LocalServiceDiscovery
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.network.UrlCandidates
@@ -9,6 +11,7 @@ import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.di.ProberClient
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -18,11 +21,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -52,6 +55,7 @@ constructor(
     private val sessionManagerProvider: Provider<SessionManager>,
     private val databaseRepository: DatabaseRepository,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
+    private val localServiceDiscovery: LocalServiceDiscovery,
     private val serverAddressResolverProvider: Provider<ServerAddressResolver>,
     @ApplicationScope private val scope: CoroutineScope,
 ) : ServerRepository {
@@ -216,30 +220,73 @@ constructor(
         }
     }
 
-    override fun discoverServersFlow(): Flow<List<Server>> = flow {
-        try {
-            val discoveredServers = mutableListOf<Server>()
-            emit(emptyList())
+    override fun discoverServersFlow(): Flow<List<Server>> = channelFlow {
+        val discoveredServers = LinkedHashMap<String, Server>()
+        val discoveryMutex = Mutex()
 
-            jellyfin.discovery.discoverLocalServers(timeout = 5000, maxServers = 10).collect {
-                serverInfo ->
-                Timber.d("Discovered server: ${serverInfo.name} at ${serverInfo.address}")
+        send(emptyList())
 
-                val server =
-                    Server(
-                        id = serverInfo.id ?: UUID.randomUUID().toString(),
-                        name = serverInfo.name ?: "Jellyfin Server",
-                        version = null,
-                        address = serverInfo.address ?: "",
-                    )
-                discoveredServers.add(server)
-                emit(discoveredServers.toList())
+        suspend fun addServer(server: Server, source: String) {
+            val key = server.address.trimEnd('/')
+            if (key.isBlank()) return
+            val snapshot =
+                discoveryMutex.withLock {
+                    if (discoveredServers.containsKey(key)) {
+                        null
+                    } else {
+                        discoveredServers[key] = server
+                        discoveredServers.values.toList()
+                    }
+                }
+            if (snapshot != null) {
+                Timber.d("Discovered server via $source: ${server.name} at ${server.address}")
+                send(snapshot)
             }
+        }
 
-            Timber.d("Discovery complete: ${discoveredServers.size} servers found")
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to discover servers")
-            emit(emptyList())
+        launch {
+            try {
+                jellyfin.discovery.discoverLocalServers(timeout = 5000, maxServers = 10).collect {
+                    serverInfo ->
+                    addServer(
+                        Server(
+                            id = serverInfo.id ?: UUID.randomUUID().toString(),
+                            name = serverInfo.name ?: "Jellyfin Server",
+                            version = null,
+                            address = serverInfo.address ?: "",
+                        ),
+                        "broadcast",
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Broadcast server discovery failed")
+            }
+        }
+
+        launch {
+            try {
+                localServiceDiscovery
+                    .discover(AfinityServiceTypes.JELLYFIN, timeoutMs = 5000)
+                    .collect { services ->
+                        services.forEach { service ->
+                            addServer(
+                                Server(
+                                    id = UUID.randomUUID().toString(),
+                                    name = service.name,
+                                    version = null,
+                                    address = service.url,
+                                ),
+                                "mdns",
+                            )
+                        }
+                    }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "mDNS server discovery failed")
+            }
         }
     }
 

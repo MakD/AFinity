@@ -57,6 +57,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.ui.audiobookshelf.login.AudiobookshelfLoginViewModel
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.DiscoveredServicesSection
 import com.makd.afinity.ui.components.LoadingButton
 import com.makd.afinity.util.isInsecurePublicUrl
 
@@ -68,12 +69,15 @@ internal fun AudiobookshelfLoginContent(
     viewModel: AudiobookshelfLoginViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val discoveredServices by viewModel.discoveredServices.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
     val autofillManager = LocalAutofillManager.current
     @Suppress("UNUSED_VARIABLE") val context = LocalContext.current
     var passwordVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.isLoggedIn) { if (uiState.isLoggedIn) onDismiss() }
+
+    LaunchedEffect(Unit) { viewModel.discoverLocalServers() }
 
     Column(
         modifier =
@@ -96,6 +100,11 @@ internal fun AudiobookshelfLoginContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+
+        DiscoveredServicesSection(
+            services = discoveredServices,
+            onSelect = { viewModel.updateServerUrl(it.url) },
+        )
 
         InsecureConnectionBannerAbs(serverUrl = uiState.serverUrl)
 

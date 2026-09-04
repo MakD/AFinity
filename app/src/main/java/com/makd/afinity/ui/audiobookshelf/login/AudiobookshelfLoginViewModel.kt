@@ -4,11 +4,15 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
+import com.makd.afinity.data.discovery.AfinityServiceTypes
+import com.makd.afinity.data.discovery.DiscoveredService
+import com.makd.afinity.data.discovery.LocalServiceDiscovery
 import com.makd.afinity.data.network.UrlCandidates
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,13 +28,30 @@ constructor(
     @param:ApplicationContext private val context: Context,
     private val audiobookshelfRepository: AudiobookshelfRepository,
     private val preferencesRepository: PreferencesRepository,
+    private val localServiceDiscovery: LocalServiceDiscovery,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AudiobookshelfLoginUiState())
     val uiState: StateFlow<AudiobookshelfLoginUiState> = _uiState.asStateFlow()
 
+    private val _discoveredServices = MutableStateFlow<List<DiscoveredService>>(emptyList())
+    val discoveredServices: StateFlow<List<DiscoveredService>> = _discoveredServices.asStateFlow()
+
+    private var discoveryJob: Job? = null
+
     val isAuthenticated = audiobookshelfRepository.isAuthenticated
     val currentConfig = audiobookshelfRepository.currentConfig
+
+    fun discoverLocalServers() {
+        discoveryJob?.cancel()
+        discoveryJob =
+            viewModelScope.launch {
+                localServiceDiscovery.discover(AfinityServiceTypes.AUDIOBOOKSHELF).collect {
+                    services ->
+                    _discoveredServices.value = services
+                }
+            }
+    }
 
     fun updateServerUrl(url: String) {
         val trimmed = url.trim()

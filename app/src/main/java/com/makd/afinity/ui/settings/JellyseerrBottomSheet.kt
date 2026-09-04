@@ -59,6 +59,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.DiscoveredServicesSection
 import com.makd.afinity.ui.components.LoadingButton
 import com.makd.afinity.ui.jellyseerr.JellyseerrLoginViewModel
 import com.makd.afinity.util.isInsecurePublicUrl
@@ -71,10 +72,13 @@ internal fun JellyseerrLoginContent(
     viewModel: JellyseerrLoginViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val discoveredServices by viewModel.discoveredServices.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
     val autofillManager = LocalAutofillManager.current
     var passwordVisible by remember { mutableStateOf(false) }
     val busy = uiState.isLoading || uiState.isQuickConnecting
+
+    LaunchedEffect(Unit) { viewModel.discoverLocalServers() }
 
     LaunchedEffect(uiState.loginSuccess) {
         if (uiState.loginSuccess) {
@@ -114,6 +118,11 @@ internal fun JellyseerrLoginContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+
+        DiscoveredServicesSection(
+            services = discoveredServices,
+            onSelect = { viewModel.updateServerUrl(it.url) },
+        )
 
         InsecureConnectionBannerJellyseerr(serverUrl = uiState.serverUrl)
 
