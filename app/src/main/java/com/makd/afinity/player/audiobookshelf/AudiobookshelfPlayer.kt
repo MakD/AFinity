@@ -553,7 +553,7 @@ constructor(
     }
 
     @OptIn(UnstableApi::class)
-    fun closeSession() {
+    fun closeSession(stopService: Boolean = true) {
         cancelSleepTimer()
         val state = playbackManager.playbackState.value
         val sessionId = state.sessionId
@@ -654,7 +654,7 @@ constructor(
         Timber.d(
             "ABS closeSession: DONE — sessionId now=${playbackManager.playbackState.value.sessionId} musicTrack=${musicPlaybackManager.state.value.currentTrack?.name}"
         )
-        if (sessionId != null) {
+        if (sessionId != null && stopService) {
             context.startService(
                 Intent(context, com.makd.afinity.player.AudioService::class.java)
                     .setAction(com.makd.afinity.player.AudioService.ACTION_STOP)
@@ -664,6 +664,10 @@ constructor(
 
     fun release() {
         closeSession()
+    }
+
+    fun releaseForEngineSwitch() {
+        closeSession(stopService = false)
     }
 }
 

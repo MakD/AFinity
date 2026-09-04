@@ -1348,7 +1348,7 @@ internal fun startMusicService(context: Context) {
             AbsPlayerEntryPoint::class.java,
         )
         .audiobookshelfPlayer()
-        .release()
+        .releaseForEngineSwitch()
     context.startService(
         Intent(context, AudioService::class.java).setAction(AudioService.ACTION_ENGINE_MUSIC)
     )
