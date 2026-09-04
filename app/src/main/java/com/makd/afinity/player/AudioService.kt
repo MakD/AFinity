@@ -11,6 +11,7 @@ import android.os.Handler
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
@@ -20,6 +21,7 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.HttpDataSource
+import androidx.media3.exoplayer.DecoderReuseEvaluation
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
@@ -497,6 +499,9 @@ class AudioService : MediaSessionService() {
                 musicQueueManager.onTrackChanged(newIndex)
                 val track = musicQueueManager.currentTrack
                 musicPlaybackManager.updateTrack(track)
+                musicPlaybackManager.updateServerTranscode(
+                    track != null && musicQueueManager.isServerTranscode(track.id)
+                )
                 if (track != null) {
                     applyNormalizationGain(track)
                     musicProgressReporter.onPlaybackStarted(
@@ -568,6 +573,16 @@ class AudioService : MediaSessionService() {
                     else -> {}
                 }
             }
+
+            override fun onAudioInputFormatChanged(
+                eventTime: AnalyticsListener.EventTime,
+                format: Format,
+                decoderReuseEvaluation: DecoderReuseEvaluation?,
+            ) {
+                if (activeEngine == ActiveEngine.MUSIC) {
+                    musicPlaybackManager.updateAudioCodec(format.sampleMimeType)
+                }
+            }
         }
 
     private fun startMusicQueueListener() {
@@ -616,6 +631,9 @@ class AudioService : MediaSessionService() {
                     track.id,
                     musicQueueManager.playMethodFor(track.id),
                 )
+                if (track.id == musicQueueManager.currentTrack?.id) {
+                    musicPlaybackManager.updateServerTranscode(true)
+                }
                 val item = musicQueueManager.mediaItemFor(track)
                 withContext(Dispatchers.Main) {
                     val player = exoPlayer ?: return@withContext
@@ -758,7 +776,7 @@ class AudioService : MediaSessionService() {
                     .build()
             val layout =
                 if (activeEngine == ActiveEngine.MUSIC) musicCustomLayout() else absCustomLayout()
-            return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+            return MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
                 .setAvailableSessionCommands(allCommands)
                 .setCustomLayout(layout)
                 .build()

@@ -10,4 +10,6 @@ data class MusicPlaybackState(
     val repeatMode: RepeatMode = RepeatMode.OFF,
     val shuffled: Boolean = false,
     val sleepTimerEndMs: Long? = null,
+    val audioCodec: String? = null,
+    val isServerTranscode: Boolean = false,
 )

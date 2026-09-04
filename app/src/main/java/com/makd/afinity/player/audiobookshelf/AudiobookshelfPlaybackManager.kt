@@ -28,9 +28,8 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
     }
 
     fun setSession(session: PlaybackSession, serverUrl: String? = null, token: String? = null) {
-        android.util.Log.d(
-            "ABS-MiniPlayer",
-            "PlaybackManager.setSession: id=${session.id} title=${session.displayTitle} author=${session.displayAuthor}",
+        Timber.d(
+            "PlaybackManager.setSession: id=${session.id} title=${session.displayTitle} author=${session.displayAuthor}"
         )
         _currentSession.value = session
 
@@ -52,6 +51,7 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
                 duration = session.duration,
                 chapters = session.chapters ?: emptyList(),
                 audioTracks = session.audioTracks ?: emptyList(),
+                playMethod = session.playMethod,
                 displayTitle = session.displayTitle ?: "Unknown",
                 displayAuthor = session.displayAuthor,
                 coverUrl = coverUrl,
@@ -165,6 +165,7 @@ data class AudiobookshelfPlaybackState(
     val playbackSpeed: Float = 1.0f,
     val chapters: List<BookChapter> = emptyList(),
     val audioTracks: List<AudioTrack> = emptyList(),
+    val playMethod: Int? = null,
     val currentChapter: BookChapter? = null,
     val sleepTimerEndTime: Long? = null,
     val isPodcastPlaylist: Boolean = false,

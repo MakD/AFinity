@@ -61,6 +61,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.data.models.music.RepeatMode
+import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.ui.audiobookshelf.player.components.EqualizerBottomSheet
 import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 import com.makd.afinity.ui.components.AFinitySnackbar
@@ -572,6 +573,8 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
             onSeekBackward = viewModel::seekBackward,
             onSeekForward = viewModel::seekForward,
             accentColor = animatedColor,
+            audioCodec = playbackState.audioCodec?.let { PlaybackStats.friendlyCodecName(it) },
+            isServerTranscode = playbackState.isServerTranscode,
         )
 
         Spacer(modifier = Modifier.height(28.dp))
@@ -839,6 +842,8 @@ private fun SharedTransitionScope.MusicPlayerLandscape(
                 onSeekBackward = viewModel::seekBackward,
                 onSeekForward = viewModel::seekForward,
                 accentColor = animatedColor,
+                audioCodec = playbackState.audioCodec?.let { PlaybackStats.friendlyCodecName(it) },
+                isServerTranscode = playbackState.isServerTranscode,
             )
 
             Spacer(modifier = Modifier.height(16.dp))

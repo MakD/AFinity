@@ -138,6 +138,14 @@ constructor(
         _currentAudioDecoder.value = if (isHardwareAccelerated) "H/W Dec" else "S/W Dec"
     }
 
+    fun updateAudioCodec(sampleMimeType: String?) {
+        _state.update { it.copy(audioCodec = sampleMimeType) }
+    }
+
+    fun updateServerTranscode(isServerTranscode: Boolean) {
+        _state.update { it.copy(isServerTranscode = isServerTranscode) }
+    }
+
     @Volatile private var exoPlayer: ExoPlayer? = null
 
     private var sleepTimerJob: Job? = null
@@ -154,7 +162,10 @@ constructor(
     }
 
     fun updateTrack(track: AfinityTrack?) {
-        _state.update { it.copy(currentTrack = track) }
+        _state.update {
+            if (it.currentTrack?.id == track?.id) it.copy(currentTrack = track)
+            else it.copy(currentTrack = track, audioCodec = null)
+        }
     }
 
     fun updatePlayingState(isPlaying: Boolean) {

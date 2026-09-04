@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.TransportControls
+import com.makd.afinity.ui.player.components.AudioFormatBadge
 import java.util.Locale
 
 @Composable
@@ -24,9 +25,18 @@ fun MusicPlayerControls(
     onSeekForward: () -> Unit = {},
     modifier: Modifier = Modifier,
     accentColor: Color = MaterialTheme.colorScheme.primary,
+    audioCodec: String? = null,
+    isServerTranscode: Boolean = false,
 ) {
     TransportControls(
         modifier = modifier,
+        timeRowCenter = {
+            AudioFormatBadge(
+                codec = audioCodec,
+                isTranscoding = isServerTranscode,
+                accentColor = accentColor,
+            )
+        },
         position = positionMs.toFloat(),
         range = 0f..durationMs.toFloat().coerceAtLeast(1f),
         bufferedPosition = bufferedPositionMs.toFloat(),

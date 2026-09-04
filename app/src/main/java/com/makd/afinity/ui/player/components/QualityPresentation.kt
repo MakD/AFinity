@@ -5,6 +5,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
@@ -12,7 +13,6 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.player.MusicQuality
 import com.makd.afinity.data.models.player.VideoQuality
 import org.jellyfin.sdk.model.api.TranscodeReason
-import java.util.Locale
 
 fun resolutionLabelFor(width: Int, height: Int): String? {
     if (width <= 0 || height <= 0) return null
@@ -55,6 +55,32 @@ fun PlayMethodBadge(isTranscoding: Boolean, modifier: Modifier = Modifier) {
         color =
             if (isTranscoding) MaterialTheme.colorScheme.primary
             else Color.White.copy(alpha = 0.75f),
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun AudioFormatBadge(
+    codec: String?,
+    isTranscoding: Boolean,
+    modifier: Modifier = Modifier,
+    accentColor: Color = MaterialTheme.colorScheme.primary,
+) {
+    if (codec.isNullOrBlank() && !isTranscoding) return
+
+    val method =
+        stringResource(
+            if (isTranscoding) R.string.player_badge_transcoding else R.string.player_badge_direct
+        )
+    val label = if (codec.isNullOrBlank()) method else "$codec · $method"
+
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelSmall,
+        fontSize = 10.sp,
+        fontWeight = FontWeight.Medium,
+        letterSpacing = 0.6.sp,
+        color = if (isTranscoding) accentColor else Color.White.copy(alpha = 0.75f),
         modifier = modifier,
     )
 }
@@ -128,11 +154,12 @@ private fun formatBitrate(bitrate: Int): String =
         stringResource(R.string.player_quality_kbps_fmt, bitrate / 1000)
     } else {
         val mbps = bitrate / 1_000_000.0
+        val locale = LocalConfiguration.current.locales[0]
         val text =
             if (mbps % 1.0 == 0.0) {
                 mbps.toInt().toString()
             } else {
-                String.format(Locale.getDefault(), "%.1f", mbps)
+                String.format(locale, "%.1f", mbps)
             }
         stringResource(R.string.player_quality_mbps_fmt, text)
     }

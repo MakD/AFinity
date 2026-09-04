@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
 import com.makd.afinity.ui.components.TransportControls
+import com.makd.afinity.ui.player.components.AudioFormatBadge
 import java.util.Locale
 
 @Composable
@@ -24,6 +25,8 @@ fun PlayerControls(
     onNextChapter: (() -> Unit)? = null,
     accentColor: Color = MaterialTheme.colorScheme.primary,
     currentChapter: BookChapter? = null,
+    audioCodec: String? = null,
+    isServerTranscode: Boolean = false,
 ) {
     val rangeStart = currentChapter?.start?.toFloat() ?: 0f
     val rangeEnd =
@@ -51,6 +54,13 @@ fun PlayerControls(
         onNext = { onNextChapter?.invoke() },
         nextEnabled = onNextChapter != null,
         accentColor = accentColor,
+        timeRowCenter = {
+            AudioFormatBadge(
+                codec = audioCodec,
+                isTranscoding = isServerTranscode,
+                accentColor = accentColor,
+            )
+        },
     )
 }
 

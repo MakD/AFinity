@@ -448,10 +448,17 @@ constructor(
             ((controller.bufferedPosition - controller.currentPosition) / 1000L).coerceAtLeast(0)
         val bitrateKbps = (audioFormat?.bitrate ?: 0) / 1000f
 
-        val isLocal = playbackManager.currentSession.value?.id?.startsWith("local_") == true
+        val session = playbackManager.currentSession.value
+        val isLocal = session?.id?.startsWith("local_") == true
         val playMethod =
-            if (isLocal) context.getString(R.string.playback_stats_value_direct_play_local)
-            else context.getString(R.string.playback_stats_value_direct_streaming)
+            when {
+                isLocal -> context.getString(R.string.playback_stats_value_direct_play_local)
+                session?.playMethod == 2 ->
+                    context.getString(R.string.playback_stats_value_transcoding)
+                session?.playMethod == 0 ->
+                    context.getString(R.string.playback_stats_value_direct_play)
+                else -> context.getString(R.string.playback_stats_value_direct_streaming)
+            }
 
         return PlaybackStats(
             playerType = "ExoPlayer (ABS Service)",

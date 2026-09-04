@@ -83,6 +83,8 @@ private fun String.withAbsWidth(px: Int): String {
     return "${this}${sep}width=$px"
 }
 
+private const val ABS_PLAY_METHOD_TRANSCODE = 2
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SharedTransitionScope.AudiobookshelfPlayerScreen(
@@ -419,6 +421,8 @@ fun SharedTransitionScope.PortraitPlayerContent(
             bufferedPosition = playbackState.bufferedPosition,
             isPlaying = playbackState.isPlaying,
             isBuffering = playbackState.isBuffering,
+            audioCodec = playbackState.audioTracks.firstOrNull()?.codec?.uppercase(),
+            isServerTranscode = playbackState.playMethod == ABS_PLAY_METHOD_TRANSCODE,
             onPlayPauseClick = viewModel::togglePlayPause,
             onSkipForward = viewModel::skipForward,
             onSkipBackward = viewModel::skipBackward,
@@ -613,6 +617,8 @@ fun SharedTransitionScope.LandscapePlayerContent(
                 bufferedPosition = playbackState.bufferedPosition,
                 isPlaying = playbackState.isPlaying,
                 isBuffering = playbackState.isBuffering,
+                audioCodec = playbackState.audioTracks.firstOrNull()?.codec?.uppercase(),
+                isServerTranscode = playbackState.playMethod == ABS_PLAY_METHOD_TRANSCODE,
                 onPlayPauseClick = viewModel::togglePlayPause,
                 onSkipForward = viewModel::skipForward,
                 onSkipBackward = viewModel::skipBackward,
