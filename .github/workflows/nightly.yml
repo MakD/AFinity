@@ -67,12 +67,29 @@ jobs:
           DATE=$(TZ=Asia/Kolkata date +%Y-%m-%d)
           echo "date=${DATE}" >> $GITHUB_OUTPUT
 
-          if gh release view nightly > /dev/null 2>&1; then
-            echo "Comparing commits since last nightly"
-            COMMITS=$(git log nightly..HEAD --oneline --no-merges -- \
+          BRANCH="${GITHUB_REF_NAME}"
+          if [ "$BRANCH" = "master" ]; then
+            TAG="nightly"
+            TITLE="Nightly ${DATE}"
+          else
+            SLUG=$(echo "$BRANCH" | sed 's#[^a-zA-Z0-9._-]#-#g')
+            TAG="nightly-${SLUG}"
+            TITLE="Nightly ${DATE} (${BRANCH})"
+          fi
+          echo "Branch ${BRANCH} -> tag ${TAG}"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "title=${TITLE}" >> $GITHUB_OUTPUT
+
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Comparing commits since last ${TAG}"
+            COMMITS=$(git log "${TAG}..HEAD" --oneline --no-merges -- \
+              app/src/ app/build.gradle.kts gradle/ build.gradle.kts settings.gradle.kts)
+          elif [ "$BRANCH" != "master" ] && git rev-parse --verify origin/master > /dev/null 2>&1; then
+            echo "First ${TAG} — using every commit since ${BRANCH} diverged from master"
+            COMMITS=$(git log origin/master..HEAD --oneline --no-merges -- \
               app/src/ app/build.gradle.kts gradle/ build.gradle.kts settings.gradle.kts)
           else
-            echo "No previous nightly found, using last 15 commits"
+            echo "No previous ${TAG} found, using last 15 commits"
             COMMITS=$(git log -15 --oneline --no-merges -- \
               app/src/ app/build.gradle.kts gradle/ build.gradle.kts settings.gradle.kts)
           fi
@@ -81,6 +98,16 @@ jobs:
           echo "commits<<$DELIMITER" >> $GITHUB_OUTPUT
           echo "$COMMITS" >> $GITHUB_OUTPUT
           echo "$DELIMITER" >> $GITHUB_OUTPUT
+
+          NOTICE_DELIMITER="EOF_NOTICE_$(date +%s)"
+          echo "notice<<$NOTICE_DELIMITER" >> $GITHUB_OUTPUT
+          if [ "$BRANCH" != "master" ]; then
+            echo "> [!CAUTION]" >> $GITHUB_OUTPUT
+            echo "> Built from the \`${BRANCH}\` branch, not \`master\`." >> $GITHUB_OUTPUT
+            echo "> **This build targets Jellyfin 12 and breaks compatibility with Jellyfin 10 servers.**" >> $GITHUB_OUTPUT
+            echo "> Future releases will drop v10 support entirely. Do not install this against a v10 server." >> $GITHUB_OUTPUT
+          fi
+          echo "$NOTICE_DELIMITER" >> $GITHUB_OUTPUT
 
       - name: Decode keystore
         run: |
@@ -104,27 +131,29 @@ jobs:
       - name: Rename APKs
         run: |
           DATE="${{ steps.info.outputs.date }}"
+          TAG="${{ steps.info.outputs.tag }}"
           for APK in app/build/outputs/apk/nightly/*.apk; do
             ABI=$(basename "$APK" | grep -oP '(arm64-v8a|armeabi-v7a)')
-            cp "$APK" "AFinity-nightly-${DATE}-${ABI}.apk"
+            cp "$APK" "AFinity-${TAG}-${DATE}-${ABI}.apk"
           done
 
       - name: Delete existing nightly release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if gh release view nightly > /dev/null 2>&1; then
-            echo "Deleting existing nightly release..."
-            gh release delete nightly --yes --cleanup-tag
+          TAG="${{ steps.info.outputs.tag }}"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Deleting existing ${TAG} release..."
+            gh release delete "$TAG" --yes --cleanup-tag
           else
-            echo "No existing nightly release found"
+            echo "No existing ${TAG} release found"
           fi
 
       - name: Publish pre-release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: nightly
-          name: Nightly ${{ steps.info.outputs.date }}
+          tag_name: ${{ steps.info.outputs.tag }}
+          name: ${{ steps.info.outputs.title }}
           prerelease: true
           body: |
             **Automated nightly build** — ${{ steps.info.outputs.date }} (IST)
@@ -135,7 +164,9 @@ jobs:
             ```
             > [!CAUTION]
             > ⚠️ Nightly builds may be unstable. Expect Bugs. Installs alongside the beta release.
-          files: AFinity-nightly-${{ steps.info.outputs.date }}-*.apk
+
+            ${{ steps.info.outputs.notice }}
+          files: AFinity-${{ steps.info.outputs.tag }}-${{ steps.info.outputs.date }}-*.apk
 
       - name: Notify Discord
         env:
@@ -143,4 +174,4 @@ jobs:
         run: |
           gh workflow run discord-release-notification.yml \
             --ref master \
-            -f release_tag=nightly
+            -f release_tag=${{ steps.info.outputs.tag }}
