@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.exception.ApiClientException
+import org.jellyfin.sdk.api.operations.AudioApi
 import org.jellyfin.sdk.api.operations.MediaInfoApi
 import org.jellyfin.sdk.api.operations.SessionApi
 import org.jellyfin.sdk.api.operations.VideoApi
@@ -196,6 +197,72 @@ constructor(
         } catch (e: Exception) {
             Timber.e(e, "Failed to build stream URL for item: $itemId")
             null
+        }
+    }
+
+    override suspend fun resolveAudioStream(
+        itemId: UUID,
+        playSessionId: String?,
+        maxStreamingBitrate: Int?,
+    ): StreamDecision? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val userId = getCurrentUserId() ?: return@withContext null
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
+
+                val response =
+                    MediaInfoApi(apiClient)
+                        .getPostedPlaybackInfo(
+                            itemId = itemId,
+                            data =
+                                PlaybackInfoDto(
+                                    userId = userId,
+                                    maxStreamingBitrate = maxStreamingBitrate,
+                                    deviceProfile =
+                                        deviceProfileFactory.createMusicProfile(maxStreamingBitrate),
+                                    enableDirectPlay = true,
+                                    enableDirectStream = true,
+                                    enableTranscoding = true,
+                                    allowAudioStreamCopy = true,
+                                ),
+                        )
+                val source = response.content.mediaSources?.firstOrNull() ?: return@withContext null
+
+                if (source.supportsDirectPlay) {
+                    val url =
+                        AudioApi(apiClient)
+                            .getAudioStreamUrl(
+                                itemId = itemId,
+                                static = true,
+                                container = source.container,
+                                mediaSourceId = source.id,
+                                tag = source.eTag,
+                                playSessionId = playSessionId,
+                            )
+                    return@withContext StreamDecision.DirectPlay(url)
+                }
+
+                val transcodingUrl =
+                    source.transcodingUrl?.takeIf { it.isNotBlank() }
+                        ?: run {
+                            Timber.e("Audio source $itemId supports neither direct play nor transcoding")
+                            return@withContext null
+                        }
+
+                Timber.d(
+                    "Resolved audio stream for $itemId: protocol=${source.transcodingSubProtocol} reasons=${TranscodingUrl.transcodeReasons(transcodingUrl)}"
+                )
+
+                StreamDecision.Transcode(
+                    url = apiClient.createUrl(transcodingUrl, ignorePathParameters = true),
+                    protocol = source.transcodingSubProtocol,
+                    transcodeReasons = TranscodingUrl.transcodeReasons(transcodingUrl),
+                    burnedInSubtitleIndex = null,
+                )
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to resolve audio stream for item: $itemId")
+                null
+            }
         }
     }
 

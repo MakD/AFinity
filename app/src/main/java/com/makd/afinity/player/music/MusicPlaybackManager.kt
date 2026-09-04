@@ -167,10 +167,12 @@ constructor(
 
     fun updatePosition(positionMs: Long, bufferedPositionMs: Long = 0L, durationMs: Long = 0L) {
         _state.update {
+            val trackDurationMs =
+                it.currentTrack?.runtimeTicks?.div(10_000L)?.takeIf { ticks -> ticks > 0L }
             it.copy(
                 positionMs = positionMs,
                 bufferedPositionMs = bufferedPositionMs,
-                durationMs = durationMs,
+                durationMs = trackDurationMs ?: durationMs,
             )
         }
     }

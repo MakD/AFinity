@@ -3,6 +3,7 @@ package com.makd.afinity.player.music
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.annotation.OptIn
 import androidx.core.net.toUri
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -12,6 +13,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.data.database.dao.MusicQueueDao
 import com.makd.afinity.data.database.entities.MusicQueueEntity
 import com.makd.afinity.data.manager.SessionManager
@@ -19,7 +21,9 @@ import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.RepeatMode
 import com.makd.afinity.data.models.player.MusicQuality
+import com.makd.afinity.data.models.player.StreamDecision
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.player.AudioService
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -64,6 +68,7 @@ private const val PLAY_METHOD_TRANSCODE = "Transcode"
 
 @Singleton
 class MusicQueueManager
+@OptIn(UnstableApi::class)
 @Inject
 constructor(
     @param:ApplicationContext private val context: Context,
@@ -73,6 +78,7 @@ constructor(
     private val dataStore: DataStore<Preferences>,
     private val preferencesRepository: PreferencesRepository,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
+    private val playbackRepository: PlaybackRepository,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -110,6 +116,8 @@ constructor(
 
     private val streamSessions = ConcurrentHashMap<UUID, StreamSession>()
 
+    private val resolvedStreams = ConcurrentHashMap<UUID, Uri>()
+
     private val activeMusicQualityBitrate: Int
         get() =
             sessionMusicQualityBitrate
@@ -122,6 +130,7 @@ constructor(
     fun setSessionMusicQuality(quality: MusicQuality?) {
         if (quality?.maxBitrate == sessionMusicQualityBitrate) return
         sessionMusicQualityBitrate = quality?.maxBitrate
+        resolvedStreams.clear()
 
         val tracks = _queue.value
         if (tracks.isEmpty()) return
@@ -307,6 +316,7 @@ constructor(
         _queue.value = emptyList()
         _currentIndex.value = 0
         streamSessions.clear()
+        resolvedStreams.clear()
         scope.launch { musicQueueDao.clearQueue() }
     }
 
@@ -365,8 +375,9 @@ constructor(
     }
 
     private fun emitLoadEvent(tracks: List<AfinityTrack>, startIndex: Int, startPositionMs: Long) {
-        val mediaItems = tracks.map { buildMediaItem(it) }
         scope.launch {
+            tracks.getOrNull(startIndex)?.let { ensureResolved(it) }
+            val mediaItems = tracks.map { buildMediaItem(it) }
             _loadQueueEvents.emit(
                 LoadQueueEvent(
                     mediaItems = mediaItems,
@@ -376,6 +387,33 @@ constructor(
             )
         }
     }
+
+    suspend fun ensureResolved(track: AfinityTrack): Boolean {
+        if (!track.localFilePath.isNullOrBlank()) return false
+        if (resolvedStreams.containsKey(track.id)) return false
+
+        val quality = musicQuality
+        val sessionKey =
+            if (quality.isOriginal) MusicQuality.ORIGINAL_BITRATE else quality.maxBitrate
+        val playSessionId = registerStreamSession(track.id, sessionKey, isDirect = true)
+        val decision =
+            playbackRepository.resolveAudioStream(
+                itemId = track.id,
+                playSessionId = playSessionId,
+                maxStreamingBitrate = quality.streamingBitrate.takeIf { !quality.isOriginal },
+            ) ?: return false
+        val isDirect = decision is StreamDecision.DirectPlay
+
+        streamSessions[track.id] = StreamSession(sessionKey, playSessionId, isDirect)
+        resolvedStreams[track.id] = decision.url.toUri()
+
+        if (!isDirect) {
+            Timber.d("Track ${track.id} needs a server transcode: ${decision.transcodeReasons}")
+        }
+        return !isDirect
+    }
+
+    fun mediaItemFor(track: AfinityTrack): MediaItem = buildMediaItem(track)
 
     private fun buildMediaItem(track: AfinityTrack): MediaItem {
         val artworkUri = track.images.primary
@@ -402,16 +440,20 @@ constructor(
                 return localUri
             }
         }
+        resolvedStreams[track.id]?.let {
+            return it
+        }
+
         val session = sessionManager.currentSession.value
         val baseUrl = session?.serverUrl?.trimEnd('/') ?: ""
         val quality = MusicQuality.fromBitrate(activeMusicQualityBitrate)
 
-        if (quality.isOriginal) {
-            registerStreamSession(track.id, MusicQuality.ORIGINAL_BITRATE, isDirect = true)
-            return "$baseUrl/Audio/${track.id}/stream?static=true".toUri()
-        }
-
-        val playSessionId = registerStreamSession(track.id, quality.maxBitrate, isDirect = false)
+        val playSessionId =
+            if (quality.isOriginal) {
+                registerStreamSession(track.id, MusicQuality.ORIGINAL_BITRATE, isDirect = true)
+            } else {
+                registerStreamSession(track.id, quality.maxBitrate, isDirect = false)
+            }
         val userId = session?.userId?.toString().orEmpty()
         val deviceId = sessionManager.getCurrentApiClient()?.deviceInfo?.id.orEmpty()
         return Uri.parse("$baseUrl/Audio/${track.id}/universal")
@@ -422,7 +464,11 @@ constructor(
             .appendQueryParameter("container", MusicQuality.CONTAINERS)
             .appendQueryParameter("transcodingContainer", MusicQuality.TRANSCODING_CONTAINER)
             .appendQueryParameter("transcodingProtocol", MusicQuality.TRANSCODING_PROTOCOL)
-            .appendQueryParameter("maxStreamingBitrate", quality.streamingBitrate.toString())
+            .apply {
+                if (!quality.isOriginal) {
+                    appendQueryParameter("maxStreamingBitrate", quality.streamingBitrate.toString())
+                }
+            }
             .appendQueryParameter("playSessionId", playSessionId)
             .build()
     }

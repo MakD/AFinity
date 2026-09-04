@@ -70,6 +70,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 import kotlin.math.pow
@@ -489,6 +490,7 @@ class AudioService : MediaSessionService() {
                     )
                 }
                 radioManager.onTrackChanged(track)
+                resolveAroundCurrent()
             }
 
             override fun onRepeatModeChanged(repeatMode: Int) {
@@ -586,6 +588,28 @@ class AudioService : MediaSessionService() {
         }
     }
 
+    private fun resolveAroundCurrent() {
+        val startIndex = exoPlayer?.currentMediaItemIndex ?: return
+        serviceScope.launch {
+            val queue = musicQueueManager.queue.value
+            for (index in intArrayOf(startIndex, startIndex + 1)) {
+                val track = queue.getOrNull(index) ?: continue
+                if (!musicQueueManager.ensureResolved(track)) continue
+                val item = musicQueueManager.mediaItemFor(track)
+                withContext(Dispatchers.Main) {
+                    val player = exoPlayer ?: return@withContext
+                    if (
+                        index < player.mediaItemCount &&
+                            player.getMediaItemAt(index).mediaId == track.id.toString()
+                    ) {
+                        Timber.d("Replacing media item $index with a transcoded stream")
+                        player.replaceMediaItem(index, item)
+                    }
+                }
+            }
+        }
+    }
+
     private fun startPositionUpdates() {
         stopPositionUpdates()
         positionUpdateJob = serviceScope.launch {
@@ -641,11 +665,12 @@ class AudioService : MediaSessionService() {
 
     private fun applyNormalizationGain(track: AfinityTrack?) {
         val player = exoPlayer ?: return
-        val gainDb = if (track != null && isPlayingSingleAlbum()) {
-            track.albumNormalizationGain ?: track.normalizationGain
-        } else {
-            track?.normalizationGain
-        }
+        val gainDb =
+            if (track != null && isPlayingSingleAlbum()) {
+                track.albumNormalizationGain ?: track.normalizationGain
+            } else {
+                track?.normalizationGain
+            }
         player.volume = if (gainDb == null) 1f else (10f.pow(gainDb / 20f)).coerceIn(0f, 1f)
     }
 

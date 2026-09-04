@@ -136,6 +136,46 @@ class AndroidDeviceProfileFactory @Inject constructor() {
         )
     }
 
+    fun createMusicProfile(maxStreamingBitrate: Int? = null): DeviceProfile {
+        val directPlayProfiles = mutableListOf<DirectPlayProfile>()
+
+        DeviceCodecs.CONTAINERS.forEachIndexed { index, container ->
+            val audioCodecs = capabilities.audioCodecsFor(index)
+            if (audioCodecs.isNotEmpty()) {
+                directPlayProfiles.add(
+                    DirectPlayProfile(
+                        type = DlnaProfileType.AUDIO,
+                        container = container,
+                        audioCodec = audioCodecs.joinToString(","),
+                    )
+                )
+            }
+        }
+
+        return DeviceProfile(
+            name = MUSIC_PROFILE_NAME,
+            maxStreamingBitrate = maxStreamingBitrate ?: MAX_STREAMING_BITRATE,
+            maxStaticBitrate = MAX_STATIC_BITRATE,
+            musicStreamingTranscodingBitrate = MAX_MUSIC_TRANSCODING_BITRATE,
+            directPlayProfiles = directPlayProfiles,
+            transcodingProfiles =
+                listOf(
+                    TranscodingProfile(
+                        type = DlnaProfileType.AUDIO,
+                        container = "ts",
+                        videoCodec = "",
+                        audioCodec = "aac",
+                        protocol = MediaStreamProtocol.HLS,
+                        context = EncodingContext.STREAMING,
+                        conditions = emptyList(),
+                    )
+                ),
+            containerProfiles = emptyList(),
+            codecProfiles = emptyList(),
+            subtitleProfiles = emptyList(),
+        )
+    }
+
     private fun globalVideoConditions(
         quality: VideoQuality,
         allowHdrPassthrough: Boolean,
@@ -213,6 +253,7 @@ class AndroidDeviceProfileFactory @Inject constructor() {
     private companion object {
         const val PROFILE_NAME = "AFinity Android"
         const val MPV_PROFILE_NAME = "AFinity Android (MPV)"
+        const val MUSIC_PROFILE_NAME = "AFinity Android (Music)"
 
         const val MAX_STREAMING_BITRATE = 120_000_000
         const val MAX_STATIC_BITRATE = 100_000_000

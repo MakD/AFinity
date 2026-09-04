@@ -34,6 +34,12 @@ interface PlaybackRepository {
         tag: String? = null,
     ): String?
 
+    suspend fun resolveAudioStream(
+        itemId: UUID,
+        playSessionId: String? = null,
+        maxStreamingBitrate: Int? = null,
+    ): StreamDecision?
+
     suspend fun resolveStream(
         itemId: UUID,
         source: MediaSourceInfo,
