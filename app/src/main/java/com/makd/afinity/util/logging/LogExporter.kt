@@ -133,7 +133,7 @@ object LogExporter {
                     )
                     .redirectErrorStream(true)
                     .start()
-            process.inputStream.bufferedReader().readText()
+            LogRedactor.redact(process.inputStream.bufferedReader().readText())
         } catch (e: Exception) {
             Timber.w(e, "Failed to capture logcat")
             "(logcat unavailable: ${e.message})"

@@ -14,6 +14,7 @@ import org.jellyfin.sdk.model.api.ProfileConditionValue
 import org.jellyfin.sdk.model.api.SubtitleDeliveryMethod
 import org.jellyfin.sdk.model.api.SubtitleProfile
 import org.jellyfin.sdk.model.api.TranscodingProfile
+import org.jellyfin.sdk.model.api.VideoRangeType
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -152,16 +153,7 @@ class AndroidDeviceProfileFactory @Inject constructor() {
             )
         }
 
-        if (!allowHdrPassthrough) {
-            conditions.add(
-                ProfileCondition(
-                    condition = ProfileConditionType.EQUALS_ANY,
-                    property = ProfileConditionValue.VIDEO_RANGE_TYPE,
-                    value = "SDR",
-                    isRequired = true,
-                )
-            )
-        }
+        videoRangeCondition(allowHdrPassthrough)?.let(conditions::add)
 
         if (conditions.isEmpty()) return null
 
@@ -169,6 +161,19 @@ class AndroidDeviceProfileFactory @Inject constructor() {
             type = CodecType.VIDEO,
             applyConditions = emptyList(),
             conditions = conditions,
+        )
+    }
+
+    private fun videoRangeCondition(allowHdrPassthrough: Boolean): ProfileCondition? {
+        val ranges =
+            if (allowHdrPassthrough) capabilities.videoRanges else setOf(VideoRangeType.SDR)
+        if (ranges.isEmpty()) return null
+
+        return ProfileCondition(
+            condition = ProfileConditionType.EQUALS_ANY,
+            property = ProfileConditionValue.VIDEO_RANGE_TYPE,
+            value = ranges.joinToString("|") { it.serialName },
+            isRequired = true,
         )
     }
 

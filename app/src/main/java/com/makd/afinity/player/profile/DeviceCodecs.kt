@@ -3,6 +3,7 @@ package com.makd.afinity.player.profile
 import android.media.MediaCodecInfo.CodecProfileLevel
 import android.media.MediaCodecList
 import android.media.MediaFormat
+import org.jellyfin.sdk.model.api.VideoRangeType
 
 object DeviceCodecs {
 
@@ -18,6 +19,25 @@ object DeviceCodecs {
             "pcm_f32le",
             "pcm_alaw",
             "pcm_mulaw",
+        )
+
+    private val PROFILE_ORDER =
+        mapOf(
+            "h264" to
+                listOf(
+                    "high",
+                    "constrained high",
+                    "main",
+                    "baseline",
+                    "constrained baseline",
+                    "extended",
+                    "high 10",
+                    "high 422",
+                    "high 444",
+                ),
+            "hevc" to
+                listOf("Main", "Main 10", "Main 10 HDR 10", "Main 10 HDR 10 Plus", "Main Still"),
+            "vp9" to listOf("Profile 0", "Profile 1", "Profile 2", "Profile 3"),
         )
 
     private val FORCED_AUDIO_CODECS =
@@ -78,6 +98,7 @@ object DeviceCodecs {
         val audioCodecs: Set<String>,
         val videoProfiles: Map<String, Set<String>>,
         val videoLevels: Map<String, Int>,
+        val videoRanges: Set<VideoRangeType>,
     ) {
         fun videoCodecsFor(containerIndex: Int): List<String> =
             CONTAINER_VIDEO_CODECS[containerIndex].filter { it in videoCodecs }
@@ -91,10 +112,18 @@ object DeviceCodecs {
         val audio = mutableSetOf<String>()
         val profiles = mutableMapOf<String, MutableSet<String>>()
         val levels = mutableMapOf<String, Int>()
+        val dolbyVisionProfiles = mutableSetOf<Int>()
 
         for (info in codecList.codecInfos) {
             if (info.isEncoder) continue
             for (mimeType in info.supportedTypes) {
+                if (mimeType == MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION) {
+                    video.add("hevc")
+                    val capabilities =
+                        runCatching { info.getCapabilitiesForType(mimeType) }.getOrNull() ?: continue
+                    capabilities.profileLevels.forEach { dolbyVisionProfiles.add(it.profile) }
+                    continue
+                }
                 val videoCodec = videoCodecFor(mimeType)
                 if (videoCodec != null) {
                     video.add(videoCodec)
@@ -119,9 +148,39 @@ object DeviceCodecs {
         return Capabilities(
             videoCodecs = video,
             audioCodecs = audio,
-            videoProfiles = profiles.mapValues { it.value.toSet() },
+            videoProfiles = profiles.mapValues { orderedProfiles(it.key, it.value) },
             videoLevels = levels,
+            videoRanges = videoRanges(dolbyVisionProfiles),
         )
+    }
+
+    private fun orderedProfiles(codec: String, names: Set<String>): Set<String> {
+        val order = PROFILE_ORDER[codec] ?: return names
+        return names
+            .sortedBy { name -> order.indexOf(name).takeIf { it >= 0 } ?: order.size }
+            .toSet()
+    }
+
+    private fun videoRanges(dolbyVisionProfiles: Set<Int>): Set<VideoRangeType> {
+        val ranges =
+            mutableSetOf(
+                VideoRangeType.SDR,
+                VideoRangeType.HDR10,
+                VideoRangeType.HDR10_PLUS,
+                VideoRangeType.HLG,
+                VideoRangeType.DOVI_WITH_SDR,
+                VideoRangeType.DOVI_WITH_HDR10,
+                VideoRangeType.DOVI_WITH_HDR10_PLUS,
+                VideoRangeType.DOVI_WITH_HLG,
+            )
+        if (dolbyVisionProfiles.isNotEmpty()) {
+            ranges.add(VideoRangeType.DOVI_WITH_EL)
+            ranges.add(VideoRangeType.DOVI_WITH_ELHDR10_PLUS)
+        }
+        if (CodecProfileLevel.DolbyVisionProfileDvheStn in dolbyVisionProfiles) {
+            ranges.add(VideoRangeType.DOVI)
+        }
+        return ranges
     }
 
     private fun videoLevelValue(codec: String, level: Int): Int? =
@@ -192,8 +251,7 @@ object DeviceCodecs {
             MediaFormat.MIMETYPE_VIDEO_H263 -> "h263"
             MediaFormat.MIMETYPE_VIDEO_MPEG4 -> "mpeg4"
             MediaFormat.MIMETYPE_VIDEO_AVC -> "h264"
-            MediaFormat.MIMETYPE_VIDEO_HEVC,
-            MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION -> "hevc"
+            MediaFormat.MIMETYPE_VIDEO_HEVC -> "hevc"
             MediaFormat.MIMETYPE_VIDEO_VP8 -> "vp8"
             MediaFormat.MIMETYPE_VIDEO_VP9 -> "vp9"
             MediaFormat.MIMETYPE_VIDEO_AV1 -> "av1"

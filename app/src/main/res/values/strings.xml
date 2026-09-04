@@ -713,8 +713,8 @@
     <string name="error_direct_play_blocked">This device can\'t play this file directly, and transcoding is turned off.</string>
     <string name="error_direct_play_blocked_fmt">This device can\'t play this file directly (%1$s), and transcoding is turned off.</string>
     <string name="player_play_anyway">Play anyway</string>
-    <string name="pref_hdr_passthrough_title">Send HDR to the display</string>
-    <string name="pref_hdr_passthrough_description">Play HDR video untouched. Turn off to have the server convert HDR to SDR, which always transcodes.</string>
+    <string name="pref_hdr_passthrough_title">Play HDR on this device</string>
+    <string name="pref_hdr_passthrough_description">Turn off to let the server convert HDR to SDR</string>
     <string name="player_quality_auto">Auto</string>
     <string name="player_quality_original">Original</string>
     <string name="player_quality_resolution_fmt">%1$dp</string>

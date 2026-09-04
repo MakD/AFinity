@@ -879,6 +879,11 @@ constructor(
     }
 
     private fun retryWithTranscodeFallback(error: PlaybackException): Boolean {
+        if (!isDecodeFailure(error)) return false
+        return forceTranscodeRetry("Direct play failed (${error.errorCodeName})")
+    }
+
+    private fun forceTranscodeRetry(reason: String): Boolean {
         if (forceTranscodeFallback) return false
         if (_uiState.value.isLiveChannel) return false
         if (currentStreamDecision !is StreamDecision.DirectPlay) return false
@@ -888,11 +893,8 @@ constructor(
         val sourceId = state.currentMediaSourceId ?: return false
         val source = item.sources.firstOrNull { it.id == sourceId }
         if (source?.type == AfinitySourceType.LOCAL) return false
-        if (!isDecodeFailure(error)) return false
 
-        Timber.w(
-            "Direct play failed (${error.errorCodeName}); re-negotiating with transcoding forced"
-        )
+        Timber.w("$reason; re-negotiating with transcoding forced")
         forceTranscodeFallback = true
         val resumePosition = player.currentPosition.coerceAtLeast(0L)
         viewModelScope.launch {
@@ -2595,10 +2597,19 @@ constructor(
 
     override fun onTracksChanged(tracks: Tracks) {
         super.onTracksChanged(tracks)
+        if (retryWithoutPlayableVideo(tracks)) return
         applyPendingTrackSelections()
         if (pendingAudioStreamIndex == null && pendingSubtitleStreamIndex == null) {
             updateCurrentTrackSelections()
         }
+    }
+
+    private fun retryWithoutPlayableVideo(tracks: Tracks): Boolean {
+        if (player is MPVPlayer) return false
+        if (tracks.groups.isEmpty()) return false
+        if (currentMediaStreams(MediaStreamType.VIDEO).isEmpty()) return false
+        if (tracks.groups.any { it.type == C.TRACK_TYPE_VIDEO && it.isSupported(true) }) return false
+        return forceTranscodeRetry("No playable video track")
     }
 
     private fun supportedTrackGroups(trackType: @C.TrackType Int): List<Tracks.Group> =
