@@ -72,6 +72,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import kotlin.math.pow
 
@@ -123,8 +124,12 @@ class AudioService : MediaSessionService() {
 
     private var mediaSession: MediaSession? = null
     private var exoPlayer: ExoPlayer? = null
-    var activeEngine: ActiveEngine = ActiveEngine.NONE
-        private set
+    private val activeEngineRef = AtomicReference(ActiveEngine.NONE)
+    var activeEngine: ActiveEngine
+        get() = activeEngineRef.get()
+        private set(value) {
+            activeEngineRef.set(value)
+        }
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var positionUpdateJob: Job? = null
@@ -223,7 +228,14 @@ class AudioService : MediaSessionService() {
                 .setWakeMode(C.WAKE_MODE_NETWORK)
                 .setLoadControl(loadControl)
                 .setMediaSourceFactory(
-                    DefaultMediaSourceFactory(DynamicDataSourceFactory())
+                    DefaultMediaSourceFactory(
+                            DynamicDataSourceFactory(
+                                applicationContext,
+                                sessionManager,
+                                securePreferencesRepository,
+                                activeEngineRef,
+                            )
+                        )
                         .setLoadErrorHandlingPolicy(retryPolicy)
                 )
                 .build()
@@ -365,10 +377,15 @@ class AudioService : MediaSessionService() {
         stopSelf()
     }
 
-    private inner class DynamicDataSourceFactory : DataSource.Factory {
+    private class DynamicDataSourceFactory(
+        private val context: Context,
+        private val sessionManager: SessionManager,
+        private val securePreferencesRepository: SecurePreferencesRepository,
+        private val activeEngineRef: AtomicReference<ActiveEngine>,
+    ) : DataSource.Factory {
         override fun createDataSource(): DataSource {
             val headers =
-                when (activeEngine) {
+                when (activeEngineRef.get()) {
                     ActiveEngine.ABS -> {
                         val token = securePreferencesRepository.getCachedAudiobookshelfToken()
                         if (token != null) mapOf("Authorization" to "Bearer $token") else emptyMap()
@@ -384,7 +401,7 @@ class AudioService : MediaSessionService() {
                     .setConnectTimeoutMs(15_000)
                     .setReadTimeoutMs(15_000)
                     .setDefaultRequestProperties(headers)
-            return DefaultDataSource.Factory(this@AudioService, httpFactory).createDataSource()
+            return DefaultDataSource.Factory(context, httpFactory).createDataSource()
         }
     }
 
@@ -595,6 +612,10 @@ class AudioService : MediaSessionService() {
             for (index in intArrayOf(startIndex, startIndex + 1)) {
                 val track = queue.getOrNull(index) ?: continue
                 if (!musicQueueManager.ensureResolved(track)) continue
+                musicProgressReporter.updatePlayMethod(
+                    track.id,
+                    musicQueueManager.playMethodFor(track.id),
+                )
                 val item = musicQueueManager.mediaItemFor(track)
                 withContext(Dispatchers.Main) {
                     val player = exoPlayer ?: return@withContext

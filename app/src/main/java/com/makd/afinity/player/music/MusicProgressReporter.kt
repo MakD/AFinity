@@ -47,6 +47,11 @@ constructor(private val playbackRepository: PlaybackRepository) {
         }
     }
 
+    fun updatePlayMethod(trackId: UUID, playMethod: String) {
+        if (currentTrackId != trackId) return
+        this.playMethod = playMethod
+    }
+
     fun startProgressUpdates(getPositionMs: () -> Long, isPaused: () -> Boolean) {
         progressJob?.cancel()
         progressJob = scope.launch {

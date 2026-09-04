@@ -326,6 +326,8 @@ constructor(
         if (streamSessions[trackId]?.isDirect != false) PLAY_METHOD_DIRECT
         else PLAY_METHOD_TRANSCODE
 
+    fun isServerTranscode(trackId: UUID): Boolean = streamSessions[trackId]?.isDirect == false
+
     fun onTrackChanged(newIndex: Int) {
         _currentIndex.value = newIndex.coerceIn(0, (_queue.value.size - 1).coerceAtLeast(0))
         scope.launch { dataStore.edit { prefs -> prefs[KEY_CURRENT_INDEX] = newIndex } }

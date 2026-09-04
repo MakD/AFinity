@@ -7,6 +7,7 @@ import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.player.profile.AndroidDeviceProfileFactory
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -259,6 +260,8 @@ constructor(
                     transcodeReasons = TranscodingUrl.transcodeReasons(transcodingUrl),
                     burnedInSubtitleIndex = null,
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to resolve audio stream for item: $itemId")
                 null

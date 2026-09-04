@@ -44,6 +44,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import org.jellyfin.sdk.model.api.TranscodingInfo
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
@@ -98,6 +99,8 @@ constructor(
         }
     }
 
+    private var lastTranscodingInfo: Pair<UUID, TranscodingInfo>? = null
+
     private fun startStatsPolling() {
         statsPollingJob?.cancel()
         statsPollingJob = viewModelScope.launch {
@@ -123,20 +126,26 @@ constructor(
 
         val uri = player.currentMediaItem?.localConfiguration?.uri
         val isLocal = uri?.scheme == "file"
-        val isUniversal = uri?.path?.endsWith("/universal") == true
+        val trackId = playbackManager.state.value.currentTrack?.id
+        val isServerTranscode = trackId != null && queueManager.isServerTranscode(trackId)
 
         val transcoding =
-            if (isUniversal) {
-                runCatching { playbackRepository.getTranscodingInfo() }.getOrNull()
-            } else null
+            if (isServerTranscode && trackId != null) {
+                runCatching { playbackRepository.getTranscodingInfo() }
+                    .getOrNull()
+                    ?.also { lastTranscodingInfo = trackId to it }
+                    ?: lastTranscodingInfo?.takeIf { it.first == trackId }?.second
+            } else {
+                lastTranscodingInfo = null
+                null
+            }
 
         val playMethod =
             when {
                 isLocal -> context.getString(R.string.playback_stats_value_direct_play_local)
-                !isUniversal -> context.getString(R.string.playback_stats_value_direct_play)
-                transcoding?.isAudioDirect == false ->
+                isServerTranscode ->
                     context.getString(R.string.playback_stats_value_transcoding)
-                else -> context.getString(R.string.playback_stats_value_direct_streaming)
+                else -> context.getString(R.string.playback_stats_value_direct_play)
             }
 
         val streamCopy = context.getString(R.string.playback_stats_value_stream_copy)
