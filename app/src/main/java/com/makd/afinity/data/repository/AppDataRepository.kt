@@ -126,6 +126,8 @@ constructor(
     private var lastReinsertRefreshAt = 0L
     private var initialLoadJob: Deferred<Unit>? = null
     private val initialLoadMutex = Mutex()
+    private val playbackSectionsMutex = Mutex()
+    private var playbackSectionsRefreshedAt = 0L
     private val _lastUserDataChangedAt = MutableStateFlow(0L)
     val lastUserDataChangedAt: StateFlow<Long> = _lastUserDataChangedAt.asStateFlow()
 
@@ -979,12 +981,22 @@ constructor(
 
     suspend fun refreshPlaybackSections() {
         if (!_isInitialDataLoaded.value) return
-        try {
-            mediaRepository.invalidateContinueWatchingCache()
-            mediaRepository.invalidateNextUpCache()
-            Timber.d("Refreshed playback sections (continue watching + next up)")
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to refresh playback sections")
+        playbackSectionsMutex.withLock {
+            val sinceLastRefresh = System.currentTimeMillis() - playbackSectionsRefreshedAt
+            if (sinceLastRefresh < PLAYBACK_SECTIONS_COALESCE_MS) {
+                Timber.d("Playback sections refreshed ${sinceLastRefresh}ms ago — coalescing")
+                return
+            }
+            try {
+                coroutineScope {
+                    launch { mediaRepository.invalidateContinueWatchingCache() }
+                    launch { mediaRepository.invalidateNextUpCache() }
+                }
+                Timber.d("Refreshed playback sections (continue watching + next up)")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to refresh playback sections")
+            }
+            playbackSectionsRefreshedAt = System.currentTimeMillis()
         }
     }
 
@@ -1353,6 +1365,7 @@ constructor(
         const val LATEST_DISPLAYED = 15
         const val COMBINED_LATEST_FETCH = 60
         private const val REINSERT_REFRESH_COOLDOWN_MS = 5_000L
+        private const val PLAYBACK_SECTIONS_COALESCE_MS = 5_000L
         private val LATEST_ROWS = setOf(HomeRow.LATEST_MOVIES, HomeRow.LATEST_TV)
     }
 }

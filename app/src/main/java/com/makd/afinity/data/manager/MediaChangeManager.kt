@@ -245,7 +245,6 @@ constructor(
             val seasonItem = resolveSeasonItem(updatedItem, knownSeasonId)
 
             mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
-            updatedItem?.let { refreshDerivedState(it) }
 
             val resolvedSeriesId =
                 when (updatedItem) {
