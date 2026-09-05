@@ -15,6 +15,11 @@ class RingBufferTree(private val maxLines: Int = 2000) : Timber.Tree() {
     private val dateFormat = SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.US)
     private var nextSequence = 0L
 
+    val capacity: Int
+        get() = maxLines
+
+    val launchTimeMillis: Long = System.currentTimeMillis()
+
     private val _updates =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val updates: SharedFlow<Unit> = _updates

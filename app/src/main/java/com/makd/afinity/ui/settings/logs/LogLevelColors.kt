@@ -46,6 +46,15 @@ object LogLevelColors {
 
     @Composable
     @ReadOnlyComposable
+    fun expandedTint(level: LogLevel): Color =
+        when (level) {
+            LogLevel.ERROR -> Error.copy(alpha = 0.13f)
+            LogLevel.WARN -> Warn.copy(alpha = 0.11f)
+            else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
+        }
+
+    @Composable
+    @ReadOnlyComposable
     fun rowTint(level: LogLevel): Color =
         when (level) {
             LogLevel.ERROR -> Error.copy(alpha = 0.09f)
