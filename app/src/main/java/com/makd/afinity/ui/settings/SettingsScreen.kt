@@ -410,10 +410,16 @@ fun SettingsScreen(
                                         title = stringResource(R.string.pref_appearance),
                                         subtitle = stringResource(R.string.pref_appearance_summary),
                                         onClick = {
-                                            scope.launch {
-                                                navigator.navigateTo(
-                                                    ListDetailPaneScaffoldRole.Detail,
-                                                    SettingsPaneDestination.Appearance,
+                                            if (isDualPane) {
+                                                scope.launch {
+                                                    navigator.navigateTo(
+                                                        ListDetailPaneScaffoldRole.Detail,
+                                                        SettingsPaneDestination.Appearance,
+                                                    )
+                                                }
+                                            } else {
+                                                navController.navigate(
+                                                    Destination.APPEARANCE_OPTIONS_ROUTE
                                                 )
                                             }
                                         },
@@ -459,8 +465,7 @@ fun SettingsScreen(
 
                             item {
                                 SettingsGroup(
-                                    title =
-                                        stringResource(R.string.pref_group_playback_downloads),
+                                    title = stringResource(R.string.pref_group_playback_downloads),
                                     endPadding = listEndPadding,
                                 ) {
                                     SettingsItem(
@@ -469,10 +474,16 @@ fun SettingsScreen(
                                         title = stringResource(R.string.pref_playback),
                                         subtitle = stringResource(R.string.pref_playback_summary),
                                         onClick = {
-                                            scope.launch {
-                                                navigator.navigateTo(
-                                                    ListDetailPaneScaffoldRole.Detail,
-                                                    SettingsPaneDestination.Player,
+                                            if (isDualPane) {
+                                                scope.launch {
+                                                    navigator.navigateTo(
+                                                        ListDetailPaneScaffoldRole.Detail,
+                                                        SettingsPaneDestination.Player,
+                                                    )
+                                                }
+                                            } else {
+                                                navController.navigate(
+                                                    Destination.PLAYER_OPTIONS_ROUTE
                                                 )
                                             }
                                         },
@@ -486,10 +497,16 @@ fun SettingsScreen(
                                                 R.string.pref_downloads_and_storage_summary
                                             ),
                                         onClick = {
-                                            scope.launch {
-                                                navigator.navigateTo(
-                                                    ListDetailPaneScaffoldRole.Detail,
-                                                    SettingsPaneDestination.Downloads,
+                                            if (isDualPane) {
+                                                scope.launch {
+                                                    navigator.navigateTo(
+                                                        ListDetailPaneScaffoldRole.Detail,
+                                                        SettingsPaneDestination.Downloads,
+                                                    )
+                                                }
+                                            } else {
+                                                navController.navigate(
+                                                    Destination.DOWNLOAD_SETTINGS_ROUTE
                                                 )
                                             }
                                         },
@@ -531,10 +548,16 @@ fun SettingsScreen(
                                         subtitle =
                                             stringResource(R.string.pref_manage_servers_summary),
                                         onClick = {
-                                            scope.launch {
-                                                navigator.navigateTo(
-                                                    ListDetailPaneScaffoldRole.Detail,
-                                                    SettingsPaneDestination.ServerManagement,
+                                            if (isDualPane) {
+                                                scope.launch {
+                                                    navigator.navigateTo(
+                                                        ListDetailPaneScaffoldRole.Detail,
+                                                        SettingsPaneDestination.ServerManagement,
+                                                    )
+                                                }
+                                            } else {
+                                                navController.navigate(
+                                                    Destination.SERVER_MANAGEMENT_ROUTE
                                                 )
                                             }
                                         },
@@ -612,11 +635,15 @@ fun SettingsScreen(
                                         title = stringResource(R.string.pref_licenses),
                                         subtitle = stringResource(R.string.pref_licenses_summary),
                                         onClick = {
-                                            scope.launch {
-                                                navigator.navigateTo(
-                                                    ListDetailPaneScaffoldRole.Detail,
-                                                    SettingsPaneDestination.Licenses,
-                                                )
+                                            if (isDualPane) {
+                                                scope.launch {
+                                                    navigator.navigateTo(
+                                                        ListDetailPaneScaffoldRole.Detail,
+                                                        SettingsPaneDestination.Licenses,
+                                                    )
+                                                }
+                                            } else {
+                                                navController.navigate(Destination.LICENSES_ROUTE)
                                             }
                                         },
                                     )
@@ -624,13 +651,18 @@ fun SettingsScreen(
                                     SettingsItem(
                                         icon = painterResource(id = R.drawable.ic_logs),
                                         title = stringResource(R.string.pref_view_logs),
-                                        subtitle =
-                                            stringResource(R.string.pref_view_logs_summary),
+                                        subtitle = stringResource(R.string.pref_view_logs_summary),
                                         onClick = {
-                                            scope.launch {
-                                                navigator.navigateTo(
-                                                    ListDetailPaneScaffoldRole.Detail,
-                                                    SettingsPaneDestination.Logs,
+                                            if (isDualPane) {
+                                                scope.launch {
+                                                    navigator.navigateTo(
+                                                        ListDetailPaneScaffoldRole.Detail,
+                                                        SettingsPaneDestination.Logs,
+                                                    )
+                                                }
+                                            } else {
+                                                navController.navigate(
+                                                    Destination.createLogsRoute()
                                                 )
                                             }
                                         },

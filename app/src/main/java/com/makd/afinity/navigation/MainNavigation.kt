@@ -118,6 +118,7 @@ import com.makd.afinity.ui.settings.appearance.AppearanceOptionsScreen
 import com.makd.afinity.ui.settings.downloads.DownloadSettingsScreen
 import com.makd.afinity.ui.settings.downloads.StorageSettingsScreen
 import com.makd.afinity.ui.settings.home.CustomSectionsScreen
+import com.makd.afinity.ui.settings.logs.LogViewerScreen
 import com.makd.afinity.ui.settings.player.PlayerOptionsScreen
 import com.makd.afinity.ui.settings.servers.AddEditServerScreen
 import com.makd.afinity.ui.settings.servers.ServerManagementScreen
@@ -1154,6 +1155,13 @@ fun MainNavigation(
 
                                 composable(Destination.LICENSES_ROUTE) {
                                     LicensesScreen(
+                                        onBackClick =
+                                            dropUnlessResumed { navController.popBackStack() }
+                                    )
+                                }
+
+                                composable(Destination.LOGS_ROUTE) {
+                                    LogViewerScreen(
                                         onBackClick =
                                             dropUnlessResumed { navController.popBackStack() }
                                     )

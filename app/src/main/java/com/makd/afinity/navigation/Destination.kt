@@ -69,6 +69,12 @@ enum class Destination(
         const val APPEARANCE_OPTIONS_ROUTE = "appearance_options"
         const val CUSTOM_SECTIONS_ROUTE = "custom_sections"
         const val LICENSES_ROUTE = "licenses"
+        const val LOGS_ROUTE = "logs"
+
+        fun createLogsRoute(): String {
+            return LOGS_ROUTE
+        }
+
         const val FILTERED_MEDIA_ROUTE = "filtered_media/{filterType}/{filterId}/{filterName}"
         const val FAVORITES_CATEGORY_ROUTE = "favorites_category/{category}"
         const val WATCHLIST_CATEGORY_ROUTE = "watchlist_category/{category}"
