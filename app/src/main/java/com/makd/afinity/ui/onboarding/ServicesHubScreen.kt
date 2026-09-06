@@ -65,6 +65,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.LocalNetworkPermissionCard
 import com.makd.afinity.ui.components.connectionIndicatorColor
 import com.makd.afinity.ui.components.connectionLabel
 import com.makd.afinity.ui.item.components.shared.AwardGold
@@ -144,6 +145,8 @@ fun ServicesHubScreen(
     val remoteHost by viewModel.remoteConfiguredHost.collectAsStateWithLifecycle()
     val remoteVerifying by viewModel.remoteVerifying.collectAsStateWithLifecycle()
     val remoteError by viewModel.remoteError.collectAsStateWithLifecycle()
+    val remoteNeedsPermission by
+        viewModel.remoteNeedsLocalNetworkPermission.collectAsStateWithLifecycle()
 
     val smViewModel: ServerManagementViewModel = hiltViewModel()
     val smState by smViewModel.state.collectAsStateWithLifecycle()
@@ -304,6 +307,10 @@ fun ServicesHubScreen(
                                         },
                                         remoteVerifying = remoteVerifying,
                                         remoteError = remoteError,
+                                        remoteNeedsLocalNetworkPermission =
+                                            remoteNeedsPermission,
+                                        onLocalNetworkPermissionGranted =
+                                            viewModel::onLocalNetworkPermissionGranted,
                                         modifier = Modifier.weight(1f),
                                     )
                                 }
@@ -375,6 +382,9 @@ fun ServicesHubScreen(
                                     },
                                     remoteVerifying = remoteVerifying,
                                     remoteError = remoteError,
+                                    remoteNeedsLocalNetworkPermission = remoteNeedsPermission,
+                                    onLocalNetworkPermissionGranted =
+                                        viewModel::onLocalNetworkPermissionGranted,
                                     modifier = Modifier.padding(bottom = 24.dp),
                                 )
                             }
@@ -701,6 +711,8 @@ private fun EditorContent(
     onAddJellyfin: (String) -> Unit,
     remoteVerifying: Boolean,
     remoteError: String?,
+    remoteNeedsLocalNetworkPermission: Boolean,
+    onLocalNetworkPermissionGranted: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val liveTypes = liveConnectionTypes(server)
@@ -781,6 +793,8 @@ private fun EditorContent(
                         verifying = remoteVerifying,
                         error = remoteError,
                         onAdd = onAddJellyfin,
+                        needsLocalNetworkPermission = remoteNeedsLocalNetworkPermission,
+                        onLocalNetworkPermissionGranted = onLocalNetworkPermissionGranted,
                     )
                 }
             EditorKind.RATINGS -> RatingsKeys(settingsViewModel)
@@ -862,7 +876,13 @@ private fun AddressRow(
 }
 
 @Composable
-private fun AddAddressBar(verifying: Boolean, error: String?, onAdd: (String) -> Unit) {
+private fun AddAddressBar(
+    verifying: Boolean,
+    error: String?,
+    onAdd: (String) -> Unit,
+    needsLocalNetworkPermission: Boolean,
+    onLocalNetworkPermissionGranted: () -> Unit,
+) {
     var input by remember { mutableStateOf("") }
     Column {
         AfinityTextField(
@@ -910,7 +930,10 @@ private fun AddAddressBar(verifying: Boolean, error: String?, onAdd: (String) ->
             },
             modifier = Modifier.fillMaxWidth(),
         )
-        if (error != null) {
+        if (needsLocalNetworkPermission) {
+            Spacer(Modifier.height(10.dp))
+            LocalNetworkPermissionCard(onGranted = onLocalNetworkPermissionGranted)
+        } else if (error != null) {
             Spacer(Modifier.height(4.dp))
             Text(
                 text = error,

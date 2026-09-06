@@ -65,6 +65,7 @@ import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.LoadingButton
+import com.makd.afinity.ui.components.LocalNetworkPermissionCard
 import com.makd.afinity.util.isInsecurePublicUrl
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -227,6 +228,11 @@ fun AddEditServerScreen(
                         }
                     }
                 }
+            }
+
+            if (state.needsLocalNetworkPermission) {
+                Spacer(modifier = Modifier.height(16.dp))
+                LocalNetworkPermissionCard(onGranted = viewModel::onLocalNetworkPermissionGranted)
             }
 
             Spacer(modifier = Modifier.height(16.dp))

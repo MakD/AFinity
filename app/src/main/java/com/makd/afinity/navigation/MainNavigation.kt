@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +25,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.WideNavigationRailDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
@@ -82,6 +84,7 @@ import com.makd.afinity.ui.audiobookshelf.player.AudiobookshelfPlayerScreen
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinitySplashScreen
 import com.makd.afinity.ui.components.AppNavigationDrawerContent
+import com.makd.afinity.ui.components.LocalNetworkPermissionGrantButton
 import com.makd.afinity.ui.components.UnsupportedServerDialog
 import com.makd.afinity.ui.favorites.FavoritesCategory
 import com.makd.afinity.ui.favorites.FavoritesCategoryScreen
@@ -1699,6 +1702,31 @@ fun MainNavigation(
     }
     if (!isPreAuth) {
         GlobalUpdateDialog(updateManager = updateManager)
+
+        val needsLocalNetworkPermission by
+            mainViewModel.needsLocalNetworkPermission.collectAsStateWithLifecycle()
+
+        if (needsLocalNetworkPermission) {
+            AlertDialog(
+                onDismissRequest = mainViewModel::dismissLocalNetworkPermissionPrompt,
+                title = { Text(text = stringResource(R.string.local_network_permission_title)) },
+                text = {
+                    Text(
+                        text = stringResource(R.string.local_network_permission_offline_body)
+                    )
+                },
+                confirmButton = {
+                    LocalNetworkPermissionGrantButton(
+                        onGranted = mainViewModel::onLocalNetworkPermissionGranted
+                    )
+                },
+                dismissButton = {
+                    TextButton(onClick = mainViewModel::dismissLocalNetworkPermissionPrompt) {
+                        Text(text = stringResource(R.string.action_cancel))
+                    }
+                },
+            )
+        }
 
         val unsupportedServerVersion by
             viewModel.unsupportedServerVersion.collectAsStateWithLifecycle()

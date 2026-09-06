@@ -2183,6 +2183,12 @@
     <string name="services_hub_remote_error_no_server">No active server.</string>
     <string name="services_hub_remote_error_different_server">That address belongs to a different server.</string>
     <string name="services_hub_remote_error_unreachable">Couldn\'t reach that address.</string>
+    <string name="local_network_permission_title">Local network access</string>
+    <string name="local_network_permission_needed">Local network access is required to discover and connect to servers on your network.</string>
+    <string name="local_network_permission_grant">Grant permission</string>
+    <string name="local_network_permission_offline_body">AFinity can\'t reach your server because local network access is turned off. Grant it to reconnect.</string>
+    <string name="local_network_permission_settings">Open settings</string>
+    <string name="local_network_permission_discovery_body">No servers were found. Grant local network access so AFinity can search your network.</string>
     <string name="error_address_different_jellyseerr">That address belongs to a different Seerr server.</string>
     <string name="error_address_different_audiobookshelf">That address belongs to a different Audiobookshelf server.</string>
     <string name="error_verify_jellyseerr_failed">Could not verify Seerr server at this address.</string>

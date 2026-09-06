@@ -59,6 +59,7 @@ import com.makd.afinity.ui.audiobookshelf.login.AudiobookshelfLoginViewModel
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.DiscoveredServicesSection
 import com.makd.afinity.ui.components.LoadingButton
+import com.makd.afinity.ui.components.LocalNetworkPermissionCard
 import com.makd.afinity.util.isInsecurePublicUrl
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -70,6 +71,8 @@ internal fun AudiobookshelfLoginContent(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val discoveredServices by viewModel.discoveredServices.collectAsStateWithLifecycle()
+    val discoveryNeedsPermission by
+        viewModel.discoveryNeedsPermission.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
     val autofillManager = LocalAutofillManager.current
     @Suppress("UNUSED_VARIABLE") val context = LocalContext.current
@@ -98,6 +101,13 @@ internal fun AudiobookshelfLoginContent(
                 text = stringResource(R.string.audiobookshelf_connect),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        if (discoveryNeedsPermission) {
+            LocalNetworkPermissionCard(
+                onGranted = viewModel::onLocalNetworkPermissionGranted,
+                body = stringResource(R.string.local_network_permission_discovery_body),
             )
         }
 

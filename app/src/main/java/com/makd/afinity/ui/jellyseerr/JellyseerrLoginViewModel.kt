@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
 import com.makd.afinity.data.discovery.AfinityServiceTypes
 import com.makd.afinity.data.discovery.DiscoveredService
+import com.makd.afinity.data.discovery.DiscoveryResult
 import com.makd.afinity.data.discovery.LocalServiceDiscovery
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.auth.QuickConnectAuthorization
@@ -44,6 +45,9 @@ constructor(
     private val _discoveredServices = MutableStateFlow<List<DiscoveredService>>(emptyList())
     val discoveredServices: StateFlow<List<DiscoveredService>> = _discoveredServices.asStateFlow()
 
+    private val _discoveryNeedsPermission = MutableStateFlow(false)
+    val discoveryNeedsPermission: StateFlow<Boolean> = _discoveryNeedsPermission.asStateFlow()
+
     private var probeJob: Job? = null
     private var discoveryJob: Job? = null
 
@@ -51,10 +55,26 @@ constructor(
         discoveryJob?.cancel()
         discoveryJob =
             viewModelScope.launch {
-                localServiceDiscovery.discover(AfinityServiceTypes.JELLYSEERR).collect { services ->
-                    _discoveredServices.value = services
+                localServiceDiscovery.discoverResult(AfinityServiceTypes.JELLYSEERR).collect {
+                    result ->
+                    when (result) {
+                        is DiscoveryResult.Services -> {
+                            _discoveryNeedsPermission.value = false
+                            _discoveredServices.value = result.services
+                        }
+                        DiscoveryResult.PermissionRequired -> {
+                            _discoveryNeedsPermission.value = true
+                            _discoveredServices.value = emptyList()
+                        }
+                        DiscoveryResult.Unavailable -> _discoveredServices.value = emptyList()
+                    }
                 }
             }
+    }
+
+    fun onLocalNetworkPermissionGranted() {
+        _discoveryNeedsPermission.value = false
+        discoverLocalServers()
     }
 
     private companion object {

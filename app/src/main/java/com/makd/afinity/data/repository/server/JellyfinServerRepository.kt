@@ -9,6 +9,7 @@ import com.makd.afinity.data.network.UrlCandidates
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.di.ProberClient
+import com.makd.afinity.util.LocalNetworkPermission
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -56,6 +57,7 @@ constructor(
     private val databaseRepository: DatabaseRepository,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
     private val localServiceDiscovery: LocalServiceDiscovery,
+    private val localNetworkPermission: LocalNetworkPermission,
     private val serverAddressResolverProvider: Provider<ServerAddressResolver>,
     @ApplicationScope private val scope: CoroutineScope,
 ) : ServerRepository {
@@ -175,6 +177,10 @@ constructor(
                         sessionManager.updateSessionUrl(result.address)
                     }
                     true
+                }
+                is AddressResolutionResult.PermissionRequired -> {
+                    Timber.w("Re-resolution blocked: local network permission missing")
+                    false
                 }
                 is AddressResolutionResult.AllFailed -> {
                     Timber.w("Re-resolution failed for all addresses")
@@ -336,6 +342,18 @@ constructor(
                 }
             }
 
+            if (
+                localNetworkPermission.mayExplainFailure(
+                    urlsToTry,
+                    networkConnectivityMonitor.isOnLocalNetwork(),
+                )
+            ) {
+                Timber.w(
+                    "Server test failed and local network permission is not granted for $serverAddress"
+                )
+                return@withContext ServerConnectionResult.LocalNetworkPermissionRequired
+            }
+
             if (lastException is ApiClientException) {
                 Timber.e(lastException, "API error testing server connection")
                 ServerConnectionResult.Error(
@@ -494,6 +512,8 @@ constructor(
         ) : ServerConnectionResult()
 
         data class Error(val message: String) : ServerConnectionResult()
+
+        data object LocalNetworkPermissionRequired : ServerConnectionResult()
     }
 
     private companion object {

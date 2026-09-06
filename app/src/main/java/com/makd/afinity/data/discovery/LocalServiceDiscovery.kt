@@ -4,12 +4,14 @@ import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import android.net.wifi.WifiManager
+import com.makd.afinity.util.LocalNetworkPermission
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.net.Inet4Address
@@ -34,10 +36,21 @@ data class DiscoveredService(
     val url: String = "$scheme://$host:$port$path".trimEnd('/')
 }
 
+sealed interface DiscoveryResult {
+    data class Services(val services: List<DiscoveredService>) : DiscoveryResult
+
+    data object PermissionRequired : DiscoveryResult
+
+    data object Unavailable : DiscoveryResult
+}
+
 @Singleton
 class LocalServiceDiscovery
 @Inject
-constructor(@param:ApplicationContext private val context: Context) {
+constructor(
+    @param:ApplicationContext private val context: Context,
+    private val localNetworkPermission: LocalNetworkPermission,
+) {
 
     private val nsdManager: NsdManager?
         get() = context.getSystemService(Context.NSD_SERVICE) as? NsdManager
@@ -50,12 +63,20 @@ constructor(@param:ApplicationContext private val context: Context) {
     fun discover(
         serviceType: String,
         timeoutMs: Long = DEFAULT_TIMEOUT_MS,
-    ): Flow<List<DiscoveredService>> {
+    ): Flow<List<DiscoveredService>> =
+        discoverResult(serviceType, timeoutMs).map { result ->
+            (result as? DiscoveryResult.Services)?.services.orEmpty()
+        }
+
+    fun discoverResult(
+        serviceType: String,
+        timeoutMs: Long = DEFAULT_TIMEOUT_MS,
+    ): Flow<DiscoveryResult> {
         val manager =
             nsdManager
                 ?: run {
                     Timber.w("mDNS: NsdManager unavailable, skipping $serviceType")
-                    return flowOf(emptyList())
+                    return flowOf(DiscoveryResult.Unavailable)
                 }
 
         return callbackFlow {
@@ -72,7 +93,19 @@ constructor(@param:ApplicationContext private val context: Context) {
                     .getOrNull()
 
             fun publish() {
-                trySend(found.values.sortedBy { it.name.lowercase() })
+                trySend(
+                    DiscoveryResult.Services(found.values.sortedBy { it.name.lowercase() })
+                )
+            }
+
+            fun closeDiagnosed() {
+                if (found.isEmpty() && !localNetworkPermission.isSatisfied()) {
+                    Timber.w(
+                        "mDNS: no services for $serviceType and local network permission not granted"
+                    )
+                    trySend(DiscoveryResult.PermissionRequired)
+                }
+                close()
             }
 
             val discoveryListener =
@@ -87,7 +120,7 @@ constructor(@param:ApplicationContext private val context: Context) {
 
                     override fun onStartDiscoveryFailed(type: String, errorCode: Int) {
                         Timber.w("mDNS: start discovery failed for $type (error $errorCode)")
-                        close()
+                        closeDiagnosed()
                     }
 
                     override fun onStopDiscoveryFailed(type: String, errorCode: Int) {
@@ -151,12 +184,12 @@ constructor(@param:ApplicationContext private val context: Context) {
                 }
                 .onFailure {
                     Timber.w(it, "mDNS: could not start discovery for $serviceType")
-                    close()
+                    closeDiagnosed()
                 }
 
             launch {
                 delay(timeoutMs)
-                close()
+                closeDiagnosed()
             }
 
             awaitClose {

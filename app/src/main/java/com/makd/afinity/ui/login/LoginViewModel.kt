@@ -16,6 +16,7 @@ import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.server.AddressResolutionResult
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.data.repository.server.ServerAddressResolver
+import com.makd.afinity.util.LocalNetworkPermission
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 
 @HiltViewModel
 class LoginViewModel
@@ -42,6 +44,7 @@ constructor(
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val serverAddressResolver: ServerAddressResolver,
     private val forgetUser: ForgetUserUseCase,
+    private val localNetworkPermission: LocalNetworkPermission,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -188,6 +191,18 @@ constructor(
                                     ),
                             )
                     }
+                    JellyfinServerRepository.ServerConnectionResult
+                        .LocalNetworkPermissionRequired -> {
+                        Timber.w("Server validation blocked: local network permission missing")
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isConnecting = false,
+                                isConnectedToServer = false,
+                                needsLocalNetworkPermission = true,
+                                error =
+                                    context.getString(R.string.local_network_permission_needed),
+                            )
+                    }
                 }
             } catch (e: Exception) {
                 _uiState.value =
@@ -257,6 +272,7 @@ constructor(
                 val resolvedUrl =
                     when (val result = serverAddressResolver.resolveAddress(server.id)) {
                         is AddressResolutionResult.Success -> result.address
+                        is AddressResolutionResult.PermissionRequired -> server.address
                         is AddressResolutionResult.AllFailed -> server.address
                     }
                 Timber.d("Resolved server URL: $resolvedUrl")
@@ -643,6 +659,12 @@ constructor(
             )
     }
 
+    fun onLocalNetworkPermissionGranted() {
+        localNetworkPermission.refresh()
+        _uiState.value = _uiState.value.copy(needsLocalNetworkPermission = false)
+        discoverServers()
+    }
+
     fun discoverServers() {
         discoveryJob?.cancel()
         discoveryJob = viewModelScope.launch {
@@ -651,6 +673,7 @@ constructor(
                     isDiscovering = true,
                     error = null,
                     discoveredServers = emptyList(),
+                    needsLocalNetworkPermission = false,
                 )
 
             try {
@@ -662,11 +685,19 @@ constructor(
                         )
                     Timber.d("Updated UI with ${servers.size} discovered servers")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isDiscovering = false, error = null)
                 Timber.e(e, "Server discovery failed")
             } finally {
-                _uiState.value = _uiState.value.copy(isDiscovering = false)
+                _uiState.value =
+                    _uiState.value.copy(
+                        isDiscovering = false,
+                        needsLocalNetworkPermission =
+                            _uiState.value.discoveredServers.isEmpty() &&
+                                !localNetworkPermission.isSatisfied(),
+                    )
             }
         }
     }
@@ -688,6 +719,7 @@ data class LoginUiState(
     val isConnectedToServer: Boolean = false,
     val isDiscovering: Boolean = false,
     val discoveredServers: List<Server> = emptyList(),
+    val needsLocalNetworkPermission: Boolean = false,
     val error: String? = null,
     val serverUrlError: String? = null,
     val quickConnectCode: String? = null,

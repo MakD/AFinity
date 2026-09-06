@@ -38,6 +38,7 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.segments.SegmentsRepository
 import com.makd.afinity.di.DownloadClient
+import com.makd.afinity.util.LocalNetworkPermission
 import com.makd.afinity.util.formatFileSize
 import com.makd.afinity.util.parseDashlessUuid
 import com.makd.afinity.util.redactUrl
@@ -66,6 +67,7 @@ import java.io.FileOutputStream
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.coroutines.cancellation.CancellationException
 
 @HiltWorker
 class MediaDownloadWorker
@@ -81,6 +83,7 @@ constructor(
     private val downloadSemaphoreManager: DownloadSemaphoreManager,
     private val downloadNotificationManager: DownloadNotificationManager,
     @param:DownloadClient private val okHttpClient: OkHttpClient,
+    private val localNetworkPermission: LocalNetworkPermission,
 ) : CoroutineWorker(appContext, workerParams) {
 
     companion object {
@@ -93,6 +96,24 @@ constructor(
         const val PROGRESS_KEY = "progress"
         const val BUFFER_SIZE = 256 * 1024
         const val PROGRESS_UPDATE_INTERVAL_MS = 500L
+        const val MAX_PERMISSION_RETRY_ATTEMPTS = 5
+    }
+
+    private suspend fun markPermissionFailure(downloadId: UUID) {
+        try {
+            val download = databaseRepository.getDownload(downloadId) ?: return
+            databaseRepository.insertDownload(
+                download.copy(
+                    status = DownloadStatus.FAILED,
+                    error = applicationContext.getString(R.string.local_network_permission_needed),
+                    updatedAt = System.currentTimeMillis(),
+                )
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to mark download failed after permission denial")
+        }
     }
 
     override suspend fun doWork(): Result =
@@ -109,6 +130,25 @@ constructor(
                 } catch (e: IllegalArgumentException) {
                     return@withContext Result.failure(workDataOf("error" to "Invalid download ID"))
                 }
+
+            val downloadServerUrl =
+                databaseRepository.getDownload(downloadId)?.serverId?.let { serverId ->
+                    databaseRepository.getServer(serverId)?.address
+                }
+
+            if (downloadServerUrl != null && localNetworkPermission.blocks(downloadServerUrl)) {
+                if (runAttemptCount >= MAX_PERMISSION_RETRY_ATTEMPTS) {
+                    Timber.w(
+                        "Download failed: local network permission still missing after $runAttemptCount attempts"
+                    )
+                    markPermissionFailure(downloadId)
+                    return@withContext Result.failure(
+                        workDataOf("error" to "Local network permission not granted")
+                    )
+                }
+                Timber.w("Download deferred: local network permission not granted")
+                return@withContext Result.retry()
+            }
 
             val itemIdString =
                 inputData.getString(KEY_ITEM_ID)

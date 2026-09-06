@@ -61,6 +61,7 @@ import com.makd.afinity.R
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.DiscoveredServicesSection
 import com.makd.afinity.ui.components.LoadingButton
+import com.makd.afinity.ui.components.LocalNetworkPermissionCard
 import com.makd.afinity.ui.jellyseerr.JellyseerrLoginViewModel
 import com.makd.afinity.util.isInsecurePublicUrl
 
@@ -73,6 +74,8 @@ internal fun JellyseerrLoginContent(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val discoveredServices by viewModel.discoveredServices.collectAsStateWithLifecycle()
+    val discoveryNeedsPermission by
+        viewModel.discoveryNeedsPermission.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
     val autofillManager = LocalAutofillManager.current
     var passwordVisible by remember { mutableStateOf(false) }
@@ -116,6 +119,13 @@ internal fun JellyseerrLoginContent(
                     },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        if (discoveryNeedsPermission) {
+            LocalNetworkPermissionCard(
+                onGranted = viewModel::onLocalNetworkPermissionGranted,
+                body = stringResource(R.string.local_network_permission_discovery_body),
             )
         }
 

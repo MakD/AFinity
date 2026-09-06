@@ -79,6 +79,14 @@ constructor(
     private val _isServerReachable = MutableStateFlow(true)
     val isServerReachable: StateFlow<Boolean> = _isServerReachable.asStateFlow()
 
+    private val _needsLocalNetworkPermission = MutableStateFlow(false)
+    val needsLocalNetworkPermission: StateFlow<Boolean> =
+        _needsLocalNetworkPermission.asStateFlow()
+
+    fun clearLocalNetworkPermissionPrompt() {
+        _needsLocalNetworkPermission.value = false
+    }
+
     /**
      * True while switchUser() is running. currentSession is overwritten in place during a switch
      * (never nulled), so isAuthenticated never toggles false->true on its own; UI layers that need
@@ -142,9 +150,16 @@ constructor(
                                 Timber.e("Token rejected by server during address resolution (401)")
                                 return@withContext Result.failure(InvalidStatusException(401, null))
                             } else {
-                                Timber.w(
-                                    "Address resolution failed, starting in offline mode. Saved URL: $serverUrl"
-                                )
+                                if (result is AddressResolutionResult.PermissionRequired) {
+                                    Timber.w(
+                                        "Local network permission missing, cannot reach ${result.attemptedAddresses}"
+                                    )
+                                    _needsLocalNetworkPermission.value = true
+                                } else {
+                                    Timber.w(
+                                        "Address resolution failed, starting in offline mode. Saved URL: $serverUrl"
+                                    )
+                                }
                                 _isServerReachable.value = false
                                 serverUrl
                             }
@@ -295,6 +310,10 @@ constructor(
         val address =
             when (val result = serverAddressResolver.resolveAddress(serverId)) {
                 is AddressResolutionResult.Success -> result.address
+                is AddressResolutionResult.PermissionRequired -> {
+                    _needsLocalNetworkPermission.value = true
+                    tokenInfo.serverUrl
+                }
                 is AddressResolutionResult.AllFailed -> tokenInfo.serverUrl
             }
         val client = getOrCreateApiClient(serverId, tokenInfo.userId, address)
@@ -320,6 +339,10 @@ constructor(
         val address =
             when (val result = serverAddressResolver.resolveAddress(serverId)) {
                 is AddressResolutionResult.Success -> result.address
+                is AddressResolutionResult.PermissionRequired -> {
+                    _needsLocalNetworkPermission.value = true
+                    tokenInfo.serverUrl
+                }
                 is AddressResolutionResult.AllFailed -> tokenInfo.serverUrl
             }
 

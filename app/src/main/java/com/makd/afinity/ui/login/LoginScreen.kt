@@ -95,6 +95,7 @@ import com.makd.afinity.data.models.user.User
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.ForgetAccountDialog
 import com.makd.afinity.ui.components.LoadingButton
+import com.makd.afinity.ui.components.LocalNetworkPermissionCard
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.util.isInsecurePublicUrl
 
@@ -193,6 +194,10 @@ fun LoginScreen(
                                         viewModel.connectToServer()
                                     },
                                     onDiscoverServers = viewModel::discoverServers,
+                                    needsLocalNetworkPermission =
+                                        loginState.uiState.needsLocalNetworkPermission,
+                                    onLocalNetworkPermissionGranted =
+                                        viewModel::onLocalNetworkPermissionGranted,
                                 )
                                 Spacer(modifier = Modifier.height(expandedBottomSpacer))
                             }
@@ -352,6 +357,10 @@ fun LoginScreen(
                                         viewModel.connectToServer()
                                     },
                                     onDiscoverServers = viewModel::discoverServers,
+                                    needsLocalNetworkPermission =
+                                        loginState.uiState.needsLocalNetworkPermission,
+                                    onLocalNetworkPermissionGranted =
+                                        viewModel::onLocalNetworkPermissionGranted,
                                 )
                             }
                         } else {
@@ -643,6 +652,8 @@ private fun LocalDiscoveryContent(
     isDiscovering: Boolean,
     onDiscoveredServerSelect: (Server) -> Unit,
     onDiscoverServers: () -> Unit,
+    needsLocalNetworkPermission: Boolean = false,
+    onLocalNetworkPermissionGranted: () -> Unit = {},
 ) {
     Column {
         Row(
@@ -670,6 +681,13 @@ private fun LocalDiscoveryContent(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
+
+        if (needsLocalNetworkPermission) {
+            LocalNetworkPermissionCard(
+                onGranted = onLocalNetworkPermissionGranted,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+        }
 
         if (discoveredServers.isNotEmpty()) {
             discoveredServers.forEach { server ->

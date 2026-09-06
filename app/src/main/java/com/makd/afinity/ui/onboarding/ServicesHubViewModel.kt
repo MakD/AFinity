@@ -73,6 +73,14 @@ constructor(
     private val _remoteError = MutableStateFlow<String?>(null)
     val remoteError = _remoteError.asStateFlow()
 
+    private val _remoteNeedsLocalNetworkPermission = MutableStateFlow(false)
+    val remoteNeedsLocalNetworkPermission = _remoteNeedsLocalNetworkPermission.asStateFlow()
+
+    fun onLocalNetworkPermissionGranted() {
+        _remoteNeedsLocalNetworkPermission.value = false
+        _remoteError.value = null
+    }
+
     init {
         viewModelScope.launch {
             sessionManager.currentSession.collect { session ->
@@ -104,11 +112,13 @@ constructor(
 
     fun clearRemoteError() {
         _remoteError.value = null
+        _remoteNeedsLocalNetworkPermission.value = false
     }
 
     fun verifyAndSaveRemoteAddress(input: String, onSaved: () -> Unit) {
         viewModelScope.launch {
             _remoteError.value = null
+            _remoteNeedsLocalNetworkPermission.value = false
             _remoteVerifying.value = true
             try {
                 val session = sessionManager.currentSession.value
@@ -143,6 +153,12 @@ constructor(
                     }
                     is JellyfinServerRepository.ServerConnectionResult.Error -> {
                         _remoteError.value = result.message
+                    }
+                    JellyfinServerRepository.ServerConnectionResult
+                        .LocalNetworkPermissionRequired -> {
+                        _remoteNeedsLocalNetworkPermission.value = true
+                        _remoteError.value =
+                            context.getString(R.string.local_network_permission_needed)
                     }
                 }
             } catch (e: Exception) {

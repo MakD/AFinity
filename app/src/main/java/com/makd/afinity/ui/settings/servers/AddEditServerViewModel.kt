@@ -10,6 +10,7 @@ import com.makd.afinity.data.models.server.ServerAddress
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.data.repository.server.ServerRepository
+import com.makd.afinity.util.LocalNetworkPermission
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,6 +32,7 @@ data class AddEditServerState(
     val saveSuccess: Boolean = false,
     val duplicateServerDetected: Boolean = false,
     val duplicateServerName: String? = null,
+    val needsLocalNetworkPermission: Boolean = false,
 )
 
 sealed class ConnectionTestResult {
@@ -48,11 +50,19 @@ constructor(
     @param:ApplicationContext private val context: Context,
     private val serverRepository: ServerRepository,
     private val databaseRepository: DatabaseRepository,
+    private val localNetworkPermission: LocalNetworkPermission,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     private val serverId: String? =
         savedStateHandle.get<String>("serverId")?.takeIf { it != "null" }
+
+    fun onLocalNetworkPermissionGranted() {
+        localNetworkPermission.refresh()
+        _state.value =
+            _state.value.copy(needsLocalNetworkPermission = false, connectionTestResult = null)
+        testConnection()
+    }
 
     private val _state = MutableStateFlow(AddEditServerState(serverId = serverId))
     val state: StateFlow<AddEditServerState> = _state.asStateFlow()
@@ -80,7 +90,12 @@ constructor(
     }
 
     fun updateServerUrl(url: String) {
-        _state.value = _state.value.copy(serverUrl = url, connectionTestResult = null)
+        _state.value =
+            _state.value.copy(
+                serverUrl = url,
+                connectionTestResult = null,
+                needsLocalNetworkPermission = false,
+            )
     }
 
     fun updateServerName(name: String) {
@@ -134,6 +149,19 @@ constructor(
                             _state.value.copy(
                                 isTestingConnection = false,
                                 connectionTestResult = ConnectionTestResult.Error(result.message),
+                            )
+                    }
+
+                    JellyfinServerRepository.ServerConnectionResult
+                        .LocalNetworkPermissionRequired -> {
+                        _state.value =
+                            _state.value.copy(
+                                isTestingConnection = false,
+                                connectionTestResult =
+                                    ConnectionTestResult.Error(
+                                        context.getString(R.string.local_network_permission_needed)
+                                    ),
+                                needsLocalNetworkPermission = true,
                             )
                     }
                 }
