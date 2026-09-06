@@ -7,6 +7,8 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import com.makd.afinity.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -19,8 +21,6 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import okhttp3.ConnectionPool
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class NetworkConnectivityMonitor

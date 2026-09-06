@@ -56,9 +56,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityTrack
+import java.util.concurrent.atomic.AtomicInteger
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
-import java.util.concurrent.atomic.AtomicInteger
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

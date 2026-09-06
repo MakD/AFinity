@@ -220,7 +220,9 @@ constructor(
                                     userId = userId,
                                     maxStreamingBitrate = maxStreamingBitrate,
                                     deviceProfile =
-                                        deviceProfileFactory.createMusicProfile(maxStreamingBitrate),
+                                        deviceProfileFactory.createMusicProfile(
+                                            maxStreamingBitrate
+                                        ),
                                     enableDirectPlay = true,
                                     enableDirectStream = true,
                                     enableTranscoding = true,
@@ -246,7 +248,9 @@ constructor(
                 val transcodingUrl =
                     source.transcodingUrl?.takeIf { it.isNotBlank() }
                         ?: run {
-                            Timber.e("Audio source $itemId supports neither direct play nor transcoding")
+                            Timber.e(
+                                "Audio source $itemId supports neither direct play nor transcoding"
+                            )
                             return@withContext null
                         }
 
@@ -303,13 +307,14 @@ constructor(
                 }
 
                 val rewritten =
-                    TranscodingUrl.withSubtitleStreamIndex(transcodingUrl, subtitleStreamIndex).let {
-                        if (audioStreamIndex != null) {
-                            TranscodingUrl.withAudioStreamIndex(it, audioStreamIndex)
-                        } else {
-                            it
+                    TranscodingUrl.withSubtitleStreamIndex(transcodingUrl, subtitleStreamIndex)
+                        .let {
+                            if (audioStreamIndex != null) {
+                                TranscodingUrl.withAudioStreamIndex(it, audioStreamIndex)
+                            } else {
+                                it
+                            }
                         }
-                    }
                         .let {
                             if (startTimeTicks != null && startTimeTicks > 0L) {
                                 TranscodingUrl.withStartTimeTicks(it, startTimeTicks)

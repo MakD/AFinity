@@ -374,9 +374,7 @@ internal fun SelectableAddressRow(
 private fun addressAnnotated(parts: AddressParts, contentColor: Color): AnnotatedString =
     buildAnnotatedString {
         parts.scheme?.let { scheme ->
-            withStyle(SpanStyle(color = contentColor.copy(alpha = 0.55f))) {
-                append("$scheme://")
-            }
+            withStyle(SpanStyle(color = contentColor.copy(alpha = 0.55f))) { append("$scheme://") }
         }
         append(parts.hostWithPath)
     }

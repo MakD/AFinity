@@ -136,11 +136,7 @@ private fun AwardsOpenList(
 ) {
     val preview =
         remember(awards.awards) {
-            awards.awards
-                .groupBy { it.year }
-                .values
-                .take(OPEN_LIST_PREVIEW_GROUPS)
-                .flatten()
+            awards.awards.groupBy { it.year }.values.take(OPEN_LIST_PREVIEW_GROUPS).flatten()
         }
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -343,9 +339,7 @@ fun omdbAwardsHeadline(awards: String?): String? =
         ?.split(".", limit = 2)
         ?.first()
         ?.trim()
-        ?.takeIf {
-            it.isNotBlank()
-        }
+        ?.takeIf { it.isNotBlank() }
 
 @Composable
 fun derivedAwardsHeadline(awards: WikidataAwards): String? {

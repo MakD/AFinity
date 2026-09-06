@@ -105,8 +105,7 @@ fun CastRibbon(
 private fun RibbonFace(entry: RibbonEntry, onPersonClick: ((UUID) -> Unit)?) {
     val person = entry.person
     val clickHandler = onPersonClick
-    val ringColor =
-        if (entry.isGuest) MaterialTheme.colorScheme.primary else Color.Transparent
+    val ringColor = if (entry.isGuest) MaterialTheme.colorScheme.primary else Color.Transparent
     val roleLabel =
         if (person.role.isNotEmpty()) stringResource(R.string.cast_role_format, person.role) else ""
 
@@ -168,14 +167,12 @@ private fun RibbonFace(entry: RibbonEntry, onPersonClick: ((UUID) -> Unit)?) {
 private fun SeeAllChevron(onClick: () -> Unit) {
     Box(
         modifier =
-            Modifier.height(RibbonAvatarSize)
-                .width(40.dp)
-                .clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() },
-                ) {
-                    onClick()
-                },
+            Modifier.height(RibbonAvatarSize).width(40.dp).clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() },
+            ) {
+                onClick()
+            },
         contentAlignment = Alignment.Center,
     ) {
         Icon(

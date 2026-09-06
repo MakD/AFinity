@@ -394,9 +394,7 @@ fun MusicArtistScreen(
                                                     }),
                                             onDownload =
                                                 if (isDownloadAllowedByServer)
-                                                    ({
-                                                        viewModel.downloadTrack(track.id)
-                                                    })
+                                                    ({ viewModel.downloadTrack(track.id) })
                                                 else null,
                                             isDownloadEnabled = canDownloadOnNetwork,
                                             onCancelDownload = {
@@ -456,9 +454,7 @@ fun MusicArtistScreen(
                                                     },
                                                     onDownload =
                                                         if (isDownloadAllowedByServer)
-                                                            ({
-                                                                viewModel.downloadTrack(track.id)
-                                                            })
+                                                            ({ viewModel.downloadTrack(track.id) })
                                                         else null,
                                                     isDownloadEnabled = canDownloadOnNetwork,
                                                     onCancelDownload = {
@@ -840,9 +836,7 @@ fun MusicArtistScreen(
                                         }),
                                 onDownload =
                                     if (isDownloadAllowedByServer)
-                                        ({
-                                            viewModel.downloadTrack(track.id)
-                                        })
+                                        ({ viewModel.downloadTrack(track.id) })
                                     else null,
                                 isDownloadEnabled = canDownloadOnNetwork,
                                 onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
@@ -904,9 +898,7 @@ fun MusicArtistScreen(
                                                     }),
                                             onDownload =
                                                 if (isDownloadAllowedByServer)
-                                                    ({
-                                                        viewModel.downloadTrack(track.id)
-                                                    })
+                                                    ({ viewModel.downloadTrack(track.id) })
                                                 else null,
                                             isDownloadEnabled = canDownloadOnNetwork,
                                             onCancelDownload = {

@@ -50,21 +50,22 @@ data class VideoQuality(val maxBitrate: Int, val maxWidth: Int?) {
 
         fun fromBitrate(bitrate: Int?): VideoQuality =
             when (bitrate) {
-                null, ORIGINAL_BITRATE -> ORIGINAL
+                null,
+                ORIGINAL_BITRATE -> ORIGINAL
                 AUTO_BITRATE -> AUTO
-                else -> LADDER.firstOrNull { it.maxBitrate == bitrate } ?: VideoQuality(bitrate, null)
+                else ->
+                    LADDER.firstOrNull { it.maxBitrate == bitrate } ?: VideoQuality(bitrate, null)
             }
 
         fun optionsFor(sourceBitrate: Int?, sourceWidth: Int?): List<VideoQuality> {
             val knownBitrate = sourceBitrate?.takeIf { it > 0 }
-            val rungs =
-                LADDER.filter { rung ->
-                    val width = rung.maxWidth ?: Int.MAX_VALUE
-                    val neverUpscale = sourceWidth == null || width <= sourceWidth
-                    val downscales = sourceWidth != null && width < sourceWidth
-                    val lowersBitrate = knownBitrate == null || rung.maxBitrate < knownBitrate
-                    neverUpscale && (downscales || lowersBitrate)
-                }
+            val rungs = LADDER.filter { rung ->
+                val width = rung.maxWidth ?: Int.MAX_VALUE
+                val neverUpscale = sourceWidth == null || width <= sourceWidth
+                val downscales = sourceWidth != null && width < sourceWidth
+                val lowersBitrate = knownBitrate == null || rung.maxBitrate < knownBitrate
+                neverUpscale && (downscales || lowersBitrate)
+            }
             return buildList {
                 add(AUTO)
                 add(ORIGINAL)

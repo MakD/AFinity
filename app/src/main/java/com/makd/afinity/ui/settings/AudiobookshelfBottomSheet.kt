@@ -71,8 +71,7 @@ internal fun AudiobookshelfLoginContent(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val discoveredServices by viewModel.discoveredServices.collectAsStateWithLifecycle()
-    val discoveryNeedsPermission by
-        viewModel.discoveryNeedsPermission.collectAsStateWithLifecycle()
+    val discoveryNeedsPermission by viewModel.discoveryNeedsPermission.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
     val autofillManager = LocalAutofillManager.current
     @Suppress("UNUSED_VARIABLE") val context = LocalContext.current

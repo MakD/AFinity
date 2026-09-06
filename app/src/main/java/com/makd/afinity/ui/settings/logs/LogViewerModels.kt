@@ -57,7 +57,8 @@ data class LogScope(
     val window: LogWindow = LogWindow.ALL,
 ) {
     val isFiltered: Boolean
-        get() = minLevel != null || query.isNotBlank() || tags.isNotEmpty() || window != LogWindow.ALL
+        get() =
+            minLevel != null || query.isNotBlank() || tags.isNotEmpty() || window != LogWindow.ALL
 }
 
 data class LogViewerUiState(

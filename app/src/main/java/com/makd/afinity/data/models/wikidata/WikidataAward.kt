@@ -8,8 +8,9 @@ enum class WikidataSubjectType(val value: String) {
     PERSON("person");
 
     companion object {
-        fun fromValue(value: String): WikidataSubjectType? =
-            entries.firstOrNull { it.value == value }
+        fun fromValue(value: String): WikidataSubjectType? = entries.firstOrNull {
+            it.value == value
+        }
     }
 }
 

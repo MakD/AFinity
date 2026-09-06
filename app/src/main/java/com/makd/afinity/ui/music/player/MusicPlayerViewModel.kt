@@ -33,6 +33,9 @@ import com.makd.afinity.player.music.RadioManager
 import com.makd.afinity.ui.player.components.transcodeReasonRes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.Locale
+import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,9 +48,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.TranscodingInfo
-import java.util.Locale
-import java.util.UUID
-import javax.inject.Inject
 
 @HiltViewModel
 class MusicPlayerViewModel
@@ -143,8 +143,7 @@ constructor(
         val playMethod =
             when {
                 isLocal -> context.getString(R.string.playback_stats_value_direct_play_local)
-                isServerTranscode ->
-                    context.getString(R.string.playback_stats_value_transcoding)
+                isServerTranscode -> context.getString(R.string.playback_stats_value_transcoding)
                 else -> context.getString(R.string.playback_stats_value_direct_play)
             }
 

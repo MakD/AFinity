@@ -80,6 +80,5 @@ object WikidataAwardQueries {
     fun isValidTmdbId(tmdbId: String?): Boolean =
         !tmdbId.isNullOrBlank() && tmdbId.all { it.isDigit() }
 
-    private fun escape(value: String): String =
-        value.replace("\\", "\\\\").replace("\"", "\\\"")
+    private fun escape(value: String): String = value.replace("\\", "\\\\").replace("\"", "\\\"")
 }

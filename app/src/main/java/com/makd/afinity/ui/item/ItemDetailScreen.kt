@@ -342,9 +342,7 @@ fun ItemDetailScreen(
         LaunchedEffect(selectedEpisode, pendingNavigationPersonId) {
             if (selectedEpisode == null && pendingNavigationPersonId != null) {
                 kotlinx.coroutines.delay(300)
-                navController.navigate(
-                    Destination.createPersonRoute(pendingNavigationPersonId!!)
-                )
+                navController.navigate(Destination.createPersonRoute(pendingNavigationPersonId!!))
                 pendingNavigationPersonId = null
             }
         }

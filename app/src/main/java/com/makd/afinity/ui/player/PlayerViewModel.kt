@@ -960,9 +960,8 @@ constructor(
                 val stopAtItemEnd =
                     !isIntro && _uiState.value.sleepTimerMode is SleepTimerMode.EndOfItem
                 val nextItem =
-                    if ((isIntro || autoPlay) &&
-                        !stopAtItemEnd &&
-                        playlistManager.canAutoAdvance()
+                    if (
+                        (isIntro || autoPlay) && !stopAtItemEnd && playlistManager.canAutoAdvance()
                     ) {
                         playlistManager.next()
                     } else null
@@ -1128,8 +1127,7 @@ constructor(
             if (syncPlayInterceptor?.handle(event) == true) return@launch
             when (event) {
                 is PlayerEvent.Play ->
-                    if (_uiState.value.sleepTimerExpired) resumeFromSleepTimer()
-                    else player.play()
+                    if (_uiState.value.sleepTimerExpired) resumeFromSleepTimer() else player.play()
                 is PlayerEvent.Pause -> player.pause()
                 is PlayerEvent.Seek -> player.seekTo(event.positionMs)
                 is PlayerEvent.SeekRelative -> {
@@ -1659,26 +1657,28 @@ constructor(
         val height = info.height ?: 0
         val output = buildString {
             if (width > 0 && height > 0) append("${width}x${height}")
-            info.bitrate?.takeIf { it > 0 }?.let {
-                if (isNotEmpty()) append(" • ")
-                append(String.format(Locale.US, "%.1f Mbps", it / 1_000_000.0))
-            }
+            info.bitrate
+                ?.takeIf { it > 0 }
+                ?.let {
+                    if (isNotEmpty()) append(" • ")
+                    append(String.format(Locale.US, "%.1f Mbps", it / 1_000_000.0))
+                }
         }
         val contentFps = (player as? ExoPlayer)?.videoFormat?.frameRate?.takeIf { it > 0f }
         val speed =
-            info.framerate?.takeIf { it > 0f }?.let { encoderFps ->
-                if (contentFps != null && contentFps > 0) {
-                    String.format(Locale.US, "%.1fx realtime", encoderFps / contentFps)
-                } else {
-                    String.format(Locale.US, "%.0f fps", encoderFps)
-                }
-            } ?: ""
+            info.framerate
+                ?.takeIf { it > 0f }
+                ?.let { encoderFps ->
+                    if (contentFps != null && contentFps > 0) {
+                        String.format(Locale.US, "%.1fx realtime", encoderFps / contentFps)
+                    } else {
+                        String.format(Locale.US, "%.0f fps", encoderFps)
+                    }
+                } ?: ""
         val directLabel = context.getString(R.string.playback_stats_value_stream_copy)
         return TranscodeStatsFields(
             output = output,
-            video =
-                if (info.isVideoDirect) directLabel
-                else info.videoCodec?.uppercase().orEmpty(),
+            video = if (info.isVideoDirect) directLabel else info.videoCodec?.uppercase().orEmpty(),
             audio =
                 if (info.isAudioDirect) directLabel
                 else
@@ -2094,9 +2094,7 @@ constructor(
                     ?.mediaStreams
                     .orEmpty()
                     .filter { it.type == MediaStreamType.SUBTITLE }
-                    .mapNotNull { stream ->
-                        stream.deliveryMethod?.let { stream.index to it }
-                    }
+                    .mapNotNull { stream -> stream.deliveryMethod?.let { stream.index to it } }
                     .toMap()
 
             val clientRenderedSubtitles =
@@ -2106,8 +2104,7 @@ constructor(
                     .toSet()
 
             val serverBurnedSubtitle =
-                negotiatedSubtitleDelivery
-                    .entries
+                negotiatedSubtitleDelivery.entries
                     .firstOrNull { it.value == SubtitleDeliveryMethod.ENCODE }
                     ?.key
 
@@ -2296,8 +2293,7 @@ constructor(
                             emptyList()
                         }
                     } else {
-                        val containerDropsSubtitles =
-                            streamDecision !is StreamDecision.DirectPlay
+                        val containerDropsSubtitles = streamDecision !is StreamDecision.DirectPlay
 
                         val negotiatedDeliveryUrls =
                             negotiatedSource
@@ -2641,7 +2637,8 @@ constructor(
         if (player is MPVPlayer) return false
         if (tracks.groups.isEmpty()) return false
         if (currentMediaStreams(MediaStreamType.VIDEO).isEmpty()) return false
-        if (tracks.groups.any { it.type == C.TRACK_TYPE_VIDEO && it.isSupported(true) }) return false
+        if (tracks.groups.any { it.type == C.TRACK_TYPE_VIDEO && it.isSupported(true) })
+            return false
         return forceTranscodeRetry("No playable video track")
     }
 

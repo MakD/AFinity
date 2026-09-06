@@ -1591,15 +1591,33 @@ object DatabaseMigrations {
                 db.execSQL(
                     "ALTER TABLE `mediastreams` ADD COLUMN `hdr10PlusPresentFlag` INTEGER NOT NULL DEFAULT 0"
                 )
-                db.execSQL("UPDATE `mediastreams` SET `videoRangeType` = 'HDR10Plus' WHERE `videoRangeType` = 'HDR10_PLUS'")
-                db.execSQL("UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithHDR10' WHERE `videoRangeType` = 'DOVI_WITH_HDR10'")
-                db.execSQL("UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithHLG' WHERE `videoRangeType` = 'DOVI_WITH_HLG'")
-                db.execSQL("UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithSDR' WHERE `videoRangeType` = 'DOVI_WITH_SDR'")
-                db.execSQL("UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithEL' WHERE `videoRangeType` = 'DOVI_WITH_EL'")
-                db.execSQL("UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithHDR10Plus' WHERE `videoRangeType` = 'DOVI_WITH_HDR10_PLUS'")
-                db.execSQL("UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithELHDR10Plus' WHERE `videoRangeType` = 'DOVI_WITH_ELHDR10_PLUS'")
-                db.execSQL("UPDATE `mediastreams` SET `videoRangeType` = 'DOVIInvalid' WHERE `videoRangeType` = 'DOVI_INVALID'")
-                db.execSQL("UPDATE `mediastreams` SET `videoRangeType` = 'Unknown' WHERE `videoRangeType` = 'UNKNOWN'")
+                db.execSQL(
+                    "UPDATE `mediastreams` SET `videoRangeType` = 'HDR10Plus' WHERE `videoRangeType` = 'HDR10_PLUS'"
+                )
+                db.execSQL(
+                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithHDR10' WHERE `videoRangeType` = 'DOVI_WITH_HDR10'"
+                )
+                db.execSQL(
+                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithHLG' WHERE `videoRangeType` = 'DOVI_WITH_HLG'"
+                )
+                db.execSQL(
+                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithSDR' WHERE `videoRangeType` = 'DOVI_WITH_SDR'"
+                )
+                db.execSQL(
+                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithEL' WHERE `videoRangeType` = 'DOVI_WITH_EL'"
+                )
+                db.execSQL(
+                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithHDR10Plus' WHERE `videoRangeType` = 'DOVI_WITH_HDR10_PLUS'"
+                )
+                db.execSQL(
+                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIWithELHDR10Plus' WHERE `videoRangeType` = 'DOVI_WITH_ELHDR10_PLUS'"
+                )
+                db.execSQL(
+                    "UPDATE `mediastreams` SET `videoRangeType` = 'DOVIInvalid' WHERE `videoRangeType` = 'DOVI_INVALID'"
+                )
+                db.execSQL(
+                    "UPDATE `mediastreams` SET `videoRangeType` = 'Unknown' WHERE `videoRangeType` = 'UNKNOWN'"
+                )
             }
         }
 

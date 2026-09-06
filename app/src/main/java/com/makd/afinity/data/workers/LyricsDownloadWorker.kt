@@ -70,8 +70,7 @@ constructor(
                     return@withContext Result.success(workDataOf())
                 }
 
-                val lyricsJson =
-                    encodeLyricsJson(lines.mapNotNull { it.toAfinityLyricLine() })
+                val lyricsJson = encodeLyricsJson(lines.mapNotNull { it.toAfinityLyricLine() })
 
                 databaseRepository.insertMusicLyrics(
                     trackId = itemId,

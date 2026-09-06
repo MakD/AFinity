@@ -543,9 +543,7 @@ private fun DownloadGroupSheet(
 ) {
     val childCount = jellyfinChildren.size + absChildren.size
 
-    LaunchedEffect(entry.key, childCount) {
-        if (entry.isGroup && childCount == 0) onDismiss()
-    }
+    LaunchedEffect(entry.key, childCount) { if (entry.isGroup && childCount == 0) onDismiss() }
 
     val absLibraryItemId =
         when (val ref = entry.ref) {

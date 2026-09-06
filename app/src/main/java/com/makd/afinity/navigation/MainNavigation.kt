@@ -1711,9 +1711,7 @@ fun MainNavigation(
                 onDismissRequest = mainViewModel::dismissLocalNetworkPermissionPrompt,
                 title = { Text(text = stringResource(R.string.local_network_permission_title)) },
                 text = {
-                    Text(
-                        text = stringResource(R.string.local_network_permission_offline_body)
-                    )
+                    Text(text = stringResource(R.string.local_network_permission_offline_body))
                 },
                 confirmButton = {
                     LocalNetworkPermissionGrantButton(

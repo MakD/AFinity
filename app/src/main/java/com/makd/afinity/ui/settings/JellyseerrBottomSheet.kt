@@ -74,8 +74,7 @@ internal fun JellyseerrLoginContent(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val discoveredServices by viewModel.discoveredServices.collectAsStateWithLifecycle()
-    val discoveryNeedsPermission by
-        viewModel.discoveryNeedsPermission.collectAsStateWithLifecycle()
+    val discoveryNeedsPermission by viewModel.discoveryNeedsPermission.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
     val autofillManager = LocalAutofillManager.current
     var passwordVisible by remember { mutableStateOf(false) }
@@ -105,8 +104,7 @@ internal fun JellyseerrLoginContent(
                 text = stringResource(R.string.jellyseerr_connect_title),
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             )
-            val instanceTitle =
-                uiState.publicSettings?.applicationTitle?.takeIf { it.isNotBlank() }
+            val instanceTitle = uiState.publicSettings?.applicationTitle?.takeIf { it.isNotBlank() }
             Text(
                 text =
                     if (instanceTitle != null) {
@@ -320,8 +318,7 @@ internal fun JellyseerrLoginContent(
                             }
                         }
                     ),
-                modifier =
-                    Modifier.fillMaxWidth().semantics { contentType = ContentType.Password },
+                modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Password },
             )
         }
 

@@ -49,7 +49,6 @@ import com.makd.afinity.util.localizedDateFormat
 import java.util.Date
 import java.util.Locale
 
-
 fun LazyListScope.episodeListItems(
     episodes: List<PodcastEpisode>,
     onEpisodePlay: (PodcastEpisode) -> Unit,

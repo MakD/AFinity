@@ -1276,7 +1276,8 @@ constructor(
             }
             val writersDeferred = async {
                 if (cap(DiscoverySection.WRITTEN_BY) == 0) emptyList()
-                else peopleRepository.getTopPeople(PersonKind.WRITER, limit = 50, minAppearances = 3)
+                else
+                    peopleRepository.getTopPeople(PersonKind.WRITER, limit = 50, minAppearances = 3)
             }
             val studiosDeferred = async {
                 if (spotlightCap == 0) emptyList() else studiosPool(force = false)

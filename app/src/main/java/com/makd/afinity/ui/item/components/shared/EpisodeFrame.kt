@@ -87,17 +87,15 @@ fun EpisodeFrame(
                 episode.playbackPositionTicks > 0L ->
                     "-" +
                         formatTimecode(
-                            (episode.runtimeTicks - episode.playbackPositionTicks)
-                                .coerceAtLeast(0L) / 10_000L
+                            (episode.runtimeTicks - episode.playbackPositionTicks).coerceAtLeast(
+                                0L
+                            ) / 10_000L
                         )
                 else -> formatTimecode(episode.runtimeTicks / 10_000L)
             }
         }
 
-    Box(
-        modifier =
-            modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(12.dp))
-    ) {
+    Box(modifier = modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(12.dp))) {
         AsyncImage(
             imageUrl = imageUrl,
             contentDescription = episode.name,

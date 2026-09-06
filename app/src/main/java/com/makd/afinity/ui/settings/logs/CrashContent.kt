@@ -231,9 +231,7 @@ fun CrashDetailContent(
                     stampFormatter.format(Date(report.timeMillis)),
                     first = true,
                 )
-                report.thread?.let {
-                    MetaRow(stringResource(R.string.logs_crash_meta_thread), it)
-                }
+                report.thread?.let { MetaRow(stringResource(R.string.logs_crash_meta_thread), it) }
                 report.build?.let { MetaRow(stringResource(R.string.logs_crash_meta_build), it) }
                 report.device?.let { MetaRow(stringResource(R.string.logs_crash_meta_device), it) }
             }

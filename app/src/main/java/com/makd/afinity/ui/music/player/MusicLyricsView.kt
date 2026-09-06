@@ -226,9 +226,7 @@ private fun ContentDrawScope.drawKaraokeFill(layout: TextLayoutResult?, progress
     val lineIndex = layout.getLineForOffset(index.coerceAtMost(length - 1))
 
     if (lineIndex > 0) {
-        clipRect(0f, 0f, size.width, layout.getLineBottom(lineIndex - 1)) {
-            content.drawContent()
-        }
+        clipRect(0f, 0f, size.width, layout.getLineBottom(lineIndex - 1)) { content.drawContent() }
     }
 
     val start = layout.getHorizontalPosition(index, usePrimaryDirection = true)

@@ -243,9 +243,7 @@ constructor(
 
         viewModelScope.launch {
             adminChangeBroadcaster.changes
-                .filter {
-                    it.itemId == itemId.toString() && it.kind != AdminChangeKind.IMAGES
-                }
+                .filter { it.itemId == itemId.toString() && it.kind != AdminChangeKind.IMAGES }
                 .collect { forceReloadFromServer() }
         }
 
@@ -627,8 +625,7 @@ constructor(
         try {
             itemLastServerFetchAt = System.currentTimeMillis()
             val serverItem =
-                mediaRepository.getItemDetail(itemId)?.let { baseItemDto
-                    ->
+                mediaRepository.getItemDetail(itemId)?.let { baseItemDto ->
                     when (baseItemDto.type) {
                         BaseItemKind.MOVIE ->
                             baseItemDto.toAfinityMovie(mediaRepository.getBaseUrl(), null)
@@ -769,8 +766,7 @@ constructor(
                     if (isOffline) {
                         loadItemFromDatabase()
                     } else {
-                        mediaRepository.getItemDetail(itemId)?.let {
-                            baseItemDto ->
+                        mediaRepository.getItemDetail(itemId)?.let { baseItemDto ->
                             specialFeatureCount = baseItemDto.specialFeatureCount ?: 0
                             itemLastServerFetchAt = System.currentTimeMillis()
                             when (baseItemDto.type) {

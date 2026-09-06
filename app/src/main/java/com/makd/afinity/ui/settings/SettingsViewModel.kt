@@ -1293,8 +1293,7 @@ constructor(
                         quickConnectAuthSuccess = false,
                     )
                 val authorized =
-                    authRepository.authorizeQuickConnect(code) ==
-                        QuickConnectAuthorization.APPROVED
+                    authRepository.authorizeQuickConnect(code) == QuickConnectAuthorization.APPROVED
                 _uiState.value =
                     _uiState.value.copy(
                         isAuthorizingQuickConnect = false,
@@ -1330,7 +1329,6 @@ constructor(
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }
-
 }
 
 data class SettingsUiState(

@@ -698,8 +698,7 @@ private fun HeroMetadata(item: AfinityItem) {
     if (item is AfinityShow) {
         item.seasonCount?.let { count ->
             Text(
-                text =
-                    pluralStringResource(R.plurals.hero_season_plural, count, count),
+                text = pluralStringResource(R.plurals.hero_season_plural, count, count),
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

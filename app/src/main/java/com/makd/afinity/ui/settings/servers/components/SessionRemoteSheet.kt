@@ -148,7 +148,8 @@ fun SessionRemoteSheet(
                     color = MaterialTheme.colorScheme.errorContainer,
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                        modifier =
+                            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
@@ -162,8 +163,7 @@ fun SessionRemoteSheet(
                             text =
                                 stringResource(
                                     R.string.session_remote_other_user_warning,
-                                    session.userName
-                                        ?: stringResource(R.string.unknown_user),
+                                    session.userName ?: stringResource(R.string.unknown_user),
                                 ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onErrorContainer,
@@ -191,7 +191,9 @@ fun SessionRemoteSheet(
                     imageUrl = artworkUrl,
                     contentDescription = null,
                     modifier =
-                        Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(12.dp)),
+                        Modifier.fillMaxWidth()
+                            .aspectRatio(16f / 9f)
+                            .clip(RoundedCornerShape(12.dp)),
                     contentScale = ContentScale.Crop,
                 )
             }

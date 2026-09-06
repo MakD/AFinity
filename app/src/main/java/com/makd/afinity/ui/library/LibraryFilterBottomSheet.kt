@@ -78,16 +78,13 @@ private fun LanguageFilterSection(
     onQueryConsumed: () -> Unit,
 ) {
     val selected = available.filter { it.code in selectedCodes }
-    val suggestions =
-        available.filter {
-            it.code !in selectedCodes &&
-                (query.isBlank() || it.name.contains(query, ignoreCase = true))
-        }
+    val suggestions = available.filter {
+        it.code !in selectedCodes && (query.isBlank() || it.name.contains(query, ignoreCase = true))
+    }
 
     FilterAccordionSection(
         title = title,
-        summary =
-            if (selected.isEmpty()) anyLabel else selected.joinToString(", ") { it.name },
+        summary = if (selected.isEmpty()) anyLabel else selected.joinToString(", ") { it.name },
         expanded = expanded,
         onToggle = onToggle,
     ) {

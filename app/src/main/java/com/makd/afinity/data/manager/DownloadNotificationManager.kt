@@ -151,9 +151,10 @@ constructor(@param:ApplicationContext private val context: Context) {
     fun postFailed(notificationId: Int, title: String, subText: String?, error: String?) {
         ensureChannel()
         val failedText =
-            error?.takeIf { it.isNotBlank() }?.let {
-                context.getString(R.string.notif_download_failed_reason_fmt, it)
-            } ?: context.getString(R.string.notif_download_failed)
+            error
+                ?.takeIf { it.isNotBlank() }
+                ?.let { context.getString(R.string.notif_download_failed_reason_fmt, it) }
+                ?: context.getString(R.string.notif_download_failed)
         val notification =
             NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_download)

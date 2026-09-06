@@ -56,7 +56,10 @@ constructor(
     init {
         viewModelScope.launch {
             val source = tree ?: return@launch
-            source.updates.onStart { emit(Unit) }.debounce(REFRESH_DEBOUNCE_MS).collect { rebuild() }
+            source.updates
+                .onStart { emit(Unit) }
+                .debounce(REFRESH_DEBOUNCE_MS)
+                .collect { rebuild() }
         }
         viewModelScope.launch { loadCrashes() }
     }
@@ -102,7 +105,11 @@ constructor(
 
     fun clearFilters() {
         _uiState.update {
-            it.copy(scope = LogScope(window = it.scope.window), searchActive = false, expandedKey = null)
+            it.copy(
+                scope = LogScope(window = it.scope.window),
+                searchActive = false,
+                expandedKey = null,
+            )
         }
         rebuild()
     }
@@ -120,9 +127,7 @@ constructor(
     fun setPaused(paused: Boolean) {
         if (_uiState.value.paused == paused) return
         frozen = if (paused) snapshot() else null
-        _uiState.update {
-            it.copy(paused = paused, following = !paused, expandedKey = null)
-        }
+        _uiState.update { it.copy(paused = paused, following = !paused, expandedKey = null) }
         rebuild()
     }
 
@@ -258,34 +263,33 @@ constructor(
 
     private fun rebuild() {
         rebuildJob?.cancel()
-        rebuildJob =
-            viewModelScope.launch {
-                val frozenEntries = frozen
-                val state = _uiState.value
-                val capacity = tree?.capacity ?: 0
-                val result =
-                    withContext(Dispatchers.Default) {
-                        val entries = frozenEntries ?: snapshot()
-                        val anchor =
-                            frozenEntries?.lastOrNull()?.timeMillis ?: System.currentTimeMillis()
-                        build(entries, state.scope, state.density, state.groupRepeats, anchor)
-                    }
-                visibleEntries = result.matching
-                _uiState.update {
-                    it.copy(
-                        revision = it.revision + 1,
-                        rows = result.rows,
-                        errorCount = result.errorCount,
-                        warningCount = result.warningCount,
-                        totalCount = result.totalCount,
-                        matchCount = result.matching.size,
-                        groupCount = result.groupCount,
-                        bufferCapacity = capacity,
-                        errorRowIndices = result.errorRowIndices,
-                        tagCounts = result.tagCounts,
-                    )
+        rebuildJob = viewModelScope.launch {
+            val frozenEntries = frozen
+            val state = _uiState.value
+            val capacity = tree?.capacity ?: 0
+            val result =
+                withContext(Dispatchers.Default) {
+                    val entries = frozenEntries ?: snapshot()
+                    val anchor =
+                        frozenEntries?.lastOrNull()?.timeMillis ?: System.currentTimeMillis()
+                    build(entries, state.scope, state.density, state.groupRepeats, anchor)
                 }
+            visibleEntries = result.matching
+            _uiState.update {
+                it.copy(
+                    revision = it.revision + 1,
+                    rows = result.rows,
+                    errorCount = result.errorCount,
+                    warningCount = result.warningCount,
+                    totalCount = result.totalCount,
+                    matchCount = result.matching.size,
+                    groupCount = result.groupCount,
+                    bufferCapacity = capacity,
+                    errorRowIndices = result.errorRowIndices,
+                    tagCounts = result.tagCounts,
+                )
             }
+        }
     }
 
     private data class BuildResult(
@@ -312,13 +316,12 @@ constructor(
         val since = scope.window.durationMillis?.let { anchorMillis - it }
         val query = scope.query.trim()
 
-        val matching =
-            entries.filter { entry ->
-                (since == null || entry.timeMillis >= since) &&
-                    (scope.minLevel == null || entry.level >= scope.minLevel) &&
-                    (scope.tags.isEmpty() || entry.tag in scope.tags) &&
-                    (query.isEmpty() || entry.matches(query))
-            }
+        val matching = entries.filter { entry ->
+            (since == null || entry.timeMillis >= since) &&
+                (scope.minLevel == null || entry.level >= scope.minLevel) &&
+                (scope.tags.isEmpty() || entry.tag in scope.tags) &&
+                (query.isEmpty() || entry.matches(query))
+        }
 
         val rows = mutableListOf<TimelineRow>()
         if (entries.firstOrNull()?.sequence == 0L) {
@@ -459,8 +462,7 @@ constructor(
     }
 
     private val versionLabel: String
-        get() =
-            "${BuildConfig.VERSION_NAME} (${if (BuildConfig.DEBUG) "debug" else "release"})"
+        get() = "${BuildConfig.VERSION_NAME} (${if (BuildConfig.DEBUG) "debug" else "release"})"
 
     private companion object {
         const val REFRESH_DEBOUNCE_MS = 200L

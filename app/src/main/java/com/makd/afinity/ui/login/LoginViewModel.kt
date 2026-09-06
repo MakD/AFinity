@@ -199,8 +199,7 @@ constructor(
                                 isConnecting = false,
                                 isConnectedToServer = false,
                                 needsLocalNetworkPermission = true,
-                                error =
-                                    context.getString(R.string.local_network_permission_needed),
+                                error = context.getString(R.string.local_network_permission_needed),
                             )
                     }
                 }

@@ -80,8 +80,7 @@ constructor(
     val isServerReachable: StateFlow<Boolean> = _isServerReachable.asStateFlow()
 
     private val _needsLocalNetworkPermission = MutableStateFlow(false)
-    val needsLocalNetworkPermission: StateFlow<Boolean> =
-        _needsLocalNetworkPermission.asStateFlow()
+    val needsLocalNetworkPermission: StateFlow<Boolean> = _needsLocalNetworkPermission.asStateFlow()
 
     fun clearLocalNetworkPermissionPrompt() {
         _needsLocalNetworkPermission.value = false

@@ -42,8 +42,7 @@ constructor(
                     Timber.w("DisplayMessage command received with no Text argument")
                     return@collect
                 }
-                val timeoutMs =
-                    command.arguments["TimeoutMs"]?.toLongOrNull() ?: DEFAULT_TIMEOUT_MS
+                val timeoutMs = command.arguments["TimeoutMs"]?.toLongOrNull() ?: DEFAULT_TIMEOUT_MS
                 show(
                     RemoteMessage(
                         header = command.arguments["Header"]?.takeIf { it.isNotBlank() },

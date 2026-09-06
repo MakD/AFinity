@@ -467,8 +467,7 @@ fun LogViewerScreen(
                             uiState.emptyReason == LogEmptyReason.NONE,
                     onClick = jumpToLatest,
                     modifier =
-                        Modifier.align(Alignment.BottomCenter)
-                            .padding(bottom = bottomPadding),
+                        Modifier.align(Alignment.BottomCenter).padding(bottom = bottomPadding),
                 )
             }
         }
@@ -994,7 +993,6 @@ private fun BottomBar(
                 }
             }
         }
-
     }
 }
 

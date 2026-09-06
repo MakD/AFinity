@@ -53,23 +53,21 @@ constructor(
 
     fun discoverLocalServers() {
         discoveryJob?.cancel()
-        discoveryJob =
-            viewModelScope.launch {
-                localServiceDiscovery.discoverResult(AfinityServiceTypes.JELLYSEERR).collect {
-                    result ->
-                    when (result) {
-                        is DiscoveryResult.Services -> {
-                            _discoveryNeedsPermission.value = false
-                            _discoveredServices.value = result.services
-                        }
-                        DiscoveryResult.PermissionRequired -> {
-                            _discoveryNeedsPermission.value = true
-                            _discoveredServices.value = emptyList()
-                        }
-                        DiscoveryResult.Unavailable -> _discoveredServices.value = emptyList()
+        discoveryJob = viewModelScope.launch {
+            localServiceDiscovery.discoverResult(AfinityServiceTypes.JELLYSEERR).collect { result ->
+                when (result) {
+                    is DiscoveryResult.Services -> {
+                        _discoveryNeedsPermission.value = false
+                        _discoveredServices.value = result.services
                     }
+                    DiscoveryResult.PermissionRequired -> {
+                        _discoveryNeedsPermission.value = true
+                        _discoveredServices.value = emptyList()
+                    }
+                    DiscoveryResult.Unavailable -> _discoveredServices.value = emptyList()
                 }
             }
+        }
     }
 
     fun onLocalNetworkPermissionGranted() {
@@ -323,34 +321,31 @@ constructor(
                 jellyseerrRepository.setServerUrl(validUrl)
 
                 val initiateResult = jellyseerrRepository.initiateQuickConnect()
-                val request =
-                    initiateResult.getOrElse { error ->
-                        val statusCode = (error as? JellyseerrLoginException)?.code
-                        if (statusCode == 404) {
-                            _uiState.update {
-                                it.copy(
-                                    isQuickConnecting = false,
-                                    quickConnectAvailable = false,
-                                    error =
-                                        context.getString(
-                                            R.string.error_seerr_quick_connect_unsupported
-                                        ),
-                                )
-                            }
-                        } else {
-                            _uiState.update {
-                                it.copy(
-                                    isQuickConnecting = false,
-                                    error =
-                                        context.getString(
-                                            R.string.error_seerr_quick_connect_initiate
-                                        ),
-                                )
-                            }
+                val request = initiateResult.getOrElse { error ->
+                    val statusCode = (error as? JellyseerrLoginException)?.code
+                    if (statusCode == 404) {
+                        _uiState.update {
+                            it.copy(
+                                isQuickConnecting = false,
+                                quickConnectAvailable = false,
+                                error =
+                                    context.getString(
+                                        R.string.error_seerr_quick_connect_unsupported
+                                    ),
+                            )
                         }
-                        Timber.e(error, "Jellyseerr Quick Connect initiate failed")
-                        return@launch
+                    } else {
+                        _uiState.update {
+                            it.copy(
+                                isQuickConnecting = false,
+                                error =
+                                    context.getString(R.string.error_seerr_quick_connect_initiate),
+                            )
+                        }
                     }
+                    Timber.e(error, "Jellyseerr Quick Connect initiate failed")
+                    return@launch
+                }
 
                 when (val authorization = authRepository.authorizeQuickConnect(request.code)) {
                     QuickConnectAuthorization.APPROVED -> Unit
@@ -417,9 +412,7 @@ constructor(
 
                                     else -> parseErrorMessage(error.message)
                                 }
-                            _uiState.update {
-                                it.copy(isQuickConnecting = false, error = message)
-                            }
+                            _uiState.update { it.copy(isQuickConnecting = false, error = message) }
                             Timber.e(error, "Jellyseerr Quick Connect authentication failed")
                         },
                     )

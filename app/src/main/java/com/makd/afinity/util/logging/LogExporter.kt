@@ -44,9 +44,7 @@ object LogExporter {
                     appendLine()
                     if (entries != null) {
                         appendLine("--- App Logs (filtered view, ${entries.size} lines) ---")
-                        appendLine(
-                            ringBufferTree?.format(entries) ?: "(no ring buffer available)"
-                        )
+                        appendLine(ringBufferTree?.format(entries) ?: "(no ring buffer available)")
                     } else {
                         appendLine("--- App Logs ---")
                         appendLine(ringBufferTree?.dump() ?: "(no ring buffer available)")

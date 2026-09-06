@@ -44,14 +44,37 @@ object DeviceCodecs {
         PCM_CODECS + listOf("alac", "aac", "ac3", "eac3", "dts", "mlp", "truehd")
 
     val CONTAINERS =
-        listOf("mp4", "fmp4", "webm", "mkv", "mp3", "ogg", "wav", "mpegts", "flv", "aac", "flac", "3gp")
+        listOf(
+            "mp4",
+            "fmp4",
+            "webm",
+            "mkv",
+            "mp3",
+            "ogg",
+            "wav",
+            "mpegts",
+            "flv",
+            "aac",
+            "flac",
+            "3gp",
+        )
 
     private val CONTAINER_VIDEO_CODECS =
         listOf(
             listOf("mpeg1video", "mpeg2video", "h263", "mpeg4", "h264", "hevc", "av1", "vp9"),
             listOf("mpeg1video", "mpeg2video", "h263", "mpeg4", "h264", "hevc", "av1", "vp9"),
             listOf("vp8", "vp9", "av1"),
-            listOf("mpeg1video", "mpeg2video", "h263", "mpeg4", "h264", "hevc", "av1", "vp8", "vp9"),
+            listOf(
+                "mpeg1video",
+                "mpeg2video",
+                "h263",
+                "mpeg4",
+                "h264",
+                "hevc",
+                "av1",
+                "vp8",
+                "vp9",
+            ),
             emptyList(),
             emptyList(),
             emptyList(),
@@ -120,7 +143,8 @@ object DeviceCodecs {
                 if (mimeType == MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION) {
                     video.add("hevc")
                     val capabilities =
-                        runCatching { info.getCapabilitiesForType(mimeType) }.getOrNull() ?: continue
+                        runCatching { info.getCapabilitiesForType(mimeType) }.getOrNull()
+                            ?: continue
                     capabilities.profileLevels.forEach { dolbyVisionProfiles.add(it.profile) }
                     continue
                 }
@@ -128,7 +152,8 @@ object DeviceCodecs {
                 if (videoCodec != null) {
                     video.add(videoCodec)
                     val capabilities =
-                        runCatching { info.getCapabilitiesForType(mimeType) }.getOrNull() ?: continue
+                        runCatching { info.getCapabilitiesForType(mimeType) }.getOrNull()
+                            ?: continue
                     val bucket = profiles.getOrPut(videoCodec) { mutableSetOf() }
                     for (profileLevel in capabilities.profileLevels) {
                         videoProfileName(videoCodec, profileLevel.profile)?.let(bucket::add)

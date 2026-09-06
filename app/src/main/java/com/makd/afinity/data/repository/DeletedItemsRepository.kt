@@ -3,14 +3,14 @@ package com.makd.afinity.data.repository
 import com.makd.afinity.data.database.dao.DeletedItemDao
 import com.makd.afinity.data.database.entities.DeletedItemEntity
 import com.makd.afinity.util.ItemIds
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlin.time.Duration.Companion.days
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
-import kotlin.time.Duration.Companion.days
 
 @Singleton
 class DeletedItemsRepository @Inject constructor(private val dao: DeletedItemDao) {

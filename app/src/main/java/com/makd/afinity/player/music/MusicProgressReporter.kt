@@ -1,6 +1,9 @@
 package com.makd.afinity.player.music
 
 import com.makd.afinity.data.repository.playback.PlaybackRepository
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -9,9 +12,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class MusicProgressReporter

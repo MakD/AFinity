@@ -30,7 +30,8 @@ fun parseAddressParts(input: String): AddressParts {
 
     val colon = authority.lastIndexOf(':')
     if (colon < 0) return AddressParts(scheme, authority, path, null)
-    val port = authority.substring(colon + 1).toIntOrNull()
-        ?: return AddressParts(scheme, authority, path, null)
+    val port =
+        authority.substring(colon + 1).toIntOrNull()
+            ?: return AddressParts(scheme, authority, path, null)
     return AddressParts(scheme, authority.substring(0, colon), path, port)
 }

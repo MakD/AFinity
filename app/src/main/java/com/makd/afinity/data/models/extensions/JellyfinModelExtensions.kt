@@ -216,8 +216,8 @@ fun BaseItemDto.toAfinityEpisode(baseUrl: String): AfinityEpisode? {
                 trickplay
                     ?.flatMap { (_, widthMap) ->
                         widthMap.orEmpty().map { (width, info) ->
-                        width to info.toAfinityTrickplayInfo()
-                    }
+                            width to info.toAfinityTrickplayInfo()
+                        }
                     }
                     ?.toMap(),
             providerIds =

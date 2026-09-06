@@ -48,23 +48,22 @@ constructor(
 
     fun discoverLocalServers() {
         discoveryJob?.cancel()
-        discoveryJob =
-            viewModelScope.launch {
-                localServiceDiscovery.discoverResult(AfinityServiceTypes.AUDIOBOOKSHELF).collect {
-                    result ->
-                    when (result) {
-                        is DiscoveryResult.Services -> {
-                            _discoveryNeedsPermission.value = false
-                            _discoveredServices.value = result.services
-                        }
-                        DiscoveryResult.PermissionRequired -> {
-                            _discoveryNeedsPermission.value = true
-                            _discoveredServices.value = emptyList()
-                        }
-                        DiscoveryResult.Unavailable -> _discoveredServices.value = emptyList()
+        discoveryJob = viewModelScope.launch {
+            localServiceDiscovery.discoverResult(AfinityServiceTypes.AUDIOBOOKSHELF).collect {
+                result ->
+                when (result) {
+                    is DiscoveryResult.Services -> {
+                        _discoveryNeedsPermission.value = false
+                        _discoveredServices.value = result.services
                     }
+                    DiscoveryResult.PermissionRequired -> {
+                        _discoveryNeedsPermission.value = true
+                        _discoveredServices.value = emptyList()
+                    }
+                    DiscoveryResult.Unavailable -> _discoveredServices.value = emptyList()
                 }
             }
+        }
     }
 
     fun onLocalNetworkPermissionGranted() {

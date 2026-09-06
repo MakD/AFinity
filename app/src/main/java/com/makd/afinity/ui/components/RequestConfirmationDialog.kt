@@ -482,7 +482,8 @@ fun RequestConfirmationDialog(
                                 )
                             } else {
                                 Text(
-                                    text = stringResource(R.string.seerr_seasons_all_first_available),
+                                    text =
+                                        stringResource(R.string.seerr_seasons_all_first_available),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )

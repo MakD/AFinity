@@ -1,8 +1,8 @@
 package com.makd.afinity.util
 
-import org.jellyfin.sdk.model.DeviceInfo
 import java.security.MessageDigest
 import java.util.UUID
+import org.jellyfin.sdk.model.DeviceInfo
 
 fun DeviceInfo.forUser(userId: UUID): DeviceInfo = forUser(userId.toString())
 

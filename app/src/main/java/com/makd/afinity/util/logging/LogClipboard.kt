@@ -21,9 +21,7 @@ object LogClipboard {
             }
             val clip = ClipData.newPlainText(label, text)
             clip.description.extras =
-                PersistableBundle().apply {
-                    putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true)
-                }
+                PersistableBundle().apply { putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true) }
             manager.setPrimaryClip(clip)
         }
     }

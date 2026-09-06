@@ -62,7 +62,8 @@ fun AlbumRelatedSection(
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = if (onViewAllClick != null) Modifier.weight(1f, fill = false) else Modifier,
+                modifier =
+                    if (onViewAllClick != null) Modifier.weight(1f, fill = false) else Modifier,
             )
 
             if (onViewAllClick != null) {

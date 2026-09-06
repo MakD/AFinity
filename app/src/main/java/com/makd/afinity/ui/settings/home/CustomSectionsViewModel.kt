@@ -20,6 +20,8 @@ import com.makd.afinity.data.repository.home.CustomHomeSectionsRepository
 import com.makd.afinity.data.repository.home.HomeLayoutPreferencesRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -32,8 +34,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
 
 enum class SourceLoadState {
     LOADING,

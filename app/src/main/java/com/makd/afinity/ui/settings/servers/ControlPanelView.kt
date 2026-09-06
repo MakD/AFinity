@@ -107,17 +107,13 @@ internal fun ControlPanelView(
             onPlaystate = { command ->
                 remoteSession.id?.let { viewModel.sendPlaystate(it, command) }
             },
-            onSetVolume = { volume ->
-                remoteSession.id?.let { viewModel.setVolume(it, volume) }
-            },
+            onSetVolume = { volume -> remoteSession.id?.let { viewModel.setVolume(it, volume) } },
             onToggleMute = {
                 remoteSession.id?.let {
                     viewModel.toggleMute(it, remoteSession.playState?.isMuted == true)
                 }
             },
-            onSendMessage = { text ->
-                remoteSession.id?.let { viewModel.sendMessage(it, text) }
-            },
+            onSendMessage = { text -> remoteSession.id?.let { viewModel.sendMessage(it, text) } },
         )
     }
 
@@ -232,96 +228,97 @@ internal fun ControlPanelView(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 16.dp),
-        ) {
-            IconButton(
-                onClick = onBack,
-                modifier =
-                    Modifier.background(
-                        MaterialTheme.colorScheme.surfaceContainerHigh,
-                        CircleShape,
-                    ),
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_chevron_left),
-                    contentDescription = stringResource(R.string.cd_back),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = stringResource(R.string.title_control_panel),
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-
-        Column(
-            modifier =
-                Modifier.fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            ActiveSessionsSection(
-                sessions = sessions ?: emptyList(),
-                baseUrl = viewModel.baseUrl,
-                loading = sessions == null,
-                pendingPause = pendingPause,
-                onTogglePause = viewModel::togglePause,
-                onOpenRemote = { remoteSessionId = it.id },
-            )
-
+        Column(modifier = Modifier.fillMaxSize()) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier =
+                    Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 16.dp),
             ) {
-                QuickActionButton(
-                    label = stringResource(R.string.action_refresh_libraries),
-                    icon = painterResource(R.drawable.ic_refresh),
-                    onClick = { viewModel.refreshAllLibraries() },
-                    isLoading = isLibraryRefreshing,
-                    enabled = !isLibraryRefreshing,
-                    modifier = Modifier.weight(1f),
-                )
-                QuickActionButton(
-                    label = stringResource(R.string.action_restart),
-                    icon = painterResource(R.drawable.ic_restart),
-                    onClick = { showRestartConfirm = true },
-                    isDangerous = true,
-                    modifier = Modifier.weight(1f),
-                )
-                QuickActionButton(
-                    label = stringResource(R.string.action_shutdown),
-                    icon = painterResource(R.drawable.ic_power),
-                    onClick = { showShutdownConfirm = true },
-                    isDangerous = true,
-                    modifier = Modifier.weight(1f),
+                IconButton(
+                    onClick = onBack,
+                    modifier =
+                        Modifier.background(
+                            MaterialTheme.colorScheme.surfaceContainerHigh,
+                            CircleShape,
+                        ),
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_chevron_left),
+                        contentDescription = stringResource(R.string.cd_back),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    text = stringResource(R.string.title_control_panel),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
 
-            val currentTasks = tasks
-            when {
-                currentTasks == null ->
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                currentTasks.isNotEmpty() ->
-                    ScheduledTasksSection(
-                        tasks = currentTasks,
-                        onRunTask = { viewModel.runTask(it) },
-                        onStopTask = { viewModel.stopTask(it) },
+            Column(
+                modifier =
+                    Modifier.fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                ActiveSessionsSection(
+                    sessions = sessions ?: emptyList(),
+                    baseUrl = viewModel.baseUrl,
+                    loading = sessions == null,
+                    pendingPause = pendingPause,
+                    onTogglePause = viewModel::togglePause,
+                    onOpenRemote = { remoteSessionId = it.id },
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    QuickActionButton(
+                        label = stringResource(R.string.action_refresh_libraries),
+                        icon = painterResource(R.drawable.ic_refresh),
+                        onClick = { viewModel.refreshAllLibraries() },
+                        isLoading = isLibraryRefreshing,
+                        enabled = !isLibraryRefreshing,
+                        modifier = Modifier.weight(1f),
                     )
+                    QuickActionButton(
+                        label = stringResource(R.string.action_restart),
+                        icon = painterResource(R.drawable.ic_restart),
+                        onClick = { showRestartConfirm = true },
+                        isDangerous = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    QuickActionButton(
+                        label = stringResource(R.string.action_shutdown),
+                        icon = painterResource(R.drawable.ic_power),
+                        onClick = { showShutdownConfirm = true },
+                        isDangerous = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+
+                val currentTasks = tasks
+                when {
+                    currentTasks == null ->
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    currentTasks.isNotEmpty() ->
+                        ScheduledTasksSection(
+                            tasks = currentTasks,
+                            onRunTask = { viewModel.runTask(it) },
+                            onStopTask = { viewModel.stopTask(it) },
+                        )
+                }
             }
         }
-    }
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
@@ -655,8 +652,7 @@ private fun PlayingSessionCard(
                         if (progress != null) {
                             LinearProgressIndicator(
                                 progress = { progress },
-                                modifier =
-                                    Modifier.fillMaxWidth().padding(top = 6.dp).height(3.dp),
+                                modifier = Modifier.fillMaxWidth().padding(top = 6.dp).height(3.dp),
                                 color = MaterialTheme.colorScheme.primary,
                                 trackColor = Color.White.copy(alpha = 0.25f),
                             )

@@ -554,8 +554,7 @@ fun HomeScreen(
                                 key = { section -> section.key },
                                 contentType = { section ->
                                     when (section) {
-                                        is HomeSection.Items ->
-                                            section::class to section.cardStyle
+                                        is HomeSection.Items -> section::class to section.cardStyle
                                         is HomeSection.Pending ->
                                             section::class to section.cardStyle
                                         else -> section::class
@@ -625,8 +624,7 @@ fun HomeScreen(
                                 key = { section -> section.key },
                                 contentType = { section ->
                                     when (section) {
-                                        is HomeSection.Items ->
-                                            section::class to section.cardStyle
+                                        is HomeSection.Items -> section::class to section.cardStyle
                                         is HomeSection.Pending ->
                                             section::class to section.cardStyle
                                         else -> section::class

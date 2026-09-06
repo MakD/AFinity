@@ -25,13 +25,12 @@ object UrlCandidates {
                 (listOf(clean) + httpsPorts.map { "https://$host:$it$path" }).distinct()
             parts.scheme == "http" ->
                 (listOf(clean) + httpPorts.map { "http://$host:$it$path" }).distinct()
-            else ->
-                buildList {
-                        add("https://$host$path")
-                        httpsPorts.forEach { add("https://$host:$it$path") }
-                        httpPorts.forEach { add("http://$host:$it$path") }
-                        add("http://$host$path")
-                    }
+            else -> buildList {
+                    add("https://$host$path")
+                    httpsPorts.forEach { add("https://$host:$it$path") }
+                    httpPorts.forEach { add("http://$host:$it$path") }
+                    add("http://$host$path")
+                }
                     .distinct()
         }
     }

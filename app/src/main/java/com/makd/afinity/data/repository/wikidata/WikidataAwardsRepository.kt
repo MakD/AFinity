@@ -43,13 +43,17 @@ constructor(
         if (!WikidataAwardQueries.isValidTmdbId(tmdbId)) return WikidataAwards.UNCONFIRMED
         val id = tmdbId!!
 
-        cached(subjectType, id)?.let { return it }
+        cached(subjectType, id)?.let {
+            return it
+        }
 
         val key = "${subjectType.value}-$id"
         val gate = inFlightLock.withLock { inFlight.getOrPut(key) { Mutex() } }
         try {
             gate.withLock {
-                cached(subjectType, id)?.let { return it }
+                cached(subjectType, id)?.let {
+                    return it
+                }
 
                 val fetched = fetch(subjectType, id)
                 persist(subjectType, id, fetched)

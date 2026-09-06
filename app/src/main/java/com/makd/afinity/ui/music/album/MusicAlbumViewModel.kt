@@ -117,11 +117,11 @@ constructor(
         if (artistId != null) {
             viewModelScope.launch {
                 runCatching {
-                        musicRepository.getArtistAlbums(
-                            artistId = artistId,
-                            excludeAlbumId = album.id,
-                        )
-                    }
+                    musicRepository.getArtistAlbums(
+                        artistId = artistId,
+                        excludeAlbumId = album.id,
+                    )
+                }
                     .onSuccess { albums ->
                         if (albums.isNotEmpty()) {
                             _uiState.update { it.copy(moreFromArtist = albums) }
@@ -133,12 +133,12 @@ constructor(
 
         viewModelScope.launch {
             runCatching {
-                    musicRepository.getSimilarAlbums(
-                        itemId = album.id,
-                        limit = 12,
-                        excludeArtistId = artistId,
-                    )
-                }
+                musicRepository.getSimilarAlbums(
+                    itemId = album.id,
+                    limit = 12,
+                    excludeArtistId = artistId,
+                )
+            }
                 .onSuccess { albums ->
                     if (albums.isNotEmpty()) {
                         _uiState.update { it.copy(similarAlbums = albums) }

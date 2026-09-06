@@ -359,8 +359,7 @@ fun SharedTransitionScope.PortraitPlayerContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        val coverWidthPx =
-            with(LocalDensity.current) { AudioPlayerLayout.CoverMaxSize.roundToPx() }
+        val coverWidthPx = with(LocalDensity.current) { AudioPlayerLayout.CoverMaxSize.roundToPx() }
         Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             Surface(
                 modifier =
@@ -522,8 +521,7 @@ fun SharedTransitionScope.LandscapePlayerContent(
         horizontalArrangement = Arrangement.spacedBy(32.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val coverWidthPx =
-            with(LocalDensity.current) { AudioPlayerLayout.CoverMaxSize.roundToPx() }
+        val coverWidthPx = with(LocalDensity.current) { AudioPlayerLayout.CoverMaxSize.roundToPx() }
         Box(
             modifier = Modifier.weight(0.45f).fillMaxHeight(),
             contentAlignment = Alignment.Center,

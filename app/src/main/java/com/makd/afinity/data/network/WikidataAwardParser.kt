@@ -33,10 +33,7 @@ object WikidataAwardParser {
         }
 
         val wonKeys =
-            grouped.keys
-                .filter { it.result == AwardResult.WON }
-                .map { it.name to it.year }
-                .toSet()
+            grouped.keys.filter { it.result == AwardResult.WON }.map { it.name to it.year }.toSet()
 
         for ((key, details) in grouped) {
             if (key.result != AwardResult.NOMINATED) continue

@@ -21,9 +21,7 @@ sealed class AuthenticationState {
 }
 
 @HiltViewModel
-class AuthViewModel
-@Inject
-constructor(private val authRepository: AuthRepository) : ViewModel() {
+class AuthViewModel @Inject constructor(private val authRepository: AuthRepository) : ViewModel() {
 
     private val _authenticationState =
         MutableStateFlow<AuthenticationState>(AuthenticationState.Loading)

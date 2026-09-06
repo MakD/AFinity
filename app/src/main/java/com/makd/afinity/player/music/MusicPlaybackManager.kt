@@ -9,6 +9,8 @@ import com.makd.afinity.data.models.music.RepeatMode
 import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import com.makd.afinity.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -24,8 +26,6 @@ import org.jellyfin.sdk.model.api.GeneralCommandType
 import org.jellyfin.sdk.model.api.PlaystateCommand
 import org.jellyfin.sdk.model.api.PlaystateRequest
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
 
 private const val TICKS_PER_MILLISECOND = 10_000L
 private const val REMOTE_SEEK_STEP_MS = 30_000L
@@ -85,17 +85,14 @@ constructor(
         val player = exoPlayer ?: return
         val duration = player.duration
         val target = player.currentPosition.coerceAtLeast(0L) + deltaMs
-        player.seekTo(
-            if (duration > 0) target.coerceIn(0L, duration) else target.coerceAtLeast(0L)
-        )
+        player.seekTo(if (duration > 0) target.coerceIn(0L, duration) else target.coerceAtLeast(0L))
     }
 
     private fun applyRemoteGeneral(command: GeneralCommand) {
         when (command.name) {
             GeneralCommandType.SET_VOLUME ->
                 command.arguments["Volume"]?.toIntOrNull()?.let { setDeviceVolume(it) }
-            GeneralCommandType.VOLUME_UP ->
-                setDeviceVolume(getDeviceVolume() + REMOTE_VOLUME_STEP)
+            GeneralCommandType.VOLUME_UP -> setDeviceVolume(getDeviceVolume() + REMOTE_VOLUME_STEP)
             GeneralCommandType.VOLUME_DOWN ->
                 setDeviceVolume(getDeviceVolume() - REMOTE_VOLUME_STEP)
             GeneralCommandType.MUTE -> applyRemoteMute(true)

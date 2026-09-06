@@ -393,9 +393,7 @@ private fun DownloadCategoryLegend(
                             if (selected) color.copy(alpha = 0.16f)
                             else MaterialTheme.colorScheme.surfaceContainerHigh
                         )
-                        .clickable {
-                            onSelectCategory(usage.category.takeIf { !selected })
-                        }
+                        .clickable { onSelectCategory(usage.category.takeIf { !selected }) }
                         .padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(7.dp),

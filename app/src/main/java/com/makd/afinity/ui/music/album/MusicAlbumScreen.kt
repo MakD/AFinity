@@ -445,9 +445,7 @@ fun MusicAlbumScreen(
                                         }),
                                 onDownload =
                                     if (isDownloadAllowedByServer)
-                                        ({
-                                            viewModel.downloadTrack(track.id)
-                                        })
+                                        ({ viewModel.downloadTrack(track.id) })
                                     else null,
                                 isDownloadEnabled = canDownloadOnNetwork,
                                 onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
@@ -647,9 +645,7 @@ fun MusicAlbumScreen(
                                     }),
                             onDownload =
                                 if (isDownloadAllowedByServer)
-                                    ({
-                                        viewModel.downloadTrack(track.id)
-                                    })
+                                    ({ viewModel.downloadTrack(track.id) })
                                 else null,
                             isDownloadEnabled = canDownloadOnNetwork,
                             onCancelDownload = { viewModel.cancelTrackDownload(track.id) },

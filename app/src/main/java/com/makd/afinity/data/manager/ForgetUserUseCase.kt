@@ -34,16 +34,16 @@ constructor(
 
             try {
                 serverDatabaseDao.getDownloadsForUser(serverId, userId).forEach { download ->
-                    downloadRepository
-                        .deleteDownload(download.id)
-                        .onFailure { Timber.w(it, "Failed to delete download ${download.id}") }
+                    downloadRepository.deleteDownload(download.id).onFailure {
+                        Timber.w(it, "Failed to delete download ${download.id}")
+                    }
                 }
 
-                serverDatabaseDao.getAbsDownloadIdsForUser(serverId, userId.toString()).forEach {
-                    id ->
-                    absDownloadRepository
-                        .deleteDownload(id)
-                        .onFailure { Timber.w(it, "Failed to delete Audiobookshelf download $id") }
+                serverDatabaseDao.getAbsDownloadIdsForUser(serverId, userId.toString()).forEach { id
+                    ->
+                    absDownloadRepository.deleteDownload(id).onFailure {
+                        Timber.w(it, "Failed to delete Audiobookshelf download $id")
+                    }
                 }
 
                 securePreferencesRepository.clearServerUserToken(serverId, userId)

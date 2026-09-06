@@ -344,8 +344,7 @@ constructor(
                             GeneralCommand(
                                 name = GeneralCommandType.SET_VOLUME,
                                 controllingUserId = controllingUserId,
-                                arguments =
-                                    mapOf("Volume" to volume.coerceIn(0, 100).toString()),
+                                arguments = mapOf("Volume" to volume.coerceIn(0, 100).toString()),
                             ),
                     )
                 Result.success(Unit)
@@ -480,7 +479,6 @@ constructor(
         val prefix = first.take(shared).joinToString(separator)
         return if (separator == "/") "/$prefix" else prefix
     }
-
 
     override suspend fun restartServer(): Result<Unit> =
         withContext(Dispatchers.IO) {

@@ -8,6 +8,10 @@ import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
+import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -30,10 +34,6 @@ import org.jellyfin.sdk.model.api.SessionInfoDto
 import org.jellyfin.sdk.model.api.TaskInfo
 import org.jellyfin.sdk.model.api.TaskState
 import timber.log.Timber
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicBoolean
-import javax.inject.Inject
 
 @HiltViewModel
 class ControlPanelViewModel
@@ -151,7 +151,8 @@ constructor(
         _pendingPause.update { pending ->
             pending.filterNot { (sessionId, optimisticPaused) ->
                 val actual =
-                    sessions.firstOrNull { it.id == sessionId }?.playState?.isPaused ?: return@filterNot true
+                    sessions.firstOrNull { it.id == sessionId }?.playState?.isPaused
+                        ?: return@filterNot true
                 actual == optimisticPaused
             }
         }

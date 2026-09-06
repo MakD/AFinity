@@ -282,8 +282,10 @@ fun ServicesHubScreen(
                         VerticalDivider()
                         Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                             val kind = selected
-                            val server = currentServer
-                            if (kind != null && (kind == EditorKind.RATINGS || server != null)) {
+                            if (
+                                kind != null &&
+                                    (kind == EditorKind.RATINGS || currentServer != null)
+                            ) {
                                 Column(modifier = Modifier.fillMaxSize()) {
                                     EditorHeader(
                                         title = stringResource(editorTitle(kind)),
@@ -291,7 +293,7 @@ fun ServicesHubScreen(
                                     )
                                     EditorContent(
                                         kind = kind,
-                                        server = server,
+                                        server = currentServer,
                                         smViewModel = smViewModel,
                                         settingsViewModel = settingsViewModel,
                                         onDisconnect = {
@@ -307,8 +309,7 @@ fun ServicesHubScreen(
                                         },
                                         remoteVerifying = remoteVerifying,
                                         remoteError = remoteError,
-                                        remoteNeedsLocalNetworkPermission =
-                                            remoteNeedsPermission,
+                                        remoteNeedsLocalNetworkPermission = remoteNeedsPermission,
                                         onLocalNetworkPermissionGranted =
                                             viewModel::onLocalNetworkPermissionGranted,
                                         modifier = Modifier.weight(1f),
@@ -348,8 +349,7 @@ fun ServicesHubScreen(
                     )
 
                     val kind = selected
-                    val server = currentServer
-                    if (kind != null && (kind == EditorKind.RATINGS || server != null)) {
+                    if (kind != null && (kind == EditorKind.RATINGS || currentServer != null)) {
                         ModalBottomSheet(
                             onDismissRequest = { selected = null },
                             sheetState = editorSheetState,
@@ -367,7 +367,7 @@ fun ServicesHubScreen(
                                 )
                                 EditorContent(
                                     kind = kind,
-                                    server = server,
+                                    server = currentServer,
                                     smViewModel = smViewModel,
                                     settingsViewModel = settingsViewModel,
                                     onDisconnect = {
@@ -880,8 +880,8 @@ private fun AddAddressBar(
     verifying: Boolean,
     error: String?,
     onAdd: (String) -> Unit,
-    needsLocalNetworkPermission: Boolean,
-    onLocalNetworkPermissionGranted: () -> Unit,
+    needsLocalNetworkPermission: Boolean = false,
+    onLocalNetworkPermissionGranted: () -> Unit = {},
 ) {
     var input by remember { mutableStateOf("") }
     Column {

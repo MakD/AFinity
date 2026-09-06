@@ -442,9 +442,7 @@ fun PlaylistScreen(
                                         onRemoveFromPlaylist = { viewModel.removeEntry(entry) },
                                         onDownload =
                                             if (isDownloadAllowedByServer)
-                                                ({
-                                                    viewModel.downloadTrack(track.id)
-                                                })
+                                                ({ viewModel.downloadTrack(track.id) })
                                             else null,
                                         isDownloadEnabled = canDownloadOnNetwork,
                                         onCancelDownload = {
@@ -703,9 +701,7 @@ fun PlaylistScreen(
                                     onRemoveFromPlaylist = { viewModel.removeEntry(entry) },
                                     onDownload =
                                         if (isDownloadAllowedByServer)
-                                            ({
-                                                viewModel.downloadTrack(track.id)
-                                            })
+                                            ({ viewModel.downloadTrack(track.id) })
                                         else null,
                                     isDownloadEnabled = canDownloadOnNetwork,
                                     onCancelDownload = { viewModel.cancelTrackDownload(track.id) },

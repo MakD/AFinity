@@ -124,10 +124,8 @@ private enum class PlaybackSection {
 private fun playbackSectionTitle(section: PlaybackSection?): String =
     when (section) {
         null -> stringResource(R.string.player_options_title)
-        PlaybackSection.VideoQuality ->
-            stringResource(R.string.playback_section_video_quality)
-        PlaybackSection.MusicQuality ->
-            stringResource(R.string.playback_section_music_quality)
+        PlaybackSection.VideoQuality -> stringResource(R.string.playback_section_video_quality)
+        PlaybackSection.MusicQuality -> stringResource(R.string.playback_section_music_quality)
         PlaybackSection.Tracks -> stringResource(R.string.playback_section_tracks)
         PlaybackSection.SubtitleAppearance ->
             stringResource(R.string.playback_section_subtitle_appearance)
@@ -218,506 +216,519 @@ fun PlayerOptionsScreen(
                 ),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            if (section == null) item {
-                SettingsGroup {
-                    SettingsItem(
-                        icon = painterResource(id = R.drawable.ic_video_settings),
-                        title = stringResource(R.string.playback_section_video_quality),
-                        subtitle =
-                            stringResource(R.string.playback_section_video_quality_summary),
-                        onClick = { section = PlaybackSection.VideoQuality },
-                    )
-                    SettingsDivider()
-                    SettingsItem(
-                        icon = painterResource(id = R.drawable.ic_audio),
-                        title = stringResource(R.string.playback_section_music_quality),
-                        subtitle =
-                            stringResource(R.string.playback_section_music_quality_summary),
-                        onClick = { section = PlaybackSection.MusicQuality },
-                    )
-                    SettingsDivider()
-                    SettingsItem(
-                        icon = painterResource(id = R.drawable.ic_subtitles),
-                        title = stringResource(R.string.playback_section_tracks),
-                        subtitle = stringResource(R.string.playback_section_tracks_summary),
-                        onClick = { section = PlaybackSection.Tracks },
-                    )
-                    SettingsDivider()
-                    SettingsItem(
-                        icon = painterResource(id = R.drawable.ic_subtitles_settings),
-                        title = stringResource(R.string.playback_section_subtitle_appearance),
-                        subtitle =
-                            stringResource(
-                                R.string.playback_section_subtitle_appearance_summary
-                            ),
-                        onClick = { section = PlaybackSection.SubtitleAppearance },
-                    )
-                    SettingsDivider()
-                    SettingsItem(
-                        icon = painterResource(id = R.drawable.ic_player_play_filled),
-                        title = stringResource(R.string.playback_section_controls),
-                        subtitle = stringResource(R.string.playback_section_controls_summary),
-                        onClick = { section = PlaybackSection.Controls },
-                    )
-                    SettingsDivider()
-                    SettingsItem(
-                        icon = painterResource(id = R.drawable.ic_cast),
-                        title = stringResource(R.string.pref_group_chromecast),
-                        subtitle = stringResource(R.string.playback_section_cast_summary),
-                        onClick = { section = PlaybackSection.Chromecast },
-                    )
-                    SettingsDivider()
-                    SettingsItem(
-                        icon = painterResource(id = R.drawable.ic_cpu),
-                        title = stringResource(R.string.playback_section_advanced),
-                        subtitle = stringResource(R.string.playback_section_advanced_summary),
-                        onClick = { section = PlaybackSection.Advanced },
-                    )
-                }
-            }
-
-            if (section == PlaybackSection.Advanced) item {
-                Column {
-                    SettingsGroup(title = stringResource(R.string.pref_group_engine)) {
-                        SettingsSwitchItem(
+            if (section == null)
+                item {
+                    SettingsGroup {
+                        SettingsItem(
                             icon = painterResource(id = R.drawable.ic_video_settings),
-                            title = stringResource(R.string.pref_use_exoplayer_title),
-                            subtitle = stringResource(R.string.pref_use_exoplayer_summary),
-                            checked = uiState.useExoPlayer,
-                            onCheckedChange = viewModel::toggleUseExoPlayer,
+                            title = stringResource(R.string.playback_section_video_quality),
+                            subtitle =
+                                stringResource(R.string.playback_section_video_quality_summary),
+                            onClick = { section = PlaybackSection.VideoQuality },
                         )
                         SettingsDivider()
-                        BufferSizeSelectorItem(
-                            selectedSizeMb = uiState.bufferSizeMb,
-                            onSizeSelected = viewModel::setBufferSizeMb,
+                        SettingsItem(
+                            icon = painterResource(id = R.drawable.ic_audio),
+                            title = stringResource(R.string.playback_section_music_quality),
+                            subtitle =
+                                stringResource(R.string.playback_section_music_quality_summary),
+                            onClick = { section = PlaybackSection.MusicQuality },
+                        )
+                        SettingsDivider()
+                        SettingsItem(
+                            icon = painterResource(id = R.drawable.ic_subtitles),
+                            title = stringResource(R.string.playback_section_tracks),
+                            subtitle = stringResource(R.string.playback_section_tracks_summary),
+                            onClick = { section = PlaybackSection.Tracks },
+                        )
+                        SettingsDivider()
+                        SettingsItem(
+                            icon = painterResource(id = R.drawable.ic_subtitles_settings),
+                            title = stringResource(R.string.playback_section_subtitle_appearance),
+                            subtitle =
+                                stringResource(
+                                    R.string.playback_section_subtitle_appearance_summary
+                                ),
+                            onClick = { section = PlaybackSection.SubtitleAppearance },
+                        )
+                        SettingsDivider()
+                        SettingsItem(
+                            icon = painterResource(id = R.drawable.ic_player_play_filled),
+                            title = stringResource(R.string.playback_section_controls),
+                            subtitle = stringResource(R.string.playback_section_controls_summary),
+                            onClick = { section = PlaybackSection.Controls },
+                        )
+                        SettingsDivider()
+                        SettingsItem(
+                            icon = painterResource(id = R.drawable.ic_cast),
+                            title = stringResource(R.string.pref_group_chromecast),
+                            subtitle = stringResource(R.string.playback_section_cast_summary),
+                            onClick = { section = PlaybackSection.Chromecast },
+                        )
+                        SettingsDivider()
+                        SettingsItem(
+                            icon = painterResource(id = R.drawable.ic_cpu),
+                            title = stringResource(R.string.playback_section_advanced),
+                            subtitle = stringResource(R.string.playback_section_advanced_summary),
+                            onClick = { section = PlaybackSection.Advanced },
                         )
                     }
+                }
 
-                    AnimatedVisibility(
-                        visible = !uiState.useExoPlayer,
-                        enter = fadeIn() + expandVertically(),
-                        exit = fadeOut() + shrinkVertically(),
-                    ) {
-                        Column {
-                            Spacer(modifier = Modifier.height(24.dp))
-                            SettingsGroup(title = stringResource(R.string.pref_group_mpv)) {
-                                SubtitleDropdownItem(
-                                    title = stringResource(R.string.pref_mpv_hwdec_title),
-                                    selectedOption = uiState.mpvHwDec,
-                                    options = MpvHwDec.entries.toList(),
-                                    onValueChange = viewModel::setMpvHwDec,
-                                    labelProvider = { stringResource(it.labelRes) },
-                                    icon = painterResource(id = R.drawable.ic_cpu),
-                                )
-                                SettingsDivider()
-                                SubtitleDropdownItem(
-                                    title = stringResource(R.string.pref_mpv_video_output_title),
-                                    selectedOption = uiState.mpvVideoOutput,
-                                    options = MpvVideoOutput.entries.toList(),
-                                    onValueChange = viewModel::setMpvVideoOutput,
-                                    labelProvider = { stringResource(it.labelRes) },
-                                    icon = painterResource(id = R.drawable.ic_video_settings),
-                                )
-                                SettingsDivider()
-                                SubtitleDropdownItem(
-                                    title = stringResource(R.string.pref_mpv_audio_output_title),
-                                    selectedOption = uiState.mpvAudioOutput,
-                                    options = MpvAudioOutput.entries.toList(),
-                                    onValueChange = viewModel::setMpvAudioOutput,
-                                    labelProvider = { stringResource(it.labelRes) },
-                                    icon = painterResource(id = R.drawable.ic_audio),
-                                )
-                                SettingsDivider()
-                                SettingsItem(
-                                    icon = painterResource(id = R.drawable.ic_edit),
-                                    title = stringResource(R.string.pref_edit_mpv_conf_title),
-                                    subtitle = stringResource(R.string.pref_edit_config_summary),
-                                    onClick = { editingConfigFile = "mpv.conf" },
-                                )
-                                SettingsDivider()
-                                SettingsItem(
-                                    icon = painterResource(id = R.drawable.ic_edit),
-                                    title = stringResource(R.string.pref_edit_input_conf_title),
-                                    subtitle =
-                                        stringResource(R.string.pref_edit_input_conf_summary),
-                                    onClick = { editingConfigFile = "input.conf" },
-                                )
-                                // Temporarily hidden; backend prefs retained.
-                                /*
-                                SettingsDivider()
-                                SubtitleDropdownItem(
-                                    title = stringResource(R.string.pref_mpv_gpu_api_title),
-                                    selectedOption = uiState.mpvGpuApi,
-                                    options = MpvGpuApi.entries.toList(),
-                                    onValueChange = viewModel::setMpvGpuApi,
-                                    labelProvider = { stringResource(it.labelRes) },
-                                    icon = painterResource(id = R.drawable.ic_cpu),
-                                )
-                                SettingsDivider()
-                                SubtitleDropdownItem(
-                                    title = stringResource(R.string.pref_mpv_hdr_output_title),
-                                    selectedOption = uiState.mpvHdrOutput,
-                                    options = MpvHdrOutput.entries.toList(),
-                                    onValueChange = viewModel::setMpvHdrOutput,
-                                    labelProvider = { stringResource(it.labelRes) },
-                                    icon = painterResource(id = R.drawable.ic_colorize),
-                                    hint = stringResource(R.string.pref_mpv_hdr_output_hint),
-                                )
-                                SettingsDivider()
-                                SubtitleDropdownItem(
-                                    title = stringResource(R.string.pref_mpv_tone_mapping_title),
-                                    selectedOption = uiState.mpvToneMapping,
-                                    options = MpvToneMapping.entries.toList(),
-                                    onValueChange = viewModel::setMpvToneMapping,
-                                    labelProvider = { stringResource(it.labelRes) },
-                                    icon = painterResource(id = R.drawable.ic_texture),
-                                    hint = stringResource(R.string.pref_mpv_tone_mapping_hint),
-                                )
-                                SettingsDivider()
-                                SettingsSwitchItem(
-                                    icon = painterResource(id = R.drawable.ic_visibility),
-                                    title = stringResource(R.string.pref_mpv_hdr_peak_title),
-                                    subtitle =
-                                        stringResource(R.string.pref_mpv_hdr_peak_summary),
-                                    checked = uiState.mpvHdrPeakDetection,
-                                    onCheckedChange = viewModel::setMpvHdrPeakDetection,
-                                )
-                                */
+            if (section == PlaybackSection.Advanced)
+                item {
+                    Column {
+                        SettingsGroup(title = stringResource(R.string.pref_group_engine)) {
+                            SettingsSwitchItem(
+                                icon = painterResource(id = R.drawable.ic_video_settings),
+                                title = stringResource(R.string.pref_use_exoplayer_title),
+                                subtitle = stringResource(R.string.pref_use_exoplayer_summary),
+                                checked = uiState.useExoPlayer,
+                                onCheckedChange = viewModel::toggleUseExoPlayer,
+                            )
+                            SettingsDivider()
+                            BufferSizeSelectorItem(
+                                selectedSizeMb = uiState.bufferSizeMb,
+                                onSizeSelected = viewModel::setBufferSizeMb,
+                            )
+                        }
+
+                        AnimatedVisibility(
+                            visible = !uiState.useExoPlayer,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically(),
+                        ) {
+                            Column {
+                                Spacer(modifier = Modifier.height(24.dp))
+                                SettingsGroup(title = stringResource(R.string.pref_group_mpv)) {
+                                    SubtitleDropdownItem(
+                                        title = stringResource(R.string.pref_mpv_hwdec_title),
+                                        selectedOption = uiState.mpvHwDec,
+                                        options = MpvHwDec.entries.toList(),
+                                        onValueChange = viewModel::setMpvHwDec,
+                                        labelProvider = { stringResource(it.labelRes) },
+                                        icon = painterResource(id = R.drawable.ic_cpu),
+                                    )
+                                    SettingsDivider()
+                                    SubtitleDropdownItem(
+                                        title =
+                                            stringResource(R.string.pref_mpv_video_output_title),
+                                        selectedOption = uiState.mpvVideoOutput,
+                                        options = MpvVideoOutput.entries.toList(),
+                                        onValueChange = viewModel::setMpvVideoOutput,
+                                        labelProvider = { stringResource(it.labelRes) },
+                                        icon = painterResource(id = R.drawable.ic_video_settings),
+                                    )
+                                    SettingsDivider()
+                                    SubtitleDropdownItem(
+                                        title =
+                                            stringResource(R.string.pref_mpv_audio_output_title),
+                                        selectedOption = uiState.mpvAudioOutput,
+                                        options = MpvAudioOutput.entries.toList(),
+                                        onValueChange = viewModel::setMpvAudioOutput,
+                                        labelProvider = { stringResource(it.labelRes) },
+                                        icon = painterResource(id = R.drawable.ic_audio),
+                                    )
+                                    SettingsDivider()
+                                    SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_edit),
+                                        title = stringResource(R.string.pref_edit_mpv_conf_title),
+                                        subtitle =
+                                            stringResource(R.string.pref_edit_config_summary),
+                                        onClick = { editingConfigFile = "mpv.conf" },
+                                    )
+                                    SettingsDivider()
+                                    SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_edit),
+                                        title = stringResource(R.string.pref_edit_input_conf_title),
+                                        subtitle =
+                                            stringResource(R.string.pref_edit_input_conf_summary),
+                                        onClick = { editingConfigFile = "input.conf" },
+                                    )
+                                    // Temporarily hidden; backend prefs retained.
+                                    /*
+                                    SettingsDivider()
+                                    SubtitleDropdownItem(
+                                        title = stringResource(R.string.pref_mpv_gpu_api_title),
+                                        selectedOption = uiState.mpvGpuApi,
+                                        options = MpvGpuApi.entries.toList(),
+                                        onValueChange = viewModel::setMpvGpuApi,
+                                        labelProvider = { stringResource(it.labelRes) },
+                                        icon = painterResource(id = R.drawable.ic_cpu),
+                                    )
+                                    SettingsDivider()
+                                    SubtitleDropdownItem(
+                                        title = stringResource(R.string.pref_mpv_hdr_output_title),
+                                        selectedOption = uiState.mpvHdrOutput,
+                                        options = MpvHdrOutput.entries.toList(),
+                                        onValueChange = viewModel::setMpvHdrOutput,
+                                        labelProvider = { stringResource(it.labelRes) },
+                                        icon = painterResource(id = R.drawable.ic_colorize),
+                                        hint = stringResource(R.string.pref_mpv_hdr_output_hint),
+                                    )
+                                    SettingsDivider()
+                                    SubtitleDropdownItem(
+                                        title = stringResource(R.string.pref_mpv_tone_mapping_title),
+                                        selectedOption = uiState.mpvToneMapping,
+                                        options = MpvToneMapping.entries.toList(),
+                                        onValueChange = viewModel::setMpvToneMapping,
+                                        labelProvider = { stringResource(it.labelRes) },
+                                        icon = painterResource(id = R.drawable.ic_texture),
+                                        hint = stringResource(R.string.pref_mpv_tone_mapping_hint),
+                                    )
+                                    SettingsDivider()
+                                    SettingsSwitchItem(
+                                        icon = painterResource(id = R.drawable.ic_visibility),
+                                        title = stringResource(R.string.pref_mpv_hdr_peak_title),
+                                        subtitle =
+                                            stringResource(R.string.pref_mpv_hdr_peak_summary),
+                                        checked = uiState.mpvHdrPeakDetection,
+                                        onCheckedChange = viewModel::setMpvHdrPeakDetection,
+                                    )
+                                    */
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            if (section == PlaybackSection.Tracks) item {
-                SettingsGroup(title = stringResource(R.string.pref_group_language)) {
-                    LanguageSelectorItem(
-                        title = stringResource(R.string.pref_preferred_audio_language_title),
-                        subtitle = stringResource(R.string.pref_preferred_audio_language_summary),
-                        selectedCode = uiState.preferredAudioLanguage,
-                        onLanguageSelected = viewModel::setPreferredAudioLanguage,
-                        icon = painterResource(id = R.drawable.ic_language),
-                    )
+            if (section == PlaybackSection.Tracks)
+                item {
+                    SettingsGroup(title = stringResource(R.string.pref_group_language)) {
+                        LanguageSelectorItem(
+                            title = stringResource(R.string.pref_preferred_audio_language_title),
+                            subtitle =
+                                stringResource(R.string.pref_preferred_audio_language_summary),
+                            selectedCode = uiState.preferredAudioLanguage,
+                            onLanguageSelected = viewModel::setPreferredAudioLanguage,
+                            icon = painterResource(id = R.drawable.ic_language),
+                        )
 
-                    SettingsDivider()
+                        SettingsDivider()
 
-                    LanguageSelectorItem(
-                        title = stringResource(R.string.pref_preferred_subtitle_language_title),
-                        subtitle =
-                            stringResource(R.string.pref_preferred_subtitle_language_summary),
-                        selectedCode = uiState.preferredSubtitleLanguage,
-                        onLanguageSelected = viewModel::setPreferredSubtitleLanguage,
-                        icon = painterResource(id = R.drawable.ic_subtitles),
-                    )
+                        LanguageSelectorItem(
+                            title = stringResource(R.string.pref_preferred_subtitle_language_title),
+                            subtitle =
+                                stringResource(R.string.pref_preferred_subtitle_language_summary),
+                            selectedCode = uiState.preferredSubtitleLanguage,
+                            onLanguageSelected = viewModel::setPreferredSubtitleLanguage,
+                            icon = painterResource(id = R.drawable.ic_subtitles),
+                        )
 
-                    SettingsDivider()
+                        SettingsDivider()
 
-                    SubtitleModeSelectorItem(
-                        icon = painterResource(id = R.drawable.ic_subtitles_settings),
-                        title = stringResource(R.string.pref_subtitle_mode_title),
-                        selectedMode = uiState.subtitleModeOverride,
-                        onModeSelected = viewModel::setSubtitleModeOverride,
-                    )
+                        SubtitleModeSelectorItem(
+                            icon = painterResource(id = R.drawable.ic_subtitles_settings),
+                            title = stringResource(R.string.pref_subtitle_mode_title),
+                            selectedMode = uiState.subtitleModeOverride,
+                            onModeSelected = viewModel::setSubtitleModeOverride,
+                        )
 
-                    SettingsDivider()
+                        SettingsDivider()
 
-                    SettingsSwitchItem(
-                        icon = painterResource(id = R.drawable.ic_subtitles),
-                        title = stringResource(R.string.pref_prefer_sdh_title),
-                        subtitle =
-                            if (uiState.sdhPreferenceApplies) {
-                                stringResource(R.string.pref_prefer_sdh_summary)
-                            } else {
-                                stringResource(R.string.pref_prefer_sdh_unavailable)
-                            },
-                        checked = uiState.preferSdhSubtitles,
-                        onCheckedChange = viewModel::togglePreferSdhSubtitles,
-                        enabled = uiState.sdhPreferenceApplies,
-                    )
+                        SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_subtitles),
+                            title = stringResource(R.string.pref_prefer_sdh_title),
+                            subtitle =
+                                if (uiState.sdhPreferenceApplies) {
+                                    stringResource(R.string.pref_prefer_sdh_summary)
+                                } else {
+                                    stringResource(R.string.pref_prefer_sdh_unavailable)
+                                },
+                            checked = uiState.preferSdhSubtitles,
+                            onCheckedChange = viewModel::togglePreferSdhSubtitles,
+                            enabled = uiState.sdhPreferenceApplies,
+                        )
+                    }
                 }
-            }
 
-            if (section == PlaybackSection.Controls) item {
-                SettingsGroup(title = stringResource(R.string.pref_group_interface)) {
-                    SettingsSwitchItem(
-                        icon = painterResource(id = R.drawable.ic_player_play_filled),
-                        title = stringResource(R.string.pref_autoplay_title),
-                        subtitle = stringResource(R.string.pref_autoplay_summary),
-                        checked = uiState.autoPlay,
-                        onCheckedChange = viewModel::toggleAutoPlay,
-                    )
-                    SettingsDivider()
-                    SkipModeSelectorItem(
-                        icon = painterResource(id = R.drawable.ic_skip_next),
-                        title = stringResource(R.string.pref_skip_intro_title),
-                        selectedMode = uiState.skipIntroMode,
-                        onModeSelected = viewModel::setSkipIntroMode,
-                    )
-                    SettingsDivider()
-                    SkipModeSelectorItem(
-                        icon = painterResource(id = R.drawable.ic_fast_forward),
-                        title = stringResource(R.string.pref_skip_outro_title),
-                        selectedMode = uiState.skipOutroMode,
-                        onModeSelected = viewModel::setSkipOutroMode,
-                    )
-                    SettingsDivider()
-                    SettingsSwitchItem(
-                        icon = painterResource(id = R.drawable.ic_visibility),
-                        title = stringResource(R.string.pref_autohide_logo_title),
-                        subtitle = stringResource(R.string.pref_autohide_logo_summary),
-                        checked = uiState.logoAutoHide,
-                        onCheckedChange = viewModel::toggleLogoAutoHide,
-                    )
-                    SettingsDivider()
-                    SettingsSwitchItem(
-                        icon = painterResource(id = R.drawable.ic_player_pause_filled),
-                        title = stringResource(R.string.pref_pause_screen_title),
-                        subtitle = stringResource(R.string.pref_pause_screen_summary),
-                        checked = uiState.pauseScreenEnabled,
-                        onCheckedChange = viewModel::togglePauseScreen,
-                    )
-                    AnimatedVisibility(
-                        visible = uiState.pauseScreenEnabled,
-                        enter = fadeIn() + expandVertically(),
-                        exit = fadeOut() + shrinkVertically(),
-                    ) {
-                        Column {
-                            SettingsDivider()
-                            PauseScreenDelaySelectorItem(
-                                seconds = uiState.pauseScreenDelaySeconds,
-                                onSecondsChange = viewModel::setPauseScreenDelaySeconds,
+            if (section == PlaybackSection.Controls)
+                item {
+                    SettingsGroup(title = stringResource(R.string.pref_group_interface)) {
+                        SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_player_play_filled),
+                            title = stringResource(R.string.pref_autoplay_title),
+                            subtitle = stringResource(R.string.pref_autoplay_summary),
+                            checked = uiState.autoPlay,
+                            onCheckedChange = viewModel::toggleAutoPlay,
+                        )
+                        SettingsDivider()
+                        SkipModeSelectorItem(
+                            icon = painterResource(id = R.drawable.ic_skip_next),
+                            title = stringResource(R.string.pref_skip_intro_title),
+                            selectedMode = uiState.skipIntroMode,
+                            onModeSelected = viewModel::setSkipIntroMode,
+                        )
+                        SettingsDivider()
+                        SkipModeSelectorItem(
+                            icon = painterResource(id = R.drawable.ic_fast_forward),
+                            title = stringResource(R.string.pref_skip_outro_title),
+                            selectedMode = uiState.skipOutroMode,
+                            onModeSelected = viewModel::setSkipOutroMode,
+                        )
+                        SettingsDivider()
+                        SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_visibility),
+                            title = stringResource(R.string.pref_autohide_logo_title),
+                            subtitle = stringResource(R.string.pref_autohide_logo_summary),
+                            checked = uiState.logoAutoHide,
+                            onCheckedChange = viewModel::toggleLogoAutoHide,
+                        )
+                        SettingsDivider()
+                        SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_player_pause_filled),
+                            title = stringResource(R.string.pref_pause_screen_title),
+                            subtitle = stringResource(R.string.pref_pause_screen_summary),
+                            checked = uiState.pauseScreenEnabled,
+                            onCheckedChange = viewModel::togglePauseScreen,
+                        )
+                        AnimatedVisibility(
+                            visible = uiState.pauseScreenEnabled,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically(),
+                        ) {
+                            Column {
+                                SettingsDivider()
+                                PauseScreenDelaySelectorItem(
+                                    seconds = uiState.pauseScreenDelaySeconds,
+                                    onSecondsChange = viewModel::setPauseScreenDelaySeconds,
+                                )
+                            }
+                        }
+                        SettingsDivider()
+                        SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_fast_forward),
+                            title = stringResource(R.string.pref_chapter_skip_gesture_title),
+                            subtitle = stringResource(R.string.pref_chapter_skip_gesture_summary),
+                            checked = uiState.chapterSkipGesture,
+                            onCheckedChange = viewModel::toggleChapterSkipGesture,
+                        )
+                        SettingsDivider()
+                        VideoZoomModeSelectorItem(
+                            selectedMode = uiState.defaultVideoZoomMode,
+                            onModeSelected = viewModel::setDefaultVideoZoomMode,
+                        )
+                    }
+                }
+
+            if (section == PlaybackSection.Controls)
+                item {
+                    SettingsGroup(title = stringResource(R.string.pref_group_pip)) {
+                        SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_pip),
+                            title = stringResource(R.string.pref_pip_gesture_title),
+                            subtitle = stringResource(R.string.pref_pip_gesture_summary),
+                            checked = uiState.pipGestureEnabled,
+                            onCheckedChange = viewModel::togglePipGesture,
+                        )
+                        SettingsDivider()
+                        SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_headphones),
+                            title = stringResource(R.string.pref_pip_background_title),
+                            subtitle = stringResource(R.string.pref_pip_background_summary),
+                            checked = uiState.pipBackgroundPlay,
+                            onCheckedChange = viewModel::togglePipBackgroundPlay,
+                        )
+                    }
+                }
+
+            if (section == PlaybackSection.SubtitleAppearance)
+                item {
+                    SettingsGroup(title = stringResource(R.string.pref_group_subtitles)) {
+                        Box(modifier = Modifier.padding(16.dp)) {
+                            SubtitlePreview(
+                                subtitlePrefs = subtitlePrefs,
+                                useExoPlayer = uiState.useExoPlayer,
                             )
                         }
-                    }
-                    SettingsDivider()
-                    SettingsSwitchItem(
-                        icon = painterResource(id = R.drawable.ic_fast_forward),
-                        title = stringResource(R.string.pref_chapter_skip_gesture_title),
-                        subtitle = stringResource(R.string.pref_chapter_skip_gesture_summary),
-                        checked = uiState.chapterSkipGesture,
-                        onCheckedChange = viewModel::toggleChapterSkipGesture,
-                    )
-                    SettingsDivider()
-                    VideoZoomModeSelectorItem(
-                        selectedMode = uiState.defaultVideoZoomMode,
-                        onModeSelected = viewModel::setDefaultVideoZoomMode,
-                    )
-                }
-            }
 
-            if (section == PlaybackSection.Controls) item {
-                SettingsGroup(title = stringResource(R.string.pref_group_pip)) {
-                    SettingsSwitchItem(
-                        icon = painterResource(id = R.drawable.ic_pip),
-                        title = stringResource(R.string.pref_pip_gesture_title),
-                        subtitle = stringResource(R.string.pref_pip_gesture_summary),
-                        checked = uiState.pipGestureEnabled,
-                        onCheckedChange = viewModel::togglePipGesture,
-                    )
-                    SettingsDivider()
-                    SettingsSwitchItem(
-                        icon = painterResource(id = R.drawable.ic_headphones),
-                        title = stringResource(R.string.pref_pip_background_title),
-                        subtitle = stringResource(R.string.pref_pip_background_summary),
-                        checked = uiState.pipBackgroundPlay,
-                        onCheckedChange = viewModel::togglePipBackgroundPlay,
-                    )
-                }
-            }
+                        SettingsDivider()
 
-            if (section == PlaybackSection.SubtitleAppearance) item {
-                SettingsGroup(title = stringResource(R.string.pref_group_subtitles)) {
-                    Box(modifier = Modifier.padding(16.dp)) {
-                        SubtitlePreview(
+                        AnimatedVisibility(
+                            visible = uiState.useExoPlayer,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically(),
+                        ) {
+                            Column {
+                                SubtitleDropdownItem(
+                                    title = stringResource(R.string.pref_ass_render_mode_title),
+                                    selectedOption = uiState.assRenderMode,
+                                    options = AssRenderMode.entries.toList(),
+                                    onValueChange = viewModel::setAssRenderMode,
+                                    labelProvider = { stringResource(it.labelRes) },
+                                    icon = painterResource(id = R.drawable.ic_subtitles),
+                                    hint = stringResource(R.string.pref_ass_render_mode_hint),
+                                )
+                                SettingsDivider()
+                            }
+                        }
+
+                        SubtitleCustomizationContent(
                             subtitlePrefs = subtitlePrefs,
                             useExoPlayer = uiState.useExoPlayer,
+                            onUpdate = { updatedPrefs ->
+                                scope.launch(Dispatchers.IO) {
+                                    preferencesRepository.setSubtitlePreferences(updatedPrefs)
+                                }
+                            },
                         )
                     }
+                }
 
-                    SettingsDivider()
+            if (section == PlaybackSection.VideoQuality)
+                item {
+                    SettingsGroup(title = stringResource(R.string.pref_group_streaming_quality)) {
+                        val qualityOptions = VideoQuality.settingsLadder()
+                        val transcodingAllowed = !uiState.neverTranscode
 
-                    AnimatedVisibility(
-                        visible = uiState.useExoPlayer,
-                        enter = fadeIn() + expandVertically(),
-                        exit = fadeOut() + shrinkVertically(),
-                    ) {
-                        Column {
-                            SubtitleDropdownItem(
-                                title = stringResource(R.string.pref_ass_render_mode_title),
-                                selectedOption = uiState.assRenderMode,
-                                options = AssRenderMode.entries.toList(),
-                                onValueChange = viewModel::setAssRenderMode,
-                                labelProvider = { stringResource(it.labelRes) },
-                                icon = painterResource(id = R.drawable.ic_subtitles),
-                                hint = stringResource(R.string.pref_ass_render_mode_hint),
+                        VideoQualitySelectorItem(
+                            icon = painterResource(id = R.drawable.ic_wifi),
+                            title = stringResource(R.string.pref_quality_wifi_title),
+                            selectedBitrate = uiState.videoQualityWifi,
+                            options = qualityOptions,
+                            enabled = transcodingAllowed,
+                            onQualitySelected = viewModel::setVideoQualityWifi,
+                            hint =
+                                if (transcodingAllowed) null
+                                else stringResource(R.string.pref_requires_transcoding),
+                        )
+
+                        SettingsDivider()
+
+                        VideoQualitySelectorItem(
+                            icon = painterResource(id = R.drawable.ic_cellular_data),
+                            title = stringResource(R.string.pref_quality_cellular_title),
+                            selectedBitrate = uiState.videoQualityCellular,
+                            options = qualityOptions,
+                            enabled = transcodingAllowed,
+                            onQualitySelected = viewModel::setVideoQualityCellular,
+                            hint =
+                                if (transcodingAllowed) null
+                                else stringResource(R.string.pref_requires_transcoding),
+                        )
+
+                        SettingsDivider()
+
+                        val channelOptions =
+                            listOf(
+                                8 to stringResource(R.string.pref_transcode_channels_8),
+                                6 to stringResource(R.string.pref_transcode_channels_6),
+                                2 to stringResource(R.string.pref_transcode_channels_2),
                             )
-                            SettingsDivider()
+
+                        SubtitleDropdownItem(
+                            title = stringResource(R.string.pref_transcode_channels_title),
+                            selectedOption = uiState.transcodeMaxAudioChannels,
+                            options = channelOptions.map { it.first },
+                            onValueChange = viewModel::setTranscodeMaxAudioChannels,
+                            labelProvider = { channels ->
+                                channelOptions.find { it.first == channels }?.second.orEmpty()
+                            },
+                            icon = painterResource(id = R.drawable.ic_speaker),
+                            enabled = transcodingAllowed,
+                            hint =
+                                if (transcodingAllowed) null
+                                else stringResource(R.string.pref_requires_transcoding),
+                        )
+
+                        SettingsDivider()
+
+                        SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_hdr),
+                            title = stringResource(R.string.pref_hdr_passthrough_title),
+                            subtitle = stringResource(R.string.pref_hdr_passthrough_description),
+                            checked = uiState.allowHdrPassthrough,
+                            onCheckedChange = { viewModel.setAllowHdrPassthrough(it) },
+                        )
+
+                        SettingsDivider()
+
+                        SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_video_off),
+                            title = stringResource(R.string.pref_never_transcode_title),
+                            subtitle = stringResource(R.string.pref_never_transcode_description),
+                            checked = uiState.neverTranscode,
+                            onCheckedChange = { viewModel.setNeverTranscode(it) },
+                        )
+                    }
+                }
+
+            if (section == PlaybackSection.MusicQuality)
+                item {
+                    SettingsGroup(title = stringResource(R.string.pref_group_streaming_quality)) {
+                        val musicOptions = MusicQuality.options()
+                        val musicLabels = musicOptions.associate {
+                            it.maxBitrate to musicQualityLabel(it)
                         }
-                    }
 
-                    SubtitleCustomizationContent(
-                        subtitlePrefs = subtitlePrefs,
-                        useExoPlayer = uiState.useExoPlayer,
-                        onUpdate = { updatedPrefs ->
-                            scope.launch(Dispatchers.IO) {
-                                preferencesRepository.setSubtitlePreferences(updatedPrefs)
-                            }
-                        },
-                    )
-                }
-            }
-
-            if (section == PlaybackSection.VideoQuality) item {
-                SettingsGroup(title = stringResource(R.string.pref_group_streaming_quality)) {
-                    val qualityOptions = VideoQuality.settingsLadder()
-                    val transcodingAllowed = !uiState.neverTranscode
-
-                    VideoQualitySelectorItem(
-                        icon = painterResource(id = R.drawable.ic_wifi),
-                        title = stringResource(R.string.pref_quality_wifi_title),
-                        selectedBitrate = uiState.videoQualityWifi,
-                        options = qualityOptions,
-                        enabled = transcodingAllowed,
-                        onQualitySelected = viewModel::setVideoQualityWifi,
-                        hint =
-                            if (transcodingAllowed) null
-                            else stringResource(R.string.pref_requires_transcoding),
-                    )
-
-                    SettingsDivider()
-
-                    VideoQualitySelectorItem(
-                        icon = painterResource(id = R.drawable.ic_cellular_data),
-                        title = stringResource(R.string.pref_quality_cellular_title),
-                        selectedBitrate = uiState.videoQualityCellular,
-                        options = qualityOptions,
-                        enabled = transcodingAllowed,
-                        onQualitySelected = viewModel::setVideoQualityCellular,
-                        hint =
-                            if (transcodingAllowed) null
-                            else stringResource(R.string.pref_requires_transcoding),
-                    )
-
-                    SettingsDivider()
-
-                    val channelOptions =
-                        listOf(
-                            8 to stringResource(R.string.pref_transcode_channels_8),
-                            6 to stringResource(R.string.pref_transcode_channels_6),
-                            2 to stringResource(R.string.pref_transcode_channels_2),
+                        SubtitleDropdownItem(
+                            title = stringResource(R.string.pref_music_quality_wifi_title),
+                            selectedOption = uiState.musicQualityWifi,
+                            options = musicOptions.map { it.maxBitrate },
+                            onValueChange = viewModel::setMusicQualityWifi,
+                            labelProvider = { bitrate -> musicLabels[bitrate].orEmpty() },
+                            icon = painterResource(id = R.drawable.ic_wifi),
+                            enabled = !uiState.neverTranscode,
+                            hint =
+                                if (uiState.neverTranscode)
+                                    stringResource(R.string.pref_requires_transcoding)
+                                else null,
                         )
 
-                    SubtitleDropdownItem(
-                        title = stringResource(R.string.pref_transcode_channels_title),
-                        selectedOption = uiState.transcodeMaxAudioChannels,
-                        options = channelOptions.map { it.first },
-                        onValueChange = viewModel::setTranscodeMaxAudioChannels,
-                        labelProvider = { channels ->
-                            channelOptions.find { it.first == channels }?.second.orEmpty()
-                        },
-                        icon = painterResource(id = R.drawable.ic_speaker),
-                        enabled = transcodingAllowed,
-                        hint =
-                            if (transcodingAllowed) null
-                            else stringResource(R.string.pref_requires_transcoding),
-                    )
+                        SettingsDivider()
 
-                    SettingsDivider()
-
-                    SettingsSwitchItem(
-                        icon = painterResource(id = R.drawable.ic_hdr),
-                        title = stringResource(R.string.pref_hdr_passthrough_title),
-                        subtitle = stringResource(R.string.pref_hdr_passthrough_description),
-                        checked = uiState.allowHdrPassthrough,
-                        onCheckedChange = { viewModel.setAllowHdrPassthrough(it) },
-                    )
-
-                    SettingsDivider()
-
-                    SettingsSwitchItem(
-                        icon = painterResource(id = R.drawable.ic_video_off),
-                        title = stringResource(R.string.pref_never_transcode_title),
-                        subtitle = stringResource(R.string.pref_never_transcode_description),
-                        checked = uiState.neverTranscode,
-                        onCheckedChange = { viewModel.setNeverTranscode(it) },
-                    )
-                }
-            }
-
-            if (section == PlaybackSection.MusicQuality) item {
-                SettingsGroup(title = stringResource(R.string.pref_group_streaming_quality)) {
-                    val musicOptions = MusicQuality.options()
-                    val musicLabels = musicOptions.associate {
-                        it.maxBitrate to musicQualityLabel(it)
+                        SubtitleDropdownItem(
+                            title = stringResource(R.string.pref_music_quality_cellular_title),
+                            selectedOption = uiState.musicQualityCellular,
+                            options = musicOptions.map { it.maxBitrate },
+                            onValueChange = viewModel::setMusicQualityCellular,
+                            labelProvider = { bitrate -> musicLabels[bitrate].orEmpty() },
+                            icon = painterResource(id = R.drawable.ic_cellular_data),
+                            enabled = !uiState.neverTranscode,
+                            hint =
+                                if (uiState.neverTranscode)
+                                    stringResource(R.string.pref_requires_transcoding)
+                                else null,
+                        )
                     }
-
-                    SubtitleDropdownItem(
-                        title = stringResource(R.string.pref_music_quality_wifi_title),
-                        selectedOption = uiState.musicQualityWifi,
-                        options = musicOptions.map { it.maxBitrate },
-                        onValueChange = viewModel::setMusicQualityWifi,
-                        labelProvider = { bitrate -> musicLabels[bitrate].orEmpty() },
-                        icon = painterResource(id = R.drawable.ic_wifi),
-                        enabled = !uiState.neverTranscode,
-                        hint =
-                            if (uiState.neverTranscode)
-                                stringResource(R.string.pref_requires_transcoding)
-                            else null,
-                    )
-
-                    SettingsDivider()
-
-                    SubtitleDropdownItem(
-                        title = stringResource(R.string.pref_music_quality_cellular_title),
-                        selectedOption = uiState.musicQualityCellular,
-                        options = musicOptions.map { it.maxBitrate },
-                        onValueChange = viewModel::setMusicQualityCellular,
-                        labelProvider = { bitrate -> musicLabels[bitrate].orEmpty() },
-                        icon = painterResource(id = R.drawable.ic_cellular_data),
-                        enabled = !uiState.neverTranscode,
-                        hint =
-                            if (uiState.neverTranscode)
-                                stringResource(R.string.pref_requires_transcoding)
-                            else null,
-                    )
                 }
-            }
 
-            if (section == PlaybackSection.Chromecast) item {
-                SettingsGroup(title = stringResource(R.string.pref_group_chromecast)) {
-                    SettingsSwitchItem(
-                        icon = painterResource(id = R.drawable.ic_cast),
-                        title = stringResource(R.string.pref_cast_hevc_title),
-                        subtitle = stringResource(R.string.pref_cast_hevc_description),
-                        checked = uiState.castHevcEnabled,
-                        onCheckedChange = { viewModel.setCastHevcEnabled(it) },
-                    )
-
-                    SettingsDivider()
-
-                    val bitrateOptions =
-                        listOf(
-                            0 to stringResource(R.string.pref_cast_max_bitrate_auto),
-                            16_000_000 to stringResource(R.string.unit_mbps_fmt, 16),
-                            8_000_000 to stringResource(R.string.unit_mbps_fmt, 8),
-                            4_000_000 to stringResource(R.string.unit_mbps_fmt, 4),
-                            2_000_000 to stringResource(R.string.unit_mbps_fmt, 2),
-                            1_000_000 to stringResource(R.string.unit_mbps_fmt, 1),
+            if (section == PlaybackSection.Chromecast)
+                item {
+                    SettingsGroup(title = stringResource(R.string.pref_group_chromecast)) {
+                        SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_cast),
+                            title = stringResource(R.string.pref_cast_hevc_title),
+                            subtitle = stringResource(R.string.pref_cast_hevc_description),
+                            checked = uiState.castHevcEnabled,
+                            onCheckedChange = { viewModel.setCastHevcEnabled(it) },
                         )
 
-                    SubtitleDropdownItem(
-                        title = stringResource(R.string.pref_cast_max_bitrate_title),
-                        selectedOption = uiState.castMaxBitrate,
-                        options = bitrateOptions.map { it.first },
-                        onValueChange = viewModel::setCastMaxBitrate,
-                        labelProvider = { bitrate ->
-                            bitrateOptions.find { it.first == bitrate }?.second
-                                ?: stringResource(R.string.unit_mbps_fmt, 16)
-                        },
-                        icon = painterResource(id = R.drawable.ic_broadcast),
-                    )
+                        SettingsDivider()
+
+                        val bitrateOptions =
+                            listOf(
+                                0 to stringResource(R.string.pref_cast_max_bitrate_auto),
+                                16_000_000 to stringResource(R.string.unit_mbps_fmt, 16),
+                                8_000_000 to stringResource(R.string.unit_mbps_fmt, 8),
+                                4_000_000 to stringResource(R.string.unit_mbps_fmt, 4),
+                                2_000_000 to stringResource(R.string.unit_mbps_fmt, 2),
+                                1_000_000 to stringResource(R.string.unit_mbps_fmt, 1),
+                            )
+
+                        SubtitleDropdownItem(
+                            title = stringResource(R.string.pref_cast_max_bitrate_title),
+                            selectedOption = uiState.castMaxBitrate,
+                            options = bitrateOptions.map { it.first },
+                            onValueChange = viewModel::setCastMaxBitrate,
+                            labelProvider = { bitrate ->
+                                bitrateOptions.find { it.first == bitrate }?.second
+                                    ?: stringResource(R.string.unit_mbps_fmt, 16)
+                            },
+                            icon = painterResource(id = R.drawable.ic_broadcast),
+                        )
+                    }
                 }
-            }
         }
     }
 }
@@ -983,8 +994,7 @@ private fun BufferSizeSelectorItem(selectedSizeMb: Int, onSizeSelected: (Int) ->
                                 text = option.second,
                                 style = MaterialTheme.typography.bodyLarge,
                                 color =
-                                    if (index == selectedIndex)
-                                        MaterialTheme.colorScheme.primary
+                                    if (index == selectedIndex) MaterialTheme.colorScheme.primary
                                     else MaterialTheme.colorScheme.onSurface,
                             )
                             Text(

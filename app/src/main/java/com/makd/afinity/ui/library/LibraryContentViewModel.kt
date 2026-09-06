@@ -443,23 +443,22 @@ constructor(
         if (sectionId != null || filterOptionsJob?.isActive == true) return
         if (_uiState.value.filterOptions != LibraryFilterOptions()) return
 
-        filterOptionsJob =
-            viewModelScope.launch {
-                _uiState.value = _uiState.value.copy(isLoadingFilterOptions = true)
-                try {
-                    val type = libraryType ?: determineLibraryType()
-                    val options =
-                        mediaRepository.getFilterOptions(
-                            parentId = libraryId?.let { UUID.fromString(it) },
-                            libraryType = type,
-                        )
-                    _uiState.value = _uiState.value.copy(filterOptions = options)
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to load filter options")
-                } finally {
-                    _uiState.value = _uiState.value.copy(isLoadingFilterOptions = false)
-                }
+        filterOptionsJob = viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoadingFilterOptions = true)
+            try {
+                val type = libraryType ?: determineLibraryType()
+                val options =
+                    mediaRepository.getFilterOptions(
+                        parentId = libraryId?.let { UUID.fromString(it) },
+                        libraryType = type,
+                    )
+                _uiState.value = _uiState.value.copy(filterOptions = options)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load filter options")
+            } finally {
+                _uiState.value = _uiState.value.copy(isLoadingFilterOptions = false)
             }
+        }
     }
 
     fun updateFilters(filters: LibraryFilters) {

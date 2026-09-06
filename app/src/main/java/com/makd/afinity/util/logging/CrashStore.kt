@@ -2,13 +2,13 @@ package com.makd.afinity.util.logging
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 data class CrashReport(
     val id: String,
@@ -53,7 +53,8 @@ class CrashStore @Inject constructor(@param:ApplicationContext private val conte
     }
 
     private fun parse(file: File): CrashReport? {
-        val text = runCatching { file.readText() }.getOrNull()?.takeIf { it.isNotBlank() } ?: return null
+        val text =
+            runCatching { file.readText() }.getOrNull()?.takeIf { it.isNotBlank() } ?: return null
 
         val header = text.substringBefore(TRACE_HEADER)
         val trace = text.substringAfter(TRACE_HEADER, "").substringBefore(LOGS_HEADER).trim()
@@ -86,7 +87,11 @@ class CrashStore @Inject constructor(@param:ApplicationContext private val conte
     }
 
     private fun String.valueFor(key: String): String? =
-        lineSequence().firstOrNull { it.startsWith(key) }?.removePrefix(key)?.trim()?.ifBlank { null }
+        lineSequence()
+            .firstOrNull { it.startsWith(key) }
+            ?.removePrefix(key)
+            ?.trim()
+            ?.ifBlank { null }
 
     private fun timeOf(file: File): Long {
         val stamp = file.name.removePrefix("crash_").removeSuffix(".txt")

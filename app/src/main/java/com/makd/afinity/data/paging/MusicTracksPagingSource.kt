@@ -5,10 +5,10 @@ import androidx.paging.PagingState
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicFilters
 import com.makd.afinity.data.repository.music.MusicRepository
+import java.util.UUID
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 import timber.log.Timber
-import java.util.UUID
 
 class MusicTracksPagingSource(
     private val musicRepository: MusicRepository,

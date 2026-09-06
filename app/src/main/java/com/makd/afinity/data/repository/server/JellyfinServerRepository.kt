@@ -235,15 +235,14 @@ constructor(
         suspend fun addServer(server: Server, source: String) {
             val key = server.address.trimEnd('/')
             if (key.isBlank()) return
-            val snapshot =
-                discoveryMutex.withLock {
-                    if (discoveredServers.containsKey(key)) {
-                        null
-                    } else {
-                        discoveredServers[key] = server
-                        discoveredServers.values.toList()
-                    }
+            val snapshot = discoveryMutex.withLock {
+                if (discoveredServers.containsKey(key)) {
+                    null
+                } else {
+                    discoveredServers[key] = server
+                    discoveredServers.values.toList()
                 }
+            }
             if (snapshot != null) {
                 Timber.d("Discovered server via $source: ${server.name} at ${server.address}")
                 send(snapshot)

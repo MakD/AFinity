@@ -177,8 +177,7 @@ constructor(
                     val personItems = itemsDeferred.await()
                     _uiState.update { currentState ->
                         currentState.copy(
-                            movies =
-                                itemStore.merge(personItems.filterIsInstance<AfinityMovie>()),
+                            movies = itemStore.merge(personItems.filterIsInstance<AfinityMovie>()),
                             shows = itemStore.merge(personItems.filterIsInstance<AfinityShow>()),
                         )
                     }

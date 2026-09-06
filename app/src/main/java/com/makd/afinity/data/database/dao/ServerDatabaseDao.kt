@@ -286,7 +286,9 @@ abstract class ServerDatabaseDao {
     @Query("DELETE FROM downloads WHERE serverId = :serverId AND userId = :userId")
     abstract suspend fun deleteDownloadsForUser(serverId: String, userId: UUID)
 
-    @Query("DELETE FROM abs_downloads WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId")
+    @Query(
+        "DELETE FROM abs_downloads WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
     abstract suspend fun deleteAbsDownloadsForUser(serverId: String, userId: String)
 
     @Query(

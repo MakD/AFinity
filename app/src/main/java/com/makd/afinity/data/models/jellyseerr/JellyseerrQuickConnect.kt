@@ -9,5 +9,4 @@ data class QuickConnectInitiateResponse(
     @SerialName("secret") val secret: String,
 )
 
-@Serializable
-data class QuickConnectAuthenticateRequest(@SerialName("secret") val secret: String)
+@Serializable data class QuickConnectAuthenticateRequest(@SerialName("secret") val secret: String)

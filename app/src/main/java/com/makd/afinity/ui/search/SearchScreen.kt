@@ -782,7 +782,8 @@ private fun SearchResultsContent(
     ) {
         item {
             Text(
-                text = pluralStringResource(
+                text =
+                    pluralStringResource(
                         R.plurals.search_results_count_fmt,
                         results.size,
                         results.size,
@@ -1080,7 +1081,8 @@ private fun JellyseerrSearchResultsContent(
     ) {
         item {
             Text(
-                text = pluralStringResource(
+                text =
+                    pluralStringResource(
                         R.plurals.search_results_count_fmt,
                         results.size,
                         results.size,
@@ -1449,7 +1451,8 @@ private fun AudiobookshelfSearchResultsContent(
     ) {
         item {
             Text(
-                text = pluralStringResource(
+                text =
+                    pluralStringResource(
                         R.plurals.search_results_count_fmt,
                         results.size,
                         results.size,

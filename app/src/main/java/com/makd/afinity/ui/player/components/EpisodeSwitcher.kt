@@ -244,8 +244,10 @@ fun EpisodeSwitcher(
                                 isPlaying = isPlaying,
                                 liveProgress =
                                     if (index == activeEpisodeIndex && currentDurationMs > 0L) {
-                                        (currentPositionMs.toFloat() / currentDurationMs)
-                                            .coerceIn(0f, 1f)
+                                        (currentPositionMs.toFloat() / currentDurationMs).coerceIn(
+                                            0f,
+                                            1f,
+                                        )
                                     } else null,
                                 onClick = { onEpisodeClick(item.id) },
                             )

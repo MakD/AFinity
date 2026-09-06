@@ -21,33 +21,36 @@ class RingBufferTree(private val maxLines: Int = 2000) : Timber.Tree() {
     val launchTimeMillis: Long = System.currentTimeMillis()
 
     private val _updates =
-        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+        MutableSharedFlow<Unit>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST,
+        )
     val updates: SharedFlow<Unit> = _updates
 
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
         if (priority < Log.DEBUG) return
 
         synchronized(buffer) {
-                val created =
-                    LogEntry(
-                        sequence = nextSequence++,
-                        timeMillis = System.currentTimeMillis(),
-                        priority = priority,
-                        tag = tag ?: "App",
-                        message = LogRedactor.redact(message),
-                        stackTrace =
-                            t?.let {
-                                LogRedactor.redact(
-                                    it.stackTraceToString()
-                                        .lines()
-                                        .take(STACK_TRACE_LINES)
-                                        .joinToString("\n")
-                                )
-                            },
-                    )
-                if (buffer.size >= maxLines) buffer.removeFirst()
-                buffer.addLast(created)
-            }
+            val created =
+                LogEntry(
+                    sequence = nextSequence++,
+                    timeMillis = System.currentTimeMillis(),
+                    priority = priority,
+                    tag = tag ?: "App",
+                    message = LogRedactor.redact(message),
+                    stackTrace =
+                        t?.let {
+                            LogRedactor.redact(
+                                it.stackTraceToString()
+                                    .lines()
+                                    .take(STACK_TRACE_LINES)
+                                    .joinToString("\n")
+                            )
+                        },
+                )
+            if (buffer.size >= maxLines) buffer.removeFirst()
+            buffer.addLast(created)
+        }
 
         _updates.tryEmit(Unit)
     }

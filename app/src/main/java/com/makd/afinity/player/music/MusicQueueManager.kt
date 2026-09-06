@@ -27,6 +27,10 @@ import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.player.AudioService
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -40,10 +44,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
-import javax.inject.Inject
-import javax.inject.Singleton
 
 data class LoadQueueEvent(
     val mediaItems: List<MediaItem>,
@@ -145,9 +145,7 @@ constructor(
         scope.launch { restoreFromRoom() }
 
         scope.launch {
-            preferencesRepository.getMusicQualityWifiFlow().collect {
-                wifiMusicQualityBitrate = it
-            }
+            preferencesRepository.getMusicQualityWifiFlow().collect { wifiMusicQualityBitrate = it }
         }
 
         scope.launch {

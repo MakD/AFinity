@@ -67,8 +67,7 @@ constructor(
                     val topTracks = itemStore.mergeOwners(state.topTracks)
                     val albums = itemStore.mergeOwners(state.albums)
                     val appearsOn = itemStore.mergeOwners(state.appearsOn)
-                    val artist =
-                        state.artist?.let { itemStore.mergeOwners(listOf(it)).first() }
+                    val artist = state.artist?.let { itemStore.mergeOwners(listOf(it)).first() }
                     if (
                         topTracks === state.topTracks &&
                             albums === state.albums &&
@@ -119,9 +118,7 @@ constructor(
                 val topTracks = tracksDeferred.await()
                 val albums = albumsDeferred.await()
                 val appearsOn = appearsDeferred.await()
-                itemStore.putIfAbsent(
-                    topTracks + albums + appearsOn + listOfNotNull(artist)
-                )
+                itemStore.putIfAbsent(topTracks + albums + appearsOn + listOfNotNull(artist))
                 _uiState.update {
                     it.copy(
                         artist = artist?.let { a -> itemStore.mergeOwners(listOf(a)).first() },

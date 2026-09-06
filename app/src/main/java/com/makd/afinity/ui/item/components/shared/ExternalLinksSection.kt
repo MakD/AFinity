@@ -1,7 +1,6 @@
 package com.makd.afinity.ui.item.components.shared
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -22,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityItem
@@ -57,9 +57,7 @@ fun ExternalLinksSection(externalUrls: List<AfinityExternalUrl>?) {
                         intrinsic.width / intrinsic.height
                     } else 1f
                 val narrowBoost =
-                    (LOGO_REFERENCE_ASPECT / aspect)
-                        .coerceAtLeast(1f)
-                        .pow(LOGO_ASPECT_COMPENSATION)
+                    (LOGO_REFERENCE_ASPECT / aspect).coerceAtLeast(1f).pow(LOGO_ASPECT_COMPENSATION)
                 val logoHeight =
                     (LOGO_BASE_HEIGHT_DP * narrowBoost).coerceAtMost(LOGO_MAX_HEIGHT_DP).dp
 
@@ -69,7 +67,7 @@ fun ExternalLinksSection(externalUrls: List<AfinityExternalUrl>?) {
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
                                 onClick = {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link.url))
+                                    val intent = Intent(Intent.ACTION_VIEW, link.url.toUri())
                                     context.startActivity(intent)
                                 },
                             )

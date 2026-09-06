@@ -86,8 +86,7 @@ fun ModalSideSheet(
         onDismissRequest()
     }
 
-    val scrimAlpha =
-        ((1f - abs(offsetX.value) / sheetWidthPx).coerceIn(0f, 1f)) * ScrimAlpha
+    val scrimAlpha = ((1f - abs(offsetX.value) / sheetWidthPx).coerceIn(0f, 1f)) * ScrimAlpha
 
     Dialog(
         onDismissRequest = { scope.launch { animateOutAndDismiss() } },
@@ -101,9 +100,7 @@ fun ModalSideSheet(
         PredictiveBackHandler { progress ->
             try {
                 progress.collect { event ->
-                    offsetX.snapTo(
-                        hiddenOffsetPx * LinearOutSlowInEasing.transform(event.progress)
-                    )
+                    offsetX.snapTo(hiddenOffsetPx * LinearOutSlowInEasing.transform(event.progress))
                 }
                 animateOutAndDismiss()
             } catch (_: CancellationException) {

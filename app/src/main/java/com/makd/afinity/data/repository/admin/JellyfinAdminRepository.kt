@@ -131,9 +131,7 @@ constructor(
             try {
                 val api = ItemLookupApi(getApiClient() ?: return@withContext emptyList())
                 val response = api.getExternalIdInfos(itemId = UUID.fromString(itemId))
-                response.content.map {
-                    ExternalIdProvider(name = it.name, key = it.key)
-                }
+                response.content.map { ExternalIdProvider(name = it.name, key = it.key) }
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get external ID providers for $itemId")
                 emptyList()

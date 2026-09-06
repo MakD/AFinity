@@ -23,9 +23,9 @@ import com.makd.afinity.data.models.server.ServerWithAddresses
 import com.makd.afinity.data.models.server.ServerWithAddressesAndUsers
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.models.user.User
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.UserItemDataDto
-import java.util.UUID
 
 interface DatabaseRepository {
 

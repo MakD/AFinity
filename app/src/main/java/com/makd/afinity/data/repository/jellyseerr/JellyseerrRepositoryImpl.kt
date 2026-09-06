@@ -176,8 +176,7 @@ constructor(
 
     override suspend fun verifyServer(url: String): PublicSettings? {
         return withContext(Dispatchers.IO) {
-            val base =
-                url.trim().removeSuffix("/").removeSuffix("/api/v1/status").removeSuffix("/")
+            val base = url.trim().removeSuffix("/").removeSuffix("/api/v1/status").removeSuffix("/")
             fetchPublicSettings(base)
         }
     }
@@ -441,15 +440,11 @@ constructor(
         val serverUrl = securePreferencesRepository.getJellyseerrServerUrl() ?: ""
         val cookies =
             response.headers()["Set-Cookie"]
-                ?: serverUrl.toHttpUrlOrNull()?.host?.let {
-                    seerrCookieJar.sessionCookieHeader(it)
-                }
+                ?: serverUrl.toHttpUrlOrNull()?.host?.let { seerrCookieJar.sessionCookieHeader(it) }
 
         if (cookies.isNullOrBlank()) {
             Timber.e("Jellyseerr login returned no session cookie")
-            return Result.failure(
-                Exception("Login failed: server did not return a session cookie")
-            )
+            return Result.failure(Exception("Login failed: server did not return a session cookie"))
         }
 
         securePreferencesRepository.saveJellyseerrAuthForUser(

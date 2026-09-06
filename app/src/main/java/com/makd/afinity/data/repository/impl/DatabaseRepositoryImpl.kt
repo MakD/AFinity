@@ -63,16 +63,16 @@ import com.makd.afinity.data.models.server.ServerWithAddressesAndUsers
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.DatabaseRepository
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Provider
+import javax.inject.Singleton
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import org.jellyfin.sdk.model.api.UserItemDataDto
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Provider
-import javax.inject.Singleton
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton

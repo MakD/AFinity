@@ -221,7 +221,9 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
         return try {
             val boxSets = mediaRepository.getBoxSetsContaining(item.id, FieldSets.MEDIA_ITEM_CARDS)
             val boxSet =
-                boxSets.filter { (it.itemCount ?: 0) > 1 }.minByOrNull { it.itemCount ?: Int.MAX_VALUE }
+                boxSets
+                    .filter { (it.itemCount ?: 0) > 1 }
+                    .minByOrNull { it.itemCount ?: Int.MAX_VALUE }
             if (boxSet == null) {
                 Timber.d(
                     "Collection queue: no usable boxset for ${item.name} " +

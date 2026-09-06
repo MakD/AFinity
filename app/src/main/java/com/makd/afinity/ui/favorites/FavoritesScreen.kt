@@ -571,7 +571,10 @@ private fun FavoriteTracksSection(
     onViewAllClick: (() -> Unit)? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        SectionRowHeader(title = stringResource(R.string.favorites_songs), onViewAllClick = onViewAllClick)
+        SectionRowHeader(
+            title = stringResource(R.string.favorites_songs),
+            onViewAllClick = onViewAllClick,
+        )
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),

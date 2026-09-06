@@ -1,4 +1,6 @@
+import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.dsl.ApplicationExtension
+import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import java.util.Properties
 import java.util.regex.Pattern
 
@@ -139,6 +141,32 @@ kotlin {
             "-Xjvm-default=all",
             "-Xcontext-parameters",
         )
+    }
+}
+
+configure<ApplicationAndroidComponentsExtension> {
+    onVariants { variant ->
+        val buildType = variant.buildType ?: return@onVariants
+        if (buildType != "release" && buildType != "nightly") return@onVariants
+
+        val mappingFile = variant.artifacts.get(SingleArtifact.OBFUSCATION_MAPPING_FILE)
+        val variantName = variant.name.replaceFirstChar { it.uppercase() }
+
+        val archiveMapping =
+            tasks.register<Zip>("archive${variantName}Mapping") {
+                group = "reporting"
+                description = "Archives the R8 mapping for $buildType builds."
+                from(mappingFile)
+                archiveFileName.set(
+                    "afinity-v$appVersionName-$appVersionCode-${variant.name}-mapping.zip"
+                )
+                destinationDirectory.set(rootProject.layout.projectDirectory.dir("mapping-archive"))
+                onlyIf { mappingFile.orNull?.asFile?.exists() == true }
+            }
+
+        tasks
+            .matching { it.name == "assemble$variantName" }
+            .configureEach { finalizedBy(archiveMapping) }
     }
 }
 

@@ -91,9 +91,7 @@ fun PeopleDialog(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.End,
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.action_close))
-                    }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
                 }
             }
         }
@@ -135,8 +133,7 @@ private fun PersonRow(person: AfinityPerson, onPersonClick: ((UUID) -> Unit)?) {
         modifier =
             Modifier.fillMaxWidth()
                 .then(
-                    if (clickHandler != null)
-                        Modifier.clickable { clickHandler(person.id) }
+                    if (clickHandler != null) Modifier.clickable { clickHandler(person.id) }
                     else Modifier
                 )
                 .padding(horizontal = 24.dp, vertical = 8.dp),

@@ -90,17 +90,20 @@ fun EpgProgramCell(
                 }
             }
 
-            program.episodeTitle?.takeIf { it.isNotBlank() }?.let { episodeTitle ->
-                Text(
-                    text = episodeTitle,
-                    style = MaterialTheme.typography.labelSmall,
-                    color =
-                        if (isLive) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+            program.episodeTitle
+                ?.takeIf { it.isNotBlank() }
+                ?.let { episodeTitle ->
+                    Text(
+                        text = episodeTitle,
+                        style = MaterialTheme.typography.labelSmall,
+                        color =
+                            if (isLive)
+                                MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
 
             if (isLive) {
                 Spacer(modifier = Modifier.height(2.dp))

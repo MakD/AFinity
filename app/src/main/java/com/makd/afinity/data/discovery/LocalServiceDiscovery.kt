@@ -83,19 +83,16 @@ constructor(
             val found = ConcurrentHashMap<String, DiscoveredService>()
             val infoCallbacks = ConcurrentHashMap<String, NsdManager.ServiceInfoCallback>()
 
-            val multicastLock =
-                runCatching {
-                        wifiManager?.createMulticastLock(MULTICAST_LOCK_TAG)?.apply {
-                            setReferenceCounted(true)
-                            acquire()
-                        }
-                    }
-                    .getOrNull()
+            val multicastLock = runCatching {
+                wifiManager?.createMulticastLock(MULTICAST_LOCK_TAG)?.apply {
+                    setReferenceCounted(true)
+                    acquire()
+                }
+            }
+                .getOrNull()
 
             fun publish() {
-                trySend(
-                    DiscoveryResult.Services(found.values.sortedBy { it.name.lowercase() })
-                )
+                trySend(DiscoveryResult.Services(found.values.sortedBy { it.name.lowercase() }))
             }
 
             fun closeDiagnosed() {
@@ -140,8 +137,7 @@ constructor(
                                 }
 
                                 override fun onServiceUpdated(serviceInfo: NsdServiceInfo) {
-                                    val service =
-                                        serviceInfo.toDiscoveredService(key) ?: return
+                                    val service = serviceInfo.toDiscoveredService(key) ?: return
                                     found[key] = service
                                     publish()
                                 }
@@ -156,12 +152,12 @@ constructor(
 
                         infoCallbacks[key] = callback
                         runCatching {
-                                manager.registerServiceInfoCallback(
-                                    serviceInfo,
-                                    callbackExecutor,
-                                    callback,
-                                )
-                            }
+                            manager.registerServiceInfoCallback(
+                                serviceInfo,
+                                callbackExecutor,
+                                callback,
+                            )
+                        }
                             .onFailure {
                                 infoCallbacks.remove(key)
                                 Timber.w(it, "mDNS: could not resolve $key")
@@ -176,12 +172,12 @@ constructor(
                 }
 
             runCatching {
-                    manager.discoverServices(
-                        serviceType,
-                        NsdManager.PROTOCOL_DNS_SD,
-                        discoveryListener,
-                    )
-                }
+                manager.discoverServices(
+                    serviceType,
+                    NsdManager.PROTOCOL_DNS_SD,
+                    discoveryListener,
+                )
+            }
                 .onFailure {
                     Timber.w(it, "mDNS: could not start discovery for $serviceType")
                     closeDiagnosed()

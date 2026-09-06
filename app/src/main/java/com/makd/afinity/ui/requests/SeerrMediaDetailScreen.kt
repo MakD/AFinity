@@ -835,32 +835,59 @@ private fun buildSeerrDetailRows(
             ?.mapNotNull { it.name ?: it.iso_3166_1 }
             ?.takeIf { it.isNotEmpty() }
 
-    originalTitle?.let { add(SeerrDetailRowData(context.getString(R.string.seerr_detail_original_title), it)) }
+    originalTitle?.let {
+        add(SeerrDetailRowData(context.getString(R.string.seerr_detail_original_title), it))
+    }
     details.status
         ?.takeIf { it.isNotBlank() }
-        ?.let { add(SeerrDetailRowData(context.getString(R.string.seerr_detail_status), it, isStatus = true)) }
+        ?.let {
+            add(
+                SeerrDetailRowData(
+                    context.getString(R.string.seerr_detail_status),
+                    it,
+                    isStatus = true,
+                )
+            )
+        }
 
     if (mediaType == MediaType.TV) {
         details.seriesType
             ?.takeIf { it.isNotBlank() }
-            ?.let { add(SeerrDetailRowData(context.getString(R.string.seerr_detail_series_type), it)) }
+            ?.let {
+                add(SeerrDetailRowData(context.getString(R.string.seerr_detail_series_type), it))
+            }
         details.firstAirDate?.let { date ->
-            formatSeerrDate(date)?.let { add(SeerrDetailRowData(context.getString(R.string.seerr_detail_first_air_date), it)) }
+            formatSeerrDate(date)?.let {
+                add(SeerrDetailRowData(context.getString(R.string.seerr_detail_first_air_date), it))
+            }
         }
         details.nextEpisodeToAir?.airDate?.let { date ->
-            formatSeerrDate(date)?.let { add(SeerrDetailRowData(context.getString(R.string.seerr_detail_next_air_date), it)) }
+            formatSeerrDate(date)?.let {
+                add(SeerrDetailRowData(context.getString(R.string.seerr_detail_next_air_date), it))
+            }
         }
         details.episodeRunTime
             ?.firstOrNull()
             ?.takeIf { it > 0 }
-            ?.let { add(SeerrDetailRowData(
-                    context.getString(R.string.seerr_detail_episode_runtime),
-                    context.getString(R.string.seerr_runtime_minutes_fmt, it),
-                )) }
+            ?.let {
+                add(
+                    SeerrDetailRowData(
+                        context.getString(R.string.seerr_detail_episode_runtime),
+                        context.getString(R.string.seerr_runtime_minutes_fmt, it),
+                    )
+                )
+            }
         details.networks
             ?.mapNotNull { it.name }
             ?.takeIf { it.isNotEmpty() }
-            ?.let { add(SeerrDetailRowData(context.getString(R.string.seerr_detail_networks), it.joinToString(", "))) }
+            ?.let {
+                add(
+                    SeerrDetailRowData(
+                        context.getString(R.string.seerr_detail_networks),
+                        it.joinToString(", "),
+                    )
+                )
+            }
     } else {
         val usReleases =
             details.releases?.results?.firstOrNull { it.iso_3166_1 == "US" }?.release_dates
@@ -869,7 +896,12 @@ private fun buildSeerrDetailRows(
             ?.release_date
             ?.let { date ->
                 formatSeerrDate(date.take(10))?.let {
-                    add(SeerrDetailRowData(context.getString(R.string.seerr_detail_release_theatrical), it))
+                    add(
+                        SeerrDetailRowData(
+                            context.getString(R.string.seerr_detail_release_theatrical),
+                            it,
+                        )
+                    )
                 }
             }
         usReleases
@@ -877,20 +909,46 @@ private fun buildSeerrDetailRows(
             ?.release_date
             ?.let { date ->
                 formatSeerrDate(date.take(10))?.let {
-                    add(SeerrDetailRowData(context.getString(R.string.seerr_detail_release_digital), it))
+                    add(
+                        SeerrDetailRowData(
+                            context.getString(R.string.seerr_detail_release_digital),
+                            it,
+                        )
+                    )
                 }
             }
         if (usReleases == null) {
             details.releaseDate?.let { date ->
-                formatSeerrDate(date)?.let { add(SeerrDetailRowData(context.getString(R.string.seerr_detail_release_date), it)) }
+                formatSeerrDate(date)?.let {
+                    add(
+                        SeerrDetailRowData(
+                            context.getString(R.string.seerr_detail_release_date),
+                            it,
+                        )
+                    )
+                }
             }
         }
         details.budget
             ?.takeIf { it > 0 }
-            ?.let { add(SeerrDetailRowData(context.getString(R.string.seerr_detail_budget), String.format(Locale.US, "$%,d", it))) }
+            ?.let {
+                add(
+                    SeerrDetailRowData(
+                        context.getString(R.string.seerr_detail_budget),
+                        String.format(Locale.US, "$%,d", it),
+                    )
+                )
+            }
         details.revenue
             ?.takeIf { it > 0 }
-            ?.let { add(SeerrDetailRowData(context.getString(R.string.seerr_detail_revenue), String.format(Locale.US, "$%,d", it))) }
+            ?.let {
+                add(
+                    SeerrDetailRowData(
+                        context.getString(R.string.seerr_detail_revenue),
+                        String.format(Locale.US, "$%,d", it),
+                    )
+                )
+            }
     }
 
     language
@@ -904,7 +962,14 @@ private fun buildSeerrDetailRows(
                 )
             )
         }
-    countries?.let { add(SeerrDetailRowData(context.getString(R.string.seerr_detail_production_country), it.joinToString(", "))) }
+    countries?.let {
+        add(
+            SeerrDetailRowData(
+                context.getString(R.string.seerr_detail_production_country),
+                it.joinToString(", "),
+            )
+        )
+    }
 }
 
 private fun formatSeerrDate(dateString: String): String? {

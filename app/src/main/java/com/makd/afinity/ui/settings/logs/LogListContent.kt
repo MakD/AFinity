@@ -314,7 +314,8 @@ private fun ComfortableRow(
                                 .background(MaterialTheme.colorScheme.outlineVariant)
                     )
                     Text(
-                        text = row.occurrenceTimes.joinToString(" · ") { formatter.format(Date(it)) },
+                        text =
+                            row.occurrenceTimes.joinToString(" · ") { formatter.format(Date(it)) },
                         style = LogTextStyles.metaSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -467,7 +468,10 @@ private fun RowActions(
 @Composable
 private fun RowAction(icon: Int, label: String, color: Color, onClick: () -> Unit) {
     Row(
-        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(onClick = onClick).padding(vertical = 4.dp),
+        modifier =
+            Modifier.clip(RoundedCornerShape(8.dp))
+                .clickable(onClick = onClick)
+                .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {

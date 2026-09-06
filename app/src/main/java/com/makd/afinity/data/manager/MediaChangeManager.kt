@@ -97,9 +97,7 @@ constructor(
 
     private suspend fun emitBatch(batch: MediaChangeBatch) {
         itemStore.put(
-            batch.changes.flatMap {
-                listOfNotNull(it.updatedItem, it.parentItem, it.seasonItem)
-            }
+            batch.changes.flatMap { listOfNotNull(it.updatedItem, it.parentItem, it.seasonItem) }
         )
         _batches.emit(batch)
     }
@@ -120,17 +118,16 @@ constructor(
             }
         if (items.isEmpty()) return
 
-        val changes =
-            items.map { item ->
-                MediaChangeEvent(
-                    itemId = item.id,
-                    updatedItem = item,
-                    seriesId =
-                        (item as? AfinityEpisode)?.seriesId ?: (item as? AfinitySeason)?.seriesId,
-                    seasonId = (item as? AfinityEpisode)?.seasonId,
-                    source = MediaChangeSource.WEBSOCKET,
-                )
-            }
+        val changes = items.map { item ->
+            MediaChangeEvent(
+                itemId = item.id,
+                updatedItem = item,
+                seriesId =
+                    (item as? AfinityEpisode)?.seriesId ?: (item as? AfinitySeason)?.seriesId,
+                seasonId = (item as? AfinityEpisode)?.seasonId,
+                source = MediaChangeSource.WEBSOCKET,
+            )
+        }
         emitBatch(MediaChangeBatch(changes, MediaChangeSource.WEBSOCKET))
     }
 
@@ -375,14 +372,13 @@ data class MediaChangeBatch(
     val changes: List<MediaChangeEvent>,
     val source: MediaChangeSource,
 ) {
-    val itemIds: Set<UUID> =
-        buildSet {
-            changes.forEach { change ->
-                add(change.itemId)
-                change.seriesId?.let { add(it) }
-                change.seasonId?.let { add(it) }
-            }
+    val itemIds: Set<UUID> = buildSet {
+        changes.forEach { change ->
+            add(change.itemId)
+            change.seriesId?.let { add(it) }
+            change.seasonId?.let { add(it) }
         }
+    }
 
     fun affects(vararg ids: UUID?): Boolean = ids.any { it != null && it in itemIds }
 

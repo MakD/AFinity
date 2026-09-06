@@ -117,8 +117,9 @@ fun SettingsItem(
                     text = subtitle,
                     style = MaterialTheme.typography.bodyMedium,
                     color =
-                        (subtitleColor ?: MaterialTheme.colorScheme.onSurfaceVariant)
-                            .copy(alpha = contentAlpha),
+                        (subtitleColor ?: MaterialTheme.colorScheme.onSurfaceVariant).copy(
+                            alpha = contentAlpha
+                        ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 2.dp),
