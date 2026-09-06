@@ -67,6 +67,9 @@ import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
+import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -97,9 +100,6 @@ import kotlinx.coroutines.yield
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import kotlin.coroutines.cancellation.CancellationException
 
 private const val POPULATED_METADATA_TTL_MS = 48L * 60L * 60L * 1000L
 private const val EMPTY_METADATA_TTL_MS = 6L * 60L * 60L * 1000L

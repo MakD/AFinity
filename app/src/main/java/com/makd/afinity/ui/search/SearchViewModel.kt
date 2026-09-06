@@ -46,6 +46,8 @@ import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -72,8 +74,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
 
 @OptIn(FlowPreview::class)
 @HiltViewModel

@@ -1,8 +1,8 @@
 package com.makd.afinity.data.models.media
 
+import java.util.UUID
 import kotlinx.serialization.Serializable
 import org.jellyfin.sdk.model.api.BaseItemDto
-import java.util.UUID
 
 @Serializable
 data class AfinityChapter(

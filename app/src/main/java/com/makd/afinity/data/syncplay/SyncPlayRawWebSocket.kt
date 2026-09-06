@@ -2,6 +2,9 @@ package com.makd.afinity.data.syncplay
 
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.di.ApplicationScope
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -23,9 +26,6 @@ import org.jellyfin.sdk.model.api.GroupUpdateType
 import org.jellyfin.sdk.model.api.PlayQueueUpdate
 import org.jellyfin.sdk.model.api.SendCommand
 import timber.log.Timber
-import java.util.concurrent.TimeUnit
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class SyncPlayRawWebSocket

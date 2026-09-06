@@ -10,6 +10,10 @@ import com.makd.afinity.ui.livetv.models.LiveTvCategory
 import com.makd.afinity.ui.livetv.models.ProgramWithChannel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
+import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -25,10 +29,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
-import java.util.UUID
-import javax.inject.Inject
 
 @OptIn(FlowPreview::class)
 @HiltViewModel

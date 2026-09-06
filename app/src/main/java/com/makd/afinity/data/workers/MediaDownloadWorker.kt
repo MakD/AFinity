@@ -44,6 +44,12 @@ import com.makd.afinity.util.parseDashlessUuid
 import com.makd.afinity.util.redactUrl
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.io.File
+import java.io.FileOutputStream
+import java.util.Locale
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicLong
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
@@ -62,12 +68,6 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
-import java.io.File
-import java.io.FileOutputStream
-import java.util.Locale
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicLong
-import kotlin.coroutines.cancellation.CancellationException
 
 @HiltWorker
 class MediaDownloadWorker

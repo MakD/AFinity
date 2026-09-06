@@ -16,6 +16,10 @@ import com.makd.afinity.data.repository.AudiobookshelfAuthData
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.ServerUserToken
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.Base64
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
@@ -25,10 +29,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.util.Base64
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 private val Context.dataStore: DataStore<Preferences> by
     preferencesDataStore(name = "secure_settings")

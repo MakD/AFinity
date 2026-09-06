@@ -62,6 +62,9 @@ import com.makd.afinity.player.music.MusicProgressReporter
 import com.makd.afinity.player.music.MusicQueueManager
 import com.makd.afinity.player.music.RadioManager
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.concurrent.atomic.AtomicReference
+import javax.inject.Inject
+import kotlin.math.pow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -74,9 +77,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.util.concurrent.atomic.AtomicReference
-import javax.inject.Inject
-import kotlin.math.pow
 
 @UnstableApi
 @OptIn(UnstableApi::class)

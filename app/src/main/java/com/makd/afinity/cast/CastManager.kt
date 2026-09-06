@@ -23,6 +23,8 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -39,8 +41,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
 
 private const val DEFAULT_MAX_BITRATE = 16_000_000
 

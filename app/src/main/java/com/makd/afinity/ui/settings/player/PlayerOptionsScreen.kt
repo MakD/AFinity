@@ -103,12 +103,12 @@ import com.makd.afinity.ui.player.components.musicQualityLabel
 import com.makd.afinity.ui.player.components.settingsQualityLabel
 import com.makd.afinity.ui.settings.SettingsViewModel
 import dagger.hilt.android.EntryPointAccessors
+import java.io.File
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.SubtitlePlaybackMode
-import java.io.File
-import java.util.Locale
 
 private enum class PlaybackSection {
     VideoQuality,

@@ -19,6 +19,7 @@ import com.makd.afinity.util.logging.LogSignatures
 import com.makd.afinity.util.logging.RingBufferTree
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -30,7 +31,6 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
 @OptIn(FlowPreview::class)
 @HiltViewModel

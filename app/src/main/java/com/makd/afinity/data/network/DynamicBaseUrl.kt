@@ -1,8 +1,8 @@
 package com.makd.afinity.data.network
 
+import java.io.IOException
 import okhttp3.HttpUrl
 import okhttp3.Request
-import java.io.IOException
 
 internal fun normalizeDynamicBaseUrl(raw: String?): String? {
     if (raw.isNullOrBlank()) {

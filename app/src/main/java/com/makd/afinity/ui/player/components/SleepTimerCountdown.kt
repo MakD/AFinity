@@ -6,9 +6,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.delay
 import java.util.Locale
 import kotlin.math.abs
+import kotlinx.coroutines.delay
 
 @Composable
 fun rememberSleepTimerRemainingMs(endTimeMs: Long?): Long {

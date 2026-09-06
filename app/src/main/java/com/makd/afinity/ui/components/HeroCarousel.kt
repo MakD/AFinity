@@ -71,11 +71,11 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.navigation.LocalSkipServerImageResize
 import com.makd.afinity.ui.utils.bottomOverlap
+import java.util.Locale
 import kotlinx.coroutines.delay
 import mx.platacard.pagerindicator.PagerIndicatorOrientation
 import mx.platacard.pagerindicator.PagerWormIndicator
 import timber.log.Timber
-import java.util.Locale
 
 private val HeroMaxHeight = 560.dp
 private val HeroBottomOverlap = 40.dp

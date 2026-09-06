@@ -9,6 +9,9 @@ import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.di.ApplicationScope
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -19,9 +22,6 @@ import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.UserItemDataDto
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton

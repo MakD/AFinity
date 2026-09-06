@@ -6,8 +6,8 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.withUserData
 import com.makd.afinity.data.models.media.withUserDataPatch
 import com.makd.afinity.data.repository.media.MediaRepository
-import timber.log.Timber
 import java.util.UUID
+import timber.log.Timber
 
 suspend fun MediaChangeEvent.resolveChangedItems(
     mediaRepository: MediaRepository,

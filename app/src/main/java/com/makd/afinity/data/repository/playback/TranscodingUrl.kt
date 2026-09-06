@@ -1,9 +1,9 @@
 package com.makd.afinity.data.repository.playback
 
-import org.jellyfin.sdk.model.api.SubtitleDeliveryMethod
-import org.jellyfin.sdk.model.api.TranscodeReason
 import java.net.URLDecoder
 import java.net.URLEncoder
+import org.jellyfin.sdk.model.api.SubtitleDeliveryMethod
+import org.jellyfin.sdk.model.api.TranscodeReason
 
 object TranscodingUrl {
 

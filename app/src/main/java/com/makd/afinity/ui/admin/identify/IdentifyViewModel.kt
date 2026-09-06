@@ -7,12 +7,12 @@ import com.makd.afinity.data.models.admin.ExternalIdProvider
 import com.makd.afinity.data.models.admin.IdentifyResult
 import com.makd.afinity.data.repository.admin.AdminRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class IdentifyUiState(
     val searchName: String = "",

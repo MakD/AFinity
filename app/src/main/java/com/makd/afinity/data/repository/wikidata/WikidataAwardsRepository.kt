@@ -7,16 +7,16 @@ import com.makd.afinity.data.network.WikidataApiService
 import com.makd.afinity.data.network.WikidataAwardParser
 import com.makd.afinity.data.network.WikidataAwardQueries
 import com.makd.afinity.data.repository.DatabaseRepository
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
-import timber.log.Timber
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import timber.log.Timber
 
 @Singleton
 class WikidataAwardsRepository

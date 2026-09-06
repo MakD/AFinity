@@ -38,8 +38,8 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.utils.horizontalBleed
-import org.jellyfin.sdk.model.api.PersonKind
 import java.util.UUID
+import org.jellyfin.sdk.model.api.PersonKind
 
 private val RibbonAvatarSize = 56.dp
 private val RibbonItemWidth = 72.dp

@@ -1,10 +1,10 @@
 package com.makd.afinity.data.manager
 
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class PendingNavigationManager @Inject constructor() {

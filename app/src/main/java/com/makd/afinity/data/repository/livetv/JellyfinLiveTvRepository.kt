@@ -13,6 +13,11 @@ import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.di.NetworkModule
 import com.makd.afinity.util.MediaCapabilities
 import com.makd.afinity.util.redactUrl
+import java.time.LocalDateTime
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlin.time.Duration
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.operations.LiveTvApi
@@ -37,11 +42,6 @@ import org.jellyfin.sdk.model.api.SubtitleDeliveryMethod
 import org.jellyfin.sdk.model.api.SubtitleProfile
 import org.jellyfin.sdk.model.api.TranscodingProfile
 import timber.log.Timber
-import java.time.LocalDateTime
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
-import kotlin.time.Duration
 
 @Singleton
 class JellyfinLiveTvRepository

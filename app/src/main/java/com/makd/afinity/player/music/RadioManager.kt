@@ -5,6 +5,9 @@ import com.makd.afinity.data.models.music.RadioMode
 import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.data.models.music.RadioState
 import com.makd.afinity.data.repository.music.MusicRepository
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -15,9 +18,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 private const val MIN_UPCOMING_TRACKS = 5
 private const val INITIAL_BATCH_SIZE = 20

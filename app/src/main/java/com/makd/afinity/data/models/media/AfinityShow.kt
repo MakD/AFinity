@@ -4,11 +4,11 @@ import com.makd.afinity.data.models.extensions.toAfinityImages
 import com.makd.afinity.data.models.extensions.toAfinityPerson
 import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.tmdb.TmdbReview
+import java.time.LocalDateTime
+import java.util.UUID
 import org.jellyfin.sdk.model.DateTime
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.PlayAccess
-import java.time.LocalDateTime
-import java.util.UUID
 
 data class AfinityShow(
     override val id: UUID,

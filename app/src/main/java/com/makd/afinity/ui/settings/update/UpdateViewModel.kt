@@ -16,14 +16,14 @@ import com.makd.afinity.util.DateSkeleton
 import com.makd.afinity.util.localizedDateFormat
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.Date
+import java.util.Locale
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.Date
-import java.util.Locale
-import javax.inject.Inject
 
 @HiltViewModel
 class UpdateViewModel

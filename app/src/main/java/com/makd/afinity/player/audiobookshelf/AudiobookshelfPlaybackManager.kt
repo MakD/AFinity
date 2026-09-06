@@ -3,13 +3,13 @@ package com.makd.afinity.player.audiobookshelf
 import com.makd.afinity.data.models.audiobookshelf.AudioTrack
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class AudiobookshelfPlaybackManager @Inject constructor() {

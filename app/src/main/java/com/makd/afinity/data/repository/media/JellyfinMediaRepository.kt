@@ -50,6 +50,10 @@ import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -90,10 +94,6 @@ import org.jellyfin.sdk.model.api.SeriesStatus
 import org.jellyfin.sdk.model.api.SortOrder
 import org.jellyfin.sdk.model.api.VideoType
 import timber.log.Timber
-import java.io.File
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 private val RESUMABLE_ITEM_TYPES = listOf(BaseItemKind.MOVIE, BaseItemKind.EPISODE)
 

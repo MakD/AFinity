@@ -119,11 +119,11 @@ import com.makd.afinity.ui.utils.IntentUtils
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 import com.makd.afinity.ui.utils.verticalLayoutOffset
 import com.makd.afinity.util.rememberPreferencesRepository
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.MediaType
 import timber.log.Timber
-import java.util.UUID
 
 @Composable
 fun ItemDetailScreen(

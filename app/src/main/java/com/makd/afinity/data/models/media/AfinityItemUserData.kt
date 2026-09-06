@@ -4,8 +4,8 @@ import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.user.AfinityUserDataDto
-import org.jellyfin.sdk.model.api.UserItemDataDto
 import java.util.UUID
+import org.jellyfin.sdk.model.api.UserItemDataDto
 
 data class UserDataPatch(
     val played: Boolean? = null,

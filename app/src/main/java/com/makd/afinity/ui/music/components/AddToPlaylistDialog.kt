@@ -51,8 +51,8 @@ import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.ui.components.AfinitySwitch
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.components.AsyncImage
-import org.jellyfin.sdk.model.api.MediaType
 import java.util.UUID
+import org.jellyfin.sdk.model.api.MediaType
 
 private enum class DialogScreen {
     List,

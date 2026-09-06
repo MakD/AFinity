@@ -32,11 +32,11 @@ import coil3.request.crossfade
 import coil3.size.Size
 import com.makd.afinity.navigation.LocalSkipServerImageResize
 import com.vanniktech.blurhash.BlurHash
+import java.util.concurrent.Executors
+import kotlin.math.roundToInt
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.util.concurrent.Executors
-import kotlin.math.roundToInt
 
 internal const val IMAGE_CROSSFADE_MILLIS = 80
 

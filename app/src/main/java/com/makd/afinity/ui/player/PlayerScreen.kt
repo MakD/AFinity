@@ -60,10 +60,10 @@ import com.makd.afinity.ui.player.utils.KeepScreenOn
 import com.makd.afinity.ui.player.utils.PlayerSystemBarsController
 import com.makd.afinity.ui.player.utils.ScreenBrightnessController
 import io.github.peerless2012.ass.media.kt.withAssSupport
+import java.util.UUID
 import kotlinx.coroutines.flow.map
 import org.jellyfin.sdk.model.api.GroupStateType
 import timber.log.Timber
-import java.util.UUID
 
 @UnstableApi
 @Composable

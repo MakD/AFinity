@@ -6,8 +6,8 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.makd.afinity.data.database.entities.AbsDownloadEntity
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
-import kotlinx.coroutines.flow.Flow
 import java.util.UUID
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AbsDownloadDao {

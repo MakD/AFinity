@@ -9,13 +9,13 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.repository.DeletedItemsRepository
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Serializable private data class StringList(val items: List<String>)
 

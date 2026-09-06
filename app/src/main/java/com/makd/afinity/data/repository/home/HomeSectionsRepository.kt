@@ -33,6 +33,11 @@ import com.makd.afinity.data.repository.PeopleRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlin.random.Random
+import kotlin.time.Duration.Companion.hours
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -55,11 +60,6 @@ import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.PersonKind
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
-import kotlin.random.Random
-import kotlin.time.Duration.Companion.hours
 
 @Singleton
 class HomeSectionsRepository

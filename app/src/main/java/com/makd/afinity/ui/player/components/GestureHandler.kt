@@ -22,11 +22,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.sign
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private enum class GestureType {
     BRIGHTNESS,
@@ -201,11 +201,14 @@ fun GestureHandler(
                                                 when {
                                                     dragStartOffset.x < leftZoneWidth ->
                                                         GestureType.BRIGHTNESS
+
                                                     dragStartOffset.x > rightZoneStart ->
                                                         GestureType.VOLUME
+
                                                     else -> null
                                                 }
                                             }
+
                                             currentIsSeekEnabled -> GestureType.SEEK
                                             else -> null
                                         }
@@ -250,6 +253,7 @@ fun GestureHandler(
                                     val normalizedDelta = totalHorizontalDelta / componentWidth
                                     currentOnSeekGesture(normalizedDelta)
                                 }
+
                                 null -> {}
                             }
                         },

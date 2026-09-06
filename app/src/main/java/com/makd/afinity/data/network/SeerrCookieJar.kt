@@ -1,11 +1,11 @@
 package com.makd.afinity.data.network
 
-import okhttp3.Cookie
-import okhttp3.CookieJar
-import okhttp3.HttpUrl
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
+import okhttp3.Cookie
+import okhttp3.CookieJar
+import okhttp3.HttpUrl
 
 @Singleton
 class SeerrCookieJar @Inject constructor() : CookieJar {

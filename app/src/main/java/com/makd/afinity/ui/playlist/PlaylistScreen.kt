@@ -88,10 +88,10 @@ import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
+import java.util.UUID
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
-import java.util.UUID
 
 @UnstableApi
 @Composable

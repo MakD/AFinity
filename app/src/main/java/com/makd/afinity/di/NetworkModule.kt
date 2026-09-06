@@ -24,6 +24,15 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import java.io.File
+import java.io.IOException
+import java.net.Inet4Address
+import java.util.UUID
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import javax.inject.Qualifier
+import javax.inject.Singleton
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -50,15 +59,6 @@ import org.jellyfin.sdk.model.DeviceInfo
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import timber.log.Timber
-import java.io.File
-import java.io.IOException
-import java.net.Inet4Address
-import java.util.UUID
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import javax.inject.Qualifier
-import javax.inject.Singleton
-import kotlin.time.Duration.Companion.seconds
 
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class DownloadClient
 

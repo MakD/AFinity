@@ -2,6 +2,10 @@ package com.makd.afinity.data.syncplay
 
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.repository.syncplay.SyncPlayRepository
+import java.time.ZoneOffset
+import java.util.concurrent.atomic.AtomicLong
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -13,10 +17,6 @@ import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.operations.SystemApi
 import org.jellyfin.sdk.model.DateTime
 import timber.log.Timber
-import java.time.ZoneOffset
-import java.util.concurrent.atomic.AtomicLong
-import javax.inject.Inject
-import javax.inject.Singleton
 
 private const val PING_ROUNDS = 4
 private const val RESYNC_INTERVAL_MS = 30_000L

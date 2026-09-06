@@ -6,9 +6,9 @@ import com.makd.afinity.data.models.extensions.toAfinityChannel
 import com.makd.afinity.data.models.extensions.toAfinityFolder
 import com.makd.afinity.data.models.extensions.toAfinityVideo
 import com.makd.afinity.data.models.extensions.toAfinityVideoPlaylist
+import java.util.UUID
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
-import java.util.UUID
 
 interface AfinityItem : AfinityUserDataOwner {
     override val id: UUID

@@ -8,11 +8,11 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.media.MediaRepository
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 
 data class ItemRatings(
     val mdbRatings: List<MdbListRating> = emptyList(),

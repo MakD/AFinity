@@ -35,6 +35,10 @@ import com.makd.afinity.data.workers.MediaDownloadWorker
 import com.makd.afinity.data.workers.SubtitleDownloadWorker
 import com.makd.afinity.data.workers.TrickplayDownloadWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -46,10 +50,6 @@ import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
-import java.io.File
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class JellyfinDownloadRepository

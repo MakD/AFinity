@@ -10,6 +10,9 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.syncplay.SyncPlayGroupUpdate
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.util.ItemIds
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -48,9 +51,6 @@ import org.jellyfin.sdk.model.api.TaskInfo
 import org.jellyfin.sdk.model.api.TaskState
 import org.jellyfin.sdk.model.api.UserDataChangedMessage
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class JellyfinWebSocketManager

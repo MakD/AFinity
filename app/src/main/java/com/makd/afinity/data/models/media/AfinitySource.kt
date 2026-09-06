@@ -2,11 +2,11 @@ package com.makd.afinity.data.models.media
 
 import com.makd.afinity.data.database.dao.ServerDatabaseDao
 import com.makd.afinity.data.database.entities.AfinitySourceDto
+import java.io.File
+import java.util.UUID
 import org.jellyfin.sdk.model.api.MediaProtocol
 import org.jellyfin.sdk.model.api.MediaSourceInfo
 import org.jellyfin.sdk.model.api.MediaStreamType
-import java.io.File
-import java.util.UUID
 
 data class AfinitySource(
     val id: String,

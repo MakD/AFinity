@@ -30,6 +30,7 @@ import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.util.GenreDuotoneColorGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -44,7 +45,6 @@ import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withPermit
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltViewModel
 class RequestsViewModel

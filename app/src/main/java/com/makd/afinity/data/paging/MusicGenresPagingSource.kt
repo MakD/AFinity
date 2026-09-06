@@ -4,8 +4,8 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.makd.afinity.data.models.music.AfinityMusicGenre
 import com.makd.afinity.data.repository.music.MusicRepository
-import timber.log.Timber
 import java.util.UUID
+import timber.log.Timber
 
 class MusicGenresPagingSource(
     private val musicRepository: MusicRepository,

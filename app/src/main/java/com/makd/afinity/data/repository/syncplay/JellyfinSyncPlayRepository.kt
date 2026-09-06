@@ -3,6 +3,8 @@ package com.makd.afinity.data.repository.syncplay
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.syncplay.SyncPlayState
 import com.makd.afinity.data.syncplay.SyncPlayGroupEvent
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,8 +23,6 @@ import org.jellyfin.sdk.model.api.PlayRequestDto
 import org.jellyfin.sdk.model.api.ReadyRequestDto
 import org.jellyfin.sdk.model.api.SeekRequestDto
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class JellyfinSyncPlayRepository @Inject constructor(private val sessionManager: SessionManager) :

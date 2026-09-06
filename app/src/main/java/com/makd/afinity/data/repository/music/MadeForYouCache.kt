@@ -8,12 +8,12 @@ import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MadeForYouMixKind
 import com.makd.afinity.data.models.music.MadeForYouSlot
 import com.makd.afinity.data.repository.home.HomeCacheRepository
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import timber.log.Timber
 
 private const val LAYOUT_VERSION = 1
 

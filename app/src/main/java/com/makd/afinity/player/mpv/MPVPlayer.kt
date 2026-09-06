@@ -34,14 +34,14 @@ import androidx.media3.common.util.ListenerSet
 import androidx.media3.common.util.Size
 import androidx.media3.common.util.Util
 import dev.jdtech.mpv.MPVLib
-import org.json.JSONArray
-import org.json.JSONException
-import org.json.JSONObject
-import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.concurrent.CopyOnWriteArraySet
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
+import timber.log.Timber
 
 @androidx.media3.common.util.UnstableApi
 class MPVPlayer(

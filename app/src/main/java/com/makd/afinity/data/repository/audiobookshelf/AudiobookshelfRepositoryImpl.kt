@@ -49,6 +49,12 @@ import com.makd.afinity.data.repository.SeriesItemsResult
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Lazy
+import java.io.File
+import java.io.IOException
+import java.util.Locale
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -70,12 +76,6 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import timber.log.Timber
-import java.io.File
-import java.io.IOException
-import java.util.Locale
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class AudiobookshelfRepositoryImpl

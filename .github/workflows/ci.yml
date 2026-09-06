@@ -4,7 +4,6 @@ on:
   push:
   pull_request:
 
-# A burst of commits on the same ref costs one build, not one per commit.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -31,14 +30,13 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      # Run as its own step so the failing check is obvious in the UI.
-      # ktfmt is already configured in the root build (kotlinLangStyle).
-      # Fix locally with: ./gradlew ktfmtFormat
       - name: Check formatting
         run: ./gradlew ktfmtCheck
 
-      # always() so a formatting failure still tells you whether it compiles —
-      # one push surfaces both problems instead of two round trips.
       - name: Compile
         if: always()
         run: ./gradlew compileDebugKotlin
+
+      - name: Unit tests
+        if: always()
+        run: ./gradlew testDebugUnitTest

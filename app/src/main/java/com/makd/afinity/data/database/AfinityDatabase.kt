@@ -78,6 +78,8 @@ import com.makd.afinity.data.models.server.ServerAddress
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.models.user.User
 
+const val AFINITY_DB_VERSION = 78
+
 @Database(
     entities =
         [
@@ -126,8 +128,8 @@ import com.makd.afinity.data.models.user.User
             ServerStorageCacheEntity::class,
             WikidataAwardsCacheEntity::class,
         ],
-    version = 78,
-    exportSchema = false,
+    version = AFINITY_DB_VERSION,
+    exportSchema = true,
 )
 @TypeConverters(AfinityTypeConverters::class)
 abstract class AfinityDatabase : RoomDatabase() {

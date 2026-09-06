@@ -73,9 +73,9 @@ import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.player.PlayerViewModel
 import com.makd.afinity.ui.player.components.PlaybackSpeedDialog
-import org.jellyfin.sdk.model.api.MediaStreamType
 import java.util.Locale
 import kotlin.math.abs
+import org.jellyfin.sdk.model.api.MediaStreamType
 
 data class CastBitrateOption(val label: String, val bitrate: Int)
 

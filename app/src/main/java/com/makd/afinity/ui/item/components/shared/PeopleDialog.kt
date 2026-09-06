@@ -32,8 +32,8 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.ui.components.AsyncImage
-import org.jellyfin.sdk.model.api.PersonKind
 import java.util.UUID
+import org.jellyfin.sdk.model.api.PersonKind
 
 @Composable
 fun PeopleDialog(

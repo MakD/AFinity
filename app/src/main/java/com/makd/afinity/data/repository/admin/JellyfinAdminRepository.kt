@@ -8,6 +8,9 @@ import com.makd.afinity.data.models.admin.EditablePerson
 import com.makd.afinity.data.models.admin.ExternalIdProvider
 import com.makd.afinity.data.models.admin.IdentifyResult
 import com.makd.afinity.data.models.admin.ItemImage
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.exception.ApiClientException
@@ -30,9 +33,6 @@ import org.jellyfin.sdk.model.api.RemoteSearchResult
 import org.jellyfin.sdk.model.api.SeriesInfo
 import org.jellyfin.sdk.model.api.SeriesInfoRemoteSearchQuery
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class JellyfinAdminRepository

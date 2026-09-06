@@ -3,6 +3,9 @@ package com.makd.afinity.data.sync
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.di.ApplicationScope
+import java.util.concurrent.atomic.AtomicBoolean
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
@@ -10,9 +13,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.concurrent.atomic.AtomicBoolean
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class PendingJellyfinSync

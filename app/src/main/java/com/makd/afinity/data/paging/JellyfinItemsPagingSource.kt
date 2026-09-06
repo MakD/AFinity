@@ -10,8 +10,8 @@ import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.data.models.media.toItemFilterCriteria
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
-import timber.log.Timber
 import java.util.UUID
+import timber.log.Timber
 
 class JellyfinItemsPagingSource(
     private val mediaRepository: MediaRepository,

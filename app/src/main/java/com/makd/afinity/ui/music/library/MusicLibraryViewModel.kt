@@ -37,6 +37,9 @@ import com.makd.afinity.data.repository.music.MadeForYouCache
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.store.ItemStore
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import javax.inject.Inject
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -59,9 +62,6 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 import timber.log.Timber
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
-import javax.inject.Inject
 
 enum class MusicSortField(@StringRes val labelRes: Int, val sortBy: ItemSortBy) {
     Name(R.string.music_sort_field_name, ItemSortBy.SORT_NAME),

@@ -5,12 +5,12 @@ import com.makd.afinity.data.models.server.ServerStorage
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.ui.settings.servers.JellyfinStats
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.GeneralCommandType
 import org.jellyfin.sdk.model.api.PlaystateCommand
 import org.jellyfin.sdk.model.api.SessionInfoDto
 import org.jellyfin.sdk.model.api.TaskInfo
-import java.util.UUID
 
 interface JellyfinRepository {
 

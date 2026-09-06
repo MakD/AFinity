@@ -30,6 +30,9 @@ import com.makd.afinity.util.isLocalAddress
 import com.makd.afinity.util.isTailscaleAddress
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Provider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -48,9 +51,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.doubleOrNull
 import org.jellyfin.sdk.model.api.TaskInfo
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Provider
 
 data class ServerManagementState(
     val servers: List<ServerWithUserCount> = emptyList(),

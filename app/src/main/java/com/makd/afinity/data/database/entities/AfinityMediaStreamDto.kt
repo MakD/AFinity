@@ -3,8 +3,8 @@ package com.makd.afinity.data.database.entities
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.makd.afinity.data.models.media.AfinityMediaStream
-import org.jellyfin.sdk.model.api.MediaStreamType
 import java.util.UUID
+import org.jellyfin.sdk.model.api.MediaStreamType
 
 @Entity(tableName = "mediastreams")
 data class AfinityMediaStreamDto(

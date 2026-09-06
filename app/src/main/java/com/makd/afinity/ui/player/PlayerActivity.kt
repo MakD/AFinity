@@ -37,9 +37,9 @@ import com.makd.afinity.navigation.LocalShowAwards
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.theme.AFinityTheme
 import dagger.hilt.android.AndroidEntryPoint
-import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
+import timber.log.Timber
 
 @UnstableApi
 @AndroidEntryPoint

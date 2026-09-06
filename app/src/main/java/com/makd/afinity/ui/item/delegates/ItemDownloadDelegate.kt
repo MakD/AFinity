@@ -7,10 +7,10 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.data.storage.StorageVolumeInfo
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 class ItemDownloadDelegate
 @Inject

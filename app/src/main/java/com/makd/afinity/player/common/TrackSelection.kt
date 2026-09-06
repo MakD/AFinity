@@ -1,8 +1,8 @@
 package com.makd.afinity.player.common
 
 import com.makd.afinity.data.models.media.AfinityMediaStream
-import org.jellyfin.sdk.model.api.SubtitlePlaybackMode
 import java.util.Locale
+import org.jellyfin.sdk.model.api.SubtitlePlaybackMode
 
 data class TrackSelectionResult(val audioPosition: Int?, val subtitlePosition: Int)
 

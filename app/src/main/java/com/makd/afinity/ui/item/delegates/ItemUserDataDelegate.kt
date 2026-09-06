@@ -9,10 +9,10 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 class ItemUserDataDelegate
 @Inject

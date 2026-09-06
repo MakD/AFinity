@@ -2,6 +2,8 @@ package com.makd.afinity.data.manager
 
 import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import com.makd.afinity.di.ApplicationScope
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -11,8 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.GeneralCommandType
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
 
 data class RemoteMessage(val header: String?, val text: String)
 

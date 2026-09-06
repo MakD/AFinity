@@ -6,6 +6,9 @@ import com.makd.afinity.data.models.media.UserDataPatch
 import com.makd.afinity.data.models.media.patchedWith
 import com.makd.afinity.data.models.media.patchedWithUserData
 import com.makd.afinity.data.models.media.withUserDataFrom
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,9 +18,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import org.jellyfin.sdk.model.api.UserItemDataDto
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class ItemStore @Inject constructor() {

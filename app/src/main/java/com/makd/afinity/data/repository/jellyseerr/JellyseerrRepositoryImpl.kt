@@ -46,6 +46,12 @@ import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Lazy
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -67,12 +73,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import retrofit2.Response
 import timber.log.Timber
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class JellyseerrRepositoryImpl

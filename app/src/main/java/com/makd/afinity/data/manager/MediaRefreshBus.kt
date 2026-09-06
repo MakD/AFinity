@@ -1,10 +1,10 @@
 package com.makd.afinity.data.manager
 
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import javax.inject.Inject
-import javax.inject.Singleton
 
 enum class RefreshTrigger {
     USER_DATA_CHANGED,

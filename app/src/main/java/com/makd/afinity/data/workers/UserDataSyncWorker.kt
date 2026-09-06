@@ -12,6 +12,9 @@ import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.time.Instant
+import java.time.ZoneId
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
@@ -19,9 +22,6 @@ import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.operations.UserDataApi
 import org.jellyfin.sdk.model.DateTime
 import timber.log.Timber
-import java.time.Instant
-import java.time.ZoneId
-import java.util.UUID
 
 @HiltWorker
 class UserDataSyncWorker

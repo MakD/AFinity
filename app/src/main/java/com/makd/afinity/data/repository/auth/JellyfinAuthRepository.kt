@@ -9,6 +9,9 @@ import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.util.forUser
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
@@ -30,9 +33,6 @@ import org.jellyfin.sdk.model.api.ClientCapabilitiesDto
 import org.jellyfin.sdk.model.api.GeneralCommandType
 import org.jellyfin.sdk.model.api.MediaType
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 internal val SUPPORTED_REMOTE_COMMANDS =
     listOf(

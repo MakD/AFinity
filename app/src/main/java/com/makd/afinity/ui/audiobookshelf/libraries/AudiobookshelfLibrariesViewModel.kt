@@ -15,6 +15,7 @@ import com.makd.afinity.data.websocket.AbsSocketEvent
 import com.makd.afinity.data.websocket.AudiobookshelfSocketManager
 import com.makd.afinity.data.websocket.WebSocketState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -37,7 +38,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltViewModel
 class AudiobookshelfLibrariesViewModel

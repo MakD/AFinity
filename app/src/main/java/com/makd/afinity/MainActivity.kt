@@ -50,9 +50,9 @@ import com.makd.afinity.ui.components.RemoteMessagePill
 import com.makd.afinity.ui.theme.AFinityTheme
 import com.makd.afinity.ui.theme.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {

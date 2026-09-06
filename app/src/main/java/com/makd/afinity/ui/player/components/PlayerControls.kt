@@ -109,13 +109,13 @@ import com.makd.afinity.ui.item.components.shared.omdbAwardsHeadline
 import com.makd.afinity.ui.livetv.components.LiveBadge
 import com.makd.afinity.ui.player.PlayerViewModel
 import com.makd.afinity.ui.player.toLocalizedLanguageName
+import java.util.Date
+import java.util.Locale
+import kotlin.math.abs
 import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.PersonKind
 import org.jellyfin.sdk.model.api.PlayMethod
-import java.util.Date
-import java.util.Locale
-import kotlin.math.abs
 
 data class AudioStreamOption(
     val stream: AfinityMediaStream,

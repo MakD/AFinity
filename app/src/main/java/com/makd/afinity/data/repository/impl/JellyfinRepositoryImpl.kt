@@ -18,6 +18,9 @@ import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.ui.settings.servers.JellyfinStats
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
@@ -38,9 +41,6 @@ import org.jellyfin.sdk.model.api.SessionInfoDto
 import org.jellyfin.sdk.model.api.SystemStorageDto
 import org.jellyfin.sdk.model.api.TaskInfo
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class JellyfinRepositoryImpl

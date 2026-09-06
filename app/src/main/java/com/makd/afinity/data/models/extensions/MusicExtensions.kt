@@ -6,10 +6,10 @@ import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
+import java.util.UUID
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.ImageFormat
 import org.jellyfin.sdk.model.api.ImageType
-import java.util.UUID
 
 fun List<AfinityTrack>.toRecentlyPlayedAlbums(limit: Int): List<AfinityAlbum> {
     val seen = mutableSetOf<UUID>()

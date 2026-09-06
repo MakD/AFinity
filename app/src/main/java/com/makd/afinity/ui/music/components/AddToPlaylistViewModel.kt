@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.repository.music.MusicRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,8 +14,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.MediaType
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
 
 data class AddToPlaylistState(
     val playlists: List<AfinityPlaylist> = emptyList(),

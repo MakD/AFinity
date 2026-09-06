@@ -11,11 +11,11 @@ import com.makd.afinity.data.models.music.toAfinityLyricLine
 import com.makd.afinity.data.repository.DatabaseRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.operations.LyricApi
 import timber.log.Timber
-import java.util.UUID
 
 @HiltWorker
 class LyricsDownloadWorker

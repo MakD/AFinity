@@ -13,10 +13,10 @@ import com.makd.afinity.R
 import com.makd.afinity.data.workers.DownloadActionReceiver
 import com.makd.afinity.util.formatFileSize
 import dagger.hilt.android.qualifiers.ApplicationContext
-import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import timber.log.Timber
 
 @Singleton
 class DownloadNotificationManager

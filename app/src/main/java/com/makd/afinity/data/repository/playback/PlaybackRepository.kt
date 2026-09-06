@@ -2,11 +2,11 @@ package com.makd.afinity.data.repository.playback
 
 import com.makd.afinity.data.models.player.StreamDecision
 import com.makd.afinity.data.models.player.VideoQuality
+import java.util.UUID
 import org.jellyfin.sdk.model.api.DeviceProfile
 import org.jellyfin.sdk.model.api.MediaSourceInfo
 import org.jellyfin.sdk.model.api.PlaybackInfoResponse
 import org.jellyfin.sdk.model.api.TranscodingInfo
-import java.util.UUID
 
 interface PlaybackRepository {
 

@@ -15,6 +15,7 @@ import com.makd.afinity.data.syncplay.SyncPlayRawWebSocket
 import com.makd.afinity.data.syncplay.SyncPlayTimeSyncEngine
 import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -36,7 +37,6 @@ import org.jellyfin.sdk.model.api.PlayQueueUpdate
 import org.jellyfin.sdk.model.api.SendCommand
 import org.jellyfin.sdk.model.api.SendCommandType
 import timber.log.Timber
-import javax.inject.Inject
 
 fun interface SyncPlayInterceptor {
     fun handle(event: PlayerEvent): Boolean

@@ -15,6 +15,9 @@ import io.socket.client.IO
 import io.socket.client.Manager
 import io.socket.client.Socket
 import io.socket.engineio.client.transports.WebSocket
+import java.net.URI
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -32,9 +35,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import timber.log.Timber
-import java.net.URI
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Serializable
 private data class AbsProgressEventPayload(@SerialName("data") val data: MediaProgress? = null)

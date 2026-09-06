@@ -8,10 +8,10 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import dagger.hilt.android.qualifiers.ApplicationContext
-import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import timber.log.Timber
 
 @Singleton
 class UpdateScheduler @Inject constructor(@param:ApplicationContext private val context: Context) {

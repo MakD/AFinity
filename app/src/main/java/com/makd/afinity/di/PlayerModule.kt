@@ -14,10 +14,10 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.runBlocking
-import timber.log.Timber
 import java.io.File
 import javax.inject.Singleton
+import kotlinx.coroutines.runBlocking
+import timber.log.Timber
 
 @UnstableApi
 @Module

@@ -12,6 +12,10 @@ import com.makd.afinity.di.ProberClient
 import com.makd.afinity.util.LocalNetworkPermission
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Provider
+import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,10 +43,6 @@ import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.operations.SystemApi
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Provider
-import javax.inject.Singleton
 
 @OptIn(FlowPreview::class)
 @Singleton

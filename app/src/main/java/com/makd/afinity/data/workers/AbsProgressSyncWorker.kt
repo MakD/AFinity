@@ -10,10 +10,10 @@ import com.makd.afinity.data.repository.audiobookshelf.AbsProgressSyncScheduler
 import dagger.Lazy
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.util.UUID
 
 @HiltWorker
 class AbsProgressSyncWorker

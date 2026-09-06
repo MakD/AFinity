@@ -5,9 +5,9 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityPersonImage
+import java.util.UUID
 import kotlinx.serialization.Serializable
 import org.jellyfin.sdk.model.api.PersonKind
-import java.util.UUID
 
 @Serializable
 data class CachedPersonWithCount(

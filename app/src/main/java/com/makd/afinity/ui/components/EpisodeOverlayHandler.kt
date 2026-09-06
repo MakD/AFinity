@@ -19,8 +19,8 @@ import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.item.components.QualitySelectionDialog
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.util.rememberItemDownloadDelegate
-import kotlinx.coroutines.delay
 import java.util.UUID
+import kotlinx.coroutines.delay
 
 @Composable
 fun EpisodeOverlayHandler(

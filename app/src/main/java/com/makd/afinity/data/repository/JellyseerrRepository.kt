@@ -23,10 +23,10 @@ import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import com.makd.afinity.data.models.jellyseerr.WatchProviderDetails
 import com.makd.afinity.data.models.jellyseerr.WatchProviderRegion
 import com.makd.afinity.data.models.server.AddressCheck
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import java.util.UUID
 
 data class RequestEvent(val request: JellyseerrRequest)
 

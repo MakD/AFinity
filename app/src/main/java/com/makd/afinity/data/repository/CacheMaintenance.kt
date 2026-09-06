@@ -8,13 +8,13 @@ import com.makd.afinity.data.repository.home.HomeSectionsRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.di.GitHubClient
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import timber.log.Timber
-import java.io.File
-import javax.inject.Inject
-import javax.inject.Singleton
 
 private const val EXO_CACHE_DIR = "exo_media_cache"
 private const val HTTP_CACHE_DIR = "http_cache"

@@ -107,6 +107,9 @@ import io.github.peerless2012.ass.media.kt.withAssMkvSupport
 import io.github.peerless2012.ass.media.kt.withAssSupport
 import io.github.peerless2012.ass.media.parser.AssSubtitleParserFactory
 import io.github.peerless2012.ass.media.type.AssRenderType
+import java.util.Locale
+import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
@@ -131,9 +134,6 @@ import org.jellyfin.sdk.model.api.SubtitlePlaybackMode
 import org.jellyfin.sdk.model.api.TranscodeReason
 import org.jellyfin.sdk.model.api.TranscodingInfo
 import timber.log.Timber
-import java.util.Locale
-import java.util.UUID
-import javax.inject.Inject
 
 private const val MAX_PENDING_TRACK_ATTEMPTS = 10
 private const val TICKS_PER_MILLISECOND = 10_000L

@@ -6,6 +6,11 @@ import android.net.nsd.NsdServiceInfo
 import android.net.wifi.WifiManager
 import com.makd.afinity.util.LocalNetworkPermission
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.net.Inet4Address
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executor
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -14,11 +19,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.net.Inet4Address
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executor
-import javax.inject.Inject
-import javax.inject.Singleton
 
 object AfinityServiceTypes {
     const val JELLYFIN = "_jellyfin._tcp"

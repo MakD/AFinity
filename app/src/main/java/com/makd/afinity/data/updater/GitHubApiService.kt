@@ -2,14 +2,14 @@ package com.makd.afinity.data.updater
 
 import com.makd.afinity.data.updater.models.GitHubRelease
 import com.makd.afinity.di.GitHubClient
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class GitHubApiService

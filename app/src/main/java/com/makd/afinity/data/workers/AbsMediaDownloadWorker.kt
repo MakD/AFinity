@@ -32,6 +32,9 @@ import com.makd.afinity.util.formatFileSize
 import dagger.Lazy
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.io.File
+import java.io.FileOutputStream
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
@@ -39,9 +42,6 @@ import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import timber.log.Timber
-import java.io.File
-import java.io.FileOutputStream
-import java.util.UUID
 
 @HiltWorker
 class AbsMediaDownloadWorker
