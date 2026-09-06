@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.player.components
 
+import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -45,6 +46,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.player.SLEEP_TIMER_EXTEND_MINUTES
@@ -54,6 +56,7 @@ import com.makd.afinity.ui.player.PlayerViewModel
 
 private val SLEEP_TIMER_DURATION_OPTIONS = listOf(5, 15, 30, 45, 60, 90)
 
+@OptIn(UnstableApi::class)
 @Composable
 fun SleepTimerPanel(
     uiState: PlayerViewModel.PlayerUiState,
@@ -86,6 +89,7 @@ fun SleepTimerPanel(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
                     ) {}
+                    .playerOverlayInsets()
                     .widthIn(min = 340.dp, max = 560.dp),
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
@@ -281,7 +285,11 @@ fun SleepTimerExtendPrompt(
 
     Column(modifier = modifier, horizontalAlignment = Alignment.End) {
         Text(
-            text = stringResource(R.string.player_sleep_timer_ends_in, formatSleepCountdown(remainingMs)),
+            text =
+                stringResource(
+                    R.string.player_sleep_timer_ends_in,
+                    formatSleepCountdown(remainingMs),
+                ),
             style = MaterialTheme.typography.labelMedium,
             color = Color.White.copy(alpha = 0.78f),
         )
@@ -336,6 +344,7 @@ fun SleepTimerExtendPrompt(
     }
 }
 
+@OptIn(UnstableApi::class)
 @Composable
 fun SleepTimerEndedOverlay(
     uiState: PlayerViewModel.PlayerUiState,

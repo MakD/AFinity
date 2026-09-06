@@ -73,6 +73,8 @@ import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import java.util.Locale
 import java.util.UUID
 
+private const val PLAYED_FRACTION = 0.9f
+
 @Composable
 fun EpisodeSwitcher(
     episodes: List<AfinityItem>,
@@ -82,6 +84,8 @@ fun EpisodeSwitcher(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     collectionName: String? = null,
+    currentPositionMs: Long = 0L,
+    currentDurationMs: Long = 0L,
 ) {
     val displayEpisodes = episodes
 
@@ -144,6 +148,7 @@ fun EpisodeSwitcher(
                 modifier =
                     Modifier.fillMaxHeight()
                         .widthIn(min = 380.dp, max = 450.dp)
+                        .playerOverlayInsets()
                         .padding(16.dp)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
@@ -237,6 +242,11 @@ fun EpisodeSwitcher(
                                 partNumber = partInfoMap[index]?.second,
                                 isCurrentlyPlaying = index == activeEpisodeIndex,
                                 isPlaying = isPlaying,
+                                liveProgress =
+                                    if (index == activeEpisodeIndex && currentDurationMs > 0L) {
+                                        (currentPositionMs.toFloat() / currentDurationMs)
+                                            .coerceIn(0f, 1f)
+                                    } else null,
                                 onClick = { onEpisodeClick(item.id) },
                             )
                         }
@@ -254,6 +264,7 @@ private fun EpisodeSwitcherCard(
     isPlaying: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    liveProgress: Float? = null,
     parentItem: AfinityItem? = null,
     partNumber: Int? = null,
 ) {
@@ -323,7 +334,10 @@ private fun EpisodeSwitcherCard(
                         )
             )
 
-            if (episode.played) {
+            val watched =
+                episode.played || (liveProgress != null && liveProgress >= PLAYED_FRACTION)
+
+            if (watched) {
                 Box(
                     modifier =
                         Modifier.align(Alignment.TopEnd)
@@ -341,18 +355,19 @@ private fun EpisodeSwitcherCard(
                 }
             }
 
-            if (episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0) {
-                val progress =
+            val storedProgress =
+                if (episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0) {
                     episode.playbackPositionTicks.toFloat() / episode.runtimeTicks.toFloat()
-                if (progress > 0f && progress < 0.95f) {
-                    LinearProgressIndicator(
-                        progress = { progress },
-                        modifier =
-                            Modifier.fillMaxWidth().height(3.dp).align(Alignment.BottomCenter),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = Color.White.copy(alpha = 0.2f),
-                    )
-                }
+                } else null
+            val progress = liveProgress ?: storedProgress
+
+            if (!watched && progress != null && progress > 0f && progress < 0.95f) {
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.fillMaxWidth().height(3.dp).align(Alignment.BottomCenter),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = Color.White.copy(alpha = 0.2f),
+                )
             }
 
             if (episode.runtimeTicks > 0) {

@@ -68,7 +68,7 @@ fun PlaybackSpeedDialog(
             PlaybackSpeedPanel(
                 currentSpeed = currentSpeed,
                 onSpeedChange = onSpeedChange,
-                modifier = Modifier.fillMaxWidth(cardWidthFraction),
+                modifier = Modifier.fillMaxWidth(cardWidthFraction).playerOverlayInsets(),
             )
         }
     }

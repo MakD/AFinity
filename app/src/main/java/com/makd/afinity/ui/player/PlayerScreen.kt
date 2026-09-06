@@ -55,6 +55,7 @@ import com.makd.afinity.ui.player.components.SyncPlayGroupSheet
 import com.makd.afinity.ui.player.components.SyncPlayWaitingOverlay
 import com.makd.afinity.ui.player.components.TrickplayPreview
 import com.makd.afinity.ui.player.components.VersionPickerSheet
+import com.makd.afinity.ui.player.components.playerOverlayInsets
 import com.makd.afinity.ui.player.utils.KeepScreenOn
 import com.makd.afinity.ui.player.utils.PlayerSystemBarsController
 import com.makd.afinity.ui.player.utils.ScreenBrightnessController
@@ -424,6 +425,7 @@ fun PlayerScreen(
                     Box(
                         modifier =
                             Modifier.align(Alignment.BottomEnd)
+                                .playerOverlayInsets()
                                 .padding(bottom = 110.dp, end = 56.dp)
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },

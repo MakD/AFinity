@@ -224,35 +224,33 @@ fun PlayerControls(
                         }
                 }
 
-            val streams =
-                selectableStreams.map { stream ->
-                    val localizedLang =
-                        stream.localizedLanguage?.takeIf { it.isNotBlank() }
-                            ?: if (stream.language.isNotEmpty() && stream.language != "und") {
-                                stream.language.toLocalizedLanguageName()
-                                    ?: stream.language.uppercase()
-                            } else {
-                                unknownLang
-                            }
-                    val channelStr = formatAudioChannels(stream)
-                    val profileStr = prettyAudioProfile(stream.profile, stream.codec)
-                    val displayName = buildString {
-                        append(localizedLang)
-                        if (stream.isOriginal) {
-                            append(" [${stream.localizedOriginal ?: trackTags.original}]")
+            val streams = selectableStreams.map { stream ->
+                val localizedLang =
+                    stream.localizedLanguage?.takeIf { it.isNotBlank() }
+                        ?: if (stream.language.isNotEmpty() && stream.language != "und") {
+                            stream.language.toLocalizedLanguageName() ?: stream.language.uppercase()
+                        } else {
+                            unknownLang
                         }
-                        if (stream.codec.isNotBlank()) append(" • ${stream.codec.uppercase()}")
-                        if (channelStr != null) append(" $channelStr")
-                        if (profileStr != null) append(" • $profileStr")
+                val channelStr = formatAudioChannels(stream)
+                val profileStr = prettyAudioProfile(stream.profile, stream.codec)
+                val displayName = buildString {
+                    append(localizedLang)
+                    if (stream.isOriginal) {
+                        append(" [${stream.localizedOriginal ?: trackTags.original}]")
                     }
-                    AudioStreamOption(
-                        stream = stream,
-                        displayName = displayName,
-                        isDefault = stream.isDefault,
-                        position = stream.index,
-                        secondaryName = trackTitle(stream, null, localizedLang),
-                    )
+                    if (stream.codec.isNotBlank()) append(" • ${stream.codec.uppercase()}")
+                    if (channelStr != null) append(" $channelStr")
+                    if (profileStr != null) append(" • $profileStr")
                 }
+                AudioStreamOption(
+                    stream = stream,
+                    displayName = displayName,
+                    isDefault = stream.isDefault,
+                    position = stream.index,
+                    secondaryName = trackTitle(stream, null, localizedLang),
+                )
+            }
             assertAudioOptions(streams)
         }
 
@@ -786,6 +784,8 @@ fun PlayerControls(
                 currentIndex = switcherIndex,
                 isPlaying = uiState.isPlaying,
                 collectionName = playlistCollectionName,
+                currentPositionMs = uiState.currentPosition,
+                currentDurationMs = uiState.duration,
                 onEpisodeClick = { episodeId ->
                     onJumpToEpisode(episodeId)
                     showEpisodeSwitcher = false
@@ -810,9 +810,7 @@ fun PlayerControls(
                             .windowInsetsPadding(
                                 WindowInsets.safeDrawing
                                     .only(WindowInsetsSides.Horizontal)
-                                    .union(
-                                        WindowInsets.displayCutout.only(WindowInsetsSides.Top)
-                                    )
+                                    .union(WindowInsets.displayCutout.only(WindowInsetsSides.Top))
                             )
                             .padding(top = 72.dp, end = 16.dp)
                             .clickable(
@@ -1337,6 +1335,7 @@ private fun BottomControls(
     }
 }
 
+@OptIn(UnstableApi::class)
 @Composable
 private fun PlaybackBadges(uiState: PlayerViewModel.PlayerUiState) {
     val resolution = resolutionLabelFor(uiState.outputVideoWidth, uiState.outputVideoHeight)
