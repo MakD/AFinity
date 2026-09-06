@@ -6,7 +6,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,7 +29,6 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -38,7 +36,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -100,7 +97,6 @@ import com.makd.afinity.ui.downloads.DownloadsViewModel
 import com.makd.afinity.ui.downloads.absChildrenOf
 import com.makd.afinity.ui.downloads.components.DownloadStorageStrip
 import com.makd.afinity.ui.downloads.components.downloadCatalogSections
-import com.makd.afinity.ui.downloads.components.downloadCategoryLabel
 import com.makd.afinity.ui.downloads.jellyfinChildrenOf
 import java.util.UUID
 import kotlin.math.ceil
@@ -110,7 +106,6 @@ import kotlin.math.ceil
 fun DownloadSettingsScreen(
     onBackClick: () -> Unit,
     onNavigateToAbsItem: (libraryItemId: String) -> Unit = {},
-    onStorageSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: DownloadsViewModel = hiltViewModel(),
 ) {
@@ -119,7 +114,7 @@ fun DownloadSettingsScreen(
     val playerOffset = LocalPlayerOffset.current
 
     val catalog by viewModel.catalog.collectAsStateWithLifecycle()
-    val availableCategories by viewModel.availableCategories.collectAsStateWithLifecycle()
+    val categoryUsage by viewModel.categoryUsage.collectAsStateWithLifecycle()
     val categoryFilter by viewModel.categoryFilter.collectAsStateWithLifecycle()
     var selectedEntry by remember { mutableStateOf<DownloadCatalogEntry?>(null) }
     var pendingBulkDelete by remember { mutableStateOf(false) }
@@ -281,7 +276,7 @@ fun DownloadSettingsScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = stringResource(R.string.pref_downloads_and_storage),
+                            text = stringResource(R.string.pref_offline_media),
                             style =
                                 MaterialTheme.typography.headlineMedium.copy(
                                     fontWeight = FontWeight.Bold
@@ -293,14 +288,6 @@ fun DownloadSettingsScreen(
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_chevron_left),
                                 contentDescription = stringResource(R.string.cd_back),
-                            )
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = onStorageSettingsClick) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_settings),
-                                contentDescription = stringResource(R.string.cd_downloads_settings),
                             )
                         }
                     },
@@ -355,23 +342,15 @@ fun DownloadSettingsScreen(
         ) {
             item(key = "storage_strip", span = { GridItemSpan(maxLineSpan) }) {
                 DownloadStorageStrip(
-                    downloadsBytes = uiState.totalStorageUsedAllServers,
+                    categories = categoryUsage,
+                    selectedCategory = categoryFilter,
                     deviceUsedBytes = deviceStats?.usedBytes ?: 0L,
                     deviceTotalBytes = deviceStats?.totalBytes ?: 0L,
                     freeBytes = deviceStats?.freeBytes ?: 0L,
                     formatSize = viewModel::formatStorageSize,
+                    onSelectCategory = viewModel::setCategoryFilter,
                     modifier = Modifier.padding(top = 8.dp),
                 )
-            }
-
-            if (availableCategories.size > 1) {
-                item(key = "category_chips", span = { GridItemSpan(maxLineSpan) }) {
-                    DownloadFilterChips(
-                        categories = availableCategories,
-                        selected = categoryFilter,
-                        onSelect = viewModel::setCategoryFilter,
-                    )
-                }
             }
 
             val allActiveCount = uiState.activeDownloads.size + uiState.absActiveDownloads.size
@@ -544,32 +523,6 @@ private fun DownloadSelectionBar(
                     fontWeight = FontWeight.Bold,
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun DownloadFilterChips(
-    categories: List<DownloadCategory>,
-    selected: DownloadCategory?,
-    onSelect: (DownloadCategory?) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        FilterChip(
-            selected = selected == null,
-            onClick = { onSelect(null) },
-            label = { Text(stringResource(R.string.filter_all)) },
-        )
-        categories.forEach { category ->
-            FilterChip(
-                selected = selected == category,
-                onClick = { onSelect(if (selected == category) null else category) },
-                label = { Text(downloadCategoryLabel(category)) },
-            )
         }
     }
 }

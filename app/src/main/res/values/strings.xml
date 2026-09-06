@@ -815,6 +815,22 @@
     <string name="cd_aspect_ratio">Aspect Ratio</string>
     <string name="cd_screen_rotation">Screen rotation</string>
 
+    <string name="player_sleep_timer_title">Sleep timer</string>
+    <string name="player_sleep_timer_end_of_episode">End of episode</string>
+    <string name="player_sleep_timer_end_of_movie">End of movie</string>
+    <string name="player_sleep_timer_stop">Stop timer</string>
+    <string name="player_sleep_timer_ends_in">Sleep timer ends in %1$s</string>
+    <string name="player_sleep_timer_ended">Sleep timer ended</string>
+    <string name="player_sleep_timer_paused_fmt">Paused at %1$s · %2$s</string>
+    <plurals name="player_sleep_timer_closing_in">
+        <item quantity="one">closing in %1$d second</item>
+        <item quantity="other">closing in %1$d seconds</item>
+    </plurals>
+    <plurals name="player_sleep_timer_extend">
+        <item quantity="one">Add %1$d min</item>
+        <item quantity="other">Add %1$d min</item>
+    </plurals>
+
     <string name="cd_fast_forward">Fast Forward</string>
     <string name="cd_rewind">Rewind</string>
     <string name="seek_forward_text">+10s</string>
@@ -959,7 +975,9 @@
     <string name="layout_vertical">Vertical</string>
 
     <string name="pref_downloads_and_storage">Downloads &amp; Storage</string>
-    <string name="pref_downloads_and_storage_summary">Manage offline media and image caching</string>
+    <string name="pref_downloads_and_storage_summary">Download behaviour, storage locations and cache</string>
+    <string name="pref_offline_media">Offline media</string>
+    <string name="pref_offline_media_summary">Browse and free up downloaded media</string>
     <string name="active_downloads_header_fmt">In progress (%1$d)</string>
     <string name="completed_downloads_header_fmt">On this device (%1$d)</string>
     <string name="download_status_queued">Queued</string>
@@ -994,7 +1012,6 @@
     <string name="downloads_sort_largest">Largest first</string>
     <string name="downloads_sort_title">A to Z</string>
     <string name="cd_downloads_sort">Sort downloads</string>
-    <string name="cd_downloads_settings">Storage and download settings</string>
     <plurals name="download_group_episodes_fmt">
         <item quantity="one">%1$d episode · %2$s</item>
         <item quantity="other">%1$d episodes · %2$s</item>
@@ -1563,6 +1580,8 @@
     <string name="abs_sleep_timer_title">SLEEP TIMER</string>
     <string name="abs_sleep_timer_stop">Stop Timer</string>
     <string name="abs_sleep_timer_set_new">Set New Timer</string>
+    <string name="abs_sleep_timer_end_of_chapter">End of chapter</string>
+    <string name="abs_sleep_timer_end_of_episode">End of episode</string>
     <string name="abs_skip_silence">SKIP SILENCE</string>
     <string name="cd_abs_chapters">Chapters</string>
     <string name="abs_bookmarks_title">Bookmarks</string>
@@ -2195,6 +2214,8 @@
     <string name="logs_buffered_fmt">%1$d / %2$d</string>
     <string name="logs_paused">paused in history</string>
     <string name="logs_pause">Pause</string>
+    <string name="logs_resume">Resume</string>
+    <string name="logs_jump_to_latest">Jump to latest</string>
     <string name="logs_back_to_live">Back to live</string>
     <string name="logs_save_title">Save logs</string>
     <string name="logs_save_all">Everything in the buffer</string>

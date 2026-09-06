@@ -94,32 +94,39 @@ constructor(
     private val _categoryFilter = MutableStateFlow<DownloadCategory?>(null)
     val categoryFilter: StateFlow<DownloadCategory?> = _categoryFilter.asStateFlow()
 
-    val catalog: StateFlow<List<DownloadCatalogEntry>> =
-        combine(_uiState, _sortOrder, _categoryFilter) { state, sort, filter ->
+    private val fullCatalog: StateFlow<List<DownloadCatalogEntry>> =
+        _uiState
+            .map { state ->
                 val unavailableVolumeIds =
                     state.volumeStorageStats.filter { !it.isAvailable }.map { it.volumeId }.toSet()
 
                 buildDownloadCatalog(
-                        jellyfinDownloads = state.completedDownloads,
-                        absDownloads = state.absCompletedDownloads,
-                        unavailableVolumeIds = unavailableVolumeIds,
-                    )
-                    .filter { filter == null || it.category == filter }
-                    .sortedForCatalog(sort)
+                    jellyfinDownloads = state.completedDownloads,
+                    absDownloads = state.absCompletedDownloads,
+                    unavailableVolumeIds = unavailableVolumeIds,
+                )
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    val availableCategories: StateFlow<List<DownloadCategory>> =
-        _uiState
-            .map { state ->
-                buildDownloadCatalog(
-                        jellyfinDownloads = state.completedDownloads,
-                        absDownloads = state.absCompletedDownloads,
-                        unavailableVolumeIds = emptySet(),
-                    )
-                    .map { it.category }
-                    .distinct()
-                    .sortedBy { it.ordinal }
+    val catalog: StateFlow<List<DownloadCatalogEntry>> =
+        combine(fullCatalog, _sortOrder, _categoryFilter) { entries, sort, filter ->
+                entries.filter { filter == null || it.category == filter }.sortedForCatalog(sort)
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val categoryUsage: StateFlow<List<DownloadCategoryUsage>> =
+        fullCatalog
+            .map { entries ->
+                entries
+                    .groupBy { it.category }
+                    .map { (category, group) ->
+                        DownloadCategoryUsage(
+                            category = category,
+                            bytes = group.sumOf { it.sizeBytes },
+                            count = group.size,
+                        )
+                    }
+                    .sortedBy { it.category.ordinal }
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 

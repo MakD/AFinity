@@ -66,6 +66,7 @@ data class LogViewerUiState(
     val rows: List<TimelineRow> = emptyList(),
     val scope: LogScope = LogScope(),
     val following: Boolean = true,
+    val paused: Boolean = false,
     val groupRepeats: Boolean = true,
     val searchActive: Boolean = false,
     val expandedKey: String? = null,
@@ -85,7 +86,7 @@ data class LogViewerUiState(
 ) {
     val density: LogDensity
         get() =
-            if (following && scope.minLevel == null) LogDensity.COMPACT else LogDensity.COMFORTABLE
+            if (!paused && scope.minLevel == null) LogDensity.COMPACT else LogDensity.COMFORTABLE
 
     val emptyReason: LogEmptyReason
         get() =

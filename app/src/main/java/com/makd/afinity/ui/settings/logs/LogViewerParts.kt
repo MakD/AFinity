@@ -34,12 +34,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.util.logging.LogLevel
@@ -138,8 +136,7 @@ private fun TagRow(tag: LogTagCount, checked: Boolean, onToggle: () -> Unit) {
         Checkbox(checked = checked, onCheckedChange = { onToggle() })
         Text(
             text = tag.tag.uppercase(),
-            fontFamily = FontFamily.Monospace,
-            fontSize = 12.sp,
+            style = LogTextStyles.label,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -152,8 +149,7 @@ private fun TagRow(tag: LogTagCount, checked: Boolean, onToggle: () -> Unit) {
         }
         Text(
             text = tag.total.toString(),
-            fontFamily = FontFamily.Monospace,
-            fontSize = 11.sp,
+            style = LogTextStyles.meta,
             color = MaterialTheme.colorScheme.outline,
             textAlign = TextAlign.End,
             modifier = Modifier.width(38.dp),
@@ -165,14 +161,13 @@ private fun TagRow(tag: LogTagCount, checked: Boolean, onToggle: () -> Unit) {
 private fun SeverityBadge(count: Int, level: LogLevel) {
     Text(
         text = count.toString(),
-        fontFamily = FontFamily.Monospace,
-        fontSize = 10.sp,
+        style = LogTextStyles.metaSmall,
         fontWeight = FontWeight.SemiBold,
         color = LogLevelColors.content(level),
         modifier =
             Modifier.clip(RoundedCornerShape(8.dp))
                 .background(LogLevelColors.content(level).copy(alpha = 0.16f))
-                .padding(horizontal = 7.dp, vertical = 1.dp),
+                .padding(horizontal = 7.dp, vertical = 2.dp),
     )
 }
 
@@ -280,8 +275,7 @@ fun LogCountChip(
             )
             Text(
                 text = compactCount(count),
-                fontFamily = FontFamily.Monospace,
-                fontSize = 11.sp,
+                style = LogTextStyles.meta,
                 fontWeight = FontWeight.SemiBold,
                 color =
                     (if (selected) MaterialTheme.colorScheme.surface else tint).copy(alpha = 0.7f),

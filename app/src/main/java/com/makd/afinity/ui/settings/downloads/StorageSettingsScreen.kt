@@ -137,7 +137,7 @@ fun StorageSettingsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = stringResource(R.string.section_storage_cache),
+                        text = stringResource(R.string.pref_downloads_and_storage),
                         style =
                             MaterialTheme.typography.headlineMedium.copy(
                                 fontWeight = FontWeight.Bold

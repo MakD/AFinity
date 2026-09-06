@@ -1,6 +1,11 @@
 package com.makd.afinity.ui.settings.logs
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -11,12 +16,19 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -30,7 +42,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -48,6 +59,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,15 +68,15 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.util.logging.LogLevel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -78,6 +90,7 @@ fun LogViewerScreen(
     val playerOffset = LocalPlayerOffset.current
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    val screenInsets = WindowInsets.systemBars.union(WindowInsets.displayCutout)
 
     var showExport by remember { mutableStateOf(false) }
     var showTags by remember { mutableStateOf(false) }
@@ -88,14 +101,24 @@ fun LogViewerScreen(
 
     val dragged by listState.interactionSource.collectIsDraggedAsState()
 
-    LaunchedEffect(uiState.revision, uiState.following) {
-        if (uiState.following && uiState.rows.isNotEmpty()) {
+    LaunchedEffect(uiState.revision, uiState.following, dragged) {
+        if (uiState.following && !dragged && uiState.rows.isNotEmpty()) {
             listState.scrollToItem(uiState.rows.lastIndex)
         }
     }
 
     LaunchedEffect(dragged) {
-        if (dragged && uiState.following) viewModel.setFollowing(false)
+        if (dragged && uiState.following) {
+            snapshotFlow { listState.canScrollForward }.first { it }
+            viewModel.setFollowing(false)
+        }
+    }
+
+    val jumpToLatest: () -> Unit = {
+        scope.launch {
+            viewModel.setFollowing(true)
+            if (uiState.rows.isNotEmpty()) listState.animateScrollToItem(uiState.rows.lastIndex)
+        }
     }
 
     val closeOverlay: (() -> Unit)? =
@@ -123,6 +146,12 @@ fun LogViewerScreen(
                         SearchField(
                             query = uiState.scope.query,
                             onQueryChange = viewModel::setQuery,
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.logs_title),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
                         )
                     }
                 },
@@ -171,7 +200,11 @@ fun LogViewerScreen(
                                 }
                                 OverflowMenu(
                                     expanded = showMenu,
-                                    state = uiState,
+                                    tab = uiState.tab,
+                                    matchCount = uiState.matchCount,
+                                    selectedTagCount = uiState.scope.tags.size,
+                                    groupRepeats = uiState.groupRepeats,
+                                    paused = uiState.paused,
                                     onDismiss = { showMenu = false },
                                     onCopyVisible = {
                                         showMenu = false
@@ -188,6 +221,10 @@ fun LogViewerScreen(
                                     onToggleGrouping = {
                                         showMenu = false
                                         viewModel.toggleGrouping()
+                                    },
+                                    onTogglePause = {
+                                        showMenu = false
+                                        viewModel.setPaused(!uiState.paused)
                                     },
                                     onClear = {
                                         showMenu = false
@@ -206,12 +243,19 @@ fun LogViewerScreen(
                     TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surface
                     ),
+                windowInsets =
+                    screenInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top),
             )
         },
         bottomBar = {
             if (uiState.openCrash == null) {
                 BottomBar(
-                    state = uiState,
+                    tab = uiState.tab,
+                    paused = uiState.paused,
+                    totalCount = uiState.totalCount,
+                    bufferCapacity = uiState.bufferCapacity,
+                    crashCount = uiState.crashes.size,
+                    window = uiState.scope.window,
                     windowExpanded = showWindow,
                     onWindowClick = { showWindow = true },
                     onWindowDismiss = { showWindow = false },
@@ -219,7 +263,6 @@ fun LogViewerScreen(
                         showWindow = false
                         viewModel.setWindow(it)
                     },
-                    onToggleFollow = { viewModel.setFollowing(!uiState.following) },
                     modifier = Modifier.padding(bottom = playerOffset),
                 )
             }
@@ -235,29 +278,26 @@ fun LogViewerScreen(
                 contentPadding =
                     PaddingValues(
                         top = padding.calculateTopPadding(),
-                        bottom = playerOffset,
+                        bottom = max(padding.calculateBottomPadding(), playerOffset),
                     ),
-                modifier = Modifier.fillMaxSize(),
+                modifier =
+                    Modifier.fillMaxSize()
+                        .windowInsetsPadding(screenInsets.only(WindowInsetsSides.Horizontal)),
             )
             return@Scaffold
         }
 
-        Column(modifier = Modifier.fillMaxSize().padding(top = padding.calculateTopPadding())) {
-            if (!uiState.searchActive) {
-                Text(
-                    text = stringResource(R.string.logs_title),
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp),
-                )
-            }
-
+        Column(
+            modifier =
+                Modifier.fillMaxSize()
+                    .windowInsetsPadding(screenInsets.only(WindowInsetsSides.Horizontal))
+                    .padding(top = padding.calculateTopPadding())
+        ) {
             Row(
                 modifier =
                     Modifier.fillMaxWidth()
                         .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 20.dp),
+                        .padding(start = 20.dp, end = 20.dp, top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 LogCountChip(
@@ -418,6 +458,18 @@ fun LogViewerScreen(
                                 .padding(end = 10.dp, bottom = bottomPadding),
                     )
                 }
+
+                JumpToLatestPill(
+                    visible =
+                        uiState.tab == LogTab.LOGS &&
+                            !uiState.following &&
+                            !uiState.paused &&
+                            uiState.emptyReason == LogEmptyReason.NONE,
+                    onClick = jumpToLatest,
+                    modifier =
+                        Modifier.align(Alignment.BottomCenter)
+                            .padding(bottom = bottomPadding),
+                )
             }
         }
     }
@@ -536,28 +588,29 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(19.dp),
         )
-        Box(modifier = Modifier.weight(1f)) {
-            if (query.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.logs_search_placeholder),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            BasicTextField(
-                value = query,
-                onValueChange = onQueryChange,
-                singleLine = true,
-                textStyle =
-                    LocalTextStyle.current.merge(
-                        MaterialTheme.typography.bodyLarge.copy(
-                            color = MaterialTheme.colorScheme.onSurface
+        BasicTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            singleLine = true,
+            textStyle =
+                MaterialTheme.typography.bodyLarge.copy(
+                    color = MaterialTheme.colorScheme.onSurface
+                ),
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            modifier = Modifier.weight(1f).focusRequester(focusRequester),
+            decorationBox = { innerTextField ->
+                Box(contentAlignment = Alignment.CenterStart) {
+                    if (query.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.logs_search_placeholder),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                    ),
-                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
-            )
-        }
+                    }
+                    innerTextField()
+                }
+            },
+        )
     }
 }
 
@@ -575,8 +628,7 @@ private fun TagChip(tag: String, onRemove: () -> Unit) {
     ) {
         Text(
             text = tag.uppercase(),
-            fontFamily = FontFamily.Monospace,
-            fontSize = 11.sp,
+            style = LogTextStyles.meta,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.primary,
         )
@@ -599,8 +651,7 @@ private fun MetaBar(text: String, action: String, onAction: () -> Unit) {
     ) {
         Text(
             text = text,
-            fontFamily = FontFamily.Monospace,
-            fontSize = 10.sp,
+            style = LogTextStyles.metaSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f),
         )
@@ -617,17 +668,22 @@ private fun MetaBar(text: String, action: String, onAction: () -> Unit) {
 @Composable
 private fun OverflowMenu(
     expanded: Boolean,
-    state: LogViewerUiState,
+    tab: LogTab,
+    matchCount: Int,
+    selectedTagCount: Int,
+    groupRepeats: Boolean,
+    paused: Boolean,
     onDismiss: () -> Unit,
     onCopyVisible: () -> Unit,
     onSave: () -> Unit,
     onTags: () -> Unit,
     onToggleGrouping: () -> Unit,
+    onTogglePause: () -> Unit,
     onClear: () -> Unit,
     onDeleteCrashes: () -> Unit,
 ) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
-        if (state.tab == LogTab.LOGS) {
+        if (tab == LogTab.LOGS) {
             DropdownMenuItem(
                 text = { Text(text = stringResource(R.string.logs_copy_visible)) },
                 leadingIcon = {
@@ -638,9 +694,8 @@ private fun OverflowMenu(
                 },
                 trailingIcon = {
                     Text(
-                        text = state.matchCount.toString(),
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 11.sp,
+                        text = matchCount.toString(),
+                        style = LogTextStyles.meta,
                         color = MaterialTheme.colorScheme.outline,
                     )
                 },
@@ -665,11 +720,10 @@ private fun OverflowMenu(
                     )
                 },
                 trailingIcon = {
-                    if (state.scope.tags.isNotEmpty()) {
+                    if (selectedTagCount > 0) {
                         Text(
-                            text = state.scope.tags.size.toString(),
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp,
+                            text = selectedTagCount.toString(),
+                            style = LogTextStyles.meta,
                             color = MaterialTheme.colorScheme.primary,
                         )
                     }
@@ -681,7 +735,7 @@ private fun OverflowMenu(
                     Text(
                         text =
                             stringResource(
-                                if (state.groupRepeats) R.string.logs_expand_repeats
+                                if (groupRepeats) R.string.logs_expand_repeats
                                 else R.string.logs_collapse_repeats
                             )
                     )
@@ -693,6 +747,28 @@ private fun OverflowMenu(
                     )
                 },
                 onClick = onToggleGrouping,
+            )
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        text =
+                            stringResource(
+                                if (paused) R.string.logs_resume else R.string.logs_pause
+                            )
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        painter =
+                            painterResource(
+                                id =
+                                    if (paused) R.drawable.ic_player_play_filled
+                                    else R.drawable.ic_player_pause_filled
+                            ),
+                        contentDescription = null,
+                    )
+                },
+                onClick = onTogglePause,
             )
             HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
             DropdownMenuItem(
@@ -733,6 +809,39 @@ private fun OverflowMenu(
 }
 
 @Composable
+private fun JumpToLatestPill(visible: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    AnimatedVisibility(
+        visible = visible,
+        modifier = modifier,
+        enter = fadeIn() + scaleIn(initialScale = 0.85f),
+        exit = fadeOut() + scaleOut(targetScale = 0.85f),
+    ) {
+        Row(
+            modifier =
+                Modifier.clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.primary)
+                    .clickable(onClick = onClick)
+                    .padding(start = 12.dp, end = 14.dp, top = 7.dp, bottom = 7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                text = stringResource(R.string.logs_jump_to_latest),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
+        }
+    }
+}
+
+@Composable
 private fun ErrorJumpPill(
     count: Int,
     onPrevious: () -> Unit,
@@ -761,8 +870,7 @@ private fun ErrorJumpPill(
         )
         Text(
             text = count.toString(),
-            fontFamily = FontFamily.Monospace,
-            fontSize = 10.sp,
+            style = LogTextStyles.metaSmall,
             fontWeight = FontWeight.SemiBold,
             color = tint,
         )
@@ -778,24 +886,33 @@ private fun ErrorJumpPill(
 
 @Composable
 private fun BottomBar(
-    state: LogViewerUiState,
+    tab: LogTab,
+    paused: Boolean,
+    totalCount: Int,
+    bufferCapacity: Int,
+    crashCount: Int,
+    window: LogWindow,
     windowExpanded: Boolean,
     onWindowClick: () -> Unit,
     onWindowDismiss: () -> Unit,
     onWindowSelected: (LogWindow) -> Unit,
-    onToggleFollow: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (state.tab == LogTab.CRASHES) {
+    val barInsets =
+        WindowInsets.systemBars
+            .union(WindowInsets.displayCutout)
+            .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
+
+    if (tab == LogTab.CRASHES) {
         Text(
-            text = stringResource(R.string.logs_crash_reports_kept_fmt, state.crashes.size),
-            fontFamily = FontFamily.Monospace,
-            fontSize = 11.sp,
+            text = stringResource(R.string.logs_crash_reports_kept_fmt, crashCount),
+            style = LogTextStyles.meta,
             color = MaterialTheme.colorScheme.outline,
             modifier =
                 modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface)
+                    .windowInsetsPadding(barInsets)
                     .padding(horizontal = 20.dp, vertical = 18.dp),
         )
         return
@@ -806,6 +923,7 @@ private fun BottomBar(
             modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface)
+                .windowInsetsPadding(barInsets)
                 .padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -815,23 +933,18 @@ private fun BottomBar(
                 Modifier.size(7.dp)
                     .clip(CircleShape)
                     .background(
-                        if (state.following) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.outline
+                        if (paused) MaterialTheme.colorScheme.outline
+                        else MaterialTheme.colorScheme.primary
                     )
         )
         Text(
             text =
-                if (state.following) {
-                    stringResource(
-                        R.string.logs_buffered_fmt,
-                        state.totalCount,
-                        state.bufferCapacity,
-                    )
-                } else {
+                if (paused) {
                     stringResource(R.string.logs_paused)
+                } else {
+                    stringResource(R.string.logs_buffered_fmt, totalCount, bufferCapacity)
                 },
-            fontFamily = FontFamily.Monospace,
-            fontSize = 11.sp,
+            style = LogTextStyles.meta,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f),
         )
@@ -847,11 +960,10 @@ private fun BottomBar(
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 Text(
-                    text = stringResource(windowLabel(state.scope.window)),
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp,
+                    text = stringResource(windowLabel(window)),
+                    style = LogTextStyles.meta,
                     color =
-                        if (state.scope.window == LogWindow.ALL) {
+                        if (window == LogWindow.ALL) {
                             MaterialTheme.colorScheme.onSurfaceVariant
                         } else {
                             MaterialTheme.colorScheme.primary
@@ -865,11 +977,11 @@ private fun BottomBar(
                 )
             }
             DropdownMenu(expanded = windowExpanded, onDismissRequest = onWindowDismiss) {
-                LogWindow.entries.forEach { window ->
+                LogWindow.entries.forEach { option ->
                     DropdownMenuItem(
-                        text = { Text(text = stringResource(windowMenuLabel(window))) },
+                        text = { Text(text = stringResource(windowMenuLabel(option))) },
                         leadingIcon = {
-                            if (window == state.scope.window) {
+                            if (option == window) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_check),
                                     contentDescription = null,
@@ -877,21 +989,12 @@ private fun BottomBar(
                                 )
                             }
                         },
-                        onClick = { onWindowSelected(window) },
+                        onClick = { onWindowSelected(option) },
                     )
                 }
             }
         }
 
-        if (state.following) {
-            OutlinedButton(onClick = onToggleFollow, shape = RoundedCornerShape(20.dp)) {
-                Text(text = stringResource(R.string.logs_pause))
-            }
-        } else {
-            Button(onClick = onToggleFollow, shape = RoundedCornerShape(20.dp)) {
-                Text(text = stringResource(R.string.logs_back_to_live))
-            }
-        }
     }
 }
 
@@ -985,8 +1088,7 @@ private fun ScopeOption(
         )
         Text(
             text = subtitle,
-            fontFamily = FontFamily.Monospace,
-            fontSize = 10.sp,
+            style = LogTextStyles.metaSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 3.dp),
         )

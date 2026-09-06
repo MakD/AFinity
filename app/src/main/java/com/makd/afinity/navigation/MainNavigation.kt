@@ -1107,12 +1107,6 @@ fun MainNavigation(
                                                 Destination.createAudiobookshelfItemRoute(itemId)
                                             )
                                         },
-                                        onStorageSettingsClick =
-                                            dropUnlessResumed {
-                                                navController.navigate(
-                                                    Destination.STORAGE_SETTINGS_ROUTE
-                                                )
-                                            },
                                         modifier = Modifier.fillMaxSize(),
                                     )
                                 }

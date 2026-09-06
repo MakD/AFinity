@@ -11,6 +11,12 @@ enum class DownloadCategory {
     PODCAST,
 }
 
+data class DownloadCategoryUsage(
+    val category: DownloadCategory,
+    val bytes: Long,
+    val count: Int,
+)
+
 enum class DownloadSort {
     RECENT,
     LARGEST,

@@ -254,6 +254,11 @@ constructor(
         dismissSleepTimerDialog()
     }
 
+    fun setChapterSleepTimer(extraChapters: Int) {
+        audiobookshelfPlayer.setChapterSleepTimer(extraChapters)
+        dismissSleepTimerDialog()
+    }
+
     fun cancelSleepTimer() {
         audiobookshelfPlayer.cancelSleepTimer()
     }

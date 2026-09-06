@@ -128,6 +128,7 @@ fun SettingsScreen(
     val connectionType by viewModel.connectionType.collectAsStateWithLifecycle()
     val manualOfflineMode by viewModel.manualOfflineMode.collectAsStateWithLifecycle()
     val isNetworkAvailable by viewModel.isNetworkAvailable.collectAsStateWithLifecycle()
+    val hasOfflineMedia by viewModel.hasOfflineMedia.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
     val defaultLangString = stringResource(R.string.lang_system_default)
@@ -501,16 +502,39 @@ fun SettingsScreen(
                                                 scope.launch {
                                                     navigator.navigateTo(
                                                         ListDetailPaneScaffoldRole.Detail,
-                                                        SettingsPaneDestination.Downloads,
+                                                        SettingsPaneDestination.StorageSettings,
                                                     )
                                                 }
                                             } else {
                                                 navController.navigate(
-                                                    Destination.DOWNLOAD_SETTINGS_ROUTE
+                                                    Destination.STORAGE_SETTINGS_ROUTE
                                                 )
                                             }
                                         },
                                     )
+                                    if (hasOfflineMedia) {
+                                        SettingsDivider()
+                                        SettingsItem(
+                                            icon = painterResource(id = R.drawable.ic_download),
+                                            title = stringResource(R.string.pref_offline_media),
+                                            subtitle =
+                                                stringResource(R.string.pref_offline_media_summary),
+                                            onClick = {
+                                                if (isDualPane) {
+                                                    scope.launch {
+                                                        navigator.navigateTo(
+                                                            ListDetailPaneScaffoldRole.Detail,
+                                                            SettingsPaneDestination.Downloads,
+                                                        )
+                                                    }
+                                                } else {
+                                                    navController.navigate(
+                                                        Destination.DOWNLOAD_SETTINGS_ROUTE
+                                                    )
+                                                }
+                                            },
+                                        )
+                                    }
                                 }
                             }
 
@@ -759,14 +783,6 @@ fun SettingsScreen(
                                 navController.navigate(
                                     Destination.createAudiobookshelfItemRoute(itemId)
                                 )
-                            },
-                            onStorageSettingsClick = {
-                                scope.launch {
-                                    navigator.navigateTo(
-                                        ListDetailPaneScaffoldRole.Detail,
-                                        SettingsPaneDestination.StorageSettings,
-                                    )
-                                }
                             },
                         )
                     is SettingsPaneDestination.StorageSettings ->

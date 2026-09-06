@@ -37,6 +37,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
+import com.makd.afinity.ui.player.components.formatSleepCountdown
+import com.makd.afinity.ui.player.components.rememberSleepTimerRemainingMs
 
 private val TIMER_OPTIONS = listOf(5, 10, 15, 30, 45, 60, 90, 120)
 
@@ -50,11 +52,8 @@ fun MusicSleepTimerSheet(
 ) {
     val sheetState = rememberModalBottomSheetState()
 
-    val isTimerActive = activeTimerEndMs != null && activeTimerEndMs > System.currentTimeMillis()
-    val remainingMinutes =
-        if (isTimerActive && activeTimerEndMs != null)
-            ((activeTimerEndMs - System.currentTimeMillis()) / 60_000).toInt().coerceAtLeast(1)
-        else null
+    val remainingMs = rememberSleepTimerRemainingMs(activeTimerEndMs)
+    val isTimerActive = activeTimerEndMs != null && remainingMs > 0L
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -74,7 +73,7 @@ fun MusicSleepTimerSheet(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            if (isTimerActive && remainingMinutes != null) {
+            if (isTimerActive) {
                 Box(
                     modifier =
                         Modifier.fillMaxWidth()
@@ -94,7 +93,11 @@ fun MusicSleepTimerSheet(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "$remainingMinutes min remaining",
+                            text =
+                                stringResource(
+                                    R.string.player_time_left,
+                                    formatSleepCountdown(remainingMs),
+                                ),
                             style =
                                 MaterialTheme.typography.headlineSmall.copy(
                                     fontWeight = FontWeight.Bold

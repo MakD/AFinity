@@ -14,6 +14,7 @@ import com.makd.afinity.util.logging.LogEntry
 import com.makd.afinity.util.logging.LogExporter
 import com.makd.afinity.util.logging.LogLevel
 import com.makd.afinity.util.logging.LogSecretsCollector
+import com.makd.afinity.util.logging.LogSignature
 import com.makd.afinity.util.logging.LogSignatures
 import com.makd.afinity.util.logging.RingBufferTree
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -113,8 +114,15 @@ constructor(
 
     fun setFollowing(following: Boolean) {
         if (_uiState.value.following == following) return
-        frozen = if (following) null else snapshot()
         _uiState.update { it.copy(following = following) }
+    }
+
+    fun setPaused(paused: Boolean) {
+        if (_uiState.value.paused == paused) return
+        frozen = if (paused) snapshot() else null
+        _uiState.update {
+            it.copy(paused = paused, following = !paused, expandedKey = null)
+        }
         rebuild()
     }
 
@@ -138,7 +146,7 @@ constructor(
     fun clearBuffer() {
         tree?.clear()
         frozen = null
-        _uiState.update { it.copy(following = true, expandedKey = null) }
+        _uiState.update { it.copy(following = true, paused = false, expandedKey = null) }
         rebuild()
     }
 
@@ -252,11 +260,14 @@ constructor(
         rebuildJob?.cancel()
         rebuildJob =
             viewModelScope.launch {
-                val entries = frozen ?: snapshot()
+                val frozenEntries = frozen
                 val state = _uiState.value
-                val anchor = frozen?.lastOrNull()?.timeMillis ?: System.currentTimeMillis()
+                val capacity = tree?.capacity ?: 0
                 val result =
                     withContext(Dispatchers.Default) {
+                        val entries = frozenEntries ?: snapshot()
+                        val anchor =
+                            frozenEntries?.lastOrNull()?.timeMillis ?: System.currentTimeMillis()
                         build(entries, state.scope, state.density, state.groupRepeats, anchor)
                     }
                 visibleEntries = result.matching
@@ -264,12 +275,12 @@ constructor(
                     it.copy(
                         revision = it.revision + 1,
                         rows = result.rows,
-                        errorCount = entries.count { entry -> entry.level == LogLevel.ERROR },
-                        warningCount = entries.count { entry -> entry.level >= LogLevel.WARN },
-                        totalCount = entries.size,
+                        errorCount = result.errorCount,
+                        warningCount = result.warningCount,
+                        totalCount = result.totalCount,
                         matchCount = result.matching.size,
-                        groupCount = result.rows.count { row -> row is TimelineRow.Event },
-                        bufferCapacity = tree?.capacity ?: 0,
+                        groupCount = result.groupCount,
+                        bufferCapacity = capacity,
                         errorRowIndices = result.errorRowIndices,
                         tagCounts = result.tagCounts,
                     )
@@ -282,6 +293,10 @@ constructor(
         val matching: List<LogEntry>,
         val tagCounts: List<LogTagCount>,
         val errorRowIndices: List<Int>,
+        val totalCount: Int,
+        val errorCount: Int,
+        val warningCount: Int,
+        val groupCount: Int,
     )
 
     private fun build(
@@ -292,6 +307,8 @@ constructor(
         anchorMillis: Long,
     ): BuildResult {
         val tagCounts = countTags(entries)
+        val errorCount = tagCounts.sumOf { it.errors }
+        val warningCount = errorCount + tagCounts.sumOf { it.warnings }
         val since = scope.window.durationMillis?.let { anchorMillis - it }
         val query = scope.query.trim()
 
@@ -315,27 +332,41 @@ constructor(
         }
 
         if (matching.isEmpty()) {
-            return BuildResult(emptyList(), matching, tagCounts, emptyList())
+            return BuildResult(
+                rows = emptyList(),
+                matching = matching,
+                tagCounts = tagCounts,
+                errorRowIndices = emptyList(),
+                totalCount = entries.size,
+                errorCount = errorCount,
+                warningCount = warningCount,
+                groupCount = 0,
+            )
         }
 
         val comfortable = density == LogDensity.COMFORTABLE
 
         if (comfortable && groupRepeats) {
-            val groups = LinkedHashMap<String, MutableList<LogEntry>>()
-            matching.forEach { entry -> groups.getOrPut(groupKey(entry)) { mutableListOf() }.add(entry) }
+            val groups = LinkedHashMap<String, MutableList<SignedEntry>>()
+            matching.forEach { entry ->
+                val signature = LogSignatures.of(entry.message)
+                groups
+                    .getOrPut(groupKey(entry, signature)) { mutableListOf() }
+                    .add(SignedEntry(entry, signature))
+            }
 
             var previous: LogEntry? = null
             groups.forEach { (key, group) ->
-                val representative = group.first()
+                val representative = group.first().entry
                 appendGap(rows, previous, representative)
                 rows.add(
                     TimelineRow.Event(
                         key = key,
                         entry = representative,
-                        label = LogSignatures.label(group.map { LogSignatures.of(it.message) }),
+                        label = LogSignatures.label(group.map { it.signature }),
                         relativeLabel = relativeLabel(previous, representative),
                         count = group.size,
-                        occurrenceTimes = group.map { it.timeMillis },
+                        occurrenceTimes = group.map { it.entry.timeMillis },
                         highlights = representative.message.highlights(query),
                     )
                 )
@@ -366,8 +397,19 @@ constructor(
                 row is TimelineRow.Event && row.entry.level == LogLevel.ERROR
             }
 
-        return BuildResult(rows, matching, tagCounts, errorRowIndices)
+        return BuildResult(
+            rows = rows,
+            matching = matching,
+            tagCounts = tagCounts,
+            errorRowIndices = errorRowIndices,
+            totalCount = entries.size,
+            errorCount = errorCount,
+            warningCount = warningCount,
+            groupCount = rows.count { row -> row is TimelineRow.Event },
+        )
     }
+
+    private data class SignedEntry(val entry: LogEntry, val signature: LogSignature)
 
     private fun countTags(entries: List<LogEntry>): List<LogTagCount> {
         if (entries.isEmpty()) return emptyList()
@@ -383,8 +425,10 @@ constructor(
             .sortedWith(compareByDescending<LogTagCount> { it.total }.thenBy { it.tag })
     }
 
-    private fun groupKey(entry: LogEntry): String =
-        "${entry.tag}|${entry.level}|${LogSignatures.of(entry.message).chunks.hashCode()}"
+    private fun groupKey(
+        entry: LogEntry,
+        signature: LogSignature = LogSignatures.of(entry.message),
+    ): String = "${entry.tag}|${entry.level}|${signature.chunks.hashCode()}"
 
     private fun LogEntry.matches(query: String): Boolean =
         message.contains(query, ignoreCase = true) ||

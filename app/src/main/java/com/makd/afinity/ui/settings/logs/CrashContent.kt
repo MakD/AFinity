@@ -5,11 +5,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -33,11 +31,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
@@ -47,6 +49,9 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+
+private val CrashAccentWidth = 3.dp
+private val KeyColumnWidth = 74.sp
 
 @Composable
 fun CrashListContent(
@@ -83,17 +88,27 @@ private fun CrashCard(
 ) {
     val tint = LogLevelColors.content(LogLevel.ERROR)
     val accent = if (isNew) tint else tint.copy(alpha = 0.45f)
+    val accentWidthPx = with(LocalDensity.current) { CrashAccentWidth.toPx() }
 
     Row(
         modifier =
             Modifier.fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .height(IntrinsicSize.Min)
                 .clip(RoundedCornerShape(16.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
                 .clickable(onClick = onClick)
+                .drawBehind {
+                    val start =
+                        if (layoutDirection == LayoutDirection.Ltr) 0f
+                        else size.width - accentWidthPx
+                    drawRect(
+                        color = accent,
+                        topLeft = Offset(start, 0f),
+                        size = Size(accentWidthPx, size.height),
+                    )
+                }
+                .padding(start = CrashAccentWidth)
     ) {
-        Box(modifier = Modifier.width(3.dp).fillMaxHeight().background(accent))
         Column(modifier = Modifier.weight(1f).padding(horizontal = 14.dp, vertical = 15.dp)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -111,7 +126,7 @@ private fun CrashCard(
                 if (isNew) {
                     Text(
                         text = stringResource(R.string.logs_crash_new),
-                        fontSize = 9.sp,
+                        style = LogTextStyles.pillSmall,
                         fontWeight = FontWeight.Bold,
                         color = LogLevelColors.container(LogLevel.ERROR),
                         modifier =
@@ -136,9 +151,7 @@ private fun CrashCard(
             report.topAppFrame?.let { frame ->
                 Text(
                     text = frame,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 10.sp,
-                    lineHeight = 15.sp,
+                    style = LogTextStyles.trace,
                     color = MaterialTheme.colorScheme.outline,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -152,8 +165,7 @@ private fun CrashCard(
             ) {
                 Text(
                     text = crashSubtitle(report, formatter),
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 10.sp,
+                    style = LogTextStyles.metaSmall,
                     color = MaterialTheme.colorScheme.outline,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -242,9 +254,7 @@ fun CrashDetailContent(
             ) {
                 Text(
                     text = report.stackTrace,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 10.sp,
-                    lineHeight = 16.sp,
+                    style = LogTextStyles.trace,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -283,8 +293,7 @@ fun CrashDetailContent(
                                 R.string.logs_save_lines_fmt,
                                 report.precedingLineCount,
                             ),
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 10.sp,
+                        style = LogTextStyles.metaSmall,
                         color = MaterialTheme.colorScheme.outline,
                     )
                 }
@@ -299,9 +308,7 @@ fun CrashDetailContent(
                     ) {
                         Text(
                             text = report.precedingLogs,
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 10.sp,
-                            lineHeight = 16.sp,
+                            style = LogTextStyles.trace,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -362,15 +369,13 @@ private fun MetaRow(key: String, value: String, first: Boolean = false) {
     ) {
         Text(
             text = key,
-            fontFamily = FontFamily.Monospace,
-            fontSize = 10.sp,
+            style = LogTextStyles.metaSmall,
             color = MaterialTheme.colorScheme.outline,
-            modifier = Modifier.width(74.dp),
+            modifier = Modifier.width(with(LocalDensity.current) { KeyColumnWidth.toDp() }),
         )
         Text(
             text = value,
-            fontFamily = FontFamily.Monospace,
-            fontSize = 11.sp,
+            style = LogTextStyles.meta,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

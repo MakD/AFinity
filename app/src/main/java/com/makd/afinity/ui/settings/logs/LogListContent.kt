@@ -6,16 +6,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -29,17 +28,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
@@ -48,9 +51,12 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private val TimeColumnWidth = 50.dp
+private val RowStartPadding = 20.dp
+private val TimeColumnWidth = 50.sp
+private val TimeGutter = 12.dp
 private val RailColumnWidth = 18.dp
-private val TagColumnWidth = 84.dp
+private val FirstLineHeight = 18.dp
+private val TagColumnWidth = 100.sp
 private val RibbonWidth = 3.dp
 private const val GapContentType = "gap"
 private const val LaunchContentType = "launch"
@@ -129,43 +135,45 @@ private fun CompactRow(
 ) {
     val entry = row.entry
     val tint = LogLevelColors.content(entry.level)
+    val ribbon = LogLevelColors.ribbon(entry.level)
+    val density = LocalDensity.current
+    val ribbonWidthPx = with(density) { RibbonWidth.toPx() }
+    val tagWidth = with(density) { TagColumnWidth.toDp() }
 
     Row(
         modifier =
             Modifier.fillMaxWidth()
-                .height(IntrinsicSize.Min)
                 .background(LogLevelColors.rowTint(entry.level))
                 .clickable(onClick = onClick)
+                .drawBehind {
+                    val start =
+                        if (layoutDirection == LayoutDirection.Ltr) 0f
+                        else size.width - ribbonWidthPx
+                    drawRect(
+                        color = ribbon,
+                        topLeft = Offset(start, 0f),
+                        size = Size(ribbonWidthPx, size.height),
+                    )
+                }
+                .padding(start = RibbonWidth)
     ) {
-        Box(
-            modifier =
-                Modifier.width(RibbonWidth)
-                    .fillMaxHeight()
-                    .background(LogLevelColors.ribbon(entry.level))
-        )
         Text(
             text = formatter.format(Date(entry.timeMillis)),
-            fontFamily = FontFamily.Monospace,
-            fontSize = 10.sp,
-            lineHeight = 17.sp,
+            style = LogTextStyles.console,
             color = MaterialTheme.colorScheme.outline,
             modifier = Modifier.padding(start = 10.dp),
         )
         Text(
             text = entry.tag.uppercase(),
-            fontFamily = FontFamily.Monospace,
-            fontSize = 10.sp,
-            lineHeight = 17.sp,
+            style = LogTextStyles.console,
             color = tint,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.width(TagColumnWidth).padding(start = 8.dp),
+            modifier = Modifier.width(tagWidth).padding(start = 8.dp),
         )
         Text(
             text = highlighted(compactMessage(entry.message, entry.stackTrace), row.highlights),
-            fontFamily = FontFamily.Monospace,
-            fontSize = 11.sp,
-            lineHeight = 17.sp,
+            style = LogTextStyles.console,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -187,56 +195,64 @@ private fun ComfortableRow(
     val entry = row.entry
     val tint = LogLevelColors.content(entry.level)
     val grouped = row.count > 1
+    val railColor = MaterialTheme.colorScheme.outlineVariant
+    val density = LocalDensity.current
+    val timeWidth = with(density) { TimeColumnWidth.toDp() }
+    val railCenterPx =
+        with(density) { (RowStartPadding + timeWidth + TimeGutter + RailColumnWidth / 2).toPx() }
+    val railWidthPx = with(density) { 1.dp.toPx() }
 
     Row(
         modifier =
             Modifier.fillMaxWidth()
-                .height(IntrinsicSize.Min)
                 .clickable(onClick = onClick)
-                .padding(start = 20.dp)
+                .drawBehind {
+                    val center =
+                        if (layoutDirection == LayoutDirection.Ltr) railCenterPx
+                        else size.width - railCenterPx
+                    drawRect(
+                        color = railColor,
+                        topLeft = Offset(center - railWidthPx / 2f, 0f),
+                        size = Size(railWidthPx, size.height),
+                    )
+                }
+                .padding(start = RowStartPadding)
     ) {
         Text(
             text = row.relativeLabel ?: formatter.format(Date(entry.timeMillis)),
-            fontFamily = FontFamily.Monospace,
-            fontSize = 10.sp,
+            style = LogTextStyles.metaSmall,
             color = MaterialTheme.colorScheme.outline,
             textAlign = TextAlign.End,
-            modifier = Modifier.width(TimeColumnWidth).padding(top = 3.dp),
+            modifier =
+                Modifier.width(timeWidth)
+                    .height(FirstLineHeight)
+                    .wrapContentHeight(Alignment.CenterVertically),
         )
 
-        Box(modifier = Modifier.width(RailColumnWidth).fillMaxHeight()) {
+        Spacer(modifier = Modifier.width(TimeGutter))
+
+        Box(
+            modifier = Modifier.width(RailColumnWidth).height(FirstLineHeight),
+            contentAlignment = Alignment.Center,
+        ) {
             Box(
                 modifier =
-                    Modifier.align(Alignment.TopCenter)
-                        .width(1.dp)
-                        .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.outlineVariant)
-            )
-            Box(
-                modifier =
-                    Modifier.align(Alignment.TopCenter)
-                        .padding(top = 1.dp)
-                        .size(17.dp)
+                    Modifier.size(17.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surface)
                         .border(2.dp, tint, CircleShape)
             )
-            Box(
-                modifier =
-                    Modifier.align(Alignment.TopCenter)
-                        .padding(top = 5.dp)
-                        .size(9.dp)
-                        .clip(CircleShape)
-                        .background(tint)
-            )
+            Box(modifier = Modifier.size(9.dp).clip(CircleShape).background(tint))
         }
 
         Column(modifier = Modifier.weight(1f).padding(start = 14.dp, end = 20.dp, bottom = 20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.height(FirstLineHeight),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
                     text = entry.tag.uppercase(),
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 10.sp,
+                    style = LogTextStyles.metaSmall,
                     fontWeight = FontWeight.Medium,
                     color = tint,
                 )
@@ -244,13 +260,13 @@ private fun ComfortableRow(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "${row.count}x",
-                        fontSize = 10.sp,
+                        style = LogTextStyles.pill,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.surface,
                         modifier =
                             Modifier.clip(RoundedCornerShape(9.dp))
                                 .background(tint)
-                                .padding(horizontal = 7.dp, vertical = 1.dp),
+                                .padding(horizontal = 7.dp, vertical = 2.dp),
                     )
                 }
             }
@@ -279,9 +295,7 @@ private fun ComfortableRow(
                 ) {
                     Text(
                         text = trace,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 10.sp,
-                        lineHeight = 16.sp,
+                        style = LogTextStyles.trace,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -301,8 +315,7 @@ private fun ComfortableRow(
                     )
                     Text(
                         text = row.occurrenceTimes.joinToString(" · ") { formatter.format(Date(it)) },
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 10.sp,
+                        style = LogTextStyles.metaSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -331,19 +344,25 @@ private fun ExpandedRow(
 ) {
     val entry = row.entry
     val tint = LogLevelColors.content(entry.level)
+    val ribbon = LogLevelColors.ribbon(entry.level)
+    val ribbonWidthPx = with(LocalDensity.current) { RibbonWidth.toPx() }
 
     Row(
         modifier =
             Modifier.fillMaxWidth()
-                .height(IntrinsicSize.Min)
                 .background(LogLevelColors.expandedTint(entry.level))
+                .drawBehind {
+                    val start =
+                        if (layoutDirection == LayoutDirection.Ltr) 0f
+                        else size.width - ribbonWidthPx
+                    drawRect(
+                        color = ribbon,
+                        topLeft = Offset(start, 0f),
+                        size = Size(ribbonWidthPx, size.height),
+                    )
+                }
+                .padding(start = RibbonWidth)
     ) {
-        Box(
-            modifier =
-                Modifier.width(RibbonWidth)
-                    .fillMaxHeight()
-                    .background(LogLevelColors.ribbon(entry.level))
-        )
         Column(
             modifier =
                 Modifier.weight(1f)
@@ -356,25 +375,22 @@ private fun ExpandedRow(
             ) {
                 Text(
                     text = entry.level.name,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 9.sp,
+                    style = LogTextStyles.badge,
                     fontWeight = FontWeight.SemiBold,
                     color = LogLevelColors.container(entry.level),
                     modifier =
                         Modifier.clip(RoundedCornerShape(8.dp))
                             .background(tint)
-                            .padding(horizontal = 7.dp, vertical = 1.dp),
+                            .padding(horizontal = 7.dp, vertical = 2.dp),
                 )
                 Text(
                     text = formatter.format(Date(entry.timeMillis)),
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 10.sp,
+                    style = LogTextStyles.metaSmall,
                     color = MaterialTheme.colorScheme.outline,
                 )
                 Text(
                     text = entry.tag.uppercase(),
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 10.sp,
+                    style = LogTextStyles.metaSmall,
                     color = tint,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -383,9 +399,7 @@ private fun ExpandedRow(
 
             Text(
                 text = highlighted(entry.message, row.highlights),
-                fontFamily = FontFamily.Monospace,
-                fontSize = 12.sp,
-                lineHeight = 18.sp,
+                style = LogTextStyles.message,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(top = 7.dp),
             )
@@ -401,9 +415,7 @@ private fun ExpandedRow(
                 ) {
                     Text(
                         text = trace,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 10.sp,
-                        lineHeight = 16.sp,
+                        style = LogTextStyles.trace,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -494,8 +506,7 @@ private fun LaunchRow(row: TimelineRow.Launch, formatter: SimpleDateFormat) {
                     row.version,
                     formatter.format(Date(row.timeMillis)),
                 ),
-            fontFamily = FontFamily.Monospace,
-            fontSize = 9.sp,
+            style = LogTextStyles.badge,
             color = MaterialTheme.colorScheme.outline,
         )
         Box(
@@ -509,15 +520,17 @@ private fun LaunchRow(row: TimelineRow.Launch, formatter: SimpleDateFormat) {
 
 @Composable
 private fun GapRow(row: TimelineRow.Gap) {
-    Row(modifier = Modifier.fillMaxWidth().padding(start = 20.dp)) {
+    val timeWidth = with(LocalDensity.current) { TimeColumnWidth.toDp() }
+
+    Row(modifier = Modifier.fillMaxWidth().padding(start = RowStartPadding)) {
         Text(
             text = formatGap(row.durationMillis),
-            fontFamily = FontFamily.Monospace,
-            fontSize = 9.sp,
+            style = LogTextStyles.badge,
             color = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
             textAlign = TextAlign.End,
-            modifier = Modifier.width(TimeColumnWidth).padding(top = 14.dp),
+            modifier = Modifier.width(timeWidth).padding(top = 14.dp),
         )
+        Spacer(modifier = Modifier.width(TimeGutter))
         Column(
             modifier = Modifier.width(RailColumnWidth).height(40.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -536,35 +549,42 @@ private fun GapRow(row: TimelineRow.Gap) {
 }
 
 @Composable
-private fun buildLabel(parts: List<LabelPart>): AnnotatedString = buildAnnotatedString {
-    parts.forEach { part ->
-        when (part) {
-            is LabelPart.Literal -> append(part.text)
-            LabelPart.Variable ->
-                withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant)) {
-                    append("n")
+private fun buildLabel(parts: List<LabelPart>): AnnotatedString {
+    val variableStyle = SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant)
+    return remember(parts, variableStyle) {
+        buildAnnotatedString {
+            parts.forEach { part ->
+                when (part) {
+                    is LabelPart.Literal -> append(part.text)
+                    LabelPart.Variable -> withStyle(variableStyle) { append("n") }
                 }
+            }
         }
     }
 }
 
 @Composable
 private fun highlighted(text: String, ranges: List<IntRange>): AnnotatedString {
-    if (ranges.isEmpty()) return AnnotatedString(text)
     val style =
         SpanStyle(
             background = MaterialTheme.colorScheme.primary.copy(alpha = 0.26f),
             color = MaterialTheme.colorScheme.onSurface,
         )
-    return buildAnnotatedString {
-        var cursor = 0
-        ranges.forEach { range ->
-            if (range.first > text.length || range.last >= text.length) return@forEach
-            if (range.first > cursor) append(text.substring(cursor, range.first))
-            withStyle(style) { append(text.substring(range.first, range.last + 1)) }
-            cursor = range.last + 1
+    return remember(text, ranges, style) {
+        if (ranges.isEmpty()) {
+            AnnotatedString(text)
+        } else {
+            buildAnnotatedString {
+                var cursor = 0
+                ranges.forEach { range ->
+                    if (range.first > text.length || range.last >= text.length) return@forEach
+                    if (range.first > cursor) append(text.substring(cursor, range.first))
+                    withStyle(style) { append(text.substring(range.first, range.last + 1)) }
+                    cursor = range.last + 1
+                }
+                if (cursor < text.length) append(text.substring(cursor))
+            }
         }
-        if (cursor < text.length) append(text.substring(cursor))
     }
 }
 

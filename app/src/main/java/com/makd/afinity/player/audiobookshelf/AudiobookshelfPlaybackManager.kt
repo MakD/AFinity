@@ -84,7 +84,23 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
     }
 
     fun setSleepTimer(endTimeMillis: Long?) {
-        _playbackState.update { it.copy(sleepTimerEndTime = endTimeMillis) }
+        _playbackState.update {
+            it.copy(
+                sleepTimerEndTime = endTimeMillis,
+                sleepTimerTargetSeconds = null,
+                sleepTimerChapterTarget = null,
+            )
+        }
+    }
+
+    fun setSleepTimerTarget(targetSeconds: Double?, chapterIndex: Int?) {
+        _playbackState.update {
+            it.copy(
+                sleepTimerEndTime = null,
+                sleepTimerTargetSeconds = targetSeconds,
+                sleepTimerChapterTarget = chapterIndex,
+            )
+        }
     }
 
     fun setPlaylistInfo(episodeIds: List<String>) {
@@ -168,6 +184,8 @@ data class AudiobookshelfPlaybackState(
     val playMethod: Int? = null,
     val currentChapter: BookChapter? = null,
     val sleepTimerEndTime: Long? = null,
+    val sleepTimerTargetSeconds: Double? = null,
+    val sleepTimerChapterTarget: Int? = null,
     val isPodcastPlaylist: Boolean = false,
     val playlistEpisodeIds: List<String> = emptyList(),
     val isChapterBasedPlayback: Boolean = false,
@@ -183,5 +201,10 @@ data class AudiobookshelfPlaybackState(
         get() = (duration - currentTime).coerceAtLeast(0.0)
 
     val hasSleepTimer: Boolean
-        get() = sleepTimerEndTime != null && sleepTimerEndTime > System.currentTimeMillis()
+        get() =
+            (sleepTimerEndTime != null && sleepTimerEndTime > System.currentTimeMillis()) ||
+                sleepTimerTargetSeconds != null
+
+    val sleepTimerRemainingSeconds: Double?
+        get() = sleepTimerTargetSeconds?.let { (it - currentTime).coerceAtLeast(0.0) }
 }

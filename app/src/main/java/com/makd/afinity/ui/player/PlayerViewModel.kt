@@ -72,7 +72,10 @@ import com.makd.afinity.data.models.player.GestureConfig
 import com.makd.afinity.data.models.player.MpvHdrOutput
 import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.models.player.PlayerEvent
+import com.makd.afinity.data.models.player.SLEEP_TIMER_EXTEND_MINUTES
+import com.makd.afinity.data.models.player.SLEEP_TIMER_PROMPT_THRESHOLD_MS
 import com.makd.afinity.data.models.player.SkipMode
+import com.makd.afinity.data.models.player.SleepTimerMode
 import com.makd.afinity.data.models.player.StreamDecision
 import com.makd.afinity.data.models.player.SubtitleOutlineStyle
 import com.makd.afinity.data.models.player.SubtitlePreferences
@@ -220,6 +223,12 @@ constructor(
     private var segmentCheckingJob: Job? = null
     private var skipButtonHideJob: Job? = null
     private var lastShownSegmentKey: String? = null
+
+    private var sleepTimerJob: Job? = null
+    private var sleepTimerFadeJob: Job? = null
+    private var sleepTimerCloseJob: Job? = null
+    private var sleepTimerDeadlineMs: Long = 0L
+    private var volumeBeforeSleepFade: Float? = null
 
     private var progressReportingJob: Job? = null
     private var pendingMainItemOptions: MainItemPlaybackOptions? = null
@@ -948,14 +957,23 @@ constructor(
             viewModelScope.launch {
                 val isIntro = _uiState.value.isPlayingIntro
                 val autoPlay = preferencesRepository.getAutoPlay()
+                val stopAtItemEnd =
+                    !isIntro && _uiState.value.sleepTimerMode is SleepTimerMode.EndOfItem
                 val nextItem =
-                    if ((isIntro || autoPlay) && playlistManager.canAutoAdvance()) {
+                    if ((isIntro || autoPlay) &&
+                        !stopAtItemEnd &&
+                        playlistManager.canAutoAdvance()
+                    ) {
                         playlistManager.next()
                     } else null
                 when {
                     nextItem != null -> {
                         Timber.d("Episode ended, auto-advancing to: ${nextItem.name}")
                         playQueueItem(nextItem)
+                    }
+                    stopAtItemEnd -> {
+                        Timber.d("Item ended with an end-of-item sleep timer armed")
+                        onSleepTimerExpired()
                     }
                     !_uiState.value.isLiveChannel -> {
                         Timber.d("Playback ended with no next item, closing player")
@@ -1109,7 +1127,9 @@ constructor(
         viewModelScope.launch {
             if (syncPlayInterceptor?.handle(event) == true) return@launch
             when (event) {
-                is PlayerEvent.Play -> player.play()
+                is PlayerEvent.Play ->
+                    if (_uiState.value.sleepTimerExpired) resumeFromSleepTimer()
+                    else player.play()
                 is PlayerEvent.Pause -> player.pause()
                 is PlayerEvent.Seek -> player.seekTo(event.positionMs)
                 is PlayerEvent.SeekRelative -> {
@@ -1187,6 +1207,11 @@ constructor(
 
                     if (event.segment.type == AfinitySegmentType.OUTRO) {
                         viewModelScope.launch {
+                            if (_uiState.value.sleepTimerMode is SleepTimerMode.EndOfItem) {
+                                Timber.d("Outro skipped with an end-of-item sleep timer armed")
+                                onSleepTimerExpired()
+                                return@launch
+                            }
                             val nextItem =
                                 if (playlistManager.canAutoAdvance()) {
                                     playlistManager.getNextItem()
@@ -1326,6 +1351,14 @@ constructor(
                         subtitleStreamIndex = event.subtitleStreamIndex,
                     )
                 }
+
+                is PlayerEvent.SetSleepTimer -> setSleepTimer(event.mode)
+
+                is PlayerEvent.CancelSleepTimer -> clearSleepTimerState()
+
+                is PlayerEvent.ExtendSleepTimer -> extendSleepTimer()
+
+                is PlayerEvent.ResumeFromSleepTimer -> resumeFromSleepTimer()
             }
         }
     }
@@ -3522,6 +3555,7 @@ constructor(
     private var playStatus = false
 
     fun onResume() {
+        if (_uiState.value.sleepTimerExpired) return
         if (!_uiState.value.isCasting && playStatus) {
             player.play()
         }
@@ -3617,6 +3651,170 @@ constructor(
         return if (playerDuration > 0) playerDuration * 10000 else item.runtimeTicks
     }
 
+    private fun sleepTimerEndOfItemRemainingMs(): Long {
+        if (!::player.isInitialized) return 0L
+        val duration = player.duration
+        if (duration <= 0L) return 0L
+        val position = player.currentPosition.coerceAtLeast(0L)
+        val speed = _uiState.value.playbackSpeed.coerceAtLeast(0.1f)
+        return ((duration - position).coerceAtLeast(0L) / speed).toLong()
+    }
+
+    private fun setSleepTimer(mode: SleepTimerMode) {
+        clearSleepTimerState()
+
+        val remaining =
+            when (mode) {
+                is SleepTimerMode.Duration -> mode.minutes * 60_000L
+                is SleepTimerMode.EndOfItem -> sleepTimerEndOfItemRemainingMs()
+            }
+        if (remaining <= 0L) return
+
+        sleepTimerDeadlineMs = System.currentTimeMillis() + remaining
+        updateUiState { it.copy(sleepTimerMode = mode, sleepTimerRemainingMs = remaining) }
+        startSleepTimerTicker()
+    }
+
+    private fun startSleepTimerTicker() {
+        sleepTimerJob?.cancel()
+        sleepTimerJob = viewModelScope.launch {
+            while (true) {
+                val mode = _uiState.value.sleepTimerMode ?: break
+                val remaining =
+                    when (mode) {
+                        is SleepTimerMode.EndOfItem -> sleepTimerEndOfItemRemainingMs()
+                        is SleepTimerMode.Duration ->
+                            (sleepTimerDeadlineMs - System.currentTimeMillis()).coerceAtLeast(0L)
+                    }
+
+                updateUiState {
+                    it.copy(
+                        sleepTimerRemainingMs = remaining,
+                        showSleepTimerExtendPrompt =
+                            remaining > 0L && remaining <= SLEEP_TIMER_PROMPT_THRESHOLD_MS,
+                    )
+                }
+
+                if (remaining <= 0L && mode is SleepTimerMode.Duration) {
+                    onSleepTimerExpired()
+                    break
+                }
+                delay(1000)
+            }
+        }
+    }
+
+    private fun extendSleepTimer() {
+        val state = _uiState.value
+        if (state.sleepTimerMode == null || state.sleepTimerExpired) return
+
+        val remaining =
+            state.sleepTimerRemainingMs.coerceAtLeast(0L) + SLEEP_TIMER_EXTEND_MINUTES * 60_000L
+        sleepTimerDeadlineMs = System.currentTimeMillis() + remaining
+        updateUiState {
+            it.copy(
+                sleepTimerMode = SleepTimerMode.Duration((remaining / 60_000L).toInt()),
+                sleepTimerRemainingMs = remaining,
+                showSleepTimerExtendPrompt = false,
+            )
+        }
+        startSleepTimerTicker()
+    }
+
+    private fun onSleepTimerExpired() {
+        if (_uiState.value.sleepTimerExpired) return
+
+        sleepTimerJob?.cancel()
+        sleepTimerJob = null
+
+        updateUiState {
+            it.copy(
+                sleepTimerExpired = true,
+                sleepTimerRemainingMs = 0L,
+                showSleepTimerExtendPrompt = false,
+                sleepTimerCloseInSeconds = SLEEP_TIMER_GRACE_SECONDS,
+            )
+        }
+        hideControls()
+
+        sleepTimerFadeJob?.cancel()
+        sleepTimerFadeJob = viewModelScope.launch {
+            if (::player.isInitialized && player.isPlaying) {
+                val originalVolume = getInternalVolume()
+                volumeBeforeSleepFade = originalVolume
+                for (step in SLEEP_TIMER_FADE_STEPS downTo 0) {
+                    setInternalVolume(originalVolume * (step.toFloat() / SLEEP_TIMER_FADE_STEPS))
+                    delay(SLEEP_TIMER_FADE_MS / SLEEP_TIMER_FADE_STEPS)
+                }
+                player.pause()
+                restoreVolumeAfterSleepFade()
+            }
+            startSleepTimerCloseCountdown()
+        }
+    }
+
+    private fun startSleepTimerCloseCountdown() {
+        sleepTimerCloseJob?.cancel()
+        sleepTimerCloseJob = viewModelScope.launch {
+            var remaining = SLEEP_TIMER_GRACE_SECONDS
+            while (remaining > 0) {
+                updateUiState { it.copy(sleepTimerCloseInSeconds = remaining) }
+                delay(1000)
+                remaining--
+            }
+            updateUiState { it.copy(sleepTimerCloseInSeconds = 0) }
+            Timber.d("Sleep timer grace period elapsed, closing player")
+            _closePlayerEvent.tryEmit(Unit)
+        }
+    }
+
+    private fun resumeFromSleepTimer() {
+        val wasEnded = ::player.isInitialized && player.playbackState == Player.STATE_ENDED
+        clearSleepTimerState()
+
+        if (!::player.isInitialized) return
+        if (wasEnded) {
+            viewModelScope.launch {
+                val nextItem =
+                    if (playlistManager.canAutoAdvance()) playlistManager.next() else null
+                if (nextItem != null) {
+                    playQueueItem(nextItem)
+                } else {
+                    _closePlayerEvent.tryEmit(Unit)
+                }
+            }
+        } else {
+            player.play()
+        }
+        showControls()
+    }
+
+    private fun restoreVolumeAfterSleepFade() {
+        volumeBeforeSleepFade?.let { setInternalVolume(it) }
+        volumeBeforeSleepFade = null
+    }
+
+    private fun clearSleepTimerState() {
+        sleepTimerJob?.cancel()
+        sleepTimerJob = null
+        sleepTimerFadeJob?.cancel()
+        sleepTimerFadeJob = null
+        sleepTimerCloseJob?.cancel()
+        sleepTimerCloseJob = null
+        sleepTimerDeadlineMs = 0L
+        restoreVolumeAfterSleepFade()
+
+        updateUiState {
+            it.copy(
+                sleepTimerMode = null,
+                sleepTimerRemainingMs = 0L,
+                sleepTimerExpired = false,
+                sleepTimerCloseInSeconds = 0,
+                showSleepTimerExtendPrompt = false,
+            )
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
 
@@ -3628,6 +3826,9 @@ constructor(
         skipButtonHideJob?.cancel()
         controlsHideJob?.cancel()
         statsPollingJob?.cancel()
+        sleepTimerJob?.cancel()
+        sleepTimerFadeJob?.cancel()
+        sleepTimerCloseJob?.cancel()
         videoMediaSession?.release()
         videoMediaSession = null
         if (::player.isInitialized) {
@@ -3727,7 +3928,15 @@ constructor(
         val isPlayingIntro: Boolean = false,
         val showPlaybackStats: Boolean = false,
         val playbackStats: PlaybackStats = PlaybackStats(),
-    )
+        val sleepTimerMode: SleepTimerMode? = null,
+        val sleepTimerRemainingMs: Long = 0L,
+        val sleepTimerExpired: Boolean = false,
+        val sleepTimerCloseInSeconds: Int = 0,
+        val showSleepTimerExtendPrompt: Boolean = false,
+    ) {
+        val isSleepTimerArmed: Boolean
+            get() = sleepTimerMode != null && !sleepTimerExpired
+    }
 
     data class MainItemPlaybackOptions(
         val itemId: UUID,
@@ -3739,6 +3948,9 @@ constructor(
 
     private companion object {
         const val SERVER_STATS_INTERVAL_TICKS = 5
+        const val SLEEP_TIMER_GRACE_SECONDS = 60
+        const val SLEEP_TIMER_FADE_MS = 5_000L
+        const val SLEEP_TIMER_FADE_STEPS = 20
     }
 }
 

@@ -103,6 +103,14 @@ sealed class PlayerEvent {
         val audioStreamIndex: Int? = null,
         val subtitleStreamIndex: Int? = null,
     ) : PlayerEvent()
+
+    data class SetSleepTimer(val mode: SleepTimerMode) : PlayerEvent()
+
+    data object CancelSleepTimer : PlayerEvent()
+
+    data object ExtendSleepTimer : PlayerEvent()
+
+    data object ResumeFromSleepTimer : PlayerEvent()
 }
 
 data class PlaybackStats(

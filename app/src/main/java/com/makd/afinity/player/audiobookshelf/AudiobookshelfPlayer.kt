@@ -34,6 +34,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -550,6 +551,45 @@ constructor(
             pause()
             playbackManager.setSleepTimer(null)
             Timber.d("Sleep timer triggered")
+        }
+    }
+
+    fun setChapterSleepTimer(extraChapters: Int = 0) {
+        cancelSleepTimer()
+        val state = playbackManager.playbackState.value
+        val chapters = state.chapters
+
+        val targetSeconds: Double
+        val chapterIndex: Int?
+
+        if (chapters.isEmpty()) {
+            if (state.duration <= 0.0) return
+            targetSeconds = state.duration
+            chapterIndex = null
+        } else {
+            val currentIndex = state.currentChapterIndex.takeIf { it >= 0 } ?: 0
+            val index = (currentIndex + extraChapters).coerceIn(chapters.indices)
+            targetSeconds = chapters[index].end
+            chapterIndex = index
+        }
+
+        if (targetSeconds <= state.currentTime) return
+
+        playbackManager.setSleepTimerTarget(targetSeconds, chapterIndex)
+
+        sleepTimerJob = scope.launch {
+            while (isActive) {
+                val current = playbackManager.playbackState.value
+                val remainingSeconds = targetSeconds - current.currentTime
+                if (remainingSeconds <= 0.0) break
+
+                val speed = current.playbackSpeed.coerceAtLeast(0.1f)
+                val remainingMs = (remainingSeconds / speed * 1000).toLong()
+                delay(if (current.isPlaying) remainingMs.coerceAtMost(1_000L) else 1_000L)
+            }
+            pause()
+            playbackManager.setSleepTimerTarget(null, null)
+            Timber.d("Chapter sleep timer triggered at ${targetSeconds}s")
         }
     }
 

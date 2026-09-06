@@ -3,10 +3,13 @@ package com.makd.afinity.ui.downloads.components
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -40,6 +43,7 @@ import com.makd.afinity.R
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.downloads.DownloadCatalogEntry
 import com.makd.afinity.ui.downloads.DownloadCategory
+import com.makd.afinity.ui.downloads.DownloadCategoryUsage
 import com.makd.afinity.ui.theme.CardDimensions
 
 @Composable
@@ -257,23 +261,33 @@ private fun CardBadge(
 }
 
 @Composable
+fun downloadCategoryColor(category: DownloadCategory): Color =
+    when (category) {
+        DownloadCategory.VIDEO -> MaterialTheme.colorScheme.primary
+        DownloadCategory.MUSIC -> MaterialTheme.colorScheme.tertiary
+        DownloadCategory.AUDIOBOOK -> MaterialTheme.colorScheme.secondary
+        DownloadCategory.PODCAST -> MaterialTheme.colorScheme.primaryContainer
+    }
+
+@Composable
 fun DownloadStorageStrip(
-    downloadsBytes: Long,
+    categories: List<DownloadCategoryUsage>,
+    selectedCategory: DownloadCategory?,
     deviceUsedBytes: Long,
     deviceTotalBytes: Long,
     freeBytes: Long,
     formatSize: (Long) -> String,
+    onSelectCategory: (DownloadCategory?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val downloadsFraction =
-        if (deviceTotalBytes > 0L) {
-            (downloadsBytes.toFloat() / deviceTotalBytes).coerceIn(0f, 1f)
-        } else 0f
+    val downloadsBytes = categories.sumOf { it.bytes }
+    val fractionOf: (Long) -> Float = { bytes ->
+        if (deviceTotalBytes > 0L) (bytes.toFloat() / deviceTotalBytes).coerceIn(0f, 1f) else 0f
+    }
+    val downloadsFraction = fractionOf(downloadsBytes)
     val otherFraction =
-        if (deviceTotalBytes > 0L) {
-            ((deviceUsedBytes - downloadsBytes).coerceAtLeast(0L).toFloat() / deviceTotalBytes)
-                .coerceIn(0f, 1f - downloadsFraction)
-        } else 0f
+        fractionOf((deviceUsedBytes - downloadsBytes).coerceAtLeast(0L))
+            .coerceAtMost(1f - downloadsFraction)
     val remainder = (1f - downloadsFraction - otherFraction).coerceAtLeast(0f)
 
     Surface(
@@ -283,7 +297,7 @@ fun DownloadStorageStrip(
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -307,16 +321,28 @@ fun DownloadStorageStrip(
             Row(
                 modifier =
                     Modifier.fillMaxWidth()
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                        .height(10.dp)
+                        .clip(RoundedCornerShape(5.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                if (downloadsFraction > 0f) {
+                categories.forEach { usage ->
+                    val fraction = fractionOf(usage.bytes)
+                    if (fraction <= 0f) return@forEach
+                    val dimmed = selectedCategory != null && selectedCategory != usage.category
                     Box(
                         modifier =
-                            Modifier.weight(downloadsFraction)
+                            Modifier.weight(fraction)
                                 .fillMaxHeight()
-                                .background(MaterialTheme.colorScheme.primary)
+                                .background(
+                                    downloadCategoryColor(usage.category)
+                                        .copy(alpha = if (dimmed) 0.3f else 1f)
+                                )
+                                .clickable {
+                                    onSelectCategory(
+                                        usage.category.takeIf { it != selectedCategory }
+                                    )
+                                }
                     )
                 }
                 if (otherFraction > 0f) {
@@ -324,12 +350,67 @@ fun DownloadStorageStrip(
                         modifier =
                             Modifier.weight(otherFraction)
                                 .fillMaxHeight()
-                                .background(MaterialTheme.colorScheme.primaryContainer)
+                                .background(MaterialTheme.colorScheme.outlineVariant)
                     )
                 }
                 if (remainder > 0f) {
                     Spacer(modifier = Modifier.weight(remainder))
                 }
+            }
+
+            if (categories.isNotEmpty()) {
+                DownloadCategoryLegend(
+                    categories = categories,
+                    selectedCategory = selectedCategory,
+                    formatSize = formatSize,
+                    onSelectCategory = onSelectCategory,
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DownloadCategoryLegend(
+    categories: List<DownloadCategoryUsage>,
+    selectedCategory: DownloadCategory?,
+    formatSize: (Long) -> String,
+    onSelectCategory: (DownloadCategory?) -> Unit,
+) {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        categories.forEach { usage ->
+            val selected = selectedCategory == usage.category
+            val color = downloadCategoryColor(usage.category)
+            Row(
+                modifier =
+                    Modifier.clip(RoundedCornerShape(14.dp))
+                        .background(
+                            if (selected) color.copy(alpha = 0.16f)
+                            else MaterialTheme.colorScheme.surfaceContainerHigh
+                        )
+                        .clickable {
+                            onSelectCategory(usage.category.takeIf { !selected })
+                        }
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+            ) {
+                Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(color))
+                Text(
+                    text = downloadCategoryLabel(usage.category),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = formatSize(usage.bytes),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

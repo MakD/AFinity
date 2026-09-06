@@ -161,6 +161,20 @@ fun PlayerControls(
     var showEpisodeSwitcher by remember { mutableStateOf(false) }
     var showChapterSwitcher by remember { mutableStateOf(false) }
     var showMembersPopup by remember { mutableStateOf(false) }
+    var showSleepTimerPanel by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.sleepTimerExpired) {
+        if (uiState.sleepTimerExpired) showSleepTimerPanel = false
+    }
+
+    val sleepTimerEndOfItemRemainingMs =
+        if (uiState.isLiveChannel || uiState.duration <= 0L) {
+            0L
+        } else {
+            ((uiState.duration - uiState.currentPosition).coerceAtLeast(0L) /
+                    uiState.playbackSpeed.coerceAtLeast(0.1f))
+                .toLong()
+        }
 
     val currentItem = uiState.currentItem
 
@@ -372,6 +386,7 @@ fun PlayerControls(
                 !uiState.playWhenReady &&
                 !uiState.isControlsLocked &&
                 !uiState.isInPictureInPictureMode &&
+                !uiState.sleepTimerExpired &&
                 uiState.currentItem != null &&
                 !uiState.isLiveChannel &&
                 !uiState.isPlayingIntro
@@ -563,6 +578,7 @@ fun PlayerControls(
                         onPlayerEvent = onPlayerEvent,
                         onSpeedToggle = { showSpeedDialog = !showSpeedDialog },
                         onTrackPanelToggle = { showTrackPanel = !showTrackPanel },
+                        onSleepTimerToggle = { showSleepTimerPanel = !showSleepTimerPanel },
                         onEpisodeSwitcherToggle = { showEpisodeSwitcher = !showEpisodeSwitcher },
                         showEpisodeSwitcherButton =
                             (playlistQueue.size - playlistContentStartIndex) > 1 &&
@@ -600,7 +616,8 @@ fun PlayerControls(
         }
         val currentSegment = uiState.currentSegment
         AnimatedVisibility(
-            visible = uiState.showSkipButton && currentSegment != null,
+            visible =
+                uiState.showSkipButton && currentSegment != null && !uiState.sleepTimerExpired,
             modifier =
                 Modifier.align(Alignment.BottomEnd)
                     .windowInsetsPadding(
@@ -651,6 +668,50 @@ fun PlayerControls(
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
+        }
+
+        AnimatedVisibility(
+            visible =
+                uiState.showSleepTimerExtendPrompt &&
+                    uiState.isPlaying &&
+                    !uiState.showSkipButton &&
+                    !uiState.isControlsLocked &&
+                    !uiState.isInPictureInPictureMode,
+            modifier =
+                Modifier.align(Alignment.BottomEnd)
+                    .windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+                    )
+                    .padding(end = 16.dp, bottom = 110.dp),
+            enter =
+                fadeIn(tween(300)) +
+                    scaleIn(
+                        initialScale = 0.8f,
+                        animationSpec = tween(300),
+                        transformOrigin = TransformOrigin(1f, 1f),
+                    ),
+            exit =
+                fadeOut(tween(300)) +
+                    scaleOut(
+                        targetScale = 0.8f,
+                        animationSpec = tween(300),
+                        transformOrigin = TransformOrigin(1f, 1f),
+                    ),
+        ) {
+            SleepTimerExtendPrompt(
+                remainingMs = uiState.sleepTimerRemainingMs,
+                onExtend = { onPlayerEvent(PlayerEvent.ExtendSleepTimer) },
+            )
+        }
+
+        if (showSleepTimerPanel) {
+            SleepTimerPanel(
+                uiState = uiState,
+                endOfItemRemainingMs = sleepTimerEndOfItemRemainingMs,
+                onSelectMode = { mode -> onPlayerEvent(PlayerEvent.SetSleepTimer(mode)) },
+                onCancel = { onPlayerEvent(PlayerEvent.CancelSleepTimer) },
+                onDismiss = { showSleepTimerPanel = false },
+            )
         }
 
         if (showTrackPanel) {
@@ -928,6 +989,13 @@ fun PlayerControls(
                 }
             }
         }
+
+        if (uiState.sleepTimerExpired && !uiState.isInPictureInPictureMode) {
+            SleepTimerEndedOverlay(
+                uiState = uiState,
+                onResume = { onPlayerEvent(PlayerEvent.ResumeFromSleepTimer) },
+            )
+        }
     }
 }
 
@@ -1149,6 +1217,7 @@ private fun BottomControls(
     onPlayerEvent: (PlayerEvent) -> Unit,
     onSpeedToggle: () -> Unit,
     onTrackPanelToggle: () -> Unit,
+    onSleepTimerToggle: () -> Unit = {},
     onEpisodeSwitcherToggle: () -> Unit = {},
     showEpisodeSwitcherButton: Boolean = false,
     onChapterSwitcherToggle: () -> Unit = {},
@@ -1186,14 +1255,9 @@ private fun BottomControls(
                         horizontalArrangement = Arrangement.spacedBy(14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        val tracksActive =
-                            uiState.audioStreamIndex != null || uiState.subtitleStreamIndex != null
                         LabeledControl(
-                            painter = painterResource(id = R.drawable.ic_subtitles),
+                            painter = painterResource(id = R.drawable.ic_settings),
                             label = stringResource(R.string.player_tracks_label),
-                            tint =
-                                if (tracksActive) MaterialTheme.colorScheme.primary
-                                else Color.White.copy(alpha = 0.72f),
                             showLabel = false,
                             onClick = onTrackPanelToggle,
                         )
@@ -1202,6 +1266,23 @@ private fun BottomControls(
                             label = stringResource(R.string.cd_speed),
                             showLabel = false,
                             onClick = onSpeedToggle,
+                        )
+                        val sleepTimerArmed = uiState.isSleepTimerArmed
+                        LabeledControl(
+                            painter =
+                                painterResource(
+                                    id =
+                                        if (sleepTimerArmed) R.drawable.ic_moon_filled
+                                        else R.drawable.ic_moon
+                                ),
+                            label =
+                                if (sleepTimerArmed) formatTime(uiState.sleepTimerRemainingMs)
+                                else stringResource(R.string.player_sleep_timer_title),
+                            tint =
+                                if (sleepTimerArmed) MaterialTheme.colorScheme.primary
+                                else Color.White.copy(alpha = 0.72f),
+                            showLabel = sleepTimerArmed,
+                            onClick = onSleepTimerToggle,
                         )
                     }
 

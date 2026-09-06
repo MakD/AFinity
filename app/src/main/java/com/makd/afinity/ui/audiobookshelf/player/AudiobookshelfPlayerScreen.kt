@@ -254,6 +254,23 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
                 onTimerSelected = viewModel::setSleepTimer,
                 onCancelTimer = viewModel::cancelSleepTimer,
                 onDismiss = viewModel::dismissSleepTimerDialog,
+                chapterCount = playbackState.chapters.size,
+                currentChapterIndex = playbackState.currentChapterIndex,
+                isPodcast = playbackState.isPodcastPlaylist,
+                chapterTargetRemainingSeconds = { extraChapters ->
+                    val chapters = playbackState.chapters
+                    val target =
+                        if (chapters.isEmpty()) {
+                            playbackState.duration.takeIf { it > 0.0 }
+                        } else {
+                            val index = playbackState.currentChapterIndex.coerceAtLeast(0)
+                            chapters.getOrNull(index + extraChapters)?.end
+                        }
+                    target?.minus(playbackState.currentTime)?.takeIf { it > 0.0 }
+                },
+                onChapterTimerSelected = viewModel::setChapterSleepTimer,
+                activeChapterTarget = playbackState.sleepTimerChapterTarget,
+                activeTargetRemainingSeconds = playbackState.sleepTimerRemainingSeconds,
             )
         }
 
@@ -460,12 +477,12 @@ fun SharedTransitionScope.PortraitPlayerContent(
             AudioPlayerControlSlot(
                 painter =
                     painterResource(
-                        if (playbackState.sleepTimerEndTime != null) R.drawable.ic_moon_filled
+                        if (playbackState.hasSleepTimer) R.drawable.ic_moon_filled
                         else R.drawable.ic_moon
                     ),
                 contentDescription = stringResource(R.string.cd_music_sleep_timer),
                 onClick = viewModel::showSleepTimerDialog,
-                active = playbackState.sleepTimerEndTime != null,
+                active = playbackState.hasSleepTimer,
                 activeColor = animatedColor,
             )
             AudioPlayerControlSlot(
@@ -658,12 +675,12 @@ fun SharedTransitionScope.LandscapePlayerContent(
                 AudioPlayerControlSlot(
                     painter =
                         painterResource(
-                            if (playbackState.sleepTimerEndTime != null) R.drawable.ic_moon_filled
+                            if (playbackState.hasSleepTimer) R.drawable.ic_moon_filled
                             else R.drawable.ic_moon
                         ),
                     contentDescription = stringResource(R.string.cd_music_sleep_timer),
                     onClick = viewModel::showSleepTimerDialog,
-                    active = playbackState.sleepTimerEndTime != null,
+                    active = playbackState.hasSleepTimer,
                     activeColor = animatedColor,
                 )
                 AudioPlayerControlSlot(
