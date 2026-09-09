@@ -981,4 +981,72 @@
     <string name="music_nav_tracks">Låtar</string>
     <string name="music_radio_mode_similar">Liknande</string>
     <string name="music_radio_mode_similar_desc">Spelar låtar som liknar utgångslåten, hämtade från Jellyfins direktmix</string>
+    <plurals name="quota_days_fmt">
+        <item quantity="one">%1$d / %2$d dag</item>
+        <item quantity="other">%1$d / %2$d dagar</item>
+    </plurals>
+    <string name="music_radio_mode_continuous">Kontinuerligt</string>
+    <string name="music_radio_mode_continuous_desc">Varje ny låt liknar den föregående och flyter naturligt vidare</string>
+    <string name="music_radio_mode_album_mix">Albumblandning</string>
+    <string name="music_radio_mode_album_mix_desc">Köar hela album som liknar källalbumet</string>
+    <string name="music_radio_mode_reshuffle">Blanda om</string>
+    <string name="music_radio_mode_reshuffle_desc">Blandar om källåtarna vid upprepning, som blanda-och-upprepa</string>
+    <string name="music_radio_mode_random">Slumpmässigt</string>
+    <string name="music_radio_mode_random_desc">Väljer låtar slumpmässigt från källan; dubbletter tillåts</string>
+    <string name="cd_music_minimize">Minimera</string>
+    <string name="cd_music_sleep_timer">Insomningstimer</string>
+    <string name="cd_music_queue">Kö</string>
+    <string name="cd_music_add_to_playlist">Lägg till i spellista</string>
+    <string name="cd_music_instant_mix">Direktmix</string>
+    <string name="cd_music_start_radio">Starta radio</string>
+    <string name="cd_music_shuffle">Blanda</string>
+    <string name="cd_music_repeat">Upprepa</string>
+    <string name="cd_music_lyrics">Låttexter</string>
+    <string name="cd_music_now_playing">Spelas nu</string>
+    <string name="cd_music_more_options">Fler alternativ</string>
+    <string name="cd_music_downloaded">Nedladdad</string>
+    <string name="cd_music_drag_reorder">Dra för att ändra ordning</string>
+    <string name="cd_music_remove">Ta bort</string>
+    <string name="cd_music_seek_backward">Sök bakåt</string>
+    <string name="cd_music_seek_forward">Sök framåt</string>
+    <string name="cd_music_delete_playlist">Ta bort spellista</string>
+    <string name="music_filter_clear">Rensa</string>
+    <string name="music_tab_genres">Genrer</string>
+    <string name="music_nav_genres">Genrer</string>
+    <string name="pref_cast_max_bitrate_auto">Automatiskt (nätverkstest)</string>
+    <string name="request_all_seasons_note">Alla säsonger kommer att begäras</string>
+    <plurals name="request_quota_period_fmt">
+        <item quantity="one">per %1$d dag</item>
+        <item quantity="other">per %1$d dagar</item>
+    </plurals>
+    <string name="request_quota_exceeded">Gränsen har nåtts</string>
+    <string name="request_quota_exceeded_message">Du har inte tillräckligt många förfrågningar kvar. Din kvot återställs automatiskt.</string>
+    <plurals name="request_quota_movie_remaining_fmt">
+        <item quantity="one">%1$d av %2$d filmförfrågan återstår</item>
+        <item quantity="other">%1$d av %2$d filmförfrågningar återstår</item>
+    </plurals>
+    <plurals name="request_quota_tv_remaining_fmt">
+        <item quantity="one">%1$d av %2$d säsongsförfrågan återstår</item>
+        <item quantity="other">%1$d av %2$d säsongsförfrågningar återstår</item>
+    </plurals>
+    <string name="request_language_profile">Språkprofil</string>
+    <string name="request_tags">Taggar</string>
+    <string name="request_tags_none">Ingen</string>
+    <string name="request_as_label">Begär som</string>
+    <string name="request_series_match">Seriematchning</string>
+    <string name="request_select_placeholder">Välj …</string>
+    <string name="seerr_detail_request">Begär</string>
+    <string name="seerr_detail_open_library">Öppna i biblioteket</string>
+    <string name="seerr_collection_fallback">Samling</string>
+    <plurals name="season_count_fmt">
+        <item quantity="one">%1$d säsong</item>
+        <item quantity="other">%1$d säsonger</item>
+    </plurals>
+    <string name="seerr_recommendations_title">Rekommendationer</string>
+    <string name="seerr_details_title">Detaljer</string>
+    <string name="btn_validate">Validera</string>
+    <string name="update_console_status_hashing">Beräknar kontrollsumma för nedladdad fil …</string>
+    <string name="update_console_status_match">MATCHNING: autentisk version, säker att installera</string>
+    <string name="update_console_status_mismatch">FELMATCHNING: filen har tagits bort, ladda ned igen</string>
+    <string name="update_console_status_error">FEL: kunde inte läsa filen, ladda ned igen</string>
 </resources>
