@@ -12,6 +12,7 @@ import com.makd.afinity.data.repository.DatabaseRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.UUID
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.operations.LyricApi
@@ -81,6 +82,8 @@ constructor(
 
                 Timber.i("Cached ${lines.size} lyric lines for track $itemId")
                 Result.success(workDataOf())
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to cache lyrics for track $itemId, not fatal")
                 Result.success(workDataOf())

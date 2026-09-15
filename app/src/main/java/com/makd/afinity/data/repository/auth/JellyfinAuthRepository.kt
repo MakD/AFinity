@@ -12,6 +12,7 @@ import com.makd.afinity.util.forUser
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
@@ -139,6 +140,8 @@ constructor(
                     scope.launch { registerClientCapabilities(client) }
                 }
                 return@withContext AuthRepository.RestoreResult.Success
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Critical error during auth restoration")
                 return@withContext AuthRepository.RestoreResult.Failed
@@ -154,6 +157,8 @@ constructor(
         try {
             securePreferencesRepository.clearAuthenticationData()
             Timber.d("Cleared all encrypted authentication data")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to clear encrypted authentication data")
         }
@@ -182,6 +187,8 @@ constructor(
                 val authResult = response.content
                 handleSuccessfulAuth(authResult, username, client)
                 AuthRepository.AuthResult.Success(authResult)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Authentication failed")
                 AuthRepository.AuthResult.Error(friendlyAuthError(e))
@@ -219,6 +226,8 @@ constructor(
                 val username = authResult.user?.name ?: "QuickConnect User"
                 handleSuccessfulAuth(authResult, username, client)
                 AuthRepository.AuthResult.Success(authResult)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "QuickConnect authentication failed")
                 AuthRepository.AuthResult.Error(friendlyAuthError(e))
@@ -244,6 +253,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to initiate QuickConnect")
                 null
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error initiating QuickConnect")
                 null
@@ -272,6 +283,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get QuickConnect state")
                 null
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting QuickConnect state")
                 null
@@ -287,6 +300,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to read QuickConnect availability")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error reading QuickConnect availability")
                 false
@@ -316,6 +331,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "QuickConnect authorization failed")
                 QuickConnectAuthorization.FAILED
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error during QuickConnect authorization")
                 QuickConnectAuthorization.FAILED
@@ -328,6 +345,8 @@ constructor(
             try {
                 sessionManager.logout()
                 Timber.d("Successfully logged out")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error during logout")
             }
@@ -352,6 +371,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get current user")
                 null
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting current user")
                 null
@@ -381,6 +402,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get public users")
                 emptyList()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting public users")
                 emptyList()
@@ -410,6 +433,8 @@ constructor(
                 try {
                     databaseRepository.insertUser(user)
                     Timber.d("Saved user to database: ${user.name}")
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to save user to database, continuing anyway")
                 }
@@ -438,6 +463,8 @@ constructor(
             Timber.d("Successfully registered client capabilities with icon URL")
         } catch (e: ApiClientException) {
             Timber.e(e, "Failed to register client capabilities")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Unexpected error registering client capabilities")
         }

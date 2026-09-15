@@ -21,6 +21,7 @@ import com.makd.afinity.ui.settings.servers.JellyfinStats
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
@@ -67,6 +68,8 @@ constructor(
     override suspend fun discoverServersFlow(): Flow<List<Server>> {
         return try {
             serverRepository.discoverServersFlow()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to discover servers flow")
             flowOf(emptyList())
@@ -78,6 +81,8 @@ constructor(
     ): JellyfinServerRepository.ServerConnectionResult {
         return try {
             serverRepository.testServerConnection(serverUrl)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to validate server: $serverUrl")
             JellyfinServerRepository.ServerConnectionResult.Error(
@@ -93,6 +98,8 @@ constructor(
     override suspend fun logout() {
         try {
             authRepository.logout()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to logout")
         }
@@ -101,6 +108,8 @@ constructor(
     override suspend fun getCurrentUser(): User? {
         return try {
             authRepository.getCurrentUser()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to get current user")
             null
@@ -110,6 +119,8 @@ constructor(
     override suspend fun getPublicUsers(serverUrl: String): List<User> {
         return try {
             authRepository.getPublicUsers(serverUrl)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to get public users")
             emptyList()
@@ -124,6 +135,8 @@ constructor(
             currentUser?.primaryImageTag?.let { imageTag ->
                 "$serverUrl/Users/${currentUser.id}/Images/Primary?tag=$imageTag"
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to get user profile image URL")
             null
@@ -165,6 +178,8 @@ constructor(
                 jellyfinStatsDao.insertStats(freshStats)
                 emit(freshStats.toJellyfinStats())
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to refresh remote Jellyfin stats")
         }
@@ -183,6 +198,8 @@ constructor(
                 mediaSourceId = itemId.toString(),
                 playMethod = "DirectPlay",
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to report playback start: $itemId")
         }
@@ -203,6 +220,8 @@ constructor(
                 isPaused = isPaused,
                 playMethod = "DirectPlay",
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to report playback progress: $itemId")
         }
@@ -221,31 +240,10 @@ constructor(
                 positionTicks = positionTicks,
                 mediaSourceId = itemId.toString(),
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to report playback stopped: $itemId")
-        }
-    }
-
-    override suspend fun getStreamUrl(
-        itemId: UUID,
-        mediaSourceId: String,
-        maxBitrate: Int?,
-        audioStreamIndex: Int?,
-        subtitleStreamIndex: Int?,
-        videoStreamIndex: Int?,
-    ): String {
-        return try {
-            serverRepository.buildStreamUrl(
-                itemId.toString(),
-                mediaSourceId,
-                maxBitrate,
-                audioStreamIndex,
-                subtitleStreamIndex,
-                videoStreamIndex,
-            )
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get stream URL for item: $itemId")
-            ""
         }
     }
 
@@ -268,6 +266,8 @@ constructor(
                 maxHeight = maxHeight,
                 quality = quality,
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to get image URL for item: $itemId")
             ""
@@ -282,6 +282,8 @@ constructor(
             return@withContext try {
                 val sessions = SessionApi(apiClient).getSessions().content ?: emptyList()
                 Result.success(sessions)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get active sessions")
                 Result.failure(e)
@@ -305,6 +307,8 @@ constructor(
                         seekPositionTicks = seekPositionTicks,
                     )
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to send playstate command $command to session $sessionId")
                 Result.failure(e)
@@ -322,6 +326,8 @@ constructor(
             return@withContext try {
                 SessionApi(apiClient).sendGeneralCommand(sessionId = sessionId, command = command)
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to send general command $command to session $sessionId")
                 Result.failure(e)
@@ -348,6 +354,8 @@ constructor(
                             ),
                     )
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set volume on session $sessionId")
                 Result.failure(e)
@@ -376,6 +384,8 @@ constructor(
                             ),
                     )
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to send message to session $sessionId")
                 Result.failure(e)
@@ -407,6 +417,8 @@ constructor(
                 )
             )
             emit(fresh)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to refresh server storage")
         }
@@ -488,6 +500,8 @@ constructor(
             return@withContext try {
                 SystemApi(apiClient).restartApplication()
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to restart server")
                 Result.failure(e)
@@ -502,6 +516,8 @@ constructor(
             return@withContext try {
                 SystemApi(apiClient).shutdownApplication()
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to shutdown server")
                 Result.failure(e)
@@ -516,6 +532,8 @@ constructor(
             return@withContext try {
                 LibraryApi(apiClient).refreshLibrary()
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh libraries")
                 Result.failure(e)
@@ -531,6 +549,8 @@ constructor(
                 val tasks =
                     ScheduledTaskApi(apiClient).getTasks(isHidden = false).content ?: emptyList()
                 Result.success(tasks)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get scheduled tasks")
                 Result.failure(e)
@@ -545,6 +565,8 @@ constructor(
             return@withContext try {
                 ScheduledTaskApi(apiClient).startTask(taskId)
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start task $taskId")
                 Result.failure(e)
@@ -559,6 +581,8 @@ constructor(
             return@withContext try {
                 ScheduledTaskApi(apiClient).stopTask(taskId)
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to stop task $taskId")
                 Result.failure(e)

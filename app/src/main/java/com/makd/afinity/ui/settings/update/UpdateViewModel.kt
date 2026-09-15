@@ -19,6 +19,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -69,6 +70,8 @@ constructor(
                 updateManager.checkForUpdates()
                 val lastCheck = preferencesRepository.getLastUpdateCheck()
                 _uiState.value = _uiState.value.copy(lastCheckTime = formatTimestamp(lastCheck))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to check for updates")
             }

@@ -24,7 +24,7 @@ data class AfinitySource(
     val height: Int? = null,
 )
 
-suspend fun MediaSourceInfo.toAfinitySource(
+fun MediaSourceInfo.toAfinitySource(
     baseUrl: String,
     itemId: UUID,
 ): AfinitySource {

@@ -18,6 +18,7 @@ import io.socket.engineio.client.transports.WebSocket
 import java.net.URI
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -238,6 +239,8 @@ constructor(
             }
 
             newSocket.connect()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "AbsSocket: failed to create socket")
             socket = null
@@ -252,6 +255,8 @@ constructor(
                 val progress =
                     json.decodeFromString<AbsProgressEventPayload>(raw).data ?: return@launch
                 mergeRemoteProgress(listOf(progress), source = "user_item_progress_updated")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(
                     "AbsSocket: failed to parse user_item_progress_updated (${e::class.simpleName})"
@@ -269,6 +274,8 @@ constructor(
                     mergeRemoteProgress(payload.mediaProgress, source = "user_updated")
                 }
                 audiobookshelfRepository.cacheBookmarks(payload.bookmarks)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e("AbsSocket: failed to parse user_updated (${e::class.simpleName})")
             }
@@ -298,6 +305,8 @@ constructor(
                 audiobookshelfRepository.applyRemoteItem(item)
                 Timber.d("AbsSocket: $source applied for ${item.id}")
                 _events.tryEmit(AbsSocketEvent.ItemsChanged)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "AbsSocket: failed to parse $source")
             }
@@ -312,6 +321,8 @@ constructor(
                 audiobookshelfRepository.removeRemoteItem(itemId)
                 Timber.d("AbsSocket: item_removed applied for $itemId")
                 _events.tryEmit(AbsSocketEvent.ItemsChanged)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "AbsSocket: failed to parse item_removed")
             }

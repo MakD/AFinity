@@ -150,20 +150,6 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
             currentTime >= chapter.start && currentTime < chapter.end
         }
     }
-
-    fun getNextChapter(): BookChapter? {
-        val currentChapter =
-            _playbackState.value.currentChapter
-                ?: return _playbackState.value.chapters.firstOrNull()
-        val currentIndex = _playbackState.value.chapters.indexOf(currentChapter)
-        return _playbackState.value.chapters.getOrNull(currentIndex + 1)
-    }
-
-    fun getPreviousChapter(): BookChapter? {
-        val currentChapter = _playbackState.value.currentChapter ?: return null
-        val currentIndex = _playbackState.value.chapters.indexOf(currentChapter)
-        return _playbackState.value.chapters.getOrNull(currentIndex - 1)
-    }
 }
 
 data class AudiobookshelfPlaybackState(

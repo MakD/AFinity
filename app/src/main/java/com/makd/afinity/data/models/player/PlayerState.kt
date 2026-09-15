@@ -5,30 +5,6 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySegment
 import java.util.UUID
 
-data class PlayerState(
-    val isPlaying: Boolean = false,
-    val isPaused: Boolean = false,
-    val isLoading: Boolean = false,
-    val isBuffering: Boolean = false,
-    val currentPosition: Long = 0L,
-    val duration: Long = 0L,
-    val currentItem: AfinityItem? = null,
-    val mediaSourceId: String? = null,
-    val audioStreamIndex: Int? = null,
-    val subtitleStreamIndex: Int? = null,
-    val volume: Int = 100,
-    val brightness: Float = 0.5f,
-    val playbackSpeed: Float = 1.0f,
-    val isControlsVisible: Boolean = true,
-    val error: PlayerError? = null,
-    val isFullscreen: Boolean = true,
-    val sessionId: String? = null,
-    val isControlsLocked: Boolean = false,
-    val isInPictureInPictureMode: Boolean = false,
-)
-
-data class PlayerError(val code: Int, val message: String, val cause: Throwable? = null)
-
 sealed class PlayerEvent {
     object Play : PlayerEvent()
 

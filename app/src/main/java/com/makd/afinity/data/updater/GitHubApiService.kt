@@ -4,6 +4,7 @@ import com.makd.afinity.data.updater.models.GitHubRelease
 import com.makd.afinity.di.GitHubClient
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -55,6 +56,8 @@ constructor(@param:GitHubClient private val okHttpClient: OkHttpClient) {
 
                 Timber.d("Fetched latest stable release: ${release.tagName}")
                 Result.success(release)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error fetching latest release")
                 Result.failure(e)
@@ -91,6 +94,8 @@ constructor(@param:GitHubClient private val okHttpClient: OkHttpClient) {
 
                 Timber.d("Fetched latest nightly release: ${latest.tagName}")
                 Result.success(latest)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error fetching nightly releases")
                 Result.failure(e)

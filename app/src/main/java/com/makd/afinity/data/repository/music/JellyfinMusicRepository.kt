@@ -32,6 +32,7 @@ import com.makd.afinity.data.repository.NoActiveSessionException
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -531,7 +532,15 @@ constructor(
         }
 
     override suspend fun getPlaylistById(playlistId: UUID): AfinityPlaylist? =
-        apiCall(null, "Failed to fetch playlist: $playlistId") { apiClient, userId ->
+        getPlaylistByIdResult(playlistId).getOrElse { e ->
+            if (e !is NoActiveSessionException) {
+                Timber.e(e, "Failed to fetch playlist: $playlistId")
+            }
+            null
+        }
+
+    override suspend fun getPlaylistByIdResult(playlistId: UUID): Result<AfinityPlaylist?> =
+        apiInvoker.apiResult { apiClient, userId ->
             val baseUrl = getBaseUrlInternal()
             LibraryApi(apiClient)
                 .getItems(
@@ -649,6 +658,8 @@ constructor(
                     )
                 invalidatePlaylistsCache()
                 mediaChangeManager.notifyLibraryContentChanged("playlist_items_added")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to add tracks to playlist $playlistId")
                 throw e
@@ -666,6 +677,8 @@ constructor(
                     )
                 invalidatePlaylistsCache()
                 mediaChangeManager.notifyLibraryContentChanged("playlist_items_removed")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to remove tracks from playlist $playlistId")
                 throw e
@@ -679,6 +692,8 @@ constructor(
                 LibraryApi(apiClient).deleteItem(itemId = playlistId)
                 invalidatePlaylistsCache()
                 mediaChangeManager.notifyLibraryContentChanged("playlist_deleted")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to delete playlist $playlistId")
                 throw e
@@ -759,6 +774,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.d("No lyrics found for track: $trackId")
                 fallback
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error fetching lyrics for track: $trackId")
                 fallback

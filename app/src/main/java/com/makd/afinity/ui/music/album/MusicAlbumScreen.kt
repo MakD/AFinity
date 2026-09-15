@@ -540,10 +540,9 @@ fun MusicAlbumScreen(
                                                         remember { MutableInteractionSource() },
                                                 ) {
                                                     navController.navigate(
-                                                        com.makd.afinity.navigation.Destination
-                                                            .createMusicArtistRoute(
-                                                                artistId.toString()
-                                                            )
+                                                        Destination.createMusicArtistRoute(
+                                                            artistId.toString()
+                                                        )
                                                     )
                                                 }
                                             else Modifier
@@ -705,9 +704,9 @@ fun MusicAlbumScreen(
 
 @Composable
 private fun ArtistPhotoCard(
+    modifier: Modifier = Modifier,
     imageUrl: String?,
     fallbackUrl: String? = null,
-    modifier: Modifier = Modifier,
 ) {
     var currentUrl by remember(imageUrl) { mutableStateOf(imageUrl) }
 

@@ -28,7 +28,6 @@ interface PlaybackRepository {
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
         videoStreamIndex: Int? = null,
-        maxStreamingBitrate: Int? = null,
         startTimeTicks: Long? = null,
         playSessionId: String? = null,
         tag: String? = null,

@@ -860,13 +860,13 @@ fun SettingsScreen(
 
 @Composable
 fun ProfileHeader(
+    modifier: Modifier = Modifier,
     userName: String,
     serverName: String?,
     serverUrl: String?,
     serverVersion: String? = null,
     userProfileImageUrl: String?,
     connectionType: ConnectionType,
-    modifier: Modifier = Modifier,
     isAdmin: Boolean = false,
     onControlPanelClick: (() -> Unit)? = null,
 ) {

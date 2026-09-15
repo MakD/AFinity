@@ -6,6 +6,7 @@ import com.makd.afinity.di.ApplicationScope
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
@@ -50,6 +51,8 @@ constructor(
                 Timber.i("$pending unsynced user data rows pending ($reason), scheduling sync")
                 syncScheduler.ifIdle()
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to check for pending user data")
         }

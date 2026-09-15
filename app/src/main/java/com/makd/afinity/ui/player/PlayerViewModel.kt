@@ -110,6 +110,7 @@ import io.github.peerless2012.ass.media.type.AssRenderType
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
@@ -346,6 +347,8 @@ constructor(
                 currentZoomMode = preferencesRepository.getDefaultVideoZoomMode()
                 updateUiState { it.copy(videoZoomMode = currentZoomMode) }
                 applyZoomMode(currentZoomMode)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load default video zoom mode, using FIT")
                 currentZoomMode = VideoZoomMode.FIT
@@ -484,6 +487,8 @@ constructor(
         } catch (e: Settings.SettingNotFoundException) {
             Timber.e(e, "System brightness setting not found. Returning default brightness.")
             0.5f
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to get system brightness. Returning default brightness.")
             0.5f
@@ -539,6 +544,8 @@ constructor(
                                                 trickplayTileCache[currentTileIndex] = tileBitmap
                                             }
                                         }
+                                    } catch (e: CancellationException) {
+                                        throw e
                                     } catch (e: Exception) {
                                         Timber.e(e, "Failed to pre-fetch trickplay tile")
                                     }
@@ -595,6 +602,8 @@ constructor(
                             Timber.d(
                                 "Reported progress: ${player.currentPosition}ms, paused: $isPaused, audio: $jfAudioIndex, sub: $jfSubIndex"
                             )
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.e(e, "Failed to report periodic progress")
                         }
@@ -1623,7 +1632,7 @@ constructor(
                     bufferHealth =
                         context.resources.getQuantityString(
                             R.plurals.playback_stats_value_seconds_fmt,
-                            bufferSeconds.toInt(),
+                            bufferSeconds,
                             bufferSeconds,
                         ),
                     videoBitrate =
@@ -1669,7 +1678,7 @@ constructor(
             info.framerate
                 ?.takeIf { it > 0f }
                 ?.let { encoderFps ->
-                    if (contentFps != null && contentFps > 0) {
+                    if (contentFps != null) {
                         String.format(Locale.US, "%.1fx realtime", encoderFps / contentFps)
                     } else {
                         String.format(Locale.US, "%.0f fps", encoderFps)
@@ -1779,6 +1788,8 @@ constructor(
         try {
             val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
             displayManager.getDisplay(Display.DEFAULT_DISPLAY)?.isHdr
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             null
         }
@@ -1788,6 +1799,8 @@ constructor(
             val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
             val rate = displayManager.getDisplay(Display.DEFAULT_DISPLAY)?.refreshRate ?: 0f
             if (rate > 0f) String.format(Locale.US, "%.0f Hz", rate) else ""
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             ""
         }
@@ -2418,6 +2431,8 @@ constructor(
                                     "[MultiPart] Inserted ${parts.size} parts into queue after '${fullItem.name}'"
                                 )
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.e(
                                 e,
@@ -2427,6 +2442,8 @@ constructor(
                     }
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load media")
             updateUiState {
@@ -2562,6 +2579,8 @@ constructor(
             updateUiState {
                 it.copy(isLoading = false, isLiveChannel = true, currentItem = channelItem)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load live channel")
             updateUiState {
@@ -2957,6 +2976,8 @@ constructor(
                     canSeek = true,
                 )
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to report playback start")
         }
@@ -2970,6 +2991,8 @@ constructor(
         currentMediaSegments =
             try {
                 segmentsRepository.getSegments(itemId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load segments for item $itemId")
                 emptyList()
@@ -3521,6 +3544,8 @@ constructor(
                         trickplayPreviewPosition = position,
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(
                     e,
@@ -3813,7 +3838,6 @@ constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
 
         clearPlaylist()
         stopPlayback()

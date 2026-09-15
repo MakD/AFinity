@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -503,6 +504,12 @@ private fun NotLoggedInView(onLoginClick: () -> Unit, modifier: Modifier = Modif
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
+            Button(onClick = onLoginClick) {
+                Text(
+                    text = stringResource(R.string.login_btn_connect),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
         }
     }
 }
@@ -532,6 +539,12 @@ private fun ErrorView(message: String, onRetry: () -> Unit, modifier: Modifier =
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
+            Button(onClick = onRetry) {
+                Text(
+                    text = stringResource(R.string.action_retry),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
         }
     }
 }

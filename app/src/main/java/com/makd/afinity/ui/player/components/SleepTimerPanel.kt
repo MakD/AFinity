@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
@@ -43,6 +44,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -174,7 +176,7 @@ private fun DurationTile(
                     if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                     else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                 )
-                .clickable(onClick = onClick),
+                .selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -212,7 +214,7 @@ private fun EndOfItemRow(
                     if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                     else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                 )
-                .clickable(onClick = onClick)
+                .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
                 .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -256,7 +258,7 @@ private fun StopRow(onClick: () -> Unit) {
                 .height(48.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f))
-                .clickable(onClick = onClick),
+                .clickable(role = Role.Button, onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
     ) {
@@ -368,6 +370,7 @@ fun SleepTimerEndedOverlay(
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
+                    role = Role.Button,
                     onClick = onResume,
                 ),
         contentAlignment = Alignment.Center,

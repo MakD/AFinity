@@ -15,6 +15,7 @@ import dagger.assisted.AssistedInject
 import java.time.Instant
 import java.time.ZoneId
 import java.util.UUID
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
@@ -59,6 +60,8 @@ constructor(
                                     account.userId,
                                     account.serverId,
                                 )
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 Timber.e(
                                     e,
@@ -80,6 +83,8 @@ constructor(
                                     account.serverId,
                                     account.userId,
                                 )
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 Timber.w(e, "Could not build client for server ${account.serverId}")
                                 null
@@ -161,6 +166,8 @@ constructor(
                     }
                     else -> Result.retry()
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "User data sync failed with critical error")
                 return@withContext if (runAttemptCount >= MAX_RUN_ATTEMPTS) {
@@ -210,6 +217,8 @@ constructor(
                     UploadResult.RETRY
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to sync item ${userData.itemId}")
             UploadResult.RETRY

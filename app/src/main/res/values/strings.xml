@@ -701,8 +701,8 @@
     <string name="music_more_section_audio">AUDIO</string>
     <string name="music_more_section_track">THIS TRACK</string>
     <string name="abs_more_section_audio">AUDIO</string>
-    <string name="state_on">On</string>
-    <string name="state_off">Off</string>
+    <string name="state_toggle_on">On</string>
+    <string name="state_toggle_off">Off</string>
     <string name="music_quality_short_kbps_fmt">%1$dk</string>
     <string name="pref_music_quality_wifi_title">Music quality on Wi-Fi</string>
     <string name="pref_music_quality_cellular_title">Music quality on mobile data</string>

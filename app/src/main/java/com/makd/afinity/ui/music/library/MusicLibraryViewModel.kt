@@ -40,6 +40,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -814,6 +815,8 @@ constructor(
                             .filterNotNull()
                     if (sections.isNotEmpty())
                         _uiState.update { it.copy(moreFromArtistSections = sections) }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load More From sections")
                 }
@@ -843,6 +846,8 @@ constructor(
                             .filterNotNull()
                     if (sections.isNotEmpty())
                         _uiState.update { it.copy(musicGenreSections = sections) }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load genre sections")
                 }
@@ -881,6 +886,8 @@ constructor(
                         if (albums.isNotEmpty())
                             _uiState.update { it.copy(albumsByDecade = decade to albums) }
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load albums by decade")
                 }
@@ -934,6 +941,8 @@ constructor(
                             .filterNotNull()
                     if (sections.isNotEmpty())
                         _uiState.update { it.copy(topTracksSections = sections) }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load top tracks sections")
                 }
@@ -963,6 +972,8 @@ constructor(
                             .filterNotNull()
                     if (sections.isNotEmpty())
                         _uiState.update { it.copy(newGenreReleases = sections) }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load new genre releases")
                 }

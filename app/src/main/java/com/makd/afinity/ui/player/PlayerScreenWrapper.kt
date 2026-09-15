@@ -24,6 +24,7 @@ import java.util.UUID
 @androidx.media3.common.util.UnstableApi
 @Composable
 fun PlayerScreenWrapper(
+    modifier: Modifier = Modifier,
     itemId: UUID,
     mediaSourceId: String,
     audioStreamIndex: Int? = null,
@@ -37,7 +38,6 @@ fun PlayerScreenWrapper(
     liveStreamUrl: String? = null,
     navController: androidx.navigation.NavController? = null,
     onBackPressed: () -> Unit,
-    modifier: Modifier = Modifier,
     viewModel: PlayerWrapperViewModel = hiltViewModel(),
 ) {
     val item by viewModel.item.collectAsStateWithLifecycle()

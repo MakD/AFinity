@@ -106,6 +106,7 @@ import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
+import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
@@ -120,6 +121,7 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
+    modifier: Modifier = Modifier,
     onBackClick: () -> Unit,
     onItemClick: (AfinityItem) -> Unit,
     onGenreClick: (String) -> Unit,
@@ -131,7 +133,6 @@ fun SearchScreen(
     onMusicArtistClick: (String) -> Unit = {},
     onMusicPlaylistClick: (String) -> Unit = {},
     onNavigateToSeerrMedia: (item: SearchResultItem) -> Unit = {},
-    modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel(),
     musicPlayerViewModel: MusicPlayerViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
@@ -348,6 +349,14 @@ fun SearchScreen(
                         results = scopedResults,
                         onItemClick = onItemClick,
                         onEpisodeClick = { episode -> viewModel.selectEpisode(episode) },
+                    )
+                }
+
+                uiState.searchError != null -> {
+                    FullScreenError(
+                        message = uiState.searchError,
+                        actionText = stringResource(R.string.action_retry),
+                        onActionClick = viewModel::performSearch,
                     )
                 }
 
@@ -1053,15 +1062,13 @@ private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
                     }
                 }
 
-                item.overview?.let { overview ->
-                    Text(
-                        text = overview,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = if (item is AfinityEpisode) 2 else 3,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                Text(
+                    text = item.overview,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = if (item is AfinityEpisode) 2 else 3,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }

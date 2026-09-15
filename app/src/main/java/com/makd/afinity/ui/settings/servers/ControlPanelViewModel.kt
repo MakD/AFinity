@@ -12,6 +12,7 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -138,6 +139,8 @@ constructor(
                         _activeSessions.value = sessions
                         sessionCache[serverId] = sessions
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed session fetch")
                 }
@@ -340,13 +343,14 @@ constructor(
             if (result.isSuccess) {
                 updateTasksState(result.getOrNull())
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to force poll scheduled tasks")
         }
     }
 
     override fun onCleared() {
-        super.onCleared()
         pollingJob?.cancel()
         storageJob?.cancel()
     }

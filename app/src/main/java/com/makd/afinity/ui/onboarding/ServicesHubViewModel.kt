@@ -19,6 +19,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.net.URI
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
@@ -110,11 +111,6 @@ constructor(
         }
     }
 
-    fun clearRemoteError() {
-        _remoteError.value = null
-        _remoteNeedsLocalNetworkPermission.value = false
-    }
-
     fun verifyAndSaveRemoteAddress(input: String, onSaved: () -> Unit) {
         viewModelScope.launch {
             _remoteError.value = null
@@ -161,6 +157,8 @@ constructor(
                             context.getString(R.string.local_network_permission_needed)
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to verify remote address")
                 _remoteError.value =

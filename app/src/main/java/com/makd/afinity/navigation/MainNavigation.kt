@@ -129,6 +129,7 @@ import com.makd.afinity.ui.settings.update.GlobalUpdateDialog
 import com.makd.afinity.ui.watchlist.WatchlistCategory
 import com.makd.afinity.ui.watchlist.WatchlistCategoryScreen
 import com.makd.afinity.ui.watchlist.WatchlistScreen
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -260,7 +261,7 @@ fun MainNavigation(
 
     LaunchedEffect(isOffline, isPreAuth) {
         if (isOffline && !isPreAuth) {
-            if (currentRoute != null && currentRoute != Destination.HOME.route) {
+            if (currentRoute != Destination.HOME.route) {
                 Timber.d("Switching to offline mode, navigating to HOME")
                 navController.navigate(Destination.HOME.route) {
                     popUpTo(Destination.HOME.route) { saveState = true }
@@ -472,6 +473,8 @@ fun MainNavigation(
                                                         subtitleStreamIndex = null,
                                                         startPositionMs = 0L,
                                                     )
+                                                } catch (e: CancellationException) {
+                                                    throw e
                                                 } catch (e: Exception) {
                                                     Timber.e(
                                                         e,
@@ -1731,8 +1734,7 @@ fun MainNavigation(
 
         val onEscapeRoute =
             currentRoute == Destination.SERVER_MANAGEMENT_ROUTE ||
-                currentRoute == Destination.ADD_EDIT_SERVER_ROUTE ||
-                currentRoute == Destination.LOGIN_ROUTE
+                currentRoute == Destination.ADD_EDIT_SERVER_ROUTE
 
         if (unsupportedServerVersion != null && !onEscapeRoute) {
             var showSessionSwitcher by rememberSaveable { mutableStateOf(false) }

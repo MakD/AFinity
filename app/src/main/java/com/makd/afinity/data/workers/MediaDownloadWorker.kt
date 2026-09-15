@@ -176,6 +176,8 @@ constructor(
 
             try {
                 setForeground(createQueuedForegroundInfo(downloadId, notifTitle, notifSubText))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to promote to foreground service")
             }
@@ -198,6 +200,8 @@ constructor(
                                 0,
                             )
                         )
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to update foreground service to active")
                     }
@@ -255,6 +259,8 @@ constructor(
                                     .content
                                     ?.items
                                     ?.firstOrNull()
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 Timber.e(e, "Failed to fetch item details")
                                 null
@@ -465,7 +471,7 @@ constructor(
                                 itemId,
                                 download.serverId,
                                 userId.toString(),
-                                android.net.Uri.fromFile(finalFile).toString(),
+                                Uri.fromFile(finalFile).toString(),
                             )
                         } else {
                             if (itemType.uppercase() == "MOVIE") {
@@ -496,6 +502,8 @@ constructor(
                                 KEY_FILE_PATH to finalFile.absolutePath,
                             )
                         )
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Media download failed")
                         try {
@@ -546,6 +554,8 @@ constructor(
                 totalBytes,
                 System.currentTimeMillis(),
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to update download progress")
         }
@@ -649,6 +659,8 @@ constructor(
 
                 else -> Timber.w("Unsupported item type: ${baseItemDto.type}")
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to ensure item is in database")
         }
@@ -725,6 +737,8 @@ constructor(
                     databaseRepository.insertEpisode(item.copy(images = updatedImages), serverId)
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to download images")
         }
@@ -770,6 +784,8 @@ constructor(
                     logoImageBlurHash = images.logoImageBlurHash,
                 )
             databaseRepository.insertShow(show.copy(images = updatedImages), serverId)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to download show images")
         }
@@ -820,6 +836,8 @@ constructor(
                     logoImageBlurHash = images.logoImageBlurHash,
                 )
             databaseRepository.insertSeason(season.copy(images = updatedImages), serverId)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to download season images")
         }
@@ -864,12 +882,14 @@ constructor(
                     } ?: person
                 }
             databaseRepository.insertMovie(movie.copy(people = updatedPeople), serverId)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to download person images")
         }
     }
 
-    private suspend fun downloadImage(
+    private fun downloadImage(
         apiClient: ApiClient,
         imageUrl: String,
         outputDir: File,
@@ -904,6 +924,8 @@ constructor(
                     }
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w("Failed to download image $baseName: ${e.message}")
         }
@@ -913,6 +935,8 @@ constructor(
     private suspend fun downloadSegments(itemId: UUID) {
         try {
             segmentsRepository.getSegments(itemId)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to download segments")
         }
@@ -955,11 +979,15 @@ constructor(
                             stream = stream.copy(path = file.absolutePath),
                             sourceId = localSourceId,
                         )
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w("Failed to copy stream ${stream.type} to local source")
                     }
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to create LOCAL source entry")
         }
@@ -1152,6 +1180,8 @@ constructor(
                     }
                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to load notification image")
             null

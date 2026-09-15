@@ -366,7 +366,6 @@ constructor(
 
     override fun onCleared() {
         statsPollingJob?.cancel()
-        super.onCleared()
     }
 
     private var statsPollingJob: kotlinx.coroutines.Job? = null

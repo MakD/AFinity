@@ -27,7 +27,6 @@ import com.makd.afinity.data.network.OmdbApiService
 import com.makd.afinity.data.network.TmdbApiService
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.AudiobookshelfRepository
-import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
@@ -43,6 +42,7 @@ import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -67,7 +67,6 @@ constructor(
     private val appDataRepository: AppDataRepository,
     private val homeLayoutPreferencesRepository: HomeLayoutPreferencesRepository,
     private val serverRepository: ServerRepository,
-    private val databaseRepository: DatabaseRepository,
     private val sessionManager: SessionManager,
     private val offlineModeManager: OfflineModeManager,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
@@ -540,6 +539,8 @@ constructor(
             try {
                 preferencesRepository.setThemeMode(mode)
                 Timber.d("Theme mode set to: $mode")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set theme mode")
             }
@@ -551,6 +552,8 @@ constructor(
             try {
                 preferencesRepository.setDynamicColors(enabled)
                 Timber.d("Dynamic colors set to: $enabled")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle dynamic colors")
             }
@@ -582,6 +585,8 @@ constructor(
             try {
                 preferencesRepository.setAutoPlay(enabled)
                 Timber.d("Auto-play set to: $enabled")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle auto-play")
             }
@@ -593,6 +598,8 @@ constructor(
             try {
                 preferencesRepository.setPipGestureEnabled(enabled)
                 Timber.d("PIP gesture set to: $enabled")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle PIP gesture")
             }
@@ -604,6 +611,8 @@ constructor(
             try {
                 preferencesRepository.setPipBackgroundPlay(enabled)
                 Timber.d("PIP background play set to: $enabled")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle PIP background play")
             }
@@ -651,6 +660,8 @@ constructor(
 
                 preferencesRepository.setUseExoPlayer(enabled)
                 Timber.d("Use ExoPlayer set to: $enabled")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle use exoplayer")
             }
@@ -662,6 +673,8 @@ constructor(
             try {
                 preferencesRepository.setSkipIntroMode(mode)
                 Timber.d("Skip intro mode set to: ${mode.name}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set skip intro mode")
             }
@@ -673,6 +686,8 @@ constructor(
             try {
                 preferencesRepository.setSkipOutroMode(mode)
                 Timber.d("Skip outro mode set to: ${mode.name}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set skip outro mode")
             }
@@ -684,6 +699,8 @@ constructor(
             try {
                 preferencesRepository.setOfflineMode(enabled)
                 Timber.d("Offline mode set to: $enabled")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle offline mode")
             }
@@ -695,6 +712,8 @@ constructor(
             try {
                 preferencesRepository.setLogoAutoHide(enabled)
                 Timber.d("Logo auto-hide set to: $enabled")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle logo auto-hide")
             }
@@ -706,6 +725,8 @@ constructor(
             try {
                 preferencesRepository.setPauseScreenEnabled(enabled)
                 Timber.d("Pause screen set to: $enabled")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle pause screen")
             }
@@ -717,6 +738,8 @@ constructor(
             try {
                 preferencesRepository.setPauseScreenDelaySeconds(seconds)
                 Timber.d("Pause screen delay set to: ${seconds}s")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set pause screen delay")
             }
@@ -728,6 +751,8 @@ constructor(
             try {
                 preferencesRepository.setChapterSkipGesture(enabled)
                 Timber.d("Chapter skip gesture set to: $enabled")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle chapter skip gesture")
             }
@@ -739,6 +764,8 @@ constructor(
             try {
                 preferencesRepository.setDefaultVideoZoomMode(mode)
                 Timber.d("Default video zoom mode set to: ${mode.name}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set default video zoom mode")
             }
@@ -750,6 +777,8 @@ constructor(
             try {
                 preferencesRepository.setMpvGpuApi(gpuApi)
                 Timber.d("MPV GPU API set to: ${gpuApi.value}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set MPV GPU API")
             }
@@ -761,6 +790,8 @@ constructor(
             try {
                 preferencesRepository.setMpvHdrOutput(hdrOutput)
                 Timber.d("MPV HDR output set to: ${hdrOutput.value}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set MPV HDR output")
             }
@@ -772,6 +803,8 @@ constructor(
             try {
                 preferencesRepository.setAssRenderMode(mode)
                 Timber.d("ASS render mode set to: ${mode.value}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set ASS render mode")
             }
@@ -783,6 +816,8 @@ constructor(
             try {
                 preferencesRepository.setMpvToneMapping(toneMapping)
                 Timber.d("MPV tone mapping set to: ${toneMapping.value}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set MPV tone mapping")
             }
@@ -794,6 +829,8 @@ constructor(
             try {
                 preferencesRepository.setMpvHdrPeakDetection(enabled)
                 Timber.d("MPV HDR peak detection set to: $enabled")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set MPV HDR peak detection")
             }
@@ -805,6 +842,8 @@ constructor(
             try {
                 preferencesRepository.setMpvHwDec(hwDec)
                 Timber.d("MPV hardware decoding set to: ${hwDec.value}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set MPV hardware decoding")
             }
@@ -816,6 +855,8 @@ constructor(
             try {
                 preferencesRepository.setMpvVideoOutput(videoOutput)
                 Timber.d("MPV video output set to: ${videoOutput.value}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set MPV video output")
             }
@@ -827,6 +868,8 @@ constructor(
             try {
                 preferencesRepository.setMpvAudioOutput(audioOutput)
                 Timber.d("MPV audio output set to: ${audioOutput.value}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set MPV audio output")
             }
@@ -838,6 +881,8 @@ constructor(
             try {
                 preferencesRepository.setPreferredAudioLanguage(language)
                 Timber.d("Preferred audio language set to: $language")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set preferred audio language")
             }
@@ -849,6 +894,8 @@ constructor(
             try {
                 preferencesRepository.setPreferredSubtitleLanguage(language)
                 Timber.d("Preferred subtitle language set to: $language")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set preferred subtitle language")
             }
@@ -859,6 +906,8 @@ constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setPreferSdhSubtitles(enabled)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set SDH subtitle preference")
             }
@@ -870,6 +919,8 @@ constructor(
             try {
                 preferencesRepository.setSubtitleModeOverride(mode)
                 Timber.d("Subtitle mode override set to: $mode")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set subtitle mode override")
             }
@@ -881,6 +932,8 @@ constructor(
             try {
                 preferencesRepository.setCastHevcEnabled(enabled)
                 Timber.d("Cast HEVC set to: $enabled")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set cast HEVC")
             }
@@ -892,6 +945,8 @@ constructor(
             try {
                 preferencesRepository.setCastMaxBitrate(bitrate)
                 Timber.d("Cast max bitrate set to: $bitrate")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set cast max bitrate")
             }
@@ -902,6 +957,8 @@ constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setVideoQualityWifi(bitrate)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set Wi-Fi video quality")
             }
@@ -912,6 +969,8 @@ constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setVideoQualityCellular(bitrate)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set cellular video quality")
             }
@@ -922,6 +981,8 @@ constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setTranscodeMaxAudioChannels(channels)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set transcode audio channels")
             }
@@ -932,6 +993,8 @@ constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setMusicQualityWifi(bitrate)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set Wi-Fi music quality")
             }
@@ -942,6 +1005,8 @@ constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setMusicQualityCellular(bitrate)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set cellular music quality")
             }
@@ -952,6 +1017,8 @@ constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setNeverTranscode(never)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set never transcode")
             }
@@ -962,6 +1029,8 @@ constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setAllowHdrPassthrough(allow)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set HDR passthrough")
             }
@@ -973,6 +1042,8 @@ constructor(
             try {
                 preferencesRepository.setBufferSizeMb(sizeMb)
                 Timber.d("Buffer size set to: ${sizeMb}MB")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set buffer size")
             }
@@ -984,6 +1055,8 @@ constructor(
             try {
                 preferencesRepository.setEpisodeLayout(layout)
                 Timber.d("Episode layout set to: ${layout.getDisplayName()}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set episode layout")
             }
@@ -1002,6 +1075,8 @@ constructor(
 
                     try {
                         jellyseerrRepository.logout()
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to logout from Jellyseerr during AFinity logout")
                     }
@@ -1009,55 +1084,20 @@ constructor(
                     try {
                         audiobookshelfPlayer.release()
                         audiobookshelfRepository.logout()
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to logout from Audiobookshelf during AFinity logout")
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Logout failed")
                 _uiState.value =
                     _uiState.value.copy(
                         isLoggingOut = false,
                         error = context.getString(R.string.error_logout_failed_fmt, e.message),
-                    )
-            }
-        }
-    }
-
-    fun logoutFromJellyseerr() {
-        viewModelScope.launch {
-            try {
-                jellyseerrRepository.logout()
-                Timber.d("Jellyseerr logout successful")
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to logout from Jellyseerr")
-                _uiState.value =
-                    _uiState.value.copy(
-                        error =
-                            context.getString(
-                                R.string.error_jellyseerr_logout_failed_fmt,
-                                e.message,
-                            )
-                    )
-            }
-        }
-    }
-
-    fun logoutFromAudiobookshelf() {
-        viewModelScope.launch {
-            try {
-                audiobookshelfPlayer.release()
-                audiobookshelfRepository.logout()
-                Timber.d("Audiobookshelf logout successful")
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to logout from Audiobookshelf")
-                _uiState.value =
-                    _uiState.value.copy(
-                        error =
-                            context.getString(
-                                R.string.error_audiobookshelf_logout_failed_fmt,
-                                e.message,
-                            )
                     )
             }
         }
@@ -1085,6 +1125,8 @@ constructor(
                     _uiState.value =
                         _uiState.value.copy(tmdbKeyValidationError = "Invalid TMDB API Key")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "TMDB validation network failure")
                 _uiState.value =
@@ -1119,6 +1161,8 @@ constructor(
                     _uiState.value =
                         _uiState.value.copy(mdbListKeyValidationError = "Invalid MDBList API Key")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "MDBList validation network failure")
                 _uiState.value =
@@ -1153,6 +1197,8 @@ constructor(
                     _uiState.value =
                         _uiState.value.copy(omdbKeyValidationError = "Invalid OMDb API Key")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "OMDb validation network failure")
                 _uiState.value =
@@ -1163,15 +1209,6 @@ constructor(
                 _uiState.value = _uiState.value.copy(isOmdbKeyValidating = false)
             }
         }
-    }
-
-    fun clearApiValidationErrors() {
-        _uiState.value =
-            _uiState.value.copy(
-                tmdbKeyValidationError = null,
-                mdbListKeyValidationError = null,
-                omdbKeyValidationError = null,
-            )
     }
 
     fun setTmdbApiKey(apiKey: String) {
@@ -1191,6 +1228,8 @@ constructor(
                 } else {
                     Timber.w("Failed to save TMDB API Key: User or Server is null")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error saving TMDB API key")
             }
@@ -1214,6 +1253,8 @@ constructor(
                 } else {
                     Timber.w("Failed to save OMDb API Key: User or Server is null")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error saving OMDb API key")
             }
@@ -1237,6 +1278,8 @@ constructor(
                 } else {
                     Timber.w("Failed to save MDBList API Key: User or Server is null")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error saving MDBList API key")
             }
@@ -1272,6 +1315,8 @@ constructor(
                     user.apiRequests?.let {
                         MdbListUsage(used = user.apiRequestsCount ?: 0, limit = it)
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to load MDBList usage")
                     null
@@ -1303,6 +1348,8 @@ constructor(
                                 context.getString(R.string.error_quickconnect_invalid_code)
                             else null,
                     )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "QuickConnect authorization failed")
                 _uiState.value =

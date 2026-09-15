@@ -177,12 +177,6 @@ data class MediaProgressSyncData(
 )
 
 @Serializable
-data class SyncResponse(
-    @SerialName("id") val id: String? = null,
-    @SerialName("success") val success: Boolean? = null,
-)
-
-@Serializable
 data class ProgressUpdateRequest(
     @SerialName("currentTime") val currentTime: Double? = null,
     @SerialName("duration") val duration: Double? = null,

@@ -199,7 +199,7 @@ constructor(
             it.storageVolumeId to it.totalBytes
         }
 
-    private suspend fun buildLocalDirPath(
+    private fun buildLocalDirPath(
         volumeId: String,
         serverId: String,
         libraryItemId: String,

@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -91,7 +92,11 @@ fun AudioPlayerValueSlot(
                 Modifier.minimumInteractiveComponentSize()
                     .clip(RoundedCornerShape(50))
                     .background(Color.White.copy(alpha = 0.14f))
-                    .clickable(onClickLabel = contentDescription, onClick = onClick)
+                    .clickable(
+                        onClickLabel = contentDescription,
+                        role = Role.Button,
+                        onClick = onClick,
+                    )
                     .padding(horizontal = 10.dp, vertical = 5.dp),
             contentAlignment = Alignment.Center,
         ) {

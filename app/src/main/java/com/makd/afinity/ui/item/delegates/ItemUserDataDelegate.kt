@@ -10,6 +10,7 @@ import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -52,6 +53,8 @@ constructor(
                     )
                     mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error toggling favorite status")
                 revertUI()
@@ -84,6 +87,8 @@ constructor(
                     )
                     mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error toggling like status")
                 revertUI()
@@ -114,6 +119,8 @@ constructor(
                     )
                     onSuccess()
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error toggling episode favorite")
             }

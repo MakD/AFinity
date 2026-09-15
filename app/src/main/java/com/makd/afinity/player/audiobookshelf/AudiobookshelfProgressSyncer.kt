@@ -8,6 +8,7 @@ import com.makd.afinity.data.repository.audiobookshelf.AbsProgressSyncScheduler
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -120,6 +121,8 @@ constructor(
                 onSuccess = { Timber.d("Progress synced: ${currentTime}s / ${state.duration}s") },
                 onFailure = { error -> Timber.w(error, "Failed to sync progress, will retry") },
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Exception syncing progress")
         }
@@ -180,6 +183,8 @@ constructor(
                 },
                 onFailure = { error -> Timber.w(error, "Failed to sync playlist progress") },
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Exception syncing playlist progress")
         }
@@ -192,7 +197,7 @@ constructor(
     ) {
         val itemId = state.itemId ?: return
 
-        Timber.d("Playlist episode transition: ${currentPlaylistEpisodeId} -> $newEpisodeId")
+        Timber.d("Playlist episode transition: $currentPlaylistEpisodeId -> $newEpisodeId")
 
         val prevEpisodeId = currentPlaylistEpisodeId
         if (prevEpisodeId != null) {
@@ -211,6 +216,8 @@ constructor(
                         duration = prevDuration,
                     )
                     Timber.d("Closed session for episode: $prevEpisodeId")
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to close previous episode session")
                 }
@@ -231,6 +238,8 @@ constructor(
                     Timber.e(error, "Failed to start session for new episode: $newEpisodeId")
                 },
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Exception starting new episode session")
         }

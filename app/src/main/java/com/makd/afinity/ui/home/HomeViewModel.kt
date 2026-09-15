@@ -14,7 +14,6 @@ import com.makd.afinity.R
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.OfflineModeManager
-import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.manager.resolveTargetItem
 import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.GenreItem
@@ -64,6 +63,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -102,7 +102,6 @@ constructor(
     private val offlineModeManager: OfflineModeManager,
     private val authRepository: AuthRepository,
     private val mediaRepository: MediaRepository,
-    private val playbackStateManager: PlaybackStateManager,
     private val mediaChangeManager: MediaChangeManager,
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val homeSectionsRepository: HomeSectionsRepository,
@@ -412,6 +411,8 @@ constructor(
                     if (parentShowItem == null) {
                         try {
                             parentShowItem = mediaRepository.getItemById(trueSeriesId)
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.e(
                                 e,
@@ -654,6 +655,8 @@ constructor(
                     offlineContentLoaded = true,
                 )
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load downloaded content")
         }
@@ -704,12 +707,16 @@ constructor(
                 try {
                     val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
                     _selectedEpisodeWatchlistStatus.value = isInWatchlist
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load episode watchlist status")
                     _selectedEpisodeWatchlistStatus.value = false
                 }
 
                 _isLoadingEpisode.value = false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load full episode details")
                 _selectedEpisode.value = episode
@@ -737,6 +744,8 @@ constructor(
                 .items
                 .firstOrNull()
                 ?.toAfinityItem(mediaRepository.getBaseUrl())
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to fetch random unwatched item")
             null
@@ -769,6 +778,8 @@ constructor(
                     _selectedEpisodeWatchlistStatus.value = isInWatchlist
                     Timber.w("Failed to toggle watchlist status")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error toggling episode watchlist")
                 try {
@@ -802,6 +813,8 @@ constructor(
                 if (!success) {
                     _selectedEpisode.value = episode
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error toggling episode watched status")
                 _selectedEpisode.value = episode
@@ -825,6 +838,8 @@ constructor(
         if (offlineModeManager.isOffline.first()) return
         try {
             appDataRepository.loadCombinedGenres()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load combined genres")
         }
@@ -836,6 +851,8 @@ constructor(
         viewModelScope.launch {
             try {
                 appDataRepository.loadMoviesForGenre(genre, HOME_GENRE_POOL)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load movies for genre: $genre")
             }
@@ -848,6 +865,8 @@ constructor(
         viewModelScope.launch {
             try {
                 appDataRepository.loadShowsForGenre(genre, HOME_GENRE_POOL)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load shows for genre: $genre")
             }
@@ -862,6 +881,8 @@ constructor(
             }
             val upcoming = mediaRepository.getUpcomingEpisodes(limit = 24)
             _uiState.update { it.copy(upcomingEpisodes = upcoming, upcomingLoaded = true) }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             _uiState.update { it.copy(upcomingLoaded = true) }
             Timber.e(e, "Failed to load upcoming episodes")

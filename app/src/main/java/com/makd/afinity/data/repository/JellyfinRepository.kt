@@ -49,15 +49,6 @@ interface JellyfinRepository {
 
     suspend fun reportPlaybackStopped(itemId: UUID, positionTicks: Long, sessionId: String? = null)
 
-    suspend fun getStreamUrl(
-        itemId: UUID,
-        mediaSourceId: String,
-        maxBitrate: Int? = null,
-        audioStreamIndex: Int? = null,
-        subtitleStreamIndex: Int? = null,
-        videoStreamIndex: Int? = null,
-    ): String
-
     suspend fun getImageUrl(
         itemId: UUID,
         imageType: String,

@@ -10,6 +10,7 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -70,6 +71,8 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
                         Timber.d("Resuming media at ${startPositionMs}ms, skipping intros")
                         emptyList()
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to fetch intros")
                     emptyList()
@@ -90,6 +93,8 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
                     }
                 }
             result
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to initialize playlist")
             false
@@ -117,6 +122,8 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
             val startIndex = videoItems.indexOfFirst { it.id == startingItem.id }.coerceAtLeast(0)
             setQueue(videoItems, startIndex)
             true
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to initialize playlist queue for $playlistId")
             initializeSingleItemQueue(startingItem, emptyList())
@@ -194,6 +201,8 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
 
             setQueue(finalQueue, startIndex, contentStart = actualContentStart)
             true
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to initialize episode queue")
             val fallbackQueue = intros.toMutableList().apply { add(startingEpisode) }
@@ -258,6 +267,8 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
                     "current at $startIndex (jump only)"
             )
             true
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to build collection queue for ${item.name}")
             false

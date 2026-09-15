@@ -7,6 +7,7 @@ import com.makd.afinity.data.repository.DatabaseRepository
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -36,7 +37,7 @@ constructor(
     private val mediaChangeManager: MediaChangeManager,
 ) : UserDataRepository {
 
-    private suspend fun getCurrentUserId(): UUID? {
+    private fun getCurrentUserId(): UUID? {
         return sessionManager.currentSession.value?.userId
     }
 
@@ -73,6 +74,8 @@ constructor(
                 databaseRepository.updateShow(updated)
                 return
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to update local cache for item $itemId")
         }
@@ -100,6 +103,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to mark item as watched: $itemId")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error marking item as watched: $itemId")
                 false
@@ -125,6 +130,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to mark item as unwatched: $itemId")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error marking item as unwatched: $itemId")
                 false
@@ -154,6 +161,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to update playback position for item: $itemId")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error updating playback position for item: $itemId")
                 false
@@ -173,6 +182,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get user data for item: $itemId")
                 null
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting user data for item: $itemId")
                 null
@@ -192,6 +203,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to add item to favorites: $itemId")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error adding item to favorites: $itemId")
                 false
@@ -211,6 +224,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to remove item from favorites: $itemId")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error removing item from favorites: $itemId")
                 false
@@ -238,6 +253,8 @@ constructor(
                             includeItemTypes.mapNotNull {
                                 try {
                                     BaseItemKind.valueOf(it.uppercase())
+                                } catch (e: CancellationException) {
+                                    throw e
                                 } catch (e: Exception) {
                                     null
                                 }
@@ -253,6 +270,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get favorite items")
                 emptyList()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting favorite items")
                 emptyList()
@@ -278,6 +297,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to set rating for item: $itemId")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error setting rating for item: $itemId")
                 false
@@ -301,6 +322,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to remove rating for item: $itemId")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error removing rating for item: $itemId")
                 false
@@ -324,6 +347,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to set like status for item: $itemId")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error setting like status for item: $itemId")
                 false
@@ -358,6 +383,8 @@ constructor(
                             )
                             successCount++
                         }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to sync user data for item: ${userDataDto.itemId}")
                     }
@@ -365,6 +392,8 @@ constructor(
 
                 val successRate = successCount.toFloat() / items.size
                 successRate > 0.5f
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to sync user data")
                 false
@@ -382,6 +411,8 @@ constructor(
                         .mapNotNull { (itemId, userData) -> userData?.let { itemId to it } }
                         .toMap()
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get user data batch")
                 emptyMap()

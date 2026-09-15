@@ -351,19 +351,14 @@ fun MetadataRow(
             item is AfinityMovie || item is AfinityEpisode || item is AfinityVideo
 
         if (isSingleMediaEndsAt && stableRuntimeTicks > 0) {
-            val remainingTicks = stableRuntimeTicks
-
-            if (remainingTicks > 0) {
-                val totalMs = remainingTicks / 10_000L
-                val endTimeStr = getFormattedEndTime(context, totalMs)
-                Text(
-                    text = stringResource(R.string.meta_ends_at, endTimeStr),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                    textAlign = if (isLandscape) TextAlign.Start else TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
+            val endTimeStr = getFormattedEndTime(context, stableRuntimeTicks / 10_000L)
+            Text(
+                text = stringResource(R.string.meta_ends_at, endTimeStr),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                textAlign = if (isLandscape) TextAlign.Start else TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }

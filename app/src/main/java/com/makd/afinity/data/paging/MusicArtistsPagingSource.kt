@@ -6,6 +6,7 @@ import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.MusicFilters
 import com.makd.afinity.data.repository.music.MusicRepository
 import java.util.UUID
+import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 import timber.log.Timber
@@ -43,6 +44,8 @@ class MusicArtistsPagingSource(
                 prevKey = if (page == 0) null else page - 1,
                 nextKey = if (items.size < PAGE_SIZE) null else page + 1,
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load artists page")
             LoadResult.Error(e)

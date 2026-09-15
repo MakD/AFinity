@@ -39,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -511,9 +512,7 @@ private fun PlayingSessionCard(
     val userAvatarUrl =
         remember(baseUrl, session.userId) {
             val uid = session.userId
-            if (uid != null && baseUrl.isNotEmpty())
-                "$baseUrl/Users/$uid/Images/Primary?maxWidth=48"
-            else null
+            if (baseUrl.isNotEmpty()) "$baseUrl/Users/$uid/Images/Primary?maxWidth=48" else null
         }
 
     val basePositionTicks = session.playState?.positionTicks ?: 0L
@@ -523,7 +522,7 @@ private fun PlayingSessionCard(
     session.playState?.positionTicks
     val runtimeTicks = item.runTimeTicks
 
-    var localPositionTicks by remember(basePositionTicks) { mutableStateOf(basePositionTicks) }
+    var localPositionTicks by remember(basePositionTicks) { mutableLongStateOf(basePositionTicks) }
 
     LaunchedEffect(basePositionTicks, isPaused) {
         if (!isPaused) {

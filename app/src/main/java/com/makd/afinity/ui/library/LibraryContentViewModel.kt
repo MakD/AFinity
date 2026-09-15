@@ -39,6 +39,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -120,6 +121,8 @@ constructor(
                 _selectedEpisode.value = fullEpisode ?: episode
                 _selectedEpisodeWatchlistStatus.value =
                     watchlistRepository.isInWatchlist(episode.id)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load full episode details")
                 _selectedEpisode.value = episode
@@ -277,7 +280,7 @@ constructor(
 
         viewModelScope.launch {
             mediaChangeManager.libraryContentChanges.collect { event ->
-                Timber.d("Library content changed (${event.reason}) — refreshing ${libraryName}")
+                Timber.d("Library content changed (${event.reason}) — refreshing $libraryName")
                 currentLibraryPagingSource?.invalidate() ?: loadItems()
             }
         }
@@ -307,6 +310,8 @@ constructor(
             val library = libraries.find { it.id.toString() == libraryId }
             Timber.d("Library '$libraryName' has type: ${library?.type}")
             library?.type ?: CollectionType.Mixed
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to determine library type, falling back to name detection")
             val name = libraryName ?: ""
@@ -417,6 +422,8 @@ constructor(
 
                 loadItems()
                 lastLoadedAt = System.currentTimeMillis()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load library content")
                 _uiState.value =
@@ -453,6 +460,8 @@ constructor(
                         libraryType = type,
                     )
                 _uiState.value = _uiState.value.copy(filterOptions = options)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load filter options")
             } finally {
@@ -543,6 +552,8 @@ constructor(
                 _pagingData.value = applyUpdatesToPagingFlow(baseFlow)
 
                 Timber.d("Alphabet scroll: Created new paging source for letter '$letter'")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to scroll to letter $letter")
             }

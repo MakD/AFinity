@@ -6,6 +6,7 @@ import java.time.ZoneOffset
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -88,6 +89,8 @@ constructor(
                     Timber.d(
                         "SyncPlay time sync round ${round + 1}/$PING_ROUNDS: rtt=${rtt}ms offset=${offset}ms"
                     )
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.w(e, "SyncPlay time sync round ${round + 1} failed, skipping")
                 }

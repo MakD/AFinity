@@ -15,6 +15,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -79,6 +80,8 @@ constructor(
                     _state.value =
                         _state.value.copy(serverUrl = server.address, serverName = server.name)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error loading server")
                 _state.value =
@@ -165,6 +168,8 @@ constructor(
                             )
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error testing connection")
                 _state.value =
@@ -282,6 +287,8 @@ constructor(
                 }
 
                 _state.value = _state.value.copy(isSaving = false, saveSuccess = true)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error saving server")
                 _state.value =

@@ -1,6 +1,5 @@
 package com.makd.afinity.data.manager
 
-import android.content.Context
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.AudiobookshelfRepository
@@ -14,7 +13,6 @@ import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.di.NetworkModule
 import com.makd.afinity.di.ProberClient
 import com.makd.afinity.util.forUser
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
@@ -22,6 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -36,7 +35,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
-import org.jellyfin.sdk.api.okhttp.OkHttpFactory
 import org.jellyfin.sdk.api.operations.UserApi
 import org.jellyfin.sdk.api.sockets.DefaultSocketApi
 import org.jellyfin.sdk.model.DeviceInfo
@@ -66,11 +64,9 @@ constructor(
     private val jellyseerrRepository: JellyseerrRepository,
     private val audiobookshelfRepository: AudiobookshelfRepository,
     private val serverAddressResolver: ServerAddressResolver,
-    private val okHttpFactory: OkHttpFactory,
     private val jellyfin: Jellyfin,
     private val deviceInfo: DeviceInfo,
     @param:ProberClient private val proberJellyfin: Jellyfin,
-    @param:ApplicationContext private val context: Context,
     @ApplicationScope private val sessionScope: CoroutineScope,
 ) {
     private val _currentSession = MutableStateFlow<Session?>(null)
@@ -162,6 +158,8 @@ constructor(
                                 _isServerReachable.value = false
                                 serverUrl
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.w(
                                 e,
@@ -211,11 +209,15 @@ constructor(
 
                 try {
                     jellyseerrRepository.setActiveJellyfinSession(serverId, userId)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to link Jellyseerr session")
                 }
                 try {
                     audiobookshelfRepository.setActiveJellyfinSession(serverId, userId)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to link Audiobookshelf session")
                 }
@@ -260,12 +262,16 @@ constructor(
                         Timber.d(
                             "Admin status refreshed from policy: isAdmin=$isAdmin, canDownload=$canDownload"
                         )
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to refresh user policy; using cached isAdmin")
                     }
                 }
 
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start session")
                 Result.failure(e)

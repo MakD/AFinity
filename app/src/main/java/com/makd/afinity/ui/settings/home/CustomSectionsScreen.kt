@@ -50,6 +50,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -1206,8 +1207,8 @@ private fun MonthDayPickerDialog(
     onDismiss: () -> Unit,
     onConfirm: (Int, Int) -> Unit,
 ) {
-    var month by remember { mutableStateOf(initialMonth) }
-    var day by remember { mutableStateOf(initialDay) }
+    var month by remember { mutableIntStateOf(initialMonth) }
+    var day by remember { mutableIntStateOf(initialDay) }
     var monthGridOpen by remember { mutableStateOf(false) }
     val today = remember { MonthDay.now() }
     val daysInMonth = Month.of(month).maxLength()

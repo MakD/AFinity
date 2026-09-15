@@ -14,6 +14,7 @@ import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -105,6 +106,8 @@ constructor(
                 } else {
                     _uiState.update { it.copy(isLoading = false) }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to check Live TV access")
                 _uiState.update {
@@ -124,6 +127,8 @@ constructor(
             applyFilterToCache(_selectedLetter.value)
 
             _uiState.update { it.copy(epgChannels = channels, isLoading = false) }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load channels")
             _uiState.update {
@@ -227,6 +232,8 @@ constructor(
                 _uiState.update {
                     it.copy(categorizedPrograms = filteredCategories, isCategoriesLoading = false)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load categorized programs")
                 _uiState.update { it.copy(isCategoriesLoading = false) }
@@ -266,6 +273,8 @@ constructor(
                                         windowStart = startTime,
                                         windowEnd = endTime,
                                     )
+                                } catch (e: CancellationException) {
+                                    throw e
                                 } catch (e: Exception) {
                                     emptyList()
                                 }
@@ -287,6 +296,8 @@ constructor(
                         )
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load EPG data")
                 _uiState.update { it.copy(isEpgLoading = false) }
@@ -349,6 +360,8 @@ constructor(
                     applyFilterToCache(_selectedLetter.value)
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to refresh tab data for $tab")
         }
@@ -365,6 +378,8 @@ constructor(
                     }
                     applyFilterToCache(_selectedLetter.value)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle favorite for channel: $channelId")
             }
@@ -384,6 +399,8 @@ constructor(
                 applyFilterToCache(_selectedLetter.value)
 
                 _uiState.update { it.copy(isRefreshing = false) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh")
                 _uiState.update { it.copy(isRefreshing = false) }
@@ -399,7 +416,6 @@ constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
         refreshJob?.cancel()
     }
 

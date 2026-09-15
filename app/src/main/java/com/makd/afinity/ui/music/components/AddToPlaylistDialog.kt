@@ -41,6 +41,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -140,6 +141,7 @@ private fun PlaylistListDialog(
                                             indication = null,
                                             interactionSource =
                                                 remember { MutableInteractionSource() },
+                                            role = Role.Button,
                                             onClick = { onSelectPlaylist(playlist) },
                                         )
                                         .padding(vertical = 8.dp),
@@ -209,6 +211,7 @@ private fun PlaylistListDialog(
                             .clickable(
                                 indication = null,
                                 interactionSource = remember { MutableInteractionSource() },
+                                role = Role.Button,
                                 onClick = onCreateNew,
                             )
                             .padding(vertical = 10.dp),

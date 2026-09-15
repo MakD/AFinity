@@ -46,7 +46,6 @@ import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinitySegment
-import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinityTrickplayInfo
@@ -380,8 +379,6 @@ constructor(
         )
     }
 
-    override suspend fun updateMediaStream(stream: AfinityMediaStream) {}
-
     override suspend fun deleteMediaStream(streamId: UUID) {
         mediaStreamDao.deleteMediaStreamById(streamId)
     }
@@ -397,10 +394,6 @@ constructor(
         serverDatabaseDao.insertTrickplayInfo(trickplayInfo.toAfinityTrickplayInfoDto(sourceId))
     }
 
-    override suspend fun updateTrickplayInfo(trickplayInfo: AfinityTrickplayInfo) {}
-
-    override suspend fun deleteTrickplayInfo(sourceId: String) {}
-
     override suspend fun getTrickplayInfo(sourceId: String): AfinityTrickplayInfo? {
         return serverDatabaseDao.getTrickplayInfo(sourceId)?.toAfinityTrickplayInfo()
     }
@@ -412,8 +405,6 @@ constructor(
     override suspend fun updateSegment(segment: AfinitySegment, itemId: UUID) {
         serverDatabaseDao.insertSegment(segment.toAfinitySegmentsDto(itemId))
     }
-
-    override suspend fun deleteSegment(itemId: UUID, segmentType: AfinitySegmentType) {}
 
     override suspend fun getSegmentsForItem(itemId: UUID): List<AfinitySegment> {
         return serverDatabaseDao.getSegmentsForItem(itemId).map { it.toAfinitySegment() }
@@ -583,10 +574,6 @@ constructor(
     override suspend fun clearUserData(userId: UUID) {
         val serverId = sessionManager.currentSession.value?.serverId ?: return
         userDataDao.deleteUserDataByUserId(userId, serverId)
-    }
-
-    override suspend fun getDatabaseSize(): Long {
-        return 0L
     }
 
     private suspend fun AfinityMovieDto.toAfinityMovie(

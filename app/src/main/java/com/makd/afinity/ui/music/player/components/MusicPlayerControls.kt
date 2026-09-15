@@ -12,6 +12,7 @@ import java.util.Locale
 
 @Composable
 fun MusicPlayerControls(
+    modifier: Modifier = Modifier,
     positionMs: Long,
     durationMs: Long,
     bufferedPositionMs: Long,
@@ -23,7 +24,6 @@ fun MusicPlayerControls(
     onSeek: (Long) -> Unit,
     onSeekBackward: () -> Unit = {},
     onSeekForward: () -> Unit = {},
-    modifier: Modifier = Modifier,
     accentColor: Color = MaterialTheme.colorScheme.primary,
     audioCodec: String? = null,
     isServerTranscode: Boolean = false,

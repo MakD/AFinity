@@ -5,7 +5,6 @@ import android.os.StatFs
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
-import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.download.DownloadInfo
@@ -24,6 +23,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -45,7 +45,6 @@ constructor(
     private val preferencesRepository: PreferencesRepository,
     private val storageLocationProvider: StorageLocationProvider,
     private val cacheMaintenance: CacheMaintenance,
-    val offlineModeManager: OfflineModeManager,
 ) : ViewModel() {
 
     private val _cacheUsage = MutableStateFlow<CacheUsage?>(null)
@@ -59,6 +58,8 @@ constructor(
             _cacheUsage.value =
                 try {
                     cacheMaintenance.usage()
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to read cache usage")
                     null
@@ -75,6 +76,8 @@ constructor(
             _isClearingCache.value = true
             try {
                 cacheMaintenance.clearCachedData(sections)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to clear cached data")
             } finally {
@@ -178,6 +181,8 @@ constructor(
                         availableVolumes = volumes,
                         defaultStorageVolumeId = defaultVolumeId,
                     )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load storage volumes")
             }
@@ -189,6 +194,8 @@ constructor(
             try {
                 preferencesRepository.setDownloadStorageVolumeId(volumeId)
                 _uiState.value = _uiState.value.copy(defaultStorageVolumeId = volumeId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to update default storage volume")
             }
@@ -212,6 +219,8 @@ constructor(
                         videoCacheSizeMb = videoCacheSizeMb,
                         maxConcurrentDownloads = maxConcurrentDownloads,
                     )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load download preferences")
             }
@@ -223,6 +232,8 @@ constructor(
             try {
                 preferencesRepository.setMaxDownloads(count)
                 _uiState.value = _uiState.value.copy(maxConcurrentDownloads = count)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to update max concurrent downloads preference")
             }
@@ -234,6 +245,8 @@ constructor(
             try {
                 preferencesRepository.setDownloadOverWifiOnly(wifiOnly)
                 _uiState.value = _uiState.value.copy(downloadOverWifiOnly = wifiOnly)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to update download WiFi preference")
             }
@@ -245,6 +258,8 @@ constructor(
             try {
                 preferencesRepository.setImageCacheEnabled(enabled)
                 _uiState.value = _uiState.value.copy(isImageCacheEnabled = enabled)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to update image cache enabled preference")
             }
@@ -256,6 +271,8 @@ constructor(
             try {
                 preferencesRepository.setImageCacheSizeMb(sizeMb)
                 _uiState.value = _uiState.value.copy(imageCacheSizeMb = sizeMb)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to update image cache size preference")
             }
@@ -267,6 +284,8 @@ constructor(
             try {
                 preferencesRepository.setVideoCacheSizeMb(sizeMb)
                 _uiState.value = _uiState.value.copy(videoCacheSizeMb = sizeMb)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to update video cache size preference")
             }
@@ -292,6 +311,8 @@ constructor(
                                     ),
                             )
                     }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to observe active downloads")
             }
@@ -306,6 +327,8 @@ constructor(
                         _uiState.value =
                             _uiState.value.copy(completedDownloads = completedDownloads)
                     }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to observe completed downloads")
             }
@@ -329,6 +352,8 @@ constructor(
                                     ),
                             )
                     }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to observe ABS active downloads")
             }
@@ -342,6 +367,8 @@ constructor(
                     .collect { absCompleted ->
                         _uiState.value = _uiState.value.copy(absCompletedDownloads = absCompleted)
                     }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to observe ABS completed downloads")
             }
@@ -399,6 +426,8 @@ constructor(
                         deviceStorageStats = deviceStats,
                         volumeStorageStats = perVolume,
                     )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load storage info")
             }
@@ -436,6 +465,8 @@ constructor(
                                 (totalBytes - availableBytes).toFloat() / totalBytes.toFloat()
                             else 0f,
                     )
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to stat volume ${volume.id}")
                     return@mapNotNull null
@@ -488,6 +519,8 @@ constructor(
                     _uiState.value =
                         _uiState.value.copy(error = "Failed to pause download: ${error.message}")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error pausing download")
             }
@@ -503,6 +536,8 @@ constructor(
                     _uiState.value =
                         _uiState.value.copy(error = "Failed to resume download: ${error.message}")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error resuming download")
             }
@@ -525,6 +560,8 @@ constructor(
                                 error = "Failed to cancel download: ${error.message}"
                             )
                     }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error cancelling download")
             }
@@ -555,6 +592,8 @@ constructor(
                                 )
                         }
                     }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error deleting download")
             }
@@ -581,6 +620,8 @@ constructor(
                         _uiState.value =
                             _uiState.value.copy(error = "Failed to remove entry: ${error.message}")
                     }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error removing download record")
             }
@@ -593,6 +634,8 @@ constructor(
                 absDownloadRepository.cancelDownload(downloadId).onFailure {
                     Timber.e(it, "Failed to cancel ABS download")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error cancelling ABS download")
             }
@@ -606,6 +649,8 @@ constructor(
                     .deleteDownload(downloadId)
                     .onSuccess { loadStorageInfo() }
                     .onFailure { Timber.e(it, "Failed to delete ABS download") }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error deleting ABS download")
             }
@@ -632,19 +677,6 @@ constructor(
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
-    }
-
-    fun retryFailedDownload(downloadId: UUID) {
-        viewModelScope.launch {
-            try {
-                downloadRepository
-                    .resumeDownload(downloadId)
-                    .onSuccess { Timber.i("Failed download requeued: $downloadId") }
-                    .onFailure { error -> Timber.e(error, "Failed to retry download") }
-            } catch (e: Exception) {
-                Timber.e(e, "Error retrying failed download")
-            }
-        }
     }
 
     fun formatStorageSize(bytes: Long): String = formatFileSize(context, bytes)

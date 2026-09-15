@@ -18,6 +18,7 @@ import dagger.assisted.AssistedInject
 import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -118,6 +119,8 @@ constructor(
                             .content
                             ?.items
                             ?.firstOrNull()
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to fetch item details for trickplay")
                         null
@@ -168,6 +171,8 @@ constructor(
                                         baseUrl = baseUrl,
                                         outputDir = trickplayDir,
                                     )
+                                } catch (e: CancellationException) {
+                                    throw e
                                 } catch (e: Exception) {
                                     Timber.w(
                                         e,
@@ -183,6 +188,8 @@ constructor(
                 trickplayInfo.forEach { (_, info) ->
                     try {
                         databaseRepository.insertTrickplayInfo(info, localSourceId)
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to save trickplay info to database")
                     }
@@ -197,6 +204,8 @@ constructor(
                         KEY_SOURCE_ID to sourceId,
                     )
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Trickplay download failed")
                 return@withContext Result.failure(
@@ -274,6 +283,8 @@ constructor(
                                 Timber.i(
                                     "Downloaded trickplay tiled image: $resolution/$tileIndex.jpg (${outputFile.length()} bytes)"
                                 )
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 Timber.w(e, "Failed to download trickplay tile $tileIndex")
                             }

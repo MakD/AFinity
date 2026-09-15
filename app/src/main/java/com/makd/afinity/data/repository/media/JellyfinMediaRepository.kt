@@ -1,6 +1,5 @@
 package com.makd.afinity.data.repository.media
 
-import android.content.Context
 import androidx.core.net.toUri
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
@@ -48,14 +47,11 @@ import com.makd.afinity.data.repository.JellyfinApiInvoker
 import com.makd.afinity.data.repository.NoActiveSessionException
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
-import com.makd.afinity.di.ApplicationScope
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -102,14 +98,12 @@ class JellyfinMediaRepository
 @Inject
 constructor(
     private val sessionManager: SessionManager,
-    @param:ApplicationContext private val context: Context,
     private val mdbListApiService: MdbListApiService,
     private val omdbApiService: OmdbApiService,
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val databaseRepository: DatabaseRepository,
     private val storageLocationProvider: StorageLocationProvider,
     private val apiInvoker: JellyfinApiInvoker,
-    @ApplicationScope private val applicationScope: CoroutineScope,
 ) : MediaRepository {
     override suspend fun refreshItemUserData(
         itemId: UUID,
@@ -134,6 +128,8 @@ constructor(
                     }
                 }
                 return@withContext freshItem
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh UserData")
                 null
@@ -254,6 +250,8 @@ constructor(
                 }
                 _continueWatching.value = continueWatchingItems
                 Timber.d("Full refresh of continue watching cache completed")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh continue watching cache")
             }
@@ -290,6 +288,8 @@ constructor(
                 }
                 _nextUp.value = nextUpEpisodes
                 Timber.d("Full refresh of next up cache completed")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh next up cache")
             }
@@ -329,6 +329,8 @@ constructor(
         val uuid =
             try {
                 UUID.fromString(itemId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 null
             }
@@ -365,7 +367,6 @@ constructor(
         sortDescending: Boolean,
         filters: LibraryFilters,
         nameStartsWith: String?,
-        fields: List<ItemFields>?,
         studioNames: List<String>,
         includeItemTypes: List<String>?,
         onSourceCreated: ((PagingSource<Int, AfinityItem>) -> Unit)?,
@@ -410,6 +411,8 @@ constructor(
                 .mapNotNull {
                     try {
                         BaseItemKind.valueOf(it.uppercase())
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w("Unknown item type dropped from filter query: $it")
                         null
@@ -504,6 +507,8 @@ constructor(
                     .mapNotNull { baseItemDto ->
                         try {
                             baseItemDto.toAfinityCollection(getBaseUrl())
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.w(e, "Failed to convert item to collection: ${baseItemDto.name}")
                             null
@@ -643,6 +648,8 @@ constructor(
                         .mapNotNull {
                             try {
                                 BaseItemKind.valueOf(it.uppercase())
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 Timber.w("Unknown item type dropped from filter: $it")
                                 null
@@ -697,6 +704,8 @@ constructor(
                         imageTypes.mapNotNull {
                             try {
                                 ImageType.valueOf(it.uppercase())
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 null
                             }
@@ -711,6 +720,8 @@ constructor(
                         .mapNotNull {
                             try {
                                 ImageType.valueOf(it.uppercase())
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 null
                             }
@@ -1234,32 +1245,39 @@ constructor(
         }
 
     override suspend fun getFavoriteMedia(fields: List<ItemFields>?): List<AfinityItem> =
-        apiCall(emptyList(), "Failed to get favorite media") { apiClient, userId ->
-            val baseUrl = getBaseUrl()
-            LibraryApi(apiClient)
-                .getItems(
-                    userId = userId,
-                    includeItemTypes =
-                        listOf(
-                            BaseItemKind.MOVIE,
-                            BaseItemKind.SERIES,
-                            BaseItemKind.SEASON,
-                            BaseItemKind.EPISODE,
-                            BaseItemKind.BOX_SET,
-                        ),
-                    isFavorite = true,
-                    recursive = true,
-                    fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
-                    enableImages = true,
-                    enableUserData = true,
-                    enableTotalRecordCount = false,
-                    imageTypeLimit = 1,
-                    sortBy = listOf(ItemSortBy.SORT_NAME),
-                )
-                .content
-                .items
-                .mapNotNull { baseItem -> baseItem.toAfinityItem(baseUrl) }
+        getFavoriteMediaResult(fields).getOrElse { e ->
+            if (e !is NoActiveSessionException) Timber.e(e, "Failed to get favorite media")
+            emptyList()
         }
+
+    override suspend fun getFavoriteMediaResult(
+        fields: List<ItemFields>?
+    ): Result<List<AfinityItem>> = apiInvoker.apiResult { apiClient, userId ->
+        val baseUrl = getBaseUrl()
+        LibraryApi(apiClient)
+            .getItems(
+                userId = userId,
+                includeItemTypes =
+                    listOf(
+                        BaseItemKind.MOVIE,
+                        BaseItemKind.SERIES,
+                        BaseItemKind.SEASON,
+                        BaseItemKind.EPISODE,
+                        BaseItemKind.BOX_SET,
+                    ),
+                isFavorite = true,
+                recursive = true,
+                fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                enableImages = true,
+                enableUserData = true,
+                enableTotalRecordCount = false,
+                imageTypeLimit = 1,
+                sortBy = listOf(ItemSortBy.SORT_NAME),
+            )
+            .content
+            .items
+            .mapNotNull { baseItem -> baseItem.toAfinityItem(baseUrl) }
+    }
 
     override suspend fun getFavoritePeople(fields: List<ItemFields>?): List<AfinityPersonDetail> =
         apiCall(emptyList(), "Failed to get favorite people") { apiClient, userId ->
@@ -1370,6 +1388,8 @@ constructor(
                             .mapNotNull {
                                 try {
                                     BaseItemKind.valueOf(it.uppercase())
+                                } catch (e: CancellationException) {
+                                    throw e
                                 } catch (e: Exception) {
                                     null
                                 }
@@ -1386,7 +1406,15 @@ constructor(
         }
 
     override suspend fun getPerson(personId: UUID): AfinityPersonDetail? =
-        apiCall(null, "Failed to get person details for ID: $personId") { apiClient, userId ->
+        getPersonResult(personId).getOrElse { e ->
+            if (e !is NoActiveSessionException) {
+                Timber.e(e, "Failed to get person details for ID: $personId")
+            }
+            null
+        }
+
+    override suspend fun getPersonResult(personId: UUID): Result<AfinityPersonDetail?> =
+        apiInvoker.apiResult { apiClient, userId ->
             LibraryApi(apiClient)
                 .getItem(itemId = personId, userId = userId)
                 .content
@@ -1432,6 +1460,8 @@ constructor(
                             .mapNotNull {
                                 try {
                                     BaseItemKind.valueOf(it.uppercase())
+                                } catch (e: CancellationException) {
+                                    throw e
                                 } catch (e: Exception) {
                                     null
                                 }
@@ -1497,6 +1527,8 @@ constructor(
                 } else {
                     Timber.d("Trickplay file not found locally, trying API")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to load trickplay from local storage, falling back to API")
             }
@@ -1508,6 +1540,8 @@ constructor(
                 val response = trickPlayApi.getTrickplayTileImage(itemId, width, index)
                 Timber.d("Fetched trickplay tile from API: ${response.content.size} bytes")
                 response.content
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to get trickplay data for tile $index")
                 null
@@ -1534,6 +1568,8 @@ constructor(
                             .mapNotNull {
                                 try {
                                     BaseItemKind.valueOf(it.uppercase())
+                                } catch (e: CancellationException) {
+                                    throw e
                                 } catch (e: Exception) {
                                     null
                                 }
@@ -1575,6 +1611,8 @@ constructor(
                             .mapNotNull {
                                 try {
                                     BaseItemKind.valueOf(it.uppercase())
+                                } catch (e: CancellationException) {
+                                    throw e
                                 } catch (e: Exception) {
                                     Timber.w("Unknown item type dropped from studio query: $it")
                                     null
@@ -1675,6 +1713,8 @@ constructor(
                                     } else {
                                         null
                                     }
+                                } catch (e: CancellationException) {
+                                    throw e
                                 } catch (e: Exception) {
                                     Timber.w(
                                         e,
@@ -1754,6 +1794,8 @@ constructor(
                             verifiedHot = "certified-hot" in keywords || "verified-hot" in keywords,
                         ),
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get MDBList ratings for TMDB ID: $tmdbId")
                 MdbListRatingsResult()
@@ -1782,6 +1824,8 @@ constructor(
                     Timber.w("OMDb API Error: ${result.error}")
                     null
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get OMDb details for IMDb ID: $imdbId")
                 null
@@ -1810,6 +1854,8 @@ constructor(
         try {
             getItem(episode.id, fields = FieldSets.PLAYABLE_EPISODE)?.toAfinityEpisode(getBaseUrl())
                 ?: episode
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to hydrate playback sources for episode ${episode.id}")
             episode
@@ -1833,6 +1879,8 @@ constructor(
                     Timber.d("Found NextUp episode: ${playableNextUp.first().name}")
                     return playableNextUp.first()
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "NextUp API failed")
             }
@@ -1851,6 +1899,8 @@ constructor(
                 if (nextEpisode != null) return withPlaybackSources(nextEpisode)
             }
             return firstEpisodeOfSeries?.let { withPlaybackSources(it) }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to determine episode to play for series: $seriesId")
             null
@@ -1868,6 +1918,8 @@ constructor(
             if (playableEpisodes.isEmpty()) return null
 
             playableEpisodes.firstOrNull { !it.played } ?: playableEpisodes.firstOrNull()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to determine episode to play for season: $seasonId")
             null
@@ -1877,6 +1929,8 @@ constructor(
     override suspend fun getSeriesNextEpisode(seriesId: UUID): AfinityEpisode? {
         return try {
             getNextUp(seriesId, limit = 1).firstOrNull()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to get next episode for series: $seriesId")
             null

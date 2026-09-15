@@ -35,7 +35,7 @@ private const val TAILSCALE_DOMAIN_SUFFIX = "ts.net"
 class NetworkLocality
 @Inject
 constructor(
-    @param:ApplicationContext context: Context,
+    @ApplicationContext context: Context,
     networkConnectivityMonitor: NetworkConnectivityMonitor,
     @ApplicationScope scope: CoroutineScope,
 ) {

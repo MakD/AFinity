@@ -192,7 +192,8 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
                     title = stringResource(R.string.cd_equalizer),
                     value =
                         stringResource(
-                            if (equalizerState.isEnabled) R.string.state_on else R.string.state_off
+                            if (equalizerState.isEnabled) R.string.state_toggle_on
+                            else R.string.state_toggle_off
                         ),
                     onClick = {
                         showMoreSheet = false
@@ -204,7 +205,8 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
                     title = stringResource(R.string.abs_skip_silence_title),
                     value =
                         stringResource(
-                            if (skipSilenceEnabled) R.string.state_on else R.string.state_off
+                            if (skipSilenceEnabled) R.string.state_toggle_on
+                            else R.string.state_toggle_off
                         ),
                     onClick = { viewModel.setSkipSilence(!skipSilenceEnabled) },
                 )
@@ -360,7 +362,10 @@ fun SharedTransitionScope.PortraitPlayerContent(
         Spacer(modifier = Modifier.height(24.dp))
 
         val coverWidthPx = with(LocalDensity.current) { AudioPlayerLayout.CoverMaxSize.roundToPx() }
-        Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            contentAlignment = Alignment.Center,
+        ) {
             Surface(
                 modifier =
                     AudioPlayerLayout.CoverSizeCap.aspectRatio(1f)

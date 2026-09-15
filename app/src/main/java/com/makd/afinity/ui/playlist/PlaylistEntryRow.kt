@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -44,10 +45,10 @@ import java.util.concurrent.TimeUnit
 
 @Composable
 fun PlaylistVideoRow(
+    modifier: Modifier = Modifier,
     item: AfinityItem,
     onClick: () -> Unit,
     onRemoveFromPlaylist: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -58,6 +59,7 @@ fun PlaylistVideoRow(
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() },
+                    role = Role.Button,
                     onClick = onClick,
                 )
                 .padding(horizontal = 16.dp, vertical = 10.dp),

@@ -230,6 +230,8 @@ constructor(
                 if (genreRepository.combinedGenres.value.isEmpty()) {
                     try {
                         genreRepository.loadCombinedGenres()
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to load genres for custom sections")
                     }
@@ -366,7 +368,6 @@ constructor(
                     return@withContext null
                 }
                 .items
-                .orEmpty()
                 .mapNotNull { dto ->
                     val name = dto.name ?: return@mapNotNull null
                     SourceOption(dto.id.toString(), name)

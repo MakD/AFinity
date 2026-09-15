@@ -45,6 +45,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -129,7 +130,9 @@ fun AppNavigationDrawerContent(
                         Modifier.fillMaxWidth()
                             .padding(horizontal = 16.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .clickable { accountSwitcherExpanded = !accountSwitcherExpanded }
+                            .clickable(role = Role.Button) {
+                                accountSwitcherExpanded = !accountSwitcherExpanded
+                            }
                             .padding(horizontal = 8.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -254,8 +257,7 @@ fun AppNavigationDrawerContent(
                         val visible =
                             when {
                                 isOffline && destination != Destination.HOME -> false
-                                destination == Destination.LIBRARIES ->
-                                    librariesInDrawer && !isOffline
+                                destination == Destination.LIBRARIES -> librariesInDrawer
                                 destination == Destination.FAVORITES -> favoritesCount > 0
                                 destination == Destination.WATCHLIST -> watchlistCount > 0
                                 destination == Destination.REQUESTS -> isJellyseerrAuthenticated

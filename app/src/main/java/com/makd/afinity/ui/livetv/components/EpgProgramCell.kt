@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -68,7 +69,7 @@ fun EpgProgramCell(
                     color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
                     shape = MaterialTheme.shapes.small,
                 )
-                .clickable(onClick = onClick)
+                .clickable(role = Role.Button, onClick = onClick)
                 .padding(horizontal = 4.dp, vertical = 4.dp)
     ) {
         Column {

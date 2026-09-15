@@ -89,6 +89,8 @@ interface MusicRepository {
 
     suspend fun getPlaylistById(playlistId: UUID): AfinityPlaylist?
 
+    suspend fun getPlaylistByIdResult(playlistId: UUID): Result<AfinityPlaylist?>
+
     suspend fun getPlaylistContents(playlistId: UUID): AfinityPlaylistContents
 
     suspend fun createPlaylist(

@@ -19,6 +19,7 @@ import com.makd.afinity.data.repository.jellyseerr.JellyseerrLoginException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -110,6 +111,8 @@ constructor(
                             },
                         )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to check auth status")
             }
@@ -124,6 +127,8 @@ constructor(
                     _uiState.update { it.copy(serverUrl = savedUrl) }
                     probeServer(savedUrl)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load saved server URL")
             }
@@ -274,6 +279,8 @@ constructor(
                     _uiState.update { it.copy(isLoading = false, error = finalErrorMessage) }
                     Timber.e(lastError, "Jellyseerr login failed on validated server")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -416,6 +423,8 @@ constructor(
                             Timber.e(error, "Jellyseerr Quick Connect authentication failed")
                         },
                     )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -536,6 +545,8 @@ constructor(
                             Timber.e(error, "Logout failed")
                         },
                     )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(

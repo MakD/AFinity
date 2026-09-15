@@ -11,6 +11,7 @@ import com.makd.afinity.data.models.media.toItemFilterCriteria
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
 import java.util.UUID
+import kotlinx.coroutines.CancellationException
 import timber.log.Timber
 
 class JellyfinItemsPagingSource(
@@ -78,6 +79,8 @@ class JellyfinItemsPagingSource(
                 prevKey = if (page == 0) null else page - 1,
                 nextKey = if (items.isEmpty() || items.size < PAGE_SIZE) null else page + 1,
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load page")
             LoadResult.Error(e)

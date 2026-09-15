@@ -22,6 +22,8 @@ interface WatchlistRepository {
 
     suspend fun getWatchlistItems(): List<AfinityItem>
 
+    suspend fun getWatchlistItemsResult(): Result<List<AfinityItem>>
+
     suspend fun getWatchlistBoxSets(): List<AfinityBoxSet>
 
     suspend fun getWatchlistMovies(): List<AfinityMovie>

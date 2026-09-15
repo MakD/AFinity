@@ -85,6 +85,8 @@ constructor(
                 val servers = databaseRepository.getAllServers()
                 _savedServers.value = servers
                 Timber.d("Loaded ${servers.size} saved servers")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load saved servers")
             }
@@ -168,6 +170,8 @@ constructor(
                             Timber.d(
                                 "Saved server to database: ${validationResult.server.name} (${validationResult.server.id})"
                             )
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.w(e, "Failed to save server to database, continuing anyway")
                         }
@@ -203,6 +207,8 @@ constructor(
                             )
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value =
                     _uiState.value.copy(
@@ -231,6 +237,8 @@ constructor(
             val users = jellyfinRepository.getPublicUsers(_connectedServerUrl.value)
             _publicUsers.value = users
             Timber.d("Loaded ${users.size} public users")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load public users")
         }
@@ -289,6 +297,8 @@ constructor(
                     _uiState.value.copy(isConnecting = false, isConnectedToServer = true)
 
                 Timber.d("Successfully connected to saved server: ${server.name}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to connect to saved server: ${server.name}")
                 _uiState.value =
@@ -329,6 +339,8 @@ constructor(
             Timber.d(
                 "Loaded ${usersWithTokens.size} saved users with tokens for server $serverId (${allUsers.size} total users)"
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load saved users for server $serverId")
             _savedUsers.value = emptyList()
@@ -395,6 +407,8 @@ constructor(
                         )
                     Timber.w("No saved token found for user: ${user.name}")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value =
                     _uiState.value.copy(
@@ -488,6 +502,8 @@ constructor(
                         Timber.e("Login failed: ${result.message}")
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value =
                     _uiState.value.copy(
@@ -529,6 +545,8 @@ constructor(
                             error = context.getString(R.string.error_quick_connect_start),
                         )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value =
                     _uiState.value.copy(
@@ -629,6 +647,8 @@ constructor(
                     quickConnectCode = null,
                     quickConnectSecret = null,
                 )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             _uiState.value =
                 _uiState.value.copy(

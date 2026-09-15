@@ -38,6 +38,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -98,7 +99,7 @@ private fun MusicCarouselSection(
                     modifier =
                         Modifier.height(itemSize.height)
                             .maskClip(MaterialTheme.shapes.extraLarge)
-                            .clickable { onItemClick(index) }
+                            .clickable(role = Role.Button) { onItemClick(index) }
                 ) {
                     AsyncImage(
                         imageUrl = imageUrl(index),
@@ -444,7 +445,7 @@ fun ArtistAlbumsCarousel(
                     modifier =
                         Modifier.height(itemSize.height)
                             .maskClip(MaterialTheme.shapes.extraLarge)
-                            .clickable { onAlbumClick(album) }
+                            .clickable(role = Role.Button) { onAlbumClick(album) }
                 ) {
                     AsyncImage(
                         imageUrl = (album.images.backdrop ?: album.images.primary)?.toString(),

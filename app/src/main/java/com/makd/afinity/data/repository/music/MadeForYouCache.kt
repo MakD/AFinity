@@ -11,6 +11,7 @@ import com.makd.afinity.data.repository.home.HomeCacheRepository
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import timber.log.Timber
@@ -94,6 +95,8 @@ constructor(
             if (layout.version != LAYOUT_VERSION) return null
             val slots = layout.slots.mapNotNull { it.toSlot() }
             slots.ifEmpty { null }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to decode Made For You layout for library=$libraryId")
             null
@@ -106,6 +109,8 @@ constructor(
         if (persistable.isEmpty()) return
         try {
             homeCacheRepository.putRaw(key, json.encodeToString(CachedLayout(slots = persistable)))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to persist Made For You layout for library=$libraryId")
         }

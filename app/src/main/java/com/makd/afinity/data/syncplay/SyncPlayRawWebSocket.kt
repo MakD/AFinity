@@ -5,6 +5,7 @@ import com.makd.afinity.di.ApplicationScope
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -115,6 +116,8 @@ constructor(
                 "SyncPlayGroupUpdate" -> parseSyncPlayGroupUpdate(root)
                 else -> {}
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "SyncPlay: failed to parse raw frame")
         }
@@ -126,6 +129,8 @@ constructor(
             val command = ApiSerializer.json.decodeFromJsonElement(SendCommand.serializer(), data)
             Timber.d("SyncPlay raw command: ${command.command}, ticks=${command.positionTicks}")
             _commands.emit(command)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "SyncPlay: failed to deserialize SendCommand")
         }
@@ -204,6 +209,8 @@ constructor(
                 }
                 else -> {}
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "SyncPlay: failed to parse raw frame")
         }

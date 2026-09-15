@@ -101,6 +101,8 @@ constructor(
                                 "JellyfinServerRepository: Session changed but server ${session.serverId} not found in database"
                             )
                         }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "JellyfinServerRepository: Failed to load server for session")
                     }
@@ -187,6 +189,8 @@ constructor(
                     false
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to re-resolve server address")
             false
@@ -220,6 +224,8 @@ constructor(
             _unsupportedServerVersion.value = null
 
             Timber.d("Updated base URL to: $baseUrl")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to set base URL: $baseUrl")
             throw e
@@ -308,34 +314,31 @@ constructor(
                     val response = systemApi.getPublicSystemInfo()
                     val systemInfo = response.content
 
-                    if (systemInfo != null) {
-                        if (!ServerVersionSupport.isSupported(systemInfo.version)) {
-                            Timber.w(
-                                "Rejecting server at $url: version ${systemInfo.version} is below ${ServerVersionSupport.minimum}"
-                            )
-                            return@withContext ServerConnectionResult.Error(
-                                ServerVersionSupport.unsupportedMessage(
-                                    context,
-                                    systemInfo.version,
-                                )
-                            )
-                        }
-                        val server =
-                            Server(
-                                id = systemInfo.id ?: UUID.randomUUID().toString(),
-                                name = systemInfo.serverName ?: "Jellyfin Server",
-                                version = systemInfo.version,
-                                address = url,
-                            )
-                        return@withContext ServerConnectionResult.Success(
-                            server = server,
-                            serverAddress = url,
-                            version = systemInfo.version ?: "Unknown",
-                            isQuickConnectEnabled = systemInfo.startupWizardCompleted == true,
+                    if (!ServerVersionSupport.isSupported(systemInfo.version)) {
+                        Timber.w(
+                            "Rejecting server at $url: version ${systemInfo.version} is below ${ServerVersionSupport.minimum}"
+                        )
+                        return@withContext ServerConnectionResult.Error(
+                            ServerVersionSupport.unsupportedMessage(context, systemInfo.version)
                         )
                     }
+                    val server =
+                        Server(
+                            id = systemInfo.id ?: UUID.randomUUID().toString(),
+                            name = systemInfo.serverName ?: "Jellyfin Server",
+                            version = systemInfo.version,
+                            address = url,
+                        )
+                    return@withContext ServerConnectionResult.Success(
+                        server = server,
+                        serverAddress = url,
+                        version = systemInfo.version ?: "Unknown",
+                        isQuickConnectEnabled = systemInfo.startupWizardCompleted == true,
+                    )
                 } catch (e: ApiClientException) {
                     lastException = e
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     lastException = e
                 }
@@ -378,6 +381,8 @@ constructor(
                         true
                     }
                 result == true
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.d("Ping failed for $address: ${e.message}")
                 false
@@ -400,6 +405,8 @@ constructor(
                         address = _currentBaseUrl.value,
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get server info")
                 null
@@ -414,29 +421,27 @@ constructor(
                 val response = systemApi.getPublicSystemInfo()
                 val systemInfo = response.content
 
-                if (systemInfo != null) {
-                    val server =
-                        Server(
-                            id = systemInfo.id ?: UUID.randomUUID().toString(),
-                            name = systemInfo.serverName ?: "Jellyfin Server",
-                            version = systemInfo.version,
-                            address = _currentBaseUrl.value,
+                val server =
+                    Server(
+                        id = systemInfo.id ?: UUID.randomUUID().toString(),
+                        name = systemInfo.serverName ?: "Jellyfin Server",
+                        version = systemInfo.version,
+                        address = _currentBaseUrl.value,
+                    )
+                _currentServer.value = server
+                _isConnected.value = true
+                _unsupportedServerVersion.value =
+                    if (ServerVersionSupport.isSupported(systemInfo.version)) {
+                        null
+                    } else {
+                        Timber.e(
+                            "Connected server is Jellyfin ${systemInfo.version}, below the required ${ServerVersionSupport.minimum}"
                         )
-                    _currentServer.value = server
-                    _isConnected.value = true
-                    _unsupportedServerVersion.value =
-                        if (ServerVersionSupport.isSupported(systemInfo.version)) {
-                            null
-                        } else {
-                            Timber.e(
-                                "Connected server is Jellyfin ${systemInfo.version}, below the required ${ServerVersionSupport.minimum}"
-                            )
-                            systemInfo.version
-                        }
-                    Timber.d("Server info refreshed: ${server.name}")
-                } else {
-                    Timber.e("Failed to refresh server info - no system info returned")
-                }
+                        systemInfo.version
+                    }
+                Timber.d("Server info refreshed: ${server.name}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh server info")
             }
@@ -476,30 +481,6 @@ constructor(
         val queryString = if (params.isNotEmpty()) "?${params.joinToString("&")}" else ""
 
         return "$baseUrl/Items/$itemId/Images/$imageType/$imageIndex$queryString"
-    }
-
-    override fun buildStreamUrl(
-        itemId: String,
-        mediaSourceId: String,
-        maxBitrate: Int?,
-        audioStreamIndex: Int?,
-        subtitleStreamIndex: Int?,
-        videoStreamIndex: Int?,
-        accessToken: String?,
-    ): String {
-        val baseUrl = _currentBaseUrl.value
-        if (baseUrl.isBlank()) return ""
-
-        val params = mutableListOf<String>()
-
-        params.add("MediaSourceId=$mediaSourceId")
-        params.add("Static=true")
-
-        if (maxBitrate != null) params.add("maxStreamingBitrate=$maxBitrate")
-
-        val queryString = params.joinToString("&")
-
-        return "$baseUrl/Videos/$itemId/stream?$queryString"
     }
 
     sealed class ServerConnectionResult {

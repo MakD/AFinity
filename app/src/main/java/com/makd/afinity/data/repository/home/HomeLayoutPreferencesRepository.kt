@@ -9,6 +9,7 @@ import com.makd.afinity.data.models.DiscoverySection
 import com.makd.afinity.data.models.HomeRow
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -68,6 +69,8 @@ constructor(
                 .mapNotNull { HomeRow.fromKey(it.sectionKey) }
                 .filterNot { it.mandatory }
                 .toSet()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to read hidden home rows")
             emptySet()
@@ -78,6 +81,8 @@ constructor(
         val key = sessionKey() ?: return DiscoveryConfig()
         return try {
             dao.getForSession(key).toDiscoveryConfig()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to read discovery config")
             DiscoveryConfig()
@@ -111,6 +116,8 @@ constructor(
                     maxCount = null,
                 )
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to save discovery density")
         }
@@ -132,6 +139,8 @@ constructor(
                     maxCount = maxCount?.coerceIn(1, section.ceiling),
                 )
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to save discovery section ${section.key}")
         }
@@ -150,6 +159,8 @@ constructor(
                     maxCount = null,
                 )
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to save home row visibility for ${row.key}")
         }
@@ -159,6 +170,8 @@ constructor(
         val key = sessionKey() ?: return
         try {
             dao.deleteForSession(key)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to reset home layout preferences")
         }

@@ -22,6 +22,7 @@ import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.player.music.MusicPlaybackManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
@@ -217,6 +218,8 @@ constructor(
                 val hasAccess = liveTvRepository.hasLiveTvAccess()
                 Timber.d("Live TV access check result: $hasAccess")
                 _hasLiveTvAccess.value = hasAccess
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to check Live TV access")
                 _hasLiveTvAccess.value = true
@@ -238,6 +241,8 @@ constructor(
 
                 jellyfinRepository.refreshServerInfo()
                 Timber.d("Server info refreshed on app start")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh server info on app start")
             }
@@ -277,6 +282,8 @@ constructor(
 
                     appDataRepository.loadInitialData()
                     success = true
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load app data on attempt $currentAttempt")
 
@@ -307,6 +314,8 @@ constructor(
             } else {
                 item
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to resolve playable item for: ${item.name}")
             null

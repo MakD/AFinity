@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -133,7 +134,8 @@ private fun PersonRow(person: AfinityPerson, onPersonClick: ((UUID) -> Unit)?) {
         modifier =
             Modifier.fillMaxWidth()
                 .then(
-                    if (clickHandler != null) Modifier.clickable { clickHandler(person.id) }
+                    if (clickHandler != null)
+                        Modifier.clickable(role = Role.Button) { clickHandler(person.id) }
                     else Modifier
                 )
                 .padding(horizontal = 24.dp, vertical = 8.dp),

@@ -120,7 +120,12 @@ fun WatchlistScreen(
             uiState.isLoading -> FullScreenLoading(modifier = Modifier.padding(customPadding))
 
             uiState.error != null ->
-                FullScreenError(message = uiState.error, modifier = Modifier.padding(customPadding))
+                FullScreenError(
+                    message = uiState.error,
+                    modifier = Modifier.padding(customPadding),
+                    actionText = stringResource(R.string.action_retry),
+                    onActionClick = viewModel::retry,
+                )
 
             uiState.boxSets.isEmpty() &&
                 uiState.movies.isEmpty() &&

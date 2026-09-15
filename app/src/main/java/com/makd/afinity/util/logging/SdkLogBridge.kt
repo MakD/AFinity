@@ -23,10 +23,10 @@ object SdkLogBridge {
             val cause = loggingEvent.cause
 
             when (loggingEvent.level) {
-                Level.ERROR -> tree.e(cause, message)
-                Level.WARN -> tree.w(cause, message)
-                Level.INFO -> tree.i(cause, message)
-                else -> tree.d(cause, message)
+                Level.ERROR -> if (message.isEmpty()) tree.e(cause) else tree.e(cause, message)
+                Level.WARN -> if (message.isEmpty()) tree.w(cause) else tree.w(cause, message)
+                Level.INFO -> if (message.isEmpty()) tree.i(cause) else tree.i(cause, message)
+                else -> if (message.isEmpty()) tree.d(cause) else tree.d(cause, message)
             }
         }
     }

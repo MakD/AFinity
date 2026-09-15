@@ -18,6 +18,7 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration
+import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.operations.LiveTvApi
@@ -344,6 +345,8 @@ constructor(
                                 )
                                 .content
                                 .mediaSource
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.e(e, "Failed to open live stream for channel $channelId")
                             null
@@ -425,6 +428,8 @@ constructor(
                         socketTimeout = Duration.ZERO,
                     ),
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to build untimed Live TV client, falling back to session client")
             source

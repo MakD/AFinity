@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -35,7 +36,9 @@ fun DownloadListItemRow(
     supportingContent: @Composable () -> Unit,
 ) {
     ListItem(
-        modifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier,
+        modifier =
+            if (onClick != null) modifier.clickable(role = Role.Button, onClick = onClick)
+            else modifier,
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         leadingContent = {
             AsyncImage(

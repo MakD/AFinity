@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -73,6 +74,7 @@ private fun String.withAbsWidth(px: Int): String {
 
 @Composable
 fun ItemHeader(
+    modifier: Modifier = Modifier,
     item: LibraryItem,
     progress: MediaProgress?,
     serverUrl: String?,
@@ -84,7 +86,6 @@ fun ItemHeader(
     audibleRating: AudibleRating? = null,
     onToggleFinished: (() -> Unit)? = null,
     toggleFinishedEnabled: Boolean = true,
-    modifier: Modifier = Modifier,
 ) {
     val coverUrl =
         if (
@@ -151,6 +152,7 @@ fun ItemHeroBackground(coverUrl: String?, modifier: Modifier = Modifier) {
 
 @Composable
 fun ItemHeaderContent(
+    modifier: Modifier = Modifier,
     item: LibraryItem,
     progress: MediaProgress?,
     coverUrl: String?,
@@ -162,7 +164,6 @@ fun ItemHeaderContent(
     audibleRating: AudibleRating? = null,
     onToggleFinished: (() -> Unit)? = null,
     toggleFinishedEnabled: Boolean = true,
-    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -577,6 +578,7 @@ internal fun ExpandableSynopsis(description: String, modifier: Modifier = Modifi
                     Modifier.clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() },
+                            role = Role.Button,
                         ) {
                             isExpanded = !isExpanded
                         }
@@ -637,7 +639,7 @@ internal fun ItemDetailsSection(item: LibraryItem, modifier: Modifier = Modifier
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                tags!!.forEach { tag ->
+                tags.forEach { tag ->
                     Surface(
                         shape = RoundedCornerShape(16.dp),
                         color = MaterialTheme.colorScheme.surfaceContainerHighest,

@@ -27,3 +27,4 @@ dependencyResolutionManagement {
 rootProject.name = "AFinity"
 
 include(":app")
+include(":benchmark")

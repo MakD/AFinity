@@ -3,6 +3,7 @@ import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import java.util.Properties
 import java.util.regex.Pattern
+import org.jetbrains.kotlin.compose.compiler.gradle.ComposeCompilerGradlePluginExtension
 
 plugins {
     alias(libs.plugins.android.application)
@@ -12,6 +13,7 @@ plugins {
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+    alias(libs.plugins.androidx.baselineprofile)
     id("kotlin-parcelize")
 }
 
@@ -30,6 +32,15 @@ aboutLibraries {
             Pattern.compile("org\\.jetbrains\\.compose.*"),
             Pattern.compile("org\\.jetbrains\\.androidx.*"),
         )
+    }
+}
+
+configure<ComposeCompilerGradlePluginExtension> {
+    stabilityConfigurationFiles.add(layout.projectDirectory.file("compose_compiler_config.conf"))
+
+    if (providers.gradleProperty("composeMetrics").orNull == "true") {
+        metricsDestination.set(layout.buildDirectory.dir("compose-metrics"))
+        reportsDestination.set(layout.buildDirectory.dir("compose-reports"))
     }
 }
 
@@ -141,8 +152,7 @@ kotlin {
             "-opt-in=kotlin.RequiresOptIn",
             "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
             "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
-            "-Xjvm-default=all",
-            "-Xcontext-parameters",
+            "-jvm-default=no-compatibility",
         )
     }
 }
@@ -233,6 +243,7 @@ dependencies {
     implementation(libs.media3.ffmpeg.decoder)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging.interceptor)
+    implementation(libs.androidx.profileinstaller)
     implementation(libs.play.services.cast.framework)
     implementation(libs.reorderable)
     implementation(libs.retrofit)
@@ -256,4 +267,84 @@ dependencies {
     androidTestImplementation(libs.junit)
 
     testImplementation(libs.junit)
+
+    baselineProfile(project(":benchmark"))
+}
+
+val cancellationRethrowAllowlist =
+    setOf(
+        "data/database/AfinityTypeConverters.kt",
+        "data/manager/DownloadNotificationManager.kt",
+        "data/models/jellyseerr/JellyseerrRequest.kt",
+        "data/models/jellyseerr/SearchResultItem.kt",
+        "data/repository/audiobookshelf/AbsProgressSyncScheduler.kt",
+        "data/repository/audiobookshelf/AudiobookshelfEpisodeMappers.kt",
+        "data/storage/StorageLocationProvider.kt",
+        "data/sync/UserDataSyncScheduler.kt",
+        "di/NetworkModule.kt",
+        "player/common/AudioEqualizerManager.kt",
+        "player/mpv/MPVPlayer.kt",
+        "ui/audiobookshelf/libraries/AudiobookshelfLibrariesViewModel.kt",
+        "ui/components/AsyncImage.kt",
+        "ui/components/HeroCarousel.kt",
+        "ui/person/PersonViewModel.kt",
+        "ui/player/Extensions.kt",
+        "ui/player/PlayerActivity.kt",
+        "ui/player/utils/VolmeManager.kt",
+        "ui/requests/SeerrMediaDetailScreen.kt",
+        "ui/settings/player/PlayerOptionsScreen.kt",
+        "ui/settings/servers/utils/Formatters.kt",
+        "ui/utils/IntentUtils.kt",
+    )
+
+tasks.register("checkCancellationRethrow") {
+    group = "verification"
+    description =
+        "Fails if a catch (e: Exception) is missing a CancellationException rethrow above it."
+
+    val sourceRoot = layout.projectDirectory.dir("src/main/java/com/makd/afinity").asFile
+    val allowlist = cancellationRethrowAllowlist
+    inputs.dir(sourceRoot)
+
+    doLast {
+        val violations = mutableListOf<String>()
+        sourceRoot
+            .walkTopDown()
+            .filter { it.isFile && it.extension == "kt" }
+            .forEach { file ->
+                val relative = file.relativeTo(sourceRoot).invariantSeparatorsPath
+                if (relative in allowlist) return@forEach
+                val lines = file.readLines()
+                lines.forEachIndexed { index, line ->
+                    if (!line.contains("catch (e: Exception)")) return@forEachIndexed
+                    val guarded =
+                        index >= 2 &&
+                            lines[index - 2].contains("catch (e: CancellationException)") &&
+                            lines[index - 1].trim() == "throw e"
+                    if (!guarded) violations += "$relative:${index + 1}"
+                }
+            }
+
+        if (violations.isNotEmpty()) {
+            throw GradleException(
+                buildString {
+                    appendLine(
+                        "Cancellation rethrow missing at ${violations.size} site(s). " +
+                            "Catching Exception swallows coroutine cancellation, so the coroutine " +
+                            "keeps running until its next suspension point."
+                    )
+                    violations.forEach { appendLine("  $it") }
+                    appendLine()
+                    appendLine("Add directly above each catch:")
+                    appendLine("    } catch (e: CancellationException) {")
+                    appendLine("        throw e")
+                    appendLine()
+                    appendLine(
+                        "If the file contains no coroutines, add it to " +
+                            "cancellationRethrowAllowlist in app/build.gradle.kts instead."
+                    )
+                }
+            )
+        }
+    }
 }

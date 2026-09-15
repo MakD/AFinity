@@ -130,7 +130,7 @@ constructor(
         val isServerTranscode = trackId != null && queueManager.isServerTranscode(trackId)
 
         val transcoding =
-            if (isServerTranscode && trackId != null) {
+            if (trackId != null && isServerTranscode) {
                 runCatching { playbackRepository.getTranscodingInfo() }
                     .getOrNull()
                     ?.also { lastTranscodingInfo = trackId to it }

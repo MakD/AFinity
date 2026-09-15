@@ -454,10 +454,10 @@ private fun CastTitleSection(
             overflow = TextOverflow.Ellipsis,
         )
 
-        if (currentItem is AfinityEpisode && currentItem.seriesName != null) {
+        if (currentItem is AfinityEpisode) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = currentItem.seriesName!!,
+                text = currentItem.seriesName,
                 style =
                     if (isLandscape) MaterialTheme.typography.bodyMedium
                     else MaterialTheme.typography.titleMedium,

@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -292,7 +293,7 @@ private fun EpisodeSwitcherCard(
                 .clip(RoundedCornerShape(16.dp))
                 .background(backgroundColor)
                 .border(1.dp, borderColor, RoundedCornerShape(16.dp))
-                .clickable(onClick = onClick)
+                .clickable(role = Role.Button, onClick = onClick)
                 .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

@@ -9,6 +9,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -61,6 +62,8 @@ object LogExporter {
                     subject = "AFinity logs — $timestamp",
                     content = scrub(logContent, secretsToRedact),
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to export logs")
             }
@@ -92,6 +95,8 @@ object LogExporter {
                     subject = "AFinity crash — ${report.simpleExceptionClass}",
                     content = scrub(content, secretsToRedact),
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to export crash report")
             }
@@ -184,6 +189,8 @@ object LogExporter {
                     .redirectErrorStream(true)
                     .start()
             LogRedactor.redact(process.inputStream.bufferedReader().readText())
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to capture logcat")
             "(logcat unavailable: ${e.message})"

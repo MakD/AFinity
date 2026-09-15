@@ -73,6 +73,7 @@ import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.EmptyState
+import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.DownloadProgressIndicator
@@ -194,6 +195,17 @@ fun PlaylistScreen(
     if (uiState.isLoading) {
         Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             FullScreenLoading()
+        }
+        return
+    }
+
+    if (uiState.error != null) {
+        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+            FullScreenError(
+                message = uiState.error,
+                actionText = stringResource(R.string.action_retry),
+                onActionClick = viewModel::retry,
+            )
         }
         return
     }

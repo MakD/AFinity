@@ -28,6 +28,7 @@ import com.makd.afinity.util.logging.SdkLogBridge
 import dagger.hilt.android.HiltAndroidApp
 import io.github.oshai.kotlinlogging.Level
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -85,6 +86,8 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
             Timber.d(
                 "ImageLoader prefs: cacheEnabled=$imageCacheEnabled, cacheSizeMb=$imageCacheSizeMb"
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to read ImageLoader prefs, using defaults")
         }

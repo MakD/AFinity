@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -233,7 +234,7 @@ internal fun ServerSessionGroupItem(
             Row(
                 modifier =
                     Modifier.fillMaxWidth()
-                        .clickable(onClick = onAddAccountClick)
+                        .clickable(role = Role.Button, onClick = onAddAccountClick)
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -281,6 +282,7 @@ private fun SessionItem(
                 .fillMaxWidth()
                 .combinedClickable(
                     enabled = !session.isCurrent,
+                    role = Role.Button,
                     onClick = onClick,
                     onLongClick = onLongClick,
                 )

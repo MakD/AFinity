@@ -11,6 +11,7 @@ import com.makd.afinity.data.models.admin.ItemImage
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.exception.ApiClientException
@@ -66,6 +67,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get editable item $itemId")
                 null
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting editable item $itemId")
                 null
@@ -120,6 +123,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to update item $itemId")
                 Result.failure(e)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error updating item $itemId")
                 Result.failure(e)
@@ -135,6 +140,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get external ID providers for $itemId")
                 emptyList()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting external ID providers for $itemId")
                 emptyList()
@@ -166,6 +173,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to search movie for $itemId")
                 emptyList()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error searching movie for $itemId")
                 emptyList()
@@ -197,6 +206,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to search series for $itemId")
                 emptyList()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error searching series for $itemId")
                 emptyList()
@@ -237,6 +248,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to apply identify result to $itemId")
                 Result.failure(e)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error applying identify result to $itemId")
                 Result.failure(e)
@@ -275,6 +288,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get images for $itemId")
                 emptyList()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting images for $itemId")
                 emptyList()
@@ -314,6 +329,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get remote images for $itemId")
                 emptyList()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting remote images for $itemId")
                 emptyList()
@@ -349,6 +366,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to download remote image for $itemId")
                 Result.failure(e)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error downloading remote image for $itemId")
                 Result.failure(e)
@@ -392,6 +411,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to upload image for $itemId")
                 Result.failure(e)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error uploading image for $itemId")
                 Result.failure(e)
@@ -427,6 +448,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to delete image for $itemId")
                 Result.failure(e)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error deleting image for $itemId")
                 Result.failure(e)
@@ -464,6 +487,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to refresh item $itemId")
                 Result.failure(e)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error refreshing item $itemId")
                 Result.failure(e)
@@ -486,6 +511,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to delete item $itemId")
                 Result.failure(e)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error deleting item $itemId")
                 Result.failure(e)

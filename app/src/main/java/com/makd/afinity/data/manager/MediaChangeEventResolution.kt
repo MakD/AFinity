@@ -7,6 +7,7 @@ import com.makd.afinity.data.models.media.withUserData
 import com.makd.afinity.data.models.media.withUserDataPatch
 import com.makd.afinity.data.repository.media.MediaRepository
 import java.util.UUID
+import kotlinx.coroutines.CancellationException
 import timber.log.Timber
 
 suspend fun MediaChangeEvent.resolveChangedItems(
@@ -35,6 +36,8 @@ suspend fun MediaChangeEvent.resolveChangedItems(
                     if (!fetchAllowed) return@mapNotNull null
                     try {
                         mediaRepository.getItemById(id)
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to resolve item $id for media change patch")
                         null
@@ -61,6 +64,8 @@ suspend fun MediaChangeEvent.resolveTargetItem(
     }
     return try {
         mediaRepository.getItemById(itemId)
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         Timber.e(e, "Failed to resolve target item for media change patch: $itemId")
         null

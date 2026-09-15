@@ -16,6 +16,7 @@ import com.makd.afinity.data.store.ItemStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -104,6 +105,8 @@ constructor(
                 }
                 updateDownloadState(lastAllDownloads)
                 album?.let { loadRelatedSections(it) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load album $albumId")
                 _uiState.update { it.copy(isLoading = false, error = e.message) }

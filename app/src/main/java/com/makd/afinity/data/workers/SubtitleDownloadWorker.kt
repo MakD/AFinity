@@ -18,6 +18,7 @@ import dagger.assisted.AssistedInject
 import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -115,6 +116,8 @@ constructor(
                             .content
                             ?.items
                             ?.firstOrNull()
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to fetch item details for subtitles")
                         null
@@ -171,6 +174,8 @@ constructor(
                             outputDir = subtitlesDir,
                             mediaSourceId = sourceId,
                         )
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to download subtitle: ${stream.language}")
                     }
@@ -185,6 +190,8 @@ constructor(
                         KEY_SOURCE_ID to sourceId,
                     )
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Subtitle download failed")
                 return@withContext Result.failure(
@@ -246,6 +253,8 @@ constructor(
                         }
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error downloading subtitle file")
                 return
@@ -258,6 +267,8 @@ constructor(
                 val localStream = stream.copy(path = outputFile.absolutePath, isExternal = true)
                 databaseRepository.insertMediaStream(localStream, localSourceId)
                 Timber.d("Registered local subtitle in DB: ${outputFile.name}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to insert subtitle stream into database")
             }

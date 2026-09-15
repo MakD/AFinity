@@ -22,6 +22,7 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration.Companion.hours
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -113,6 +114,8 @@ constructor(
 
                 val combinedList = (movieGenreItems + showGenreItems).shuffled()
                 _combinedGenres.value = combinedList
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load combined genres")
             }
@@ -145,6 +148,8 @@ constructor(
                 )
             }
             genreCacheDao.insertGenreCaches(genreEntities)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load genres")
         }
@@ -176,6 +181,8 @@ constructor(
                 )
             }
             genreCacheDao.insertShowGenreCaches(genreEntities)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load show genres")
         }
@@ -253,6 +260,8 @@ constructor(
                 }
 
                 _genreLoadingStates.update { it + (genre to false) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load movies for genre: $genre")
                 _genreLoadingStates.update { it + (genre to false) }
@@ -346,6 +355,8 @@ constructor(
             }
 
             _genreLoadingStates.update { it + (genre to false) }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load shows for genre: $genre")
             _genreLoadingStates.update { it + (genre to false) }
@@ -391,6 +402,8 @@ constructor(
                 val userId = currentUserId()
                 genreCacheDao.deleteCachedMovie(canonical, serverId, userId)
                 genreCacheDao.deleteCachedShow(canonical, serverId, userId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to remove $itemId from genre caches")
             }
@@ -486,6 +499,8 @@ constructor(
                         Timber.d("Updated show DB cache for: ${updatedItem.name}")
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to update Genre DB caches")
             }
@@ -495,6 +510,8 @@ constructor(
     suspend fun clearAllData() {
         try {
             genreCacheDao.clearAllCache()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to clear genre database caches")
         }

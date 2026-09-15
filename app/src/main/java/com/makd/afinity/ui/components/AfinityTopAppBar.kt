@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -132,7 +133,9 @@ fun AfinityTopAppBar(
                         Modifier.height(42.dp)
                             .clip(RoundedCornerShape(24.dp))
                             .background(Color.Black.copy(alpha = 0.3f))
-                            .clickable(enabled = !isRetrying) { viewModel.retryConnection() }
+                            .clickable(enabled = !isRetrying, role = Role.Button) {
+                                viewModel.retryConnection()
+                            }
                             .padding(horizontal = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {

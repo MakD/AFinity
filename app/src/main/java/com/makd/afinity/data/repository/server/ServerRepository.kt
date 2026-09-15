@@ -45,14 +45,4 @@ interface ServerRepository {
         maxHeight: Int? = null,
         quality: Int? = null,
     ): String
-
-    fun buildStreamUrl(
-        itemId: String,
-        mediaSourceId: String,
-        maxBitrate: Int? = null,
-        audioStreamIndex: Int? = null,
-        subtitleStreamIndex: Int? = null,
-        videoStreamIndex: Int? = null,
-        accessToken: String? = null,
-    ): String
 }

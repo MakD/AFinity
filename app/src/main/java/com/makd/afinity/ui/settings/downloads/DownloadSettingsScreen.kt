@@ -104,9 +104,9 @@ import kotlin.math.ceil
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DownloadSettingsScreen(
+    modifier: Modifier = Modifier,
     onBackClick: () -> Unit,
     onNavigateToAbsItem: (libraryItemId: String) -> Unit = {},
-    modifier: Modifier = Modifier,
     viewModel: DownloadsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -754,7 +754,7 @@ fun ActiveDownloadCard(
                             }
 
                         Text(
-                            text = subtitle ?: download.sourceName,
+                            text = subtitle,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
                             maxLines = 1,

@@ -190,14 +190,6 @@ constructor(
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }
-
-    suspend fun isNotificationPermissionDeclined(): Boolean {
-        return preferencesRepository.getNotificationPermissionDeclined()
-    }
-
-    fun declineNotificationPermission() {
-        viewModelScope.launch { preferencesRepository.setNotificationPermissionDeclined(true) }
-    }
 }
 
 data class AudiobookshelfLoginUiState(

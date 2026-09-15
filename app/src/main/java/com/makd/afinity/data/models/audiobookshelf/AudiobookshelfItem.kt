@@ -340,5 +340,3 @@ data class SeriesResult(
 
 @Serializable
 data class ItemsInProgressResponse(@SerialName("libraryItems") val libraryItems: List<LibraryItem>)
-
-@Serializable data class GenresResponse(@SerialName("genres") val genres: List<String>)

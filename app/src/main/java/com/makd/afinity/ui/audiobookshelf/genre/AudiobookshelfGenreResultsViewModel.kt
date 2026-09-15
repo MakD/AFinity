@@ -6,6 +6,7 @@ import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -69,6 +70,8 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
                 Timber.d(
                     "Genre results loaded: ${audiobooks.size} audiobooks, ${podcasts.size} podcasts for '$genre'"
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load genre results")
                 _uiState.value =

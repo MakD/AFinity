@@ -33,6 +33,10 @@ jobs:
       - name: Check formatting
         run: ./gradlew ktfmtCheck
 
+      - name: Check cancellation rethrows
+        if: always()
+        run: ./gradlew checkCancellationRethrow
+
       - name: Compile
         if: always()
         run: ./gradlew compileDebugKotlin

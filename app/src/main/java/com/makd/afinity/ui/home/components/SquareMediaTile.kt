@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -30,7 +31,7 @@ fun SquareMediaTile(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
 ) {
-    Column(modifier = modifier.width(100.dp).clickable(onClick = onClick)) {
+    Column(modifier = modifier.width(100.dp).clickable(role = Role.Button, onClick = onClick)) {
         Card(
             modifier = Modifier.width(100.dp).aspectRatio(1f),
             shape = RoundedCornerShape(8.dp),

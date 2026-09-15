@@ -33,6 +33,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -118,6 +119,8 @@ constructor(
             mediaController = future.await()
             Timber.d("ABS getConnectedController: connected to AudioService")
             mediaController
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "ABS getConnectedController: FAILED to connect to AudioService")
             controllerFuture = null
@@ -676,6 +679,8 @@ constructor(
                                 "Failed to close session on server: ${result.exceptionOrNull()?.message}"
                             )
                         }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Error closing session on server")
                     }
@@ -724,6 +729,8 @@ private suspend fun <T> ListenableFuture<T>.await(): T {
             {
                 try {
                     continuation.resume(Futures.getDone(this@await))
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     if (isCancelled) {
                         continuation.cancel(e)

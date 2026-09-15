@@ -54,11 +54,11 @@ import com.makd.afinity.ui.settings.servers.components.UnverifiedAddressDialog
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ServerManagementScreen(
+    modifier: Modifier = Modifier,
     onBackClick: () -> Unit,
     onAddServerClick: () -> Unit,
     onEditServerClick: (serverId: String) -> Unit,
     isDualPane: Boolean = false,
-    modifier: Modifier = Modifier,
     viewModel: ServerManagementViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()

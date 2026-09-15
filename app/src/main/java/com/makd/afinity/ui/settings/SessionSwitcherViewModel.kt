@@ -9,14 +9,13 @@ import com.makd.afinity.data.manager.Session
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.manager.UserImageStore
 import com.makd.afinity.data.models.server.Server
-import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
-import com.makd.afinity.data.repository.auth.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -52,8 +51,6 @@ constructor(
     private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
     private val securePreferencesRepository: SecurePreferencesRepository,
-    private val authRepository: AuthRepository,
-    private val appDataRepository: AppDataRepository,
     private val userImageStore: UserImageStore,
     private val forgetUser: ForgetUserUseCase,
 ) : ViewModel() {
@@ -108,6 +105,8 @@ constructor(
                                 ServerSessionGroup(server = server, sessions = userSessions)
                             }
                             sessionGroups to currentSession
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.e(e, "Error building session groups")
                             emptyList<ServerSessionGroup>() to currentSession

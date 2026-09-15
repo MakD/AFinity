@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -36,6 +37,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -115,7 +117,13 @@ fun DownloadPosterCard(
 ) {
     Column(
         modifier =
-            modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    role = Role.Button,
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                )
     ) {
         Box(
             modifier =
@@ -393,7 +401,13 @@ private fun DownloadCategoryLegend(
                             if (selected) color.copy(alpha = 0.16f)
                             else MaterialTheme.colorScheme.surfaceContainerHigh
                         )
-                        .clickable { onSelectCategory(usage.category.takeIf { !selected }) }
+                        .toggleable(
+                            value = selected,
+                            role = Role.Checkbox,
+                            onValueChange = { checked ->
+                                onSelectCategory(usage.category.takeIf { checked })
+                            },
+                        )
                         .padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(7.dp),

@@ -415,7 +415,7 @@ constructor(
         }
     }
 
-    private suspend fun handleServerRestarting() {
+    private fun handleServerRestarting() {
         Timber.w("Server is restarting")
         _connectionState.value = WebSocketState.SERVER_RESTARTING
         reconnectJob?.cancel()
@@ -426,7 +426,7 @@ constructor(
         }
     }
 
-    private suspend fun handleServerShutdown() {
+    private fun handleServerShutdown() {
         Timber.w("Server is shutting down")
         _connectionState.value = WebSocketState.SERVER_SHUTDOWN
     }

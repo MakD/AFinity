@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -76,6 +77,7 @@ fun EpisodeListCard(
                 .clickable(
                     interactionSource = interactionSource,
                     indication = null,
+                    role = Role.Button,
                     onClick = onClick,
                 ),
         shape = RoundedCornerShape(8.dp),
@@ -255,9 +257,9 @@ fun EpisodeListCard(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    item.runtimeTicks?.let { ticks ->
+                    if (item.runtimeTicks > 0) {
                         Text(
-                            text = formatRuntimeTicks(ticks),
+                            text = formatRuntimeTicks(item.runtimeTicks),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.align(Alignment.CenterVertically),
@@ -265,7 +267,7 @@ fun EpisodeListCard(
                     }
 
                     item.premiereDate?.let { date ->
-                        if (item.runtimeTicks != null) {
+                        if (item.runtimeTicks > 0) {
                             MetadataDot(modifier = Modifier.align(Alignment.CenterVertically))
                         }
                         Text(

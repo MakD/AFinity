@@ -7,6 +7,7 @@ import com.makd.afinity.data.repository.download.DownloadRepository
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
@@ -53,6 +54,8 @@ constructor(
                 serverDatabaseDao.clearAllDataForUser(serverId, userId)
                 Timber.i("Forgot account $userId on server $serverId")
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to forget account $userId on server $serverId")
                 Result.failure(e)

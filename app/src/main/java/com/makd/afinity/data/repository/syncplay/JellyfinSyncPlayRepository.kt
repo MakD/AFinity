@@ -5,6 +5,7 @@ import com.makd.afinity.data.models.syncplay.SyncPlayState
 import com.makd.afinity.data.syncplay.SyncPlayGroupEvent
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,6 +44,8 @@ class JellyfinSyncPlayRepository @Inject constructor(private val sessionManager:
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get SyncPlay groups")
                 emptyList()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting SyncPlay groups")
                 emptyList()
@@ -56,6 +59,8 @@ class JellyfinSyncPlayRepository @Inject constructor(private val sessionManager:
                 Timber.d("SyncPlay: created group '$name'")
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to create SyncPlay group '$name'")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error creating SyncPlay group '$name'")
             }
@@ -68,6 +73,8 @@ class JellyfinSyncPlayRepository @Inject constructor(private val sessionManager:
                 Timber.d("SyncPlay: join request sent for group $groupId")
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to join SyncPlay group $groupId")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error joining SyncPlay group $groupId")
             }
@@ -81,6 +88,8 @@ class JellyfinSyncPlayRepository @Inject constructor(private val sessionManager:
                 Timber.d("SyncPlay: left group")
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to leave SyncPlay group")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error leaving SyncPlay group")
             }
@@ -92,6 +101,8 @@ class JellyfinSyncPlayRepository @Inject constructor(private val sessionManager:
                 syncPlayApi()?.syncPlayPause()
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to send SyncPlay pause")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error sending SyncPlay pause")
             }
@@ -103,6 +114,8 @@ class JellyfinSyncPlayRepository @Inject constructor(private val sessionManager:
                 syncPlayApi()?.syncPlayUnpause()
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to send SyncPlay unpause")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error sending SyncPlay unpause")
             }
@@ -114,6 +127,8 @@ class JellyfinSyncPlayRepository @Inject constructor(private val sessionManager:
                 syncPlayApi()?.syncPlaySeek(SeekRequestDto(positionTicks = positionTicks))
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to send SyncPlay seek to $positionTicks ticks")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error sending SyncPlay seek")
             }
@@ -125,6 +140,8 @@ class JellyfinSyncPlayRepository @Inject constructor(private val sessionManager:
                 syncPlayApi()?.syncPlayStop()
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to send SyncPlay stop")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error sending SyncPlay stop")
             }
@@ -148,6 +165,8 @@ class JellyfinSyncPlayRepository @Inject constructor(private val sessionManager:
                     )
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to report SyncPlay buffering")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error reporting SyncPlay buffering")
             }
@@ -171,6 +190,8 @@ class JellyfinSyncPlayRepository @Inject constructor(private val sessionManager:
                     )
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to report SyncPlay ready")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error reporting SyncPlay ready")
             }
@@ -182,6 +203,8 @@ class JellyfinSyncPlayRepository @Inject constructor(private val sessionManager:
                 syncPlayApi()?.syncPlayPing(PingRequestDto(ping = clientTimeMs))
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to send SyncPlay ping")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error sending SyncPlay ping")
             }
@@ -203,6 +226,8 @@ class JellyfinSyncPlayRepository @Inject constructor(private val sessionManager:
                 )
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to set SyncPlay queue")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error setting SyncPlay queue")
             }

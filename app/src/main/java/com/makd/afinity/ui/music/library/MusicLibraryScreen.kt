@@ -227,6 +227,7 @@ fun MusicLibraryScreen(
 
 @Composable
 internal fun TracksList(
+    modifier: Modifier = Modifier,
     listState: LazyListState,
     tracks: LazyPagingItems<AfinityTrack>,
     favoriteOverrides: Map<UUID, Boolean>,
@@ -244,7 +245,6 @@ internal fun TracksList(
     onCancelDownload: ((AfinityTrack) -> Unit)? = null,
     isDownloadEnabled: Boolean = true,
     trackDownloadInfos: Map<UUID, DownloadInfo> = emptyMap(),
-    modifier: Modifier = Modifier,
 ) {
     val isInitialLoading = tracks.loadState.refresh is LoadState.Loading && tracks.itemCount == 0
     if (isInitialLoading) {

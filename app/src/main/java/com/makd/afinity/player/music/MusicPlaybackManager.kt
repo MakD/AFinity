@@ -220,10 +220,6 @@ constructor(
         exoPlayer?.seekToNextMediaItem()
     }
 
-    fun skipToPrevious() {
-        exoPlayer?.seekToPreviousMediaItem()
-    }
-
     fun seekToIndex(index: Int, positionMs: Long = 0L) {
         exoPlayer?.seekTo(index, positionMs)
     }

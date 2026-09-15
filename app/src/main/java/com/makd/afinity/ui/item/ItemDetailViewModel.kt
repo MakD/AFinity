@@ -201,6 +201,8 @@ constructor(
                         fields = FieldSets.MEDIA_ITEM_CARDS,
                     )
                 _uiState.update { it.copy(containingBoxSets = boxSets) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load containing BoxSets in init")
             }
@@ -367,6 +369,8 @@ constructor(
                                             }
                                         }
                                     }
+                                } catch (e: CancellationException) {
+                                    throw e
                                 } catch (e: Exception) {
                                     Timber.e(
                                         e,
@@ -407,6 +411,8 @@ constructor(
                                             it.copy(containingBoxSets = freshBoxSets)
                                         }
                                     }
+                                } catch (e: CancellationException) {
+                                    throw e
                                 } catch (e: Exception) {
                                     Timber.e(e, "Failed to refresh containing BoxSets")
                                 }
@@ -474,6 +480,8 @@ constructor(
                             mediaChangeManager.notifyItemChanged(currentItem.id, null, null)
                         }
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed background patch for series/season/boxset counts")
                 }
@@ -498,6 +506,8 @@ constructor(
                                 downloadUnavailable = unavailable,
                             )
                     }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 Timber.e(e, "Failed to observe download status")
@@ -611,6 +621,8 @@ constructor(
                 if (!skipNetworkSync) {
                     launch { syncWithServerInBackground() }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh from cache")
             }
@@ -671,6 +683,8 @@ constructor(
                                     if (nextEpisode != _uiState.value.nextEpisode) {
                                         _uiState.update { it.copy(nextEpisode = nextEpisode) }
                                     }
+                                } catch (e: CancellationException) {
+                                    throw e
                                 } catch (e: Exception) {
                                     Timber.w(e, "Failed to refresh next episode in background sync")
                                 }
@@ -683,6 +697,8 @@ constructor(
                                             it.copy(seasons = itemStore.merge(seasons))
                                         }
                                     }
+                                } catch (e: CancellationException) {
+                                    throw e
                                 } catch (e: Exception) {
                                     Timber.w(e, "Failed to refresh seasons in background sync")
                                 }
@@ -698,12 +714,16 @@ constructor(
                             if (nextEpisode != _uiState.value.nextEpisode) {
                                 _uiState.update { it.copy(nextEpisode = nextEpisode) }
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.w(e, "Failed to refresh next episode in background sync")
                         }
                     }
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Background server sync failed (non-critical)")
         }
@@ -744,6 +764,8 @@ constructor(
                     else item
                 }
                 _uiState.value = _uiState.value.copy(boxSetItems = itemStore.merge(items))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load boxset items")
             }
@@ -875,6 +897,8 @@ constructor(
                                 if (parts.isNotEmpty()) {
                                     _uiState.update { it.copy(movieParts = parts) }
                                 }
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 Timber.e(e, "Failed to fetch movie parts")
                             }
@@ -915,6 +939,8 @@ constructor(
                         }
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value =
                     _uiState.value.copy(
@@ -933,6 +959,8 @@ constructor(
                     try {
                         val similar = mediaRepository.getSimilarItems(itemId)
                         _uiState.update { it.copy(similarItems = itemStore.merge(similar)) }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to get similar items")
                     }
@@ -941,6 +969,8 @@ constructor(
                     try {
                         val seasons = mediaRepository.getSeasons(itemId)
                         _uiState.update { it.copy(seasons = itemStore.merge(seasons)) }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to get seasons")
                     }
@@ -952,6 +982,8 @@ constructor(
                                 val features = mediaRepository.getSpecialFeatures(itemId, id)
                                 _uiState.update { it.copy(specialFeatures = features) }
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.e(e, "Failed to get special features")
                         }
@@ -966,6 +998,8 @@ constructor(
                                 val features = mediaRepository.getSpecialFeatures(itemId, id)
                                 _uiState.update { it.copy(specialFeatures = features) }
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.e(e, "Failed to get special features")
                         }
@@ -994,6 +1028,8 @@ constructor(
                                 _episodesPagingData.value = patchedFlow
                                 _uiState.update { it.copy(episodesPagingData = patchedFlow) }
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.e(e, "Failed to get episodes flow")
                         }
@@ -1006,6 +1042,8 @@ constructor(
                     try {
                         val similar = mediaRepository.getSimilarItems(itemId)
                         _uiState.update { it.copy(similarItems = itemStore.merge(similar)) }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to get similar items")
                     }
@@ -1017,6 +1055,8 @@ constructor(
                                 val features = mediaRepository.getSpecialFeatures(itemId, id)
                                 _uiState.update { it.copy(specialFeatures = features) }
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.e(e, "Failed to get special features")
                         }
@@ -1042,6 +1082,8 @@ constructor(
                 if (nextEp != null) {
                     _uiState.update { it.copy(nextEpisode = nextEp) }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to fetch parallel next episode")
             }
@@ -1061,6 +1103,8 @@ constructor(
                 if (nextEp != null && nextEp != _uiState.value.nextEpisode) {
                     _uiState.update { it.copy(nextEpisode = nextEp) }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to fetch next episode for item: ${item.id}")
             }
@@ -1189,6 +1233,8 @@ constructor(
                                 } else {
                                     emptyList()
                                 }
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 emptyList()
                             }
@@ -1238,6 +1284,8 @@ constructor(
                     )
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load reviews/ratings")
             _uiState.update { it.copy(isLoadingReviews = false) }
@@ -1598,6 +1646,8 @@ constructor(
                 } else {
                     _uiState.update { it.copy(item = currentItem) }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error toggling watched status")
                 _uiState.update { it.copy(item = currentItem) }
@@ -1637,6 +1687,8 @@ constructor(
                 if (!success) {
                     _selectedEpisode.value = episode
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error toggling episode watched status")
                 _selectedEpisode.value = episode

@@ -8,6 +8,7 @@ import com.makd.afinity.data.repository.music.MusicRepository
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -106,6 +107,8 @@ constructor(
                 RadioMode.RESHUFFLE -> reshuffleTracks(state.sourceTracks)
                 RadioMode.RANDOM -> randomTracks(state.sourceTracks, count)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "RadioManager: failed to generate tracks for mode ${state.mode}")
             emptyList()

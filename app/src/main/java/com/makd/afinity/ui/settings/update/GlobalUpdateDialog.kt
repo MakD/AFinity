@@ -54,6 +54,7 @@ fun GlobalUpdateDialog(updateManager: UpdateManager) {
             when (val state = updateState) {
                 is UpdateState.Available -> state.release
                 is UpdateState.Downloaded -> state.release
+                is UpdateState.Downloading -> state.release
                 else -> null
             }
 

@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -221,7 +222,7 @@ fun SessionRemoteSheet(
             val runtimeTicks = item?.runTimeTicks
 
             var localPositionTicks by
-                remember(basePositionTicks) { mutableStateOf(basePositionTicks) }
+                remember(basePositionTicks) { mutableLongStateOf(basePositionTicks) }
             var scrubbing by remember { mutableStateOf(false) }
             var scrubValue by remember { mutableFloatStateOf(0f) }
 

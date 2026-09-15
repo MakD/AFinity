@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -104,7 +105,7 @@ private fun ExpandableEpisodeItem(
         modifier =
             Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
-                .clickable(onClick = onPlay)
+                .clickable(role = Role.Button, onClick = onPlay)
                 .padding(12.dp)
                 .animateContentSize(),
         verticalAlignment = Alignment.Top,

@@ -18,6 +18,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -87,6 +88,8 @@ constructor(
                 val channelDeferred = viewModelScope.async {
                     try {
                         liveTvRepository.getChannel(channelId)
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to load channel details, using placeholder")
                         null
@@ -119,6 +122,8 @@ constructor(
                     Timber.e("PlayerWrapperViewModel: Failed to get stream URL")
                     _streamError.value = context.getString(R.string.error_get_stream_url)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "PlayerWrapperViewModel: Failed to load live channel")
                 _streamError.value = context.getString(R.string.error_load_channel_fmt, e.message)
@@ -157,6 +162,8 @@ constructor(
                                 "PlayerWrapperViewModel: Loaded item from database: ${loadedItem.name}"
                             )
                         }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "PlayerWrapperViewModel: Database lookup failed")
                     }
@@ -182,6 +189,8 @@ constructor(
                         } else {
                             Timber.w("PlayerWrapperViewModel: Item not found via API")
                         }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "PlayerWrapperViewModel: API load failed (Check offline mode)")
                     }
@@ -194,6 +203,8 @@ constructor(
                 }
 
                 _item.value = loadedItem
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "PlayerWrapperViewModel: Critical failure loading item $itemId")
                 _item.value = null

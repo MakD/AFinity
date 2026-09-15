@@ -25,6 +25,7 @@ import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -89,6 +90,8 @@ constructor(
                     .setOutputSwitcherEnabled(true)
                     .build()
             Timber.d("CastManager initialized")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to initialize CastManager")
         }
@@ -306,6 +309,8 @@ constructor(
 
                 _castEvents.emit(CastEvent.PlaybackStarted(item.id))
                 Timber.d("Cast media loaded: ${item.name}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load media on cast device")
                 _castEvents.emit(CastEvent.PlaybackError("Failed to load media: ${e.message}"))
@@ -373,6 +378,8 @@ constructor(
                 Timber.d(
                     "Music queue loaded to Cast: ${tracks.size} tracks, starting at $startIndex"
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load music queue on cast device")
                 _castEvents.emit(CastEvent.PlaybackError("Failed to load music: ${e.message}"))
@@ -385,6 +392,8 @@ constructor(
             try {
                 if (forward) remoteMediaClient?.queueNext(null)
                 else remoteMediaClient?.queuePrev(null)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to skip music track on cast device")
             }
@@ -459,6 +468,8 @@ constructor(
                 Timber.d(
                     "ABS loaded to Cast: ${tracks.size} tracks, starting at index $startTrackIndex, pos ${startPositionInTrackMs}ms"
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load ABS session on cast device")
                 _castEvents.emit(CastEvent.PlaybackError("Failed to load audiobook: ${e.message}"))
@@ -483,6 +494,8 @@ constructor(
                         client.queueJumpToItem(targetEntry.key, positionWithinTrackMs, null)
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to seek ABS position on cast device")
             }
@@ -543,6 +556,8 @@ constructor(
                 stopProgressReporting()
                 stopPositionPolling()
                 resetPlaybackState()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error stopping cast playback")
             }
@@ -556,6 +571,8 @@ constructor(
             try {
                 castSession?.volume = volume.coerceIn(0.0, 1.0)
                 _castState.update { it.copy(volume = volume.coerceIn(0.0, 1.0)) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set cast volume")
             }
@@ -677,6 +694,8 @@ constructor(
         scope.launch {
             try {
                 castContext?.sessionManager?.endCurrentSession(true)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error disconnecting cast session")
             }
@@ -763,6 +782,8 @@ constructor(
                 _castState.value =
                     _castState.value.copy(volume = session.volume, isMuted = session.isMute)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Error polling cast position")
         }
@@ -890,6 +911,8 @@ constructor(
                                     positionTicks = finalState.currentPosition * 10000,
                                     mediaSourceId = mediaSourceId,
                                 )
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 Timber.e(e, "Failed to report cast playback stop")
                             }

@@ -55,6 +55,7 @@ import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -116,6 +117,8 @@ constructor(
                     Result.failure(Exception("$errorMessage: ${response.message()}"))
                 }
             } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
+            } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, errorMessage)
@@ -179,6 +182,8 @@ constructor(
                         _currentConfig.value =
                             _currentConfig.value?.copy(serverUrl = result.address)
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(
                         e,
@@ -220,6 +225,8 @@ constructor(
 
                 val response = client.newCall(request).execute()
                 response.isSuccessful
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.d("Audiobookshelf server verification failed for $url: ${e.message}")
                 false
@@ -269,6 +276,8 @@ constructor(
                         else -> AddressCheck.DIFFERENT_SERVER
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.d("Audiobookshelf identity check failed for $url: ${e.message}")
                 AddressCheck.INDETERMINATE
@@ -321,6 +330,8 @@ constructor(
                         )
                         activeUrl = result.address
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.w(e, "Audiobookshelf: Address resolution failed, using config URL")
                 }
@@ -486,6 +497,8 @@ constructor(
                     pendingServerUrl = null
                     Result.failure(Exception(errorMsg))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Audiobookshelf login failed")
                 pendingServerUrl = null
@@ -516,6 +529,8 @@ constructor(
 
                 Timber.d("Audiobookshelf logout successful")
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Audiobookshelf logout failed")
                 Result.failure(e)
@@ -537,6 +552,8 @@ constructor(
                     _isAuthenticated.value = false
                     Result.success(false)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Token validation failed")
                 Result.failure(e)
@@ -604,6 +621,8 @@ constructor(
                 } else {
                     Result.failure(Exception("Failed to fetch libraries: ${response.message()}"))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh libraries")
                 Result.failure(e)
@@ -625,6 +644,8 @@ constructor(
                 } else {
                     Result.failure(Exception("Failed to fetch library: ${response.message()}"))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get library")
                 Result.failure(e)
@@ -648,6 +669,8 @@ constructor(
                         Exception("Failed to fetch library stats: ${response.message()}")
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get library stats")
                 Result.failure(e)
@@ -757,6 +780,8 @@ constructor(
 
                 Timber.d("Fetched all ${allItems.size} items for library $libraryId")
                 Result.success(allItems)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh library items")
                 Result.failure(e)
@@ -883,6 +908,8 @@ constructor(
                     Timber.w("getItemDetails: ABS returned ${response.message()} — trying DB cache")
                     cachedResult("Failed to fetch item: ${response.message()}")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get item details — trying DB cache")
                 cachedResult(e.message ?: "Failed to get item details")
@@ -912,6 +939,8 @@ constructor(
             val response =
                 try {
                     apiService.get().getSeries(id = libraryId, limit = limit, page = currentPage)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to fetch series page for library $libraryId")
                     return@flow
@@ -973,6 +1002,8 @@ constructor(
                 } else {
                     Result.failure(Exception("Failed to fetch series items: ${response.message()}"))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get series items for series: $seriesId")
                 Result.failure(e)
@@ -1011,6 +1042,8 @@ constructor(
                 } else {
                     Result.failure(Exception("Failed to fetch personalized: ${response.message()}"))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get personalized")
                 Result.failure(e)
@@ -1118,6 +1151,8 @@ constructor(
                 val bookmarks = body.bookmarks.orEmpty()
                 cacheBookmarks(bookmarks)
                 Result.success(bookmarks)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh bookmarks")
                 Result.failure(e)
@@ -1158,6 +1193,8 @@ constructor(
                     audiobookshelfDao.insertBookmark(body.toEntity(serverId, userId.toString()))
                 }
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Bookmark create queued for later sync")
                 Result.success(Unit)
@@ -1198,6 +1235,8 @@ constructor(
                     )
                 }
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Bookmark delete queued for later sync")
                 Result.success(Unit)
@@ -1244,6 +1283,8 @@ constructor(
                 } catch (e: IOException) {
                     Timber.w(e, "Bookmark sync stopped: connectivity")
                     break
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.w(e, "Skipping bookmark sync entry")
                 }
@@ -1283,11 +1324,15 @@ constructor(
                             )
                         }
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to refresh in-progress item metadata")
                 }
 
                 Result.success(progressList)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh progress")
                 Result.failure(e)
@@ -1378,6 +1423,8 @@ constructor(
                 }
 
                 Result.success(localProgress.copy(pendingSync = !synced).toMediaProgress())
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to update progress")
                 Result.failure(e)
@@ -1584,6 +1631,8 @@ constructor(
                         Exception("Failed to initMonitoring session: ${response.message()}")
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to initMonitoring playback session")
                 Result.failure(e)
@@ -1622,6 +1671,8 @@ constructor(
                 } else {
                     Result.failure(Exception("Failed to sync session: ${response.message()}"))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to sync playback session")
                 Result.failure(e)
@@ -1660,6 +1711,8 @@ constructor(
                 } else {
                     Result.failure(Exception("Failed to close session: ${response.message()}"))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to close playback session")
                 Result.failure(e)
@@ -1695,6 +1748,8 @@ constructor(
                     "Fetched ${combinedGenres.size} combined genres across ${libraryIds.size} libraries"
                 )
                 Result.success(combinedGenres)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get combined genres")
                 Result.failure(e)
@@ -1757,6 +1812,8 @@ constructor(
 
                 Timber.d("Fetched ${allItems.size} items for genre '$genre' in library $libraryId")
                 Result.success(allItems)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get items by genre '$genre'")
                 Result.failure(e)
@@ -1806,6 +1863,8 @@ constructor(
                 } else {
                     Result.failure(Exception("Failed to fetch genre items: ${response.message()}"))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get limited items for genre '$genre'")
                 Result.failure(e)
@@ -1892,6 +1951,8 @@ constructor(
                 }
 
                 Result.success(syncedCount)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to sync pending progress")
                 Result.failure(e)
@@ -1968,6 +2029,8 @@ constructor(
                             if (remote.isFinished) -1 else 1,
                         )
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to apply remote progress for ${remote.libraryItemId}")
                 }
@@ -1982,6 +2045,8 @@ constructor(
             try {
                 upsertItemPreservingEpisodeCount(item, currentServerId, currentUserId.toString())
                 item.userMediaProgress?.let { cacheProgress(it) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to apply remote item ${item.id}")
             }
@@ -1993,6 +2058,8 @@ constructor(
             val (currentServerId, currentUserId) = activeContext ?: return@withContext
             try {
                 audiobookshelfDao.deleteItem(itemId, currentServerId, currentUserId.toString())
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to remove remote item $itemId")
             }
@@ -2131,6 +2198,8 @@ constructor(
         val genres = genres?.let {
             try {
                 json.decodeFromString<List<String>>(it)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 null
             }
@@ -2173,6 +2242,8 @@ constructor(
                 } else {
                     Result.failure(Exception("Failed to get listening stats: ${response.code()}"))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error fetching listening stats")
                 Result.failure(e)
@@ -2193,6 +2264,8 @@ constructor(
                         Exception("Failed to get listening sessions: ${response.code()}")
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error fetching listening sessions")
                 Result.failure(e)
@@ -2272,6 +2345,8 @@ constructor(
                 Result.success(
                     AudibleRating(rating = rating, numRatings = null, asin = resolvedAsin)
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to fetch Audible rating for $itemId")
                 Result.success(null)
@@ -2294,6 +2369,8 @@ constructor(
             val asin = response.body()?.firstOrNull()?.asin
             Timber.d("AudibleRating: fallback asin=$asin")
             asin
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "ABS cover search fallback failed for: $title")
             null

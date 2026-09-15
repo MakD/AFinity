@@ -160,7 +160,12 @@ fun FavoritesScreen(
             when {
                 uiState.isLoading -> FullScreenLoading()
 
-                uiState.error != null -> FullScreenError(message = uiState.error)
+                uiState.error != null ->
+                    FullScreenError(
+                        message = uiState.error,
+                        actionText = stringResource(R.string.action_retry),
+                        onActionClick = viewModel::retry,
+                    )
 
                 else -> {
                     val hasAnyFavorites =

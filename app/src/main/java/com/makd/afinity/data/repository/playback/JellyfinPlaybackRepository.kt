@@ -42,7 +42,7 @@ constructor(
     private val deviceProfileFactory: AndroidDeviceProfileFactory,
 ) : PlaybackRepository {
 
-    private suspend fun getCurrentUserId(): UUID? {
+    private fun getCurrentUserId(): UUID? {
         return sessionManager.currentSession.value?.userId
     }
 
@@ -114,6 +114,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get playback info for item: $itemId")
                 null
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting playback info for item: $itemId")
                 null
@@ -160,6 +162,8 @@ constructor(
                     "Got ${response.content.mediaSources?.size ?: 0} media sources for item: $itemId"
                 )
                 response.content.mediaSources ?: emptyList()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get media sources for item: $itemId")
                 emptyList()
@@ -173,7 +177,6 @@ constructor(
         audioStreamIndex: Int?,
         subtitleStreamIndex: Int?,
         videoStreamIndex: Int?,
-        maxStreamingBitrate: Int?,
         startTimeTicks: Long?,
         playSessionId: String?,
         tag: String?,
@@ -195,6 +198,8 @@ constructor(
                 )
             Timber.d("Generated stream URL for item: $itemId")
             streamUrl
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to build stream URL for item: $itemId")
             null
@@ -345,6 +350,8 @@ constructor(
                         burnedInSubtitleIndex = burnedIn,
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to resolve stream for item: $itemId")
                 null
@@ -387,6 +394,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to report playback start for item: $itemId")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error reporting playback start for item: $itemId")
                 false
@@ -451,6 +460,8 @@ constructor(
                     subtitleStreamIndex,
                 )
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(
                     e,
@@ -521,6 +532,8 @@ constructor(
                     isEnded = isEnded,
                 )
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(
                     e,
@@ -609,6 +622,8 @@ constructor(
             Timber.i(
                 "Saved playback progress locally for item $itemId: ${resolved.positionTicks / 10000}ms, played=${updatedData.played}"
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to save playback progress locally for item: $itemId")
         }
@@ -619,6 +634,8 @@ constructor(
             val userId = getCurrentUserId() ?: return
             val serverId = sessionManager.currentSession.value?.serverId ?: return
             databaseRepository.markUserDataSynced(userId, itemId, serverId)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to clear pending sync flag for item: $itemId")
         }
@@ -629,6 +646,8 @@ constructor(
             databaseRepository.getEpisode(itemId, userId)?.runtimeTicks
                 ?: databaseRepository.getMovie(itemId, userId)?.runtimeTicks
                 ?: 0L
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Could not resolve runtime for item: $itemId")
             0L
@@ -645,6 +664,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to ping session: $sessionId")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error pinging session: $sessionId")
                 false
@@ -664,6 +685,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get active session")
                 null
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting active session")
                 null
@@ -690,6 +713,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to read transcoding info")
                 null
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error reading transcoding info")
                 null
@@ -707,6 +732,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to end session: $sessionId")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error ending session: $sessionId")
                 false
@@ -719,6 +746,8 @@ constructor(
             try {
                 Timber.w("stopTranscoding not available in current SDK")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to stop transcoding for device: $deviceId")
                 false
@@ -731,6 +760,8 @@ constructor(
             try {
                 Timber.w("getTranscodingJob not available in current SDK")
                 null
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get transcoding job for device: $deviceId")
                 null
@@ -749,6 +780,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get bitrate test bytes")
                 null
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting bitrate test bytes")
                 null
@@ -780,6 +813,8 @@ constructor(
                 }
 
                 if (maxBitrate > 0) maxBitrate else null
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to detect max bitrate")
                 null
@@ -830,6 +865,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get cast playback info for item: $itemId")
                 null
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting cast playback info for item: $itemId")
                 null

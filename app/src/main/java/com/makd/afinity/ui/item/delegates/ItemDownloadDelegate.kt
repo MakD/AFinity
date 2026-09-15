@@ -8,6 +8,7 @@ import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.data.storage.StorageVolumeInfo
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -36,6 +37,8 @@ constructor(
                 } else {
                     showQualityDialog()
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error preparing download")
             }
@@ -64,6 +67,8 @@ constructor(
                 val volumes = storageLocationProvider.listVolumes()
                 val defaultVolumeId = preferencesRepository.getDownloadStorageVolumeId()
                 showPicker(volumes, defaultVolumeId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error preparing download options")
             }
@@ -85,6 +90,8 @@ constructor(
                     .startDownload(target.id, sourceId, volumeId)
                     .onSuccess { Timber.i("Download started successfully for: ${target.name}") }
                     .onFailure { error -> Timber.e(error, "Failed to start download") }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error starting download")
             }

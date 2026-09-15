@@ -20,6 +20,7 @@ import dagger.assisted.AssistedInject
 import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -159,6 +160,8 @@ constructor(
                                 Timber.i("Primary image downloaded successfully")
                             }
                         }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to download primary image")
                     }
@@ -177,6 +180,8 @@ constructor(
                                 Timber.i("Backdrop image downloaded successfully")
                             }
                         }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to download backdrop image")
                     }
@@ -195,6 +200,8 @@ constructor(
                                 Timber.i("Logo image downloaded successfully")
                             }
                         }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to download logo image")
                     }
@@ -213,6 +220,8 @@ constructor(
                                 Timber.i("Thumb image downloaded successfully")
                             }
                         }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to download thumb image")
                     }
@@ -232,6 +241,8 @@ constructor(
                                     Timber.i("Series logo image downloaded successfully")
                                 }
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.w(e, "Failed to download series logo")
                         }
@@ -249,6 +260,8 @@ constructor(
                                     Timber.i("Show primary image downloaded successfully")
                                 }
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.w(e, "Failed to download show primary image")
                         }
@@ -266,6 +279,8 @@ constructor(
                                     Timber.i("Show backdrop image downloaded successfully")
                                 }
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.w(e, "Failed to download show backdrop image")
                         }
@@ -287,6 +302,8 @@ constructor(
                         KEY_SOURCE_ID to sourceId,
                     )
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Image download failed")
                 return@withContext Result.failure(
@@ -382,6 +399,8 @@ constructor(
                 }
             }
             true
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to download music track images")
             false
@@ -432,6 +451,8 @@ constructor(
                     Timber.w("Unsupported item type for image update: ${item::class.simpleName}")
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to update item with local images")
         }

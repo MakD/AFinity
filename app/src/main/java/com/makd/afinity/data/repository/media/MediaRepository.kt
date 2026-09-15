@@ -215,6 +215,8 @@ interface MediaRepository {
 
     suspend fun getFavoriteMedia(fields: List<ItemFields>? = null): List<AfinityItem>
 
+    suspend fun getFavoriteMediaResult(fields: List<ItemFields>? = null): Result<List<AfinityItem>>
+
     suspend fun getGenres(
         parentId: UUID? = null,
         limit: Int? = null,
@@ -262,6 +264,8 @@ interface MediaRepository {
 
     suspend fun getPerson(personId: UUID): AfinityPersonDetail?
 
+    suspend fun getPersonResult(personId: UUID): Result<AfinityPersonDetail?>
+
     suspend fun getPersonWithoutRefresh(
         personId: UUID,
         fields: List<ItemFields>? = null,
@@ -297,7 +301,6 @@ interface MediaRepository {
         sortDescending: Boolean,
         filters: LibraryFilters,
         nameStartsWith: String? = null,
-        fields: List<ItemFields>? = null,
         studioNames: List<String> = emptyList(),
         includeItemTypes: List<String>? = null,
         onSourceCreated: ((PagingSource<Int, AfinityItem>) -> Unit)? = null,

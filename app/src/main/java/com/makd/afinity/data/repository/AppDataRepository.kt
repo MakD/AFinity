@@ -48,6 +48,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -283,6 +284,8 @@ constructor(
                 }
 
                 reloadHomeData()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error handling deletion of ${itemIds.size} item(s)")
             }
@@ -310,6 +313,9 @@ constructor(
 
     private val _favoritesData = MutableStateFlow(FavoritesData())
     val favoritesData: StateFlow<FavoritesData> = _favoritesData.asStateFlow()
+
+    private val _favoritesLoadFailed = MutableStateFlow(false)
+    val favoritesLoadFailed: StateFlow<Boolean> = _favoritesLoadFailed.asStateFlow()
     val favoritesCountFlow: Flow<Int> =
         favoritesData
             .map { data ->
@@ -329,6 +335,9 @@ constructor(
 
     private val _watchlistData = MutableStateFlow(WatchlistData())
     val watchlistData: StateFlow<WatchlistData> = _watchlistData.asStateFlow()
+
+    private val _watchlistLoadFailed = MutableStateFlow(false)
+    val watchlistLoadFailed: StateFlow<Boolean> = _watchlistLoadFailed.asStateFlow()
 
     private val _isInitialDataLoaded = MutableStateFlow(false)
     val isInitialDataLoaded: StateFlow<Boolean> = _isInitialDataLoaded.asStateFlow()
@@ -361,6 +370,8 @@ constructor(
                         clearAllData()
                         try {
                             loadInitialData()
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.e(e, "Failed to reload data after session switch")
                         }
@@ -390,6 +401,8 @@ constructor(
                     try {
                         clearAllData(sessionEnded = false)
                         loadInitialData()
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to reload data after base URL change")
                     }
@@ -440,6 +453,8 @@ constructor(
             _isInitialDataLoaded.value = false
             try {
                 loadInitialData()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Retry of initial data load failed")
             }
@@ -473,6 +488,8 @@ constructor(
                             ) ?: emptyList()
                         _heroCarouselItems.value = heroDeferred.await()
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Carousel fetch failed on cache-hit path, proceeding without it")
                 }
@@ -498,6 +515,8 @@ constructor(
                 val watchlistCountDeferred = async {
                     try {
                         watchlistRepository.refreshWatchlistCount()
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to load watchlist count on startup")
                     }
@@ -537,6 +556,8 @@ constructor(
                 favoritesDeferred.await()
                 watchlistDeferred.await()
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load initial app data")
             throw e
@@ -582,6 +603,8 @@ constructor(
                 launch { loadWatchlistData() }
             }
             Timber.d("Background network refresh complete")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Background network refresh failed")
         }
@@ -699,6 +722,8 @@ constructor(
             try {
                 mediaRepository.invalidateAllCaches()
                 reloadHomeData()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh home data after task completion")
             }
@@ -724,6 +749,8 @@ constructor(
                 _latestTvSeries.value = latestTvSeries
                 Timber.d("Home data reloaded successfully")
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to reload home data")
         }
@@ -802,6 +829,8 @@ constructor(
                 )
 
             randomHeroItems.items?.mapNotNull { it.toAfinityItem(baseUrl) } ?: emptyList()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load hero carousel items")
             emptyList()
@@ -864,6 +893,8 @@ constructor(
                                                     )
                                                     .filterIsInstance<AfinityMovie>()
                                             library to items
+                                        } catch (e: CancellationException) {
+                                            throw e
                                         } catch (e: Exception) {
                                             library to emptyList()
                                         }
@@ -883,6 +914,8 @@ constructor(
                                                     limit = 30,
                                                     isPlayed = false,
                                                 )
+                                        } catch (e: CancellationException) {
+                                            throw e
                                         } catch (e: Exception) {
                                             library to emptyList()
                                         }
@@ -911,6 +944,8 @@ constructor(
                                                 )
                                             }
                                         library to items
+                                    } catch (e: CancellationException) {
+                                        throw e
                                     } catch (e: Exception) {
                                         library to emptyList()
                                     }
@@ -960,6 +995,8 @@ constructor(
                 }
 
             Pair(mergeStoreUserData(latestMovies), mergeStoreUserData(latestTvSeries))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load home specific data")
             Pair(emptyList(), emptyList())
@@ -993,6 +1030,8 @@ constructor(
                     launch { mediaRepository.invalidateNextUpCache() }
                 }
                 Timber.d("Refreshed playback sections (continue watching + next up)")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh playback sections")
             }
@@ -1009,6 +1048,8 @@ constructor(
             if (latestMovies.isNotEmpty()) _latestMovies.value = latestMovies
             if (latestTvSeries.isNotEmpty()) _latestTvSeries.value = latestTvSeries
             Timber.d("Refreshed library sections (latest movies + shows)")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to refresh library sections")
         }
@@ -1018,6 +1059,8 @@ constructor(
         val updatedItem =
             try {
                 mediaRepository.getItemById(itemId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to fetch item $itemId after admin change")
                 null
@@ -1083,6 +1126,8 @@ constructor(
         if (session.serverId.isBlank()) return
         try {
             homeCacheRepository.patchItem("${session.serverId}_${session.userId}", updatedItem)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to patch persisted home cache for ${updatedItem.id}")
         }
@@ -1091,7 +1136,7 @@ constructor(
     private suspend fun loadFavoritesData() {
         try {
             coroutineScope {
-                val mediaDeferred = async { mediaRepository.getFavoriteMedia() }
+                val mediaDeferred = async { mediaRepository.getFavoriteMediaResult() }
                 val peopleDeferred = async { mediaRepository.getFavoritePeople() }
                 val channelsDeferred = async {
                     if (sessionManager.currentSession.value?.canAccessLiveTv == false) {
@@ -1129,7 +1174,14 @@ constructor(
                     }
                 }
 
-                val media = mediaDeferred.await()
+                val media =
+                    mediaDeferred.await().getOrElse { e ->
+                        if (e is CancellationException) throw e
+                        Timber.e(e, "Failed to load favorite media")
+                        _favoritesLoadFailed.value = true
+                        return@coroutineScope
+                    }
+                _favoritesLoadFailed.value = false
 
                 _favoritesData.value =
                     FavoritesData(
@@ -1147,14 +1199,24 @@ constructor(
                         favoritePlaylists = playlistsDeferred.await().sortedBy { it.name },
                     )
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load favorites data")
+            _favoritesLoadFailed.value = true
         }
     }
 
     private suspend fun loadWatchlistData() {
         try {
-            val items = watchlistRepository.getWatchlistItems()
+            val items =
+                watchlistRepository.getWatchlistItemsResult().getOrElse { e ->
+                    if (e is CancellationException) throw e
+                    Timber.e(e, "Failed to load watchlist items")
+                    _watchlistLoadFailed.value = true
+                    return
+                }
+            _watchlistLoadFailed.value = false
             _watchlistData.value =
                 WatchlistData(
                     boxSets = items.filterIsInstance<AfinityBoxSet>().sortedBy { it.name },
@@ -1163,8 +1225,11 @@ constructor(
                     seasons = items.filterIsInstance<AfinitySeason>().sortedBy { it.name },
                     episodes = items.filterIsInstance<AfinityEpisode>().sortedBy { it.name },
                 )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load watchlist data")
+            _watchlistLoadFailed.value = true
         }
     }
 
@@ -1355,6 +1420,8 @@ constructor(
             peopleRepository.clearAllData()
             genreRepository.clearAllData()
             deletedItemsRepository.clear()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to clear database caches")
         }

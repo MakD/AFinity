@@ -206,7 +206,8 @@ fun SharedTransitionScope.MusicPlayerScreen(
                     title = stringResource(R.string.cd_equalizer),
                     value =
                         stringResource(
-                            if (equalizerState.isEnabled) R.string.state_on else R.string.state_off
+                            if (equalizerState.isEnabled) R.string.state_toggle_on
+                            else R.string.state_toggle_off
                         ),
                     onClick = {
                         showMoreSheet = false
@@ -228,7 +229,8 @@ fun SharedTransitionScope.MusicPlayerScreen(
                             if (sleepTimerActive) R.drawable.ic_moon_filled else R.drawable.ic_moon
                         ),
                     title = stringResource(R.string.cd_music_sleep_timer),
-                    value = if (sleepTimerActive) null else stringResource(R.string.state_off),
+                    value =
+                        if (sleepTimerActive) null else stringResource(R.string.state_toggle_off),
                     onClick = {
                         showMoreSheet = false
                         showSleepTimer = true
@@ -432,7 +434,10 @@ private fun SharedTransitionScope.MusicPlayerPortrait(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
-        Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            contentAlignment = Alignment.Center,
+        ) {
             AnimatedContent(
                 targetState = showLyrics,
                 transitionSpec = { fadeIn(tween(400)) togetherWith fadeOut(tween(400)) },

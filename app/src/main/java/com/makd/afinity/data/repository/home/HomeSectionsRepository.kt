@@ -297,6 +297,8 @@ constructor(
                             homeCacheRepository.getRaw(layoutCacheKey(sk), layoutTTL)?.let {
                                 try {
                                     json.decodeFromString<List<HomeSectionDescriptor>>(it)
+                                } catch (e: CancellationException) {
+                                    throw e
                                 } catch (e: Exception) {
                                     Timber.e(e, "Failed to decode cached home layout")
                                     null
@@ -594,6 +596,8 @@ constructor(
         val uuid =
             try {
                 UUID.fromString(itemId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 null
             }
@@ -830,7 +834,7 @@ constructor(
         )
     }
 
-    private suspend fun decodeReferenceMovie(movieJson: String?): AfinityMovie? {
+    private fun decodeReferenceMovie(movieJson: String?): AfinityMovie? {
         val movie = movieJson?.let { converters.toAfinityMovie(it) } ?: return null
         return movie.copy(images = movie.images.withBaseUrl(mediaRepository.getBaseUrl()))
     }
@@ -917,6 +921,8 @@ constructor(
                             limit = WATCH_AGAIN_POOL,
                             fields = FieldSets.MEDIA_ITEM_CARDS,
                         )
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to load watched shows for watch again")
                         emptyList()
@@ -931,6 +937,8 @@ constructor(
                             limit = WATCH_AGAIN_POOL,
                             fields = FieldSets.MEDIA_ITEM_CARDS,
                         )
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to load watched movies for watch again")
                         emptyList()
@@ -948,6 +956,8 @@ constructor(
                             ?.filterIsInstance<AfinityBoxSet>()
                             ?.filter { it.unplayedItemCount == 0 && (it.itemCount ?: 0) >= 2 }
                             ?: emptyList()
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to load watched boxsets for watch again")
                         emptyList()
@@ -1000,6 +1010,8 @@ constructor(
                     limit = 25,
                     fields = FieldSets.MEDIA_ITEM_CARDS,
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to load top rated movies")
                 emptyList()
@@ -1013,6 +1025,8 @@ constructor(
                     limit = 25,
                     fields = FieldSets.MEDIA_ITEM_CARDS,
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to load top rated shows")
                 emptyList()
@@ -1064,6 +1078,8 @@ constructor(
                 CustomSectionSourceType.LIBRARY ->
                     try {
                         UUID.fromString(section.primarySourceValue.orEmpty())
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Custom section ${section.id} has an invalid source id")
                         return HomeSectionContent.Empty
@@ -1113,6 +1129,8 @@ constructor(
                         .items
                         ?.mapNotNull { it.toAfinityItem(baseUrl) } ?: emptyList()
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load custom home section ${section.id}")
                 val stale =
@@ -1228,6 +1246,8 @@ constructor(
                         descriptor.boxSetId?.let {
                             try {
                                 UUID.fromString(it)
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 null
                             }
@@ -1294,6 +1314,8 @@ constructor(
                             )
                             .items
                             ?.filter { (it.childCount ?: 0) >= 3 && it.name != null } ?: emptyList()
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to load boxsets for spotlight descriptors")
                         emptyList()
@@ -1410,6 +1432,8 @@ constructor(
                                     fields = listOf(ItemFields.PEOPLE),
                                 )
                                 ?.toAfinityMovie(mediaRepository.getBaseUrl())
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             null
                         } ?: continue
@@ -1657,6 +1681,8 @@ constructor(
                 }
 
             return allFavorites.filterNot { it.id in excludedMovies }.randomOrNull()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to get random favorite movie")
             return null
@@ -1695,6 +1721,8 @@ constructor(
             } else {
                 recentWatched.random()
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to get random recently watched movie")
             return null

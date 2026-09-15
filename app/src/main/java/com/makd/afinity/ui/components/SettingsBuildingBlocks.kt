@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -80,6 +81,7 @@ fun SettingsItem(
     subtitle: String? = null,
     onClick: (() -> Unit)? = null,
     enabled: Boolean = true,
+    role: Role = Role.Button,
     subtitleColor: Color? = null,
     trailing: @Composable (() -> Unit)? = null,
 ) {
@@ -90,7 +92,8 @@ fun SettingsItem(
             modifier
                 .fillMaxWidth()
                 .then(
-                    if (onClick != null && enabled) Modifier.clickable(onClick = onClick)
+                    if (onClick != null && enabled)
+                        Modifier.clickable(role = role, onClick = onClick)
                     else Modifier
                 )
                 .padding(horizontal = 16.dp, vertical = 16.dp),
@@ -159,6 +162,7 @@ fun SettingsSwitchItem(
                 { onCheckedChange(!checked) }
             } else null,
         enabled = enabled,
+        role = Role.Switch,
         modifier = modifier,
         trailing = {
             AfinitySwitch(
