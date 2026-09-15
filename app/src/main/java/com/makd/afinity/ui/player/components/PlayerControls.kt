@@ -39,6 +39,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
@@ -118,6 +121,7 @@ import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.PersonKind
 import org.jellyfin.sdk.model.api.PlayMethod
+import org.jellyfin.sdk.model.api.TranscodeReason
 
 data class AudioStreamOption(
     val stream: AfinityMediaStream,
@@ -159,6 +163,7 @@ fun PlayerControls(
     syncPlayMemberInfo: Map<String, SyncPlayMemberInfo> = emptyMap(),
 ) {
     var showTrackPanel by remember { mutableStateOf(false) }
+    var showQualityPanel by remember { mutableStateOf(false) }
     var showSpeedDialog by remember { mutableStateOf(false) }
     var showEpisodeSwitcher by remember { mutableStateOf(false) }
     var showChapterSwitcher by remember { mutableStateOf(false) }
@@ -578,6 +583,16 @@ fun PlayerControls(
                         onPlayerEvent = onPlayerEvent,
                         onSpeedToggle = { showSpeedDialog = !showSpeedDialog },
                         onTrackPanelToggle = { showTrackPanel = !showTrackPanel },
+                        onQualityToggle =
+                            if (
+                                uiState.availableQualities.size > 1 &&
+                                    !uiState.isLiveChannel &&
+                                    !uiState.isQualityLocked
+                            ) {
+                                { showQualityPanel = !showQualityPanel }
+                            } else {
+                                null
+                            },
                         onSleepTimerToggle = { showSleepTimerPanel = !showSleepTimerPanel },
                         onEpisodeSwitcherToggle = { showEpisodeSwitcher = !showEpisodeSwitcher },
                         showEpisodeSwitcherButton =
@@ -748,10 +763,29 @@ fun PlayerControls(
                         onPlayerEvent(PlayerEvent.SwitchToTrack(trackType, index))
                     }
                 },
+                onDismiss = { showTrackPanel = false },
+            )
+        }
+
+        if (showQualityPanel) {
+            val qualitySource =
+                uiState.currentItem?.sources?.firstOrNull { it.id == uiState.currentMediaSourceId }
+            val qualitySourceVideo =
+                qualitySource?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+            QualityPanel(
+                options = uiState.availableQualities,
+                selected = uiState.videoQuality,
+                playMethod = uiState.playMethod,
+                transcodeReasons = uiState.transcodeReasons,
+                outputWidth = uiState.outputVideoWidth,
+                outputHeight = uiState.outputVideoHeight,
+                sourceWidth = qualitySourceVideo?.width,
+                sourceHeight = qualitySourceVideo?.height,
+                sourceBitrate = qualitySource?.bitrate?.toInt(),
                 onSelectQuality = { quality ->
                     onPlayerEvent(PlayerEvent.SelectVideoQuality(quality))
                 },
-                onDismiss = { showTrackPanel = false },
+                onDismiss = { showQualityPanel = false },
             )
         }
 
@@ -1217,6 +1251,7 @@ private fun BottomControls(
     onPlayerEvent: (PlayerEvent) -> Unit,
     onSpeedToggle: () -> Unit,
     onTrackPanelToggle: () -> Unit,
+    onQualityToggle: (() -> Unit)? = null,
     onSleepTimerToggle: () -> Unit = {},
     onEpisodeSwitcherToggle: () -> Unit = {},
     showEpisodeSwitcherButton: Boolean = false,
@@ -1292,7 +1327,7 @@ private fun BottomControls(
                         horizontalArrangement = Arrangement.spacedBy(14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        PlaybackBadges(uiState = uiState)
+                        PlaybackBadges(uiState = uiState, onClick = onQualityToggle)
 
                         if (uiState.availableSources.size > 1) {
                             LabeledControl(
@@ -1339,7 +1374,7 @@ private fun BottomControls(
 
 @OptIn(UnstableApi::class)
 @Composable
-private fun PlaybackBadges(uiState: PlayerViewModel.PlayerUiState) {
+private fun PlaybackBadges(uiState: PlayerViewModel.PlayerUiState, onClick: (() -> Unit)?) {
     val resolution = resolutionLabelFor(uiState.outputVideoWidth, uiState.outputVideoHeight)
     val playMethod = uiState.playMethod
     if (resolution == null && playMethod == null) return
@@ -1349,7 +1384,19 @@ private fun PlaybackBadges(uiState: PlayerViewModel.PlayerUiState) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(end = 10.dp),
+        modifier =
+            if (onClick != null) {
+                Modifier.padding(end = 2.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(
+                        onClickLabel = stringResource(R.string.cd_quality),
+                        role = Role.Button,
+                        onClick = onClick,
+                    )
+                    .padding(horizontal = 8.dp, vertical = 6.dp)
+            } else {
+                Modifier.padding(end = 10.dp)
+            },
     ) {
         resolution?.let { ResolutionLabel(label = it) }
         if (resolution != null && showPlayMethod) {
@@ -1361,6 +1408,14 @@ private fun PlaybackBadges(uiState: PlayerViewModel.PlayerUiState) {
         }
         if (showPlayMethod) {
             PlayMethodBadge(isTranscoding = playMethod == PlayMethod.TRANSCODE)
+        }
+        if (onClick != null) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.6f),
+                modifier = Modifier.size(14.dp),
+            )
         }
     }
 }
@@ -1556,17 +1611,11 @@ private fun TrackPanel(
     currentAudioIndex: Int,
     currentSubtitleIndex: Int,
     onSelectTrack: (Int, Int) -> Unit,
-    onSelectQuality: (VideoQuality) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val qualityOptions = uiState.availableQualities
-    val showQuality = qualityOptions.size > 1 && !uiState.isLiveChannel
-    val currentSource =
-        uiState.currentItem?.sources?.firstOrNull { it.id == uiState.currentMediaSourceId }
-    val sourceVideoStream =
-        currentSource?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+    val qualityAvailable = uiState.availableQualities.size > 1 && !uiState.isLiveChannel
     val reasonText =
-        if (uiState.playMethod == PlayMethod.TRANSCODE) {
+        if (uiState.playMethod == PlayMethod.TRANSCODE && !qualityAvailable) {
             transcodeReasonText(uiState.transcodeReasons)
         } else {
             null
@@ -1591,21 +1640,20 @@ private fun TrackPanel(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
                     ) {}
-                    .widthIn(min = 340.dp, max = 640.dp)
+                    .widthIn(min = 340.dp, max = 560.dp)
                     .heightIn(max = 440.dp),
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Text(
-                    text =
-                        stringResource(
-                            if (showQuality) R.string.player_track_panel_title
-                            else R.string.player_tracks_label
-                        ),
+                    text = stringResource(R.string.player_tracks_label),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 16.dp),
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(20.dp),
+                    modifier = Modifier.weight(1f, fill = false),
+                ) {
                     TrackColumn(
                         title = stringResource(R.string.player_audio_title),
                         modifier = Modifier.weight(1f),
@@ -1646,52 +1694,208 @@ private fun TrackPanel(
                             )
                         }
                     }
-                    if (showQuality) {
-                        TrackColumn(
-                            title = stringResource(R.string.player_quality_title),
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            qualityOptions.forEach { option ->
-                                TrackRow(
-                                    label = qualityLabel(option),
-                                    selected = uiState.videoQuality == option,
-                                    onClick = {
-                                        onSelectQuality(option)
-                                        onDismiss()
-                                    },
-                                    secondaryLabel =
-                                        qualitySecondaryLabel(
-                                            quality = option,
-                                            sourceWidth = sourceVideoStream?.width,
-                                            sourceHeight = sourceVideoStream?.height,
-                                            sourceBitrate = currentSource?.bitrate?.toInt(),
-                                        ),
-                                )
-                            }
-                        }
+                }
+                if (reasonText != null) {
+                    TranscodeReasonLine(
+                        text = reasonText,
+                        modifier = Modifier.padding(top = 16.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TranscodeReasonLine(text: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.ic_info),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(16.dp),
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun QualityPanel(
+    options: List<VideoQuality>,
+    selected: VideoQuality,
+    playMethod: PlayMethod?,
+    transcodeReasons: List<TranscodeReason>,
+    outputWidth: Int,
+    outputHeight: Int,
+    sourceWidth: Int?,
+    sourceHeight: Int?,
+    sourceBitrate: Int?,
+    onSelectQuality: (VideoQuality) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val reasonText =
+        if (playMethod == PlayMethod.TRANSCODE) transcodeReasonText(transcodeReasons) else null
+    val listState =
+        rememberLazyListState(
+            initialFirstVisibleItemIndex = (options.indexOf(selected) - 2).coerceAtLeast(0)
+        )
+    val playingText =
+        when {
+            playMethod == PlayMethod.TRANSCODE &&
+                outputWidth > 0 &&
+                outputHeight > 0 &&
+                sourceWidth != null &&
+                sourceHeight != null &&
+                sourceWidth > 0 ->
+                stringResource(
+                    R.string.player_quality_playing_transcoded_fmt,
+                    outputWidth,
+                    outputHeight,
+                    sourceWidth,
+                    sourceHeight,
+                )
+
+            playMethod != null && playMethod != PlayMethod.TRANSCODE ->
+                stringResource(R.string.player_quality_playing_original)
+
+            else -> null
+        }
+
+    Box(
+        modifier =
+            Modifier.fillMaxSize().clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+            ) {
+                onDismiss()
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 6.dp,
+            shadowElevation = 8.dp,
+            modifier =
+                Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) {}
+                    .widthIn(min = 340.dp, max = 420.dp)
+                    .heightIn(max = 440.dp),
+        ) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Text(
+                    text = stringResource(R.string.player_quality_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                if (playingText != null) {
+                    Text(
+                        text = playingText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                LazyColumn(
+                    state = listState,
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    modifier = Modifier.weight(1f, fill = false),
+                ) {
+                    items(options, key = { it.maxBitrate }) { option ->
+                        QualityOptionRow(
+                            label = qualityLabel(option),
+                            detail =
+                                qualitySecondaryLabel(
+                                    quality = option,
+                                    sourceWidth = sourceWidth,
+                                    sourceHeight = sourceHeight,
+                                    sourceBitrate = sourceBitrate,
+                                ),
+                            selected = option == selected,
+                            onClick = {
+                                onSelectQuality(option)
+                                onDismiss()
+                            },
+                        )
                     }
                 }
                 if (reasonText != null) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(top = 16.dp, bottom = 12.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant,
+                    TranscodeReasonLine(
+                        text = reasonText,
+                        modifier = Modifier.padding(top = 12.dp),
                     )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_info),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = reasonText,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun QualityOptionRow(
+    label: String,
+    detail: String?,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(
+                    if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                    else Color.Transparent
+                )
+                .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+                .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color =
+                if (selected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurface,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            maxLines = 1,
+            modifier = Modifier.weight(1f),
+        )
+        if (!detail.isNullOrBlank()) {
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.bodyMedium,
+                color =
+                    if (selected) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
+        if (selected) {
+            Spacer(modifier = Modifier.width(12.dp))
+            Icon(
+                painter = painterResource(id = R.drawable.ic_check),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp),
+            )
         }
     }
 }

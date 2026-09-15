@@ -115,7 +115,7 @@ fun musicQualityLabel(quality: MusicQuality): String =
     if (quality.isOriginal) {
         stringResource(R.string.player_quality_original)
     } else {
-        stringResource(R.string.music_quality_opus_fmt, quality.maxBitrate / 1000)
+        formatBitrate(quality.maxBitrate)
     }
 
 @Composable

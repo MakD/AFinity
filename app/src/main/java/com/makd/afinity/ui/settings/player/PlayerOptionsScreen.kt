@@ -668,9 +668,9 @@ fun PlayerOptionsScreen(
                             onValueChange = viewModel::setMusicQualityWifi,
                             labelProvider = { bitrate -> musicLabels[bitrate].orEmpty() },
                             icon = painterResource(id = R.drawable.ic_wifi),
-                            enabled = !uiState.neverTranscode,
+                            enabled = !uiState.musicNeverTranscode,
                             hint =
-                                if (uiState.neverTranscode)
+                                if (uiState.musicNeverTranscode)
                                     stringResource(R.string.pref_requires_transcoding)
                                 else null,
                         )
@@ -684,11 +684,21 @@ fun PlayerOptionsScreen(
                             onValueChange = viewModel::setMusicQualityCellular,
                             labelProvider = { bitrate -> musicLabels[bitrate].orEmpty() },
                             icon = painterResource(id = R.drawable.ic_cellular_data),
-                            enabled = !uiState.neverTranscode,
+                            enabled = !uiState.musicNeverTranscode,
                             hint =
-                                if (uiState.neverTranscode)
+                                if (uiState.musicNeverTranscode)
                                     stringResource(R.string.pref_requires_transcoding)
                                 else null,
+                        )
+
+                        SettingsDivider()
+
+                        SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_file_music),
+                            title = stringResource(R.string.pref_never_transcode_title),
+                            subtitle = stringResource(R.string.pref_never_transcode_description),
+                            checked = uiState.musicNeverTranscode,
+                            onCheckedChange = { viewModel.setMusicNeverTranscode(it) },
                         )
                     }
                 }

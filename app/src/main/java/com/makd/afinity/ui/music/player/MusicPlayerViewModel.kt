@@ -84,6 +84,8 @@ constructor(
     private val _musicQuality = MutableStateFlow(queueManager.musicQuality)
     val musicQuality: StateFlow<MusicQuality> = _musicQuality.asStateFlow()
 
+    val neverTranscode: StateFlow<Boolean> = queueManager.neverTranscode
+
     fun setMusicQuality(quality: MusicQuality) {
         queueManager.setSessionMusicQuality(quality)
         _musicQuality.value = queueManager.musicQuality

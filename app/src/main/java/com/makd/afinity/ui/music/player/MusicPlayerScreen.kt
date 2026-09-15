@@ -61,6 +61,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.RadioSeed
 import com.makd.afinity.data.models.music.RepeatMode
+import com.makd.afinity.data.models.player.MusicQuality
 import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.ui.audiobookshelf.player.components.EqualizerBottomSheet
 import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
@@ -94,6 +95,7 @@ fun SharedTransitionScope.MusicPlayerScreen(
     val playbackState by viewModel.playbackState.collectAsStateWithLifecycle()
     val equalizerState by viewModel.equalizerState.collectAsStateWithLifecycle()
     val musicQuality by viewModel.musicQuality.collectAsStateWithLifecycle()
+    val neverTranscode by viewModel.neverTranscode.collectAsStateWithLifecycle()
     val lyrics by viewModel.lyrics.collectAsStateWithLifecycle()
     val showLyrics by viewModel.showLyrics.collectAsStateWithLifecycle()
     val lyricsLoading by viewModel.lyricsLoading.collectAsStateWithLifecycle()
@@ -217,11 +219,15 @@ fun SharedTransitionScope.MusicPlayerScreen(
                 PlayerMoreRow(
                     painter = painterResource(R.drawable.ic_speed),
                     title = stringResource(R.string.music_player_quality_title),
-                    value = musicQualityShortLabel(musicQuality),
+                    value =
+                        musicQualityShortLabel(
+                            if (neverTranscode) MusicQuality.ORIGINAL else musicQuality
+                        ),
                     onClick = {
                         showMoreSheet = false
                         showQualitySheet = true
                     },
+                    enabled = !neverTranscode,
                 )
                 PlayerMoreRow(
                     painter =

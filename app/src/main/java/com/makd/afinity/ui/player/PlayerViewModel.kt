@@ -1921,7 +1921,11 @@ constructor(
         return if (stream.isExternal) TrackSelection.NO_SUBTITLE else selectedIndex
     }
 
+    private suspend fun isTranscodingAllowed(): Boolean =
+        sessionAllowTranscoding ?: !preferencesRepository.getNeverTranscode()
+
     private suspend fun resolveVideoQuality(): VideoQuality {
+        if (!isTranscodingAllowed()) return VideoQuality.ORIGINAL
         sessionVideoQuality?.let {
             return it
         }
@@ -2087,9 +2091,8 @@ constructor(
 
             refreshStreamAuthHeader()
 
+            val allowTranscoding = isTranscodingAllowed()
             val quality = resolveVideoQuality()
-            val allowTranscoding =
-                sessionAllowTranscoding ?: !preferencesRepository.getNeverTranscode()
             val playbackInfo =
                 playbackRepository.getPlaybackInfo(
                     itemId = fullItem.id,
@@ -2176,6 +2179,7 @@ constructor(
                                 sourceWidth = videoStream?.width,
                             )
                         },
+                    isQualityLocked = !allowTranscoding,
                     mdbRatings = emptyList(),
                     omdbAwards = null,
                 )
@@ -3901,6 +3905,7 @@ constructor(
         val clientRenderedSubtitles: Set<Int> = emptySet(),
         val videoQuality: VideoQuality = VideoQuality.ORIGINAL,
         val availableQualities: List<VideoQuality> = emptyList(),
+        val isQualityLocked: Boolean = false,
         val outputVideoWidth: Int = 0,
         val outputVideoHeight: Int = 0,
         val showPlayButton: Boolean = true,

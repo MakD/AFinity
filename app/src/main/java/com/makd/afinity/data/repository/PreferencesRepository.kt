@@ -100,6 +100,10 @@ interface PreferencesRepository {
 
     fun getNeverTranscodeFlow(): Flow<Boolean>
 
+    suspend fun setMusicNeverTranscode(never: Boolean)
+
+    fun getMusicNeverTranscodeFlow(): Flow<Boolean>
+
     suspend fun setSkipIntroMode(mode: SkipMode)
 
     suspend fun getSkipIntroMode(): SkipMode

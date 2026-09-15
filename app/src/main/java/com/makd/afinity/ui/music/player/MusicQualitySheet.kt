@@ -55,6 +55,15 @@ fun MusicQualitySheet(
                 modifier = Modifier.fillMaxWidth(),
             )
 
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = stringResource(R.string.music_quality_sheet_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
             Spacer(modifier = Modifier.height(16.dp))
 
             MusicQuality.options().forEach { option ->

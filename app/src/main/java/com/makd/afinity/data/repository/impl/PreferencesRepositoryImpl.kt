@@ -61,6 +61,7 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         val NEVER_TRANSCODE = booleanPreferencesKey("never_transcode")
         val MUSIC_QUALITY_WIFI = intPreferencesKey("music_quality_wifi")
         val MUSIC_QUALITY_CELLULAR = intPreferencesKey("music_quality_cellular")
+        val MUSIC_NEVER_TRANSCODE = booleanPreferencesKey("music_never_transcode")
         val SKIP_INTRO_ENABLED_LEGACY = booleanPreferencesKey("skip_intro_enabled")
         val SKIP_OUTRO_ENABLED_LEGACY = booleanPreferencesKey("skip_outro_enabled")
         val SKIP_INTRO_MODE = stringPreferencesKey("skip_intro_mode")
@@ -343,6 +344,14 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
     override fun getNeverTranscodeFlow(): Flow<Boolean> {
         return dataStore.data.map { it[Keys.NEVER_TRANSCODE] ?: false }
+    }
+
+    override suspend fun setMusicNeverTranscode(never: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.MUSIC_NEVER_TRANSCODE] = never }
+    }
+
+    override fun getMusicNeverTranscodeFlow(): Flow<Boolean> {
+        return dataStore.data.map { it[Keys.MUSIC_NEVER_TRANSCODE] ?: false }
     }
 
     override suspend fun setCombineLibrarySections(combine: Boolean) {

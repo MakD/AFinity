@@ -688,7 +688,6 @@
     <string name="player_audio_title">Audio Track</string>
     <string name="player_subtitle_title">Subtitles</string>
     <string name="player_quality_title">Quality</string>
-    <string name="player_track_panel_title">Audio, Subtitles &amp; Quality</string>
     <string name="pref_group_streaming_quality">Streaming quality</string>
     <string name="pref_quality_wifi_title">Quality on Wi-Fi</string>
     <string name="pref_quality_cellular_title">Quality on mobile data</string>
@@ -696,7 +695,7 @@
     <string name="pref_transcode_channels_8">Up to 7.1</string>
     <string name="pref_transcode_channels_6">Up to 5.1</string>
     <string name="pref_transcode_channels_2">Stereo</string>
-    <string name="music_quality_opus_fmt">Opus %1$d kbps</string>
+    <string name="music_quality_sheet_hint">Files below the limit play unchanged</string>
     <string name="music_quality_short_original">Original</string>
     <string name="music_more_section_audio">AUDIO</string>
     <string name="music_more_section_track">THIS TRACK</string>
@@ -710,7 +709,7 @@
     <string name="cd_music_quality">Streaming quality</string>
     <string name="pref_requires_transcoding">Turn off Never transcode to use this</string>
     <string name="pref_never_transcode_title">Never transcode</string>
-    <string name="pref_never_transcode_description">Only play files this device can decode itself. Your server will never re-encode, but some files will not play.</string>
+    <string name="pref_never_transcode_description">Only play formats this device supports</string>
     <string name="error_direct_play_blocked">This device can\'t play this file directly, and transcoding is turned off.</string>
     <string name="error_direct_play_blocked_fmt">This device can\'t play this file directly (%1$s), and transcoding is turned off.</string>
     <string name="player_play_anyway">Play anyway</string>
@@ -722,6 +721,8 @@
     <string name="player_quality_kbps_fmt">%1$d kbps</string>
     <string name="player_quality_mbps_fmt">%1$s Mbps</string>
     <string name="player_quality_auto_summary">Match connection</string>
+    <string name="player_quality_playing_original">Playing original quality</string>
+    <string name="player_quality_playing_transcoded_fmt">Playing %1$d×%2$d, transcoded from %3$d×%4$d</string>
     <string name="player_subtitle_burned_in">Burned in</string>
     <string name="player_transcode_reason_prefix">Transcoding — %1$s</string>
     <string name="player_transcode_reason_audio_codec">audio codec not supported</string>

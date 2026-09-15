@@ -112,6 +112,9 @@ constructor(
     @Volatile private var cellularMusicQualityBitrate = MusicQuality.CELLULAR_DEFAULT_BITRATE
     @Volatile private var sessionMusicQualityBitrate: Int? = null
 
+    private val _neverTranscode = MutableStateFlow(false)
+    val neverTranscode: StateFlow<Boolean> = _neverTranscode.asStateFlow()
+
     private data class StreamSession(val key: Int, val playSessionId: String, val isDirect: Boolean)
 
     private val streamSessions = ConcurrentHashMap<UUID, StreamSession>()
@@ -120,9 +123,11 @@ constructor(
 
     private val activeMusicQualityBitrate: Int
         get() =
-            sessionMusicQualityBitrate
-                ?: if (networkConnectivityMonitor.isOnWifi()) wifiMusicQualityBitrate
-                else cellularMusicQualityBitrate
+            if (_neverTranscode.value) MusicQuality.ORIGINAL_BITRATE
+            else
+                sessionMusicQualityBitrate
+                    ?: if (networkConnectivityMonitor.isOnWifi()) wifiMusicQualityBitrate
+                    else cellularMusicQualityBitrate
 
     val musicQuality: MusicQuality
         get() = MusicQuality.fromBitrate(activeMusicQualityBitrate)
@@ -151,6 +156,21 @@ constructor(
         scope.launch {
             preferencesRepository.getMusicQualityCellularFlow().collect {
                 cellularMusicQualityBitrate = it
+            }
+        }
+
+        scope.launch {
+            preferencesRepository.getMusicNeverTranscodeFlow().collect { never ->
+                val changed = never != _neverTranscode.value
+                _neverTranscode.value = never
+                if (!changed) return@collect
+                resolvedStreams.clear()
+                val tracks = _queue.value
+                if (tracks.isNotEmpty()) {
+                    _rearrangeQueueEvents.emit(
+                        RearrangeQueueEvent(tracks.map { buildMediaItem(it) }, _currentIndex.value)
+                    )
+                }
             }
         }
 
@@ -390,6 +410,7 @@ constructor(
 
     suspend fun ensureResolved(track: AfinityTrack): Boolean {
         if (!track.localFilePath.isNullOrBlank()) return false
+        if (_neverTranscode.value) return false
         if (resolvedStreams.containsKey(track.id)) return false
 
         val quality = musicQuality
@@ -440,12 +461,23 @@ constructor(
                 return localUri
             }
         }
+        val session = sessionManager.currentSession.value
+        val baseUrl = session?.serverUrl?.trimEnd('/') ?: ""
+
+        if (_neverTranscode.value) {
+            val playSessionId =
+                registerStreamSession(track.id, MusicQuality.ORIGINAL_BITRATE, isDirect = true)
+            return Uri.parse("$baseUrl/Audio/${track.id}/stream")
+                .buildUpon()
+                .appendQueryParameter("static", "true")
+                .appendQueryParameter("playSessionId", playSessionId)
+                .build()
+        }
+
         resolvedStreams[track.id]?.let {
             return it
         }
 
-        val session = sessionManager.currentSession.value
-        val baseUrl = session?.serverUrl?.trimEnd('/') ?: ""
         val quality = MusicQuality.fromBitrate(activeMusicQualityBitrate)
 
         val playSessionId =

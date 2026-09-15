@@ -532,6 +532,12 @@ constructor(
                 _uiState.value = _uiState.value.copy(neverTranscode = it)
             }
         }
+
+        viewModelScope.launch {
+            preferencesRepository.getMusicNeverTranscodeFlow().collect {
+                _uiState.value = _uiState.value.copy(musicNeverTranscode = it)
+            }
+        }
     }
 
     fun setThemeMode(mode: String) {
@@ -1025,6 +1031,18 @@ constructor(
         }
     }
 
+    fun setMusicNeverTranscode(never: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setMusicNeverTranscode(never)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set music never transcode")
+            }
+        }
+    }
+
     fun setAllowHdrPassthrough(allow: Boolean) {
         viewModelScope.launch {
             try {
@@ -1420,6 +1438,7 @@ data class SettingsUiState(
     val transcodeMaxAudioChannels: Int = 6,
     val allowHdrPassthrough: Boolean = true,
     val neverTranscode: Boolean = false,
+    val musicNeverTranscode: Boolean = false,
     val musicQualityWifi: Int = MusicQuality.ORIGINAL_BITRATE,
     val musicQualityCellular: Int = MusicQuality.CELLULAR_DEFAULT_BITRATE,
     val bufferSizeMb: Int = 64,
