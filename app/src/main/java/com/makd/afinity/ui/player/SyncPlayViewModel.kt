@@ -15,6 +15,8 @@ import com.makd.afinity.data.syncplay.SyncPlayRawWebSocket
 import com.makd.afinity.data.syncplay.SyncPlayTimeSyncEngine
 import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -24,7 +26,6 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -36,7 +37,6 @@ import org.jellyfin.sdk.model.api.PlayQueueUpdate
 import org.jellyfin.sdk.model.api.SendCommand
 import org.jellyfin.sdk.model.api.SendCommandType
 import timber.log.Timber
-import javax.inject.Inject
 
 fun interface SyncPlayInterceptor {
     fun handle(event: PlayerEvent): Boolean
@@ -238,27 +238,44 @@ constructor(
     }
 
     private suspend fun collectSyncPlayCommands() {
-        webSocketManager.syncPlayCommands
-            .catch { e -> Timber.e(e, "Error collecting SyncPlay commands (SDK path)") }
-            .collect { command -> handleSyncPlayCommand(command) }
+        webSocketManager.syncPlayCommands.collect { command ->
+            try {
+                handleSyncPlayCommand(command)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Error handling SyncPlay command (SDK path)")
+            }
+        }
     }
 
     private suspend fun collectRawCommands() {
-        rawWebSocket.commands
-            .catch { e -> Timber.e(e, "Error collecting SyncPlay commands (raw WS path)") }
-            .collect { command -> handleSyncPlayCommand(command) }
+        rawWebSocket.commands.collect { command ->
+            try {
+                handleSyncPlayCommand(command)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Error handling SyncPlay command (raw WS path)")
+            }
+        }
     }
 
     private suspend fun collectGroupUpdates() {
-        webSocketManager.syncPlayGroupUpdates
-            .catch { e -> Timber.e(e, "Error collecting SyncPlay group updates") }
-            .collect { update -> handleGroupUpdate(update) }
+        webSocketManager.syncPlayGroupUpdates.collect { update ->
+            try {
+                handleGroupUpdate(update)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Error handling SyncPlay group update")
+            }
+        }
     }
 
     private suspend fun collectRawGroupEvents() {
-        rawWebSocket.groupEvents
-            .catch { e -> Timber.e(e, "Error collecting SyncPlay raw group events") }
-            .collect { event ->
+        rawWebSocket.groupEvents.collect { event ->
+            try {
                 syncPlayRepository.updateFromGroupEvent(event)
                 when (event) {
                     is SyncPlayGroupEvent.GroupStateRefreshed -> {
@@ -274,13 +291,24 @@ constructor(
                     }
                     else -> {}
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Error handling SyncPlay raw group event")
             }
+        }
     }
 
     private suspend fun collectPlayQueueUpdates() {
-        rawWebSocket.playQueueUpdates
-            .catch { e -> Timber.e(e, "Error collecting SyncPlay queue updates") }
-            .collect { update -> handlePlayQueueUpdate(update) }
+        rawWebSocket.playQueueUpdates.collect { update ->
+            try {
+                handlePlayQueueUpdate(update)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Error handling SyncPlay queue update")
+            }
+        }
     }
 
     private suspend fun handlePlayQueueUpdate(update: PlayQueueUpdate) {
@@ -325,12 +353,14 @@ constructor(
                     }
             Timber.d("SyncPlay: loading ${item.name} at ${startPositionMs}ms")
             _effects.emit(SyncPlayEffect.LoadContent(item, mediaSourceId, startPositionMs))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "SyncPlay: failed to load item ${playingItem.itemId}")
         }
     }
 
-    private suspend fun handleSyncPlayCommand(command: SendCommand) {
+    private fun handleSyncPlayCommand(command: SendCommand) {
         currentPlaylistItemId = command.playlistItemId
         val rawDelayMs = timeSyncEngine.toScheduledDelayMs(command.`when`)
         val delayMs = rawDelayMs.coerceIn(0L, 3_000L)
@@ -388,8 +418,6 @@ constructor(
                     _effects.emit(SyncPlayEffect.GroupLeft)
                 }
             }
-            GroupUpdateType.CREATE_GROUP_DENIED,
-            GroupUpdateType.JOIN_GROUP_DENIED,
             GroupUpdateType.LIBRARY_ACCESS_DENIED -> {
                 val message = "Access denied: ${update.type.serialName}"
                 syncPlayRepository.updateFromGroupEvent(
@@ -463,7 +491,6 @@ constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
         rawWebSocket.stop()
         timeSyncEngine.stop()
     }

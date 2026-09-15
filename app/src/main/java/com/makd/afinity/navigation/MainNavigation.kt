@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -24,9 +25,11 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.WideNavigationRailDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberWideNavigationRailState
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
@@ -34,8 +37,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.compositeOver
@@ -62,6 +68,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideoPlaylist
+import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.data.updater.UpdateManager
 import com.makd.afinity.data.websocket.WebSocketState
 import com.makd.afinity.ui.admin.identify.IdentifyScreen
@@ -77,6 +84,8 @@ import com.makd.afinity.ui.audiobookshelf.player.AudiobookshelfPlayerScreen
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AfinitySplashScreen
 import com.makd.afinity.ui.components.AppNavigationDrawerContent
+import com.makd.afinity.ui.components.LocalNetworkPermissionGrantButton
+import com.makd.afinity.ui.components.UnsupportedServerDialog
 import com.makd.afinity.ui.favorites.FavoritesCategory
 import com.makd.afinity.ui.favorites.FavoritesCategoryScreen
 import com.makd.afinity.ui.favorites.FavoritesScreen
@@ -106,10 +115,13 @@ import com.makd.afinity.ui.requests.RequestsScreen
 import com.makd.afinity.ui.search.GenreResultsScreen
 import com.makd.afinity.ui.search.SearchScreen
 import com.makd.afinity.ui.settings.LicensesScreen
+import com.makd.afinity.ui.settings.SessionSwitcherBottomSheet
 import com.makd.afinity.ui.settings.SettingsScreen
 import com.makd.afinity.ui.settings.appearance.AppearanceOptionsScreen
 import com.makd.afinity.ui.settings.downloads.DownloadSettingsScreen
+import com.makd.afinity.ui.settings.downloads.StorageSettingsScreen
 import com.makd.afinity.ui.settings.home.CustomSectionsScreen
+import com.makd.afinity.ui.settings.logs.LogViewerScreen
 import com.makd.afinity.ui.settings.player.PlayerOptionsScreen
 import com.makd.afinity.ui.settings.servers.AddEditServerScreen
 import com.makd.afinity.ui.settings.servers.ServerManagementScreen
@@ -117,10 +129,13 @@ import com.makd.afinity.ui.settings.update.GlobalUpdateDialog
 import com.makd.afinity.ui.watchlist.WatchlistCategory
 import com.makd.afinity.ui.watchlist.WatchlistCategoryScreen
 import com.makd.afinity.ui.watchlist.WatchlistScreen
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
 val LocalPlayerOffset = compositionLocalOf { 0.dp }
+val LocalSkipServerImageResize = compositionLocalOf { false }
+val LocalSideSheetEnabled = compositionLocalOf { true }
 val LocalShowRatings = compositionLocalOf { true }
 
 val LocalShowAwards = compositionLocalOf { true }
@@ -152,6 +167,7 @@ fun MainNavigation(
     val musicPlaybackState by viewModel.musicPlaybackManager.state.collectAsStateWithLifecycle()
     val showRatings by viewModel.showRatings.collectAsStateWithLifecycle()
     val showAwards by viewModel.showAwards.collectAsStateWithLifecycle()
+    val sideSheetEnabled by viewModel.sideSheetEnabled.collectAsStateWithLifecycle()
     val navigationDrawerEnabled by viewModel.navigationDrawerEnabled.collectAsStateWithLifecycle()
     val librariesInDrawer by viewModel.librariesInDrawer.collectAsStateWithLifecycle()
     val serverName by viewModel.serverName.collectAsStateWithLifecycle()
@@ -245,7 +261,7 @@ fun MainNavigation(
 
     LaunchedEffect(isOffline, isPreAuth) {
         if (isOffline && !isPreAuth) {
-            if (currentRoute != null && currentRoute != Destination.HOME.route) {
+            if (currentRoute != Destination.HOME.route) {
                 Timber.d("Switching to offline mode, navigating to HOME")
                 navController.navigate(Destination.HOME.route) {
                     popUpTo(Destination.HOME.route) { saveState = true }
@@ -398,6 +414,8 @@ fun MainNavigation(
             val drawerBody: @Composable () -> Unit = {
                 CompositionLocalProvider(
                     LocalPlayerOffset provides globalPlayerOffset,
+                    LocalSkipServerImageResize provides (connectionType == ConnectionType.LOCAL),
+                    LocalSideSheetEnabled provides sideSheetEnabled,
                     LocalShowRatings provides showRatings,
                     LocalShowAwards provides showAwards,
                 ) {
@@ -407,6 +425,12 @@ fun MainNavigation(
                                 navController = navController,
                                 startDestination = Destination.SPLASH_ROUTE,
                                 modifier = Modifier.fillMaxSize(),
+                                predictivePopEnterTransition = {
+                                    fadeIn(animationSpec = tween(700))
+                                },
+                                predictivePopExitTransition = {
+                                    fadeOut(animationSpec = tween(700))
+                                },
                             ) {
                                 composable(Destination.SPLASH_ROUTE) {
                                     LaunchedEffect(authState) {
@@ -449,6 +473,8 @@ fun MainNavigation(
                                                         subtitleStreamIndex = null,
                                                         startPositionMs = 0L,
                                                     )
+                                                } catch (e: CancellationException) {
+                                                    throw e
                                                 } catch (e: Exception) {
                                                     Timber.e(
                                                         e,
@@ -1091,6 +1117,14 @@ fun MainNavigation(
                                     )
                                 }
 
+                                composable(Destination.STORAGE_SETTINGS_ROUTE) {
+                                    StorageSettingsScreen(
+                                        onBackClick =
+                                            dropUnlessResumed { navController.popBackStack() },
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                }
+
                                 composable(Destination.PLAYER_OPTIONS_ROUTE) {
                                     PlayerOptionsScreen(
                                         onBackClick =
@@ -1102,7 +1136,13 @@ fun MainNavigation(
                                 composable(Destination.APPEARANCE_OPTIONS_ROUTE) {
                                     AppearanceOptionsScreen(
                                         onBackClick =
-                                            dropUnlessResumed { navController.popBackStack() }
+                                            dropUnlessResumed { navController.popBackStack() },
+                                        onCustomSectionsClick =
+                                            dropUnlessResumed {
+                                                navController.navigate(
+                                                    Destination.CUSTOM_SECTIONS_ROUTE
+                                                )
+                                            },
                                     )
                                 }
 
@@ -1115,6 +1155,13 @@ fun MainNavigation(
 
                                 composable(Destination.LICENSES_ROUTE) {
                                     LicensesScreen(
+                                        onBackClick =
+                                            dropUnlessResumed { navController.popBackStack() }
+                                    )
+                                }
+
+                                composable(Destination.LOGS_ROUTE) {
+                                    LogViewerScreen(
                                         onBackClick =
                                             dropUnlessResumed { navController.popBackStack() }
                                     )
@@ -1308,6 +1355,11 @@ fun MainNavigation(
                                                 defaultValue = null
                                             },
                                             navArgument("genreId") {
+                                                type = NavType.StringType
+                                                nullable = true
+                                                defaultValue = null
+                                            },
+                                            navArgument("libraryId") {
                                                 type = NavType.StringType
                                                 nullable = true
                                                 defaultValue = null
@@ -1653,6 +1705,62 @@ fun MainNavigation(
     }
     if (!isPreAuth) {
         GlobalUpdateDialog(updateManager = updateManager)
+
+        val needsLocalNetworkPermission by
+            mainViewModel.needsLocalNetworkPermission.collectAsStateWithLifecycle()
+
+        if (needsLocalNetworkPermission) {
+            AlertDialog(
+                onDismissRequest = mainViewModel::dismissLocalNetworkPermissionPrompt,
+                title = { Text(text = stringResource(R.string.local_network_permission_title)) },
+                text = {
+                    Text(text = stringResource(R.string.local_network_permission_offline_body))
+                },
+                confirmButton = {
+                    LocalNetworkPermissionGrantButton(
+                        onGranted = mainViewModel::onLocalNetworkPermissionGranted
+                    )
+                },
+                dismissButton = {
+                    TextButton(onClick = mainViewModel::dismissLocalNetworkPermissionPrompt) {
+                        Text(text = stringResource(R.string.action_cancel))
+                    }
+                },
+            )
+        }
+
+        val unsupportedServerVersion by
+            viewModel.unsupportedServerVersion.collectAsStateWithLifecycle()
+
+        val onEscapeRoute =
+            currentRoute == Destination.SERVER_MANAGEMENT_ROUTE ||
+                currentRoute == Destination.ADD_EDIT_SERVER_ROUTE
+
+        if (unsupportedServerVersion != null && !onEscapeRoute) {
+            var showSessionSwitcher by rememberSaveable { mutableStateOf(false) }
+            val sessionSwitcherSheetState = rememberModalBottomSheetState()
+
+            UnsupportedServerDialog(
+                version = unsupportedServerVersion,
+                onSwitchAccount = { showSessionSwitcher = true },
+                onServerSettings = {
+                    navController.navigate(Destination.createServerManagementRoute())
+                },
+            )
+
+            if (showSessionSwitcher) {
+                SessionSwitcherBottomSheet(
+                    onDismiss = { showSessionSwitcher = false },
+                    onAddAccountClick = { server ->
+                        showSessionSwitcher = false
+                        navController.navigate(
+                            Destination.createLoginRoute(serverUrl = server.address)
+                        )
+                    },
+                    sheetState = sessionSwitcherSheetState,
+                )
+            }
+        }
     }
 }
 

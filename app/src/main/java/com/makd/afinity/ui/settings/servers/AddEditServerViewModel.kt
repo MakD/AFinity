@@ -10,15 +10,17 @@ import com.makd.afinity.data.models.server.ServerAddress
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.data.repository.server.ServerRepository
+import com.makd.afinity.util.LocalNetworkPermission
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
 
 data class AddEditServerState(
     val serverId: String? = null,
@@ -31,6 +33,7 @@ data class AddEditServerState(
     val saveSuccess: Boolean = false,
     val duplicateServerDetected: Boolean = false,
     val duplicateServerName: String? = null,
+    val needsLocalNetworkPermission: Boolean = false,
 )
 
 sealed class ConnectionTestResult {
@@ -48,11 +51,19 @@ constructor(
     @param:ApplicationContext private val context: Context,
     private val serverRepository: ServerRepository,
     private val databaseRepository: DatabaseRepository,
+    private val localNetworkPermission: LocalNetworkPermission,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     private val serverId: String? =
         savedStateHandle.get<String>("serverId")?.takeIf { it != "null" }
+
+    fun onLocalNetworkPermissionGranted() {
+        localNetworkPermission.refresh()
+        _state.value =
+            _state.value.copy(needsLocalNetworkPermission = false, connectionTestResult = null)
+        testConnection()
+    }
 
     private val _state = MutableStateFlow(AddEditServerState(serverId = serverId))
     val state: StateFlow<AddEditServerState> = _state.asStateFlow()
@@ -69,6 +80,8 @@ constructor(
                     _state.value =
                         _state.value.copy(serverUrl = server.address, serverName = server.name)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error loading server")
                 _state.value =
@@ -80,7 +93,12 @@ constructor(
     }
 
     fun updateServerUrl(url: String) {
-        _state.value = _state.value.copy(serverUrl = url, connectionTestResult = null)
+        _state.value =
+            _state.value.copy(
+                serverUrl = url,
+                connectionTestResult = null,
+                needsLocalNetworkPermission = false,
+            )
     }
 
     fun updateServerName(name: String) {
@@ -136,7 +154,22 @@ constructor(
                                 connectionTestResult = ConnectionTestResult.Error(result.message),
                             )
                     }
+
+                    JellyfinServerRepository.ServerConnectionResult
+                        .LocalNetworkPermissionRequired -> {
+                        _state.value =
+                            _state.value.copy(
+                                isTestingConnection = false,
+                                connectionTestResult =
+                                    ConnectionTestResult.Error(
+                                        context.getString(R.string.local_network_permission_needed)
+                                    ),
+                                needsLocalNetworkPermission = true,
+                            )
+                    }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error testing connection")
                 _state.value =
@@ -254,6 +287,8 @@ constructor(
                 }
 
                 _state.value = _state.value.copy(isSaving = false, saveSuccess = true)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error saving server")
                 _state.value =

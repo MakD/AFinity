@@ -20,13 +20,13 @@ import com.makd.afinity.data.models.media.LibraryFilterOptions
 import com.makd.afinity.data.models.media.LibraryFilters
 import com.makd.afinity.data.models.music.AfinityPlaylistContents
 import com.makd.afinity.data.models.omdb.OmdbApiResult
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
-import java.util.UUID
 
 interface MediaRepository {
 
@@ -110,6 +110,8 @@ interface MediaRepository {
     ): Result<BaseItemDtoQueryResult>
 
     suspend fun getItem(itemId: UUID, fields: List<ItemFields>? = null): BaseItemDto?
+
+    suspend fun getItemDetail(itemId: UUID): BaseItemDto?
 
     suspend fun getPlaylistItems(
         playlistId: UUID,
@@ -213,6 +215,8 @@ interface MediaRepository {
 
     suspend fun getFavoriteMedia(fields: List<ItemFields>? = null): List<AfinityItem>
 
+    suspend fun getFavoriteMediaResult(fields: List<ItemFields>? = null): Result<List<AfinityItem>>
+
     suspend fun getGenres(
         parentId: UUID? = null,
         limit: Int? = null,
@@ -260,6 +264,8 @@ interface MediaRepository {
 
     suspend fun getPerson(personId: UUID): AfinityPersonDetail?
 
+    suspend fun getPersonResult(personId: UUID): Result<AfinityPersonDetail?>
+
     suspend fun getPersonWithoutRefresh(
         personId: UUID,
         fields: List<ItemFields>? = null,
@@ -283,8 +289,6 @@ interface MediaRepository {
         fields: List<ItemFields>? = null,
     ): List<AfinityBoxSet>
 
-    suspend fun ensureBoxSetCacheBuilt()
-
     suspend fun getBoxSetsForSpotlight(
         minChildCount: Int = 3,
         maxBoxSets: Int = 15,
@@ -297,7 +301,6 @@ interface MediaRepository {
         sortDescending: Boolean,
         filters: LibraryFilters,
         nameStartsWith: String? = null,
-        fields: List<ItemFields>? = null,
         studioNames: List<String> = emptyList(),
         includeItemTypes: List<String>? = null,
         onSourceCreated: ((PagingSource<Int, AfinityItem>) -> Unit)? = null,

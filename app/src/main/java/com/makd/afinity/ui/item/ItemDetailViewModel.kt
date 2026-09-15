@@ -67,6 +67,9 @@ import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
+import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -97,9 +100,6 @@ import kotlinx.coroutines.yield
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import kotlin.coroutines.cancellation.CancellationException
 
 private const val POPULATED_METADATA_TTL_MS = 48L * 60L * 60L * 1000L
 private const val EMPTY_METADATA_TTL_MS = 6L * 60L * 60L * 1000L
@@ -164,6 +164,11 @@ constructor(
 
     private var bulkDownloadJob: Job? = null
     private var itemLastLoadedAt = 0L
+    private var itemLastServerFetchAt = 0L
+
+    private companion object {
+        const val SERVER_SYNC_FRESHNESS_MS = 3_000L
+    }
 
     private val _uiState = MutableStateFlow(ItemDetailUiState())
     val uiState: StateFlow<ItemDetailUiState> = _uiState.asStateFlow()
@@ -196,6 +201,8 @@ constructor(
                         fields = FieldSets.MEDIA_ITEM_CARDS,
                     )
                 _uiState.update { it.copy(containingBoxSets = boxSets) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load containing BoxSets in init")
             }
@@ -238,9 +245,7 @@ constructor(
 
         viewModelScope.launch {
             adminChangeBroadcaster.changes
-                .filter {
-                    it.itemId == itemId.toString() && it.kind != AdminChangeKind.IMAGES
-                }
+                .filter { it.itemId == itemId.toString() && it.kind != AdminChangeKind.IMAGES }
                 .collect { forceReloadFromServer() }
         }
 
@@ -364,6 +369,8 @@ constructor(
                                             }
                                         }
                                     }
+                                } catch (e: CancellationException) {
+                                    throw e
                                 } catch (e: Exception) {
                                     Timber.e(
                                         e,
@@ -387,18 +394,28 @@ constructor(
 
                     if (item.id == currentItem.id) {
                         _uiState.update { it.copy(item = item) }
-                        launch {
-                            try {
-                                val freshBoxSets =
-                                    mediaRepository.getBoxSetsContaining(
-                                        itemId = currentItem.id,
-                                        fields = FieldSets.MEDIA_ITEM_CARDS,
-                                    )
-                                if (freshBoxSets != _uiState.value.containingBoxSets) {
-                                    _uiState.update { it.copy(containingBoxSets = freshBoxSets) }
+                        val membershipMayHaveChanged =
+                            event.source != MediaChangeSource.PLAYBACK &&
+                                event.userData == null &&
+                                event.patch == null
+                        if (membershipMayHaveChanged) {
+                            launch {
+                                try {
+                                    val freshBoxSets =
+                                        mediaRepository.getBoxSetsContaining(
+                                            itemId = currentItem.id,
+                                            fields = FieldSets.MEDIA_ITEM_CARDS,
+                                        )
+                                    if (freshBoxSets != _uiState.value.containingBoxSets) {
+                                        _uiState.update {
+                                            it.copy(containingBoxSets = freshBoxSets)
+                                        }
+                                    }
+                                } catch (e: CancellationException) {
+                                    throw e
+                                } catch (e: Exception) {
+                                    Timber.e(e, "Failed to refresh containing BoxSets")
                                 }
-                            } catch (e: Exception) {
-                                Timber.e(e, "Failed to refresh containing BoxSets")
                             }
                         }
                     }
@@ -463,6 +480,8 @@ constructor(
                             mediaChangeManager.notifyItemChanged(currentItem.id, null, null)
                         }
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed background patch for series/season/boxset counts")
                 }
@@ -487,6 +506,8 @@ constructor(
                                 downloadUnavailable = unavailable,
                             )
                     }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 Timber.e(e, "Failed to observe download status")
@@ -578,7 +599,7 @@ constructor(
     private fun refreshFromCacheImmediate(skipNetworkSync: Boolean = false) {
         viewModelScope.launch {
             try {
-                val cachedItem = mediaRepository.getItemById(itemId)
+                val cachedItem = loadItemFromDatabase()
                 if (cachedItem != null) {
                     val resolvedItem =
                         if (cachedItem is AfinitySeason && cachedItem.runtimeTicks == 0L) {
@@ -592,55 +613,16 @@ constructor(
                         _uiState.update { state -> state.copy(item = resolvedItem) }
                     }
 
-                    when (resolvedItem) {
-                        is AfinityShow -> {
-                            launch {
-                                try {
-                                    val nextEpisode =
-                                        mediaRepository.getEpisodeToPlay(resolvedItem.id)
-                                    if (nextEpisode != _uiState.value.nextEpisode) {
-                                        _uiState.update { it.copy(nextEpisode = nextEpisode) }
-                                    }
-                                } catch (e: Exception) {
-                                    Timber.w(e, "Failed to get next episode")
-                                }
-                            }
-                            launch {
-                                try {
-                                    val seasons = mediaRepository.getSeasons(resolvedItem.id)
-                                    if (seasons != _uiState.value.seasons) {
-                                        _uiState.update {
-                                            it.copy(seasons = itemStore.merge(seasons))
-                                        }
-                                    }
-                                } catch (e: Exception) {
-                                    Timber.w(e, "Failed to get seasons")
-                                }
-                            }
-                        }
-                        is AfinitySeason -> {
-                            launch {
-                                try {
-                                    val nextEpisode =
-                                        mediaRepository.getEpisodeToPlayForSeason(
-                                            resolvedItem.id,
-                                            resolvedItem.seriesId,
-                                        )
-                                    if (nextEpisode != _uiState.value.nextEpisode) {
-                                        _uiState.update { it.copy(nextEpisode = nextEpisode) }
-                                    }
-                                } catch (e: Exception) {
-                                    Timber.w(e, "Failed to get next episode for season")
-                                }
-                            }
-                        }
-                        is AfinityBoxSet -> loadBoxSetItems(resolvedItem.id)
+                    if (resolvedItem is AfinityBoxSet) {
+                        loadBoxSetItems(resolvedItem.id)
                     }
                 }
 
                 if (!skipNetworkSync) {
                     launch { syncWithServerInBackground() }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh from cache")
             }
@@ -648,10 +630,14 @@ constructor(
     }
 
     private suspend fun syncWithServerInBackground() {
+        if (System.currentTimeMillis() - itemLastServerFetchAt < SERVER_SYNC_FRESHNESS_MS) {
+            Timber.d("Skipping background sync — item fetched from server moments ago")
+            return
+        }
         try {
+            itemLastServerFetchAt = System.currentTimeMillis()
             val serverItem =
-                mediaRepository.getItem(itemId, fields = FieldSets.ITEM_DETAIL)?.let { baseItemDto
-                    ->
+                mediaRepository.getItemDetail(itemId)?.let { baseItemDto ->
                     when (baseItemDto.type) {
                         BaseItemKind.MOVIE ->
                             baseItemDto.toAfinityMovie(mediaRepository.getBaseUrl(), null)
@@ -688,24 +674,36 @@ constructor(
                 }
 
                 when (serverItem) {
-                    is AfinityShow -> {
-                        try {
-                            val nextEpisode = mediaRepository.getEpisodeToPlay(serverItem.id)
-                            if (nextEpisode != _uiState.value.nextEpisode) {
-                                _uiState.update { it.copy(nextEpisode = nextEpisode) }
+                    is AfinityShow ->
+                        coroutineScope {
+                            launch {
+                                try {
+                                    val nextEpisode =
+                                        mediaRepository.getEpisodeToPlay(serverItem.id)
+                                    if (nextEpisode != _uiState.value.nextEpisode) {
+                                        _uiState.update { it.copy(nextEpisode = nextEpisode) }
+                                    }
+                                } catch (e: CancellationException) {
+                                    throw e
+                                } catch (e: Exception) {
+                                    Timber.w(e, "Failed to refresh next episode in background sync")
+                                }
                             }
-                        } catch (e: Exception) {
-                            Timber.w(e, "Failed to refresh next episode in background sync")
-                        }
-                        try {
-                            val seasons = mediaRepository.getSeasons(serverItem.id)
-                            if (seasons != _uiState.value.seasons) {
-                                _uiState.update { it.copy(seasons = itemStore.merge(seasons)) }
+                            launch {
+                                try {
+                                    val seasons = mediaRepository.getSeasons(serverItem.id)
+                                    if (seasons != _uiState.value.seasons) {
+                                        _uiState.update {
+                                            it.copy(seasons = itemStore.merge(seasons))
+                                        }
+                                    }
+                                } catch (e: CancellationException) {
+                                    throw e
+                                } catch (e: Exception) {
+                                    Timber.w(e, "Failed to refresh seasons in background sync")
+                                }
                             }
-                        } catch (e: Exception) {
-                            Timber.w(e, "Failed to refresh seasons in background sync")
                         }
-                    }
                     is AfinitySeason -> {
                         try {
                             val nextEpisode =
@@ -716,12 +714,16 @@ constructor(
                             if (nextEpisode != _uiState.value.nextEpisode) {
                                 _uiState.update { it.copy(nextEpisode = nextEpisode) }
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.w(e, "Failed to refresh next episode in background sync")
                         }
                     }
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Background server sync failed (non-critical)")
         }
@@ -762,6 +764,8 @@ constructor(
                     else item
                 }
                 _uiState.value = _uiState.value.copy(boxSetItems = itemStore.merge(items))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load boxset items")
             }
@@ -774,16 +778,19 @@ constructor(
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)
                 val isOffline = offlineModeManager.isCurrentlyOffline()
                 val hasInternet = offlineModeManager.isInternetAvailable()
-                if (!isOffline) {
-                    launchParallelFetches()
+
+                if (!isOffline && itemType?.uppercase() in setOf("SERIES", "SEASON")) {
+                    fetchNextUp()
                 }
 
+                var specialFeatureCount = 0
                 val item =
                     if (isOffline) {
                         loadItemFromDatabase()
                     } else {
-                        mediaRepository.getItem(itemId, fields = FieldSets.ITEM_DETAIL)?.let {
-                            baseItemDto ->
+                        mediaRepository.getItemDetail(itemId)?.let { baseItemDto ->
+                            specialFeatureCount = baseItemDto.specialFeatureCount ?: 0
+                            itemLastServerFetchAt = System.currentTimeMillis()
                             when (baseItemDto.type) {
                                 BaseItemKind.MOVIE ->
                                     baseItemDto.toAfinityMovie(mediaRepository.getBaseUrl(), null)
@@ -833,6 +840,10 @@ constructor(
 
                 _uiState.value = _uiState.value.copy(item = item, isLoading = false)
                 itemLastLoadedAt = System.currentTimeMillis()
+
+                if (!isOffline) {
+                    launchParallelFetches(specialFeatureCount)
+                }
 
                 if (!isOffline) {
                     val nextEpisodeFetchCovered =
@@ -886,6 +897,8 @@ constructor(
                                 if (parts.isNotEmpty()) {
                                     _uiState.update { it.copy(movieParts = parts) }
                                 }
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 Timber.e(e, "Failed to fetch movie parts")
                             }
@@ -926,6 +939,8 @@ constructor(
                         }
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value =
                     _uiState.value.copy(
@@ -937,14 +952,15 @@ constructor(
         }
     }
 
-    private fun launchParallelFetches() {
+    private fun launchParallelFetches(specialFeatureCount: Int) {
         when (itemType?.uppercase()) {
             "SERIES" -> {
-                fetchNextUp()
                 viewModelScope.launch {
                     try {
                         val similar = mediaRepository.getSimilarItems(itemId)
                         _uiState.update { it.copy(similarItems = itemStore.merge(similar)) }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to get similar items")
                     }
@@ -953,31 +969,40 @@ constructor(
                     try {
                         val seasons = mediaRepository.getSeasons(itemId)
                         _uiState.update { it.copy(seasons = itemStore.merge(seasons)) }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to get seasons")
                     }
                 }
-                viewModelScope.launch {
-                    try {
-                        getCurrentUserId()?.let { id ->
-                            val features = mediaRepository.getSpecialFeatures(itemId, id)
-                            _uiState.update { it.copy(specialFeatures = features) }
+                if (specialFeatureCount > 0) {
+                    viewModelScope.launch {
+                        try {
+                            getCurrentUserId()?.let { id ->
+                                val features = mediaRepository.getSpecialFeatures(itemId, id)
+                                _uiState.update { it.copy(specialFeatures = features) }
+                            }
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to get special features")
                         }
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to get special features")
                     }
                 }
             }
             "SEASON" -> {
-                fetchNextUp()
-                viewModelScope.launch {
-                    try {
-                        getCurrentUserId()?.let { id ->
-                            val features = mediaRepository.getSpecialFeatures(itemId, id)
-                            _uiState.update { it.copy(specialFeatures = features) }
+                if (specialFeatureCount > 0) {
+                    viewModelScope.launch {
+                        try {
+                            getCurrentUserId()?.let { id ->
+                                val features = mediaRepository.getSpecialFeatures(itemId, id)
+                                _uiState.update { it.copy(specialFeatures = features) }
+                            }
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to get special features")
                         }
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to get special features")
                     }
                 }
                 if (seriesId != null) {
@@ -1003,6 +1028,8 @@ constructor(
                                 _episodesPagingData.value = patchedFlow
                                 _uiState.update { it.copy(episodesPagingData = patchedFlow) }
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.e(e, "Failed to get episodes flow")
                         }
@@ -1015,18 +1042,24 @@ constructor(
                     try {
                         val similar = mediaRepository.getSimilarItems(itemId)
                         _uiState.update { it.copy(similarItems = itemStore.merge(similar)) }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to get similar items")
                     }
                 }
-                viewModelScope.launch {
-                    try {
-                        getCurrentUserId()?.let { id ->
-                            val features = mediaRepository.getSpecialFeatures(itemId, id)
-                            _uiState.update { it.copy(specialFeatures = features) }
+                if (specialFeatureCount > 0) {
+                    viewModelScope.launch {
+                        try {
+                            getCurrentUserId()?.let { id ->
+                                val features = mediaRepository.getSpecialFeatures(itemId, id)
+                                _uiState.update { it.copy(specialFeatures = features) }
+                            }
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to get special features")
                         }
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to get special features")
                     }
                 }
             }
@@ -1049,6 +1082,8 @@ constructor(
                 if (nextEp != null) {
                     _uiState.update { it.copy(nextEpisode = nextEp) }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to fetch parallel next episode")
             }
@@ -1068,6 +1103,8 @@ constructor(
                 if (nextEp != null && nextEp != _uiState.value.nextEpisode) {
                     _uiState.update { it.copy(nextEpisode = nextEp) }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to fetch next episode for item: ${item.id}")
             }
@@ -1196,6 +1233,8 @@ constructor(
                                 } else {
                                     emptyList()
                                 }
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 emptyList()
                             }
@@ -1245,6 +1284,8 @@ constructor(
                     )
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load reviews/ratings")
             _uiState.update { it.copy(isLoadingReviews = false) }
@@ -1605,6 +1646,8 @@ constructor(
                 } else {
                     _uiState.update { it.copy(item = currentItem) }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error toggling watched status")
                 _uiState.update { it.copy(item = currentItem) }
@@ -1644,6 +1687,8 @@ constructor(
                 if (!success) {
                     _selectedEpisode.value = episode
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error toggling episode watched status")
                 _selectedEpisode.value = episode

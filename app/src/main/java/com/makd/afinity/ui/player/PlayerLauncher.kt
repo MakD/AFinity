@@ -3,8 +3,8 @@ package com.makd.afinity.ui.player
 import android.content.Context
 import android.content.Intent
 import androidx.media3.common.util.UnstableApi
-import timber.log.Timber
 import java.util.UUID
+import timber.log.Timber
 
 object PlayerLauncher {
 

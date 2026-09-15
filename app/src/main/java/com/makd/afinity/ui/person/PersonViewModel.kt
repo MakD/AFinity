@@ -23,6 +23,9 @@ import com.makd.afinity.data.repository.wikidata.WikidataAwardsRepository
 import com.makd.afinity.data.store.ItemStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,8 +34,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
 
 @HiltViewModel
 class PersonViewModel
@@ -163,7 +164,7 @@ constructor(
                             includeItemTypes = listOf("Movie", "Series"),
                         )
                     }
-                    val refreshedDeferred = async { mediaRepository.getPerson(personId) }
+                    val refreshedDeferred = async { mediaRepository.getPersonResult(personId) }
 
                     storedDeferred.await()?.let { stored ->
                         _uiState.update { currentState ->
@@ -177,13 +178,32 @@ constructor(
                     val personItems = itemsDeferred.await()
                     _uiState.update { currentState ->
                         currentState.copy(
-                            movies =
-                                itemStore.merge(personItems.filterIsInstance<AfinityMovie>()),
+                            movies = itemStore.merge(personItems.filterIsInstance<AfinityMovie>()),
                             shows = itemStore.merge(personItems.filterIsInstance<AfinityShow>()),
                         )
                     }
 
-                    val person = refreshedDeferred.await() ?: _uiState.value.person
+                    val refreshed =
+                        refreshedDeferred.await().getOrElse { e ->
+                            if (e is CancellationException) throw e
+                            Timber.e(e, "Failed to refresh person details: $personId")
+                            val known = _uiState.value.person
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    error =
+                                        if (known != null) null
+                                        else
+                                            context.getString(
+                                                R.string.error_failed_load_person_fmt,
+                                                e.message ?: "",
+                                            ),
+                                )
+                            }
+                            return@coroutineScope
+                        }
+
+                    val person = refreshed ?: _uiState.value.person
                     if (person == null) {
                         _uiState.update {
                             it.copy(
@@ -205,6 +225,8 @@ constructor(
                         }
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load person details: $personId")
                 _uiState.update { currentState ->
@@ -278,6 +300,8 @@ constructor(
                 } else {
                     appDataRepository.reloadFavorites()
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error toggling favorite")
                 _uiState.update { currentState ->

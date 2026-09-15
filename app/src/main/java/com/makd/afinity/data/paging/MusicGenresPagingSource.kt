@@ -4,8 +4,9 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.makd.afinity.data.models.music.AfinityMusicGenre
 import com.makd.afinity.data.repository.music.MusicRepository
-import timber.log.Timber
 import java.util.UUID
+import kotlinx.coroutines.CancellationException
+import timber.log.Timber
 
 class MusicGenresPagingSource(
     private val musicRepository: MusicRepository,
@@ -30,6 +31,8 @@ class MusicGenresPagingSource(
                 prevKey = if (page == 0) null else page - 1,
                 nextKey = if (items.size < PAGE_SIZE) null else page + 1,
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load genres page")
             LoadResult.Error(e)

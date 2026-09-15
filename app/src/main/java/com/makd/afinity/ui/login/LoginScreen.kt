@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.login
 
-import android.content.res.Configuration
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
@@ -13,7 +12,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -70,7 +69,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalAutofillManager
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -95,7 +93,10 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.ForgetAccountDialog
 import com.makd.afinity.ui.components.LoadingButton
+import com.makd.afinity.ui.components.LocalNetworkPermissionCard
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.util.isInsecurePublicUrl
 
 enum class LoginMethod {
@@ -124,6 +125,15 @@ fun LoginScreen(
         )
     val savedServers by viewModel.savedServers.collectAsStateWithLifecycle()
     val savedUsers by viewModel.savedUsers.collectAsStateWithLifecycle()
+    var userToForget by remember { mutableStateOf<User?>(null) }
+
+    userToForget?.let { user ->
+        ForgetAccountDialog(
+            userName = user.name,
+            onConfirm = { viewModel.forgetSavedUser(user) },
+            onDismiss = { userToForget = null },
+        )
+    }
 
     var selectedLoginMethod by remember { mutableStateOf(LoginMethod.PASSWORD) }
 
@@ -135,8 +145,7 @@ fun LoginScreen(
         }
     }
 
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
     val isExpanded = widthSizeClass == WindowWidthSizeClass.Expanded
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -185,6 +194,10 @@ fun LoginScreen(
                                         viewModel.connectToServer()
                                     },
                                     onDiscoverServers = viewModel::discoverServers,
+                                    needsLocalNetworkPermission =
+                                        loginState.uiState.needsLocalNetworkPermission,
+                                    onLocalNetworkPermissionGranted =
+                                        viewModel::onLocalNetworkPermissionGranted,
                                 )
                                 Spacer(modifier = Modifier.height(expandedBottomSpacer))
                             }
@@ -248,6 +261,7 @@ fun LoginScreen(
                                     onMethodChange = { selectedLoginMethod = it },
                                     onUserSelect = viewModel::selectUser,
                                     onSavedUserLogin = viewModel::loginWithSavedUser,
+                                    onForgetSavedUser = { userToForget = it },
                                 )
                                 Spacer(modifier = Modifier.height(expandedBottomSpacer))
                             }
@@ -343,6 +357,10 @@ fun LoginScreen(
                                         viewModel.connectToServer()
                                     },
                                     onDiscoverServers = viewModel::discoverServers,
+                                    needsLocalNetworkPermission =
+                                        loginState.uiState.needsLocalNetworkPermission,
+                                    onLocalNetworkPermissionGranted =
+                                        viewModel::onLocalNetworkPermissionGranted,
                                 )
                             }
                         } else {
@@ -360,6 +378,7 @@ fun LoginScreen(
                                     onMethodChange = { selectedLoginMethod = it },
                                     onUserSelect = viewModel::selectUser,
                                     onSavedUserLogin = viewModel::loginWithSavedUser,
+                                    onForgetSavedUser = { userToForget = it },
                                 )
                                 Spacer(modifier = Modifier.height(24.dp))
                                 UserLoginForms(
@@ -633,6 +652,8 @@ private fun LocalDiscoveryContent(
     isDiscovering: Boolean,
     onDiscoveredServerSelect: (Server) -> Unit,
     onDiscoverServers: () -> Unit,
+    needsLocalNetworkPermission: Boolean = false,
+    onLocalNetworkPermissionGranted: () -> Unit = {},
 ) {
     Column {
         Row(
@@ -660,6 +681,13 @@ private fun LocalDiscoveryContent(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
+
+        if (needsLocalNetworkPermission) {
+            LocalNetworkPermissionCard(
+                onGranted = onLocalNetworkPermissionGranted,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+        }
 
         if (discoveredServers.isNotEmpty()) {
             discoveredServers.forEach { server ->
@@ -766,6 +794,7 @@ private fun UserSelectionAndTabs(
     onMethodChange: (LoginMethod) -> Unit,
     onUserSelect: (User) -> Unit,
     onSavedUserLogin: (User) -> Unit,
+    onForgetSavedUser: (User) -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
         val allUsers = (savedUsers + publicUsers).distinctBy { it.id }
@@ -778,19 +807,20 @@ private fun UserSelectionAndTabs(
             ) {
                 items(allUsers, key = { it.id.toString() }) { user ->
                     val isSelected = uiState.selectedUser?.id == user.id
+                    val isSaved = savedUsers.any { it.id == user.id }
                     UserAvatarItem(
                         user = user,
                         isSelected = isSelected,
                         serverUrl = serverUrl,
                         onClick = {
                             if (!uiState.isLoggingIn) {
-                                if (savedUsers.any { it.id == user.id }) {
-                                    onSavedUserLogin(user)
-                                } else {
-                                    onUserSelect(user)
-                                }
+                                if (isSaved) onSavedUserLogin(user) else onUserSelect(user)
                             }
                         },
+                        onLongClick =
+                            if (isSaved && !uiState.isLoggingIn) {
+                                { onForgetSavedUser(user) }
+                            } else null,
                     )
                 }
             }
@@ -851,6 +881,7 @@ private fun UserAvatarItem(
     isSelected: Boolean,
     serverUrl: String,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)?,
 ) {
     val imageUrl =
         user.primaryImageTag?.let {
@@ -861,7 +892,12 @@ private fun UserAvatarItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier =
             Modifier.width(84.dp)
-                .clickable(interactionSource = null, indication = null, onClick = onClick),
+                .combinedClickable(
+                    interactionSource = null,
+                    indication = null,
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                ),
     ) {
         Box(
             modifier =

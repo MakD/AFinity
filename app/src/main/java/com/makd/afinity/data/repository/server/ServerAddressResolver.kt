@@ -1,6 +1,7 @@
 package com.makd.afinity.data.repository.server
 
 import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.util.LocalNetworkPermission
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import com.makd.afinity.util.NetworkLocality
 import com.makd.afinity.util.probeAddresses
@@ -12,6 +13,9 @@ sealed class AddressResolutionResult {
 
     data class AllFailed(val serverId: String, val attemptedAddresses: List<String>) :
         AddressResolutionResult()
+
+    data class PermissionRequired(val serverId: String, val attemptedAddresses: List<String>) :
+        AddressResolutionResult()
 }
 
 @Singleton
@@ -22,6 +26,7 @@ constructor(
     private val serverRepository: ServerRepository,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
     private val networkLocality: NetworkLocality,
+    private val localNetworkPermission: LocalNetworkPermission,
 ) {
 
     suspend fun resolveAddress(serverId: String): AddressResolutionResult =
@@ -45,19 +50,22 @@ constructor(
                 .filter { it != primaryAddress }
         val addressesToTry = listOf(primaryAddress) + alternateAddresses
 
+        val onLocalNetwork = networkConnectivityMonitor.isOnLocalNetwork()
+
         val bestAddress =
             probeAddresses(
                 addresses = addressesToTry,
-                preferLocal = networkConnectivityMonitor.isOnLocalNetwork(),
+                preferLocal = onLocalNetwork,
                 logTag = "Jellyfin",
                 networkLocality = networkLocality,
                 validator = validator,
             )
 
-        return if (bestAddress != null) {
-            AddressResolutionResult.Success(bestAddress, serverId)
-        } else {
-            AddressResolutionResult.AllFailed(serverId, addressesToTry)
+        return when {
+            bestAddress != null -> AddressResolutionResult.Success(bestAddress, serverId)
+            localNetworkPermission.mayExplainFailure(addressesToTry, onLocalNetwork) ->
+                AddressResolutionResult.PermissionRequired(serverId, addressesToTry)
+            else -> AddressResolutionResult.AllFailed(serverId, addressesToTry)
         }
     }
 }

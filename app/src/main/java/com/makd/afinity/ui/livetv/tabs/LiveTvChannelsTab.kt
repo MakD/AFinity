@@ -40,13 +40,13 @@ import com.makd.afinity.ui.livetv.components.ChannelCard
 
 @Composable
 fun LiveTvChannelsTab(
+    modifier: Modifier = Modifier,
     uiState: LiveTvUiState,
     onChannelClick: (AfinityChannel) -> Unit,
     onFavoriteClick: (AfinityChannel) -> Unit,
     selectedLetter: String? = null,
     onLetterSelected: (String) -> Unit = {},
     onClearFilter: () -> Unit = {},
-    modifier: Modifier = Modifier,
 ) {
     if (uiState.isLoading) {
         FullScreenLoading(modifier = modifier)
@@ -66,7 +66,7 @@ fun LiveTvChannelsTab(
                                 text =
                                     stringResource(
                                         R.string.livetv_empty_letter_fmt,
-                                        selectedLetter ?: "",
+                                        selectedLetter,
                                     ),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,

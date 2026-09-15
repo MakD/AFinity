@@ -10,18 +10,16 @@ import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MusicFilterOptions
 import com.makd.afinity.data.models.music.MusicFilters
 import com.makd.afinity.data.models.music.MusicSearchResults
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.MediaType
 import org.jellyfin.sdk.model.api.SortOrder
-import java.util.UUID
 
 interface MusicRepository {
 
     fun getBaseUrl(): String
-
-    fun getStreamUrl(trackId: UUID): String
 
     suspend fun getTracks(
         libraryId: UUID,
@@ -51,6 +49,7 @@ interface MusicRepository {
         startIndex: Int = 0,
         limit: Int = 50,
         nameStartsWith: String? = null,
+        albumArtistsOnly: Boolean = true,
     ): List<AfinityArtist>
 
     suspend fun getMusicFilterOptions(
@@ -66,7 +65,11 @@ interface MusicRepository {
 
     suspend fun getArtistsByIds(artistIds: List<UUID>): List<AfinityArtist>
 
-    suspend fun getArtistAlbums(artistId: UUID, libraryId: UUID? = null): List<AfinityAlbum>
+    suspend fun getArtistAlbums(
+        artistId: UUID,
+        libraryId: UUID? = null,
+        excludeAlbumId: UUID? = null,
+    ): List<AfinityAlbum>
 
     suspend fun getArtistTopTracks(
         artistId: UUID,
@@ -85,6 +88,8 @@ interface MusicRepository {
     fun invalidatePlaylistsCache()
 
     suspend fun getPlaylistById(playlistId: UUID): AfinityPlaylist?
+
+    suspend fun getPlaylistByIdResult(playlistId: UUID): Result<AfinityPlaylist?>
 
     suspend fun getPlaylistContents(playlistId: UUID): AfinityPlaylistContents
 
@@ -105,7 +110,11 @@ interface MusicRepository {
 
     suspend fun getArtistRadio(artistId: UUID, limit: Int = 50): List<AfinityTrack>
 
-    suspend fun getSimilarAlbums(itemId: UUID, limit: Int = 5): List<AfinityAlbum>
+    suspend fun getSimilarAlbums(
+        itemId: UUID,
+        limit: Int = 5,
+        excludeArtistId: UUID? = null,
+    ): List<AfinityAlbum>
 
     suspend fun getLyrics(trackId: UUID): List<AfinityLyricLine>
 
@@ -117,7 +126,7 @@ interface MusicRepository {
 
     suspend fun getRecentlyAddedAlbums(limit: Int = 15): List<AfinityAlbum>
 
-    suspend fun getMusicGenres(limit: Int = 10): List<AfinityMusicGenre>
+    suspend fun getMusicGenres(limit: Int = 10, parentId: UUID? = null): List<AfinityMusicGenre>
 
     suspend fun getAllMusicGenres(
         libraryId: UUID? = null,
@@ -125,18 +134,27 @@ interface MusicRepository {
         limit: Int = 100,
     ): List<AfinityMusicGenre>
 
-    suspend fun getAlbumsByGenre(genreName: String, limit: Int = 15): List<AfinityAlbum>
+    suspend fun getAlbumsByGenre(
+        genreName: String,
+        limit: Int = 15,
+        parentId: UUID? = null,
+    ): List<AfinityAlbum>
 
-    suspend fun getArtistsByGenre(genreName: String, limit: Int = 30): List<AfinityArtist>
+    suspend fun getArtistsByGenre(
+        genreName: String,
+        limit: Int = 30,
+        parentId: UUID? = null,
+    ): List<AfinityArtist>
 
     suspend fun getRecentlyAddedAlbumsByGenre(
         genreName: String,
         limit: Int = 12,
+        parentId: UUID? = null,
     ): List<AfinityAlbum>
 
-    suspend fun getFavoriteArtists(limit: Int = 10): List<AfinityArtist>
+    suspend fun getFavoriteArtists(limit: Int = 10, parentId: UUID? = null): List<AfinityArtist>
 
-    suspend fun getTopArtists(limit: Int = 10): List<AfinityArtist>
+    suspend fun getTopArtists(limit: Int = 10, parentId: UUID? = null): List<AfinityArtist>
 
     suspend fun getRecentlyPlayedAlbums(limit: Int = 15): List<AfinityAlbum>
 
@@ -148,9 +166,13 @@ interface MusicRepository {
 
     suspend fun getRandomAlbums(limit: Int = 15): List<AfinityAlbum>
 
-    suspend fun getRandomArtists(limit: Int = 20): List<AfinityArtist>
+    suspend fun getRandomArtists(limit: Int = 20, parentId: UUID? = null): List<AfinityArtist>
 
-    suspend fun getTracksByGenre(genreName: String, limit: Int = 15): List<AfinityTrack>
+    suspend fun getTracksByGenre(
+        genreName: String,
+        limit: Int = 15,
+        parentId: UUID? = null,
+    ): List<AfinityTrack>
 
     suspend fun getRandomTracks(limit: Int = 15): List<AfinityTrack>
 

@@ -3,13 +3,13 @@ package com.makd.afinity.player.audiobookshelf
 import com.makd.afinity.data.models.audiobookshelf.AudioTrack
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class AudiobookshelfPlaybackManager @Inject constructor() {
@@ -28,9 +28,8 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
     }
 
     fun setSession(session: PlaybackSession, serverUrl: String? = null, token: String? = null) {
-        android.util.Log.d(
-            "ABS-MiniPlayer",
-            "PlaybackManager.setSession: id=${session.id} title=${session.displayTitle} author=${session.displayAuthor}",
+        Timber.d(
+            "PlaybackManager.setSession: id=${session.id} title=${session.displayTitle} author=${session.displayAuthor}"
         )
         _currentSession.value = session
 
@@ -52,6 +51,7 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
                 duration = session.duration,
                 chapters = session.chapters ?: emptyList(),
                 audioTracks = session.audioTracks ?: emptyList(),
+                playMethod = session.playMethod,
                 displayTitle = session.displayTitle ?: "Unknown",
                 displayAuthor = session.displayAuthor,
                 coverUrl = coverUrl,
@@ -84,7 +84,23 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
     }
 
     fun setSleepTimer(endTimeMillis: Long?) {
-        _playbackState.update { it.copy(sleepTimerEndTime = endTimeMillis) }
+        _playbackState.update {
+            it.copy(
+                sleepTimerEndTime = endTimeMillis,
+                sleepTimerTargetSeconds = null,
+                sleepTimerChapterTarget = null,
+            )
+        }
+    }
+
+    fun setSleepTimerTarget(targetSeconds: Double?, chapterIndex: Int?) {
+        _playbackState.update {
+            it.copy(
+                sleepTimerEndTime = null,
+                sleepTimerTargetSeconds = targetSeconds,
+                sleepTimerChapterTarget = chapterIndex,
+            )
+        }
     }
 
     fun setPlaylistInfo(episodeIds: List<String>) {
@@ -134,20 +150,6 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
             currentTime >= chapter.start && currentTime < chapter.end
         }
     }
-
-    fun getNextChapter(): BookChapter? {
-        val currentChapter =
-            _playbackState.value.currentChapter
-                ?: return _playbackState.value.chapters.firstOrNull()
-        val currentIndex = _playbackState.value.chapters.indexOf(currentChapter)
-        return _playbackState.value.chapters.getOrNull(currentIndex + 1)
-    }
-
-    fun getPreviousChapter(): BookChapter? {
-        val currentChapter = _playbackState.value.currentChapter ?: return null
-        val currentIndex = _playbackState.value.chapters.indexOf(currentChapter)
-        return _playbackState.value.chapters.getOrNull(currentIndex - 1)
-    }
 }
 
 data class AudiobookshelfPlaybackState(
@@ -165,8 +167,11 @@ data class AudiobookshelfPlaybackState(
     val playbackSpeed: Float = 1.0f,
     val chapters: List<BookChapter> = emptyList(),
     val audioTracks: List<AudioTrack> = emptyList(),
+    val playMethod: Int? = null,
     val currentChapter: BookChapter? = null,
     val sleepTimerEndTime: Long? = null,
+    val sleepTimerTargetSeconds: Double? = null,
+    val sleepTimerChapterTarget: Int? = null,
     val isPodcastPlaylist: Boolean = false,
     val playlistEpisodeIds: List<String> = emptyList(),
     val isChapterBasedPlayback: Boolean = false,
@@ -182,5 +187,10 @@ data class AudiobookshelfPlaybackState(
         get() = (duration - currentTime).coerceAtLeast(0.0)
 
     val hasSleepTimer: Boolean
-        get() = sleepTimerEndTime != null && sleepTimerEndTime > System.currentTimeMillis()
+        get() =
+            (sleepTimerEndTime != null && sleepTimerEndTime > System.currentTimeMillis()) ||
+                sleepTimerTargetSeconds != null
+
+    val sleepTimerRemainingSeconds: Double?
+        get() = sleepTimerTargetSeconds?.let { (it - currentTime).coerceAtLeast(0.0) }
 }

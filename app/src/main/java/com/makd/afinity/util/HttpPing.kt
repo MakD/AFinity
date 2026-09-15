@@ -1,5 +1,7 @@
 package com.makd.afinity.util
 
+import java.io.IOException
+import kotlin.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.Call
 import okhttp3.Callback
@@ -7,8 +9,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import timber.log.Timber
-import java.io.IOException
-import kotlin.coroutines.resume
 
 suspend fun OkHttpClient.pingUrl(url: String): Boolean =
     suspendCancellableCoroutine { continuation ->

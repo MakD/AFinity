@@ -29,10 +29,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,6 +49,7 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.focalAlpha
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import com.makd.afinity.ui.theme.CardDimensions
 import java.util.Locale
@@ -64,9 +65,7 @@ fun SpotlightCarousel(
 ) {
     if (items.isEmpty()) return
 
-    val configuration = LocalConfiguration.current
-    val isLandscape =
-        configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
     val containerSize = LocalWindowInfo.current.containerSize
     val density = LocalDensity.current
     val windowWidth = with(density) { containerSize.width.toDp() }
@@ -100,7 +99,7 @@ fun SpotlightCarousel(
                     modifier =
                         Modifier.height(itemSize.height)
                             .maskClip(MaterialTheme.shapes.extraLarge)
-                            .clickable { onItemClick(item) }
+                            .clickable(role = Role.Button) { onItemClick(item) }
                 ) {
                     AsyncImage(
                         imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl,
@@ -231,7 +230,7 @@ fun SpotlightCarousel(
                             modifier =
                                 Modifier.size(40.dp)
                                     .background(MaterialTheme.colorScheme.primary, CircleShape)
-                                    .clickable { onPlayClick(item) },
+                                    .clickable(role = Role.Button) { onPlayClick(item) },
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(

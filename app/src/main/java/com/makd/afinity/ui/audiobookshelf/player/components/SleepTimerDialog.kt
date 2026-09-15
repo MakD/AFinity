@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,26 +16,35 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
+import com.makd.afinity.ui.player.components.formatSleepCountdown
+import com.makd.afinity.ui.player.components.rememberSleepTimerRemainingMs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,17 +54,27 @@ fun SleepTimerDialog(
     onCancelTimer: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    chapterCount: Int = 0,
+    currentChapterIndex: Int = -1,
+    isPodcast: Boolean = false,
+    chapterTargetRemainingSeconds: (Int) -> Double? = { null },
+    onChapterTimerSelected: (Int) -> Unit = {},
+    activeChapterTarget: Int? = null,
+    activeTargetRemainingSeconds: Double? = null,
 ) {
     val sheetState = rememberModalBottomSheetState()
 
     val timerOptions = listOf(5, 10, 15, 30, 45, 60, 90, 120)
 
-    val isTimerActive =
-        currentTimerEndTime != null && currentTimerEndTime > System.currentTimeMillis()
-    val remainingMinutes =
-        if (isTimerActive && currentTimerEndTime != null) {
-            ((currentTimerEndTime - System.currentTimeMillis()) / 60000).toInt().coerceAtLeast(1)
-        } else null
+    val durationRemainingMs = rememberSleepTimerRemainingMs(currentTimerEndTime)
+    val isDurationTimerActive = currentTimerEndTime != null && durationRemainingMs > 0L
+    val isChapterTimerActive = activeTargetRemainingSeconds != null
+    val isTimerActive = isDurationTimerActive || isChapterTimerActive
+    val remainingMs =
+        if (isChapterTimerActive) (activeTargetRemainingSeconds * 1000).toLong()
+        else durationRemainingMs
+
+    var extraChapters by remember { mutableIntStateOf(0) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -75,7 +95,7 @@ fun SleepTimerDialog(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            if (isTimerActive && remainingMinutes != null) {
+            if (isTimerActive) {
                 Box(
                     modifier =
                         Modifier.fillMaxWidth()
@@ -95,7 +115,11 @@ fun SleepTimerDialog(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "$remainingMinutes min remaining",
+                            text =
+                                stringResource(
+                                    R.string.player_time_left,
+                                    formatSleepCountdown(remainingMs),
+                                ),
                             style =
                                 MaterialTheme.typography.headlineSmall.copy(
                                     fontWeight = FontWeight.Bold
@@ -128,6 +152,32 @@ fun SleepTimerDialog(
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
+            val chapterRemaining = chapterTargetRemainingSeconds(extraChapters)
+            if (chapterRemaining != null) {
+                val maxExtra =
+                    if (chapterCount > 0 && currentChapterIndex >= 0)
+                        chapterCount - 1 - currentChapterIndex
+                    else 0
+
+                ChapterTimerRow(
+                    label =
+                        stringResource(
+                            if (isPodcast) R.string.abs_sleep_timer_end_of_episode
+                            else R.string.abs_sleep_timer_end_of_chapter
+                        ),
+                    extraChapters = extraChapters,
+                    canDecrease = extraChapters > 0,
+                    canIncrease = extraChapters < maxExtra,
+                    remainingSeconds = chapterRemaining,
+                    selected = activeChapterTarget != null,
+                    onDecrease = { extraChapters = (extraChapters - 1).coerceAtLeast(0) },
+                    onIncrease = { extraChapters = (extraChapters + 1).coerceAtMost(maxExtra) },
+                    onClick = { onChapterTimerSelected(extraChapters) },
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             LazyVerticalGrid(
                 columns = GridCells.Fixed(4),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -143,13 +193,74 @@ fun SleepTimerDialog(
 }
 
 @Composable
+private fun ChapterTimerRow(
+    label: String,
+    extraChapters: Int,
+    canDecrease: Boolean,
+    canIncrease: Boolean,
+    remainingSeconds: Double,
+    selected: Boolean,
+    onDecrease: () -> Unit,
+    onIncrease: () -> Unit,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(
+                    if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                )
+                .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+                .padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = if (extraChapters > 0) "$label +$extraChapters" else label,
+                style = MaterialTheme.typography.bodyLarge,
+                color =
+                    if (selected) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text =
+                    stringResource(
+                        R.string.player_time_left,
+                        formatSleepCountdown((remainingSeconds * 1000).toLong()),
+                    ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        IconButton(onClick = onDecrease, enabled = canDecrease) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_minus),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        IconButton(onClick = onIncrease, enabled = canIncrease) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_plus),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+    }
+}
+
+@Composable
 private fun TimerTile(minutes: Int, onClick: () -> Unit) {
     Box(
         modifier =
             Modifier.aspectRatio(1.2f)
                 .clip(RoundedCornerShape(16.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                .clickable(onClick = onClick),
+                .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {

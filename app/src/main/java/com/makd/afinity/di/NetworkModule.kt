@@ -1,5 +1,6 @@
 package com.makd.afinity.di
 
+import android.app.LocaleManager
 import android.content.Context
 import android.os.Build
 import com.makd.afinity.BuildConfig
@@ -23,6 +24,15 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import java.io.File
+import java.io.IOException
+import java.net.Inet4Address
+import java.util.UUID
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import javax.inject.Qualifier
+import javax.inject.Singleton
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -49,14 +59,6 @@ import org.jellyfin.sdk.model.DeviceInfo
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import timber.log.Timber
-import java.io.File
-import java.io.IOException
-import java.net.Inet4Address
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import javax.inject.Qualifier
-import javax.inject.Singleton
-import kotlin.time.Duration.Companion.seconds
 
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class DownloadClient
 
@@ -83,6 +85,10 @@ import kotlin.time.Duration.Companion.seconds
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+
+    private const val DEVICE_PREFS = "afinity_device"
+    private const val KEY_DEVICE_ID = "device_id"
+
     @Provides
     @Singleton
     fun provideClientInfo(): ClientInfo =
@@ -93,9 +99,37 @@ object NetworkModule {
     fun provideDeviceInfo(@ApplicationContext context: Context): DeviceInfo {
         val base = androidDevice(context)
         return base.copy(
-            id = "${base.id}-${BuildConfig.APPLICATION_ID}",
+            id = persistentDeviceId(context, base.id),
             name = "${base.name} (${BuildConfig.BUILD_TYPE})",
+            languages = preferredLanguages(context),
         )
+    }
+
+    private fun persistentDeviceId(context: Context, hardwareId: String?): String {
+        val prefs = context.getSharedPreferences(DEVICE_PREFS, Context.MODE_PRIVATE)
+        prefs
+            .getString(KEY_DEVICE_ID, null)
+            ?.takeIf { it.isNotBlank() }
+            ?.let {
+                return it
+            }
+        val seed =
+            hardwareId?.takeIf { it.isNotBlank() && it != "null" }
+                ?: UUID.randomUUID().toString().replace("-", "")
+        val deviceId = "$seed-${BuildConfig.APPLICATION_ID}"
+        prefs.edit().putString(KEY_DEVICE_ID, deviceId).apply()
+        return deviceId
+    }
+
+    private fun preferredLanguages(context: Context): List<String> {
+        val appLocales =
+            context.getSystemService(LocaleManager::class.java)?.applicationLocales?.takeUnless {
+                it.isEmpty
+            }
+        val locales = appLocales ?: context.resources.configuration.locales
+        return (0 until locales.size()).mapNotNull { index ->
+            locales[index]?.toLanguageTag()?.takeUnless { it.isBlank() || it == "und" }
+        }
     }
 
     @Provides
@@ -137,7 +171,7 @@ object NetworkModule {
                 .dns { hostname ->
                     Dns.SYSTEM.lookup(hostname).sortedBy { if (it is Inet4Address) 0 else 1 }
                 }
-                .connectTimeout(15, TimeUnit.SECONDS)
+                .connectTimeout(6, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)
                 .callTimeout(45, TimeUnit.SECONDS)
@@ -301,7 +335,7 @@ object NetworkModule {
 
     val JELLYFIN_HTTP_OPTIONS =
         HttpClientOptions(
-            connectTimeout = 15.seconds,
+            connectTimeout = 6.seconds,
             requestTimeout = 45.seconds,
             socketTimeout = 30.seconds,
         )
@@ -653,6 +687,7 @@ object NetworkModule {
         ignoreUnknownKeys = true
         isLenient = true
         encodeDefaults = true
+        coerceInputValues = true
     }
 
     @Provides

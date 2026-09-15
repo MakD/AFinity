@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.playlist
 
-import android.content.res.Configuration
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -52,8 +51,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -74,7 +73,9 @@ import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.EmptyState
+import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.DownloadProgressIndicator
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
@@ -88,10 +89,10 @@ import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
+import java.util.UUID
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
-import java.util.UUID
 
 @UnstableApi
 @Composable
@@ -113,7 +114,7 @@ fun PlaylistScreen(
     val scope = rememberCoroutineScope()
     val lazyListState = rememberLazyListState()
     val topBarOpacity by rememberTopBarOpacity(lazyListState)
-    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
 
     var addToPlaylistTrackIds by remember { mutableStateOf<List<UUID>>(emptyList()) }
     var showAddToPlaylist by remember { mutableStateOf(false) }
@@ -148,22 +149,23 @@ fun PlaylistScreen(
         }
     }
 
+    val resources = LocalResources.current
+
     LaunchedEffect(Unit) {
         viewModel.downloadMessages.collect { message ->
             val text =
                 when (message) {
                     is PlaylistDownloadMessage.PartiallyStarted ->
-                        context.getString(
+                        resources.getQuantityString(
                             R.plurals.playlist_download_partial_fmt,
                             message.expected,
                             message.started,
                             message.expected,
                         )
-
                     is PlaylistDownloadMessage.Failed ->
                         message.reason?.let {
-                            context.getString(R.string.playlist_download_failed_fmt, it)
-                        } ?: context.getString(R.string.playlist_download_failed)
+                            resources.getString(R.string.playlist_download_failed_fmt, it)
+                        } ?: resources.getString(R.string.playlist_download_failed)
                 }
             snackbarHostState.showSnackbar(text)
         }
@@ -193,6 +195,17 @@ fun PlaylistScreen(
     if (uiState.isLoading) {
         Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             FullScreenLoading()
+        }
+        return
+    }
+
+    if (uiState.error != null) {
+        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+            FullScreenError(
+                message = uiState.error,
+                actionText = stringResource(R.string.action_retry),
+                onActionClick = viewModel::retry,
+            )
         }
         return
     }
@@ -310,7 +323,7 @@ fun PlaylistScreen(
                                     painter = painterResource(R.drawable.ic_delete),
                                     contentDescription =
                                         stringResource(R.string.cd_music_delete_playlist),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    tint = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.size(26.dp),
                                 )
                             }
@@ -441,9 +454,7 @@ fun PlaylistScreen(
                                         onRemoveFromPlaylist = { viewModel.removeEntry(entry) },
                                         onDownload =
                                             if (isDownloadAllowedByServer)
-                                                ({
-                                                    viewModel.downloadTrack(track.id)
-                                                })
+                                                ({ viewModel.downloadTrack(track.id) })
                                             else null,
                                         isDownloadEnabled = canDownloadOnNetwork,
                                         onCancelDownload = {
@@ -571,7 +582,7 @@ fun PlaylistScreen(
                                 painter = painterResource(R.drawable.ic_delete),
                                 contentDescription =
                                     stringResource(R.string.cd_music_delete_playlist),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(26.dp),
                             )
                         }
@@ -702,9 +713,7 @@ fun PlaylistScreen(
                                     onRemoveFromPlaylist = { viewModel.removeEntry(entry) },
                                     onDownload =
                                         if (isDownloadAllowedByServer)
-                                            ({
-                                                viewModel.downloadTrack(track.id)
-                                            })
+                                            ({ viewModel.downloadTrack(track.id) })
                                         else null,
                                     isDownloadEnabled = canDownloadOnNetwork,
                                     onCancelDownload = { viewModel.cancelTrackDownload(track.id) },

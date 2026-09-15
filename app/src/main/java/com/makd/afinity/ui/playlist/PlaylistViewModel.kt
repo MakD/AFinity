@@ -1,8 +1,10 @@
 package com.makd.afinity.ui.playlist
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.R
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
@@ -17,6 +19,10 @@ import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,8 +32,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
 
 data class PlaylistArtistEntry(val name: String, val imageUrl: String?)
 
@@ -96,6 +100,7 @@ data class PlaylistUiState(
 class PlaylistViewModel
 @Inject
 constructor(
+    @param:ApplicationContext private val context: Context,
     private val musicRepository: MusicRepository,
     private val mediaRepository: MediaRepository,
     private val downloadRepository: DownloadRepository,
@@ -382,34 +387,61 @@ constructor(
                         artistEntries = buildArtistEntries(entries),
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to reload playlist $playlistId")
             }
         }
     }
 
+    fun retry() {
+        load()
+    }
+
     private fun load() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val playlistDeferred = async { musicRepository.getPlaylistById(playlistId) }
+                val playlistDeferred = async { musicRepository.getPlaylistByIdResult(playlistId) }
                 val contentsDeferred = async { mediaRepository.getPlaylistEntries(playlistId) }
                 val contents = contentsDeferred.await()
                 val entries = contents.entries.applyLens()
+                val playlist =
+                    playlistDeferred.await().getOrElse { e ->
+                        if (e is CancellationException) throw e
+                        Timber.e(e, "Failed to load playlist $playlistId")
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                error =
+                                    context.getString(R.string.error_content_unavailable_server),
+                            )
+                        }
+                        return@launch
+                    }
                 _uiState.update {
                     it.copy(
-                        playlist = playlistDeferred.await()?.withEntryTotals(entries),
+                        playlist = playlist?.withEntryTotals(entries),
                         entries = entries,
                         audioCount = contents.audioCount,
                         videoCount = contents.videoCount,
                         artistEntries = buildArtistEntries(entries),
                         isLoading = false,
+                        error = null,
                     )
                 }
                 updateDownloadState(lastAllDownloads)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load playlist $playlistId")
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = context.getString(R.string.error_content_unavailable_server),
+                    )
+                }
             }
         }
     }
@@ -417,9 +449,7 @@ constructor(
     private fun List<PlaylistEntry>.applyLens(): List<PlaylistEntry> =
         if (audioOnly) filterIsInstance<PlaylistEntry.Audio>() else this
 
-    private suspend fun buildArtistEntries(
-        entries: List<PlaylistEntry>
-    ): List<PlaylistArtistEntry> {
+    private fun buildArtistEntries(entries: List<PlaylistEntry>): List<PlaylistArtistEntry> {
         val baseUrl = musicRepository.getBaseUrl()
         return entries
             .filterIsInstance<PlaylistEntry.Audio>()

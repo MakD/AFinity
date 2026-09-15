@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -73,6 +74,8 @@ import com.makd.afinity.ui.components.rememberRatingMetadataScale
 import java.util.Locale
 import java.util.UUID
 
+private const val PLAYED_FRACTION = 0.9f
+
 @Composable
 fun EpisodeSwitcher(
     episodes: List<AfinityItem>,
@@ -81,6 +84,9 @@ fun EpisodeSwitcher(
     onEpisodeClick: (UUID) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    collectionName: String? = null,
+    currentPositionMs: Long = 0L,
+    currentDurationMs: Long = 0L,
 ) {
     val displayEpisodes = episodes
 
@@ -143,6 +149,7 @@ fun EpisodeSwitcher(
                 modifier =
                     Modifier.fillMaxHeight()
                         .widthIn(min = 380.dp, max = 450.dp)
+                        .playerOverlayInsets()
                         .padding(16.dp)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
@@ -165,7 +172,12 @@ fun EpisodeSwitcher(
                     ) {
                         Column {
                             Text(
-                                text = stringResource(R.string.player_up_next),
+                                text =
+                                    if (collectionName != null) {
+                                        stringResource(R.string.player_collection_title)
+                                    } else {
+                                        stringResource(R.string.player_up_next)
+                                    },
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -174,13 +186,19 @@ fun EpisodeSwitcher(
                             val currentSeason =
                                 (displayEpisodes.getOrNull(activeEpisodeIndex) as? AfinityEpisode)
                                     ?.parentIndexNumber
-                            if (currentSeason != null) {
+                            val subtitle =
+                                collectionName
+                                    ?: currentSeason?.let {
+                                        stringResource(R.string.player_season_fmt, it)
+                                    }
+                            if (subtitle != null) {
                                 Text(
-                                    text =
-                                        stringResource(R.string.player_season_fmt, currentSeason),
+                                    text = subtitle,
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
                                 )
                             }
                         }
@@ -225,6 +243,13 @@ fun EpisodeSwitcher(
                                 partNumber = partInfoMap[index]?.second,
                                 isCurrentlyPlaying = index == activeEpisodeIndex,
                                 isPlaying = isPlaying,
+                                liveProgress =
+                                    if (index == activeEpisodeIndex && currentDurationMs > 0L) {
+                                        (currentPositionMs.toFloat() / currentDurationMs).coerceIn(
+                                            0f,
+                                            1f,
+                                        )
+                                    } else null,
                                 onClick = { onEpisodeClick(item.id) },
                             )
                         }
@@ -242,6 +267,7 @@ private fun EpisodeSwitcherCard(
     isPlaying: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    liveProgress: Float? = null,
     parentItem: AfinityItem? = null,
     partNumber: Int? = null,
 ) {
@@ -267,7 +293,7 @@ private fun EpisodeSwitcherCard(
                 .clip(RoundedCornerShape(16.dp))
                 .background(backgroundColor)
                 .border(1.dp, borderColor, RoundedCornerShape(16.dp))
-                .clickable(onClick = onClick)
+                .clickable(role = Role.Button, onClick = onClick)
                 .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -311,7 +337,10 @@ private fun EpisodeSwitcherCard(
                         )
             )
 
-            if (episode.played) {
+            val watched =
+                episode.played || (liveProgress != null && liveProgress >= PLAYED_FRACTION)
+
+            if (watched) {
                 Box(
                     modifier =
                         Modifier.align(Alignment.TopEnd)
@@ -329,18 +358,19 @@ private fun EpisodeSwitcherCard(
                 }
             }
 
-            if (episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0) {
-                val progress =
+            val storedProgress =
+                if (episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0) {
                     episode.playbackPositionTicks.toFloat() / episode.runtimeTicks.toFloat()
-                if (progress > 0f && progress < 0.95f) {
-                    LinearProgressIndicator(
-                        progress = { progress },
-                        modifier =
-                            Modifier.fillMaxWidth().height(3.dp).align(Alignment.BottomCenter),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = Color.White.copy(alpha = 0.2f),
-                    )
-                }
+                } else null
+            val progress = liveProgress ?: storedProgress
+
+            if (!watched && progress != null && progress > 0f && progress < 0.95f) {
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.fillMaxWidth().height(3.dp).align(Alignment.BottomCenter),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = Color.White.copy(alpha = 0.2f),
+                )
             }
 
             if (episode.runtimeTicks > 0) {

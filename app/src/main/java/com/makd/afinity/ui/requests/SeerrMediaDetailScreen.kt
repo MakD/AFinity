@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.requests
 
-import android.content.res.Configuration
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -51,7 +50,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -87,6 +85,7 @@ import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.components.SeparatedFlowRow
 import com.makd.afinity.ui.components.getAutoFlagUrl
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 import com.makd.afinity.ui.utils.verticalLayoutOffset
@@ -150,8 +149,7 @@ private fun SeerrDetailContent(
     requestsViewModel: RequestsViewModel,
     widthSizeClass: WindowWidthSizeClass,
 ) {
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
     val lazyListState = rememberLazyListState()
     val topBarOpacity by rememberTopBarOpacity(lazyListState)
 
@@ -552,6 +550,9 @@ private fun SeerrLandscapeContent(
     val displayCutoutLeft = WindowInsets.displayCutout.getLeft(density, LayoutDirection.Ltr)
     val baseColorScheme = MaterialTheme.colorScheme
     val playerOffset = LocalPlayerOffset.current
+    val windowInfo = LocalWindowInfo.current
+    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+    val screenHeightDp = with(density) { windowInfo.containerSize.height.toDp() }
 
     val landscapeColorScheme =
         remember(baseColorScheme) {
@@ -571,8 +572,8 @@ private fun SeerrLandscapeContent(
                     imageUrl = backdropUrl,
                     contentDescription = null,
                     blurHash = null,
-                    targetWidth = 1920.dp,
-                    targetHeight = 1080.dp,
+                    targetWidth = screenWidthDp,
+                    targetHeight = screenHeightDp,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                     alignment = Alignment.Center,
@@ -834,32 +835,59 @@ private fun buildSeerrDetailRows(
             ?.mapNotNull { it.name ?: it.iso_3166_1 }
             ?.takeIf { it.isNotEmpty() }
 
-    originalTitle?.let { add(SeerrDetailRowData(context.getString(R.string.seerr_detail_original_title), it)) }
+    originalTitle?.let {
+        add(SeerrDetailRowData(context.getString(R.string.seerr_detail_original_title), it))
+    }
     details.status
         ?.takeIf { it.isNotBlank() }
-        ?.let { add(SeerrDetailRowData(context.getString(R.string.seerr_detail_status), it, isStatus = true)) }
+        ?.let {
+            add(
+                SeerrDetailRowData(
+                    context.getString(R.string.seerr_detail_status),
+                    it,
+                    isStatus = true,
+                )
+            )
+        }
 
     if (mediaType == MediaType.TV) {
         details.seriesType
             ?.takeIf { it.isNotBlank() }
-            ?.let { add(SeerrDetailRowData(context.getString(R.string.seerr_detail_series_type), it)) }
+            ?.let {
+                add(SeerrDetailRowData(context.getString(R.string.seerr_detail_series_type), it))
+            }
         details.firstAirDate?.let { date ->
-            formatSeerrDate(date)?.let { add(SeerrDetailRowData(context.getString(R.string.seerr_detail_first_air_date), it)) }
+            formatSeerrDate(date)?.let {
+                add(SeerrDetailRowData(context.getString(R.string.seerr_detail_first_air_date), it))
+            }
         }
         details.nextEpisodeToAir?.airDate?.let { date ->
-            formatSeerrDate(date)?.let { add(SeerrDetailRowData(context.getString(R.string.seerr_detail_next_air_date), it)) }
+            formatSeerrDate(date)?.let {
+                add(SeerrDetailRowData(context.getString(R.string.seerr_detail_next_air_date), it))
+            }
         }
         details.episodeRunTime
             ?.firstOrNull()
             ?.takeIf { it > 0 }
-            ?.let { add(SeerrDetailRowData(
-                    context.getString(R.string.seerr_detail_episode_runtime),
-                    context.getString(R.string.seerr_runtime_minutes_fmt, it),
-                )) }
+            ?.let {
+                add(
+                    SeerrDetailRowData(
+                        context.getString(R.string.seerr_detail_episode_runtime),
+                        context.getString(R.string.seerr_runtime_minutes_fmt, it),
+                    )
+                )
+            }
         details.networks
             ?.mapNotNull { it.name }
             ?.takeIf { it.isNotEmpty() }
-            ?.let { add(SeerrDetailRowData(context.getString(R.string.seerr_detail_networks), it.joinToString(", "))) }
+            ?.let {
+                add(
+                    SeerrDetailRowData(
+                        context.getString(R.string.seerr_detail_networks),
+                        it.joinToString(", "),
+                    )
+                )
+            }
     } else {
         val usReleases =
             details.releases?.results?.firstOrNull { it.iso_3166_1 == "US" }?.release_dates
@@ -868,7 +896,12 @@ private fun buildSeerrDetailRows(
             ?.release_date
             ?.let { date ->
                 formatSeerrDate(date.take(10))?.let {
-                    add(SeerrDetailRowData(context.getString(R.string.seerr_detail_release_theatrical), it))
+                    add(
+                        SeerrDetailRowData(
+                            context.getString(R.string.seerr_detail_release_theatrical),
+                            it,
+                        )
+                    )
                 }
             }
         usReleases
@@ -876,20 +909,46 @@ private fun buildSeerrDetailRows(
             ?.release_date
             ?.let { date ->
                 formatSeerrDate(date.take(10))?.let {
-                    add(SeerrDetailRowData(context.getString(R.string.seerr_detail_release_digital), it))
+                    add(
+                        SeerrDetailRowData(
+                            context.getString(R.string.seerr_detail_release_digital),
+                            it,
+                        )
+                    )
                 }
             }
         if (usReleases == null) {
             details.releaseDate?.let { date ->
-                formatSeerrDate(date)?.let { add(SeerrDetailRowData(context.getString(R.string.seerr_detail_release_date), it)) }
+                formatSeerrDate(date)?.let {
+                    add(
+                        SeerrDetailRowData(
+                            context.getString(R.string.seerr_detail_release_date),
+                            it,
+                        )
+                    )
+                }
             }
         }
         details.budget
             ?.takeIf { it > 0 }
-            ?.let { add(SeerrDetailRowData(context.getString(R.string.seerr_detail_budget), String.format(Locale.US, "$%,d", it))) }
+            ?.let {
+                add(
+                    SeerrDetailRowData(
+                        context.getString(R.string.seerr_detail_budget),
+                        String.format(Locale.US, "$%,d", it),
+                    )
+                )
+            }
         details.revenue
             ?.takeIf { it > 0 }
-            ?.let { add(SeerrDetailRowData(context.getString(R.string.seerr_detail_revenue), String.format(Locale.US, "$%,d", it))) }
+            ?.let {
+                add(
+                    SeerrDetailRowData(
+                        context.getString(R.string.seerr_detail_revenue),
+                        String.format(Locale.US, "$%,d", it),
+                    )
+                )
+            }
     }
 
     language
@@ -903,7 +962,14 @@ private fun buildSeerrDetailRows(
                 )
             )
         }
-    countries?.let { add(SeerrDetailRowData(context.getString(R.string.seerr_detail_production_country), it.joinToString(", "))) }
+    countries?.let {
+        add(
+            SeerrDetailRowData(
+                context.getString(R.string.seerr_detail_production_country),
+                it.joinToString(", "),
+            )
+        )
+    }
 }
 
 private fun formatSeerrDate(dateString: String): String? {

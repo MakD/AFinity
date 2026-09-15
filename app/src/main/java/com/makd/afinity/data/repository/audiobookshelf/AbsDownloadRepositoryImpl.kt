@@ -14,16 +14,16 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.data.workers.AbsMediaDownloadWorker
+import java.io.File
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
-import java.io.File
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class AbsDownloadRepositoryImpl
@@ -199,7 +199,7 @@ constructor(
             it.storageVolumeId to it.totalBytes
         }
 
-    private suspend fun buildLocalDirPath(
+    private fun buildLocalDirPath(
         volumeId: String,
         serverId: String,
         libraryItemId: String,

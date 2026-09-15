@@ -8,6 +8,11 @@ import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.CustomSectionSourceType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.media.LibraryFilters
+import java.time.MonthDay
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -15,10 +20,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import timber.log.Timber
-import java.time.MonthDay
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class CustomHomeSectionsRepository
@@ -61,6 +62,8 @@ constructor(
             val position = if (section.position >= 0) section.position else dao.maxPosition(key) + 1
             dao.upsert(section.copy(position = position).toEntity(key))
             true
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to save custom home section ${section.id}")
             false
@@ -75,6 +78,8 @@ constructor(
     suspend fun delete(id: String) {
         try {
             dao.deleteById(id)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to delete custom home section $id")
         }
@@ -83,6 +88,8 @@ constructor(
     suspend fun reorder(orderedIds: List<String>) {
         try {
             dao.applyOrder(orderedIds)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to reorder custom home sections")
         }
@@ -161,7 +168,7 @@ constructor(
             val start = section.seasonStart?.let { parseMonthDay(it) } ?: return true
             val end = section.seasonEnd?.let { parseMonthDay(it) } ?: return true
             return if (start <= end) {
-                today >= start && today <= end
+                today in start..end
             } else {
                 today >= start || today <= end
             }

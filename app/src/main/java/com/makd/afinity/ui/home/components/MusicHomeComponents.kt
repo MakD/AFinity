@@ -35,10 +35,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -51,6 +51,7 @@ import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.SectionRowHeader
 import com.makd.afinity.ui.components.focalAlpha
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.music.components.MusicAlbumCard
 import com.makd.afinity.ui.music.components.MusicPlaylistCard
 import com.makd.afinity.ui.theme.CardDimensions
@@ -68,9 +69,7 @@ private fun MusicCarouselSection(
 ) {
     if (count == 0) return
 
-    val configuration = LocalConfiguration.current
-    val isLandscape =
-        configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
     val containerSize = LocalWindowInfo.current.containerSize
     val density = LocalDensity.current
     val windowWidth = with(density) { containerSize.width.toDp() }
@@ -100,7 +99,7 @@ private fun MusicCarouselSection(
                     modifier =
                         Modifier.height(itemSize.height)
                             .maskClip(MaterialTheme.shapes.extraLarge)
-                            .clickable { onItemClick(index) }
+                            .clickable(role = Role.Button) { onItemClick(index) }
                 ) {
                     AsyncImage(
                         imageUrl = imageUrl(index),
@@ -222,9 +221,7 @@ fun MostPlayedAlbumsSection(
 ) {
     if (albums.isEmpty()) return
 
-    val isLandscape =
-        LocalConfiguration.current.orientation ==
-            android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
     val cardWidth = if (isLandscape) 175.dp else 140.dp
     val rowHeight = cardWidth + 12.dp + 8.dp + 20.dp + 18.dp
 
@@ -319,9 +316,7 @@ fun MusicAlbumRowSection(
     onViewAllClick: (() -> Unit)? = null,
 ) {
     if (albums.isEmpty()) return
-    val isLandscape =
-        LocalConfiguration.current.orientation ==
-            android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
     val cardWidth = if (isLandscape) 175.dp else 140.dp
     Column(modifier = modifier) {
         if (onViewAllClick != null) {
@@ -367,9 +362,7 @@ fun MusicPlaylistRowSection(
     onViewAllClick: (() -> Unit)? = null,
 ) {
     if (playlists.isEmpty()) return
-    val isLandscape =
-        LocalConfiguration.current.orientation ==
-            android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
     val cardWidth = if (isLandscape) 175.dp else 140.dp
     Column(modifier = modifier) {
         if (onViewAllClick != null) {
@@ -415,9 +408,7 @@ fun ArtistAlbumsCarousel(
 ) {
     if (albums.isEmpty()) return
 
-    val configuration = LocalConfiguration.current
-    val isLandscape =
-        configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
     val containerSize = LocalWindowInfo.current.containerSize
     val density = LocalDensity.current
     val windowWidth = with(density) { containerSize.width.toDp() }
@@ -454,7 +445,7 @@ fun ArtistAlbumsCarousel(
                     modifier =
                         Modifier.height(itemSize.height)
                             .maskClip(MaterialTheme.shapes.extraLarge)
-                            .clickable { onAlbumClick(album) }
+                            .clickable(role = Role.Button) { onAlbumClick(album) }
                 ) {
                     AsyncImage(
                         imageUrl = (album.images.backdrop ?: album.images.primary)?.toString(),

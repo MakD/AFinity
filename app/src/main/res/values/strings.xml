@@ -32,6 +32,7 @@
     <string name="login_btn_generate_code">Generate Code</string>
     <string name="login_quick_connect_instructions">Enter this code in your browser</string>
     <string name="cd_server_icon">Server Icon</string>
+    <string name="discovery_found_on_network">Found on your network</string>
 
     <!--TopAppBar-->
     <string name="cd_search_icon">Search</string>
@@ -281,6 +282,7 @@
     <string name="meta_res_sd">SD</string>
 
     <string name="meta_vision">Vision</string>
+    <string name="meta_atmos">Atmos</string>
     <string name="meta_digital">Digital</string>
     <string name="meta_digital_plus">Digital+</string>
     <string name="meta_truehd">TrueHD</string>
@@ -342,6 +344,7 @@
     <string name="file_size_kb_fmt">%1$.1f KB</string>
     <string name="file_size_mb_fmt">%1$.1f MB</string>
     <string name="file_size_gb_fmt">%1$.2f GB</string>
+    <string name="file_size_tb_fmt">%1$.2f TB</string>
 
     <string name="season_episodes_title">Episodes</string>
 
@@ -361,6 +364,10 @@
     <plurals name="producers_prefix">
         <item quantity="one">Producer: %1$s</item>
         <item quantity="other">Producers: %1$s</item>
+    </plurals>
+    <plurals name="genres_prefix">
+        <item quantity="one">Genre: %1$s</item>
+        <item quantity="other">Genres: %1$s</item>
     </plurals>
 
     <string name="seasons_title">Seasons</string>
@@ -550,6 +557,7 @@
     </plurals>
     <string name="person_died_no_age_fmt">Died: %1$s</string>
     <string name="person_birthplace_fmt">Birth Place: %1$s</string>
+    <string name="cd_birthplace">Open birth place in maps</string>
     <string name="person_date_fmt">MMMM d, yyyy</string>
     <string name="action_show_more">Show more</string>
     <string name="action_show_less">Show less</string>
@@ -560,6 +568,7 @@
     <!--Player Screen-->
     <string name="player_error_title">Playback Error</string>
     <string name="player_up_next">Up Next</string>
+    <string name="player_collection_title">In This Collection</string>
     <string name="player_season_fmt">Season %1$d</string>
     <string name="player_season_episode_fmt">Season %1$d : Episode %2$s</string>
     <string name="cd_close">Close</string>
@@ -604,6 +613,16 @@
     <string name="playback_stats_label_player">Player</string>
     <string name="playback_stats_label_play_method">Play method</string>
     <string name="playback_stats_value_direct_streaming">Direct streaming</string>
+    <string name="playback_stats_value_transcoding">Transcoding</string>
+    <string name="playback_stats_value_direct_play">Direct play</string>
+    <string name="playback_stats_value_stream_copy">Stream copy</string>
+    <string name="playback_stats_section_transcoding">Server transcoding</string>
+    <string name="playback_stats_label_transcode_output">Output</string>
+    <string name="playback_stats_label_transcode_video">Video</string>
+    <string name="playback_stats_label_transcode_audio">Audio</string>
+    <string name="playback_stats_label_transcode_speed">Encoder speed</string>
+    <string name="playback_stats_label_transcode_hardware">Hardware accel</string>
+    <string name="playback_stats_label_transcode_reasons">Reasons</string>
     <string name="playback_stats_label_hardware_dec">Hardware Dec</string>
     <string name="playback_stats_section_network_buffer">Network &amp; Buffer</string>
     <string name="playback_stats_label_forward_buffer">Forward buffer</string>
@@ -668,6 +687,75 @@
 
     <string name="player_audio_title">Audio Track</string>
     <string name="player_subtitle_title">Subtitles</string>
+    <string name="player_quality_title">Quality</string>
+    <string name="pref_group_streaming_quality">Streaming quality</string>
+    <string name="pref_quality_wifi_title">Quality on Wi-Fi</string>
+    <string name="pref_quality_cellular_title">Quality on mobile data</string>
+    <string name="pref_transcode_channels_title">Audio channels when transcoding</string>
+    <string name="pref_transcode_channels_8">Up to 7.1</string>
+    <string name="pref_transcode_channels_6">Up to 5.1</string>
+    <string name="pref_transcode_channels_2">Stereo</string>
+    <string name="music_quality_sheet_hint">Files below the limit play unchanged</string>
+    <string name="music_quality_short_original">Original</string>
+    <string name="music_more_section_audio">AUDIO</string>
+    <string name="music_more_section_track">THIS TRACK</string>
+    <string name="abs_more_section_audio">AUDIO</string>
+    <string name="state_toggle_on">On</string>
+    <string name="state_toggle_off">Off</string>
+    <string name="music_quality_short_kbps_fmt">%1$dk</string>
+    <string name="pref_music_quality_wifi_title">Music quality on Wi-Fi</string>
+    <string name="pref_music_quality_cellular_title">Music quality on mobile data</string>
+    <string name="music_player_quality_title">Streaming quality</string>
+    <string name="cd_music_quality">Streaming quality</string>
+    <string name="pref_requires_transcoding">Turn off Never transcode to use this</string>
+    <string name="pref_never_transcode_title">Never transcode</string>
+    <string name="pref_never_transcode_description">Only play formats this device supports</string>
+    <string name="error_direct_play_blocked">This device can\'t play this file directly, and transcoding is turned off.</string>
+    <string name="error_direct_play_blocked_fmt">This device can\'t play this file directly (%1$s), and transcoding is turned off.</string>
+    <string name="player_play_anyway">Play anyway</string>
+    <string name="pref_hdr_passthrough_title">Play HDR on this device</string>
+    <string name="pref_hdr_passthrough_description">Turn off to let the server convert HDR to SDR</string>
+    <string name="player_quality_auto">Auto</string>
+    <string name="player_quality_original">Original</string>
+    <string name="player_quality_resolution_fmt">%1$dp</string>
+    <string name="player_quality_kbps_fmt">%1$d kbps</string>
+    <string name="player_quality_mbps_fmt">%1$s Mbps</string>
+    <string name="player_quality_auto_summary">Match connection</string>
+    <string name="player_quality_playing_original">Playing original quality</string>
+    <string name="player_quality_playing_transcoded_fmt">Playing %1$d×%2$d, transcoded from %3$d×%4$d</string>
+    <string name="player_subtitle_burned_in">Burned in</string>
+    <string name="player_transcode_reason_prefix">Transcoding — %1$s</string>
+    <string name="player_transcode_reason_audio_codec">audio codec not supported</string>
+    <string name="player_transcode_reason_video_codec">video codec not supported</string>
+    <string name="player_transcode_reason_container">container not supported</string>
+    <string name="player_transcode_reason_subtitle_codec">subtitle burned in</string>
+    <string name="player_transcode_reason_bitrate_limit">bitrate above the selected limit</string>
+    <string name="player_transcode_reason_video_bitrate">video bitrate too high</string>
+    <string name="player_transcode_reason_audio_bitrate">audio bitrate too high</string>
+    <string name="player_transcode_reason_resolution">resolution above the selected limit</string>
+    <string name="player_transcode_reason_video_range">HDR not supported</string>
+    <string name="player_transcode_reason_video_profile">video profile not supported</string>
+    <string name="player_transcode_reason_video_level">video level not supported</string>
+    <string name="player_transcode_reason_audio_channels">audio channel layout not supported</string>
+    <string name="player_transcode_reason_bit_depth">video bit depth not supported</string>
+    <string name="player_transcode_reason_framerate">frame rate not supported</string>
+    <string name="player_transcode_reason_interlaced">interlaced video not supported</string>
+    <string name="player_transcode_reason_external_audio">audio track is a separate file</string>
+    <string name="player_transcode_reason_direct_play_error">direct play failed</string>
+    <string name="player_transcode_reason_anamorphic">anamorphic video not supported</string>
+    <string name="player_transcode_reason_ref_frames">too many reference frames</string>
+    <string name="player_transcode_reason_secondary_audio">secondary audio track not supported</string>
+    <string name="player_transcode_reason_audio_profile">audio profile not supported</string>
+    <string name="player_transcode_reason_audio_sample_rate">audio sample rate not supported</string>
+    <string name="player_transcode_reason_audio_bit_depth">audio bit depth not supported</string>
+    <string name="player_transcode_reason_unknown_video">video stream could not be identified</string>
+    <string name="player_transcode_reason_unknown_audio">audio stream could not be identified</string>
+    <string name="player_transcode_reason_codec_tag">video codec tag not supported</string>
+    <string name="player_transcode_reason_stream_count">too many streams in this file</string>
+    <string name="player_transcode_reason_rotation">rotated video not supported</string>
+    <string name="player_transcode_reason_other">server chose to transcode</string>
+    <string name="player_badge_direct">DIRECT</string>
+    <string name="player_badge_transcoding">TRANSCODE</string>
     <string name="media_languages_audio">Available Audio:</string>
     <string name="media_languages_subtitles">Available Subtitles:</string>
     <string name="media_language_none">No language</string>
@@ -727,6 +815,22 @@
     <string name="player_time_left">%1$s left</string>
     <string name="cd_aspect_ratio">Aspect Ratio</string>
     <string name="cd_screen_rotation">Screen rotation</string>
+
+    <string name="player_sleep_timer_title">Sleep timer</string>
+    <string name="player_sleep_timer_end_of_episode">End of episode</string>
+    <string name="player_sleep_timer_end_of_movie">End of movie</string>
+    <string name="player_sleep_timer_stop">Stop timer</string>
+    <string name="player_sleep_timer_ends_in">Sleep timer ends in %1$s</string>
+    <string name="player_sleep_timer_ended">Sleep timer ended</string>
+    <string name="player_sleep_timer_paused_fmt">Paused at %1$s · %2$s</string>
+    <plurals name="player_sleep_timer_closing_in">
+        <item quantity="one">closing in %1$d second</item>
+        <item quantity="other">closing in %1$d seconds</item>
+    </plurals>
+    <plurals name="player_sleep_timer_extend">
+        <item quantity="one">Add %1$d min</item>
+        <item quantity="other">Add %1$d min</item>
+    </plurals>
 
     <string name="cd_fast_forward">Fast Forward</string>
     <string name="cd_rewind">Rewind</string>
@@ -848,6 +952,8 @@
     <string name="pref_navigation_drawer_summary">Use a side navigation menu instead of the bottom bar</string>
     <string name="pref_libraries_in_drawer_title">Show Libraries in Menu</string>
     <string name="pref_libraries_in_drawer_summary">List your libraries in the navigation menu instead of on the home screen</string>
+    <string name="pref_side_sheet_title">Side Sheet in Landscape</string>
+    <string name="pref_side_sheet_summary">Show episode details in a side sheet when the screen is wider than it is tall. Turn off to always use a bottom sheet</string>
 
     <string name="settings_group_home_screen">Home Screen</string>
     <string name="pref_combine_library_title">Combine Library Sections</string>
@@ -870,14 +976,43 @@
     <string name="layout_vertical">Vertical</string>
 
     <string name="pref_downloads_and_storage">Downloads &amp; Storage</string>
-    <string name="pref_downloads_and_storage_summary">Manage offline media and image caching</string>
-    <string name="active_downloads_header_fmt">Active Downloads (%1$d)</string>
-    <string name="completed_downloads_header_fmt">Completed Downloads (%1$d)</string>
+    <string name="pref_downloads_and_storage_summary">Download behaviour, storage locations and cache</string>
+    <string name="pref_offline_media">Offline media</string>
+    <string name="pref_offline_media_summary">Browse and free up downloaded media</string>
+    <string name="active_downloads_header_fmt">In progress (%1$d)</string>
+    <string name="completed_downloads_header_fmt">On this device (%1$d)</string>
     <string name="download_status_queued">Queued</string>
     <plurals name="episodes_downloaded_fmt">
         <item quantity="one">%1$d episode downloaded</item>
         <item quantity="other">%1$d episodes downloaded</item>
     </plurals>
+    <plurals name="download_count_episodes">
+        <item quantity="one">%1$d episode</item>
+        <item quantity="other">%1$d episodes</item>
+    </plurals>
+    <plurals name="download_count_tracks">
+        <item quantity="one">%1$d track</item>
+        <item quantity="other">%1$d tracks</item>
+    </plurals>
+    <string name="downloads_storage_used_fmt">%1$s used by downloads</string>
+    <string name="downloads_group_summary_fmt">%1$d items · %2$s</string>
+    <string name="downloads_delete_frees_fmt">Frees up %1$s</string>
+    <string name="downloads_delete_all">Delete all</string>
+    <string name="downloads_selected_fmt">%1$d selected</string>
+    <string name="downloads_select_all">Select all</string>
+    <string name="downloads_frees_up">Frees up</string>
+    <string name="downloads_delete_selected_message_fmt">This frees up %1$s. You can download these again later.</string>
+    <string name="cd_downloads_exit_selection">Leave selection</string>
+    <plurals name="downloads_delete_selected_fmt">
+        <item quantity="one">Delete %1$d item</item>
+        <item quantity="other">Delete %1$d items</item>
+    </plurals>
+    <string name="downloads_open_item">Open in library</string>
+    <string name="downloads_storage_free_fmt">%1$s free</string>
+    <string name="downloads_sort_recent">Recently added</string>
+    <string name="downloads_sort_largest">Largest first</string>
+    <string name="downloads_sort_title">A to Z</string>
+    <string name="cd_downloads_sort">Sort downloads</string>
     <plurals name="download_group_episodes_fmt">
         <item quantity="one">%1$d episode · %2$s</item>
         <item quantity="other">%1$d episodes · %2$s</item>
@@ -894,7 +1029,7 @@
     <string name="storage_free_on_device_fmt">%1$s free on device</string>
     <string name="storage_this_server">This server</string>
     <string name="storage_all_servers_fmt">%1$s total across all servers</string>
-    <string name="section_storage_locations">STORAGE LOCATIONS</string>
+    <string name="section_storage_locations">Storage locations</string>
     <string name="storage_usage_combined_fmt">%1$s used here • %2$s free of %3$s</string>
     <string name="storage_default_badge">Default</string>
     <string name="storage_set_as_default">Set as default</string>
@@ -916,7 +1051,21 @@
     <string name="cd_queued_tap_cancel">Queued, tap to cancel</string>
     <string name="cd_delete_download">Delete download</string>
 
-    <string name="player_options_title">Player Options</string>
+    <string name="player_options_title">Playback</string>
+
+    <string name="playback_section_video_quality">Video quality</string>
+    <string name="playback_section_video_quality_summary">Resolution limits, audio channels and HDR</string>
+    <string name="playback_section_music_quality">Music quality</string>
+    <string name="playback_section_music_quality_summary">Bitrate limits for Wi-Fi and mobile data</string>
+    <string name="playback_section_tracks">Audio &amp; subtitle tracks</string>
+    <string name="playback_section_tracks_summary">Which language and subtitles to pick automatically</string>
+    <string name="playback_section_subtitle_appearance">Subtitle appearance</string>
+    <string name="playback_section_subtitle_appearance_summary">Size, color, outline and position</string>
+    <string name="playback_section_controls">Player controls</string>
+    <string name="playback_section_controls_summary">Gestures, skip buttons, pause screen and zoom</string>
+    <string name="playback_section_cast_summary">Quality and codecs when casting</string>
+    <string name="playback_section_advanced">Advanced</string>
+    <string name="playback_section_advanced_summary">Playback engine, buffering and MPV config</string>
 
     <string name="pref_group_engine">Engine &amp; Behavior</string>
     <string name="pref_use_exoplayer_title">Use ExoPlayer</string>
@@ -1143,6 +1292,10 @@
     <string name="session_switcher_title">Switch Session</string>
     <string name="action_login_server">Login to this server</string>
     <string name="action_add_account">Add another account</string>
+    <string name="forget_account_title">Forget %1$s?</string>
+    <string name="forget_account_message">This removes the saved login for this account and deletes everything downloaded with it. The account itself is not deleted from the server.</string>
+    <string name="forget_account_confirm">Forget</string>
+    <string name="forget_account_failed">Couldn\'t forget this account. Try again.</string>
     <string name="empty_sessions_title">No saved sessions</string>
     <string name="empty_sessions_message">Login to a server to create a session</string>
 
@@ -1184,6 +1337,8 @@
     <string name="error_quickconnect_invalid_code">Invalid or expired code. Please try again.</string>
     <string name="error_quickconnect_failed_fmt">Authorization failed: %1$s</string>
 
+    <string name="pref_group_account">Account &amp; servers</string>
+    <string name="pref_group_playback_downloads">Playback &amp; downloads</string>
     <string name="pref_group_connections">Connections</string>
     <string name="pref_manage_servers">Manage Servers</string>
     <string name="pref_manage_servers_summary">Add or remove Jellyfin servers</string>
@@ -1210,8 +1365,6 @@
 
     <string name="pref_licenses">Licenses</string>
     <string name="pref_licenses_summary">Open source libraries</string>
-    <string name="pref_send_logs">Send Logs</string>
-    <string name="pref_send_logs_summary">Share diagnostic logs for bug reports</string>
 
     <string name="action_logout">Log Out</string>
 
@@ -1321,6 +1474,21 @@
     <string name="active_sessions_count_fmt">Active Sessions (%1$d)</string>
     <string name="active_sessions_idle_fmt">+%1$d idle</string>
     <string name="active_sessions_empty">No active sessions.</string>
+    <string name="session_command_failed">Command failed</string>
+    <string name="session_remote_other_user_warning">You are controlling %1$s\'s session.</string>
+    <string name="action_session_stop">Stop playback</string>
+    <string name="cd_session_play">Resume</string>
+    <string name="cd_session_pause">Pause</string>
+    <string name="cd_session_previous">Previous</string>
+    <string name="cd_session_next">Next</string>
+    <string name="cd_session_rewind">Back 10 seconds</string>
+    <string name="cd_session_forward">Forward 30 seconds</string>
+    <string name="cd_session_mute">Mute</string>
+    <string name="cd_session_more">More controls</string>
+    <string name="action_session_message">Message</string>
+    <string name="dialog_session_message_title">Send a message</string>
+    <string name="dialog_session_message_placeholder">Shown on the other screen</string>
+    <string name="action_send">Send</string>
     <string name="category_running">Running</string>
     <string name="category_other">Other</string>
     <string name="cd_stop_task">Stop task</string>
@@ -1382,6 +1550,7 @@
     <string name="pref_cast_max_bitrate_title">Max Bitrate</string>
     <string name="pref_cast_max_bitrate_auto">Auto (network test)</string>
     <string name="pref_buffer_size_title">Video Buffer Size</string>
+    <string name="pref_buffer_size_value_fmt">%1$s · %2$s</string>
 
     <!--Audiobookshelf Libraries / Item Screens-->
     <string name="abs_connect_title">Connect to Audiobookshelf</string>
@@ -1412,7 +1581,19 @@
     <string name="abs_sleep_timer_title">SLEEP TIMER</string>
     <string name="abs_sleep_timer_stop">Stop Timer</string>
     <string name="abs_sleep_timer_set_new">Set New Timer</string>
+    <string name="abs_sleep_timer_end_of_chapter">End of chapter</string>
+    <string name="abs_sleep_timer_end_of_episode">End of episode</string>
     <string name="abs_skip_silence">SKIP SILENCE</string>
+    <string name="cd_abs_chapters">Chapters</string>
+    <string name="abs_bookmarks_title">Bookmarks</string>
+    <string name="abs_bookmarks_empty">No bookmarks yet for this title.</string>
+    <string name="abs_bookmark_untitled">Untitled bookmark</string>
+    <string name="abs_bookmark_delete">Delete bookmark</string>
+    <string name="abs_bookmark_title_hint">Bookmark name</string>
+    <string name="abs_bookmark_add_at_fmt">Add bookmark at %1$s</string>
+    <string name="cd_abs_bookmarks">Bookmarks</string>
+    <string name="abs_skip_silence_title">Skip silence</string>
+    <string name="abs_volume_boost_title">Volume boost</string>
     <string name="abs_volume_boost">VOLUME BOOST</string>
     <string name="abs_playback_speed_label">PLAYBACK SPEED</string>
     <string name="abs_total_listening_time">TOTAL LISTENING TIME</string>
@@ -1532,16 +1713,23 @@
     <string name="action_save">Save</string>
 
     <!--Download Settings Sections-->
-    <string name="section_storage_cache">STORAGE &amp; CACHE</string>
-    <string name="section_videos">VIDEOS</string>
-    <string name="section_download_audiobooks">AUDIOBOOKS</string>
-    <string name="section_download_podcasts">PODCASTS</string>
-    <string name="section_download_music">MUSIC</string>
+    <string name="section_downloads">Downloads</string>
+    <string name="section_storage_cache">Storage &amp; cache</string>
+    <string name="section_videos">Videos</string>
+    <string name="section_download_audiobooks">Audiobooks</string>
+    <string name="section_download_podcasts">Podcasts</string>
+    <string name="section_download_music">Music</string>
 
     <!--Server Management-->
     <string name="server_version_fmt">v%1$s</string>
     <string name="server_active_connection">Active Connection</string>
     <string name="server_no_alternate_addresses">No alternate addresses configured.</string>
+    <string name="server_unsupported_version">This server runs Jellyfin %1$s. AFinity needs %2$s or newer.</string>
+    <string name="server_unsupported_version_unknown">This server\'s Jellyfin version could not be read. AFinity needs %1$s or newer.</string>
+    <string name="server_unsupported_title">Server needs updating</string>
+    <string name="server_unsupported_body">This server runs Jellyfin %1$s, and AFinity needs %2$s or newer. Media won\'t load until the server is updated.</string>
+    <string name="server_unsupported_body_unknown">This server\'s Jellyfin version could not be read, and AFinity needs %1$s or newer. Media won\'t load until the server is updated.</string>
+    <string name="server_unsupported_switch_account">Switch account</string>
     <string name="section_library_overview">Library Overview</string>
     <string name="section_active_services">Active Services</string>
     <string name="section_user_profile_header">User Profile</string>
@@ -1587,6 +1775,25 @@
     <string name="service_label_mdblist">MDBList</string>
     <string name="stat_movies">Movies</string>
     <string name="stat_episodes">Episodes</string>
+    <string name="stat_albums">Albums</string>
+    <string name="stat_songs">Songs</string>
+    <string name="stat_artists">Artists</string>
+    <string name="stat_music_videos">Music Videos</string>
+    <string name="stat_books">Books</string>
+    <string name="stat_trailers">Trailers</string>
+    <string name="stat_programs">Programs</string>
+    <string name="stat_all_items">All Items</string>
+    <string name="section_server_storage">Server Storage</string>
+    <string name="storage_folder_program_data">Program data</string>
+    <string name="storage_folder_metadata">Metadata</string>
+    <string name="storage_folder_transcoding_temp">Transcoding temp</string>
+    <string name="storage_folder_cache">Cache</string>
+    <string name="storage_folder_image_cache">Image cache</string>
+    <string name="storage_folder_logs">Logs</string>
+    <string name="storage_folder_web">Web</string>
+    <string name="storage_used_fmt">%1$s used</string>
+    <string name="storage_free_fmt">%1$s free</string>
+    <string name="storage_percent_used_fmt">%1$d%%</string>
     <string name="stat_pending">Pending</string>
     <string name="stat_available">Available</string>
     <string name="stat_items">Items</string>
@@ -1622,6 +1829,7 @@
     <!--Trailer Errors (Toast)-->
     <string name="error_no_trailer">No trailer available</string>
     <string name="error_unable_open_trailer">Unable to open trailer</string>
+    <string name="error_unable_open_location">Unable to open maps</string>
 
     <!--Notifications-->
     <string name="notif_channel_downloads">Downloads</string>
@@ -1655,8 +1863,23 @@
     <string name="error_invalid_jellyfin_password">Incorrect password for your Jellyfin account.</string>
     <string name="error_no_jellyfin_session">No active Jellyfin session. Sign in to Jellyfin first.</string>
     <string name="error_seerr_account_setup_failed">Seerr accepted your credentials but could not finish setting up your account. Ask your Seerr administrator to check the server logs.</string>
+    <string name="jellyseerr_quick_connect_button">Sign in with Quick Connect</string>
+    <string name="jellyseerr_quick_connect_description">Sign in using your current Jellyfin session, without entering a password.</string>
+    <string name="jellyseerr_login_divider_or">or</string>
+    <string name="error_seerr_quick_connect_unsupported">This Seerr server is too old for Quick Connect. Seerr 3.4.0 or newer is required.</string>
+    <string name="error_seerr_quick_connect_initiate">Seerr could not start a Quick Connect request. Please try again.</string>
+    <string name="error_seerr_quick_connect_other_server">Seerr is pointed at a different Jellyfin server than the one you are signed in to.</string>
+    <string name="error_seerr_quick_connect_not_approved">Quick Connect request could not be approved. Please try again.</string>
+    <string name="error_seerr_quick_connect_access_denied">Your Jellyfin account has no Seerr account. Ask your Seerr administrator to import it.</string>
     <string name="error_server_connect_failed_fmt">Failed to connect to server: %1$s</string>
     <string name="error_login_failed_fmt">Login failed: %1$s</string>
+    <string name="error_abs_server_unreachable">Could not connect. Please verify this is a valid Audiobookshelf server.</string>
+    <string name="error_invalid_username_password">Invalid username or password.</string>
+    <string name="error_login_check_credentials">Login failed. Please check your credentials.</string>
+    <string name="error_access_forbidden">Access forbidden. Check your permissions.</string>
+    <string name="error_server_not_found">Server not found. Check your server URL.</string>
+    <string name="error_network_check_connection">Network error. Check your connection.</string>
+    <string name="error_connection_timeout">Connection timeout. Please try again.</string>
     <string name="error_username_required">Username is required</string>
     <string name="error_failed_load_channels">Failed to load channels</string>
     <string name="error_failed_check_livetv">Failed to check Live TV access</string>
@@ -1665,7 +1888,6 @@
     <string name="error_person_not_found">Person not found</string>
     <string name="error_server_url_not_available">Server URL not available</string>
     <string name="error_server_url_required">Server URL is required</string>
-    <string name="error_set_server_url_fmt">Failed to set server URL: %1$s</string>
     <string name="error_unexpected_fmt">An unexpected error occurred: %1$s</string>
     <string name="error_not_valid_jellyfin_fmt">Not a valid Jellyfin server: %1$s</string>
     <string name="error_connect_to_server_fmt">Failed to connect to %1$s: %2$s</string>
@@ -1778,6 +2000,7 @@
     <string name="nav_home">Home</string>
     <string name="nav_audiobooks">Audiobooks</string>
     <string name="music_tab_playlists">Playlists</string>
+    <string name="music_tab_album_artists">Album Artists</string>
     <string name="music_tab_artists">Artists</string>
     <string name="music_tab_albums">Albums</string>
     <string name="music_tab_tracks">Tracks</string>
@@ -1806,6 +2029,8 @@
     <string name="music_section_artists_to_explore">Artists to Explore</string>
     <string name="music_section_popular">Popular</string>
     <string name="music_section_albums">Albums</string>
+    <string name="music_section_more_from_fmt">More from %1$s</string>
+    <string name="music_section_more_like_this">More like this</string>
     <string name="music_section_appears_on">Appears On</string>
     <string name="music_section_most_played">Most Played</string>
     <!-- Mixes -->
@@ -1883,6 +2108,7 @@
     <!-- Nav Shortcuts -->
     <string name="music_nav_playlists">Playlists</string>
     <string name="music_nav_artists">Artists</string>
+    <string name="music_nav_album_artists">Album Artists</string>
     <string name="music_nav_albums">Albums</string>
     <string name="music_nav_tracks">Tracks</string>
     <string name="music_nav_genres">Genres</string>
@@ -1958,6 +2184,12 @@
     <string name="services_hub_remote_error_no_server">No active server.</string>
     <string name="services_hub_remote_error_different_server">That address belongs to a different server.</string>
     <string name="services_hub_remote_error_unreachable">Couldn\'t reach that address.</string>
+    <string name="local_network_permission_title">Local network access</string>
+    <string name="local_network_permission_needed">Local network access is required to discover and connect to servers on your network.</string>
+    <string name="local_network_permission_grant">Grant permission</string>
+    <string name="local_network_permission_offline_body">AFinity can\'t reach your server because local network access is turned off. Grant it to reconnect.</string>
+    <string name="local_network_permission_settings">Open settings</string>
+    <string name="local_network_permission_discovery_body">No servers were found. Grant local network access so AFinity can search your network.</string>
     <string name="error_address_different_jellyseerr">That address belongs to a different Seerr server.</string>
     <string name="error_address_different_audiobookshelf">That address belongs to a different Audiobookshelf server.</string>
     <string name="error_verify_jellyseerr_failed">Could not verify Seerr server at this address.</string>
@@ -1965,4 +2197,99 @@
     <string name="unverified_address_title">Can\'t confirm this server</string>
     <string name="unverified_address_message">We reached a server at %1$s, but couldn\'t confirm it\'s the same one you\'re signed in to. Add it anyway?</string>
     <string name="unverified_address_confirm">Add anyway</string>
+
+    <string name="pref_view_logs">View logs</string>
+    <string name="pref_view_logs_summary">Watch app activity live</string>
+    <string name="library_filter_audio_language">Audio language</string>
+    <string name="library_filter_subtitle_language">Subtitle language</string>
+    <string name="library_filter_language_hint">Search languages</string>
+
+    <string name="track_tag_forced">Forced</string>
+    <string name="track_tag_sdh">SDH</string>
+    <string name="track_tag_external">External</string>
+    <string name="track_tag_original">Original</string>
+
+    <string name="logs_title">Logs</string>
+    <string name="logs_chip_all">All</string>
+    <string name="logs_chip_warnings">Warn</string>
+    <string name="logs_chip_errors">Error</string>
+    <string name="logs_chip_crashes">Crashes</string>
+    <string name="logs_groups_fmt">%1$d events in %2$d groups · repeats collapsed</string>
+    <string name="logs_events_fmt">%1$d events · every occurrence</string>
+    <string name="logs_expand">Expand</string>
+    <string name="logs_collapse">Collapse</string>
+    <string name="logs_buffered_fmt">%1$d / %2$d</string>
+    <string name="logs_paused">paused in history</string>
+    <string name="logs_pause">Pause</string>
+    <string name="logs_resume">Resume</string>
+    <string name="logs_jump_to_latest">Jump to latest</string>
+    <string name="logs_back_to_live">Back to live</string>
+    <string name="logs_save_title">Save logs</string>
+    <string name="logs_save_all">Everything in the buffer</string>
+    <string name="logs_save_visible">Just what is on screen</string>
+    <string name="logs_save_lines_fmt">%1$d lines</string>
+    <string name="logs_save_redaction_note">Server addresses, tokens and usernames are replaced with [REDACTED] before the file is written.</string>
+    <string name="logs_save_action">Save &amp; share</string>
+    <string name="logs_search">Search logs</string>
+    <string name="logs_search_placeholder">Search message, tag or trace</string>
+    <string name="logs_more">More options</string>
+    <string name="logs_matches_fmt">%1$d matches</string>
+    <string name="logs_clear_filters">Clear</string>
+    <string name="logs_copy">Copy</string>
+    <string name="logs_copy_with_context">Copy + 20 lines</string>
+    <string name="logs_only_this_tag">Only this tag</string>
+    <string name="logs_copy_visible">Copy what is on screen</string>
+    <string name="logs_tags_action">Filter by tag…</string>
+    <string name="logs_expand_repeats">Expand repeats</string>
+    <string name="logs_collapse_repeats">Collapse repeats</string>
+    <string name="logs_clear_action_menu">Clear the buffer</string>
+    <string name="logs_clear_title">Clear the buffer?</string>
+    <string name="logs_clear_body_fmt">%1$d lines are held in memory and nowhere else. Once they are gone they cannot be recovered or exported.</string>
+    <string name="logs_clear_crashes_kept_fmt">Your %1$d crash reports are not affected — delete those from the Crashes tab.</string>
+    <string name="logs_clear_action">Clear</string>
+    <string name="logs_launch_marker_fmt">APP LAUNCH · %1$s · %2$s</string>
+    <string name="logs_previous_error">Previous error</string>
+    <string name="logs_next_error">Next error</string>
+    <string name="logs_window_all">Everything</string>
+    <string name="logs_window_1m">Last 1 minute</string>
+    <string name="logs_window_5m">Last 5 minutes</string>
+    <string name="logs_window_15m">Last 15 minutes</string>
+    <string name="logs_window_all_short">All</string>
+    <string name="logs_window_1m_short">1m</string>
+    <string name="logs_window_5m_short">5m</string>
+    <string name="logs_window_15m_short">15m</string>
+    <string name="logs_tags_title">Filter by tag</string>
+    <string name="logs_tags_subtitle">Tags come from the buffer you are looking at, so the counts move as it fills.</string>
+    <string name="logs_tags_find">Find a tag</string>
+    <string name="logs_tags_clear">Clear</string>
+    <string name="logs_tags_show_fmt">Show %1$d lines</string>
+    <string name="logs_crash_note">Kept on this device only, never uploaded. The oldest report is dropped once there are more than five.</string>
+    <string name="logs_crash_new">NEW</string>
+    <string name="logs_crash_today">Today</string>
+    <string name="logs_crash_yesterday">Yesterday</string>
+    <string name="logs_crash_days_ago_fmt">%1$d days ago</string>
+    <string name="logs_crash_meta_time">TIME</string>
+    <string name="logs_crash_meta_thread">THREAD</string>
+    <string name="logs_crash_meta_build">BUILD</string>
+    <string name="logs_crash_meta_device">DEVICE</string>
+    <string name="logs_crash_stack_trace">STACK TRACE</string>
+    <string name="logs_crash_preceding">Logs before the crash</string>
+    <string name="logs_crash_copy_issue">Copy for issue</string>
+    <string name="logs_crash_share">Share</string>
+    <string name="logs_crash_delete">Delete this report</string>
+    <string name="logs_crash_delete_all">Delete all reports</string>
+    <string name="logs_crash_reports_kept_fmt">%1$d reports kept on this device</string>
+    <string name="logs_empty_buffer_title">Nothing logged yet</string>
+    <string name="logs_empty_buffer_body">Move around the app and lines will land here as they happen.</string>
+    <string name="logs_empty_search_title_fmt">No line says “%1$s”</string>
+    <string name="logs_empty_filter_title">Nothing matches these filters</string>
+    <string name="logs_empty_search_body">Message, tag and stack trace are all searched. Widen it by dropping a filter.</string>
+    <string name="logs_empty_crashes_title">No crashes recorded</string>
+    <string name="logs_empty_crashes_body">AFinity keeps the last five crash reports on this device. There are none to show.</string>
+    <string name="logs_empty_clear_filters">Clear filters</string>
+    <!--Linter -->
+    <string name="pref_send_logs">Server addresses, tokens and usernames are replaced with [REDACTED] before the file is written.</string>
+    <string name="pref_send_logs_summary">Server addresses, tokens and usernames are replaced with [REDACTED] before the file is written.</string>
+    <string name="error_set_server_url_fmt">Server addresses, tokens and usernames are replaced with [REDACTED] before the file is written.</string>
+
 </resources>

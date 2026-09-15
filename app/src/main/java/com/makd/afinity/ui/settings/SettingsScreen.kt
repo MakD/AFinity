@@ -2,7 +2,6 @@ package com.makd.afinity.ui.settings
 
 import android.app.LocaleConfig
 import android.app.LocaleManager
-import android.content.res.Configuration
 import android.os.LocaleList
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -75,7 +74,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
@@ -101,11 +99,14 @@ import com.makd.afinity.ui.components.SettingsItem
 import com.makd.afinity.ui.components.SettingsSwitchItem
 import com.makd.afinity.ui.components.connectionIndicatorColor
 import com.makd.afinity.ui.components.connectionLabel
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.settings.appearance.AppearanceOptionsScreen
 import com.makd.afinity.ui.settings.backup.BackupBottomSheet
 import com.makd.afinity.ui.settings.backup.BackupScreen
 import com.makd.afinity.ui.settings.downloads.DownloadSettingsScreen
+import com.makd.afinity.ui.settings.downloads.StorageSettingsScreen
 import com.makd.afinity.ui.settings.home.CustomSectionsScreen
+import com.makd.afinity.ui.settings.logs.LogViewerScreen
 import com.makd.afinity.ui.settings.player.PlayerOptionsScreen
 import com.makd.afinity.ui.settings.servers.ControlPanelView
 import com.makd.afinity.ui.settings.servers.ControlPanelViewModel
@@ -127,6 +128,7 @@ fun SettingsScreen(
     val connectionType by viewModel.connectionType.collectAsStateWithLifecycle()
     val manualOfflineMode by viewModel.manualOfflineMode.collectAsStateWithLifecycle()
     val isNetworkAvailable by viewModel.isNetworkAvailable.collectAsStateWithLifecycle()
+    val hasOfflineMedia by viewModel.hasOfflineMedia.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
     val defaultLangString = stringResource(R.string.lang_system_default)
@@ -152,8 +154,7 @@ fun SettingsScreen(
     val isAdmin by controlPanelViewModel.isAdmin.collectAsStateWithLifecycle()
     val windowAdaptiveInfo = currentWindowAdaptiveInfoV2()
     val defaultDirective = calculatePaneScaffoldDirective(windowAdaptiveInfo)
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
 
     val customDirective =
         PaneScaffoldDirective(
@@ -406,18 +407,39 @@ fun SettingsScreen(
                                     )
                                     SettingsDivider()
                                     SettingsItem(
-                                        icon = painterResource(id = R.drawable.ic_database),
-                                        title = stringResource(R.string.pref_downloads_and_storage),
-                                        subtitle =
-                                            stringResource(
-                                                R.string.pref_downloads_and_storage_summary
-                                            ),
+                                        icon = painterResource(id = R.drawable.ic_color_swatch),
+                                        title = stringResource(R.string.pref_appearance),
+                                        subtitle = stringResource(R.string.pref_appearance_summary),
                                         onClick = {
-                                            scope.launch {
-                                                navigator.navigateTo(
-                                                    ListDetailPaneScaffoldRole.Detail,
-                                                    SettingsPaneDestination.Downloads,
+                                            if (isDualPane) {
+                                                scope.launch {
+                                                    navigator.navigateTo(
+                                                        ListDetailPaneScaffoldRole.Detail,
+                                                        SettingsPaneDestination.Appearance,
+                                                    )
+                                                }
+                                            } else {
+                                                navController.navigate(
+                                                    Destination.APPEARANCE_OPTIONS_ROUTE
                                                 )
+                                            }
+                                        },
+                                    )
+                                    SettingsDivider()
+                                    SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_language),
+                                        title = stringResource(R.string.pref_app_language),
+                                        subtitle = appLanguageSubtitle,
+                                        onClick = {
+                                            if (isDualPane) {
+                                                scope.launch {
+                                                    navigator.navigateTo(
+                                                        ListDetailPaneScaffoldRole.Detail,
+                                                        SettingsPaneDestination.Language,
+                                                    )
+                                                }
+                                            } else {
+                                                showLanguageDialog = true
                                             }
                                         },
                                     )
@@ -439,7 +461,88 @@ fun SettingsScreen(
                                             }
                                         },
                                     )
+                                }
+                            }
+
+                            item {
+                                SettingsGroup(
+                                    title = stringResource(R.string.pref_group_playback_downloads),
+                                    endPadding = listEndPadding,
+                                ) {
+                                    SettingsItem(
+                                        icon =
+                                            painterResource(id = R.drawable.ic_playback_settings),
+                                        title = stringResource(R.string.pref_playback),
+                                        subtitle = stringResource(R.string.pref_playback_summary),
+                                        onClick = {
+                                            if (isDualPane) {
+                                                scope.launch {
+                                                    navigator.navigateTo(
+                                                        ListDetailPaneScaffoldRole.Detail,
+                                                        SettingsPaneDestination.Player,
+                                                    )
+                                                }
+                                            } else {
+                                                navController.navigate(
+                                                    Destination.PLAYER_OPTIONS_ROUTE
+                                                )
+                                            }
+                                        },
+                                    )
                                     SettingsDivider()
+                                    SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_database),
+                                        title = stringResource(R.string.pref_downloads_and_storage),
+                                        subtitle =
+                                            stringResource(
+                                                R.string.pref_downloads_and_storage_summary
+                                            ),
+                                        onClick = {
+                                            if (isDualPane) {
+                                                scope.launch {
+                                                    navigator.navigateTo(
+                                                        ListDetailPaneScaffoldRole.Detail,
+                                                        SettingsPaneDestination.StorageSettings,
+                                                    )
+                                                }
+                                            } else {
+                                                navController.navigate(
+                                                    Destination.STORAGE_SETTINGS_ROUTE
+                                                )
+                                            }
+                                        },
+                                    )
+                                    if (hasOfflineMedia) {
+                                        SettingsDivider()
+                                        SettingsItem(
+                                            icon = painterResource(id = R.drawable.ic_download),
+                                            title = stringResource(R.string.pref_offline_media),
+                                            subtitle =
+                                                stringResource(R.string.pref_offline_media_summary),
+                                            onClick = {
+                                                if (isDualPane) {
+                                                    scope.launch {
+                                                        navigator.navigateTo(
+                                                            ListDetailPaneScaffoldRole.Detail,
+                                                            SettingsPaneDestination.Downloads,
+                                                        )
+                                                    }
+                                                } else {
+                                                    navController.navigate(
+                                                        Destination.DOWNLOAD_SETTINGS_ROUTE
+                                                    )
+                                                }
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+
+                            item {
+                                SettingsGroup(
+                                    title = stringResource(R.string.pref_group_account),
+                                    endPadding = listEndPadding,
+                                ) {
                                     SettingsItem(
                                         icon = painterResource(id = R.drawable.ic_user),
                                         title = stringResource(R.string.pref_switch_session),
@@ -461,6 +564,39 @@ fun SettingsScreen(
                                                     }
                                                 }
                                             } else null,
+                                    )
+                                    SettingsDivider()
+                                    SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_server),
+                                        title = stringResource(R.string.pref_manage_servers),
+                                        subtitle =
+                                            stringResource(R.string.pref_manage_servers_summary),
+                                        onClick = {
+                                            if (isDualPane) {
+                                                scope.launch {
+                                                    navigator.navigateTo(
+                                                        ListDetailPaneScaffoldRole.Detail,
+                                                        SettingsPaneDestination.ServerManagement,
+                                                    )
+                                                }
+                                            } else {
+                                                navController.navigate(
+                                                    Destination.SERVER_MANAGEMENT_ROUTE
+                                                )
+                                            }
+                                        },
+                                    )
+                                    SettingsDivider()
+                                    SettingsItem(
+                                        icon = painterResource(id = R.drawable.ic_link),
+                                        title = stringResource(R.string.pref_connect_services),
+                                        subtitle =
+                                            stringResource(R.string.pref_connect_services_summary),
+                                        onClick = {
+                                            navController.navigate(
+                                                Destination.createServicesHubRoute("manual")
+                                            )
+                                        },
                                     )
                                     SettingsDivider()
                                     SettingsItem(
@@ -487,111 +623,6 @@ fun SettingsScreen(
                                                     }
                                                 }
                                             } else null,
-                                    )
-                                }
-                            }
-
-                            item {
-                                SettingsGroup(
-                                    title = stringResource(R.string.pref_group_connections),
-                                    endPadding = listEndPadding,
-                                ) {
-                                    SettingsItem(
-                                        icon = painterResource(id = R.drawable.ic_server),
-                                        title = stringResource(R.string.pref_manage_servers),
-                                        subtitle =
-                                            stringResource(R.string.pref_manage_servers_summary),
-                                        onClick = {
-                                            scope.launch {
-                                                navigator.navigateTo(
-                                                    ListDetailPaneScaffoldRole.Detail,
-                                                    SettingsPaneDestination.ServerManagement,
-                                                )
-                                            }
-                                        },
-                                    )
-                                    SettingsDivider()
-                                    SettingsItem(
-                                        icon = painterResource(id = R.drawable.ic_link),
-                                        title = stringResource(R.string.pref_connect_services),
-                                        subtitle =
-                                            stringResource(R.string.pref_connect_services_summary),
-                                        onClick = {
-                                            navController.navigate(
-                                                Destination.createServicesHubRoute("manual")
-                                            )
-                                        },
-                                    )
-                                }
-                            }
-
-                            item {
-                                SettingsGroup(
-                                    title = stringResource(R.string.pref_group_preferences),
-                                    endPadding = listEndPadding,
-                                ) {
-                                    SettingsItem(
-                                        icon = painterResource(id = R.drawable.ic_color_swatch),
-                                        title = stringResource(R.string.pref_appearance),
-                                        subtitle = stringResource(R.string.pref_appearance_summary),
-                                        onClick = {
-                                            scope.launch {
-                                                navigator.navigateTo(
-                                                    ListDetailPaneScaffoldRole.Detail,
-                                                    SettingsPaneDestination.Appearance,
-                                                )
-                                            }
-                                        },
-                                    )
-                                    SettingsDivider()
-                                    SettingsItem(
-                                        icon = painterResource(id = R.drawable.ic_row_custom),
-                                        title = stringResource(R.string.custom_sections_title),
-                                        subtitle =
-                                            stringResource(
-                                                R.string.custom_sections_settings_summary
-                                            ),
-                                        onClick = {
-                                            scope.launch {
-                                                navigator.navigateTo(
-                                                    ListDetailPaneScaffoldRole.Detail,
-                                                    SettingsPaneDestination.CustomSections,
-                                                )
-                                            }
-                                        },
-                                    )
-                                    SettingsDivider()
-                                    SettingsItem(
-                                        icon = painterResource(id = R.drawable.ic_language),
-                                        title = stringResource(R.string.pref_app_language),
-                                        subtitle = appLanguageSubtitle,
-                                        onClick = {
-                                            if (isDualPane) {
-                                                scope.launch {
-                                                    navigator.navigateTo(
-                                                        ListDetailPaneScaffoldRole.Detail,
-                                                        SettingsPaneDestination.Language,
-                                                    )
-                                                }
-                                            } else {
-                                                showLanguageDialog = true
-                                            }
-                                        },
-                                    )
-                                    SettingsDivider()
-                                    SettingsItem(
-                                        icon =
-                                            painterResource(id = R.drawable.ic_playback_settings),
-                                        title = stringResource(R.string.pref_playback),
-                                        subtitle = stringResource(R.string.pref_playback_summary),
-                                        onClick = {
-                                            scope.launch {
-                                                navigator.navigateTo(
-                                                    ListDetailPaneScaffoldRole.Detail,
-                                                    SettingsPaneDestination.Player,
-                                                )
-                                            }
-                                        },
                                     )
                                 }
                             }
@@ -628,31 +659,37 @@ fun SettingsScreen(
                                         title = stringResource(R.string.pref_licenses),
                                         subtitle = stringResource(R.string.pref_licenses_summary),
                                         onClick = {
-                                            scope.launch {
-                                                navigator.navigateTo(
-                                                    ListDetailPaneScaffoldRole.Detail,
-                                                    SettingsPaneDestination.Licenses,
-                                                )
+                                            if (isDualPane) {
+                                                scope.launch {
+                                                    navigator.navigateTo(
+                                                        ListDetailPaneScaffoldRole.Detail,
+                                                        SettingsPaneDestination.Licenses,
+                                                    )
+                                                }
+                                            } else {
+                                                navController.navigate(Destination.LICENSES_ROUTE)
                                             }
                                         },
                                     )
                                     SettingsDivider()
                                     SettingsItem(
                                         icon = painterResource(id = R.drawable.ic_logs),
-                                        title = stringResource(R.string.pref_send_logs),
-                                        subtitle = stringResource(R.string.pref_send_logs_summary),
-                                        onClick =
-                                            if (uiState.isExportingLogs) null
-                                            else ({ viewModel.exportLogs() }),
-                                        trailing =
-                                            if (uiState.isExportingLogs)
-                                                ({
-                                                    CircularProgressIndicator(
-                                                        modifier = Modifier.size(20.dp),
-                                                        strokeWidth = 2.dp,
+                                        title = stringResource(R.string.pref_view_logs),
+                                        subtitle = stringResource(R.string.pref_view_logs_summary),
+                                        onClick = {
+                                            if (isDualPane) {
+                                                scope.launch {
+                                                    navigator.navigateTo(
+                                                        ListDetailPaneScaffoldRole.Detail,
+                                                        SettingsPaneDestination.Logs,
                                                     )
-                                                })
-                                            else null,
+                                                }
+                                            } else {
+                                                navController.navigate(
+                                                    Destination.createLogsRoute()
+                                                )
+                                            }
+                                        },
                                     )
                                 }
                             }
@@ -719,7 +756,15 @@ fun SettingsScreen(
                 when (navigator.currentDestination?.contentKey) {
                     is SettingsPaneDestination.Appearance ->
                         AppearanceOptionsScreen(
-                            onBackClick = { scope.launch { navigator.navigateBack() } }
+                            onBackClick = { scope.launch { navigator.navigateBack() } },
+                            onCustomSectionsClick = {
+                                scope.launch {
+                                    navigator.navigateTo(
+                                        ListDetailPaneScaffoldRole.Detail,
+                                        SettingsPaneDestination.CustomSections,
+                                    )
+                                }
+                            },
                         )
                     is SettingsPaneDestination.CustomSections ->
                         CustomSectionsScreen(
@@ -740,6 +785,10 @@ fun SettingsScreen(
                                 )
                             },
                         )
+                    is SettingsPaneDestination.StorageSettings ->
+                        StorageSettingsScreen(
+                            onBackClick = { scope.launch { navigator.navigateBack() } }
+                        )
                     is SettingsPaneDestination.ServerManagement ->
                         ServerManagementScreen(
                             onBackClick = { scope.launch { navigator.navigateBack() } },
@@ -757,6 +806,8 @@ fun SettingsScreen(
                         )
                     is SettingsPaneDestination.Licenses ->
                         LicensesScreen(onBackClick = { scope.launch { navigator.navigateBack() } })
+                    is SettingsPaneDestination.Logs ->
+                        LogViewerScreen(onBackClick = { scope.launch { navigator.navigateBack() } })
                     is SettingsPaneDestination.SessionSwitcher ->
                         SessionSwitcherContent(
                             onDismiss = { scope.launch { navigator.navigateBack() } },
@@ -809,13 +860,13 @@ fun SettingsScreen(
 
 @Composable
 fun ProfileHeader(
+    modifier: Modifier = Modifier,
     userName: String,
     serverName: String?,
     serverUrl: String?,
     serverVersion: String? = null,
     userProfileImageUrl: String?,
     connectionType: ConnectionType,
-    modifier: Modifier = Modifier,
     isAdmin: Boolean = false,
     onControlPanelClick: (() -> Unit)? = null,
 ) {

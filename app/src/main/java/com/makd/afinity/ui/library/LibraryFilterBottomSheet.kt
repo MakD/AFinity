@@ -14,10 +14,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -43,6 +45,7 @@ import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.media.LibraryFeature
 import com.makd.afinity.data.models.media.LibraryFilterOptions
 import com.makd.afinity.data.models.media.LibraryFilters
+import com.makd.afinity.data.models.media.LibraryLanguageOption
 import com.makd.afinity.data.models.media.SeriesStatusFilter
 import com.makd.afinity.data.models.media.VideoTypeFilter
 import com.makd.afinity.ui.components.filter.FilterAccordionSection
@@ -56,7 +59,53 @@ data class LibraryFilterCapabilities(
     val videoType: Boolean,
     val seriesStatus: Boolean,
     val features: Boolean = true,
+    val languages: Boolean = true,
 )
+
+@Composable
+private fun LanguageFilterSection(
+    sectionKey: String,
+    title: String,
+    hint: String,
+    anyLabel: String,
+    available: List<LibraryLanguageOption>,
+    selectedCodes: Set<String>,
+    query: String,
+    onQueryChange: (String) -> Unit,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    onSelectionChange: (Set<String>) -> Unit,
+    onQueryConsumed: () -> Unit,
+) {
+    val selected = available.filter { it.code in selectedCodes }
+    val suggestions = available.filter {
+        it.code !in selectedCodes && (query.isBlank() || it.name.contains(query, ignoreCase = true))
+    }
+
+    FilterAccordionSection(
+        title = title,
+        summary = if (selected.isEmpty()) anyLabel else selected.joinToString(", ") { it.name },
+        expanded = expanded,
+        onToggle = onToggle,
+    ) {
+        SearchableChipMultiSelect(
+            label = null,
+            placeholder = hint,
+            query = query,
+            onQueryChange = onQueryChange,
+            suggestions = suggestions,
+            suggestionLabel = { it.name },
+            onSuggestionSelected = { option ->
+                onSelectionChange(selectedCodes + option.code)
+                onQueryConsumed()
+            },
+            selected = selected,
+            selectedLabel = { it.name },
+            onRemoveSelected = { option -> onSelectionChange(selectedCodes - option.code) },
+            onClearAll = { onSelectionChange(emptySet()) },
+        )
+    }
+}
 
 fun libraryFilterCapabilities(type: CollectionType?): LibraryFilterCapabilities =
     when (type) {
@@ -86,6 +135,7 @@ fun libraryFilterCapabilities(type: CollectionType?): LibraryFilterCapabilities 
                 years = false,
                 videoType = true,
                 seriesStatus = false,
+                languages = false,
             )
         else ->
             LibraryFilterCapabilities(
@@ -103,6 +153,7 @@ fun LibraryFilterBottomSheet(
     filters: LibraryFilters,
     options: LibraryFilterOptions,
     capabilities: LibraryFilterCapabilities,
+    isLoadingOptions: Boolean,
     onApply: (LibraryFilters) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -111,6 +162,8 @@ fun LibraryFilterBottomSheet(
     var tagQuery by remember { mutableStateOf("") }
     var ratingQuery by remember { mutableStateOf("") }
     var yearQuery by remember { mutableStateOf("") }
+    var audioLanguageQuery by remember { mutableStateOf("") }
+    var subtitleLanguageQuery by remember { mutableStateOf("") }
 
     var expandedSections by remember {
         mutableStateOf(
@@ -179,6 +232,19 @@ fun LibraryFilterBottomSheet(
                                     fontWeight = FontWeight.Bold
                                 ),
                         )
+
+                        if (isLoadingOptions) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(8.dp))
 
@@ -447,6 +513,42 @@ fun LibraryFilterBottomSheet(
                                     onClearAll = { working = working.copy(tags = emptySet()) },
                                 )
                             }
+                        }
+
+                        if (capabilities.languages && options.audioLanguages.isNotEmpty()) {
+                            LanguageFilterSection(
+                                sectionKey = "audioLanguages",
+                                title = stringResource(R.string.library_filter_audio_language),
+                                hint = stringResource(R.string.library_filter_language_hint),
+                                anyLabel = anyLabel,
+                                available = options.audioLanguages,
+                                selectedCodes = working.audioLanguages,
+                                query = audioLanguageQuery,
+                                onQueryChange = { audioLanguageQuery = it },
+                                expanded = expandedSections.contains("audioLanguages"),
+                                onToggle = { toggleSection("audioLanguages") },
+                                onSelectionChange = { working = working.copy(audioLanguages = it) },
+                                onQueryConsumed = { audioLanguageQuery = "" },
+                            )
+                        }
+
+                        if (capabilities.languages && options.subtitleLanguages.isNotEmpty()) {
+                            LanguageFilterSection(
+                                sectionKey = "subtitleLanguages",
+                                title = stringResource(R.string.library_filter_subtitle_language),
+                                hint = stringResource(R.string.library_filter_language_hint),
+                                anyLabel = anyLabel,
+                                available = options.subtitleLanguages,
+                                selectedCodes = working.subtitleLanguages,
+                                query = subtitleLanguageQuery,
+                                onQueryChange = { subtitleLanguageQuery = it },
+                                expanded = expandedSections.contains("subtitleLanguages"),
+                                onToggle = { toggleSection("subtitleLanguages") },
+                                onSelectionChange = {
+                                    working = working.copy(subtitleLanguages = it)
+                                },
+                                onQueryConsumed = { subtitleLanguageQuery = "" },
+                            )
                         }
 
                         if (capabilities.videoType) {

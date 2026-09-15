@@ -16,6 +16,10 @@ import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.net.URI
+import java.util.UUID
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,9 +27,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.net.URI
-import java.util.UUID
-import javax.inject.Inject
 
 @HiltViewModel
 class ServicesHubViewModel
@@ -73,6 +74,14 @@ constructor(
     private val _remoteError = MutableStateFlow<String?>(null)
     val remoteError = _remoteError.asStateFlow()
 
+    private val _remoteNeedsLocalNetworkPermission = MutableStateFlow(false)
+    val remoteNeedsLocalNetworkPermission = _remoteNeedsLocalNetworkPermission.asStateFlow()
+
+    fun onLocalNetworkPermissionGranted() {
+        _remoteNeedsLocalNetworkPermission.value = false
+        _remoteError.value = null
+    }
+
     init {
         viewModelScope.launch {
             sessionManager.currentSession.collect { session ->
@@ -102,13 +111,10 @@ constructor(
         }
     }
 
-    fun clearRemoteError() {
-        _remoteError.value = null
-    }
-
     fun verifyAndSaveRemoteAddress(input: String, onSaved: () -> Unit) {
         viewModelScope.launch {
             _remoteError.value = null
+            _remoteNeedsLocalNetworkPermission.value = false
             _remoteVerifying.value = true
             try {
                 val session = sessionManager.currentSession.value
@@ -144,7 +150,15 @@ constructor(
                     is JellyfinServerRepository.ServerConnectionResult.Error -> {
                         _remoteError.value = result.message
                     }
+                    JellyfinServerRepository.ServerConnectionResult
+                        .LocalNetworkPermissionRequired -> {
+                        _remoteNeedsLocalNetworkPermission.value = true
+                        _remoteError.value =
+                            context.getString(R.string.local_network_permission_needed)
+                    }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to verify remote address")
                 _remoteError.value =

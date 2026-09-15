@@ -4,8 +4,8 @@ import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.user.AfinityUserDataDto
-import org.jellyfin.sdk.model.api.UserItemDataDto
 import java.util.UUID
+import org.jellyfin.sdk.model.api.UserItemDataDto
 
 data class UserDataPatch(
     val played: Boolean? = null,
@@ -209,8 +209,7 @@ fun AfinityUserDataOwner.applying(values: UserDataValues): AfinityUserDataOwner 
         else -> owner
     }
 
-fun AfinityItem.withUserData(data: UserItemDataDto): AfinityItem =
-    applying(data.toUserDataValues())
+fun AfinityItem.withUserData(data: UserItemDataDto): AfinityItem = applying(data.toUserDataValues())
 
 fun AfinityItem.withUserData(data: AfinityUserDataDto): AfinityItem =
     applying(data.toUserDataValues())
@@ -239,15 +238,14 @@ fun AfinityUserDataOwner.patchedWith(patch: UserDataPatch): AfinityUserDataOwner
 fun <T : AfinityItem> List<T>.withUserData(itemId: UUID, data: UserItemDataDto): List<T> {
     if (none { it.id == itemId }) return this
     var changed = false
-    val patched =
-        map { item ->
-            if (item.id != itemId) {
-                item
-            } else {
-                @Suppress("UNCHECKED_CAST") val next = item.withUserData(data) as T
-                if (next !== item) changed = true
-                next
-            }
+    val patched = map { item ->
+        if (item.id != itemId) {
+            item
+        } else {
+            @Suppress("UNCHECKED_CAST") val next = item.withUserData(data) as T
+            if (next !== item) changed = true
+            next
         }
+    }
     return if (changed) patched else this
 }

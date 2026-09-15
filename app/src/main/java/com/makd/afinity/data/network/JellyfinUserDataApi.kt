@@ -1,13 +1,13 @@
 package com.makd.afinity.data.network
 
+import java.time.Instant
+import java.util.UUID
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.Response
 import org.jellyfin.sdk.api.client.extensions.post
 import org.jellyfin.sdk.model.api.UserItemDataDto
-import java.time.Instant
-import java.util.UUID
 
 @Serializable
 internal data class UserItemDataUpdateBody(

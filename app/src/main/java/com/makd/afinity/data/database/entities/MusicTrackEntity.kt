@@ -30,6 +30,8 @@ data class MusicTrackEntity(
     val productionYear: Int?,
     val runtimeTicks: Long,
     val images: AfinityImages?,
+    val normalizationGain: Float? = null,
+    val albumNormalizationGain: Float? = null,
     val localFilePath: String? = null,
     val localImagePath: String? = null,
 )
@@ -49,6 +51,8 @@ fun AfinityTrack.toMusicTrackEntity(serverId: String, userId: String) =
         productionYear = productionYear,
         runtimeTicks = runtimeTicks,
         images = images,
+        normalizationGain = normalizationGain,
+        albumNormalizationGain = albumNormalizationGain,
     )
 
 fun MusicTrackEntity.toAfinityTrack(): AfinityTrack {
@@ -74,7 +78,8 @@ fun MusicTrackEntity.toAfinityTrack(): AfinityTrack {
         played = false,
         favorite = false,
         playCount = null,
-        normalizationGain = null,
+        normalizationGain = normalizationGain,
+        albumNormalizationGain = albumNormalizationGain,
         images = resolvedImages,
         localFilePath = localFilePath,
         localImagePath = localImagePath,

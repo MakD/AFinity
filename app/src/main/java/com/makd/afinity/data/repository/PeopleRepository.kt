@@ -20,6 +20,11 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.util.ItemIds
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -29,10 +34,6 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.PersonKind
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
-import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.minutes
 
 @Singleton
 class PeopleRepository
@@ -79,7 +80,6 @@ constructor(
                     sortDescending = true,
                 )
                 .items
-                .orEmpty()
 
         if (items.isNotEmpty()) {
             scanCache = Triple(sessionKey, System.currentTimeMillis(), items)
@@ -183,6 +183,8 @@ constructor(
             }
 
             return mappedPeople
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to get top ${type.name}")
             return emptyList()
@@ -279,6 +281,8 @@ constructor(
             personSectionDao.insertSection(entity)
 
             return section
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to get person section for ${personWithCount.person.name}")
             return null
@@ -304,6 +308,8 @@ constructor(
                         )
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to remove $itemId from person section caches")
             }
@@ -342,6 +348,8 @@ constructor(
                         }
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to update Person DB caches")
             }
@@ -353,6 +361,8 @@ constructor(
         try {
             topPeopleDao.clearAllCache()
             personSectionDao.clearAllCache()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to clear people database caches")
         }

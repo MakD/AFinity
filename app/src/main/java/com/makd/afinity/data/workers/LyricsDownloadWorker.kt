@@ -6,15 +6,17 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.music.encodeLyricsJson
+import com.makd.afinity.data.models.music.toAfinityLyricLine
 import com.makd.afinity.data.repository.DatabaseRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.util.UUID
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
-import org.jellyfin.sdk.api.operations.LyricsApi
+import org.jellyfin.sdk.api.operations.LyricApi
 import timber.log.Timber
-import java.util.UUID
 
 @HiltWorker
 class LyricsDownloadWorker
@@ -61,7 +63,7 @@ constructor(
                     sessionManager.getOrRestoreApiClient(session.serverId)
                         ?: return@withContext Result.failure(workDataOf("error" to "No API client"))
 
-                val response = LyricsApi(apiClient).getLyrics(itemId = itemId)
+                val response = LyricApi(apiClient).getLyrics(itemId = itemId)
                 val lines = response.content.lyrics ?: emptyList()
 
                 if (lines.isEmpty()) {
@@ -69,13 +71,7 @@ constructor(
                     return@withContext Result.success(workDataOf())
                 }
 
-                val lyricsJson =
-                    Json.encodeToString(
-                        lines.mapNotNull { line ->
-                            val start = line.start ?: return@mapNotNull null
-                            listOf(line.text ?: "", (start / 10_000_000.0).toString())
-                        }
-                    )
+                val lyricsJson = encodeLyricsJson(lines.mapNotNull { it.toAfinityLyricLine() })
 
                 databaseRepository.insertMusicLyrics(
                     trackId = itemId,
@@ -86,6 +82,8 @@ constructor(
 
                 Timber.i("Cached ${lines.size} lyric lines for track $itemId")
                 Result.success(workDataOf())
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to cache lyrics for track $itemId, not fatal")
                 Result.success(workDataOf())

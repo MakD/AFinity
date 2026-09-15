@@ -65,6 +65,7 @@ fun TransportControls(
     seekForwardContentDescription: String? = null,
     playContentDescription: String? = null,
     pauseContentDescription: String? = null,
+    timeRowCenter: (@Composable () -> Unit)? = null,
 ) {
     var sliderValue by remember(position) { mutableFloatStateOf(position) }
     var isDragging by remember { mutableStateOf(false) }
@@ -142,12 +143,14 @@ fun TransportControls(
         Row(
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = elapsedLabel,
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.7f),
             )
+            timeRowCenter?.invoke()
             Text(
                 text = totalLabel,
                 style = MaterialTheme.typography.labelSmall,

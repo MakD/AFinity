@@ -8,6 +8,7 @@ import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.database.dao.AudibleRatingDao
 import com.makd.afinity.data.database.entities.AudibleRatingEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfAddressEntity
+import com.makd.afinity.data.database.entities.AudiobookshelfBookmarkEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfConfigEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfItemEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfLibraryEntity
@@ -17,6 +18,8 @@ import com.makd.afinity.data.models.audiobookshelf.AudibleRating
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser
 import com.makd.afinity.data.models.audiobookshelf.BatchLocalSessionRequest
+import com.makd.afinity.data.models.audiobookshelf.Bookmark
+import com.makd.afinity.data.models.audiobookshelf.BookmarkRequest
 import com.makd.afinity.data.models.audiobookshelf.DeviceInfo
 import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
@@ -46,6 +49,13 @@ import com.makd.afinity.data.repository.SeriesItemsResult
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Lazy
+import java.io.File
+import java.io.IOException
+import java.util.Locale
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -67,11 +77,6 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import timber.log.Timber
-import java.io.File
-import java.util.Locale
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class AudiobookshelfRepositoryImpl
@@ -89,7 +94,11 @@ constructor(
 ) : AudiobookshelfRepository {
 
     private val audiobookshelfDao = database.audiobookshelfDao()
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        coerceInputValues = true
+    }
 
     private suspend fun <T> absResult(
         errorMessage: String,
@@ -108,6 +117,8 @@ constructor(
                     Result.failure(Exception("$errorMessage: ${response.message()}"))
                 }
             } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
+            } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, errorMessage)
@@ -128,6 +139,8 @@ constructor(
 
     private val _currentConfig = MutableStateFlow<AudiobookshelfConfig?>(null)
     override val currentConfig: StateFlow<AudiobookshelfConfig?> = _currentConfig.asStateFlow()
+
+    @Volatile private var cachedBookmarksSignature: Int? = null
 
     private val _activeContextFlow = MutableStateFlow<Pair<String, UUID>?>(null)
     private var activeContext: Pair<String, UUID>?
@@ -169,6 +182,8 @@ constructor(
                         _currentConfig.value =
                             _currentConfig.value?.copy(serverUrl = result.address)
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(
                         e,
@@ -210,6 +225,8 @@ constructor(
 
                 val response = client.newCall(request).execute()
                 response.isSuccessful
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.d("Audiobookshelf server verification failed for $url: ${e.message}")
                 false
@@ -259,6 +276,8 @@ constructor(
                         else -> AddressCheck.DIFFERENT_SERVER
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.d("Audiobookshelf identity check failed for $url: ${e.message}")
                 AddressCheck.INDETERMINATE
@@ -282,6 +301,7 @@ constructor(
         _isAuthenticated.value = false
         _currentConfig.value = null
         clearPersonalizedCache()
+        cachedBookmarksSignature = null
         activeContext = serverId to userId
         _currentSessionId.value = "${serverId}_$userId"
 
@@ -310,6 +330,8 @@ constructor(
                         )
                         activeUrl = result.address
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.w(e, "Audiobookshelf: Address resolution failed, using config URL")
                 }
@@ -340,6 +362,7 @@ constructor(
 
     override fun clearActiveSession() {
         activeContext = null
+        cachedBookmarksSignature = null
         _currentSessionId.value = null
         securePreferencesRepository.clearActiveAudiobookshelfCache()
         _isAuthenticated.value = false
@@ -474,6 +497,8 @@ constructor(
                     pendingServerUrl = null
                     Result.failure(Exception(errorMsg))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Audiobookshelf login failed")
                 pendingServerUrl = null
@@ -504,6 +529,8 @@ constructor(
 
                 Timber.d("Audiobookshelf logout successful")
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Audiobookshelf logout failed")
                 Result.failure(e)
@@ -525,15 +552,13 @@ constructor(
                     _isAuthenticated.value = false
                     Result.success(false)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Token validation failed")
                 Result.failure(e)
             }
         }
-    }
-
-    override suspend fun setServerUrl(url: String) {
-        pendingServerUrl = url
     }
 
     override suspend fun getServerUrl(): String? {
@@ -596,6 +621,8 @@ constructor(
                 } else {
                     Result.failure(Exception("Failed to fetch libraries: ${response.message()}"))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh libraries")
                 Result.failure(e)
@@ -617,6 +644,8 @@ constructor(
                 } else {
                     Result.failure(Exception("Failed to fetch library: ${response.message()}"))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get library")
                 Result.failure(e)
@@ -640,6 +669,8 @@ constructor(
                         Exception("Failed to fetch library stats: ${response.message()}")
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get library stats")
                 Result.failure(e)
@@ -749,6 +780,8 @@ constructor(
 
                 Timber.d("Fetched all ${allItems.size} items for library $libraryId")
                 Result.success(allItems)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh library items")
                 Result.failure(e)
@@ -875,6 +908,8 @@ constructor(
                     Timber.w("getItemDetails: ABS returned ${response.message()} — trying DB cache")
                     cachedResult("Failed to fetch item: ${response.message()}")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get item details — trying DB cache")
                 cachedResult(e.message ?: "Failed to get item details")
@@ -904,6 +939,8 @@ constructor(
             val response =
                 try {
                     apiService.get().getSeries(id = libraryId, limit = limit, page = currentPage)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to fetch series page for library $libraryId")
                     return@flow
@@ -965,6 +1002,8 @@ constructor(
                 } else {
                     Result.failure(Exception("Failed to fetch series items: ${response.message()}"))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get series items for series: $seriesId")
                 Result.failure(e)
@@ -1003,6 +1042,8 @@ constructor(
                 } else {
                     Result.failure(Exception("Failed to fetch personalized: ${response.message()}"))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get personalized")
                 Result.failure(e)
@@ -1031,6 +1072,224 @@ constructor(
                     }
                 }
             }
+        }
+    }
+
+    private fun Bookmark.toEntity(
+        serverId: String,
+        userId: String,
+        pendingSync: Boolean = false,
+        deleted: Boolean = false,
+        updatedAt: Long = 0L,
+    ) =
+        AudiobookshelfBookmarkEntity(
+            jellyfinServerId = serverId,
+            jellyfinUserId = userId,
+            libraryItemId = libraryItemId,
+            time = time.toLong(),
+            serverTime = time,
+            title = title,
+            createdAt = createdAt,
+            pendingSync = pendingSync,
+            deleted = deleted,
+            updatedAt = updatedAt,
+        )
+
+    private fun AudiobookshelfBookmarkEntity.toBookmark() =
+        Bookmark(
+            libraryItemId = libraryItemId,
+            title = title,
+            time = serverTime,
+            createdAt = createdAt,
+        )
+
+    override fun getBookmarksForItemFlow(itemId: String): Flow<List<Bookmark>> {
+        val (serverId, userId) = activeContext ?: return flowOf(emptyList())
+        return audiobookshelfDao.getBookmarksForItemFlow(itemId, serverId, userId.toString()).map {
+            entities ->
+            entities.map { it.toBookmark() }
+        }
+    }
+
+    override suspend fun cacheBookmarks(bookmarks: List<Bookmark>) {
+        val (serverId, userId) = activeContext ?: return
+        val signature =
+            bookmarks
+                .sortedWith(compareBy({ it.libraryItemId }, { it.time }))
+                .joinToString("|") { "${it.libraryItemId}@${it.time}=${it.title}" }
+                .hashCode()
+        if (signature == cachedBookmarksSignature) return
+
+        withContext(Dispatchers.IO) {
+            runCatching {
+                audiobookshelfDao.deleteSyncedBookmarks(serverId, userId.toString())
+                if (bookmarks.isNotEmpty()) {
+                    audiobookshelfDao.insertBookmarks(
+                        bookmarks.map { it.toEntity(serverId, userId.toString()) }
+                    )
+                }
+                cachedBookmarksSignature = signature
+            }
+                .onFailure {
+                    cachedBookmarksSignature = null
+                    Timber.w(it, "Failed to cache bookmarks")
+                }
+        }
+    }
+
+    override suspend fun refreshBookmarks(): Result<List<Bookmark>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+                val response = apiService.get().getMe()
+                val body = response.body()
+                if (!response.isSuccessful || body == null) {
+                    return@withContext Result.failure(Exception("Failed to load bookmarks"))
+                }
+                val bookmarks = body.bookmarks.orEmpty()
+                cacheBookmarks(bookmarks)
+                Result.success(bookmarks)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to refresh bookmarks")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun createBookmark(
+        itemId: String,
+        timeSeconds: Long,
+        title: String,
+    ): Result<Unit> {
+        val (serverId, userId) = activeContext ?: return Result.failure(Exception("No session"))
+        return withContext(Dispatchers.IO) {
+            val now = System.currentTimeMillis()
+            audiobookshelfDao.insertBookmark(
+                AudiobookshelfBookmarkEntity(
+                    jellyfinServerId = serverId,
+                    jellyfinUserId = userId.toString(),
+                    libraryItemId = itemId,
+                    time = timeSeconds,
+                    serverTime = timeSeconds.toDouble(),
+                    title = title,
+                    createdAt = now,
+                    pendingSync = true,
+                    deleted = false,
+                    updatedAt = now,
+                )
+            )
+            if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                return@withContext Result.success(Unit)
+            }
+            try {
+                val response =
+                    apiService.get().createBookmark(itemId, BookmarkRequest(timeSeconds, title))
+                val body = response.body()
+                if (response.isSuccessful && body != null) {
+                    audiobookshelfDao.insertBookmark(body.toEntity(serverId, userId.toString()))
+                }
+                Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Bookmark create queued for later sync")
+                Result.success(Unit)
+            }
+        }
+    }
+
+    override suspend fun deleteBookmark(itemId: String, serverTime: Double): Result<Unit> {
+        val (serverId, userId) = activeContext ?: return Result.failure(Exception("No session"))
+        return withContext(Dispatchers.IO) {
+            val now = System.currentTimeMillis()
+            val timeSeconds = serverTime.toLong()
+            audiobookshelfDao.insertBookmark(
+                AudiobookshelfBookmarkEntity(
+                    jellyfinServerId = serverId,
+                    jellyfinUserId = userId.toString(),
+                    libraryItemId = itemId,
+                    time = timeSeconds,
+                    serverTime = serverTime,
+                    title = "",
+                    createdAt = now,
+                    pendingSync = true,
+                    deleted = true,
+                    updatedAt = now,
+                )
+            )
+            if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                return@withContext Result.success(Unit)
+            }
+            try {
+                val response = apiService.get().deleteBookmark(itemId, serverTime)
+                if (response.isSuccessful || response.code() == 404) {
+                    audiobookshelfDao.deleteBookmarkRow(
+                        itemId,
+                        timeSeconds,
+                        serverId,
+                        userId.toString(),
+                    )
+                }
+                Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Bookmark delete queued for later sync")
+                Result.success(Unit)
+            }
+        }
+    }
+
+    override suspend fun syncPendingBookmarks(): Int {
+        val (serverId, userId) = activeContext ?: return 0
+        if (!networkConnectivityMonitor.isCurrentlyConnected()) return 0
+        return withContext(Dispatchers.IO) {
+            var synced = 0
+            val pending = audiobookshelfDao.getPendingSyncBookmarks(serverId, userId.toString())
+            for (entry in pending) {
+                try {
+                    if (entry.deleted) {
+                        val response =
+                            apiService.get().deleteBookmark(entry.libraryItemId, entry.serverTime)
+                        if (response.isSuccessful || response.code() == 404) {
+                            audiobookshelfDao.deleteBookmarkRow(
+                                entry.libraryItemId,
+                                entry.time,
+                                serverId,
+                                userId.toString(),
+                            )
+                            synced++
+                        }
+                    } else {
+                        val response =
+                            apiService
+                                .get()
+                                .createBookmark(
+                                    entry.libraryItemId,
+                                    BookmarkRequest(entry.time, entry.title),
+                                )
+                        val body = response.body()
+                        if (response.isSuccessful && body != null) {
+                            audiobookshelfDao.insertBookmark(
+                                body.toEntity(serverId, userId.toString())
+                            )
+                            synced++
+                        }
+                    }
+                } catch (e: IOException) {
+                    Timber.w(e, "Bookmark sync stopped: connectivity")
+                    break
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.w(e, "Skipping bookmark sync entry")
+                }
+            }
+            synced
         }
     }
 
@@ -1065,11 +1324,15 @@ constructor(
                             )
                         }
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to refresh in-progress item metadata")
                 }
 
                 Result.success(progressList)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh progress")
                 Result.failure(e)
@@ -1160,6 +1423,8 @@ constructor(
                 }
 
                 Result.success(localProgress.copy(pendingSync = !synced).toMediaProgress())
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to update progress")
                 Result.failure(e)
@@ -1366,6 +1631,8 @@ constructor(
                         Exception("Failed to initMonitoring session: ${response.message()}")
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to initMonitoring playback session")
                 Result.failure(e)
@@ -1404,6 +1671,8 @@ constructor(
                 } else {
                     Result.failure(Exception("Failed to sync session: ${response.message()}"))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to sync playback session")
                 Result.failure(e)
@@ -1442,6 +1711,8 @@ constructor(
                 } else {
                     Result.failure(Exception("Failed to close session: ${response.message()}"))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to close playback session")
                 Result.failure(e)
@@ -1477,6 +1748,8 @@ constructor(
                     "Fetched ${combinedGenres.size} combined genres across ${libraryIds.size} libraries"
                 )
                 Result.success(combinedGenres)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get combined genres")
                 Result.failure(e)
@@ -1539,6 +1812,8 @@ constructor(
 
                 Timber.d("Fetched ${allItems.size} items for genre '$genre' in library $libraryId")
                 Result.success(allItems)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get items by genre '$genre'")
                 Result.failure(e)
@@ -1588,6 +1863,8 @@ constructor(
                 } else {
                     Result.failure(Exception("Failed to fetch genre items: ${response.message()}"))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get limited items for genre '$genre'")
                 Result.failure(e)
@@ -1674,6 +1951,8 @@ constructor(
                 }
 
                 Result.success(syncedCount)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to sync pending progress")
                 Result.failure(e)
@@ -1750,6 +2029,8 @@ constructor(
                             if (remote.isFinished) -1 else 1,
                         )
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to apply remote progress for ${remote.libraryItemId}")
                 }
@@ -1764,6 +2045,8 @@ constructor(
             try {
                 upsertItemPreservingEpisodeCount(item, currentServerId, currentUserId.toString())
                 item.userMediaProgress?.let { cacheProgress(it) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to apply remote item ${item.id}")
             }
@@ -1775,6 +2058,8 @@ constructor(
             val (currentServerId, currentUserId) = activeContext ?: return@withContext
             try {
                 audiobookshelfDao.deleteItem(itemId, currentServerId, currentUserId.toString())
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to remove remote item $itemId")
             }
@@ -1913,6 +2198,8 @@ constructor(
         val genres = genres?.let {
             try {
                 json.decodeFromString<List<String>>(it)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 null
             }
@@ -1955,6 +2242,8 @@ constructor(
                 } else {
                     Result.failure(Exception("Failed to get listening stats: ${response.code()}"))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error fetching listening stats")
                 Result.failure(e)
@@ -1975,6 +2264,8 @@ constructor(
                         Exception("Failed to get listening sessions: ${response.code()}")
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error fetching listening sessions")
                 Result.failure(e)
@@ -2054,6 +2345,8 @@ constructor(
                 Result.success(
                     AudibleRating(rating = rating, numRatings = null, asin = resolvedAsin)
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to fetch Audible rating for $itemId")
                 Result.success(null)
@@ -2076,6 +2369,8 @@ constructor(
             val asin = response.body()?.firstOrNull()?.asin
             Timber.d("AudibleRating: fallback asin=$asin")
             asin
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "ABS cover search fallback failed for: $title")
             null

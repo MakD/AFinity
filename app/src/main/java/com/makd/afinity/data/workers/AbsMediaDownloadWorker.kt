@@ -32,6 +32,10 @@ import com.makd.afinity.util.formatFileSize
 import dagger.Lazy
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.io.File
+import java.io.FileOutputStream
+import java.util.UUID
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
@@ -39,9 +43,6 @@ import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import timber.log.Timber
-import java.io.File
-import java.io.FileOutputStream
-import java.util.UUID
 
 @HiltWorker
 class AbsMediaDownloadWorker
@@ -113,6 +114,8 @@ constructor(
                         appContext.getString(R.string.download_status_queued),
                     )
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "AbsDownload: could not set foreground")
             }
@@ -582,6 +585,8 @@ constructor(
                     null
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to download cover")
             null
@@ -665,15 +670,11 @@ constructor(
                     downloadNotificationManager.absCancelActionIntent(downloadId),
                 )
                 .build()
-        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            ForegroundInfo(
-                downloadId.hashCode(),
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
-            )
-        } else {
-            ForegroundInfo(downloadId.hashCode(), notification)
-        }
+        return ForegroundInfo(
+            downloadId.hashCode(),
+            notification,
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
+        )
     }
 
     private fun progressContentText(
@@ -716,6 +717,8 @@ constructor(
                     inSampleSize = maxOf(1, minOf(bounds.outWidth, bounds.outHeight) / 256)
                 }
             BitmapFactory.decodeFile(path, options)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to decode cover for notification")
             null

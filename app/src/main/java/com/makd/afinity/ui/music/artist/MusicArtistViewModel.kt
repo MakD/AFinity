@@ -14,6 +14,9 @@ import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.store.ItemStore
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,8 +24,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
 
 data class MusicArtistUiState(
     val artist: AfinityArtist? = null,
@@ -67,8 +68,7 @@ constructor(
                     val topTracks = itemStore.mergeOwners(state.topTracks)
                     val albums = itemStore.mergeOwners(state.albums)
                     val appearsOn = itemStore.mergeOwners(state.appearsOn)
-                    val artist =
-                        state.artist?.let { itemStore.mergeOwners(listOf(it)).first() }
+                    val artist = state.artist?.let { itemStore.mergeOwners(listOf(it)).first() }
                     if (
                         topTracks === state.topTracks &&
                             albums === state.albums &&
@@ -119,9 +119,7 @@ constructor(
                 val topTracks = tracksDeferred.await()
                 val albums = albumsDeferred.await()
                 val appearsOn = appearsDeferred.await()
-                itemStore.putIfAbsent(
-                    topTracks + albums + appearsOn + listOfNotNull(artist)
-                )
+                itemStore.putIfAbsent(topTracks + albums + appearsOn + listOfNotNull(artist))
                 _uiState.update {
                     it.copy(
                         artist = artist?.let { a -> itemStore.mergeOwners(listOf(a)).first() },
@@ -131,6 +129,8 @@ constructor(
                         isLoading = false,
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load artist $artistId")
                 _uiState.update { it.copy(isLoading = false, error = e.message) }

@@ -1,14 +1,14 @@
 package com.makd.afinity.data.repository
 
 import com.makd.afinity.data.manager.SessionManager
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.api.client.ApiClient
-import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.jellyfin.sdk.api.client.ApiClient
+import timber.log.Timber
 
 class NoActiveSessionException : Exception("No active Jellyfin session")
 

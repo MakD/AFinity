@@ -1,6 +1,5 @@
 package com.makd.afinity.data.manager
 
-import android.content.Context
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.AudiobookshelfRepository
@@ -14,7 +13,14 @@ import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.di.NetworkModule
 import com.makd.afinity.di.ProberClient
 import com.makd.afinity.util.forUser
-import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -29,20 +35,12 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
-import org.jellyfin.sdk.api.okhttp.OkHttpFactory
 import org.jellyfin.sdk.api.operations.UserApi
 import org.jellyfin.sdk.api.sockets.DefaultSocketApi
 import org.jellyfin.sdk.model.DeviceInfo
 import org.jellyfin.sdk.model.api.UserConfiguration
 import org.jellyfin.sdk.model.api.UserDto
 import timber.log.Timber
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
-import javax.inject.Inject
-import javax.inject.Singleton
 
 data class Session(
     val serverId: String,
@@ -66,11 +64,9 @@ constructor(
     private val jellyseerrRepository: JellyseerrRepository,
     private val audiobookshelfRepository: AudiobookshelfRepository,
     private val serverAddressResolver: ServerAddressResolver,
-    private val okHttpFactory: OkHttpFactory,
     private val jellyfin: Jellyfin,
     private val deviceInfo: DeviceInfo,
     @param:ProberClient private val proberJellyfin: Jellyfin,
-    @param:ApplicationContext private val context: Context,
     @ApplicationScope private val sessionScope: CoroutineScope,
 ) {
     private val _currentSession = MutableStateFlow<Session?>(null)
@@ -78,6 +74,13 @@ constructor(
 
     private val _isServerReachable = MutableStateFlow(true)
     val isServerReachable: StateFlow<Boolean> = _isServerReachable.asStateFlow()
+
+    private val _needsLocalNetworkPermission = MutableStateFlow(false)
+    val needsLocalNetworkPermission: StateFlow<Boolean> = _needsLocalNetworkPermission.asStateFlow()
+
+    fun clearLocalNetworkPermissionPrompt() {
+        _needsLocalNetworkPermission.value = false
+    }
 
     /**
      * True while switchUser() is running. currentSession is overwritten in place during a switch
@@ -142,12 +145,21 @@ constructor(
                                 Timber.e("Token rejected by server during address resolution (401)")
                                 return@withContext Result.failure(InvalidStatusException(401, null))
                             } else {
-                                Timber.w(
-                                    "Address resolution failed, starting in offline mode. Saved URL: $serverUrl"
-                                )
+                                if (result is AddressResolutionResult.PermissionRequired) {
+                                    Timber.w(
+                                        "Local network permission missing, cannot reach ${result.attemptedAddresses}"
+                                    )
+                                    _needsLocalNetworkPermission.value = true
+                                } else {
+                                    Timber.w(
+                                        "Address resolution failed, starting in offline mode. Saved URL: $serverUrl"
+                                    )
+                                }
                                 _isServerReachable.value = false
                                 serverUrl
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.w(
                                 e,
@@ -197,11 +209,15 @@ constructor(
 
                 try {
                     jellyseerrRepository.setActiveJellyfinSession(serverId, userId)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to link Jellyseerr session")
                 }
                 try {
                     audiobookshelfRepository.setActiveJellyfinSession(serverId, userId)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to link Audiobookshelf session")
                 }
@@ -246,12 +262,16 @@ constructor(
                         Timber.d(
                             "Admin status refreshed from policy: isAdmin=$isAdmin, canDownload=$canDownload"
                         )
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to refresh user policy; using cached isAdmin")
                     }
                 }
 
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start session")
                 Result.failure(e)
@@ -295,6 +315,10 @@ constructor(
         val address =
             when (val result = serverAddressResolver.resolveAddress(serverId)) {
                 is AddressResolutionResult.Success -> result.address
+                is AddressResolutionResult.PermissionRequired -> {
+                    _needsLocalNetworkPermission.value = true
+                    tokenInfo.serverUrl
+                }
                 is AddressResolutionResult.AllFailed -> tokenInfo.serverUrl
             }
         val client = getOrCreateApiClient(serverId, tokenInfo.userId, address)
@@ -320,6 +344,10 @@ constructor(
         val address =
             when (val result = serverAddressResolver.resolveAddress(serverId)) {
                 is AddressResolutionResult.Success -> result.address
+                is AddressResolutionResult.PermissionRequired -> {
+                    _needsLocalNetworkPermission.value = true
+                    tokenInfo.serverUrl
+                }
                 is AddressResolutionResult.AllFailed -> tokenInfo.serverUrl
             }
 

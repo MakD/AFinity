@@ -17,12 +17,15 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
 import com.makd.afinity.data.models.jellyseerr.JellyseerrSearchResult
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.LoginRequest
+import com.makd.afinity.data.models.jellyseerr.LoginResponse
 import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import com.makd.afinity.data.models.jellyseerr.MediaInfo
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.PersonCombinedCreditsResponse
 import com.makd.afinity.data.models.jellyseerr.PublicSettings
+import com.makd.afinity.data.models.jellyseerr.QuickConnectAuthenticateRequest
+import com.makd.afinity.data.models.jellyseerr.QuickConnectInitiateResponse
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.RequestStatus
 import com.makd.afinity.data.models.jellyseerr.RequestUser
@@ -43,6 +46,13 @@ import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Lazy
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -62,13 +72,8 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import retrofit2.Response
 import timber.log.Timber
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class JellyseerrRepositoryImpl
@@ -110,7 +115,7 @@ constructor(
 
     private suspend fun <T> seerrResult(
         errorMessage: String,
-        call: suspend (JellyseerrApiService) -> retrofit2.Response<T>,
+        call: suspend (JellyseerrApiService) -> Response<T>,
     ): Result<T> =
         withContext(Dispatchers.IO) {
             try {
@@ -125,6 +130,8 @@ constructor(
                     Result.failure(Exception("$errorMessage: ${response.message()}"))
                 }
             } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
+            } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, errorMessage)
@@ -163,6 +170,8 @@ constructor(
                         Timber.d("Jellyseerr: Network changed, switching to ${result.address}")
                         securePreferencesRepository.updateCachedJellyseerrServerUrl(result.address)
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Jellyseerr: Failed to re-resolve address on network change")
                 }
@@ -172,8 +181,7 @@ constructor(
 
     override suspend fun verifyServer(url: String): PublicSettings? {
         return withContext(Dispatchers.IO) {
-            val base =
-                url.trim().removeSuffix("/").removeSuffix("/api/v1/status").removeSuffix("/")
+            val base = url.trim().removeSuffix("/").removeSuffix("/api/v1/status").removeSuffix("/")
             fetchPublicSettings(base)
         }
     }
@@ -187,6 +195,8 @@ constructor(
                 val body = response.body?.string() ?: return null
                 publicSettingsJson.decodeFromString<PublicSettings>(body)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.d("Jellyseerr public settings fetch failed for $baseUrl: ${e.message}")
             null
@@ -264,6 +274,8 @@ constructor(
                         else -> AddressCheck.DIFFERENT_SERVER
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.d("Jellyseerr identity check failed for $url: ${e.message}")
                 AddressCheck.INDETERMINATE
@@ -303,6 +315,8 @@ constructor(
                     } else if (result is JellyseerrAddressResult.AllFailed) {
                         Timber.w("Jellyseerr: All addresses failed: ${result.attemptedAddresses}")
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.w(e, "Jellyseerr: Address resolution failed, using config URL")
                 }
@@ -356,114 +370,181 @@ constructor(
                         apiService.get().loginLocal(localRequest)
                     }
 
-                if (response.isSuccessful && response.body() != null) {
-                    val loginResponse = response.body()!!
-                    val serverUrl = securePreferencesRepository.getJellyseerrServerUrl() ?: ""
-                    val cookies =
-                        response.headers()["Set-Cookie"]
-                            ?: serverUrl.toHttpUrlOrNull()?.host?.let {
-                                seerrCookieJar.sessionCookieHeader(it)
-                            }
-
-                    if (cookies.isNullOrBlank()) {
-                        Timber.e("Jellyseerr login returned no session cookie")
-                        return@withContext Result.failure(
-                            Exception("Login failed: server did not return a session cookie")
-                        )
-                    }
-
-                    securePreferencesRepository.saveJellyseerrAuthForUser(
-                        jellyfinServerId = currentServerId,
-                        jellyfinUserId = currentUserId,
-                        url = serverUrl,
-                        cookie = cookies,
-                        username = loginResponse.username ?: loginResponse.email ?: "User",
-                    )
-
-                    val existingConfig =
-                        jellyseerrDao.getConfig(currentServerId, currentUserId.toString())
-                    if (
-                        existingConfig != null &&
-                            existingConfig.serverUrl != serverUrl &&
-                            existingConfig.serverUrl.isNotBlank()
-                    ) {
-                        val oldExists =
-                            jellyseerrDao.getAddressByUrl(
-                                currentServerId,
-                                currentUserId.toString(),
-                                existingConfig.serverUrl,
-                            )
-                        if (oldExists == null) {
-                            jellyseerrDao.insertAddress(
-                                JellyseerrAddressEntity(
-                                    id = UUID.randomUUID(),
-                                    jellyfinServerId = currentServerId,
-                                    jellyfinUserId = currentUserId.toString(),
-                                    address = existingConfig.serverUrl,
-                                )
-                            )
-                        }
-                    }
-                    if (serverUrl.isNotBlank()) {
-                        val newExists =
-                            jellyseerrDao.getAddressByUrl(
-                                currentServerId,
-                                currentUserId.toString(),
-                                serverUrl,
-                            )
-                        if (newExists == null) {
-                            jellyseerrDao.insertAddress(
-                                JellyseerrAddressEntity(
-                                    id = UUID.randomUUID(),
-                                    jellyfinServerId = currentServerId,
-                                    jellyfinUserId = currentUserId.toString(),
-                                    address = serverUrl,
-                                )
-                            )
-                        }
-                    }
-
-                    jellyseerrDao.saveConfig(
-                        JellyseerrConfigEntity(
-                            jellyfinServerId = currentServerId,
-                            jellyfinUserId = currentUserId.toString(),
-                            serverUrl = serverUrl,
-                            isLoggedIn = true,
-                            username = loginResponse.username,
-                            userId = loginResponse.id,
-                            permissions = loginResponse.permissions,
-                        )
-                    )
-
-                    _isAuthenticated.value = true
-
-                    val user =
-                        JellyseerrUser(
-                            id = loginResponse.id,
-                            email = loginResponse.email,
-                            username = loginResponse.username,
-                            displayName = loginResponse.displayName,
-                            permissions = loginResponse.permissions,
-                            avatar = loginResponse.avatar,
-                            requestCount = loginResponse.requestCount,
-                            movieQuotaLimit = loginResponse.movieQuotaLimit,
-                            movieQuotaDays = loginResponse.movieQuotaDays,
-                            tvQuotaLimit = loginResponse.tvQuotaLimit,
-                            tvQuotaDays = loginResponse.tvQuotaDays,
-                        )
-
-                    Timber.d("Jellyseerr login successful for user: ${user.username}")
-                    Result.success(user)
-                } else {
-                    val errorMsg = "Login failed: ${response.code()} - ${response.message()}"
-                    Timber.e(errorMsg)
-                    Result.failure(JellyseerrLoginException(response.code(), errorMsg))
-                }
+                persistSession(response, currentServerId, currentUserId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Jellyseerr login failed")
                 Result.failure(e)
             }
         }
+    }
+
+    override suspend fun initiateQuickConnect(): Result<QuickConnectInitiateResponse> {
+        return withContext(Dispatchers.IO) {
+            if (activeContext == null) {
+                return@withContext Result.failure(Exception("No active Jellyfin session"))
+            }
+
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val response = apiService.get().initiateQuickConnect()
+                val body = response.body()
+
+                if (response.isSuccessful && body != null) {
+                    Result.success(body)
+                } else {
+                    val errorMsg =
+                        "Quick Connect initiate failed: ${response.code()} - ${response.message()}"
+                    Timber.e(errorMsg)
+                    Result.failure(JellyseerrLoginException(response.code(), errorMsg))
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Jellyseerr Quick Connect initiate failed")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun authenticateQuickConnect(secret: String): Result<JellyseerrUser> {
+        return withContext(Dispatchers.IO) {
+            val (currentServerId, currentUserId) =
+                activeContext
+                    ?: return@withContext Result.failure(Exception("No active Jellyfin session"))
+
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val response =
+                    apiService
+                        .get()
+                        .authenticateQuickConnect(QuickConnectAuthenticateRequest(secret))
+
+                persistSession(response, currentServerId, currentUserId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Jellyseerr Quick Connect authentication failed")
+                Result.failure(e)
+            }
+        }
+    }
+
+    private suspend fun persistSession(
+        response: Response<LoginResponse>,
+        currentServerId: String,
+        currentUserId: UUID,
+    ): Result<JellyseerrUser> {
+        val loginResponse = response.body()
+        if (!response.isSuccessful || loginResponse == null) {
+            val errorMsg = "Login failed: ${response.code()} - ${response.message()}"
+            Timber.e(errorMsg)
+            return Result.failure(JellyseerrLoginException(response.code(), errorMsg))
+        }
+
+        if (activeContext != (currentServerId to currentUserId)) {
+            Timber.w("Jellyfin session changed during Jellyseerr sign-in, discarding result")
+            return Result.failure(Exception("Jellyfin session changed during sign-in"))
+        }
+
+        val serverUrl = securePreferencesRepository.getJellyseerrServerUrl() ?: ""
+        val cookies =
+            response.headers()["Set-Cookie"]
+                ?: serverUrl.toHttpUrlOrNull()?.host?.let { seerrCookieJar.sessionCookieHeader(it) }
+
+        if (cookies.isNullOrBlank()) {
+            Timber.e("Jellyseerr login returned no session cookie")
+            return Result.failure(Exception("Login failed: server did not return a session cookie"))
+        }
+
+        securePreferencesRepository.saveJellyseerrAuthForUser(
+            jellyfinServerId = currentServerId,
+            jellyfinUserId = currentUserId,
+            url = serverUrl,
+            cookie = cookies,
+            username = loginResponse.username ?: loginResponse.email ?: "User",
+        )
+
+        val existingConfig = jellyseerrDao.getConfig(currentServerId, currentUserId.toString())
+        if (
+            existingConfig != null &&
+                existingConfig.serverUrl != serverUrl &&
+                existingConfig.serverUrl.isNotBlank()
+        ) {
+            val oldExists =
+                jellyseerrDao.getAddressByUrl(
+                    currentServerId,
+                    currentUserId.toString(),
+                    existingConfig.serverUrl,
+                )
+            if (oldExists == null) {
+                jellyseerrDao.insertAddress(
+                    JellyseerrAddressEntity(
+                        id = UUID.randomUUID(),
+                        jellyfinServerId = currentServerId,
+                        jellyfinUserId = currentUserId.toString(),
+                        address = existingConfig.serverUrl,
+                    )
+                )
+            }
+        }
+        if (serverUrl.isNotBlank()) {
+            val newExists =
+                jellyseerrDao.getAddressByUrl(
+                    currentServerId,
+                    currentUserId.toString(),
+                    serverUrl,
+                )
+            if (newExists == null) {
+                jellyseerrDao.insertAddress(
+                    JellyseerrAddressEntity(
+                        id = UUID.randomUUID(),
+                        jellyfinServerId = currentServerId,
+                        jellyfinUserId = currentUserId.toString(),
+                        address = serverUrl,
+                    )
+                )
+            }
+        }
+
+        jellyseerrDao.saveConfig(
+            JellyseerrConfigEntity(
+                jellyfinServerId = currentServerId,
+                jellyfinUserId = currentUserId.toString(),
+                serverUrl = serverUrl,
+                isLoggedIn = true,
+                username = loginResponse.username,
+                userId = loginResponse.id,
+                permissions = loginResponse.permissions,
+            )
+        )
+
+        _isAuthenticated.value = true
+
+        val user =
+            JellyseerrUser(
+                id = loginResponse.id,
+                email = loginResponse.email,
+                username = loginResponse.username,
+                displayName = loginResponse.displayName,
+                permissions = loginResponse.permissions,
+                avatar = loginResponse.avatar,
+                requestCount = loginResponse.requestCount,
+                movieQuotaLimit = loginResponse.movieQuotaLimit,
+                movieQuotaDays = loginResponse.movieQuotaDays,
+                tvQuotaLimit = loginResponse.tvQuotaLimit,
+                tvQuotaDays = loginResponse.tvQuotaDays,
+            )
+
+        Timber.d("Jellyseerr login successful for user: ${user.username}")
+        return Result.success(user)
     }
 
     override suspend fun logout(): Result<Unit> {
@@ -475,6 +556,8 @@ constructor(
                 if (hasValidConfiguration() && networkConnectivityMonitor.isCurrentlyConnected()) {
                     try {
                         apiService.get().logout()
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to logout from server, continuing with local cleanup")
                     }
@@ -497,6 +580,8 @@ constructor(
                 _isAuthenticated.value = false
                 Timber.d("Jellyseerr logout successful")
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Jellyseerr logout failed")
                 Result.failure(e)
@@ -514,6 +599,8 @@ constructor(
                 if (response.isSuccessful && response.body() != null)
                     Result.success(response.body()!!)
                 else Result.failure(Exception("Failed to get current user: ${response.message()}"))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get current user")
                 Result.failure(e)
@@ -543,6 +630,8 @@ constructor(
                         Exception("Failed to get public settings: ${response.message()}")
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get Jellyseerr public settings")
                 Result.failure(e)
@@ -562,6 +651,8 @@ constructor(
                 } else {
                     Result.failure(Exception("Failed to get user quota: ${response.message()}"))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get Jellyseerr user quota")
                 Result.failure(e)
@@ -691,6 +782,8 @@ constructor(
                             if (fetchResponse.isSuccessful && fetchResponse.body() != null)
                                 fetchResponse.body()!!
                             else request
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             request
                         }
@@ -705,6 +798,8 @@ constructor(
                     Timber.e(errorMsg)
                     Result.failure(Exception(errorMsg))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to create Jellyseerr request")
                 Result.failure(e)
@@ -785,6 +880,8 @@ constructor(
 
                             return@withContext Result.success(baseRequests)
                         }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to fetch from network, falling back to cache")
                     }
@@ -797,6 +894,8 @@ constructor(
                 } else {
                     Result.failure(Exception("No cached data available"))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get Jellyseerr requests")
                 Result.failure(e)
@@ -847,6 +946,8 @@ constructor(
                         .toEntity(currentServerId, currentUserId.toString())
                 jellyseerrDao.insertRequest(enriched)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to enrich request ${request.id}")
         } finally {
@@ -868,6 +969,8 @@ constructor(
                 if (response.isSuccessful && response.body() != null)
                     Result.success(response.body()!!)
                 else Result.failure(Exception("Failed"))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -888,6 +991,8 @@ constructor(
                     )
                     Result.success(Unit)
                 } else Result.failure(Exception("Failed"))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -921,6 +1026,8 @@ constructor(
                             requestsToDelete.add(reqEntity.id)
                         }
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.w(e, "Error checking cached requests for deletion")
                 }
@@ -948,6 +1055,8 @@ constructor(
                             }
                         }
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.w(e, "Error fetching remote requests for deletion check")
                 }
@@ -966,6 +1075,8 @@ constructor(
                                 mediaInfo.requests?.forEach { req -> requestsToDelete.add(req.id) }
                             }
                         }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Error fetching media details for TMDB $tmdbId")
                     }
@@ -975,6 +1086,8 @@ constructor(
                 requestsToDelete.forEach { requestId ->
                     try {
                         api.deleteRequest(requestId)
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to delete request $requestId in Jellyseerr")
                     }
@@ -992,6 +1105,8 @@ constructor(
                         Timber.d(
                             "Delete media $mediaId in Jellyseerr response: ${mediaDelRes.code()}"
                         )
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to delete media $mediaId in Jellyseerr")
                     }
@@ -1000,16 +1115,22 @@ constructor(
                 // 6. Trigger clear data / cache flush in Jellyseerr server
                 try {
                     api.flushCache()
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to flush cache in Jellyseerr")
                 }
                 try {
                     api.runJob("clear-data")
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to run clear-data job in Jellyseerr")
                 }
                 try {
                     api.runJob("availability-sync")
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to run availability-sync job in Jellyseerr")
                 }
@@ -1018,6 +1139,8 @@ constructor(
                 getRequests(take = 50, skip = 0)
 
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error deleting media and requests in Jellyseerr for $jellyfinItemId")
                 Result.failure(e)
@@ -1080,6 +1203,8 @@ constructor(
                     cacheRequest(req)
                     Result.success(req)
                 } else Result.failure(Exception("Failed to approve request"))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -1160,6 +1285,8 @@ constructor(
                     val errorMsg = "Failed to update: ${response.code()} - $errorBody"
                     Result.failure(Exception(errorMsg))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to update Jellyseerr request")
                 Result.failure(e)
@@ -1205,6 +1332,8 @@ constructor(
                     cacheRequest(req)
                     Result.success(req)
                 } else Result.failure(Exception("Failed"))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -1218,6 +1347,8 @@ constructor(
                 if (response.isSuccessful && response.body() != null)
                     Result.success(response.body()!!)
                 else Result.failure(Exception("Failed"))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -1238,6 +1369,8 @@ constructor(
                 } else {
                     Result.failure(Exception("Failed to get movie details: ${response.message()}"))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get movie details for ID: $movieId")
                 Result.failure(e)
@@ -1274,6 +1407,8 @@ constructor(
                         }
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to fetch ratings for $mediaType $tmdbId")
                 Result.failure(e)
@@ -1301,6 +1436,8 @@ constructor(
                         if (limit != null) body.copy(results = body.results.take(limit)) else body
                     )
                 } else Result.failure(Exception("Failed"))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -1321,6 +1458,8 @@ constructor(
                         Exception("Failed to get discover sliders: ${response.message()}")
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get Jellyseerr discover sliders")
                 Result.failure(e)
@@ -1387,6 +1526,8 @@ constructor(
                         if (limit != null) body.copy(results = body.results.take(limit)) else body
                     )
                 } else Result.failure(Exception("Failed"))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -1456,6 +1597,8 @@ constructor(
                         if (limit != null) body.copy(results = body.results.take(limit)) else body
                     )
                 } else Result.failure(Exception("Failed"))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -1472,6 +1615,8 @@ constructor(
                         if (limit != null) body.copy(results = body.results.take(limit)) else body
                     )
                 } else Result.failure(Exception("Failed"))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -1488,6 +1633,8 @@ constructor(
                         if (limit != null) body.copy(results = body.results.take(limit)) else body
                     )
                 } else Result.failure(Exception("Failed"))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -1509,6 +1656,8 @@ constructor(
                 if (response.isSuccessful && response.body() != null)
                     Result.success(response.body()!!)
                 else Result.failure(Exception("Failed"))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -1522,6 +1671,8 @@ constructor(
                 if (response.isSuccessful && response.body() != null)
                     Result.success(response.body()!!)
                 else Result.failure(Exception("Failed"))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -1535,6 +1686,8 @@ constructor(
                 if (response.isSuccessful && response.body() != null)
                     Result.success(response.body()!!)
                 else Result.failure(Exception("Failed"))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -1548,6 +1701,8 @@ constructor(
                 if (response.isSuccessful && response.body() != null)
                     Result.success(response.body()!!)
                 else Result.failure(Exception("Failed"))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -1585,6 +1740,8 @@ constructor(
                 if (response.isSuccessful && response.body() != null)
                     Result.success(response.body()!!)
                 else Result.failure(Exception("Failed"))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -1602,6 +1759,8 @@ constructor(
                         response.body()!!.sortedBy { it.displayPriority ?: Int.MAX_VALUE }
                     )
                 else Result.failure(Exception("Failed"))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -1619,6 +1778,8 @@ constructor(
                         response.body()!!.sortedBy { it.displayPriority ?: Int.MAX_VALUE }
                     )
                 else Result.failure(Exception("Failed"))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -1635,6 +1796,8 @@ constructor(
                 if (response.isSuccessful && response.body() != null)
                     Result.success(response.body()!!)
                 else Result.failure(Exception("Failed"))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -1652,6 +1815,8 @@ constructor(
                         ?: return@withContext null
                 val options = Json.decodeFromString<DiscoverFilterOptions>(entity.filterOptionsJson)
                 entity.sortBy to options
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to load discover filter state for $contextKey")
                 null
@@ -1676,6 +1841,8 @@ constructor(
                         filterOptionsJson = Json.encodeToString(filterOptions),
                     )
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to save discover filter state for $contextKey")
             }
@@ -1700,6 +1867,8 @@ constructor(
                         Exception("Failed to get service settings: ${response.message()}")
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get service settings")
                 Result.failure(e)
@@ -1724,6 +1893,8 @@ constructor(
         try {
             val entity = request.toEntity(serverId, userId.toString())
             jellyseerrDao.insertRequest(entity)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to cache request")
         }
@@ -1751,12 +1922,16 @@ constructor(
             requestedAt =
                 try {
                     dateFormat.parse(createdAt)?.time ?: System.currentTimeMillis()
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     System.currentTimeMillis()
                 },
             updatedAt =
                 try {
                     dateFormat.parse(updatedAt)?.time ?: System.currentTimeMillis()
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     System.currentTimeMillis()
                 },
@@ -1764,6 +1939,8 @@ constructor(
                 media.mediaAddedAt?.let {
                     try {
                         dateFormat.parse(it)?.time
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         null
                     }
@@ -1796,6 +1973,8 @@ constructor(
                     >(
                         seasonsJson
                     )
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     null
                 }

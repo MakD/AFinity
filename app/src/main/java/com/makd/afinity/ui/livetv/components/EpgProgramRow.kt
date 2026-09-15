@@ -6,15 +6,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
-import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.AfinityProgram
 import java.time.LocalDateTime
 
 @Composable
 fun EpgProgramRow(
-    channel: AfinityChannel,
     programs: List<AfinityProgram>,
     epgStartTime: LocalDateTime,
     visibleHours: Int,
@@ -34,13 +33,15 @@ fun EpgProgramRow(
                 .background(MaterialTheme.colorScheme.surface)
     ) {
         val visiblePrograms =
-            programs
-                .filter { program ->
-                    val programStart = program.startDate ?: return@filter false
-                    val programEnd = program.endDate ?: return@filter false
-                    programStart.isBefore(epgEndTime) && !programEnd.isBefore(epgStartTime)
-                }
-                .sortedBy { it.startDate }
+            remember(programs, epgStartTime, epgEndTime) {
+                programs
+                    .filter { program ->
+                        val programStart = program.startDate ?: return@filter false
+                        val programEnd = program.endDate ?: return@filter false
+                        programStart.isBefore(epgEndTime) && !programEnd.isBefore(epgStartTime)
+                    }
+                    .sortedBy { it.startDate }
+            }
 
         visiblePrograms.forEach { program ->
             EpgProgramCell(

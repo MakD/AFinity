@@ -2,12 +2,17 @@ package com.makd.afinity.data.repository.auth
 
 import com.makd.afinity.core.AppConstants
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.auth.QuickConnectAuthorization
 import com.makd.afinity.data.models.auth.QuickConnectState
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.util.forUser
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,7 +25,7 @@ import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
-import org.jellyfin.sdk.api.operations.QuickConnectApi
+import org.jellyfin.sdk.api.operations.AuthenticationApi
 import org.jellyfin.sdk.api.operations.SessionApi
 import org.jellyfin.sdk.api.operations.UserApi
 import org.jellyfin.sdk.model.DeviceInfo
@@ -29,9 +34,19 @@ import org.jellyfin.sdk.model.api.ClientCapabilitiesDto
 import org.jellyfin.sdk.model.api.GeneralCommandType
 import org.jellyfin.sdk.model.api.MediaType
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
+
+internal val SUPPORTED_REMOTE_COMMANDS =
+    listOf(
+        GeneralCommandType.VOLUME_UP,
+        GeneralCommandType.VOLUME_DOWN,
+        GeneralCommandType.TOGGLE_MUTE,
+        GeneralCommandType.MUTE,
+        GeneralCommandType.UNMUTE,
+        GeneralCommandType.SET_VOLUME,
+        GeneralCommandType.SET_AUDIO_STREAM_INDEX,
+        GeneralCommandType.SET_SUBTITLE_STREAM_INDEX,
+        GeneralCommandType.DISPLAY_MESSAGE,
+    )
 
 @Singleton
 class JellyfinAuthRepository
@@ -125,6 +140,8 @@ constructor(
                     scope.launch { registerClientCapabilities(client) }
                 }
                 return@withContext AuthRepository.RestoreResult.Success
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Critical error during auth restoration")
                 return@withContext AuthRepository.RestoreResult.Failed
@@ -140,6 +157,8 @@ constructor(
         try {
             securePreferencesRepository.clearAuthenticationData()
             Timber.d("Cleared all encrypted authentication data")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to clear encrypted authentication data")
         }
@@ -157,17 +176,19 @@ constructor(
                         baseUrl = serverUrl,
                         deviceInfo = deviceInfo.forUser(UUID.randomUUID()),
                     )
-                val userApi = UserApi(client)
+                val authenticationApi = AuthenticationApi(client)
                 val authRequest =
                     org.jellyfin.sdk.model.api.AuthenticateUserByName(
                         username = username,
                         pw = password,
                     )
-                val response = userApi.authenticateUserByName(authRequest)
+                val response = authenticationApi.authenticateUserByName(authRequest)
 
                 val authResult = response.content
                 handleSuccessfulAuth(authResult, username, client)
                 AuthRepository.AuthResult.Success(authResult)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Authentication failed")
                 AuthRepository.AuthResult.Error(friendlyAuthError(e))
@@ -196,15 +217,17 @@ constructor(
                         baseUrl = serverUrl,
                         deviceInfo = deviceInfo.forUser(UUID.randomUUID()),
                     )
-                val userApi = UserApi(client)
+                val authenticationApi = AuthenticationApi(client)
                 val quickConnectRequest =
                     org.jellyfin.sdk.model.api.QuickConnectDto(secret = secret)
-                val response = userApi.authenticateWithQuickConnect(quickConnectRequest)
+                val response = authenticationApi.authenticateWithQuickConnect(quickConnectRequest)
 
                 val authResult = response.content
                 val username = authResult.user?.name ?: "QuickConnect User"
                 handleSuccessfulAuth(authResult, username, client)
                 AuthRepository.AuthResult.Success(authResult)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "QuickConnect authentication failed")
                 AuthRepository.AuthResult.Error(friendlyAuthError(e))
@@ -220,7 +243,7 @@ constructor(
                         baseUrl = serverUrl,
                         deviceInfo = deviceInfo.forUser(UUID.randomUUID()),
                     )
-                val quickConnectApi = QuickConnectApi(client)
+                val quickConnectApi = AuthenticationApi(client)
                 val result = quickConnectApi.initiateQuickConnect().content
                 QuickConnectState(
                     code = result.code,
@@ -230,6 +253,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to initiate QuickConnect")
                 null
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error initiating QuickConnect")
                 null
@@ -248,7 +273,7 @@ constructor(
                         baseUrl = serverUrl,
                         deviceInfo = deviceInfo.forUser(UUID.randomUUID()),
                     )
-                val quickConnectApi = QuickConnectApi(client)
+                val quickConnectApi = AuthenticationApi(client)
                 val result = quickConnectApi.getQuickConnectState(secret = secret).content
                 QuickConnectState(
                     code = result.code,
@@ -258,6 +283,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get QuickConnect state")
                 null
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting QuickConnect state")
                 null
@@ -265,18 +292,50 @@ constructor(
         }
     }
 
-    override suspend fun authorizeQuickConnect(code: String): Boolean {
+    override suspend fun isQuickConnectEnabled(): Boolean {
         return withContext(Dispatchers.IO) {
             try {
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val quickConnectApi = QuickConnectApi(apiClient)
-                quickConnectApi.authorizeQuickConnect(code = code).content
+                AuthenticationApi(apiClient).getQuickConnectEnabled().content
+            } catch (e: ApiClientException) {
+                Timber.e(e, "Failed to read QuickConnect availability")
+                false
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error reading QuickConnect availability")
+                false
+            }
+        }
+    }
+
+    override suspend fun authorizeQuickConnect(code: String): QuickConnectAuthorization {
+        return withContext(Dispatchers.IO) {
+            try {
+                val apiClient =
+                    sessionManager.getCurrentApiClient()
+                        ?: return@withContext QuickConnectAuthorization.FAILED
+                val quickConnectApi = AuthenticationApi(apiClient)
+                if (quickConnectApi.authorizeQuickConnect(code = code).content) {
+                    QuickConnectAuthorization.APPROVED
+                } else {
+                    QuickConnectAuthorization.REFUSED
+                }
+            } catch (e: InvalidStatusException) {
+                if (e.status == 404) {
+                    QuickConnectAuthorization.UNKNOWN_CODE
+                } else {
+                    Timber.e(e, "QuickConnect authorization failed")
+                    QuickConnectAuthorization.FAILED
+                }
             } catch (e: ApiClientException) {
                 Timber.e(e, "QuickConnect authorization failed")
-                false
+                QuickConnectAuthorization.FAILED
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error during QuickConnect authorization")
-                false
+                QuickConnectAuthorization.FAILED
             }
         }
     }
@@ -286,6 +345,8 @@ constructor(
             try {
                 sessionManager.logout()
                 Timber.d("Successfully logged out")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error during logout")
             }
@@ -310,6 +371,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get current user")
                 null
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting current user")
                 null
@@ -339,6 +402,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get public users")
                 emptyList()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting public users")
                 emptyList()
@@ -368,6 +433,8 @@ constructor(
                 try {
                     databaseRepository.insertUser(user)
                     Timber.d("Saved user to database: ${user.name}")
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to save user to database, continuing anyway")
                 }
@@ -384,18 +451,7 @@ constructor(
             val capabilities =
                 ClientCapabilitiesDto(
                     playableMediaTypes = listOf(MediaType.VIDEO, MediaType.AUDIO),
-                    supportedCommands =
-                        listOf(
-                            GeneralCommandType.VOLUME_UP,
-                            GeneralCommandType.VOLUME_DOWN,
-                            GeneralCommandType.TOGGLE_MUTE,
-                            GeneralCommandType.MUTE,
-                            GeneralCommandType.UNMUTE,
-                            GeneralCommandType.SET_VOLUME,
-                            GeneralCommandType.SET_AUDIO_STREAM_INDEX,
-                            GeneralCommandType.SET_SUBTITLE_STREAM_INDEX,
-                            GeneralCommandType.DISPLAY_MESSAGE,
-                        ),
+                    supportedCommands = SUPPORTED_REMOTE_COMMANDS,
                     supportsMediaControl = true,
                     supportsPersistentIdentifier = true,
                     deviceProfile = null,
@@ -407,6 +463,8 @@ constructor(
             Timber.d("Successfully registered client capabilities with icon URL")
         } catch (e: ApiClientException) {
             Timber.e(e, "Failed to register client capabilities")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Unexpected error registering client capabilities")
         }

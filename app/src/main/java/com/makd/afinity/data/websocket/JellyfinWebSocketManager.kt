@@ -10,6 +10,9 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.syncplay.SyncPlayGroupUpdate
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.util.ItemIds
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -29,9 +32,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.sockets.SocketApiState
+import org.jellyfin.sdk.model.api.GeneralCommand
+import org.jellyfin.sdk.model.api.GeneralCommandMessage
 import org.jellyfin.sdk.model.api.LibraryChangedMessage
 import org.jellyfin.sdk.model.api.PlayMessage
+import org.jellyfin.sdk.model.api.PlayRequest
 import org.jellyfin.sdk.model.api.PlaystateMessage
+import org.jellyfin.sdk.model.api.PlaystateRequest
 import org.jellyfin.sdk.model.api.ScheduledTasksInfoMessage
 import org.jellyfin.sdk.model.api.SendCommand
 import org.jellyfin.sdk.model.api.ServerRestartingMessage
@@ -39,14 +46,11 @@ import org.jellyfin.sdk.model.api.ServerShuttingDownMessage
 import org.jellyfin.sdk.model.api.SessionInfoDto
 import org.jellyfin.sdk.model.api.SessionsMessage
 import org.jellyfin.sdk.model.api.SyncPlayCommandMessage
-import org.jellyfin.sdk.model.api.SyncPlayGroupUpdateCommandMessage
+import org.jellyfin.sdk.model.api.SyncPlayGroupUpdateMessage
 import org.jellyfin.sdk.model.api.TaskInfo
 import org.jellyfin.sdk.model.api.TaskState
 import org.jellyfin.sdk.model.api.UserDataChangedMessage
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class JellyfinWebSocketManager
@@ -78,6 +82,17 @@ constructor(
 
     private val _syncPlayCommands = MutableSharedFlow<SendCommand>(extraBufferCapacity = 16)
     val syncPlayCommands: SharedFlow<SendCommand> = _syncPlayCommands.asSharedFlow()
+
+    private val _remotePlaystateCommands =
+        MutableSharedFlow<PlaystateRequest>(extraBufferCapacity = 16)
+    val remotePlaystateCommands: SharedFlow<PlaystateRequest> =
+        _remotePlaystateCommands.asSharedFlow()
+
+    private val _remoteGeneralCommands = MutableSharedFlow<GeneralCommand>(extraBufferCapacity = 16)
+    val remoteGeneralCommands: SharedFlow<GeneralCommand> = _remoteGeneralCommands.asSharedFlow()
+
+    private val _remotePlayCommands = MutableSharedFlow<PlayRequest>(extraBufferCapacity = 16)
+    val remotePlayCommands: SharedFlow<PlayRequest> = _remotePlayCommands.asSharedFlow()
 
     private val _syncPlayGroupUpdates =
         MutableSharedFlow<SyncPlayGroupUpdate>(extraBufferCapacity = 16)
@@ -124,6 +139,7 @@ constructor(
                     launch { subscribeToSessionChanges(currentApiClient) }
                 }
                 launch { subscribeToPlayCommands(currentApiClient) }
+                launch { subscribeToGeneralCommands(currentApiClient) }
                 launch { subscribeToServerMessages(currentApiClient) }
                 launch { subscribeToTaskChanges(currentApiClient) }
                 launch { subscribeToSyncPlayCommands(currentApiClient) }
@@ -149,11 +165,17 @@ constructor(
                         is SocketApiState.Disconnected -> WebSocketState.DISCONNECTED
                     }
 
-                if (previousState == WebSocketState.CONNECTED && newState != WebSocketState.CONNECTED) {
+                if (
+                    previousState == WebSocketState.CONNECTED &&
+                        newState != WebSocketState.CONNECTED
+                ) {
                     resyncedForThisConnection = false
                 }
 
-                if (newState == WebSocketState.CONNECTED && previousState != WebSocketState.CONNECTED) {
+                if (
+                    newState == WebSocketState.CONNECTED &&
+                        previousState != WebSocketState.CONNECTED
+                ) {
                     if (hasConnectedBefore && !resyncedForThisConnection) {
                         resyncedForThisConnection = true
                         Timber.d("WebSocket reconnected - resyncing user data and content")
@@ -359,14 +381,41 @@ constructor(
     }
 
     private suspend fun handlePlayCommand(message: PlayMessage) {
-        Timber.d("Received play command from server")
+        val request = message.data
+        if (request == null) {
+            Timber.w("Remote play command received but data is null")
+            return
+        }
+        Timber.d("Remote play command: ${request.playCommand}, ${request.itemIds?.size} item(s)")
+        _remotePlayCommands.emit(request)
     }
 
     private suspend fun handlePlaystateCommand(message: PlaystateMessage) {
-        Timber.d("Received playstate command")
+        val request = message.data
+        if (request == null) {
+            Timber.w("Remote playstate command received but data is null")
+            return
+        }
+        Timber.d("Remote playstate command: ${request.command}")
+        _remotePlaystateCommands.emit(request)
     }
 
-    private suspend fun handleServerRestarting() {
+    private suspend fun subscribeToGeneralCommands(apiClient: ApiClient) {
+        collectWithRetry(
+            "General commands",
+            { apiClient.webSocket.subscribe(GeneralCommandMessage::class) },
+        ) { message ->
+            val command = message.data
+            if (command == null) {
+                Timber.w("Remote general command received but data is null")
+            } else {
+                Timber.d("Remote general command: ${command.name}")
+                _remoteGeneralCommands.emit(command)
+            }
+        }
+    }
+
+    private fun handleServerRestarting() {
         Timber.w("Server is restarting")
         _connectionState.value = WebSocketState.SERVER_RESTARTING
         reconnectJob?.cancel()
@@ -377,7 +426,7 @@ constructor(
         }
     }
 
-    private suspend fun handleServerShutdown() {
+    private fun handleServerShutdown() {
         Timber.w("Server is shutting down")
         _connectionState.value = WebSocketState.SERVER_SHUTDOWN
     }
@@ -403,16 +452,15 @@ constructor(
     private suspend fun subscribeToSyncPlayGroupUpdates(apiClient: ApiClient) {
         collectWithRetry(
             "SyncPlay group updates",
-            { apiClient.webSocket.subscribe(SyncPlayGroupUpdateCommandMessage::class) },
+            { apiClient.webSocket.subscribe(SyncPlayGroupUpdateMessage::class) },
         ) { message ->
-            message.data?.let { groupUpdate ->
-                _syncPlayGroupUpdates.emit(
-                    SyncPlayGroupUpdate(
-                        type = groupUpdate.type,
-                        groupId = groupUpdate.groupId,
-                    )
+            val groupUpdate = message.data
+            _syncPlayGroupUpdates.emit(
+                SyncPlayGroupUpdate(
+                    type = groupUpdate.type,
+                    groupId = groupUpdate.groupId,
                 )
-            }
+            )
         }
     }
 }

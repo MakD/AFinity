@@ -1,8 +1,8 @@
 package com.makd.afinity.data.repository.audiobookshelf
 
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
-import kotlinx.coroutines.flow.Flow
 import java.util.UUID
+import kotlinx.coroutines.flow.Flow
 
 interface AbsDownloadRepository {
     fun getActiveDownloadsFlow(): Flow<List<AbsDownloadInfo>>

@@ -28,21 +28,23 @@ import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsProgressSyncScheduler
 import com.makd.afinity.player.music.MusicPlaybackManager
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.Locale
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.util.Locale
-import javax.inject.Inject
-import javax.inject.Singleton
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 @Singleton
 class AudiobookshelfPlayer
@@ -117,6 +119,8 @@ constructor(
             mediaController = future.await()
             Timber.d("ABS getConnectedController: connected to AudioService")
             mediaController
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "ABS getConnectedController: FAILED to connect to AudioService")
             controllerFuture = null
@@ -448,10 +452,17 @@ constructor(
             ((controller.bufferedPosition - controller.currentPosition) / 1000L).coerceAtLeast(0)
         val bitrateKbps = (audioFormat?.bitrate ?: 0) / 1000f
 
-        val isLocal = playbackManager.currentSession.value?.id?.startsWith("local_") == true
+        val session = playbackManager.currentSession.value
+        val isLocal = session?.id?.startsWith("local_") == true
         val playMethod =
-            if (isLocal) context.getString(R.string.playback_stats_value_direct_play_local)
-            else context.getString(R.string.playback_stats_value_direct_streaming)
+            when {
+                isLocal -> context.getString(R.string.playback_stats_value_direct_play_local)
+                session?.playMethod == 2 ->
+                    context.getString(R.string.playback_stats_value_transcoding)
+                session?.playMethod == 0 ->
+                    context.getString(R.string.playback_stats_value_direct_play)
+                else -> context.getString(R.string.playback_stats_value_direct_streaming)
+            }
 
         return PlaybackStats(
             playerType = "ExoPlayer (ABS Service)",
@@ -546,6 +557,45 @@ constructor(
         }
     }
 
+    fun setChapterSleepTimer(extraChapters: Int = 0) {
+        cancelSleepTimer()
+        val state = playbackManager.playbackState.value
+        val chapters = state.chapters
+
+        val targetSeconds: Double
+        val chapterIndex: Int?
+
+        if (chapters.isEmpty()) {
+            if (state.duration <= 0.0) return
+            targetSeconds = state.duration
+            chapterIndex = null
+        } else {
+            val currentIndex = state.currentChapterIndex.takeIf { it >= 0 } ?: 0
+            val index = (currentIndex + extraChapters).coerceIn(chapters.indices)
+            targetSeconds = chapters[index].end
+            chapterIndex = index
+        }
+
+        if (targetSeconds <= state.currentTime) return
+
+        playbackManager.setSleepTimerTarget(targetSeconds, chapterIndex)
+
+        sleepTimerJob = scope.launch {
+            while (isActive) {
+                val current = playbackManager.playbackState.value
+                val remainingSeconds = targetSeconds - current.currentTime
+                if (remainingSeconds <= 0.0) break
+
+                val speed = current.playbackSpeed.coerceAtLeast(0.1f)
+                val remainingMs = (remainingSeconds / speed * 1000).toLong()
+                delay(if (current.isPlaying) remainingMs.coerceAtMost(1_000L) else 1_000L)
+            }
+            pause()
+            playbackManager.setSleepTimerTarget(null, null)
+            Timber.d("Chapter sleep timer triggered at ${targetSeconds}s")
+        }
+    }
+
     fun cancelSleepTimer() {
         sleepTimerJob?.cancel()
         sleepTimerJob = null
@@ -553,7 +603,7 @@ constructor(
     }
 
     @OptIn(UnstableApi::class)
-    fun closeSession() {
+    fun closeSession(stopService: Boolean = true) {
         cancelSleepTimer()
         val state = playbackManager.playbackState.value
         val sessionId = state.sessionId
@@ -629,6 +679,8 @@ constructor(
                                 "Failed to close session on server: ${result.exceptionOrNull()?.message}"
                             )
                         }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Error closing session on server")
                     }
@@ -654,7 +706,7 @@ constructor(
         Timber.d(
             "ABS closeSession: DONE — sessionId now=${playbackManager.playbackState.value.sessionId} musicTrack=${musicPlaybackManager.state.value.currentTrack?.name}"
         )
-        if (sessionId != null) {
+        if (sessionId != null && stopService) {
             context.startService(
                 Intent(context, com.makd.afinity.player.AudioService::class.java)
                     .setAction(com.makd.afinity.player.AudioService.ACTION_STOP)
@@ -665,6 +717,10 @@ constructor(
     fun release() {
         closeSession()
     }
+
+    fun releaseForEngineSwitch() {
+        closeSession(stopService = false)
+    }
 }
 
 private suspend fun <T> ListenableFuture<T>.await(): T {
@@ -673,6 +729,8 @@ private suspend fun <T> ListenableFuture<T>.await(): T {
             {
                 try {
                     continuation.resume(Futures.getDone(this@await))
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     if (isCancelled) {
                         continuation.cancel(e)

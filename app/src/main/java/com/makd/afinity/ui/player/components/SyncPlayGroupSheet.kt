@@ -42,11 +42,11 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.syncplay.SyncPlayState
 import com.makd.afinity.ui.components.AfinityTextField
 import com.makd.afinity.ui.player.SyncPlayUiState
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import org.jellyfin.sdk.model.UUID
 import org.jellyfin.sdk.model.api.GroupInfoDto
 import org.jellyfin.sdk.model.api.GroupStateType
-import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
 
 @Composable
 fun SyncPlayGroupSheet(

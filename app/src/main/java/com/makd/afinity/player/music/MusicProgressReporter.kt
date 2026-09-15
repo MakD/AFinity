@@ -1,6 +1,9 @@
 package com.makd.afinity.player.music
 
 import com.makd.afinity.data.repository.playback.PlaybackRepository
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -9,9 +12,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class MusicProgressReporter
@@ -21,22 +21,35 @@ constructor(private val playbackRepository: PlaybackRepository) {
     private var progressJob: Job? = null
     private var currentTrackId: UUID? = null
     private var playSessionId: String = UUID.randomUUID().toString()
+    private var playMethod: String = "DirectPlay"
 
-    fun onPlaybackStarted(trackId: UUID, startPositionMs: Long) {
-        playSessionId = UUID.randomUUID().toString()
+    fun onPlaybackStarted(
+        trackId: UUID,
+        startPositionMs: Long,
+        playSessionId: String? = null,
+        playMethod: String = "DirectPlay",
+    ) {
+        this.playSessionId = playSessionId ?: UUID.randomUUID().toString()
+        this.playMethod = playMethod
         currentTrackId = trackId
+        val sessionId = this.playSessionId
         scope.launch {
             runCatching {
                 playbackRepository.reportPlaybackStart(
                     itemId = trackId,
-                    sessionId = playSessionId,
+                    sessionId = sessionId,
                     mediaSourceId = trackId.toString(),
-                    playMethod = "DirectPlay",
+                    playMethod = playMethod,
                     canSeek = true,
                 )
             }
                 .onFailure { Timber.w(it, "Failed to report playback start for $trackId") }
         }
+    }
+
+    fun updatePlayMethod(trackId: UUID, playMethod: String) {
+        if (currentTrackId != trackId) return
+        this.playMethod = playMethod
     }
 
     fun startProgressUpdates(getPositionMs: () -> Long, isPaused: () -> Boolean) {
@@ -51,7 +64,7 @@ constructor(private val playbackRepository: PlaybackRepository) {
                         sessionId = playSessionId,
                         positionTicks = getPositionMs() * 10_000L,
                         isPaused = isPaused(),
-                        playMethod = "DirectPlay",
+                        playMethod = playMethod,
                     )
                 }
                     .onFailure { Timber.w(it, "Failed to report playback progress") }

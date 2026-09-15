@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -86,6 +87,7 @@ fun MusicTrackRow(
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() },
+                    role = Role.Button,
                     onClick = onClick,
                 )
                 .padding(horizontal = 16.dp, vertical = 10.dp),
@@ -327,6 +329,7 @@ fun MusicTrackRow(
                                 Icon(
                                     painter = painterResource(R.drawable.ic_delete),
                                     contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.size(18.dp),
                                 )
                             },
@@ -369,7 +372,7 @@ fun MusicTrackRow(
                                                 downloadStatus == DownloadStatus.QUEUED ||
                                                 downloadStatus == DownloadStatus.DOWNLOADING
                                         )
-                                            Color.Red
+                                            MaterialTheme.colorScheme.error
                                         else LocalContentColor.current,
                                     modifier = Modifier.size(18.dp),
                                 )

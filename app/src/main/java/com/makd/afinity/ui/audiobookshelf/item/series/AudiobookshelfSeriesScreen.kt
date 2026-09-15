@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.audiobookshelf.item.series
 
-import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,7 +36,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -56,6 +54,7 @@ import com.makd.afinity.ui.audiobookshelf.item.components.SeriesCoverGrid
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 
 @Composable
@@ -68,8 +67,7 @@ fun AudiobookshelfSeriesScreen(
     val config by viewModel.currentConfig.collectAsStateWithLifecycle()
     val serverUrl = config?.serverUrl
 
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
     val playerOffset = LocalPlayerOffset.current
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 

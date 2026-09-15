@@ -7,6 +7,7 @@ import androidx.work.WorkerParameters
 import com.makd.afinity.data.repository.AppDataRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CancellationException
 import timber.log.Timber
 
 @HiltWorker
@@ -31,6 +32,8 @@ constructor(
                 Timber.w("HomeDataReloadWorker: libraries empty after reload, retry")
                 Result.retry()
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "HomeDataReloadWorker: reload failed")
             Result.retry()

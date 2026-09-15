@@ -50,6 +50,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -103,13 +104,13 @@ import com.makd.afinity.ui.library.LibraryFilterBottomSheet
 import com.makd.afinity.ui.library.LibraryFilterCapabilities
 import com.makd.afinity.util.DateSkeleton
 import com.makd.afinity.util.localizedDateFormatter
-import sh.calvin.reorderable.ReorderableItem
-import sh.calvin.reorderable.rememberReorderableLazyListState
 import java.time.LocalDate
 import java.time.Month
 import java.time.MonthDay
 import java.time.format.TextStyle
 import java.util.Locale
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -298,6 +299,8 @@ fun CustomSectionsScreen(
         }
     }
 
+    val presetTitles = SeasonalPreset.entries.associateWith { stringResource(it.titleRes) }
+
     if (choosingTemplate) {
         AddSectionDialog(
             locale = locale,
@@ -306,7 +309,11 @@ fun CustomSectionsScreen(
                 editingIsNew = true
                 choosingTemplate = false
             },
-            onPreset = { viewModel.requestPreset(it, context.getString(it.titleRes)) },
+            onPreset = { preset ->
+                val resolvedTitle = presetTitles[preset] ?: ""
+                viewModel.requestPreset(preset, resolvedTitle)
+                choosingTemplate = false
+            },
             onDismiss = { choosingTemplate = false },
         )
     }
@@ -517,6 +524,7 @@ private fun ColumnScope.CustomSectionEditor(
                     videoType = CustomSectionItemType.MOVIE in draft.itemTypes,
                     seriesStatus = CustomSectionItemType.SERIES in draft.itemTypes,
                 ),
+            isLoadingOptions = filterOptions == LibraryFilterOptions(),
             onApply = { draft = draft.copy(filters = it) },
             onDismiss = { showRefineSheet = false },
         )
@@ -1199,8 +1207,8 @@ private fun MonthDayPickerDialog(
     onDismiss: () -> Unit,
     onConfirm: (Int, Int) -> Unit,
 ) {
-    var month by remember { mutableStateOf(initialMonth) }
-    var day by remember { mutableStateOf(initialDay) }
+    var month by remember { mutableIntStateOf(initialMonth) }
+    var day by remember { mutableIntStateOf(initialDay) }
     var monthGridOpen by remember { mutableStateOf(false) }
     val today = remember { MonthDay.now() }
     val daysInMonth = Month.of(month).maxLength()
@@ -1446,4 +1454,3 @@ private fun formatSeasonRange(start: String, end: String, locale: Locale): Strin
 }
 
 private fun formatMonthDay(month: Int, day: Int): String = "%02d-%02d".format(Locale.US, month, day)
-

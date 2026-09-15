@@ -16,8 +16,8 @@ import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
 import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.user.AfinityUserDataDto
-import kotlinx.coroutines.flow.Flow
 import java.util.UUID
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 abstract class ServerDatabaseDao {
@@ -251,12 +251,6 @@ abstract class ServerDatabaseDao {
     @Query("DELETE FROM genre_show_cache WHERE serverId = :serverId")
     abstract suspend fun deleteGenreShowCacheByServerId(serverId: String)
 
-    @Query("DELETE FROM boxset_cache WHERE serverId = :serverId")
-    abstract suspend fun deleteBoxSetCacheByServerId(serverId: String)
-
-    @Query("DELETE FROM boxset_cache_metadata WHERE serverId = :serverId")
-    abstract suspend fun deleteBoxSetCacheMetadataByServerId(serverId: String)
-
     @Query("DELETE FROM top_people_cache WHERE serverId = :serverId")
     abstract suspend fun deleteTopPeopleCacheByServerId(serverId: String)
 
@@ -269,11 +263,92 @@ abstract class ServerDatabaseDao {
     @Query("DELETE FROM jellyfin_stats_cache WHERE serverId = :serverId")
     abstract suspend fun deleteJellyfinStatsCacheByServerId(serverId: String)
 
+    @Query("DELETE FROM server_storage_cache WHERE serverId = :serverId")
+    abstract suspend fun deleteServerStorageCacheByServerId(serverId: String)
+
     @Query("DELETE FROM jellyseerr_requests WHERE jellyfinServerId = :serverId")
     abstract suspend fun deleteJellyseerrRequestsByServerId(serverId: String)
 
     @Query("DELETE FROM jellyseerr_config WHERE jellyfinServerId = :serverId")
     abstract suspend fun deleteJellyseerrConfigByServerId(serverId: String)
+
+    @Query("SELECT * FROM downloads WHERE serverId = :serverId AND userId = :userId")
+    abstract suspend fun getDownloadsForUser(serverId: String, userId: UUID): List<DownloadDto>
+
+    @Query(
+        "SELECT id FROM abs_downloads WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    abstract suspend fun getAbsDownloadIdsForUser(serverId: String, userId: String): List<UUID>
+
+    @Query("DELETE FROM userdata WHERE userId = :userId AND serverId = :serverId")
+    abstract suspend fun deleteUserDataForUser(userId: UUID, serverId: String)
+
+    @Query("DELETE FROM downloads WHERE serverId = :serverId AND userId = :userId")
+    abstract suspend fun deleteDownloadsForUser(serverId: String, userId: UUID)
+
+    @Query(
+        "DELETE FROM abs_downloads WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    abstract suspend fun deleteAbsDownloadsForUser(serverId: String, userId: String)
+
+    @Query(
+        "DELETE FROM jellyseerr_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    abstract suspend fun deleteJellyseerrConfigForUser(serverId: String, userId: String)
+
+    @Query(
+        "DELETE FROM audiobookshelf_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    abstract suspend fun deleteAudiobookshelfConfigForUser(serverId: String, userId: String)
+
+    @Query(
+        "DELETE FROM audiobookshelf_libraries WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    abstract suspend fun deleteAudiobookshelfLibrariesForUser(serverId: String, userId: String)
+
+    @Query(
+        "DELETE FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    abstract suspend fun deleteAudiobookshelfItemsForUser(serverId: String, userId: String)
+
+    @Query(
+        "DELETE FROM audiobookshelf_progress WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    abstract suspend fun deleteAudiobookshelfProgressForUser(serverId: String, userId: String)
+
+    @Query("DELETE FROM music_tracks WHERE serverId = :serverId AND userId = :userId")
+    abstract suspend fun deleteMusicTracksForUser(serverId: String, userId: String)
+
+    @Query("DELETE FROM music_albums WHERE serverId = :serverId AND userId = :userId")
+    abstract suspend fun deleteMusicAlbumsForUser(serverId: String, userId: String)
+
+    @Query("DELETE FROM music_lyrics WHERE serverId = :serverId AND userId = :userId")
+    abstract suspend fun deleteMusicLyricsForUser(serverId: String, userId: String)
+
+    @Query("DELETE FROM item_metadata_cache WHERE serverId = :serverId AND userId = :userId")
+    abstract suspend fun deleteItemMetadataCacheForUser(serverId: String, userId: String)
+
+    @Query("DELETE FROM users WHERE id = :userId") abstract suspend fun deleteUserRow(userId: UUID)
+
+    @Transaction
+    open suspend fun clearAllDataForUser(serverId: String, userId: UUID) {
+        val userIdText = userId.toString()
+        deleteUserDataForUser(userId, serverId)
+        deleteDownloadsForUser(serverId, userId)
+        deleteAbsDownloadsForUser(serverId, userIdText)
+        deleteJellyseerrConfigForUser(serverId, userIdText)
+        deleteAudiobookshelfConfigForUser(serverId, userIdText)
+        deleteAudiobookshelfLibrariesForUser(serverId, userIdText)
+        deleteAudiobookshelfItemsForUser(serverId, userIdText)
+        deleteAudiobookshelfProgressForUser(serverId, userIdText)
+        deleteMusicTracksForUser(serverId, userIdText)
+        deleteMusicAlbumsForUser(serverId, userIdText)
+        deleteMusicLyricsForUser(serverId, userIdText)
+        deleteItemMetadataCacheForUser(serverId, userIdText)
+        deleteOrphanedSources()
+        deleteOrphanedMediaStreams()
+        deleteUserRow(userId)
+    }
 
     @Transaction
     open suspend fun clearAllDataForServer(serverId: String) {
@@ -289,12 +364,11 @@ abstract class ServerDatabaseDao {
         deleteGenreMovieCacheByServerId(serverId)
         deleteShowGenreCacheByServerId(serverId)
         deleteGenreShowCacheByServerId(serverId)
-        deleteBoxSetCacheByServerId(serverId)
-        deleteBoxSetCacheMetadataByServerId(serverId)
         deleteTopPeopleCacheByServerId(serverId)
         deletePersonSectionCacheByServerId(serverId)
         deleteItemMetadataCacheByServerId(serverId)
         deleteJellyfinStatsCacheByServerId(serverId)
+        deleteServerStorageCacheByServerId(serverId)
         deleteJellyseerrRequestsByServerId(serverId)
         deleteJellyseerrConfigByServerId(serverId)
     }

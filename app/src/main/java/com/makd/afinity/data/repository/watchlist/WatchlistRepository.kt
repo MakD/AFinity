@@ -6,9 +6,9 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
-import java.util.UUID
 
 interface WatchlistRepository {
 
@@ -21,6 +21,8 @@ interface WatchlistRepository {
     fun isInWatchlistFlow(itemId: UUID): Flow<Boolean>
 
     suspend fun getWatchlistItems(): List<AfinityItem>
+
+    suspend fun getWatchlistItemsResult(): Result<List<AfinityItem>>
 
     suspend fun getWatchlistBoxSets(): List<AfinityBoxSet>
 

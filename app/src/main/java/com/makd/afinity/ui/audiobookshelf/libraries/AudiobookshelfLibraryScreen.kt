@@ -31,6 +31,7 @@ import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AlphabetScroller
+import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.main.MainUiState
 
@@ -63,9 +64,12 @@ fun AudiobookshelfLibraryScreen(
                 },
                 backgroundOpacity = { 1f },
                 onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
-                onProfileClick = { navController.navigate(Destination.createSettingsRoute()) },
-                userProfileImageUrl = mainUiState.userProfileImageUrl,
-                userName = mainUiState.userName,
+                profile =
+                    AppBarProfile(
+                        onClick = { navController.navigate(Destination.createSettingsRoute()) },
+                        name = mainUiState.userName,
+                        imageUrl = mainUiState.userProfileImageUrl,
+                    ),
             )
         }
     ) { innerPadding ->

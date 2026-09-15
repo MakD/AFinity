@@ -27,9 +27,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.music.AfinityAlbum
@@ -80,6 +82,7 @@ fun MusicAlbumCard(
     album: AfinityAlbum,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    showArtist: Boolean = true,
 ) {
     Column(
         modifier =
@@ -88,6 +91,7 @@ fun MusicAlbumCard(
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() },
+                    role = Role.Button,
                     onClick = onClick,
                 ),
         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -117,7 +121,7 @@ fun MusicAlbumCard(
             )
             val subtitle =
                 listOfNotNull(
-                        album.artist ?: album.artists.firstOrNull(),
+                        if (showArtist) album.artist ?: album.artists.firstOrNull() else null,
                         album.productionYear?.toString(),
                     )
                     .joinToString(" · ")
@@ -136,12 +140,12 @@ fun MusicAlbumCard(
 
 @Composable
 fun MusicArtistCard(
+    modifier: Modifier = Modifier,
     name: String,
     imageUrl: String?,
     blurHash: String? = null,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    size: androidx.compose.ui.unit.Dp = 140.dp,
+    size: Dp = 140.dp,
 ) {
     val imageSize = size * 0.86f
     Column(
@@ -151,6 +155,7 @@ fun MusicArtistCard(
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() },
+                    role = Role.Button,
                     onClick = onClick,
                 ),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -180,10 +185,10 @@ fun MusicArtistCard(
 
 @Composable
 fun MusicGenreCard(
+    modifier: Modifier = Modifier,
     genre: AfinityMusicGenre,
     index: Int = 0,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier =
@@ -192,6 +197,7 @@ fun MusicGenreCard(
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() },
+                    role = Role.Button,
                     onClick = onClick,
                 ),
         verticalArrangement = Arrangement.spacedBy(6.dp),

@@ -3,6 +3,7 @@ package com.makd.afinity.player.music
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.annotation.OptIn
 import androidx.core.net.toUri
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -12,14 +13,24 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.data.database.dao.MusicQueueDao
 import com.makd.afinity.data.database.entities.MusicQueueEntity
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.RepeatMode
+import com.makd.afinity.data.models.player.MusicQuality
+import com.makd.afinity.data.models.player.StreamDecision
+import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.player.AudioService
+import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,9 +44,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 data class LoadQueueEvent(
     val mediaItems: List<MediaItem>,
@@ -54,9 +62,13 @@ private val KEY_REPEAT_MODE = stringPreferencesKey("music_repeat_mode")
 private val KEY_SHUFFLED = booleanPreferencesKey("music_shuffled")
 
 private const val MAX_QUEUE_SIZE = 5000
+private const val STREAM_KEY_LOCAL = Int.MIN_VALUE
+private const val PLAY_METHOD_DIRECT = "DirectPlay"
+private const val PLAY_METHOD_TRANSCODE = "Transcode"
 
 @Singleton
 class MusicQueueManager
+@OptIn(UnstableApi::class)
 @Inject
 constructor(
     @param:ApplicationContext private val context: Context,
@@ -64,6 +76,9 @@ constructor(
     private val sessionManager: SessionManager,
     private val playbackManager: MusicPlaybackManager,
     private val dataStore: DataStore<Preferences>,
+    private val preferencesRepository: PreferencesRepository,
+    private val networkConnectivityMonitor: NetworkConnectivityMonitor,
+    private val playbackRepository: PlaybackRepository,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -93,8 +108,71 @@ constructor(
     val currentTrack: AfinityTrack?
         get() = _queue.value.getOrNull(_currentIndex.value)
 
+    @Volatile private var wifiMusicQualityBitrate = MusicQuality.ORIGINAL_BITRATE
+    @Volatile private var cellularMusicQualityBitrate = MusicQuality.CELLULAR_DEFAULT_BITRATE
+    @Volatile private var sessionMusicQualityBitrate: Int? = null
+
+    private val _neverTranscode = MutableStateFlow(false)
+    val neverTranscode: StateFlow<Boolean> = _neverTranscode.asStateFlow()
+
+    private data class StreamSession(val key: Int, val playSessionId: String, val isDirect: Boolean)
+
+    private val streamSessions = ConcurrentHashMap<UUID, StreamSession>()
+
+    private val resolvedStreams = ConcurrentHashMap<UUID, Uri>()
+
+    private val activeMusicQualityBitrate: Int
+        get() =
+            if (_neverTranscode.value) MusicQuality.ORIGINAL_BITRATE
+            else
+                sessionMusicQualityBitrate
+                    ?: if (networkConnectivityMonitor.isOnWifi()) wifiMusicQualityBitrate
+                    else cellularMusicQualityBitrate
+
+    val musicQuality: MusicQuality
+        get() = MusicQuality.fromBitrate(activeMusicQualityBitrate)
+
+    fun setSessionMusicQuality(quality: MusicQuality?) {
+        if (quality?.maxBitrate == sessionMusicQualityBitrate) return
+        sessionMusicQualityBitrate = quality?.maxBitrate
+        resolvedStreams.clear()
+
+        val tracks = _queue.value
+        if (tracks.isEmpty()) return
+        emitLoadEvent(
+            tracks = tracks,
+            startIndex = _currentIndex.value,
+            startPositionMs = playbackManager.state.value.positionMs,
+        )
+    }
+
     init {
         scope.launch { restoreFromRoom() }
+
+        scope.launch {
+            preferencesRepository.getMusicQualityWifiFlow().collect { wifiMusicQualityBitrate = it }
+        }
+
+        scope.launch {
+            preferencesRepository.getMusicQualityCellularFlow().collect {
+                cellularMusicQualityBitrate = it
+            }
+        }
+
+        scope.launch {
+            preferencesRepository.getMusicNeverTranscodeFlow().collect { never ->
+                val changed = never != _neverTranscode.value
+                _neverTranscode.value = never
+                if (!changed) return@collect
+                resolvedStreams.clear()
+                val tracks = _queue.value
+                if (tracks.isNotEmpty()) {
+                    _rearrangeQueueEvents.emit(
+                        RearrangeQueueEvent(tracks.map { buildMediaItem(it) }, _currentIndex.value)
+                    )
+                }
+            }
+        }
 
         scope.launch {
             var previousKey: String? = null
@@ -255,8 +333,18 @@ constructor(
     fun clearQueue() {
         _queue.value = emptyList()
         _currentIndex.value = 0
+        streamSessions.clear()
+        resolvedStreams.clear()
         scope.launch { musicQueueDao.clearQueue() }
     }
+
+    fun playSessionIdFor(trackId: UUID): String? = streamSessions[trackId]?.playSessionId
+
+    fun playMethodFor(trackId: UUID): String =
+        if (streamSessions[trackId]?.isDirect != false) PLAY_METHOD_DIRECT
+        else PLAY_METHOD_TRANSCODE
+
+    fun isServerTranscode(trackId: UUID): Boolean = streamSessions[trackId]?.isDirect == false
 
     fun onTrackChanged(newIndex: Int) {
         _currentIndex.value = newIndex.coerceIn(0, (_queue.value.size - 1).coerceAtLeast(0))
@@ -307,8 +395,9 @@ constructor(
     }
 
     private fun emitLoadEvent(tracks: List<AfinityTrack>, startIndex: Int, startPositionMs: Long) {
-        val mediaItems = tracks.map { buildMediaItem(it) }
         scope.launch {
+            tracks.getOrNull(startIndex)?.let { ensureResolved(it) }
+            val mediaItems = tracks.map { buildMediaItem(it) }
             _loadQueueEvents.emit(
                 LoadQueueEvent(
                     mediaItems = mediaItems,
@@ -318,6 +407,34 @@ constructor(
             )
         }
     }
+
+    suspend fun ensureResolved(track: AfinityTrack): Boolean {
+        if (!track.localFilePath.isNullOrBlank()) return false
+        if (_neverTranscode.value) return false
+        if (resolvedStreams.containsKey(track.id)) return false
+
+        val quality = musicQuality
+        val sessionKey =
+            if (quality.isOriginal) MusicQuality.ORIGINAL_BITRATE else quality.maxBitrate
+        val playSessionId = registerStreamSession(track.id, sessionKey, isDirect = true)
+        val decision =
+            playbackRepository.resolveAudioStream(
+                itemId = track.id,
+                playSessionId = playSessionId,
+                maxStreamingBitrate = quality.streamingBitrate.takeIf { !quality.isOriginal },
+            ) ?: return false
+        val isDirect = decision is StreamDecision.DirectPlay
+
+        streamSessions[track.id] = StreamSession(sessionKey, playSessionId, isDirect)
+        resolvedStreams[track.id] = decision.url.toUri()
+
+        if (!isDirect) {
+            Timber.d("Track ${track.id} needs a server transcode: ${decision.transcodeReasons}")
+        }
+        return !isDirect
+    }
+
+    fun mediaItemFor(track: AfinityTrack): MediaItem = buildMediaItem(track)
 
     private fun buildMediaItem(track: AfinityTrack): MediaItem {
         val artworkUri = track.images.primary
@@ -339,10 +456,61 @@ constructor(
         val localPath = track.localFilePath
         if (!localPath.isNullOrBlank()) {
             val localUri = localPath.toUri()
-            if (localUri.scheme == "file") return localUri
+            if (localUri.scheme == "file") {
+                registerStreamSession(track.id, STREAM_KEY_LOCAL, isDirect = true)
+                return localUri
+            }
         }
-        val baseUrl = sessionManager.currentSession.value?.serverUrl?.trimEnd('/') ?: ""
-        return "$baseUrl/Audio/${track.id}/stream?static=true".toUri()
+        val session = sessionManager.currentSession.value
+        val baseUrl = session?.serverUrl?.trimEnd('/') ?: ""
+
+        if (_neverTranscode.value) {
+            val playSessionId =
+                registerStreamSession(track.id, MusicQuality.ORIGINAL_BITRATE, isDirect = true)
+            return Uri.parse("$baseUrl/Audio/${track.id}/stream")
+                .buildUpon()
+                .appendQueryParameter("static", "true")
+                .appendQueryParameter("playSessionId", playSessionId)
+                .build()
+        }
+
+        resolvedStreams[track.id]?.let {
+            return it
+        }
+
+        val quality = MusicQuality.fromBitrate(activeMusicQualityBitrate)
+
+        val playSessionId =
+            if (quality.isOriginal) {
+                registerStreamSession(track.id, MusicQuality.ORIGINAL_BITRATE, isDirect = true)
+            } else {
+                registerStreamSession(track.id, quality.maxBitrate, isDirect = false)
+            }
+        val userId = session?.userId?.toString().orEmpty()
+        val deviceId = sessionManager.getCurrentApiClient()?.deviceInfo?.id.orEmpty()
+        return Uri.parse("$baseUrl/Audio/${track.id}/universal")
+            .buildUpon()
+            .appendQueryParameter("userId", userId)
+            .appendQueryParameter("deviceId", deviceId)
+            .appendQueryParameter("audioCodec", MusicQuality.AUDIO_CODECS)
+            .appendQueryParameter("container", MusicQuality.CONTAINERS)
+            .appendQueryParameter("transcodingContainer", MusicQuality.TRANSCODING_CONTAINER)
+            .appendQueryParameter("transcodingProtocol", MusicQuality.TRANSCODING_PROTOCOL)
+            .apply {
+                if (!quality.isOriginal) {
+                    appendQueryParameter("maxStreamingBitrate", quality.streamingBitrate.toString())
+                }
+            }
+            .appendQueryParameter("playSessionId", playSessionId)
+            .build()
+    }
+
+    private fun registerStreamSession(trackId: UUID, key: Int, isDirect: Boolean): String {
+        val existing = streamSessions[trackId]
+        if (existing != null && existing.key == key) return existing.playSessionId
+        val fresh = StreamSession(key, UUID.randomUUID().toString(), isDirect)
+        streamSessions[trackId] = fresh
+        return fresh.playSessionId
     }
 
     private suspend fun persistQueue(tracks: List<AfinityTrack>) {
@@ -388,6 +556,7 @@ private fun AfinityTrack.toEntity(position: Int, serverId: String) =
         durationMs = runtimeTicks / 10_000L,
         imageUrl = images.primary?.toString(),
         normalizationGain = normalizationGain,
+        albumNormalizationGain = albumNormalizationGain,
         indexNumber = indexNumber,
         discNumber = discNumber,
         serverId = serverId,
@@ -411,5 +580,6 @@ private fun MusicQueueEntity.toAfinityTrack() =
         favorite = false,
         playCount = null,
         normalizationGain = normalizationGain,
+        albumNormalizationGain = albumNormalizationGain,
         images = AfinityImages(primary = imageUrl?.toUri()),
     )

@@ -103,9 +103,7 @@ fun AvailableRequestsSection(
                 items = requests,
                 key = { displayItem -> "available_request_${displayItem.request.id}" },
             ) { displayItem ->
-                LaunchedEffect(displayItem.request.id) {
-                    onRequestVisible(displayItem.request)
-                }
+                LaunchedEffect(displayItem.request.id) { onRequestVisible(displayItem.request) }
 
                 AvailableRequestCard(
                     request = displayItem,

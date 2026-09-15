@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -43,6 +44,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
@@ -482,7 +484,8 @@ fun RequestConfirmationDialog(
                                 )
                             } else {
                                 Text(
-                                    text = stringResource(R.string.seerr_seasons_all_first_available),
+                                    text =
+                                        stringResource(R.string.seerr_seasons_all_first_available),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -646,10 +649,10 @@ fun RequestConfirmationDialog(
                                 }
                             } else if (canSelectSeasons) {
                                 SeasonSelector(
-                                    availableSeasons,
-                                    selectedSeasons,
-                                    onSeasonsChange,
-                                    disabledSeasons,
+                                    availableSeasons = availableSeasons,
+                                    selectedSeasons = selectedSeasons,
+                                    onSeasonsChange = onSeasonsChange,
+                                    disabledSeasons = disabledSeasons,
                                 )
                             } else {
                                 Text(
@@ -1000,7 +1003,12 @@ fun <T> MinimalSelectionTile(
                 Modifier.fillMaxWidth()
                     .clip(MaterialTheme.shapes.medium)
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                    .clickable(enabled = !isLoading && items.isNotEmpty()) { expanded = true }
+                    .clickable(
+                        enabled = !isLoading && items.isNotEmpty(),
+                        role = Role.DropdownList,
+                    ) {
+                        expanded = true
+                    }
                     .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1090,7 +1098,9 @@ fun <T> MinimalMultiSelectTile(
                 Modifier.fillMaxWidth()
                     .clip(MaterialTheme.shapes.medium)
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                    .clickable(enabled = items.isNotEmpty()) { expanded = true }
+                    .clickable(enabled = items.isNotEmpty(), role = Role.DropdownList) {
+                        expanded = true
+                    }
                     .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1164,7 +1174,7 @@ fun MinimalSwitchTile(
         modifier =
             Modifier.fillMaxWidth()
                 .clip(MaterialTheme.shapes.medium)
-                .clickable { onCheckedChange(!checked) }
+                .toggleable(value = checked, role = Role.Checkbox, onValueChange = onCheckedChange)
                 .padding(vertical = 8.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,

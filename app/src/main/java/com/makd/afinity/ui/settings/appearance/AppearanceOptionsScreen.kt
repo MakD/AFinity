@@ -48,6 +48,7 @@ import com.makd.afinity.ui.theme.ThemeMode
 @Composable
 fun AppearanceOptionsScreen(
     onBackClick: () -> Unit,
+    onCustomSectionsClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -57,6 +58,7 @@ fun AppearanceOptionsScreen(
     val latestRowsVisible by viewModel.latestRowsVisible.collectAsStateWithLifecycle()
     val navigationDrawerEnabled by viewModel.navigationDrawerEnabled.collectAsStateWithLifecycle()
     val librariesInDrawer by viewModel.librariesInDrawer.collectAsStateWithLifecycle()
+    val sideSheetEnabled by viewModel.sideSheetEnabled.collectAsStateWithLifecycle()
     val episodeLayout by viewModel.episodeLayout.collectAsStateWithLifecycle()
     val showRatings by viewModel.showRatings.collectAsStateWithLifecycle()
     val showAwards by viewModel.showAwards.collectAsStateWithLifecycle()
@@ -148,11 +150,26 @@ fun AppearanceOptionsScreen(
                         onCheckedChange = viewModel::toggleLibrariesInDrawer,
                         enabled = navigationDrawerEnabled,
                     )
+                    SettingsDivider()
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_sidesheet),
+                        title = stringResource(R.string.pref_side_sheet_title),
+                        subtitle = stringResource(R.string.pref_side_sheet_summary),
+                        checked = sideSheetEnabled,
+                        onCheckedChange = viewModel::toggleSideSheet,
+                    )
                 }
             }
 
             item {
                 SettingsGroup(title = stringResource(R.string.settings_group_home_screen)) {
+                    SettingsItem(
+                        icon = painterResource(id = R.drawable.ic_row_custom),
+                        title = stringResource(R.string.custom_sections_title),
+                        subtitle = stringResource(R.string.custom_sections_settings_summary),
+                        onClick = onCustomSectionsClick,
+                    )
+                    SettingsDivider()
                     SettingsSwitchItem(
                         icon = painterResource(id = R.drawable.ic_view_module),
                         title = stringResource(R.string.pref_combine_library_title),

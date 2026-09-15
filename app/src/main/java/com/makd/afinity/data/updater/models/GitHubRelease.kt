@@ -41,7 +41,7 @@ sealed class UpdateState {
 
     object UpToDate : UpdateState()
 
-    data class Downloading(val progress: Int) : UpdateState()
+    data class Downloading(val progress: Int, val release: GitHubRelease) : UpdateState()
 
     data class Downloaded(
         val file: java.io.File,

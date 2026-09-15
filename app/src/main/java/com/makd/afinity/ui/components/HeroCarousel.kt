@@ -44,7 +44,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -70,12 +69,13 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.LocalShowRatings
+import com.makd.afinity.navigation.LocalSkipServerImageResize
 import com.makd.afinity.ui.utils.bottomOverlap
+import java.util.Locale
 import kotlinx.coroutines.delay
 import mx.platacard.pagerindicator.PagerIndicatorOrientation
 import mx.platacard.pagerindicator.PagerWormIndicator
 import timber.log.Timber
-import java.util.Locale
 
 private val HeroMaxHeight = 560.dp
 private val HeroBottomOverlap = 40.dp
@@ -93,9 +93,7 @@ fun HeroCarousel(
 ) {
     if (items.isEmpty()) return
 
-    val configuration = LocalConfiguration.current
-    val isLandscape =
-        configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
 
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
@@ -175,6 +173,7 @@ private fun HeroCarouselAutoScrollAndPrefetch(
 ) {
     val context = LocalContext.current
     val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
+    val skipServerResize = LocalSkipServerImageResize.current
 
     LaunchedEffect(pagerState.settledPage, isScrolling, isDragged) {
         if (!isDragged && !isScrolling && items.size > 1) {
@@ -202,23 +201,18 @@ private fun HeroCarouselAutoScrollAndPrefetch(
         }
     }
 
-    LaunchedEffect(pagerState.currentPage) {
+    LaunchedEffect(pagerState.currentPage, skipServerResize) {
         if (items.isEmpty()) return@LaunchedEffect
-        val currentIndex = pagerState.currentPage % items.size
-        val nextIndex = (currentIndex + 1) % items.size
-        val prevIndex = (currentIndex - 1 + items.size) % items.size
-
-        listOf(nextIndex, prevIndex).forEach { index ->
-            val item = items[index]
-            val rawUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl
-            if (rawUrl != null) {
-                val request =
-                    ImageRequest.Builder(context)
-                        .data(optimizedImageUrl(rawUrl, fillWidthPx))
-                        .size(fillWidthPx, fillHeightPx)
-                        .build()
-                context.imageLoader.enqueue(request)
-            }
+        val nextIndex = (pagerState.currentPage + 1) % items.size
+        val item = items[nextIndex]
+        val rawUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl
+        if (rawUrl != null) {
+            val request =
+                ImageRequest.Builder(context)
+                    .data(optimizedImageUrl(rawUrl, fillWidthPx, skipServerResize))
+                    .size(fillWidthPx, fillHeightPx)
+                    .build()
+            context.imageLoader.enqueue(request)
         }
     }
 }
@@ -704,8 +698,7 @@ private fun HeroMetadata(item: AfinityItem) {
     if (item is AfinityShow) {
         item.seasonCount?.let { count ->
             Text(
-                text =
-                    pluralStringResource(R.plurals.hero_season_plural, count, count),
+                text = pluralStringResource(R.plurals.hero_season_plural, count, count),
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

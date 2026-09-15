@@ -9,10 +9,10 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.makd.afinity.data.workers.AbsProgressSyncWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
-import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import timber.log.Timber
 
 @Singleton
 class AbsProgressSyncScheduler

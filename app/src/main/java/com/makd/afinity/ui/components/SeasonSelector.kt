@@ -26,8 +26,8 @@ fun SeasonSelector(
     availableSeasons: Int,
     selectedSeasons: List<Int>,
     onSeasonsChange: (List<Int>) -> Unit,
-    disabledSeasons: List<Int> = emptyList(),
     modifier: Modifier = Modifier,
+    disabledSeasons: List<Int> = emptyList(),
 ) {
     val selectableSeasons = (1..availableSeasons).filter { it !in disabledSeasons }
     val allSelectableSelected = selectableSeasons.all { it in selectedSeasons }

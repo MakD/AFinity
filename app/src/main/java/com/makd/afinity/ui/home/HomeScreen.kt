@@ -71,6 +71,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
@@ -551,7 +552,14 @@ fun HomeScreen(
                             items(
                                 items = uiState.pinnedSections,
                                 key = { section -> section.key },
-                                contentType = { section -> section::class },
+                                contentType = { section ->
+                                    when (section) {
+                                        is HomeSection.Items -> section::class to section.cardStyle
+                                        is HomeSection.Pending ->
+                                            section::class to section.cardStyle
+                                        else -> section::class
+                                    }
+                                },
                             ) { section ->
                                 Box(modifier = baseModifier.padding(top = 24.dp)) {
                                     when (section) {
@@ -614,7 +622,14 @@ fun HomeScreen(
                             items(
                                 items = uiState.combinedSections,
                                 key = { section -> section.key },
-                                contentType = { section -> section::class },
+                                contentType = { section ->
+                                    when (section) {
+                                        is HomeSection.Items -> section::class to section.cardStyle
+                                        is HomeSection.Pending ->
+                                            section::class to section.cardStyle
+                                        else -> section::class
+                                    }
+                                },
                             ) { section ->
                                 val hideSection =
                                     section is HomeSection.Genre &&
@@ -828,9 +843,12 @@ fun HomeScreen(
                     }
                 }
             },
-            onProfileClick = onProfileClick,
-            userName = mainUiState.userName,
-            userProfileImageUrl = mainUiState.userProfileImageUrl,
+            profile =
+                AppBarProfile(
+                    onClick = onProfileClick,
+                    name = mainUiState.userName,
+                    imageUrl = mainUiState.userProfileImageUrl,
+                ),
             backgroundOpacity = { topBarOpacity },
             isFetchingRandom = isFetchingRandom,
         )

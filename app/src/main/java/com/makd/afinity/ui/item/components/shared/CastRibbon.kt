@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,8 +39,8 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.utils.horizontalBleed
-import org.jellyfin.sdk.model.api.PersonKind
 import java.util.UUID
+import org.jellyfin.sdk.model.api.PersonKind
 
 private val RibbonAvatarSize = 56.dp
 private val RibbonItemWidth = 72.dp
@@ -48,11 +49,11 @@ private data class RibbonEntry(val person: AfinityPerson, val isGuest: Boolean)
 
 @Composable
 fun CastRibbon(
+    modifier: Modifier = Modifier,
     item: AfinityItem,
     onSeeAllClick: () -> Unit,
     onPersonClick: ((UUID) -> Unit)? = null,
     horizontalPadding: Dp = 24.dp,
-    modifier: Modifier = Modifier,
 ) {
     val cast = item.peopleOfKind(PersonKind.ACTOR)
     val guestStars = item.peopleOfKind(PersonKind.GUEST_STAR)
@@ -104,9 +105,7 @@ fun CastRibbon(
 @Composable
 private fun RibbonFace(entry: RibbonEntry, onPersonClick: ((UUID) -> Unit)?) {
     val person = entry.person
-    val clickHandler = onPersonClick
-    val ringColor =
-        if (entry.isGuest) MaterialTheme.colorScheme.primary else Color.Transparent
+    val ringColor = if (entry.isGuest) MaterialTheme.colorScheme.primary else Color.Transparent
     val roleLabel =
         if (person.role.isNotEmpty()) stringResource(R.string.cast_role_format, person.role) else ""
 
@@ -114,12 +113,13 @@ private fun RibbonFace(entry: RibbonEntry, onPersonClick: ((UUID) -> Unit)?) {
         modifier =
             Modifier.width(RibbonItemWidth)
                 .then(
-                    if (clickHandler != null)
+                    if (onPersonClick != null)
                         Modifier.clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() },
+                            role = Role.Button,
                         ) {
-                            clickHandler(person.id)
+                            onPersonClick(person.id)
                         }
                     else Modifier
                 ),
@@ -168,14 +168,13 @@ private fun RibbonFace(entry: RibbonEntry, onPersonClick: ((UUID) -> Unit)?) {
 private fun SeeAllChevron(onClick: () -> Unit) {
     Box(
         modifier =
-            Modifier.height(RibbonAvatarSize)
-                .width(40.dp)
-                .clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() },
-                ) {
-                    onClick()
-                },
+            Modifier.height(RibbonAvatarSize).width(40.dp).clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() },
+                role = Role.Button,
+            ) {
+                onClick()
+            },
         contentAlignment = Alignment.Center,
     ) {
         Icon(

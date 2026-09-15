@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -42,11 +43,14 @@ fun EpgChannelCell(
                 .height(cellHeight)
                 .clip(MaterialTheme.shapes.small)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
-                .clickable(onClick = onClick)
+                .clickable(role = Role.Button, onClick = onClick)
                 .padding(horizontal = 8.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(modifier = Modifier.weight(1f).padding(4.dp), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier.weight(1f).padding(4.dp),
+            contentAlignment = Alignment.Center,
+        ) {
             if (channel.images.primary != null) {
                 AsyncImage(
                     imageUrl = channel.images.primary.toString(),

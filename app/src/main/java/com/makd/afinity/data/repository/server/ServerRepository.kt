@@ -10,6 +10,8 @@ interface ServerRepository {
     val isConnected: StateFlow<Boolean>
     val currentServer: StateFlow<Server?>
 
+    val unsupportedServerVersion: StateFlow<String?>
+
     suspend fun refreshServerInfo()
 
     suspend fun forceReconnect(): Boolean
@@ -42,15 +44,5 @@ interface ServerRepository {
         maxWidth: Int? = null,
         maxHeight: Int? = null,
         quality: Int? = null,
-    ): String
-
-    fun buildStreamUrl(
-        itemId: String,
-        mediaSourceId: String,
-        maxBitrate: Int? = null,
-        audioStreamIndex: Int? = null,
-        subtitleStreamIndex: Int? = null,
-        videoStreamIndex: Int? = null,
-        accessToken: String? = null,
     ): String
 }

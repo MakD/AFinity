@@ -38,11 +38,18 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.segments.SegmentsRepository
 import com.makd.afinity.di.DownloadClient
+import com.makd.afinity.util.LocalNetworkPermission
 import com.makd.afinity.util.formatFileSize
 import com.makd.afinity.util.parseDashlessUuid
 import com.makd.afinity.util.redactUrl
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.io.File
+import java.io.FileOutputStream
+import java.util.Locale
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicLong
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
@@ -56,16 +63,11 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.libraryApi
-import org.jellyfin.sdk.api.operations.ItemsApi
+import org.jellyfin.sdk.api.operations.LibraryApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
-import java.io.File
-import java.io.FileOutputStream
-import java.util.Locale
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicLong
 
 @HiltWorker
 class MediaDownloadWorker
@@ -81,6 +83,7 @@ constructor(
     private val downloadSemaphoreManager: DownloadSemaphoreManager,
     private val downloadNotificationManager: DownloadNotificationManager,
     @param:DownloadClient private val okHttpClient: OkHttpClient,
+    private val localNetworkPermission: LocalNetworkPermission,
 ) : CoroutineWorker(appContext, workerParams) {
 
     companion object {
@@ -93,6 +96,24 @@ constructor(
         const val PROGRESS_KEY = "progress"
         const val BUFFER_SIZE = 256 * 1024
         const val PROGRESS_UPDATE_INTERVAL_MS = 500L
+        const val MAX_PERMISSION_RETRY_ATTEMPTS = 5
+    }
+
+    private suspend fun markPermissionFailure(downloadId: UUID) {
+        try {
+            val download = databaseRepository.getDownload(downloadId) ?: return
+            databaseRepository.insertDownload(
+                download.copy(
+                    status = DownloadStatus.FAILED,
+                    error = applicationContext.getString(R.string.local_network_permission_needed),
+                    updatedAt = System.currentTimeMillis(),
+                )
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to mark download failed after permission denial")
+        }
     }
 
     override suspend fun doWork(): Result =
@@ -109,6 +130,25 @@ constructor(
                 } catch (e: IllegalArgumentException) {
                     return@withContext Result.failure(workDataOf("error" to "Invalid download ID"))
                 }
+
+            val downloadServerUrl =
+                databaseRepository.getDownload(downloadId)?.serverId?.let { serverId ->
+                    databaseRepository.getServer(serverId)?.address
+                }
+
+            if (downloadServerUrl != null && localNetworkPermission.blocks(downloadServerUrl)) {
+                if (runAttemptCount >= MAX_PERMISSION_RETRY_ATTEMPTS) {
+                    Timber.w(
+                        "Download failed: local network permission still missing after $runAttemptCount attempts"
+                    )
+                    markPermissionFailure(downloadId)
+                    return@withContext Result.failure(
+                        workDataOf("error" to "Local network permission not granted")
+                    )
+                }
+                Timber.w("Download deferred: local network permission not granted")
+                return@withContext Result.retry()
+            }
 
             val itemIdString =
                 inputData.getString(KEY_ITEM_ID)
@@ -136,6 +176,8 @@ constructor(
 
             try {
                 setForeground(createQueuedForegroundInfo(downloadId, notifTitle, notifSubText))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to promote to foreground service")
             }
@@ -158,6 +200,8 @@ constructor(
                                 0,
                             )
                         )
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to update foreground service to active")
                     }
@@ -190,10 +234,10 @@ constructor(
 
                         val notificationIcon = loadNotificationIcon(download, apiClient.accessToken)
 
-                        val itemsApi = ItemsApi(apiClient)
+                        val libraryApi = LibraryApi(apiClient)
                         val baseItemDto =
                             try {
-                                itemsApi
+                                libraryApi
                                     .getItems(
                                         userId = userId,
                                         ids = listOf(itemId),
@@ -215,6 +259,8 @@ constructor(
                                     .content
                                     ?.items
                                     ?.firstOrNull()
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 Timber.e(e, "Failed to fetch item details")
                                 null
@@ -425,7 +471,7 @@ constructor(
                                 itemId,
                                 download.serverId,
                                 userId.toString(),
-                                android.net.Uri.fromFile(finalFile).toString(),
+                                Uri.fromFile(finalFile).toString(),
                             )
                         } else {
                             if (itemType.uppercase() == "MOVIE") {
@@ -456,6 +502,8 @@ constructor(
                                 KEY_FILE_PATH to finalFile.absolutePath,
                             )
                         )
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Media download failed")
                         try {
@@ -506,6 +554,8 @@ constructor(
                 totalBytes,
                 System.currentTimeMillis(),
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to update download progress")
         }
@@ -521,7 +571,7 @@ constructor(
         try {
             Timber.d("Ensuring item ${baseItemDto.id} is saved to database")
             val baseUrl = apiClient.baseUrl ?: ""
-            val itemsApi = ItemsApi(apiClient)
+            val libraryApi = LibraryApi(apiClient)
 
             when (baseItemDto.type) {
                 BaseItemKind.MOVIE -> {
@@ -541,7 +591,7 @@ constructor(
                                 ?.let { id ->
                                     async {
                                         try {
-                                            itemsApi
+                                            libraryApi
                                                 .getItems(
                                                     userId = userId,
                                                     ids = listOf(id),
@@ -568,7 +618,7 @@ constructor(
                             if (databaseRepository.getSeason(seasonId, userId) == null) {
                                 async {
                                     try {
-                                        itemsApi
+                                        libraryApi
                                             .getItems(
                                                 userId = userId,
                                                 ids = listOf(seasonId),
@@ -609,6 +659,8 @@ constructor(
 
                 else -> Timber.w("Unsupported item type: ${baseItemDto.type}")
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to ensure item is in database")
         }
@@ -685,6 +737,8 @@ constructor(
                     databaseRepository.insertEpisode(item.copy(images = updatedImages), serverId)
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to download images")
         }
@@ -730,6 +784,8 @@ constructor(
                     logoImageBlurHash = images.logoImageBlurHash,
                 )
             databaseRepository.insertShow(show.copy(images = updatedImages), serverId)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to download show images")
         }
@@ -780,6 +836,8 @@ constructor(
                     logoImageBlurHash = images.logoImageBlurHash,
                 )
             databaseRepository.insertSeason(season.copy(images = updatedImages), serverId)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to download season images")
         }
@@ -824,12 +882,14 @@ constructor(
                     } ?: person
                 }
             databaseRepository.insertMovie(movie.copy(people = updatedPeople), serverId)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to download person images")
         }
     }
 
-    private suspend fun downloadImage(
+    private fun downloadImage(
         apiClient: ApiClient,
         imageUrl: String,
         outputDir: File,
@@ -864,6 +924,8 @@ constructor(
                     }
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w("Failed to download image $baseName: ${e.message}")
         }
@@ -873,6 +935,8 @@ constructor(
     private suspend fun downloadSegments(itemId: UUID) {
         try {
             segmentsRepository.getSegments(itemId)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to download segments")
         }
@@ -915,11 +979,15 @@ constructor(
                             stream = stream.copy(path = file.absolutePath),
                             sourceId = localSourceId,
                         )
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w("Failed to copy stream ${stream.type} to local source")
                     }
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to create LOCAL source entry")
         }
@@ -1112,6 +1180,8 @@ constructor(
                     }
                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to load notification image")
             null

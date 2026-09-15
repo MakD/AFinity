@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -64,6 +65,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.LocalNetworkPermissionCard
 import com.makd.afinity.ui.components.connectionIndicatorColor
 import com.makd.afinity.ui.components.connectionLabel
 import com.makd.afinity.ui.item.components.shared.AwardGold
@@ -143,6 +145,8 @@ fun ServicesHubScreen(
     val remoteHost by viewModel.remoteConfiguredHost.collectAsStateWithLifecycle()
     val remoteVerifying by viewModel.remoteVerifying.collectAsStateWithLifecycle()
     val remoteError by viewModel.remoteError.collectAsStateWithLifecycle()
+    val remoteNeedsPermission by
+        viewModel.remoteNeedsLocalNetworkPermission.collectAsStateWithLifecycle()
 
     val smViewModel: ServerManagementViewModel = hiltViewModel()
     val smState by smViewModel.state.collectAsStateWithLifecycle()
@@ -278,8 +282,10 @@ fun ServicesHubScreen(
                         VerticalDivider()
                         Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                             val kind = selected
-                            val server = currentServer
-                            if (kind != null && (kind == EditorKind.RATINGS || server != null)) {
+                            if (
+                                kind != null &&
+                                    (kind == EditorKind.RATINGS || currentServer != null)
+                            ) {
                                 Column(modifier = Modifier.fillMaxSize()) {
                                     EditorHeader(
                                         title = stringResource(editorTitle(kind)),
@@ -287,7 +293,7 @@ fun ServicesHubScreen(
                                     )
                                     EditorContent(
                                         kind = kind,
-                                        server = server,
+                                        server = currentServer,
                                         smViewModel = smViewModel,
                                         settingsViewModel = settingsViewModel,
                                         onDisconnect = {
@@ -303,6 +309,9 @@ fun ServicesHubScreen(
                                         },
                                         remoteVerifying = remoteVerifying,
                                         remoteError = remoteError,
+                                        remoteNeedsLocalNetworkPermission = remoteNeedsPermission,
+                                        onLocalNetworkPermissionGranted =
+                                            viewModel::onLocalNetworkPermissionGranted,
                                         modifier = Modifier.weight(1f),
                                     )
                                 }
@@ -340,8 +349,7 @@ fun ServicesHubScreen(
                     )
 
                     val kind = selected
-                    val server = currentServer
-                    if (kind != null && (kind == EditorKind.RATINGS || server != null)) {
+                    if (kind != null && (kind == EditorKind.RATINGS || currentServer != null)) {
                         ModalBottomSheet(
                             onDismissRequest = { selected = null },
                             sheetState = editorSheetState,
@@ -359,7 +367,7 @@ fun ServicesHubScreen(
                                 )
                                 EditorContent(
                                     kind = kind,
-                                    server = server,
+                                    server = currentServer,
                                     smViewModel = smViewModel,
                                     settingsViewModel = settingsViewModel,
                                     onDisconnect = {
@@ -374,6 +382,9 @@ fun ServicesHubScreen(
                                     },
                                     remoteVerifying = remoteVerifying,
                                     remoteError = remoteError,
+                                    remoteNeedsLocalNetworkPermission = remoteNeedsPermission,
+                                    onLocalNetworkPermissionGranted =
+                                        viewModel::onLocalNetworkPermissionGranted,
                                     modifier = Modifier.padding(bottom = 24.dp),
                                 )
                             }
@@ -523,95 +534,103 @@ private fun HubList(
                 Spacer(Modifier.height(12.dp))
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ServiceTile(
-                    iconRes = R.drawable.ic_seerr_logo,
-                    name = "Seerr",
-                    connected = seerrConnected,
-                    accent = JellyseerrColor,
-                    statusText =
-                        stringResource(
-                            if (seerrConnected) R.string.services_hub_status_connected
-                            else R.string.services_hub_status_not_set_up
-                        ),
-                    isSelected = selected == EditorKind.SEERR,
-                    onClick = onSeerr,
-                    modifier = Modifier.weight(1f),
-                    trailingDots = seerrDots,
-                )
-                ServiceTile(
-                    iconRes = R.drawable.ic_audiobookshelf_light,
-                    name = "Audiobookshelf",
-                    connected = absConnected,
-                    accent = AudiobookshelfColor,
-                    statusText =
-                        stringResource(
-                            if (absConnected) R.string.services_hub_status_connected
-                            else R.string.services_hub_status_not_set_up
-                        ),
-                    isSelected = selected == EditorKind.ABS,
-                    onClick = onAbs,
-                    modifier = Modifier.weight(1f),
-                    trailingDots = absDots,
-                )
-            }
-            Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ServiceTile(
-                    iconRes = R.drawable.ic_world,
-                    name = stringResource(R.string.services_hub_tile_remote),
-                    connected = remoteAdded,
-                    accent = MaterialTheme.colorScheme.primary,
-                    statusText =
-                        stringResource(
-                            if (remoteAdded) R.string.services_hub_status_added
-                            else R.string.services_hub_status_not_set_up
-                        ),
-                    isSelected = selected == EditorKind.JELLYFIN,
-                    onClick = onRemote,
-                    modifier = Modifier.weight(1f),
-                    trailingDots = remoteDots,
-                )
-                if (showRatings) {
+            val tiles: List<@Composable RowScope.() -> Unit> = buildList {
+                add {
                     ServiceTile(
-                        iconRes = R.drawable.ic_visibility,
-                        name = stringResource(R.string.services_hub_tile_ratings),
-                        connected = ratingsCount > 0,
-                        accent = tmdbColor,
+                        iconRes = R.drawable.ic_seerr_logo,
+                        name = "Seerr",
+                        connected = seerrConnected,
+                        accent = JellyseerrColor,
                         statusText =
-                            if (ratingsCount > 0)
-                                stringResource(
-                                    R.string.services_hub_status_ratings_count,
-                                    ratingsCount,
-                                )
-                            else stringResource(R.string.services_hub_status_not_set_up),
-                        isSelected = selected == EditorKind.RATINGS,
-                        onClick = onRatings,
+                            stringResource(
+                                if (seerrConnected) R.string.services_hub_status_connected
+                                else R.string.services_hub_status_not_set_up
+                            ),
+                        isSelected = selected == EditorKind.SEERR,
+                        onClick = onSeerr,
                         modifier = Modifier.weight(1f),
-                        trailingDots = ratingsDots,
+                        trailingDots = seerrDots,
                     )
-                } else {
-                    Spacer(Modifier.weight(1f))
+                }
+                add {
+                    ServiceTile(
+                        iconRes = R.drawable.ic_audiobookshelf_light,
+                        name = "Audiobookshelf",
+                        connected = absConnected,
+                        accent = AudiobookshelfColor,
+                        statusText =
+                            stringResource(
+                                if (absConnected) R.string.services_hub_status_connected
+                                else R.string.services_hub_status_not_set_up
+                            ),
+                        isSelected = selected == EditorKind.ABS,
+                        onClick = onAbs,
+                        modifier = Modifier.weight(1f),
+                        trailingDots = absDots,
+                    )
+                }
+                add {
+                    ServiceTile(
+                        iconRes = R.drawable.ic_world,
+                        name = stringResource(R.string.services_hub_tile_remote),
+                        connected = remoteAdded,
+                        accent = MaterialTheme.colorScheme.primary,
+                        statusText =
+                            stringResource(
+                                if (remoteAdded) R.string.services_hub_status_added
+                                else R.string.services_hub_status_not_set_up
+                            ),
+                        isSelected = selected == EditorKind.JELLYFIN,
+                        onClick = onRemote,
+                        modifier = Modifier.weight(1f),
+                        trailingDots = remoteDots,
+                    )
+                }
+                if (showRatings) {
+                    add {
+                        ServiceTile(
+                            iconRes = R.drawable.ic_visibility,
+                            name = stringResource(R.string.services_hub_tile_ratings),
+                            connected = ratingsCount > 0,
+                            accent = tmdbColor,
+                            statusText =
+                                if (ratingsCount > 0)
+                                    stringResource(
+                                        R.string.services_hub_status_ratings_count,
+                                        ratingsCount,
+                                    )
+                                else stringResource(R.string.services_hub_status_not_set_up),
+                            isSelected = selected == EditorKind.RATINGS,
+                            onClick = onRatings,
+                            modifier = Modifier.weight(1f),
+                            trailingDots = ratingsDots,
+                        )
+                    }
+                }
+                add {
+                    ServiceTile(
+                        iconRes = R.drawable.ic_laurel,
+                        name = stringResource(R.string.services_hub_tile_wikidata),
+                        connected = wikidataEnabled,
+                        accent = AwardGold,
+                        statusText =
+                            stringResource(
+                                if (wikidataEnabled) R.string.services_hub_status_connected
+                                else R.string.services_hub_status_not_set_up
+                            ),
+                        isSelected = false,
+                        onClick = onWikidata,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ServiceTile(
-                    iconRes = R.drawable.ic_laurel,
-                    name = stringResource(R.string.services_hub_tile_wikidata),
-                    connected = wikidataEnabled,
-                    accent = AwardGold,
-                    statusText =
-                        stringResource(
-                            if (wikidataEnabled) R.string.services_hub_status_connected
-                            else R.string.services_hub_status_not_set_up
-                        ),
-                    isSelected = false,
-                    onClick = onWikidata,
-                    modifier = Modifier.weight(1f),
-                )
-                Spacer(Modifier.weight(1f))
+            tiles.chunked(2).forEachIndexed { index, rowTiles ->
+                if (index > 0) Spacer(Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    rowTiles.forEach { tile -> tile() }
+                    if (rowTiles.size == 1) Spacer(Modifier.weight(1f))
+                }
             }
 
             Spacer(Modifier.height(24.dp))
@@ -692,6 +711,8 @@ private fun EditorContent(
     onAddJellyfin: (String) -> Unit,
     remoteVerifying: Boolean,
     remoteError: String?,
+    remoteNeedsLocalNetworkPermission: Boolean,
+    onLocalNetworkPermissionGranted: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val liveTypes = liveConnectionTypes(server)
@@ -772,6 +793,8 @@ private fun EditorContent(
                         verifying = remoteVerifying,
                         error = remoteError,
                         onAdd = onAddJellyfin,
+                        needsLocalNetworkPermission = remoteNeedsLocalNetworkPermission,
+                        onLocalNetworkPermissionGranted = onLocalNetworkPermissionGranted,
                     )
                 }
             EditorKind.RATINGS -> RatingsKeys(settingsViewModel)
@@ -853,7 +876,13 @@ private fun AddressRow(
 }
 
 @Composable
-private fun AddAddressBar(verifying: Boolean, error: String?, onAdd: (String) -> Unit) {
+private fun AddAddressBar(
+    verifying: Boolean,
+    error: String?,
+    onAdd: (String) -> Unit,
+    needsLocalNetworkPermission: Boolean = false,
+    onLocalNetworkPermissionGranted: () -> Unit = {},
+) {
     var input by remember { mutableStateOf("") }
     Column {
         AfinityTextField(
@@ -901,7 +930,10 @@ private fun AddAddressBar(verifying: Boolean, error: String?, onAdd: (String) ->
             },
             modifier = Modifier.fillMaxWidth(),
         )
-        if (error != null) {
+        if (needsLocalNetworkPermission) {
+            Spacer(Modifier.height(10.dp))
+            LocalNetworkPermissionCard(onGranted = onLocalNetworkPermissionGranted)
+        } else if (error != null) {
             Spacer(Modifier.height(4.dp))
             Text(
                 text = error,

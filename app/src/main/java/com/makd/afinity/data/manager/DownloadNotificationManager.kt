@@ -13,10 +13,10 @@ import com.makd.afinity.R
 import com.makd.afinity.data.workers.DownloadActionReceiver
 import com.makd.afinity.util.formatFileSize
 import dagger.hilt.android.qualifiers.ApplicationContext
-import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import timber.log.Timber
 
 @Singleton
 class DownloadNotificationManager
@@ -151,9 +151,10 @@ constructor(@param:ApplicationContext private val context: Context) {
     fun postFailed(notificationId: Int, title: String, subText: String?, error: String?) {
         ensureChannel()
         val failedText =
-            error?.takeIf { it.isNotBlank() }?.let {
-                context.getString(R.string.notif_download_failed_reason_fmt, it)
-            } ?: context.getString(R.string.notif_download_failed)
+            error
+                ?.takeIf { it.isNotBlank() }
+                ?.let { context.getString(R.string.notif_download_failed_reason_fmt, it) }
+                ?: context.getString(R.string.notif_download_failed)
         val notification =
             NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_download)

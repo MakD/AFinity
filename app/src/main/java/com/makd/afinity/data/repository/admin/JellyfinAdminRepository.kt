@@ -8,16 +8,18 @@ import com.makd.afinity.data.models.admin.EditablePerson
 import com.makd.afinity.data.models.admin.ExternalIdProvider
 import com.makd.afinity.data.models.admin.IdentifyResult
 import com.makd.afinity.data.models.admin.ItemImage
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.operations.ImageApi
 import org.jellyfin.sdk.api.operations.ItemLookupApi
-import org.jellyfin.sdk.api.operations.ItemRefreshApi
 import org.jellyfin.sdk.api.operations.ItemUpdateApi
 import org.jellyfin.sdk.api.operations.LibraryApi
 import org.jellyfin.sdk.api.operations.RemoteImageApi
-import org.jellyfin.sdk.api.operations.UserLibraryApi
 import org.jellyfin.sdk.model.FileInfo
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemPerson
@@ -32,9 +34,6 @@ import org.jellyfin.sdk.model.api.RemoteSearchResult
 import org.jellyfin.sdk.model.api.SeriesInfo
 import org.jellyfin.sdk.model.api.SeriesInfoRemoteSearchQuery
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class JellyfinAdminRepository
@@ -53,11 +52,11 @@ constructor(
             try {
                 val apiClient = getApiClient() ?: return@withContext null
                 val userId = getUserId() ?: return@withContext null
-                val userLibraryApi = UserLibraryApi(apiClient)
+                val libraryApi = LibraryApi(apiClient)
                 val itemUpdateApi = ItemUpdateApi(apiClient)
                 val itemUuid = UUID.fromString(itemId)
 
-                val itemResponse = userLibraryApi.getItem(userId = userId, itemId = itemUuid)
+                val itemResponse = libraryApi.getItem(userId = userId, itemId = itemUuid)
                 val dto = itemResponse.content
 
                 val editorResponse = itemUpdateApi.getMetadataEditorInfo(itemId = itemUuid)
@@ -68,6 +67,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get editable item $itemId")
                 null
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting editable item $itemId")
                 null
@@ -85,9 +86,9 @@ constructor(
                     getUserId()
                         ?: return@withContext Result.failure(IllegalStateException("No user"))
 
-                val userLibraryApi = UserLibraryApi(apiClient)
+                val libraryApi = LibraryApi(apiClient)
                 val existing =
-                    userLibraryApi
+                    libraryApi
                         .getItem(
                             userId = userId,
                             itemId = UUID.fromString(itemId),
@@ -122,6 +123,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to update item $itemId")
                 Result.failure(e)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error updating item $itemId")
                 Result.failure(e)
@@ -133,16 +136,12 @@ constructor(
             try {
                 val api = ItemLookupApi(getApiClient() ?: return@withContext emptyList())
                 val response = api.getExternalIdInfos(itemId = UUID.fromString(itemId))
-                response.content.map {
-                    ExternalIdProvider(
-                        name = it.name,
-                        key = it.key,
-                        urlFormatString = it.urlFormatString,
-                    )
-                }
+                response.content.map { ExternalIdProvider(name = it.name, key = it.key) }
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get external ID providers for $itemId")
                 emptyList()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting external ID providers for $itemId")
                 emptyList()
@@ -174,6 +173,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to search movie for $itemId")
                 emptyList()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error searching movie for $itemId")
                 emptyList()
@@ -205,6 +206,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to search series for $itemId")
                 emptyList()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error searching series for $itemId")
                 emptyList()
@@ -233,6 +236,7 @@ constructor(
                         searchProviderName = result.searchProviderName,
                         providerIds = result.providerIds,
                         overview = result.overview,
+                        artists = emptyList(),
                     )
                 api.applySearchCriteria(
                     itemId = UUID.fromString(itemId),
@@ -244,6 +248,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to apply identify result to $itemId")
                 Result.failure(e)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error applying identify result to $itemId")
                 Result.failure(e)
@@ -282,6 +288,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get images for $itemId")
                 emptyList()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting images for $itemId")
                 emptyList()
@@ -321,6 +329,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get remote images for $itemId")
                 emptyList()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting remote images for $itemId")
                 emptyList()
@@ -356,6 +366,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to download remote image for $itemId")
                 Result.failure(e)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error downloading remote image for $itemId")
                 Result.failure(e)
@@ -399,6 +411,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to upload image for $itemId")
                 Result.failure(e)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error uploading image for $itemId")
                 Result.failure(e)
@@ -434,6 +448,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to delete image for $itemId")
                 Result.failure(e)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error deleting image for $itemId")
                 Result.failure(e)
@@ -450,7 +466,7 @@ constructor(
         withContext(Dispatchers.IO) {
             try {
                 val api =
-                    ItemRefreshApi(
+                    LibraryApi(
                         getApiClient()
                             ?: return@withContext Result.failure(
                                 IllegalStateException("No API client")
@@ -471,6 +487,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to refresh item $itemId")
                 Result.failure(e)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error refreshing item $itemId")
                 Result.failure(e)
@@ -493,6 +511,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to delete item $itemId")
                 Result.failure(e)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error deleting item $itemId")
                 Result.failure(e)
@@ -547,9 +567,7 @@ constructor(
             year = productionYear,
             imageUrl = imageUrl,
             searchProviderName = searchProviderName,
-            providerIds =
-                providerIds?.mapValues { it.value ?: "" }?.filterValues { it.isNotEmpty() }
-                    ?: emptyMap(),
+            providerIds = providerIds.filterValues { it.isNotEmpty() },
             overview = overview,
             premiereDate = premiereDate?.toString(),
         )

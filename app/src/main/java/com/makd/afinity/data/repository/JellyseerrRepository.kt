@@ -12,6 +12,7 @@ import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.PersonCombinedCreditsResponse
 import com.makd.afinity.data.models.jellyseerr.PublicSettings
+import com.makd.afinity.data.models.jellyseerr.QuickConnectInitiateResponse
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.ServiceDetailsResponse
@@ -22,10 +23,10 @@ import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import com.makd.afinity.data.models.jellyseerr.WatchProviderDetails
 import com.makd.afinity.data.models.jellyseerr.WatchProviderRegion
 import com.makd.afinity.data.models.server.AddressCheck
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import java.util.UUID
 
 data class RequestEvent(val request: JellyseerrRequest)
 
@@ -48,6 +49,10 @@ interface JellyseerrRepository {
         password: String,
         useJellyfinAuth: Boolean = false,
     ): Result<JellyseerrUser>
+
+    suspend fun initiateQuickConnect(): Result<QuickConnectInitiateResponse>
+
+    suspend fun authenticateQuickConnect(secret: String): Result<JellyseerrUser>
 
     suspend fun logout(): Result<Unit>
 

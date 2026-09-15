@@ -15,11 +15,14 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.player.music.MusicPlaybackManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,7 +32,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltViewModel
 class MainNavigationViewModel
@@ -50,7 +52,11 @@ constructor(
     private val sessionManager: SessionManager,
     private val preferencesRepository: PreferencesRepository,
     private val pendingNavigationManager: PendingNavigationManager,
+    serverRepository: ServerRepository,
 ) : ViewModel() {
+
+    val unsupportedServerVersion = serverRepository.unsupportedServerVersion
+
     private val _hasLiveTvAccess = MutableStateFlow(true)
     val hasLiveTvAccess = _hasLiveTvAccess.asStateFlow()
 
@@ -77,6 +83,15 @@ constructor(
     val showAwards =
         preferencesRepository
             .getShowAwardsFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = true,
+            )
+
+    val sideSheetEnabled =
+        preferencesRepository
+            .getSideSheetEnabledFlow()
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
@@ -203,6 +218,8 @@ constructor(
                 val hasAccess = liveTvRepository.hasLiveTvAccess()
                 Timber.d("Live TV access check result: $hasAccess")
                 _hasLiveTvAccess.value = hasAccess
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to check Live TV access")
                 _hasLiveTvAccess.value = true
@@ -224,6 +241,8 @@ constructor(
 
                 jellyfinRepository.refreshServerInfo()
                 Timber.d("Server info refreshed on app start")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh server info on app start")
             }
@@ -263,6 +282,8 @@ constructor(
 
                     appDataRepository.loadInitialData()
                     success = true
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load app data on attempt $currentAttempt")
 
@@ -293,6 +314,8 @@ constructor(
             } else {
                 item
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to resolve playable item for: ${item.name}")
             null

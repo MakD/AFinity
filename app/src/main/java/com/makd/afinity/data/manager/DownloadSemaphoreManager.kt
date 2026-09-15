@@ -1,8 +1,8 @@
 package com.makd.afinity.data.manager
 
-import kotlinx.coroutines.sync.Semaphore
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.sync.Semaphore
 
 @Singleton
 class DownloadSemaphoreManager @Inject constructor() {

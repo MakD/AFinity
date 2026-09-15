@@ -16,6 +16,11 @@ import com.makd.afinity.data.repository.AudiobookshelfAuthData
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.ServerUserToken
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.Base64
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
@@ -25,10 +30,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.util.Base64
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 private val Context.dataStore: DataStore<Preferences> by
     preferencesDataStore(name = "secure_settings")
@@ -69,6 +70,8 @@ constructor(@param:ApplicationContext private val context: Context) : SecurePref
                 .build()
                 .keysetHandle
                 .getPrimitive(RegistryConfiguration.get(), Aead::class.java)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "CRITICAL: Tink Init failed. Keyset preserved for diagnostics.")
             throw RuntimeException("Crypto Init Failed", e)
@@ -81,6 +84,8 @@ constructor(@param:ApplicationContext private val context: Context) : SecurePref
             val bytes = Base64.getDecoder().decode(cipherText)
             val decrypted = aead.decrypt(bytes, null)
             String(decrypted, Charsets.UTF_8)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.tag("CryptoAuth").d(e, "Decryption failed - likely stale or missing data")
             null
@@ -399,6 +404,8 @@ constructor(@param:ApplicationContext private val context: Context) : SecurePref
                                 )
                             }
                         }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to parse token key: ${key.name}")
                     }
@@ -607,6 +614,8 @@ constructor(@param:ApplicationContext private val context: Context) : SecurePref
                         prefs.remove(getAudiobookshelfKey("abs_refresh_token", serverId, userId))
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to persist updated ABS tokens")
             }
@@ -628,6 +637,8 @@ constructor(@param:ApplicationContext private val context: Context) : SecurePref
                     prefs.remove(getAudiobookshelfKey("abs_token", serverId, userId))
                     prefs.remove(getAudiobookshelfKey("abs_refresh_token", serverId, userId))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to clear persisted ABS tokens")
             }

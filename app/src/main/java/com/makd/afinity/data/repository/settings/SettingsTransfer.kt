@@ -13,6 +13,10 @@ import com.makd.afinity.data.models.SettingsSection
 import com.makd.afinity.data.repository.home.HomeConfigTransfer
 import com.makd.afinity.data.repository.home.ImportPlan
 import com.makd.afinity.di.AppPreferences
+import java.time.Instant
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -24,9 +28,6 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
 import timber.log.Timber
-import java.time.Instant
-import javax.inject.Inject
-import javax.inject.Singleton
 
 sealed interface SettingsImportResult {
     data class Ready(val preview: SettingsImportPreview) : SettingsImportResult
@@ -90,6 +91,8 @@ constructor(
             val payload =
                 try {
                     json.decodeFromString(AfinitySettingsExport.serializer(), raw)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to parse settings backup")
                     return@withContext SettingsImportResult.Failed(SettingsImportFailure.UNREADABLE)

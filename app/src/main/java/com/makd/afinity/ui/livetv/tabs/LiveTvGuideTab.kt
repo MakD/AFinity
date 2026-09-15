@@ -167,7 +167,6 @@ fun LiveTvGuideTab(
                     val channelPrograms = uiState.epgPrograms[channel.id] ?: emptyList()
                     Box(modifier = Modifier.weight(1f).horizontalScroll(horizontalScrollState)) {
                         EpgProgramRow(
-                            channel = channel,
                             programs = channelPrograms,
                             epgStartTime = uiState.epgStartTime,
                             visibleHours = uiState.epgVisibleHours,

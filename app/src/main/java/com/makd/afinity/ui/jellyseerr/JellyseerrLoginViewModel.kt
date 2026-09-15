@@ -4,13 +4,22 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
+import com.makd.afinity.data.discovery.AfinityServiceTypes
+import com.makd.afinity.data.discovery.DiscoveredService
+import com.makd.afinity.data.discovery.DiscoveryResult
+import com.makd.afinity.data.discovery.LocalServiceDiscovery
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.auth.QuickConnectAuthorization
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.PublicSettings
+import com.makd.afinity.data.network.UrlCandidates
 import com.makd.afinity.data.repository.JellyseerrRepository
+import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.jellyseerr.JellyseerrLoginException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +28,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltViewModel
 class JellyseerrLoginViewModel
@@ -27,13 +35,46 @@ class JellyseerrLoginViewModel
 constructor(
     @param:ApplicationContext private val context: Context,
     private val jellyseerrRepository: JellyseerrRepository,
+    private val authRepository: AuthRepository,
     private val sessionManager: SessionManager,
+    private val localServiceDiscovery: LocalServiceDiscovery,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(JellyseerrLoginUiState())
     val uiState: StateFlow<JellyseerrLoginUiState> = _uiState.asStateFlow()
 
+    private val _discoveredServices = MutableStateFlow<List<DiscoveredService>>(emptyList())
+    val discoveredServices: StateFlow<List<DiscoveredService>> = _discoveredServices.asStateFlow()
+
+    private val _discoveryNeedsPermission = MutableStateFlow(false)
+    val discoveryNeedsPermission: StateFlow<Boolean> = _discoveryNeedsPermission.asStateFlow()
+
     private var probeJob: Job? = null
+    private var discoveryJob: Job? = null
+
+    fun discoverLocalServers() {
+        discoveryJob?.cancel()
+        discoveryJob = viewModelScope.launch {
+            localServiceDiscovery.discoverResult(AfinityServiceTypes.JELLYSEERR).collect { result ->
+                when (result) {
+                    is DiscoveryResult.Services -> {
+                        _discoveryNeedsPermission.value = false
+                        _discoveredServices.value = result.services
+                    }
+                    DiscoveryResult.PermissionRequired -> {
+                        _discoveryNeedsPermission.value = true
+                        _discoveredServices.value = emptyList()
+                    }
+                    DiscoveryResult.Unavailable -> _discoveredServices.value = emptyList()
+                }
+            }
+        }
+    }
+
+    fun onLocalNetworkPermissionGranted() {
+        _discoveryNeedsPermission.value = false
+        discoverLocalServers()
+    }
 
     private companion object {
         const val MEDIA_SERVER_TYPE_JELLYFIN = 2
@@ -70,6 +111,8 @@ constructor(
                             },
                         )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to check auth status")
             }
@@ -84,6 +127,8 @@ constructor(
                     _uiState.update { it.copy(serverUrl = savedUrl) }
                     probeServer(savedUrl)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load saved server URL")
             }
@@ -106,20 +151,32 @@ constructor(
 
         val trimmed = rawUrl.trim().removeSuffix("/")
         if (trimmed.isBlank() || !isValidUrl(trimmed)) {
-            _uiState.update { it.copy(publicSettings = null) }
+            _uiState.update { it.copy(publicSettings = null, quickConnectAvailable = false) }
             return
         }
 
         probeJob = viewModelScope.launch {
             delay(PROBE_DEBOUNCE_MS)
-            for (url in generateCandidateUrls(trimmed)) {
+            for (url in UrlCandidates.jellyseerr(trimmed)) {
                 val settings = jellyseerrRepository.verifyServer(url) ?: continue
                 _uiState.update { it.copy(publicSettings = settings) }
                 applyDetectedAuthMode(settings)
+                updateQuickConnectAvailability(settings)
                 return@launch
             }
-            _uiState.update { it.copy(publicSettings = null) }
+            _uiState.update { it.copy(publicSettings = null, quickConnectAvailable = false) }
         }
+    }
+
+    private suspend fun updateQuickConnectAvailability(settings: PublicSettings) {
+        val jellyfinBacked =
+            settings.mediaServerLogin && settings.mediaServerType == MEDIA_SERVER_TYPE_JELLYFIN
+        val hasJellyfinSession = sessionManager.currentSession.value != null
+
+        val available =
+            jellyfinBacked && hasJellyfinSession && authRepository.isQuickConnectEnabled()
+
+        _uiState.update { it.copy(quickConnectAvailable = available) }
     }
 
     private fun applyDetectedAuthMode(settings: PublicSettings) {
@@ -174,35 +231,8 @@ constructor(
 
                 _uiState.update { it.copy(isLoading = true, error = null) }
 
-                val rawUrl = _uiState.value.serverUrl.trim().removeSuffix("/")
-                val candidateUrls = generateCandidateUrls(rawUrl)
+                val validUrl = resolveVerifiedServerUrl() ?: return@launch
 
-                var validUrl: String? = null
-                var resolvedSettings: PublicSettings? = null
-
-                for (url in candidateUrls) {
-                    val settings = jellyseerrRepository.verifyServer(url)
-                    if (settings != null) {
-                        validUrl = url
-                        resolvedSettings = settings
-                        break
-                    } else {
-                        Timber.d("Verification failed for candidate URL: $url")
-                    }
-                }
-
-                if (validUrl == null) {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error =
-                                "Could not connect. Please verify this is a valid Seerr server.",
-                        )
-                    }
-                    return@launch
-                }
-
-                _uiState.update { it.copy(publicSettings = resolvedSettings) }
                 jellyseerrRepository.setServerUrl(validUrl)
                 val result =
                     jellyseerrRepository.login(
@@ -249,6 +279,8 @@ constructor(
                     _uiState.update { it.copy(isLoading = false, error = finalErrorMessage) }
                     Timber.e(lastError, "Jellyseerr login failed on validated server")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -261,21 +293,171 @@ constructor(
         }
     }
 
-    private fun validateInputs(): Boolean {
+    private suspend fun resolveVerifiedServerUrl(): String? {
+        val rawUrl = _uiState.value.serverUrl.trim().removeSuffix("/")
+
+        for (url in UrlCandidates.jellyseerr(rawUrl)) {
+            val settings = jellyseerrRepository.verifyServer(url)
+            if (settings != null) {
+                _uiState.update { it.copy(publicSettings = settings) }
+                return url
+            }
+            Timber.d("Verification failed for candidate URL: $url")
+        }
+
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                isQuickConnecting = false,
+                error = "Could not connect. Please verify this is a valid Seerr server.",
+            )
+        }
+        return null
+    }
+
+    fun loginWithQuickConnect() {
+        viewModelScope.launch {
+            try {
+                if (!validateServerUrl()) {
+                    return@launch
+                }
+
+                _uiState.update { it.copy(isQuickConnecting = true, error = null) }
+
+                val validUrl = resolveVerifiedServerUrl() ?: return@launch
+                jellyseerrRepository.setServerUrl(validUrl)
+
+                val initiateResult = jellyseerrRepository.initiateQuickConnect()
+                val request = initiateResult.getOrElse { error ->
+                    val statusCode = (error as? JellyseerrLoginException)?.code
+                    if (statusCode == 404) {
+                        _uiState.update {
+                            it.copy(
+                                isQuickConnecting = false,
+                                quickConnectAvailable = false,
+                                error =
+                                    context.getString(
+                                        R.string.error_seerr_quick_connect_unsupported
+                                    ),
+                            )
+                        }
+                    } else {
+                        _uiState.update {
+                            it.copy(
+                                isQuickConnecting = false,
+                                error =
+                                    context.getString(R.string.error_seerr_quick_connect_initiate),
+                            )
+                        }
+                    }
+                    Timber.e(error, "Jellyseerr Quick Connect initiate failed")
+                    return@launch
+                }
+
+                when (val authorization = authRepository.authorizeQuickConnect(request.code)) {
+                    QuickConnectAuthorization.APPROVED -> Unit
+
+                    QuickConnectAuthorization.UNKNOWN_CODE -> {
+                        _uiState.update {
+                            it.copy(
+                                isQuickConnecting = false,
+                                error =
+                                    context.getString(
+                                        R.string.error_seerr_quick_connect_other_server
+                                    ),
+                            )
+                        }
+                        return@launch
+                    }
+
+                    else -> {
+                        Timber.e("Quick Connect authorization returned $authorization")
+                        _uiState.update {
+                            it.copy(
+                                isQuickConnecting = false,
+                                error =
+                                    context.getString(
+                                        R.string.error_seerr_quick_connect_not_approved
+                                    ),
+                            )
+                        }
+                        return@launch
+                    }
+                }
+
+                jellyseerrRepository
+                    .authenticateQuickConnect(request.secret)
+                    .fold(
+                        onSuccess = { successUser ->
+                            _uiState.update {
+                                it.copy(
+                                    isQuickConnecting = false,
+                                    loginSuccess = true,
+                                    serverUrl = validUrl,
+                                    loggedInUser =
+                                        successUser.displayName
+                                            ?: successUser.username
+                                            ?: successUser.email,
+                                    currentUser = successUser,
+                                )
+                            }
+                            Timber.d(
+                                "Quick Connect sign-in successful for user: ${successUser.username}"
+                            )
+                        },
+                        onFailure = { error ->
+                            val statusCode = (error as? JellyseerrLoginException)?.code
+                            val message =
+                                when {
+                                    statusCode == 403 ->
+                                        context.getString(
+                                            R.string.error_seerr_quick_connect_access_denied
+                                        )
+
+                                    statusCode != null && statusCode >= 500 ->
+                                        context.getString(R.string.error_seerr_account_setup_failed)
+
+                                    else -> parseErrorMessage(error.message)
+                                }
+                            _uiState.update { it.copy(isQuickConnecting = false, error = message) }
+                            Timber.e(error, "Jellyseerr Quick Connect authentication failed")
+                        },
+                    )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isQuickConnecting = false,
+                        error = context.getString(R.string.error_unexpected_fmt, e.message ?: ""),
+                    )
+                }
+                Timber.e(e, "Error during Quick Connect sign-in")
+            }
+        }
+    }
+
+    private fun validateServerUrl(): Boolean {
         val state = _uiState.value
-        var isValid = true
 
         if (state.serverUrl.isBlank()) {
             _uiState.update {
                 it.copy(serverUrlError = context.getString(R.string.error_server_url_required))
             }
-            isValid = false
-        } else if (!isValidUrl(state.serverUrl)) {
+            return false
+        }
+        if (!isValidUrl(state.serverUrl)) {
             _uiState.update {
                 it.copy(serverUrlError = context.getString(R.string.error_invalid_url_format))
             }
-            isValid = false
+            return false
         }
+        return true
+    }
+
+    private fun validateInputs(): Boolean {
+        val state = _uiState.value
+        var isValid = validateServerUrl()
 
         if (state.email.isBlank()) {
             if (state.useJellyfinAuth) {
@@ -300,24 +482,6 @@ constructor(
         return isValid
     }
 
-    private fun generateCandidateUrls(input: String): List<String> {
-        val hasScheme = input.startsWith("http://") || input.startsWith("https://")
-        val withScheme = if (hasScheme) input else "http://$input"
-        val uri = runCatching { java.net.URI(withScheme) }.getOrNull()
-        val host = uri?.host?.takeIf { it.isNotBlank() } ?: input
-        val port = uri?.port ?: -1
-        val scheme = if (hasScheme) uri?.scheme else null
-
-        return when {
-            hasScheme && port != -1 -> listOf(input)
-            !hasScheme && port != -1 -> listOf("https://$input", "http://$input")
-            hasScheme && scheme == "https" -> listOf(input, "https://$host:5055")
-            hasScheme && scheme == "http" -> listOf(input, "http://$host:5055")
-            else ->
-                listOf("https://$host", "https://$host:5055", "http://$host:5055", "http://$host")
-        }
-    }
-
     private fun isValidUrl(url: String): Boolean {
         val trimmed = url.trim()
         return trimmed.isNotBlank() && !trimmed.contains(" ")
@@ -325,15 +489,15 @@ constructor(
 
     private fun parseErrorMessage(message: String?): String {
         return when {
-            message == null -> "Login failed. Please check your credentials."
-            message.contains("401") -> "Invalid email or password"
-            message.contains("403") -> "Access forbidden. Check your permissions."
-            message.contains("404") -> "Server not found. Check your server URL."
+            message == null -> context.getString(R.string.error_login_check_credentials)
+            message.contains("401") -> context.getString(R.string.error_invalid_credentials)
+            message.contains("403") -> context.getString(R.string.error_access_forbidden)
+            message.contains("404") -> context.getString(R.string.error_server_not_found)
             message.contains("network", ignoreCase = true) ->
-                "Network error. Check your connection."
+                context.getString(R.string.error_network_check_connection)
 
             message.contains("timeout", ignoreCase = true) ->
-                "Connection timeout. Please try again."
+                context.getString(R.string.error_connection_timeout)
 
             else -> message
         }
@@ -381,6 +545,8 @@ constructor(
                             Timber.e(error, "Logout failed")
                         },
                     )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -403,6 +569,8 @@ data class JellyseerrLoginUiState(
     val emailError: String? = null,
     val passwordError: String? = null,
     val isLoading: Boolean = false,
+    val isQuickConnecting: Boolean = false,
+    val quickConnectAvailable: Boolean = false,
     val error: String? = null,
     val loginSuccess: Boolean = false,
     val loggedInUser: String? = null,

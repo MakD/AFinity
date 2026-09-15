@@ -1,7 +1,7 @@
 package com.makd.afinity.data.repository
 
-import kotlinx.coroutines.flow.Flow
 import java.util.UUID
+import kotlinx.coroutines.flow.Flow
 
 data class ServerUserToken(
     val serverId: String,

@@ -25,10 +25,13 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -36,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -57,6 +61,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.settings.servers.components.SectionHeader
+import com.makd.afinity.ui.settings.servers.components.SessionRemoteSheet
 import com.makd.afinity.ui.settings.servers.utils.formatLastRun
 import com.makd.afinity.ui.settings.servers.utils.formatTicks
 import kotlinx.coroutines.delay
@@ -74,10 +79,44 @@ internal fun ControlPanelView(
     val tasks by viewModel.scheduledTasks.collectAsStateWithLifecycle()
     val sessions by viewModel.activeSessions.collectAsStateWithLifecycle()
     val isLibraryRefreshing by viewModel.isLibraryRefreshing.collectAsStateWithLifecycle()
+    val pendingPause by viewModel.pendingPause.collectAsStateWithLifecycle()
 
     var showRestartConfirm by remember { mutableStateOf(false) }
     var showShutdownConfirm by remember { mutableStateOf(false) }
+    var remoteSessionId by remember { mutableStateOf<String?>(null) }
     val serverId = serverWithCount.server.id
+
+    val remoteSession = sessions?.firstOrNull { it.id != null && it.id == remoteSessionId }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val commandFailedMessage = stringResource(R.string.session_command_failed)
+
+    LaunchedEffect(Unit) {
+        viewModel.commandError.collect { snackbarHostState.showSnackbar(commandFailedMessage) }
+    }
+
+    if (remoteSession != null) {
+        SessionRemoteSheet(
+            session = remoteSession,
+            baseUrl = viewModel.baseUrl,
+            isOwnSession = remoteSession.userId == viewModel.currentUserId,
+            pendingPause = remoteSession.id?.let { pendingPause[it] },
+            onDismiss = { remoteSessionId = null },
+            onTogglePause = { viewModel.togglePause(remoteSession) },
+            onSeekBy = { viewModel.seekBy(remoteSession, it) },
+            onSeekTo = { ticks -> remoteSession.id?.let { viewModel.seekTo(it, ticks) } },
+            onPlaystate = { command ->
+                remoteSession.id?.let { viewModel.sendPlaystate(it, command) }
+            },
+            onSetVolume = { volume -> remoteSession.id?.let { viewModel.setVolume(it, volume) } },
+            onToggleMute = {
+                remoteSession.id?.let {
+                    viewModel.toggleMute(it, remoteSession.playState?.isMuted == true)
+                }
+            },
+            onSendMessage = { text -> remoteSession.id?.let { viewModel.sendMessage(it, text) } },
+        )
+    }
 
     DisposableEffect(serverId) {
         viewModel.initialize(serverId)
@@ -189,92 +228,102 @@ internal fun ControlPanelView(
         )
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 16.dp),
-        ) {
-            IconButton(
-                onClick = onBack,
-                modifier =
-                    Modifier.background(
-                        MaterialTheme.colorScheme.surfaceContainerHigh,
-                        CircleShape,
-                    ),
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_chevron_left),
-                    contentDescription = stringResource(R.string.cd_back),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = stringResource(R.string.title_control_panel),
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-
-        Column(
-            modifier =
-                Modifier.fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            ActiveSessionsSection(
-                sessions = sessions ?: emptyList(),
-                baseUrl = viewModel.baseUrl,
-                loading = sessions == null,
-            )
-
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier =
+                    Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 16.dp),
             ) {
-                QuickActionButton(
-                    label = stringResource(R.string.action_refresh_libraries),
-                    icon = painterResource(R.drawable.ic_refresh),
-                    onClick = { viewModel.refreshAllLibraries() },
-                    isLoading = isLibraryRefreshing,
-                    enabled = !isLibraryRefreshing,
-                    modifier = Modifier.weight(1f),
-                )
-                QuickActionButton(
-                    label = stringResource(R.string.action_restart),
-                    icon = painterResource(R.drawable.ic_restart),
-                    onClick = { showRestartConfirm = true },
-                    isDangerous = true,
-                    modifier = Modifier.weight(1f),
-                )
-                QuickActionButton(
-                    label = stringResource(R.string.action_shutdown),
-                    icon = painterResource(R.drawable.ic_power),
-                    onClick = { showShutdownConfirm = true },
-                    isDangerous = true,
-                    modifier = Modifier.weight(1f),
+                IconButton(
+                    onClick = onBack,
+                    modifier =
+                        Modifier.background(
+                            MaterialTheme.colorScheme.surfaceContainerHigh,
+                            CircleShape,
+                        ),
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_chevron_left),
+                        contentDescription = stringResource(R.string.cd_back),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    text = stringResource(R.string.title_control_panel),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
 
-            val currentTasks = tasks
-            when {
-                currentTasks == null ->
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                currentTasks.isNotEmpty() ->
-                    ScheduledTasksSection(
-                        tasks = currentTasks,
-                        onRunTask = { viewModel.runTask(it) },
-                        onStopTask = { viewModel.stopTask(it) },
+            Column(
+                modifier =
+                    Modifier.fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                ActiveSessionsSection(
+                    sessions = sessions ?: emptyList(),
+                    baseUrl = viewModel.baseUrl,
+                    loading = sessions == null,
+                    pendingPause = pendingPause,
+                    onTogglePause = viewModel::togglePause,
+                    onOpenRemote = { remoteSessionId = it.id },
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    QuickActionButton(
+                        label = stringResource(R.string.action_refresh_libraries),
+                        icon = painterResource(R.drawable.ic_refresh),
+                        onClick = { viewModel.refreshAllLibraries() },
+                        isLoading = isLibraryRefreshing,
+                        enabled = !isLibraryRefreshing,
+                        modifier = Modifier.weight(1f),
                     )
+                    QuickActionButton(
+                        label = stringResource(R.string.action_restart),
+                        icon = painterResource(R.drawable.ic_restart),
+                        onClick = { showRestartConfirm = true },
+                        isDangerous = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    QuickActionButton(
+                        label = stringResource(R.string.action_shutdown),
+                        icon = painterResource(R.drawable.ic_power),
+                        onClick = { showShutdownConfirm = true },
+                        isDangerous = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+
+                val currentTasks = tasks
+                when {
+                    currentTasks == null ->
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    currentTasks.isNotEmpty() ->
+                        ScheduledTasksSection(
+                            tasks = currentTasks,
+                            onRunTask = { viewModel.runTask(it) },
+                            onStopTask = { viewModel.stopTask(it) },
+                        )
+                }
             }
         }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
+        )
     }
 }
 
@@ -339,6 +388,9 @@ private fun ActiveSessionsSection(
     sessions: List<SessionInfoDto>,
     baseUrl: String,
     loading: Boolean = false,
+    pendingPause: Map<String, Boolean> = emptyMap(),
+    onTogglePause: (SessionInfoDto) -> Unit = {},
+    onOpenRemote: (SessionInfoDto) -> Unit = {},
 ) {
     val playingSessions = sessions.filter { it.nowPlayingItem != null }
     val idleCount = sessions.count { it.nowPlayingItem == null }
@@ -396,7 +448,14 @@ private fun ActiveSessionsSection(
                     modifier = Modifier.fillMaxWidth(),
                     pageSpacing = 12.dp,
                 ) { page ->
-                    PlayingSessionCard(session = playingSessions[page], baseUrl = baseUrl)
+                    val session = playingSessions[page]
+                    PlayingSessionCard(
+                        session = session,
+                        baseUrl = baseUrl,
+                        pendingPause = session.id?.let { pendingPause[it] },
+                        onTogglePause = { onTogglePause(session) },
+                        onOpenRemote = { onOpenRemote(session) },
+                    )
                 }
                 if (playingSessions.size > 1) {
                     Row(
@@ -426,7 +485,13 @@ private fun ActiveSessionsSection(
 }
 
 @Composable
-private fun PlayingSessionCard(session: SessionInfoDto, baseUrl: String) {
+private fun PlayingSessionCard(
+    session: SessionInfoDto,
+    baseUrl: String,
+    pendingPause: Boolean? = null,
+    onTogglePause: () -> Unit = {},
+    onOpenRemote: () -> Unit = {},
+) {
     val item = session.nowPlayingItem ?: return
 
     val backdropUrl =
@@ -447,18 +512,17 @@ private fun PlayingSessionCard(session: SessionInfoDto, baseUrl: String) {
     val userAvatarUrl =
         remember(baseUrl, session.userId) {
             val uid = session.userId
-            if (uid != null && baseUrl.isNotEmpty())
-                "$baseUrl/Users/$uid/Images/Primary?maxWidth=48"
-            else null
+            if (baseUrl.isNotEmpty()) "$baseUrl/Users/$uid/Images/Primary?maxWidth=48" else null
         }
 
     val basePositionTicks = session.playState?.positionTicks ?: 0L
     val isPaused = session.playState?.isPaused ?: true
+    val displayPaused = pendingPause ?: isPaused
 
     session.playState?.positionTicks
     val runtimeTicks = item.runTimeTicks
 
-    var localPositionTicks by remember(basePositionTicks) { mutableStateOf(basePositionTicks) }
+    var localPositionTicks by remember(basePositionTicks) { mutableLongStateOf(basePositionTicks) }
 
     LaunchedEffect(basePositionTicks, isPaused) {
         if (!isPaused) {
@@ -486,6 +550,7 @@ private fun PlayingSessionCard(session: SessionInfoDto, baseUrl: String) {
     val userName = session.userName ?: stringResource(R.string.unknown_user)
 
     ElevatedCard(
+        onClick = onOpenRemote,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
@@ -547,76 +612,112 @@ private fun PlayingSessionCard(session: SessionInfoDto, baseUrl: String) {
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = Color.White,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text(
-                        text = year ?: "",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.7f),
-                    )
-                    if (timeText != null) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = timeText,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.9f),
+                            text = title,
+                            style =
+                                MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                            color = Color.White,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
                         )
-                    }
-                }
 
-                if (progress != null) {
-                    LinearProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp).height(3.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = Color.White.copy(alpha = 0.25f),
-                    )
-                }
-
-                Row(
-                    modifier = Modifier.padding(top = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    if (userAvatarUrl != null) {
-                        AsyncImage(
-                            imageUrl = userAvatarUrl,
-                            contentDescription = null,
-                            modifier = Modifier.size(22.dp).clip(CircleShape),
-                            contentScale = ContentScale.Crop,
-                        )
-                    } else {
-                        Box(
-                            modifier =
-                                Modifier.size(22.dp)
-                                    .background(MaterialTheme.colorScheme.primary, CircleShape),
-                            contentAlignment = Alignment.Center,
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                text = userName.first().uppercaseChar().toString(),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimary,
+                                text = year ?: "",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.7f),
+                            )
+                            if (timeText != null) {
+                                Text(
+                                    text = timeText,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.9f),
+                                )
+                            }
+                        }
+
+                        if (progress != null) {
+                            LinearProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier.fillMaxWidth().padding(top = 6.dp).height(3.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = Color.White.copy(alpha = 0.25f),
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.padding(top = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            if (userAvatarUrl != null) {
+                                AsyncImage(
+                                    imageUrl = userAvatarUrl,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(22.dp).clip(CircleShape),
+                                    contentScale = ContentScale.Crop,
+                                )
+                            } else {
+                                Box(
+                                    modifier =
+                                        Modifier.size(22.dp)
+                                            .background(
+                                                MaterialTheme.colorScheme.primary,
+                                                CircleShape,
+                                            ),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = userName.first().uppercaseChar().toString(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                    )
+                                }
+                            }
+                            Text(
+                                text = userName,
+                                style =
+                                    MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
+                                color = Color.White,
                             )
                         }
                     }
-                    Text(
-                        text = userName,
-                        style =
-                            MaterialTheme.typography.labelMedium.copy(
-                                fontWeight = FontWeight.SemiBold
-                            ),
-                        color = Color.White,
-                    )
+
+                    if (session.supportsRemoteControl) {
+                        FilledIconButton(
+                            onClick = onTogglePause,
+                            modifier = Modifier.size(52.dp),
+                        ) {
+                            Icon(
+                                painter =
+                                    painterResource(
+                                        id =
+                                            if (displayPaused) R.drawable.ic_player_play_filled
+                                            else R.drawable.ic_player_pause_filled
+                                    ),
+                                contentDescription =
+                                    stringResource(
+                                        if (displayPaused) R.string.cd_session_play
+                                        else R.string.cd_session_pause
+                                    ),
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+                    }
                 }
             }
         }

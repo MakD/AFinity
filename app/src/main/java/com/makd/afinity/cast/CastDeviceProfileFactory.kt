@@ -1,5 +1,7 @@
 package com.makd.afinity.cast
 
+import javax.inject.Inject
+import javax.inject.Singleton
 import org.jellyfin.sdk.model.api.CodecProfile
 import org.jellyfin.sdk.model.api.CodecType
 import org.jellyfin.sdk.model.api.DeviceProfile
@@ -13,8 +15,6 @@ import org.jellyfin.sdk.model.api.ProfileConditionValue
 import org.jellyfin.sdk.model.api.SubtitleDeliveryMethod
 import org.jellyfin.sdk.model.api.SubtitleProfile
 import org.jellyfin.sdk.model.api.TranscodingProfile
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class CastDeviceProfileFactory @Inject constructor() {

@@ -3,7 +3,6 @@ package com.makd.afinity.ui.audiobookshelf.player.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
@@ -24,7 +24,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -35,11 +34,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.AfinitySlider
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -117,7 +118,7 @@ fun PlaybackSpeedSelector(
                     )
                 }
 
-                Slider(
+                AfinitySlider(
                     value = currentSpeed,
                     onValueChange = { value ->
                         val snapped = (value * 20).roundToInt() / 20f
@@ -185,7 +186,7 @@ private fun PresetSpeedItem(speed: Float, isSelected: Boolean, onClick: () -> Un
                         ),
                         RoundedCornerShape(50),
                     )
-                    .clickable(onClick = onClick)
+                    .selectable(selected = isSelected, role = Role.RadioButton, onClick = onClick)
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center,
         ) {
@@ -212,6 +213,6 @@ private fun PresetSpeedItem(speed: Float, isSelected: Boolean, onClick: () -> Un
     }
 }
 
-private fun formatSpeed(speed: Float): String {
+internal fun formatSpeed(speed: Float): String {
     return if (speed == speed.toLong().toFloat()) "${speed.toLong()}" else "$speed"
 }

@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -32,8 +33,8 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.ui.components.AsyncImage
-import org.jellyfin.sdk.model.api.PersonKind
 import java.util.UUID
+import org.jellyfin.sdk.model.api.PersonKind
 
 @Composable
 fun PeopleDialog(
@@ -91,9 +92,7 @@ fun PeopleDialog(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.End,
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.action_close))
-                    }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
                 }
             }
         }
@@ -136,7 +135,7 @@ private fun PersonRow(person: AfinityPerson, onPersonClick: ((UUID) -> Unit)?) {
             Modifier.fillMaxWidth()
                 .then(
                     if (clickHandler != null)
-                        Modifier.clickable { clickHandler(person.id) }
+                        Modifier.clickable(role = Role.Button) { clickHandler(person.id) }
                     else Modifier
                 )
                 .padding(horizontal = 24.dp, vertical = 8.dp),

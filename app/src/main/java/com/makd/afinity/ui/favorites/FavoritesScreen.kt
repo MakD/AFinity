@@ -70,6 +70,7 @@ import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.FullScreenEmpty
@@ -145,9 +146,12 @@ fun FavoritesScreen(
                 },
                 onMenuClick = onMenuClick,
                 onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
-                onProfileClick = { navController.navigate(Destination.createSettingsRoute()) },
-                userProfileImageUrl = mainUiState.userProfileImageUrl,
-                userName = mainUiState.userName,
+                profile =
+                    AppBarProfile(
+                        onClick = { navController.navigate(Destination.createSettingsRoute()) },
+                        name = mainUiState.userName,
+                        imageUrl = mainUiState.userProfileImageUrl,
+                    ),
             )
         },
         modifier = modifier,
@@ -156,7 +160,12 @@ fun FavoritesScreen(
             when {
                 uiState.isLoading -> FullScreenLoading()
 
-                uiState.error != null -> FullScreenError(message = uiState.error)
+                uiState.error != null ->
+                    FullScreenError(
+                        message = uiState.error,
+                        actionText = stringResource(R.string.action_retry),
+                        onActionClick = viewModel::retry,
+                    )
 
                 else -> {
                     val hasAnyFavorites =
@@ -567,7 +576,10 @@ private fun FavoriteTracksSection(
     onViewAllClick: (() -> Unit)? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        SectionRowHeader(title = stringResource(R.string.favorites_songs), onViewAllClick = onViewAllClick)
+        SectionRowHeader(
+            title = stringResource(R.string.favorites_songs),
+            onViewAllClick = onViewAllClick,
+        )
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),

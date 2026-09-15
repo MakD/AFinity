@@ -29,6 +29,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -58,7 +59,7 @@ fun ChannelCard(
             channel.images.primary ?: channel.images.thumb
         }
 
-    Column(modifier = modifier.fillMaxWidth().clickable(onClick = onClick)) {
+    Column(modifier = modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick)) {
         Card(
             modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f),
             colors =

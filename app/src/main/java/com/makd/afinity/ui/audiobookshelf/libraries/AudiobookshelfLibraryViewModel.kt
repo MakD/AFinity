@@ -10,6 +10,8 @@ import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.websocket.AudiobookshelfSocketManager
 import com.makd.afinity.data.websocket.WebSocketState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.net.URLDecoder
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,8 +22,6 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.net.URLDecoder
-import javax.inject.Inject
 
 @HiltViewModel
 class AudiobookshelfLibraryViewModel

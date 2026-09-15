@@ -4,13 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.repository.auth.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 sealed class AuthenticationState {
     object Loading : AuthenticationState()
@@ -21,9 +22,7 @@ sealed class AuthenticationState {
 }
 
 @HiltViewModel
-class AuthViewModel
-@Inject
-constructor(private val authRepository: AuthRepository) : ViewModel() {
+class AuthViewModel @Inject constructor(private val authRepository: AuthRepository) : ViewModel() {
 
     private val _authenticationState =
         MutableStateFlow<AuthenticationState>(AuthenticationState.Loading)
@@ -57,6 +56,8 @@ constructor(private val authRepository: AuthRepository) : ViewModel() {
                         _authenticationState.value = AuthenticationState.NotAuthenticated
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error checking authentication state")
                 _authenticationState.value = AuthenticationState.NotAuthenticated

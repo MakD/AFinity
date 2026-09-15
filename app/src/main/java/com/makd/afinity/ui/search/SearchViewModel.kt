@@ -1,7 +1,9 @@
 package com.makd.afinity.ui.search
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.R
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.resolveChangedItems
@@ -46,6 +48,9 @@ import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -72,14 +77,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
 
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class SearchViewModel
 @Inject
 constructor(
+    @param:ApplicationContext private val context: Context,
     private val mediaRepository: MediaRepository,
     private val jellyseerrRepository: JellyseerrRepository,
     private val appDataRepository: AppDataRepository,
@@ -178,7 +182,6 @@ constructor(
             }
         }
 
-
         viewModelScope.launch {
             itemStore.overlay.collect { overlay ->
                 if (overlay.isEmpty()) return@collect
@@ -258,6 +261,8 @@ constructor(
                         mediaRepository
                             .getItem(episode.id, fields = FieldSets.ITEM_DETAIL)
                             ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         try {
                             authRepository.currentUser.value?.id?.let {
@@ -271,6 +276,8 @@ constructor(
                 _selectedEpisodeWatchlistStatus.value = episode.liked
 
                 _isLoadingEpisode.value = false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _selectedEpisode.value = episode
                 _selectedEpisodeWatchlistStatus.value = false
@@ -326,6 +333,8 @@ constructor(
                     _selectedEpisode.value = episode
                     updateItemInSearchResults(episode)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _selectedEpisode.value = episode
             }
@@ -384,6 +393,8 @@ constructor(
 
                 _uiState.value = _uiState.value.copy(genres = genres)
                 Timber.d("Loaded ${genres.size} genres from ${targetLibraries.size} libraries")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
 
@@ -418,6 +429,8 @@ constructor(
                             _uiState.update { it.copy(audiobookshelfGenres = emptyList()) }
                         },
                     )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load Audiobookshelf genres")
                 _uiState.update { it.copy(audiobookshelfGenres = emptyList()) }
@@ -497,16 +510,31 @@ constructor(
 
         searchJob = viewModelScope.launch {
             try {
-                _uiState.value = _uiState.value.copy(isSearching = true)
+                _uiState.value = _uiState.value.copy(isSearching = true, searchError = null)
                 val results =
-                    mediaRepository.getItems(
-                        parentId = selectedLibrary?.id,
-                        searchTerm = query,
-                        includeItemTypes = itemTypes,
-                        limit = 50,
-                        fields = FieldSets.SEARCH_RESULTS,
-                        enableImageTypes = listOf("PRIMARY"),
-                    )
+                    mediaRepository
+                        .getItemsResult(
+                            parentId = selectedLibrary?.id,
+                            searchTerm = query,
+                            includeItemTypes = itemTypes,
+                            limit = 50,
+                            fields = FieldSets.SEARCH_RESULTS,
+                            enableImageTypes = listOf("PRIMARY"),
+                        )
+                        .getOrElse { e ->
+                            if (e is CancellationException) throw e
+                            Timber.e(e, "Failed to perform search")
+                            _uiState.value =
+                                _uiState.value.copy(
+                                    searchResults = emptyList(),
+                                    isSearching = false,
+                                    searchError =
+                                        context.getString(
+                                            R.string.error_content_unavailable_server
+                                        ),
+                                )
+                            return@launch
+                        }
 
                 val afinityItems =
                     withContext(Dispatchers.Default) {
@@ -515,10 +543,10 @@ constructor(
                         val baseUrl = mediaRepository.getBaseUrl()
                         val mappedItems =
                             results.items
-                                ?.filter {
-                                    it.locationType !=
-                                        org.jellyfin.sdk.model.api.LocationType.VIRTUAL
-                                }
+                                //                                ?.filter {
+                                //                                    it.locationType !=
+                                //                                        LocationType.VIRTUAL
+                                //                                }
                                 ?.mapNotNull { baseItemDto ->
                                     try {
                                         val item = baseItemDto.toAfinityItem(baseUrl)
@@ -528,6 +556,8 @@ constructor(
                                             is AfinityBoxSet -> item
                                             else -> null
                                         }
+                                    } catch (e: CancellationException) {
+                                        throw e
                                     } catch (e: Exception) {
                                         Timber.w(e, "Failed to convert item: ${baseItemDto.name}")
                                         null
@@ -540,16 +570,26 @@ constructor(
                     }
 
                 _uiState.value =
-                    _uiState.value.copy(searchResults = afinityItems, isSearching = false)
+                    _uiState.value.copy(
+                        searchResults = afinityItems,
+                        isSearching = false,
+                        searchError = null,
+                    )
                 lastQueryAt = System.currentTimeMillis()
 
                 Timber.d("Search completed: ${afinityItems.size} results for '$query'")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
 
                 Timber.e(e, "Failed to perform search")
                 _uiState.value =
-                    _uiState.value.copy(searchResults = emptyList(), isSearching = false)
+                    _uiState.value.copy(
+                        searchResults = emptyList(),
+                        isSearching = false,
+                        searchError = context.getString(R.string.error_content_unavailable_server),
+                    )
             }
         }
     }
@@ -584,9 +624,10 @@ constructor(
 
                         val baseUrl = mediaRepository.getBaseUrl()
                         results.items
-                            ?.filter {
-                                it.locationType != org.jellyfin.sdk.model.api.LocationType.VIRTUAL
-                            }
+                            //                            ?.filter {
+                            //                                it.locationType !=
+                            // LocationType.VIRTUAL
+                            //                            }
                             ?.mapNotNull { baseItemDto ->
                                 runCatching { baseItemDto.toAfinityItem(baseUrl) }.getOrNull()
                                     as? AfinityEpisode
@@ -595,6 +636,8 @@ constructor(
                     }
 
                 _uiState.update { it.copy(episodeResults = episodes, isEpisodeSearching = false) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
 
@@ -645,24 +688,6 @@ constructor(
         }
     }
 
-    fun clearSearch() {
-        cancelAllSearchJobs()
-        _uiState.value =
-            _uiState.value.copy(
-                searchQuery = "",
-                searchResults = emptyList(),
-                isSearching = false,
-                episodeResults = emptyList(),
-                isEpisodeSearching = false,
-                jellyseerrSearchResults = emptyList(),
-                isJellyseerrSearching = false,
-                audiobookshelfSearchResults = emptyList(),
-                isAudiobookshelfSearching = false,
-                musicSearchResults = null,
-                isMusicSearching = false,
-            )
-    }
-
     fun performMusicSearch() {
         val query = _uiState.value.searchQuery.trim()
         if (query.isEmpty()) return
@@ -675,6 +700,8 @@ constructor(
                     _uiState.value.selectedLibrary?.takeIf { it.type == CollectionType.Music }?.id
                 val results = musicRepository.searchMusic(query, libraryId)
                 _uiState.update { it.copy(musicSearchResults = results, isMusicSearching = false) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 _uiState.update { it.copy(musicSearchResults = null, isMusicSearching = false) }
@@ -908,6 +935,8 @@ constructor(
                     it.copy(audiobookshelfSearchResults = items, isAudiobookshelfSearching = false)
                 }
                 Timber.d("Audiobookshelf search completed: ${items.size} results for '$query'")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
 
@@ -959,6 +988,8 @@ constructor(
                             Timber.e(error, "Jellyseerr search failed")
                         },
                     )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
 
@@ -1090,6 +1121,8 @@ constructor(
                         }
                     },
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error showing request dialog")
                 _uiState.update { state ->
@@ -1186,6 +1219,8 @@ constructor(
                             Timber.e(error, "Failed to create request")
                         },
                     )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.update { it.copy(isCreatingRequest = false) }
                 Timber.e(e, "Error creating request")
@@ -1404,6 +1439,7 @@ data class SearchUiState(
     val searchQuery: String = "",
     val searchResults: List<AfinityItem> = emptyList(),
     val isSearching: Boolean = false,
+    val searchError: String? = null,
     val episodeResults: List<AfinityEpisode> = emptyList(),
     val isEpisodeSearching: Boolean = false,
     val libraries: List<AfinityCollection> = emptyList(),

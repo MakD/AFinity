@@ -10,6 +10,11 @@ import com.makd.afinity.ui.livetv.models.LiveTvCategory
 import com.makd.afinity.ui.livetv.models.ProgramWithChannel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
+import java.util.UUID
+import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -25,10 +30,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
-import java.util.UUID
-import javax.inject.Inject
 
 @OptIn(FlowPreview::class)
 @HiltViewModel
@@ -105,6 +106,8 @@ constructor(
                 } else {
                     _uiState.update { it.copy(isLoading = false) }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to check Live TV access")
                 _uiState.update {
@@ -117,22 +120,22 @@ constructor(
         }
     }
 
-    private fun loadChannels() {
-        viewModelScope.launch {
-            try {
-                val channels = liveTvRepository.getChannels()
-                allChannelsCache = channels
-                applyFilterToCache(_selectedLetter.value)
+    private suspend fun loadChannels() {
+        try {
+            val channels = liveTvRepository.getChannels()
+            allChannelsCache = channels
+            applyFilterToCache(_selectedLetter.value)
 
-                _uiState.update { it.copy(epgChannels = channels, isLoading = false) }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load channels")
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = context.getString(R.string.error_failed_load_channels),
-                    )
-                }
+            _uiState.update { it.copy(epgChannels = channels, isLoading = false) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load channels")
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    error = context.getString(R.string.error_failed_load_channels),
+                )
             }
         }
     }
@@ -229,6 +232,8 @@ constructor(
                 _uiState.update {
                     it.copy(categorizedPrograms = filteredCategories, isCategoriesLoading = false)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load categorized programs")
                 _uiState.update { it.copy(isCategoriesLoading = false) }
@@ -263,11 +268,13 @@ constructor(
                         .map { batch ->
                             async(Dispatchers.IO) {
                                 try {
-                                    liveTvRepository.getPrograms(
+                                    liveTvRepository.getGuidePrograms(
                                         channelIds = batch.map { it.id },
-                                        minStartDate = startTime,
-                                        maxEndDate = endTime,
+                                        windowStart = startTime,
+                                        windowEnd = endTime,
                                     )
+                                } catch (e: CancellationException) {
+                                    throw e
                                 } catch (e: Exception) {
                                     emptyList()
                                 }
@@ -279,12 +286,18 @@ constructor(
                 val programsByChannel = allPrograms.groupBy { it.channelId }
 
                 _uiState.update {
-                    it.copy(
-                        epgChannels = channels,
-                        epgPrograms = programsByChannel,
-                        isEpgLoading = false,
-                    )
+                    if (it.epgPrograms == programsByChannel && it.epgChannels == channels) {
+                        it.copy(isEpgLoading = false)
+                    } else {
+                        it.copy(
+                            epgChannels = channels,
+                            epgPrograms = programsByChannel,
+                            isEpgLoading = false,
+                        )
+                    }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load EPG data")
                 _uiState.update { it.copy(isEpgLoading = false) }
@@ -347,6 +360,8 @@ constructor(
                     applyFilterToCache(_selectedLetter.value)
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to refresh tab data for $tab")
         }
@@ -363,6 +378,8 @@ constructor(
                     }
                     applyFilterToCache(_selectedLetter.value)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle favorite for channel: $channelId")
             }
@@ -382,6 +399,8 @@ constructor(
                 applyFilterToCache(_selectedLetter.value)
 
                 _uiState.update { it.copy(isRefreshing = false) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh")
                 _uiState.update { it.copy(isRefreshing = false) }
@@ -397,7 +416,6 @@ constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
         refreshJob?.cancel()
     }
 

@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -41,6 +40,7 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.RequestStatus
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.UserAvatar
 import com.makd.afinity.ui.theme.CardDimensions
 
 @Composable
@@ -117,28 +117,18 @@ fun RequestCard(
                             } else null
                         }
 
-                    if (avatarUrl != null) {
-                        AsyncImage(
-                            imageUrl = avatarUrl,
-                            contentDescription =
-                                stringResource(
-                                    R.string.requested_by_fmt,
-                                    request.requestedBy.displayName ?: "",
-                                ),
-                            blurHash = null,
-                            targetWidth = 32.dp,
-                            targetHeight = 32.dp,
-                            modifier = Modifier.size(24.dp).clip(CircleShape),
-                            contentScale = ContentScale.Crop,
-                        )
-                    } else {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_user_circle),
-                            contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.8f),
-                            modifier = Modifier.size(28.dp),
-                        )
-                    }
+                    UserAvatar(
+                        imageUrl = avatarUrl,
+                        name = request.requestedBy.displayName,
+                        size = 24.dp,
+                        containerColor = Color.Transparent,
+                        contentColor = Color.White.copy(alpha = 0.8f),
+                        contentDescription =
+                            stringResource(
+                                R.string.requested_by_fmt,
+                                request.requestedBy.displayName ?: "",
+                            ),
+                    )
 
                     if (isPending && isAdmin) {
                         FilledIconButton(

@@ -12,6 +12,9 @@ import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,8 +23,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
 
 data class MusicGenreUiState(
     val albums: List<AfinityAlbum> = emptyList(),
@@ -48,6 +49,10 @@ constructor(
     val genreImageUrl: String? = savedStateHandle.get<String>("imageUrl")
     val genreId: UUID? =
         savedStateHandle.get<String>("genreId")?.let {
+            runCatching { UUID.fromString(it) }.getOrNull()
+        }
+    private val libraryId: UUID? =
+        savedStateHandle.get<String>("libraryId")?.let {
             runCatching { UUID.fromString(it) }.getOrNull()
         }
 
@@ -98,11 +103,21 @@ constructor(
         _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         try {
             coroutineScope {
-                val albumsJob = async { musicRepository.getAlbumsByGenre(genreName, limit = 50) }
-                val artistsJob = async { musicRepository.getArtistsByGenre(genreName, limit = 50) }
-                val tracksJob = async { musicRepository.getTracksByGenre(genreName, limit = 50) }
+                val albumsJob = async {
+                    musicRepository.getAlbumsByGenre(genreName, limit = 50, parentId = libraryId)
+                }
+                val artistsJob = async {
+                    musicRepository.getArtistsByGenre(genreName, limit = 50, parentId = libraryId)
+                }
+                val tracksJob = async {
+                    musicRepository.getTracksByGenre(genreName, limit = 50, parentId = libraryId)
+                }
                 val recentJob = async {
-                    musicRepository.getRecentlyAddedAlbumsByGenre(genreName, limit = 20)
+                    musicRepository.getRecentlyAddedAlbumsByGenre(
+                        genreName,
+                        limit = 20,
+                        parentId = libraryId,
+                    )
                 }
                 _uiState.value =
                     _uiState.value.copy(
@@ -113,6 +128,8 @@ constructor(
                         isLoading = false,
                     )
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load genre content for: $genreName")
             _uiState.value = _uiState.value.copy(isLoading = false, error = e.message)

@@ -8,13 +8,14 @@ import com.makd.afinity.data.repository.settings.SettingsImportPreview
 import com.makd.afinity.data.repository.settings.SettingsImportResult
 import com.makd.afinity.data.repository.settings.SettingsTransfer
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 data class BackupUiState(
     val pendingExport: String? = null,
@@ -38,6 +39,8 @@ class BackupViewModel @Inject constructor(private val settingsTransfer: Settings
             val payload =
                 try {
                     settingsTransfer.export()
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to build settings backup")
                     null

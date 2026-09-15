@@ -1,0 +1,4 @@
+root = true
+
+[*.{kt,kts}]
+ij_kotlin_imports_layout = *

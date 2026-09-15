@@ -6,13 +6,14 @@ import android.content.Intent
 import com.makd.afinity.data.repository.audiobookshelf.AbsDownloadRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.UUID
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class DownloadActionReceiver : BroadcastReceiver() {
@@ -52,6 +53,8 @@ class DownloadActionReceiver : BroadcastReceiver() {
                             Timber.e(it, "Failed to cancel ABS download from notification")
                         }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Download notification action failed")
             } finally {

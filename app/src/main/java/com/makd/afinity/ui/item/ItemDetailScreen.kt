@@ -3,7 +3,6 @@
 package com.makd.afinity.ui.item
 
 import android.content.Context
-import android.content.res.Configuration
 import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.compose.foundation.Image
@@ -47,7 +46,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -97,6 +95,7 @@ import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.BoxSetDetailContent
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.item.components.MovieDetailContent
@@ -120,11 +119,11 @@ import com.makd.afinity.ui.utils.IntentUtils
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 import com.makd.afinity.ui.utils.verticalLayoutOffset
 import com.makd.afinity.util.rememberPreferencesRepository
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.MediaType
 import timber.log.Timber
-import java.util.UUID
 
 @Composable
 fun ItemDetailScreen(
@@ -343,9 +342,7 @@ fun ItemDetailScreen(
         LaunchedEffect(selectedEpisode, pendingNavigationPersonId) {
             if (selectedEpisode == null && pendingNavigationPersonId != null) {
                 kotlinx.coroutines.delay(300)
-                navController.navigate(
-                    Destination.createPersonRoute(pendingNavigationPersonId!!)
-                )
+                navController.navigate(Destination.createPersonRoute(pendingNavigationPersonId!!))
                 pendingNavigationPersonId = null
             }
         }
@@ -444,8 +441,7 @@ private fun ItemDetailContent(
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val context = LocalContext.current
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
 
     val lazyListState = rememberLazyListState()
     val topBarOpacity by rememberTopBarOpacity(lazyListState)
@@ -570,6 +566,9 @@ private fun LandscapeItemDetailContent(
     val displayCutoutLeft = WindowInsets.displayCutout.getLeft(density, LayoutDirection.Ltr)
     val baseColorScheme = MaterialTheme.colorScheme
     val playerOffset = LocalPlayerOffset.current
+    val windowInfo = LocalWindowInfo.current
+    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
+    val screenHeightDp = with(density) { windowInfo.containerSize.height.toDp() }
 
     val landscapeColorScheme =
         remember(baseColorScheme) {
@@ -613,8 +612,8 @@ private fun LandscapeItemDetailContent(
                     imageUrl = backdrop.first,
                     contentDescription = stringResource(R.string.cd_backdrop_fmt, item.name),
                     blurHash = backdrop.second,
-                    targetWidth = 1920.dp,
-                    targetHeight = 1080.dp,
+                    targetWidth = screenWidthDp,
+                    targetHeight = screenHeightDp,
                     useLowResPlaceholder = true,
                     onError = {
                         if (backdropIndex < backdropChain.lastIndex) {

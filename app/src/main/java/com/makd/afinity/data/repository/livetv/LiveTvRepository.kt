@@ -37,6 +37,12 @@ interface LiveTvRepository {
         limit: Int? = null,
     ): List<AfinityProgram>
 
+    suspend fun getGuidePrograms(
+        channelIds: List<UUID>,
+        windowStart: LocalDateTime,
+        windowEnd: LocalDateTime,
+    ): List<AfinityProgram>
+
     suspend fun getCurrentProgram(channelId: UUID): AfinityProgram?
 
     suspend fun getRecommendedPrograms(

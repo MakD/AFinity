@@ -13,12 +13,18 @@ import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.di.NetworkModule
 import com.makd.afinity.util.MediaCapabilities
 import com.makd.afinity.util.redactUrl
+import java.time.LocalDateTime
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlin.time.Duration
+import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.operations.LiveTvApi
 import org.jellyfin.sdk.api.operations.MediaInfoApi
-import org.jellyfin.sdk.api.operations.UserViewsApi
-import org.jellyfin.sdk.api.operations.VideosApi
+import org.jellyfin.sdk.api.operations.UserViewApi
+import org.jellyfin.sdk.api.operations.VideoApi
 import org.jellyfin.sdk.model.api.CollectionType
 import org.jellyfin.sdk.model.api.DeviceProfile
 import org.jellyfin.sdk.model.api.DirectPlayProfile
@@ -37,11 +43,6 @@ import org.jellyfin.sdk.model.api.SubtitleDeliveryMethod
 import org.jellyfin.sdk.model.api.SubtitleProfile
 import org.jellyfin.sdk.model.api.TranscodingProfile
 import timber.log.Timber
-import java.time.LocalDateTime
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
-import kotlin.time.Duration
 
 @Singleton
 class JellyfinLiveTvRepository
@@ -217,6 +218,29 @@ constructor(
                 ?: emptyList()
         }
 
+    override suspend fun getGuidePrograms(
+        channelIds: List<UUID>,
+        windowStart: LocalDateTime,
+        windowEnd: LocalDateTime,
+    ): List<AfinityProgram> =
+        apiCall(emptyList(), "Failed to get guide programs") { apiClient, _ ->
+            val baseUrl = getBaseUrl()
+
+            LiveTvApi(apiClient)
+                .getLiveTvPrograms(
+                    channelIds = channelIds,
+                    minEndDate = windowStart,
+                    maxStartDate = windowEnd,
+                    sortBy = listOf(ItemSortBy.START_DATE),
+                    sortOrder = listOf(SortOrder.ASCENDING),
+                    enableImages = false,
+                    fields = emptyList(),
+                )
+                .content
+                .items
+                ?.map { programDto -> programDto.toAfinityProgram(baseUrl) } ?: emptyList()
+        }
+
     override suspend fun getCurrentProgram(channelId: UUID): AfinityProgram? {
         val now = LocalDateTime.now()
         return getPrograms(
@@ -262,7 +286,7 @@ constructor(
 
             val untimedClient = untimedApiClient(apiClient)
             val mediaInfoApi = MediaInfoApi(untimedClient)
-            val videosApi = VideosApi(apiClient)
+            val videoApi = VideoApi(apiClient)
             val maxStreamingBitrate = 140_000_000
             val deviceProfile = buildLiveTvDeviceProfile(maxStreamingBitrate)
 
@@ -321,6 +345,8 @@ constructor(
                                 )
                                 .content
                                 .mediaSource
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.e(e, "Failed to open live stream for channel $channelId")
                             null
@@ -351,7 +377,7 @@ constructor(
                         if (source.isRemote && !directStreamPath.isNullOrBlank()) {
                             directStreamPath
                         } else {
-                            videosApi.getVideoStreamUrl(
+                            videoApi.getVideoStreamUrl(
                                 itemId = channelId,
                                 container = container,
                                 static = true,
@@ -402,6 +428,8 @@ constructor(
                         socketTimeout = Duration.ZERO,
                     ),
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to build untimed Live TV client, falling back to session client")
             source
@@ -427,7 +455,7 @@ constructor(
             return it
         }
         return apiCall(false, "Failed to check access for user") { apiClient, userId ->
-            UserViewsApi(apiClient).getUserViews(userId = userId).content.items.any {
+            UserViewApi(apiClient).getUserViews(userId = userId).content.items.any {
                 it.collectionType == CollectionType.LIVETV
             }
         }

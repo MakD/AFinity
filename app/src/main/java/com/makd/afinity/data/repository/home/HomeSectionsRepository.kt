@@ -33,6 +33,11 @@ import com.makd.afinity.data.repository.PeopleRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlin.random.Random
+import kotlin.time.Duration.Companion.hours
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -55,11 +60,6 @@ import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.PersonKind
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
-import kotlin.random.Random
-import kotlin.time.Duration.Companion.hours
 
 @Singleton
 class HomeSectionsRepository
@@ -297,6 +297,8 @@ constructor(
                             homeCacheRepository.getRaw(layoutCacheKey(sk), layoutTTL)?.let {
                                 try {
                                     json.decodeFromString<List<HomeSectionDescriptor>>(it)
+                                } catch (e: CancellationException) {
+                                    throw e
                                 } catch (e: Exception) {
                                     Timber.e(e, "Failed to decode cached home layout")
                                     null
@@ -540,6 +542,35 @@ constructor(
         if (rendered.isNotEmpty()) enqueueHydration(rendered, refresh = true)
     }
 
+    fun refreshContent(reason: String) {
+        if (sessionKey() == null) return
+        if (_layout.value.isEmpty() && _pinnedLayout.value.isEmpty()) {
+            ensureLayout()
+            return
+        }
+        seasonRecheck.update { it + 1 }
+        ensureWatchAgain(force = true)
+        ensureCriticsChoice(force = true)
+        ensurePopularStudios(force = true)
+        refreshPinnedSections(reason)
+        refreshDiscoverySections(reason)
+    }
+
+    private fun refreshDiscoverySections(reason: String) {
+        val keys = _layout.value.map { it.key }
+        if (keys.isEmpty()) return
+        val (rendered, offScreen) = keys.partition { _content.value.containsKey(it) }
+        Timber.d(
+            "Refreshing discovery home sections ($reason): ${rendered.size} on screen, ${offScreen.size} deferred"
+        )
+        if (offScreen.isNotEmpty()) {
+            scope.launch(Dispatchers.IO) {
+                hydrationMutex.withLock { hydrationRefreshKeys.addAll(offScreen) }
+            }
+        }
+        if (rendered.isNotEmpty()) enqueueHydration(rendered, refresh = true)
+    }
+
     fun updateItem(updatedItem: AfinityItem) {
         _watchAgain.update { items ->
             if (items.none { it.id == updatedItem.id }) items
@@ -565,6 +596,8 @@ constructor(
         val uuid =
             try {
                 UUID.fromString(itemId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 null
             }
@@ -801,7 +834,7 @@ constructor(
         )
     }
 
-    private suspend fun decodeReferenceMovie(movieJson: String?): AfinityMovie? {
+    private fun decodeReferenceMovie(movieJson: String?): AfinityMovie? {
         val movie = movieJson?.let { converters.toAfinityMovie(it) } ?: return null
         return movie.copy(images = movie.images.withBaseUrl(mediaRepository.getBaseUrl()))
     }
@@ -888,6 +921,8 @@ constructor(
                             limit = WATCH_AGAIN_POOL,
                             fields = FieldSets.MEDIA_ITEM_CARDS,
                         )
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to load watched shows for watch again")
                         emptyList()
@@ -902,6 +937,8 @@ constructor(
                             limit = WATCH_AGAIN_POOL,
                             fields = FieldSets.MEDIA_ITEM_CARDS,
                         )
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to load watched movies for watch again")
                         emptyList()
@@ -919,6 +956,8 @@ constructor(
                             ?.filterIsInstance<AfinityBoxSet>()
                             ?.filter { it.unplayedItemCount == 0 && (it.itemCount ?: 0) >= 2 }
                             ?: emptyList()
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to load watched boxsets for watch again")
                         emptyList()
@@ -971,6 +1010,8 @@ constructor(
                     limit = 25,
                     fields = FieldSets.MEDIA_ITEM_CARDS,
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to load top rated movies")
                 emptyList()
@@ -984,6 +1025,8 @@ constructor(
                     limit = 25,
                     fields = FieldSets.MEDIA_ITEM_CARDS,
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to load top rated shows")
                 emptyList()
@@ -1035,6 +1078,8 @@ constructor(
                 CustomSectionSourceType.LIBRARY ->
                     try {
                         UUID.fromString(section.primarySourceValue.orEmpty())
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Custom section ${section.id} has an invalid source id")
                         return HomeSectionContent.Empty
@@ -1084,6 +1129,8 @@ constructor(
                         .items
                         ?.mapNotNull { it.toAfinityItem(baseUrl) } ?: emptyList()
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load custom home section ${section.id}")
                 val stale =
@@ -1199,6 +1246,8 @@ constructor(
                         descriptor.boxSetId?.let {
                             try {
                                 UUID.fromString(it)
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 null
                             }
@@ -1247,7 +1296,8 @@ constructor(
             }
             val writersDeferred = async {
                 if (cap(DiscoverySection.WRITTEN_BY) == 0) emptyList()
-                else peopleRepository.getTopPeople(PersonKind.WRITER, limit = 50, minAppearances = 3)
+                else
+                    peopleRepository.getTopPeople(PersonKind.WRITER, limit = 50, minAppearances = 3)
             }
             val studiosDeferred = async {
                 if (spotlightCap == 0) emptyList() else studiosPool(force = false)
@@ -1264,6 +1314,8 @@ constructor(
                             )
                             .items
                             ?.filter { (it.childCount ?: 0) >= 3 && it.name != null } ?: emptyList()
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to load boxsets for spotlight descriptors")
                         emptyList()
@@ -1380,6 +1432,8 @@ constructor(
                                     fields = listOf(ItemFields.PEOPLE),
                                 )
                                 ?.toAfinityMovie(mediaRepository.getBaseUrl())
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             null
                         } ?: continue
@@ -1551,15 +1605,26 @@ constructor(
         recommendations: List<HomeSectionDescriptor>,
         spotlights: List<HomeSectionDescriptor>,
     ): List<HomeSectionDescriptor> {
-        val finalLayout = mergeProportionally(genres, recommendations).toMutableList()
+        val base = mergeProportionally(genres, recommendations)
+        if (spotlights.isEmpty()) return base
+        if (base.isEmpty()) return spotlights.take(1)
 
-        if (spotlights.isNotEmpty()) {
-            val positions = computeSpotlightPositions(finalLayout.size, spotlights.size)
-            positions.sorted().forEachIndexed { offset, pos ->
-                finalLayout.add((pos + offset).coerceIn(0, finalLayout.size), spotlights[offset])
+        val placeable = minOf(spotlights.size, base.size)
+        val stride = base.size.toFloat() / (placeable + 1)
+
+        val result = ArrayList<HomeSectionDescriptor>(base.size + placeable)
+        var placed = 0
+        base.forEachIndexed { index, descriptor ->
+            result.add(descriptor)
+            if (placed < placeable) {
+                val target = ((placed + 1) * stride).toInt().coerceIn(1, base.size)
+                if (index + 1 >= target) {
+                    result.add(spotlights[placed])
+                    placed++
+                }
             }
         }
-        return finalLayout
+        return result
     }
 
     private fun mergeProportionally(
@@ -1595,30 +1660,6 @@ constructor(
         return merged
     }
 
-    private fun computeSpotlightPositions(listSize: Int, count: Int): List<Int> {
-        if (listSize == 0 || count == 0) return emptyList()
-        val chunkSize = (listSize / (count + 1)).coerceAtLeast(1)
-
-        val rawPositions =
-            (1..count)
-                .map { i -> (i * chunkSize + (-2..2).random()).coerceIn(1, listSize) }
-                .sorted()
-
-        val adjustedPositions = mutableListOf<Int>()
-        var lastPos = -2
-
-        for (i in rawPositions.indices) {
-            val pos = rawPositions[i]
-            var newPos = if (pos <= lastPos + 1) lastPos + 2 else pos
-            val itemsLeft = count - 1 - i
-            val maxAllowedPos = (listSize - (itemsLeft * 2)).coerceAtLeast(0)
-            newPos = newPos.coerceIn(0, maxAllowedPos)
-            adjustedPositions.add(newPos)
-            lastPos = newPos
-        }
-        return adjustedPositions
-    }
-
     private suspend fun getRandomFavoriteMovie(excludedMovies: Set<UUID>): AfinityMovie? {
         try {
             val now = System.currentTimeMillis()
@@ -1640,6 +1681,8 @@ constructor(
                 }
 
             return allFavorites.filterNot { it.id in excludedMovies }.randomOrNull()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to get random favorite movie")
             return null
@@ -1678,6 +1721,8 @@ constructor(
             } else {
                 recentWatched.random()
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to get random recently watched movie")
             return null

@@ -5,8 +5,9 @@ import androidx.paging.PagingState
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
-import timber.log.Timber
 import java.util.UUID
+import kotlinx.coroutines.CancellationException
+import timber.log.Timber
 
 class EpisodesPagingSource(
     private val mediaRepository: MediaRepository,
@@ -41,6 +42,8 @@ class EpisodesPagingSource(
                 prevKey = if (page == 0) null else page - 1,
                 nextKey = if (episodes.size < PAGE_SIZE) null else page + 1,
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load episodes page")
             LoadResult.Error(e)

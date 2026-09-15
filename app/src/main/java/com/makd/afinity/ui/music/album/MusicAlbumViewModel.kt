@@ -14,6 +14,9 @@ import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.store.ItemStore
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,8 +24,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
 
 data class MusicAlbumUiState(
     val album: AfinityAlbum? = null,
@@ -32,6 +33,8 @@ data class MusicAlbumUiState(
     val error: String? = null,
     val albumDownloadInfo: DownloadInfo? = null,
     val trackDownloadInfos: Map<UUID, DownloadInfo> = emptyMap(),
+    val moreFromArtist: List<AfinityAlbum> = emptyList(),
+    val similarAlbums: List<AfinityAlbum> = emptyList(),
 )
 
 @HiltViewModel
@@ -101,10 +104,50 @@ constructor(
                     )
                 }
                 updateDownloadState(lastAllDownloads)
+                album?.let { loadRelatedSections(it) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load album $albumId")
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
             }
+        }
+    }
+
+    private fun loadRelatedSections(album: AfinityAlbum) {
+        val artistId = album.artistId
+
+        if (artistId != null) {
+            viewModelScope.launch {
+                runCatching {
+                    musicRepository.getArtistAlbums(
+                        artistId = artistId,
+                        excludeAlbumId = album.id,
+                    )
+                }
+                    .onSuccess { albums ->
+                        if (albums.isNotEmpty()) {
+                            _uiState.update { it.copy(moreFromArtist = albums) }
+                        }
+                    }
+                    .onFailure { Timber.e(it, "Failed to load more albums from artist $artistId") }
+            }
+        }
+
+        viewModelScope.launch {
+            runCatching {
+                musicRepository.getSimilarAlbums(
+                    itemId = album.id,
+                    limit = 12,
+                    excludeArtistId = artistId,
+                )
+            }
+                .onSuccess { albums ->
+                    if (albums.isNotEmpty()) {
+                        _uiState.update { it.copy(similarAlbums = albums) }
+                    }
+                }
+                .onFailure { Timber.e(it, "Failed to load similar albums for ${album.id}") }
         }
     }
 

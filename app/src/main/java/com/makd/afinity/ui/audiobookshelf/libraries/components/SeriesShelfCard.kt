@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -59,7 +60,7 @@ fun SeriesShelfCard(
                 Modifier.fillMaxWidth()
                     .aspectRatio(1.5f)
                     .clip(MaterialTheme.shapes.medium)
-                    .clickable(onClick = onClick)
+                    .clickable(role = Role.Button, onClick = onClick)
         ) {
             when {
                 coverUrls.isEmpty() -> {

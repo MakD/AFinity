@@ -10,7 +10,7 @@ enum class MediaStatus(val value: Int) {
     DELETED(7);
 
     companion object {
-        fun fromValue(value: Int): MediaStatus = values().find { it.value == value } ?: UNKNOWN
+        fun fromValue(value: Int): MediaStatus = entries.find { it.value == value } ?: UNKNOWN
 
         fun getDisplayName(status: MediaStatus): String =
             when (status) {

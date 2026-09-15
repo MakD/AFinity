@@ -5,13 +5,13 @@ import com.makd.afinity.util.NetworkConnectivityMonitor
 import com.makd.afinity.util.NetworkLocality
 import com.makd.afinity.util.pingUrl
 import com.makd.afinity.util.probeAddresses
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import timber.log.Timber
-import java.util.concurrent.TimeUnit
-import javax.inject.Inject
-import javax.inject.Singleton
 
 sealed class AudiobookshelfAddressResult {
     data class Success(val address: String) : AudiobookshelfAddressResult()

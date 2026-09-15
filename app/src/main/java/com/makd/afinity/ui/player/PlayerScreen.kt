@@ -42,6 +42,7 @@ import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.models.player.SubtitlePreferences
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.player.mpv.MPVPlayer
+import com.makd.afinity.ui.components.rememberCastChooserLauncher
 import com.makd.afinity.ui.player.cast.CastRemoteControllerScreen
 import com.makd.afinity.ui.player.components.BufferingIndicator
 import com.makd.afinity.ui.player.components.ErrorIndicator
@@ -54,14 +55,15 @@ import com.makd.afinity.ui.player.components.SyncPlayGroupSheet
 import com.makd.afinity.ui.player.components.SyncPlayWaitingOverlay
 import com.makd.afinity.ui.player.components.TrickplayPreview
 import com.makd.afinity.ui.player.components.VersionPickerSheet
+import com.makd.afinity.ui.player.components.playerOverlayInsets
 import com.makd.afinity.ui.player.utils.KeepScreenOn
 import com.makd.afinity.ui.player.utils.PlayerSystemBarsController
 import com.makd.afinity.ui.player.utils.ScreenBrightnessController
 import io.github.peerless2012.ass.media.kt.withAssSupport
+import java.util.UUID
 import kotlinx.coroutines.flow.map
 import org.jellyfin.sdk.model.api.GroupStateType
 import timber.log.Timber
-import java.util.UUID
 
 @UnstableApi
 @Composable
@@ -206,19 +208,10 @@ fun PlayerScreen(
     val castState by viewModel.castManager.castState.collectAsStateWithLifecycle()
     val isDarkTheme = isSystemInDarkTheme()
 
-    val mediaRouteButton = remember {
-        androidx.mediarouter.app.MediaRouteButton(context).also { button ->
-            com.google.android.gms.cast.framework.CastButtonFactory.setUpMediaRouteButton(
-                context,
-                button,
-            )
-            button.visibility = android.view.View.GONE
-        }
-    }
-    AndroidView(factory = { mediaRouteButton })
+    val launchCastChooser = rememberCastChooserLauncher()
     LaunchedEffect(uiState.showCastChooser) {
         if (uiState.showCastChooser) {
-            mediaRouteButton.performClick()
+            launchCastChooser()
             viewModel.dismissCastChooser()
         }
     }
@@ -366,6 +359,7 @@ fun PlayerScreen(
                 playlistQueue = playlistState.queue,
                 currentPlaylistIndex = playlistState.currentIndex,
                 playlistContentStartIndex = playlistState.contentStartIndex,
+                playlistCollectionName = playlistState.collectionName,
                 onJumpToEpisode = viewModel::jumpToEpisode,
                 onVersionToggleRequest = { showVersionPicker = !showVersionPicker },
                 isSyncPlay = syncPlayState.isInGroup,
@@ -404,6 +398,10 @@ fun PlayerScreen(
                         )
                     )
                 },
+                canPlayAnyway = uiState.canPlayAnywayWithTranscoding,
+                onPlayAnywayClick = {
+                    viewModel.handlePlayerEvent(PlayerEvent.PlayAnywayWithTranscoding)
+                },
                 modifier = Modifier.align(Alignment.Center),
             )
 
@@ -427,6 +425,7 @@ fun PlayerScreen(
                     Box(
                         modifier =
                             Modifier.align(Alignment.BottomEnd)
+                                .playerOverlayInsets()
                                 .padding(bottom = 110.dp, end = 56.dp)
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },

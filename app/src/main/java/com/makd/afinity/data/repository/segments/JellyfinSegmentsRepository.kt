@@ -4,14 +4,15 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.toAfinitySegment
 import com.makd.afinity.data.repository.DatabaseRepository
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.api.operations.MediaSegmentsApi
-import org.jellyfin.sdk.model.api.MediaSegmentType
-import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.jellyfin.sdk.api.operations.MediaSegmentApi
+import org.jellyfin.sdk.model.api.MediaSegmentType
+import timber.log.Timber
 
 @Singleton
 class JellyfinSegmentsRepository
@@ -38,7 +39,7 @@ constructor(
                 try {
                     val apiClient =
                         sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                    val mediaSegmentsApi = MediaSegmentsApi(apiClient)
+                    val mediaSegmentsApi = MediaSegmentApi(apiClient)
                     val response =
                         mediaSegmentsApi.getItemSegments(
                             itemId = itemId,
@@ -61,6 +62,8 @@ constructor(
                                 )
                                 databaseRepository.insertSegment(segment, itemId)
                                 Timber.d("Successfully cached segment ${segment.type}")
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 Timber.w(e, "Failed to cache segment ${segment.type} in database")
                             }
@@ -68,6 +71,8 @@ constructor(
                     }
 
                     segments
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.w(
                         e,
@@ -83,6 +88,8 @@ constructor(
                     }
                     fallbackSegments
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get segments for item $itemId")
                 emptyList()

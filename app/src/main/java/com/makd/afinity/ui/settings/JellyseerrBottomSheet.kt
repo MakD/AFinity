@@ -21,6 +21,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -58,7 +59,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.AfinityTextField
+import com.makd.afinity.ui.components.DiscoveredServicesSection
 import com.makd.afinity.ui.components.LoadingButton
+import com.makd.afinity.ui.components.LocalNetworkPermissionCard
 import com.makd.afinity.ui.jellyseerr.JellyseerrLoginViewModel
 import com.makd.afinity.util.isInsecurePublicUrl
 
@@ -70,9 +73,14 @@ internal fun JellyseerrLoginContent(
     viewModel: JellyseerrLoginViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val discoveredServices by viewModel.discoveredServices.collectAsStateWithLifecycle()
+    val discoveryNeedsPermission by viewModel.discoveryNeedsPermission.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
     val autofillManager = LocalAutofillManager.current
     var passwordVisible by remember { mutableStateOf(false) }
+    val busy = uiState.isLoading || uiState.isQuickConnecting
+
+    LaunchedEffect(Unit) { viewModel.discoverLocalServers() }
 
     LaunchedEffect(uiState.loginSuccess) {
         if (uiState.loginSuccess) {
@@ -96,8 +104,7 @@ internal fun JellyseerrLoginContent(
                 text = stringResource(R.string.jellyseerr_connect_title),
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             )
-            val instanceTitle =
-                uiState.publicSettings?.applicationTitle?.takeIf { it.isNotBlank() }
+            val instanceTitle = uiState.publicSettings?.applicationTitle?.takeIf { it.isNotBlank() }
             Text(
                 text =
                     if (instanceTitle != null) {
@@ -113,6 +120,18 @@ internal fun JellyseerrLoginContent(
             )
         }
 
+        if (discoveryNeedsPermission) {
+            LocalNetworkPermissionCard(
+                onGranted = viewModel::onLocalNetworkPermissionGranted,
+                body = stringResource(R.string.local_network_permission_discovery_body),
+            )
+        }
+
+        DiscoveredServicesSection(
+            services = discoveredServices,
+            onSelect = { viewModel.updateServerUrl(it.url) },
+        )
+
         InsecureConnectionBannerJellyseerr(serverUrl = uiState.serverUrl)
 
         AfinityTextField(
@@ -123,7 +142,7 @@ internal fun JellyseerrLoginContent(
             leadingIcon = painterResource(id = R.drawable.ic_link_rotated),
             supportingText = uiState.serverUrlError,
             isError = uiState.serverUrlError != null,
-            enabled = !uiState.isLoading,
+            enabled = !busy,
             keyboardOptions =
                 KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
             keyboardActions =
@@ -149,7 +168,7 @@ internal fun JellyseerrLoginContent(
                         selected = uiState.useJellyfinAuth,
                         onClick = { viewModel.setUseJellyfinAuth(true) },
                         shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                        enabled = !uiState.isLoading,
+                        enabled = !busy,
                         colors =
                             SegmentedButtonDefaults.colors(
                                 activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -163,7 +182,7 @@ internal fun JellyseerrLoginContent(
                         selected = !uiState.useJellyfinAuth,
                         onClick = { viewModel.setUseJellyfinAuth(false) },
                         shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                        enabled = !uiState.isLoading,
+                        enabled = !busy,
                         colors =
                             SegmentedButtonDefaults.colors(
                                 activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -172,6 +191,40 @@ internal fun JellyseerrLoginContent(
                     ) {
                         Text(stringResource(R.string.login_method_local))
                     }
+                }
+            }
+        }
+
+        if (uiState.useJellyfinAuth && uiState.quickConnectAvailable) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = stringResource(R.string.jellyseerr_quick_connect_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                LoadingButton(
+                    loading = uiState.isQuickConnecting,
+                    text = stringResource(R.string.jellyseerr_quick_connect_button),
+                    onClick = {
+                        focusManager.clearFocus()
+                        viewModel.loginWithQuickConnect()
+                    },
+                    enabled = uiState.serverUrl.isNotBlank() && !uiState.isLoading,
+                )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    HorizontalDivider(modifier = Modifier.weight(1f))
+                    Text(
+                        text = stringResource(R.string.jellyseerr_login_divider_or),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    HorizontalDivider(modifier = Modifier.weight(1f))
                 }
             }
         }
@@ -196,7 +249,7 @@ internal fun JellyseerrLoginContent(
                         else -> stringResource(R.string.jellyseerr_email_hint)
                     },
                 isError = uiState.emailError != null,
-                enabled = !uiState.isLoading && !uiState.useJellyfinAuth,
+                enabled = !busy && !uiState.useJellyfinAuth,
                 keyboardOptions =
                     KeyboardOptions(
                         keyboardType =
@@ -222,7 +275,7 @@ internal fun JellyseerrLoginContent(
                 leadingIcon = painterResource(id = R.drawable.ic_lock_filled),
                 supportingText = uiState.passwordError,
                 isError = uiState.passwordError != null,
-                enabled = !uiState.isLoading,
+                enabled = !busy,
                 visualTransformation =
                     if (passwordVisible) {
                         VisualTransformation.None
@@ -260,13 +313,12 @@ internal fun JellyseerrLoginContent(
                         onDone = {
                             autofillManager?.commit()
                             focusManager.clearFocus()
-                            if (!uiState.isLoading) {
+                            if (!busy) {
                                 viewModel.login()
                             }
                         }
                     ),
-                modifier =
-                    Modifier.fillMaxWidth().semantics { contentType = ContentType.Password },
+                modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Password },
             )
         }
 
@@ -310,7 +362,8 @@ internal fun JellyseerrLoginContent(
                 viewModel.login()
             },
             enabled =
-                uiState.serverUrl.isNotBlank() &&
+                !uiState.isQuickConnecting &&
+                    uiState.serverUrl.isNotBlank() &&
                     uiState.email.isNotBlank() &&
                     (uiState.useJellyfinAuth || uiState.password.isNotBlank()),
         )

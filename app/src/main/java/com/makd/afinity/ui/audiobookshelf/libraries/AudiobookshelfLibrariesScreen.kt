@@ -35,6 +35,7 @@ import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.settings.AudiobookshelfBottomSheet
@@ -81,9 +82,12 @@ fun AudiobookshelfLibrariesScreen(
                     },
                     onMenuClick = onMenuClick,
                     onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
-                    onProfileClick = { navController.navigate(Destination.createSettingsRoute()) },
-                    userProfileImageUrl = mainUiState.userProfileImageUrl,
-                    userName = mainUiState.userName,
+                    profile =
+                        AppBarProfile(
+                            onClick = { navController.navigate(Destination.createSettingsRoute()) },
+                            name = mainUiState.userName,
+                            imageUrl = mainUiState.userProfileImageUrl,
+                        ),
                 )
             }
         ) { paddingValues ->
@@ -121,9 +125,12 @@ fun AudiobookshelfLibrariesScreen(
                 },
                 onMenuClick = onMenuClick,
                 onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
-                onProfileClick = { navController.navigate(Destination.createSettingsRoute()) },
-                userProfileImageUrl = mainUiState.userProfileImageUrl,
-                userName = mainUiState.userName,
+                profile =
+                    AppBarProfile(
+                        onClick = { navController.navigate(Destination.createSettingsRoute()) },
+                        name = mainUiState.userName,
+                        imageUrl = mainUiState.userProfileImageUrl,
+                    ),
             )
         }
     ) { paddingValues ->

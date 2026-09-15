@@ -1,11 +1,22 @@
 package com.makd.afinity.data.repository.server
 
+import android.content.Context
+import com.makd.afinity.data.discovery.AfinityServiceTypes
+import com.makd.afinity.data.discovery.LocalServiceDiscovery
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.server.Server
+import com.makd.afinity.data.network.UrlCandidates
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.di.ProberClient
+import com.makd.afinity.util.LocalNetworkPermission
 import com.makd.afinity.util.NetworkConnectivityMonitor
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Provider
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -15,11 +26,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -32,22 +43,21 @@ import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.operations.SystemApi
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Provider
-import javax.inject.Singleton
 
 @OptIn(FlowPreview::class)
 @Singleton
 class JellyfinServerRepository
 @Inject
 constructor(
+    @param:ApplicationContext private val context: Context,
     private val jellyfin: Jellyfin,
     @param:ProberClient private val proberJellyfin: Jellyfin,
     private val apiClient: ApiClient,
     private val sessionManagerProvider: Provider<SessionManager>,
     private val databaseRepository: DatabaseRepository,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
+    private val localServiceDiscovery: LocalServiceDiscovery,
+    private val localNetworkPermission: LocalNetworkPermission,
     private val serverAddressResolverProvider: Provider<ServerAddressResolver>,
     @ApplicationScope private val scope: CoroutineScope,
 ) : ServerRepository {
@@ -66,6 +76,10 @@ constructor(
 
     private val _currentServer = MutableStateFlow<Server?>(null)
     override val currentServer: StateFlow<Server?> = _currentServer.asStateFlow()
+
+    private val _unsupportedServerVersion = MutableStateFlow<String?>(null)
+    override val unsupportedServerVersion: StateFlow<String?> =
+        _unsupportedServerVersion.asStateFlow()
 
     private val reconnectMutex = Mutex()
 
@@ -87,6 +101,8 @@ constructor(
                                 "JellyfinServerRepository: Session changed but server ${session.serverId} not found in database"
                             )
                         }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "JellyfinServerRepository: Failed to load server for session")
                     }
@@ -164,11 +180,17 @@ constructor(
                     }
                     true
                 }
+                is AddressResolutionResult.PermissionRequired -> {
+                    Timber.w("Re-resolution blocked: local network permission missing")
+                    false
+                }
                 is AddressResolutionResult.AllFailed -> {
                     Timber.w("Re-resolution failed for all addresses")
                     false
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to re-resolve server address")
             false
@@ -199,70 +221,89 @@ constructor(
 
             _currentBaseUrl.value = baseUrl
             _isConnected.value = sessionManager.isServerReachable.value
+            _unsupportedServerVersion.value = null
 
             Timber.d("Updated base URL to: $baseUrl")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to set base URL: $baseUrl")
             throw e
         }
     }
 
-    override fun discoverServersFlow(): Flow<List<Server>> = flow {
-        try {
-            val discoveredServers = mutableListOf<Server>()
-            emit(emptyList())
+    override fun discoverServersFlow(): Flow<List<Server>> = channelFlow {
+        val discoveredServers = LinkedHashMap<String, Server>()
+        val discoveryMutex = Mutex()
 
-            jellyfin.discovery.discoverLocalServers(timeout = 5000, maxServers = 10).collect {
-                serverInfo ->
-                Timber.d("Discovered server: ${serverInfo.name} at ${serverInfo.address}")
+        send(emptyList())
 
-                val server =
-                    Server(
-                        id = serverInfo.id ?: UUID.randomUUID().toString(),
-                        name = serverInfo.name ?: "Jellyfin Server",
-                        version = null,
-                        address = serverInfo.address ?: "",
-                    )
-                discoveredServers.add(server)
-                emit(discoveredServers.toList())
+        suspend fun addServer(server: Server, source: String) {
+            val key = server.address.trimEnd('/')
+            if (key.isBlank()) return
+            val snapshot = discoveryMutex.withLock {
+                if (discoveredServers.containsKey(key)) {
+                    null
+                } else {
+                    discoveredServers[key] = server
+                    discoveredServers.values.toList()
+                }
             }
-
-            Timber.d("Discovery complete: ${discoveredServers.size} servers found")
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to discover servers")
-            emit(emptyList())
+            if (snapshot != null) {
+                Timber.d("Discovered server via $source: ${server.name} at ${server.address}")
+                send(snapshot)
+            }
         }
-    }
 
-    private fun generateCandidateUrls(input: String): List<String> {
-        val clean = input.trim().removeSuffix("/")
-        val hasScheme = clean.startsWith("http://") || clean.startsWith("https://")
-        val withScheme = if (hasScheme) clean else "http://$clean"
-        val uri = runCatching { java.net.URI(withScheme) }.getOrNull()
-        val host = uri?.host?.takeIf { it.isNotBlank() } ?: clean
-        val port = uri?.port ?: -1
-        val scheme = if (hasScheme) uri?.scheme else null
+        launch {
+            try {
+                jellyfin.discovery.discoverLocalServers(timeout = 5000, maxServers = 10).collect {
+                    serverInfo ->
+                    addServer(
+                        Server(
+                            id = serverInfo.id ?: UUID.randomUUID().toString(),
+                            name = serverInfo.name ?: "Jellyfin Server",
+                            version = null,
+                            address = serverInfo.address ?: "",
+                        ),
+                        "broadcast",
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Broadcast server discovery failed")
+            }
+        }
 
-        return when {
-            hasScheme && port != -1 -> listOf(clean)
-            !hasScheme && port != -1 -> listOf("https://$clean", "http://$clean")
-            hasScheme && scheme == "https" ->
-                listOf(clean, "https://$host:8920", "https://$host:8096")
-            hasScheme && scheme == "http" -> listOf(clean, "http://$host:8096")
-            else ->
-                listOf(
-                    "https://$host",
-                    "https://$host:8096",
-                    "https://$host:8920",
-                    "http://$host:8096",
-                    "http://$host",
-                )
+        launch {
+            try {
+                localServiceDiscovery
+                    .discover(AfinityServiceTypes.JELLYFIN, timeoutMs = 5000)
+                    .collect { services ->
+                        services.forEach { service ->
+                            addServer(
+                                Server(
+                                    id = UUID.randomUUID().toString(),
+                                    name = service.name,
+                                    version = null,
+                                    address = service.url,
+                                ),
+                                "mdns",
+                            )
+                        }
+                    }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "mDNS server discovery failed")
+            }
         }
     }
 
     override suspend fun testServerConnection(serverAddress: String): ServerConnectionResult {
         return withContext(Dispatchers.IO) {
-            val urlsToTry = generateCandidateUrls(serverAddress)
+            val urlsToTry = UrlCandidates.jellyfin(serverAddress)
 
             var lastException: Exception? = null
 
@@ -273,26 +314,46 @@ constructor(
                     val response = systemApi.getPublicSystemInfo()
                     val systemInfo = response.content
 
-                    if (systemInfo != null) {
-                        val server =
-                            Server(
-                                id = systemInfo.id ?: UUID.randomUUID().toString(),
-                                name = systemInfo.serverName ?: "Jellyfin Server",
-                                version = systemInfo.version,
-                                address = url,
-                            )
-                        return@withContext ServerConnectionResult.Success(
-                            server = server,
-                            serverAddress = url,
-                            version = systemInfo.version ?: "Unknown",
-                            isQuickConnectEnabled = systemInfo.startupWizardCompleted == true,
+                    if (!ServerVersionSupport.isSupported(systemInfo.version)) {
+                        Timber.w(
+                            "Rejecting server at $url: version ${systemInfo.version} is below ${ServerVersionSupport.minimum}"
+                        )
+                        return@withContext ServerConnectionResult.Error(
+                            ServerVersionSupport.unsupportedMessage(context, systemInfo.version)
                         )
                     }
+                    val server =
+                        Server(
+                            id = systemInfo.id ?: UUID.randomUUID().toString(),
+                            name = systemInfo.serverName ?: "Jellyfin Server",
+                            version = systemInfo.version,
+                            address = url,
+                        )
+                    return@withContext ServerConnectionResult.Success(
+                        server = server,
+                        serverAddress = url,
+                        version = systemInfo.version ?: "Unknown",
+                        isQuickConnectEnabled = systemInfo.startupWizardCompleted == true,
+                    )
                 } catch (e: ApiClientException) {
                     lastException = e
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     lastException = e
                 }
+            }
+
+            if (
+                localNetworkPermission.mayExplainFailure(
+                    urlsToTry,
+                    networkConnectivityMonitor.isOnLocalNetwork(),
+                )
+            ) {
+                Timber.w(
+                    "Server test failed and local network permission is not granted for $serverAddress"
+                )
+                return@withContext ServerConnectionResult.LocalNetworkPermissionRequired
             }
 
             if (lastException is ApiClientException) {
@@ -320,6 +381,8 @@ constructor(
                         true
                     }
                 result == true
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.d("Ping failed for $address: ${e.message}")
                 false
@@ -342,6 +405,8 @@ constructor(
                         address = _currentBaseUrl.value,
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get server info")
                 null
@@ -356,20 +421,27 @@ constructor(
                 val response = systemApi.getPublicSystemInfo()
                 val systemInfo = response.content
 
-                if (systemInfo != null) {
-                    val server =
-                        Server(
-                            id = systemInfo.id ?: UUID.randomUUID().toString(),
-                            name = systemInfo.serverName ?: "Jellyfin Server",
-                            version = systemInfo.version,
-                            address = _currentBaseUrl.value,
+                val server =
+                    Server(
+                        id = systemInfo.id ?: UUID.randomUUID().toString(),
+                        name = systemInfo.serverName ?: "Jellyfin Server",
+                        version = systemInfo.version,
+                        address = _currentBaseUrl.value,
+                    )
+                _currentServer.value = server
+                _isConnected.value = true
+                _unsupportedServerVersion.value =
+                    if (ServerVersionSupport.isSupported(systemInfo.version)) {
+                        null
+                    } else {
+                        Timber.e(
+                            "Connected server is Jellyfin ${systemInfo.version}, below the required ${ServerVersionSupport.minimum}"
                         )
-                    _currentServer.value = server
-                    _isConnected.value = true
-                    Timber.d("Server info refreshed: ${server.name}")
-                } else {
-                    Timber.e("Failed to refresh server info - no system info returned")
-                }
+                        systemInfo.version
+                    }
+                Timber.d("Server info refreshed: ${server.name}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh server info")
             }
@@ -384,6 +456,7 @@ constructor(
         _isConnected.value = false
         _currentServer.value = null
         _currentBaseUrl.value = ""
+        _unsupportedServerVersion.value = null
     }
 
     override fun buildImageUrl(
@@ -410,30 +483,6 @@ constructor(
         return "$baseUrl/Items/$itemId/Images/$imageType/$imageIndex$queryString"
     }
 
-    override fun buildStreamUrl(
-        itemId: String,
-        mediaSourceId: String,
-        maxBitrate: Int?,
-        audioStreamIndex: Int?,
-        subtitleStreamIndex: Int?,
-        videoStreamIndex: Int?,
-        accessToken: String?,
-    ): String {
-        val baseUrl = _currentBaseUrl.value
-        if (baseUrl.isBlank()) return ""
-
-        val params = mutableListOf<String>()
-
-        params.add("MediaSourceId=$mediaSourceId")
-        params.add("Static=true")
-
-        if (maxBitrate != null) params.add("maxStreamingBitrate=$maxBitrate")
-
-        val queryString = params.joinToString("&")
-
-        return "$baseUrl/Videos/$itemId/stream?$queryString"
-    }
-
     sealed class ServerConnectionResult {
         data class Success(
             val server: Server,
@@ -443,6 +492,8 @@ constructor(
         ) : ServerConnectionResult()
 
         data class Error(val message: String) : ServerConnectionResult()
+
+        data object LocalNetworkPermissionRequired : ServerConnectionResult()
     }
 
     private companion object {

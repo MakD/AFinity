@@ -37,10 +37,10 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 
 private const val EnterAnimationMillis = 250
 private const val ExitAnimationMillis = 200
@@ -86,8 +86,7 @@ fun ModalSideSheet(
         onDismissRequest()
     }
 
-    val scrimAlpha =
-        ((1f - abs(offsetX.value) / sheetWidthPx).coerceIn(0f, 1f)) * ScrimAlpha
+    val scrimAlpha = ((1f - abs(offsetX.value) / sheetWidthPx).coerceIn(0f, 1f)) * ScrimAlpha
 
     Dialog(
         onDismissRequest = { scope.launch { animateOutAndDismiss() } },
@@ -101,9 +100,7 @@ fun ModalSideSheet(
         PredictiveBackHandler { progress ->
             try {
                 progress.collect { event ->
-                    offsetX.snapTo(
-                        hiddenOffsetPx * LinearOutSlowInEasing.transform(event.progress)
-                    )
+                    offsetX.snapTo(hiddenOffsetPx * LinearOutSlowInEasing.transform(event.progress))
                 }
                 animateOutAndDismiss()
             } catch (_: CancellationException) {

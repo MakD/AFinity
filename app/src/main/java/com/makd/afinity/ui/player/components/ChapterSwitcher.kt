@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -152,7 +153,8 @@ private fun ChapterSwitcherCard(
     val imageUrl = chapter.getChapterImageUrl(baseUrl, itemId)
 
     Column(
-        modifier = Modifier.width(ChapterCardWidth).clickable(onClick = onClick),
+        modifier =
+            Modifier.width(ChapterCardWidth).clickable(role = Role.Button, onClick = onClick),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Box(

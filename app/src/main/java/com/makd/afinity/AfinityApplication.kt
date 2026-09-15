@@ -24,7 +24,11 @@ import com.makd.afinity.di.ImageClient
 import com.makd.afinity.ui.components.IMAGE_CROSSFADE_MILLIS
 import com.makd.afinity.util.logging.CrashFileExporter
 import com.makd.afinity.util.logging.RingBufferTree
+import com.makd.afinity.util.logging.SdkLogBridge
 import dagger.hilt.android.HiltAndroidApp
+import io.github.oshai.kotlinlogging.Level
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,7 +37,6 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okio.Path.Companion.toOkioPath
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltAndroidApp
 class AfinityApplication : Application(), Configuration.Provider, SingletonImageLoader.Factory {
@@ -69,6 +72,7 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
             Timber.plant(Timber.DebugTree())
             Timber.d("Afinity Application started")
         }
+        SdkLogBridge.install(if (BuildConfig.DEBUG) Level.DEBUG else Level.WARN)
 
         Thread.setDefaultUncaughtExceptionHandler(
             CrashFileExporter(this, ringBufferTree, Thread.getDefaultUncaughtExceptionHandler())
@@ -82,6 +86,8 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
             Timber.d(
                 "ImageLoader prefs: cacheEnabled=$imageCacheEnabled, cacheSizeMb=$imageCacheSizeMb"
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to read ImageLoader prefs, using defaults")
         }

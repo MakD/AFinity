@@ -4,24 +4,29 @@ import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.media.UserDataPatch
 import com.makd.afinity.data.repository.DatabaseRepository
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.exception.ApiClientException
-import org.jellyfin.sdk.api.operations.ItemsApi
-import org.jellyfin.sdk.api.operations.PlayStateApi
-import org.jellyfin.sdk.api.operations.UserLibraryApi
+import org.jellyfin.sdk.api.operations.LibraryApi
+import org.jellyfin.sdk.api.operations.SessionApi
+import org.jellyfin.sdk.api.operations.UserDataApi
 import org.jellyfin.sdk.model.DateTime
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
+import org.jellyfin.sdk.model.api.PlayMethod
+import org.jellyfin.sdk.model.api.PlaybackOrder
+import org.jellyfin.sdk.model.api.PlaybackProgressInfo
+import org.jellyfin.sdk.model.api.RepeatMode
 import org.jellyfin.sdk.model.api.UpdateUserItemDataDto
 import org.jellyfin.sdk.model.api.UserItemDataDto
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class JellyfinUserDataRepository
@@ -32,7 +37,7 @@ constructor(
     private val mediaChangeManager: MediaChangeManager,
 ) : UserDataRepository {
 
-    private suspend fun getCurrentUserId(): UUID? {
+    private fun getCurrentUserId(): UUID? {
         return sessionManager.currentSession.value?.userId
     }
 
@@ -69,6 +74,8 @@ constructor(
                 databaseRepository.updateShow(updated)
                 return
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to update local cache for item $itemId")
         }
@@ -79,9 +86,9 @@ constructor(
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val playStateApi = PlayStateApi(apiClient)
+                val userDataApi = UserDataApi(apiClient)
 
-                playStateApi.markPlayedItem(
+                userDataApi.markPlayedItem(
                     itemId = itemId,
                     userId = userId,
                     datePlayed = DateTime.now(),
@@ -96,6 +103,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to mark item as watched: $itemId")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error marking item as watched: $itemId")
                 false
@@ -108,9 +117,9 @@ constructor(
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val playStateApi = PlayStateApi(apiClient)
+                val userDataApi = UserDataApi(apiClient)
 
-                playStateApi.markUnplayedItem(itemId = itemId, userId = userId)
+                userDataApi.markUnplayedItem(itemId = itemId, userId = userId)
                 updateLocalDatabasePlayedStatus(itemId, userId, false)
                 databaseRepository.markUserDataSynced(userId, itemId)
                 mediaChangeManager.notifyItemChanged(
@@ -121,6 +130,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to mark item as unwatched: $itemId")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error marking item as unwatched: $itemId")
                 false
@@ -132,17 +143,26 @@ constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val playStateApi = PlayStateApi(apiClient)
+                val sessionApi = SessionApi(apiClient)
 
-                playStateApi.onPlaybackProgress(
-                    itemId = itemId,
-                    positionTicks = positionTicks,
-                    isPaused = true,
+                sessionApi.reportPlaybackProgress(
+                    PlaybackProgressInfo(
+                        itemId = itemId,
+                        positionTicks = positionTicks,
+                        isPaused = true,
+                        isMuted = false,
+                        canSeek = true,
+                        playMethod = PlayMethod.DIRECT_PLAY,
+                        repeatMode = RepeatMode.REPEAT_NONE,
+                        playbackOrder = PlaybackOrder.DEFAULT,
+                    )
                 )
                 true
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to update playback position for item: $itemId")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error updating playback position for item: $itemId")
                 false
@@ -155,13 +175,15 @@ constructor(
             try {
                 val userId = getCurrentUserId() ?: return@withContext null
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
-                val itemsApi = ItemsApi(apiClient)
+                val userDataApi = UserDataApi(apiClient)
 
-                val response = itemsApi.getItemUserData(itemId = itemId, userId = userId)
+                val response = userDataApi.getItemUserData(itemId = itemId, userId = userId)
                 response.content
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get user data for item: $itemId")
                 null
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting user data for item: $itemId")
                 null
@@ -174,13 +196,15 @@ constructor(
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val userLibraryApi = UserLibraryApi(apiClient)
+                val userDataApi = UserDataApi(apiClient)
 
-                userLibraryApi.markFavoriteItem(itemId = itemId, userId = userId)
+                userDataApi.markFavoriteItem(itemId = itemId, userId = userId)
                 true
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to add item to favorites: $itemId")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error adding item to favorites: $itemId")
                 false
@@ -193,13 +217,15 @@ constructor(
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val userLibraryApi = UserLibraryApi(apiClient)
+                val userDataApi = UserDataApi(apiClient)
 
-                userLibraryApi.unmarkFavoriteItem(itemId = itemId, userId = userId)
+                userDataApi.unmarkFavoriteItem(itemId = itemId, userId = userId)
                 true
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to remove item from favorites: $itemId")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error removing item from favorites: $itemId")
                 false
@@ -217,16 +243,18 @@ constructor(
                 val userId = getCurrentUserId() ?: return@withContext emptyList()
                 val apiClient =
                     sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val itemsApi = ItemsApi(apiClient)
+                val libraryApi = LibraryApi(apiClient)
 
                 val response =
-                    itemsApi.getItems(
+                    libraryApi.getItems(
                         userId = userId,
                         isFavorite = true,
                         includeItemTypes =
                             includeItemTypes.mapNotNull {
                                 try {
                                     BaseItemKind.valueOf(it.uppercase())
+                                } catch (e: CancellationException) {
+                                    throw e
                                 } catch (e: Exception) {
                                     null
                                 }
@@ -242,6 +270,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get favorite items")
                 emptyList()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting favorite items")
                 emptyList()
@@ -254,11 +284,11 @@ constructor(
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val itemsApi = ItemsApi(apiClient)
+                val userDataApi = UserDataApi(apiClient)
 
                 val jellyfinRating = rating.coerceIn(0, 10)
 
-                itemsApi.updateItemUserData(
+                userDataApi.updateItemUserData(
                     itemId = itemId,
                     userId = userId,
                     data = UpdateUserItemDataDto(rating = jellyfinRating.toDouble()),
@@ -267,6 +297,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to set rating for item: $itemId")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error setting rating for item: $itemId")
                 false
@@ -279,9 +311,9 @@ constructor(
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val itemsApi = ItemsApi(apiClient)
+                val userDataApi = UserDataApi(apiClient)
 
-                itemsApi.updateItemUserData(
+                userDataApi.updateItemUserData(
                     itemId = itemId,
                     userId = userId,
                     data = UpdateUserItemDataDto(rating = null),
@@ -290,6 +322,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to remove rating for item: $itemId")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error removing rating for item: $itemId")
                 false
@@ -302,9 +336,9 @@ constructor(
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
-                val itemsApi = ItemsApi(apiClient)
+                val userDataApi = UserDataApi(apiClient)
 
-                itemsApi.updateItemUserData(
+                userDataApi.updateItemUserData(
                     itemId = itemId,
                     userId = userId,
                     data = UpdateUserItemDataDto(likes = isLiked),
@@ -313,6 +347,8 @@ constructor(
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to set like status for item: $itemId")
                 false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error setting like status for item: $itemId")
                 false
@@ -326,12 +362,12 @@ constructor(
                 val userId = getCurrentUserId() ?: return@withContext false
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 var successCount = 0
-                val itemsApi = ItemsApi(apiClient)
+                val userDataApi = UserDataApi(apiClient)
 
                 items.forEach { userDataDto ->
                     try {
                         userDataDto.itemId?.let { itemId ->
-                            itemsApi.updateItemUserData(
+                            userDataApi.updateItemUserData(
                                 itemId = itemId,
                                 userId = userId,
                                 data =
@@ -347,6 +383,8 @@ constructor(
                             )
                             successCount++
                         }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to sync user data for item: ${userDataDto.itemId}")
                     }
@@ -354,6 +392,8 @@ constructor(
 
                 val successRate = successCount.toFloat() / items.size
                 successRate > 0.5f
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to sync user data")
                 false
@@ -371,6 +411,8 @@ constructor(
                         .mapNotNull { (itemId, userData) -> userData?.let { itemId to it } }
                         .toMap()
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get user data batch")
                 emptyMap()

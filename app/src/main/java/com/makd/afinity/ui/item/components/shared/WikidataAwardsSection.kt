@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -97,7 +98,7 @@ private fun AwardsSummaryBar(
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
-        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
@@ -136,11 +137,7 @@ private fun AwardsOpenList(
 ) {
     val preview =
         remember(awards.awards) {
-            awards.awards
-                .groupBy { it.year }
-                .values
-                .take(OPEN_LIST_PREVIEW_GROUPS)
-                .flatten()
+            awards.awards.groupBy { it.year }.values.take(OPEN_LIST_PREVIEW_GROUPS).flatten()
         }
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -162,7 +159,7 @@ private fun AwardsOpenList(
                     ),
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
                 color = AwardGold,
-                modifier = Modifier.clickable(onClick = onShowAll),
+                modifier = Modifier.clickable(role = Role.Button, onClick = onShowAll),
             )
         }
     }
@@ -343,9 +340,7 @@ fun omdbAwardsHeadline(awards: String?): String? =
         ?.split(".", limit = 2)
         ?.first()
         ?.trim()
-        ?.takeIf {
-            it.isNotBlank()
-        }
+        ?.takeIf { it.isNotBlank() }
 
 @Composable
 fun derivedAwardsHeadline(awards: WikidataAwards): String? {

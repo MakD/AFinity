@@ -90,7 +90,9 @@ suspend fun BaseItemDto.toAfinityEpisode(
             images = toAfinityImages(baseUrl),
             chapters = toAfinityChapters(),
             trickplayInfo =
-                trickplay?.mapValues { it.value[it.value.keys.max()]!!.toAfinityTrickplayInfo() },
+                trickplay?.mapValues { (_, widthMap) ->
+                    widthMap!![widthMap.keys.max()]!!.toAfinityTrickplayInfo()
+                },
             providerIds =
                 providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
             externalUrls = externalUrls?.map { it.toAfinityExternalUrl() },

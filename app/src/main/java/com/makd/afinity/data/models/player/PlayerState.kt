@@ -5,30 +5,6 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySegment
 import java.util.UUID
 
-data class PlayerState(
-    val isPlaying: Boolean = false,
-    val isPaused: Boolean = false,
-    val isLoading: Boolean = false,
-    val isBuffering: Boolean = false,
-    val currentPosition: Long = 0L,
-    val duration: Long = 0L,
-    val currentItem: AfinityItem? = null,
-    val mediaSourceId: String? = null,
-    val audioStreamIndex: Int? = null,
-    val subtitleStreamIndex: Int? = null,
-    val volume: Int = 100,
-    val brightness: Float = 0.5f,
-    val playbackSpeed: Float = 1.0f,
-    val isControlsVisible: Boolean = true,
-    val error: PlayerError? = null,
-    val isFullscreen: Boolean = true,
-    val sessionId: String? = null,
-    val isControlsLocked: Boolean = false,
-    val isInPictureInPictureMode: Boolean = false,
-)
-
-data class PlayerError(val code: Int, val message: String, val cause: Throwable? = null)
-
 sealed class PlayerEvent {
     object Play : PlayerEvent()
 
@@ -94,6 +70,23 @@ sealed class PlayerEvent {
     data object TogglePlaybackStats : PlayerEvent()
 
     data object ToggleVersionPicker : PlayerEvent()
+
+    data class SelectVideoQuality(val quality: VideoQuality) : PlayerEvent()
+
+    data object PlayAnywayWithTranscoding : PlayerEvent()
+
+    data class RenegotiateTracks(
+        val audioStreamIndex: Int? = null,
+        val subtitleStreamIndex: Int? = null,
+    ) : PlayerEvent()
+
+    data class SetSleepTimer(val mode: SleepTimerMode) : PlayerEvent()
+
+    data object CancelSleepTimer : PlayerEvent()
+
+    data object ExtendSleepTimer : PlayerEvent()
+
+    data object ResumeFromSleepTimer : PlayerEvent()
 }
 
 data class PlaybackStats(
@@ -120,7 +113,19 @@ data class PlaybackStats(
     val hwDec: String = "Unknown",
     val bufferHealth: String = "Unknown",
     val videoBitrate: String = "Unknown",
+    val transcodeOutput: String = "",
+    val transcodeVideo: String = "",
+    val transcodeAudio: String = "",
+    val transcodeSpeed: String = "",
+    val transcodeHardware: String = "",
+    val transcodeReasons: List<String> = emptyList(),
 ) {
+    val isTranscoding: Boolean
+        get() =
+            transcodeOutput.isNotBlank() ||
+                transcodeVideo.isNotBlank() ||
+                transcodeAudio.isNotBlank()
+
     val hasVideo: Boolean
         get() = !videoResolution.startsWith("0x0") && videoResolution != "Unknown"
 

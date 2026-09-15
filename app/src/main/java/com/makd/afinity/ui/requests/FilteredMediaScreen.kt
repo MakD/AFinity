@@ -37,9 +37,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.Permissions
+import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.hasPermission
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
@@ -64,15 +66,13 @@ data class FilterParams(val type: FilterType, val id: Int, val name: String)
 
 @Composable
 fun FilteredMediaScreen(
+    modifier: Modifier = Modifier,
     filterParams: FilterParams,
     onSearchClick: () -> Unit,
     onProfileClick: () -> Unit,
     mainUiState: MainUiState,
     onItemClick: (jellyfinItemId: String, itemType: String?) -> Unit,
-    onNavigateToSeerrMedia:
-        (item: com.makd.afinity.data.models.jellyseerr.SearchResultItem) -> Unit =
-        {},
-    modifier: Modifier = Modifier,
+    onNavigateToSeerrMedia: (item: SearchResultItem) -> Unit = {},
     viewModel: FilteredMediaViewModel = hiltViewModel(),
     requestsViewModel: RequestsViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
@@ -118,9 +118,12 @@ fun FilteredMediaScreen(
                     )
                 },
                 onSearchClick = onSearchClick,
-                onProfileClick = onProfileClick,
-                userProfileImageUrl = mainUiState.userProfileImageUrl,
-                userName = mainUiState.userName,
+                profile =
+                    AppBarProfile(
+                        onClick = onProfileClick,
+                        name = mainUiState.userName,
+                        imageUrl = mainUiState.userProfileImageUrl,
+                    ),
             )
         },
         floatingActionButton = {
@@ -203,7 +206,7 @@ fun FilteredMediaScreen(
                             item = item,
                             onClick = {
                                 if (item.mediaInfo?.isFullyAvailable() == true) {
-                                    item.mediaInfo?.getJellyfinItemId()?.let { jellyfinId ->
+                                    item.mediaInfo.getJellyfinItemId()?.let { jellyfinId ->
                                         val mappedType =
                                             when (item.mediaType.lowercase()) {
                                                 "tv" -> "Series"

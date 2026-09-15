@@ -9,6 +9,10 @@ import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.di.ApplicationScope
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -19,9 +23,6 @@ import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.UserItemDataDto
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
@@ -97,9 +98,7 @@ constructor(
 
     private suspend fun emitBatch(batch: MediaChangeBatch) {
         itemStore.put(
-            batch.changes.flatMap {
-                listOfNotNull(it.updatedItem, it.parentItem, it.seasonItem)
-            }
+            batch.changes.flatMap { listOfNotNull(it.updatedItem, it.parentItem, it.seasonItem) }
         )
         _batches.emit(batch)
     }
@@ -114,23 +113,24 @@ constructor(
         val items =
             try {
                 mediaRepository.getItemsByIds(ids, FieldSets.ITEM_DETAIL)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to resolve content changes for ${ids.size} items")
                 return
             }
         if (items.isEmpty()) return
 
-        val changes =
-            items.map { item ->
-                MediaChangeEvent(
-                    itemId = item.id,
-                    updatedItem = item,
-                    seriesId =
-                        (item as? AfinityEpisode)?.seriesId ?: (item as? AfinitySeason)?.seriesId,
-                    seasonId = (item as? AfinityEpisode)?.seasonId,
-                    source = MediaChangeSource.WEBSOCKET,
-                )
-            }
+        val changes = items.map { item ->
+            MediaChangeEvent(
+                itemId = item.id,
+                updatedItem = item,
+                seriesId =
+                    (item as? AfinityEpisode)?.seriesId ?: (item as? AfinitySeason)?.seriesId,
+                seasonId = (item as? AfinityEpisode)?.seasonId,
+                source = MediaChangeSource.WEBSOCKET,
+            )
+        }
         emitBatch(MediaChangeBatch(changes, MediaChangeSource.WEBSOCKET))
     }
 
@@ -151,6 +151,8 @@ constructor(
             userDataByItemId[itemId] = userData
             try {
                 databaseRepository.patchUserDataLocally(itemId, userId, serverId, userData)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to patch local DB for $itemId")
             }
@@ -170,6 +172,8 @@ constructor(
                         mediaRepository.getItemsByIds(itemIds, FieldSets.MEDIA_ITEM_CARDS)
                     }
                 items.associateBy { it.id }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to resolve items for user data changes")
                 emptyMap()
@@ -245,7 +249,6 @@ constructor(
             val seasonItem = resolveSeasonItem(updatedItem, knownSeasonId)
 
             mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
-            updatedItem?.let { refreshDerivedState(it) }
 
             val resolvedSeriesId =
                 when (updatedItem) {
@@ -275,6 +278,8 @@ constructor(
             )
 
             updatedItem
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to publish media change for $itemId")
             emitSingle(
@@ -327,6 +332,8 @@ constructor(
                     userData = userData,
                 )
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to publish known media change for ${updatedItem.id}")
         }
@@ -365,6 +372,8 @@ constructor(
         if (seasonId == null || seasonId == updatedItem?.id) return null
         return try {
             mediaRepository.getItemById(seasonId)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Could not resolve season item for $seasonId")
             null
@@ -376,14 +385,13 @@ data class MediaChangeBatch(
     val changes: List<MediaChangeEvent>,
     val source: MediaChangeSource,
 ) {
-    val itemIds: Set<UUID> =
-        buildSet {
-            changes.forEach { change ->
-                add(change.itemId)
-                change.seriesId?.let { add(it) }
-                change.seasonId?.let { add(it) }
-            }
+    val itemIds: Set<UUID> = buildSet {
+        changes.forEach { change ->
+            add(change.itemId)
+            change.seriesId?.let { add(it) }
+            change.seasonId?.let { add(it) }
         }
+    }
 
     fun affects(vararg ids: UUID?): Boolean = ids.any { it != null && it in itemIds }
 

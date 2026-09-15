@@ -11,7 +11,6 @@ import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinitySegment
-import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinityTrickplayInfo
@@ -23,9 +22,9 @@ import com.makd.afinity.data.models.server.ServerWithAddresses
 import com.makd.afinity.data.models.server.ServerWithAddressesAndUsers
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.models.user.User
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.UserItemDataDto
-import java.util.UUID
 
 interface DatabaseRepository {
 
@@ -137,25 +136,17 @@ interface DatabaseRepository {
 
     suspend fun insertMediaStream(stream: AfinityMediaStream, sourceId: String)
 
-    suspend fun updateMediaStream(stream: AfinityMediaStream)
-
     suspend fun deleteMediaStream(streamId: UUID)
 
     suspend fun getMediaStreamsForSource(sourceId: String): List<AfinityMediaStream>
 
     suspend fun insertTrickplayInfo(trickplayInfo: AfinityTrickplayInfo, sourceId: String)
 
-    suspend fun updateTrickplayInfo(trickplayInfo: AfinityTrickplayInfo)
-
-    suspend fun deleteTrickplayInfo(sourceId: String)
-
     suspend fun getTrickplayInfo(sourceId: String): AfinityTrickplayInfo?
 
     suspend fun insertSegment(segment: AfinitySegment, itemId: UUID)
 
     suspend fun updateSegment(segment: AfinitySegment, itemId: UUID)
-
-    suspend fun deleteSegment(itemId: UUID, segmentType: AfinitySegmentType)
 
     suspend fun getSegmentsForItem(itemId: UUID): List<AfinitySegment>
 
@@ -213,8 +204,6 @@ interface DatabaseRepository {
     suspend fun clearServerData(serverId: String)
 
     suspend fun clearUserData(userId: UUID)
-
-    suspend fun getDatabaseSize(): Long
 
     suspend fun insertDownload(download: DownloadDto)
 

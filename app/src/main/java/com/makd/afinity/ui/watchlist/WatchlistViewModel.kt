@@ -1,10 +1,11 @@
 package com.makd.afinity.ui.watchlist
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.DownloadPermissions
-import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -22,7 +23,9 @@ import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,13 +46,13 @@ import timber.log.Timber
 class WatchlistViewModel
 @Inject
 constructor(
+    @param:ApplicationContext private val context: Context,
     private val watchlistRepository: WatchlistRepository,
     private val userDataRepository: UserDataRepository,
     private val downloadRepository: DownloadRepository,
     private val appDataRepository: AppDataRepository,
     private val mediaRepository: MediaRepository,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
-    private val mediaChangeManager: MediaChangeManager,
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val downloadPermissions: DownloadPermissions,
     private val itemStore: ItemStore,
@@ -80,6 +83,19 @@ constructor(
 
     init {
         observeSelectedEpisodeDownload()
+
+        viewModelScope.launch {
+            appDataRepository.watchlistLoadFailed.collect { failed ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error =
+                            if (failed) context.getString(R.string.error_content_unavailable_server)
+                            else null,
+                    )
+                }
+            }
+        }
 
         viewModelScope.launch { adminChangeBroadcaster.itemChanged.collect { loadWatchlist() } }
 
@@ -164,6 +180,13 @@ constructor(
         }
     }
 
+    fun retry() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            appDataRepository.reloadWatchlist()
+        }
+    }
+
     fun onItemClick(item: AfinityItem) {
         Timber.d("Watchlist item clicked: ${item.name} (${item.id})")
     }
@@ -200,6 +223,8 @@ constructor(
                 _selectedEpisodeWatchlistStatus.value = isInWatchlist
 
                 _isLoadingEpisode.value = false
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load full episode details")
                 _selectedEpisode.value = episode

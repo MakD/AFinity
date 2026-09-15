@@ -6,10 +6,10 @@ import com.makd.afinity.data.models.music.AfinityAlbum
 import com.makd.afinity.data.models.music.AfinityArtist
 import com.makd.afinity.data.models.music.AfinityPlaylist
 import com.makd.afinity.data.models.music.AfinityTrack
+import java.util.UUID
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.ImageFormat
 import org.jellyfin.sdk.model.api.ImageType
-import java.util.UUID
 
 fun List<AfinityTrack>.toRecentlyPlayedAlbums(limit: Int): List<AfinityAlbum> {
     val seen = mutableSetOf<UUID>()
@@ -75,6 +75,7 @@ fun BaseItemDto.toAfinityTrack(baseUrl: String): AfinityTrack {
         liked = userData?.likes == true,
         playCount = userData?.playCount,
         normalizationGain = normalizationGain,
+        albumNormalizationGain = albumNormalizationGain,
         images =
             AfinityImages(
                 primary = primary,
@@ -96,6 +97,7 @@ fun BaseItemDto.toAfinityAlbum(baseUrl: String): AfinityAlbum {
         runtimeTicks = runTimeTicks ?: 0L,
         genres = genres ?: emptyList(),
         overview = overview,
+        externalUrls = toAfinityExternalUrls(),
         favorite = userData?.isFavorite == true,
         played = userData?.played == true,
         liked = userData?.likes == true,
@@ -110,6 +112,7 @@ fun BaseItemDto.toAfinityArtist(baseUrl: String): AfinityArtist {
         id = id,
         name = name.orEmpty(),
         overview = overview,
+        externalUrls = toAfinityExternalUrls(),
         albumCount = childCount,
         genres = genres ?: emptyList(),
         favorite = userData?.isFavorite == true,

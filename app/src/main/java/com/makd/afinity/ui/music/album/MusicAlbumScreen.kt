@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.music.album
 
-import android.content.res.Configuration
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -50,7 +49,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -68,7 +66,10 @@ import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.DownloadProgressIndicator
+import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
+import com.makd.afinity.ui.item.components.shared.OverviewSection
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
@@ -80,8 +81,8 @@ import com.makd.afinity.ui.music.components.RadioModeBottomSheet
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
-import kotlinx.coroutines.launch
 import java.util.UUID
+import kotlinx.coroutines.launch
 
 @Composable
 fun MusicAlbumScreen(
@@ -105,7 +106,7 @@ fun MusicAlbumScreen(
     var radioSeed by remember { mutableStateOf<RadioSeed?>(null) }
     val lazyListState = rememberLazyListState()
     val topBarOpacity by rememberTopBarOpacity(lazyListState)
-    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
 
     if (uiState.isLoading) {
         Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -205,6 +206,56 @@ fun MusicAlbumScreen(
                     iconSize = 26.dp,
                 )
             }
+        }
+    }
+
+    val albumInfoContent: @Composable () -> Unit = {
+        val album = uiState.album
+        val overview = album?.overview.orEmpty()
+        val externalUrls = album?.externalUrls
+        if (overview.isNotEmpty() || !externalUrls.isNullOrEmpty()) {
+            Column(
+                modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 4.dp)
+            ) {
+                OverviewSection(overview = overview)
+                ExternalLinksSection(externalUrls = externalUrls)
+            }
+        }
+    }
+
+    val relatedSectionsContent: @Composable () -> Unit = {
+        Column {
+            val artist = uiState.album?.artist ?: uiState.album?.artists?.firstOrNull()
+            val artistId = uiState.album?.artistId
+
+            if (artist != null) {
+                AlbumRelatedSection(
+                    title = stringResource(R.string.music_section_more_from_fmt, artist),
+                    albums = uiState.moreFromArtist,
+                    showArtist = false,
+                    onViewAllClick =
+                        artistId?.let {
+                            {
+                                navController.navigate(
+                                    Destination.createMusicArtistRoute(it.toString())
+                                )
+                            }
+                        },
+                    onAlbumClick = { album ->
+                        navController.navigate(
+                            Destination.createMusicAlbumRoute(album.id.toString())
+                        )
+                    },
+                )
+            }
+
+            AlbumRelatedSection(
+                title = stringResource(R.string.music_section_more_like_this),
+                albums = uiState.similarAlbums,
+                onAlbumClick = { album ->
+                    navController.navigate(Destination.createMusicAlbumRoute(album.id.toString()))
+                },
+            )
         }
     }
 
@@ -327,6 +378,8 @@ fun MusicAlbumScreen(
 
                     item { actionButtonsContent() }
 
+                    item { albumInfoContent() }
+
                     val discGroups = uiState.tracks.groupBy { it.discNumber ?: 1 }.toSortedMap()
                     val isMultiDisc = discGroups.size > 1
 
@@ -392,9 +445,7 @@ fun MusicAlbumScreen(
                                         }),
                                 onDownload =
                                     if (isDownloadAllowedByServer)
-                                        ({
-                                            viewModel.downloadTrack(track.id)
-                                        })
+                                        ({ viewModel.downloadTrack(track.id) })
                                     else null,
                                 isDownloadEnabled = canDownloadOnNetwork,
                                 onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
@@ -402,6 +453,7 @@ fun MusicAlbumScreen(
                             )
                         }
                     }
+                    item { relatedSectionsContent() }
                 }
             }
         } else {
@@ -488,10 +540,9 @@ fun MusicAlbumScreen(
                                                         remember { MutableInteractionSource() },
                                                 ) {
                                                     navController.navigate(
-                                                        com.makd.afinity.navigation.Destination
-                                                            .createMusicArtistRoute(
-                                                                artistId.toString()
-                                                            )
+                                                        Destination.createMusicArtistRoute(
+                                                            artistId.toString()
+                                                        )
                                                     )
                                                 }
                                             else Modifier
@@ -525,6 +576,8 @@ fun MusicAlbumScreen(
                 }
 
                 item { actionButtonsContent() }
+
+                item { albumInfoContent() }
 
                 val discGroups = uiState.tracks.groupBy { it.discNumber ?: 1 }.toSortedMap()
                 val isMultiDisc = discGroups.size > 1
@@ -591,9 +644,7 @@ fun MusicAlbumScreen(
                                     }),
                             onDownload =
                                 if (isDownloadAllowedByServer)
-                                    ({
-                                        viewModel.downloadTrack(track.id)
-                                    })
+                                    ({ viewModel.downloadTrack(track.id) })
                                 else null,
                             isDownloadEnabled = canDownloadOnNetwork,
                             onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
@@ -601,6 +652,8 @@ fun MusicAlbumScreen(
                         )
                     }
                 }
+
+                item { relatedSectionsContent() }
             }
         }
 
@@ -651,9 +704,9 @@ fun MusicAlbumScreen(
 
 @Composable
 private fun ArtistPhotoCard(
+    modifier: Modifier = Modifier,
     imageUrl: String?,
     fallbackUrl: String? = null,
-    modifier: Modifier = Modifier,
 ) {
     var currentUrl by remember(imageUrl) { mutableStateOf(imageUrl) }
 

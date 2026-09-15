@@ -5,10 +5,10 @@ import android.os.Environment
 import android.os.storage.StorageManager
 import com.makd.afinity.data.storage.StorageLocationProvider.Companion.PRIMARY_VOLUME_ID
 import dagger.hilt.android.qualifiers.ApplicationContext
-import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
+import timber.log.Timber
 
 /**
  * Resolves the available storage volumes (internal + removable SD cards / USB-OTG) that the app can

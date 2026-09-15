@@ -9,13 +9,14 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.repository.DeletedItemsRepository
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Serializable private data class StringList(val items: List<String>)
 
@@ -52,6 +53,8 @@ constructor(
             val wrapper = json.decodeFromString<StringList>(entity.json)
             val items = wrapper.items.mapNotNull { converters.toAfinityItem(it)?.rebase(baseUrl) }
             deletedItemsRepository.retainAlive(items) { it.id.toString() }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to deserialize AfinityItem list for key=$key")
             null
@@ -65,6 +68,8 @@ constructor(
             val strings = items.mapNotNull { converters.fromAfinityItem(it) }
             val jsonStr = json.encodeToString(StringList(strings))
             dao.upsert(HomeCacheEntity(key, jsonStr, System.currentTimeMillis()))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to cache AfinityItem list for key=$key")
         }
@@ -79,6 +84,8 @@ constructor(
                     converters.toAfinityMovie(it)?.rebase(baseUrl) as? AfinityMovie
                 }
             deletedItemsRepository.retainAlive(movies) { it.id.toString() }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to deserialize AfinityMovie list for key=$key")
             null
@@ -92,6 +99,8 @@ constructor(
             val strings = movies.mapNotNull { converters.fromAfinityMovie(it) }
             val jsonStr = json.encodeToString(StringList(strings))
             dao.upsert(HomeCacheEntity(key, jsonStr, System.currentTimeMillis()))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to cache AfinityMovie list for key=$key")
         }
@@ -106,6 +115,8 @@ constructor(
                     converters.toAfinityShow(it)?.rebase(baseUrl) as? AfinityShow
                 }
             deletedItemsRepository.retainAlive(shows) { it.id.toString() }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to deserialize AfinityShow list for key=$key")
             null
@@ -119,6 +130,8 @@ constructor(
             val strings = shows.mapNotNull { converters.fromAfinityShow(it) }
             val jsonStr = json.encodeToString(StringList(strings))
             dao.upsert(HomeCacheEntity(key, jsonStr, System.currentTimeMillis()))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to cache AfinityShow list for key=$key")
         }
@@ -184,6 +197,8 @@ constructor(
         val wrapper =
             try {
                 json.decodeFromString<StringList>(entity.json)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to decode home cache row for patch: key=${entity.key}")
                 return
@@ -199,6 +214,8 @@ constructor(
         if (!changed) return
         try {
             dao.upsert(entity.copy(json = json.encodeToString(StringList(patched))))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to persist patched home cache row: key=${entity.key}")
         }

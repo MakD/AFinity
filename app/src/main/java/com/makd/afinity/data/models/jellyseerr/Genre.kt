@@ -34,8 +34,3 @@ data class GenreSliderItem(
         }
     }
 }
-
-@Serializable data class GenreListResponse(@SerialName("genres") val genres: List<Genre>)
-
-@Serializable
-data class GenreSliderResponse(@SerialName("genres") val genres: List<GenreSliderItem>)

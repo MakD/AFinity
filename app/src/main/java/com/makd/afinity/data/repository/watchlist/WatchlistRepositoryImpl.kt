@@ -15,6 +15,10 @@ import com.makd.afinity.data.models.media.toAfinitySeason
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,9 +28,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class WatchlistRepositoryImpl
@@ -59,6 +60,8 @@ constructor(
             try {
                 val userData = userDataRepository.getUserData(itemId)
                 userData?.likes == true
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to check if item is in watchlist: $itemId")
                 false
@@ -70,24 +73,26 @@ constructor(
         return flow { emit(isInWatchlist(itemId)) }.flowOn(Dispatchers.IO)
     }
 
-    override suspend fun getWatchlistItems(): List<AfinityItem> {
+    override suspend fun getWatchlistItems(): List<AfinityItem> =
+        getWatchlistItemsResult().getOrElse { e ->
+            Timber.e(e, "Failed to load watchlist items")
+            emptyList()
+        }
+
+    override suspend fun getWatchlistItemsResult(): Result<List<AfinityItem>> {
         return withContext(Dispatchers.IO) {
-            try {
-                mediaRepository
-                    .getItems(
-                        includeItemTypes =
-                            listOf("MOVIE", "SERIES", "SEASON", "EPISODE", "BOX_SET"),
-                        sortBy = SortBy.DATE_ADDED,
-                        sortDescending = true,
-                        fields = FieldSets.MEDIA_ITEM_CARDS,
-                        criteria = ItemFilterCriteria(isLiked = true),
-                    )
-                    .items
-                    ?.mapNotNull { it.toAfinityItem(mediaRepository.getBaseUrl()) } ?: emptyList()
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load watchlist items")
-                emptyList()
-            }
+            mediaRepository
+                .getItemsResult(
+                    includeItemTypes = listOf("MOVIE", "SERIES", "SEASON", "EPISODE", "BOX_SET"),
+                    sortBy = SortBy.DATE_ADDED,
+                    sortDescending = true,
+                    fields = FieldSets.MEDIA_ITEM_CARDS,
+                    criteria = ItemFilterCriteria(isLiked = true),
+                )
+                .map { response ->
+                    response.items?.mapNotNull { it.toAfinityItem(mediaRepository.getBaseUrl()) }
+                        ?: emptyList()
+                }
         }
     }
 
@@ -105,6 +110,8 @@ constructor(
                 response.items
                     ?.filter { it.type?.name == "BOX_SET" }
                     ?.map { it.toAfinityBoxSet(mediaRepository.getBaseUrl()) } ?: emptyList()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load liked box sets")
                 emptyList()
@@ -121,6 +128,8 @@ constructor(
                     sortDescending = true,
                     fields = FieldSets.MEDIA_ITEM_CARDS,
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load liked movies")
                 emptyList()
@@ -137,6 +146,8 @@ constructor(
                     sortDescending = true,
                     fields = FieldSets.MEDIA_ITEM_CARDS,
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load liked shows")
                 emptyList()
@@ -158,6 +169,8 @@ constructor(
                 response.items
                     ?.filter { it.type?.name == "SEASON" }
                     ?.mapNotNull { it.toAfinitySeason(mediaRepository.getBaseUrl()) } ?: emptyList()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load liked seasons")
                 emptyList()
@@ -180,6 +193,8 @@ constructor(
                     ?.filter { it.type?.name == "EPISODE" }
                     ?.mapNotNull { it.toAfinityEpisode(mediaRepository.getBaseUrl()) }
                     ?: emptyList()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load liked episodes")
                 emptyList()
@@ -197,6 +212,8 @@ constructor(
                         enableTotalRecordCount = true,
                     )
                 response.totalRecordCount ?: 0
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get watchlist count")
                 0
@@ -217,12 +234,16 @@ constructor(
                 likedItemIds.forEach { itemId ->
                     try {
                         userDataRepository.setLike(itemId, isLiked = false)
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to unlike item: $itemId")
                     }
                 }
                 Timber.d("Cleared watchlist (unliked ${likedItemIds.size} items)")
                 refreshWatchlistCount()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to clear watchlist")
             }

@@ -17,6 +17,11 @@ import com.makd.afinity.data.updater.models.GitHubRelease
 import com.makd.afinity.data.updater.models.UpdateState
 import com.makd.afinity.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
+import java.security.MessageDigest
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -27,10 +32,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.io.File
-import java.security.MessageDigest
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class UpdateManager
@@ -176,11 +177,13 @@ constructor(
 
             registerDownloadReceiver()
             currentDownloadId = downloadManager.enqueue(request)
-            _updateState.value = UpdateState.Downloading(0)
+            _updateState.value = UpdateState.Downloading(0, release)
 
             Timber.d("Started download: $currentDownloadId")
 
-            trackDownloadProgress()
+            trackDownloadProgress(release)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to start download")
             _updateState.value = UpdateState.Error("Failed to start download: ${e.message}")
@@ -206,7 +209,7 @@ constructor(
         }
     }
 
-    private fun trackDownloadProgress() {
+    private fun trackDownloadProgress(release: GitHubRelease) {
         progressJob?.cancel()
         progressJob = coroutineScope.launch {
             while (isActive && currentDownloadId != null) {
@@ -231,7 +234,7 @@ constructor(
                             if (totalBytes > 0) {
                                 val progress =
                                     ((bytesDownloaded * 100) / totalBytes).toInt().coerceIn(0, 99)
-                                _updateState.value = UpdateState.Downloading(progress)
+                                _updateState.value = UpdateState.Downloading(progress, release)
                                 Timber.d("Download progress: $progress%")
                             }
                         }
@@ -294,6 +297,8 @@ constructor(
                 }
 
             context.startActivity(intent)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to install update")
             _updateState.value = UpdateState.Error("Failed to install update: ${e.message}")
@@ -381,6 +386,8 @@ constructor(
             val actual =
                 try {
                     computeSha256(state.file)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to compute SHA-256 for ${state.file.name}")
                     null
@@ -523,6 +530,8 @@ constructor(
             sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
             val releaseTime = sdf.parse(publishedAt)?.time ?: return false
             releaseTime > buildTime
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to compare nightly build times")
             false
@@ -535,6 +544,8 @@ constructor(
             val remote = parseVersion(remoteVersion)
             val current = parseVersion(currentVersion)
             remote > current
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to compare versions: $currentVersion vs $remoteVersion")
             false

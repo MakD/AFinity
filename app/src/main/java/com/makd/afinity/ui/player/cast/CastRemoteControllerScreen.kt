@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.player.cast
 
-import android.content.res.Configuration
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -54,7 +53,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
@@ -72,11 +70,12 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.player.PlayerViewModel
 import com.makd.afinity.ui.player.components.PlaybackSpeedDialog
-import org.jellyfin.sdk.model.api.MediaStreamType
 import java.util.Locale
 import kotlin.math.abs
+import org.jellyfin.sdk.model.api.MediaStreamType
 
 data class CastBitrateOption(val label: String, val bitrate: Int)
 
@@ -112,8 +111,7 @@ fun CastRemoteControllerScreen(
             label = "color",
         )
 
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
 
     Box(
         modifier =
@@ -456,10 +454,10 @@ private fun CastTitleSection(
             overflow = TextOverflow.Ellipsis,
         )
 
-        if (currentItem is AfinityEpisode && currentItem.seriesName != null) {
+        if (currentItem is AfinityEpisode) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = currentItem.seriesName!!,
+                text = currentItem.seriesName,
                 style =
                     if (isLandscape) MaterialTheme.typography.bodyMedium
                     else MaterialTheme.typography.titleMedium,

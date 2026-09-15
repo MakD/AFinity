@@ -1,5 +1,6 @@
 package com.makd.afinity.data.models.jellyseerr
 
+import java.util.Locale
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -56,7 +57,9 @@ data class MediaDetails(
     }
 
     fun getRating(): String? {
-        return voteAverage?.let { if (it > 0) String.format("%.1f", it) else null }
+        return voteAverage?.let {
+            if (it > 0) String.format(Locale.getDefault(), "%.1f", it) else null
+        }
     }
 
     fun getYear(): String? {

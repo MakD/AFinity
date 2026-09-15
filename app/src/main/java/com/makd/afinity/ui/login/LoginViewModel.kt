@@ -5,6 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
+import com.makd.afinity.data.manager.ForgetUserUseCase
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
@@ -15,8 +16,11 @@ import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.server.AddressResolutionResult
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.data.repository.server.ServerAddressResolver
+import com.makd.afinity.util.LocalNetworkPermission
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +30,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel
@@ -40,6 +43,8 @@ constructor(
     private val sessionManager: SessionManager,
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val serverAddressResolver: ServerAddressResolver,
+    private val forgetUser: ForgetUserUseCase,
+    private val localNetworkPermission: LocalNetworkPermission,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -80,6 +85,8 @@ constructor(
                 val servers = databaseRepository.getAllServers()
                 _savedServers.value = servers
                 Timber.d("Loaded ${servers.size} saved servers")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load saved servers")
             }
@@ -163,6 +170,8 @@ constructor(
                             Timber.d(
                                 "Saved server to database: ${validationResult.server.name} (${validationResult.server.id})"
                             )
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.w(e, "Failed to save server to database, continuing anyway")
                         }
@@ -186,7 +195,20 @@ constructor(
                                     ),
                             )
                     }
+                    JellyfinServerRepository.ServerConnectionResult
+                        .LocalNetworkPermissionRequired -> {
+                        Timber.w("Server validation blocked: local network permission missing")
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isConnecting = false,
+                                isConnectedToServer = false,
+                                needsLocalNetworkPermission = true,
+                                error = context.getString(R.string.local_network_permission_needed),
+                            )
+                    }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value =
                     _uiState.value.copy(
@@ -215,6 +237,8 @@ constructor(
             val users = jellyfinRepository.getPublicUsers(_connectedServerUrl.value)
             _publicUsers.value = users
             Timber.d("Loaded ${users.size} public users")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load public users")
         }
@@ -255,6 +279,7 @@ constructor(
                 val resolvedUrl =
                     when (val result = serverAddressResolver.resolveAddress(server.id)) {
                         is AddressResolutionResult.Success -> result.address
+                        is AddressResolutionResult.PermissionRequired -> server.address
                         is AddressResolutionResult.AllFailed -> server.address
                     }
                 Timber.d("Resolved server URL: $resolvedUrl")
@@ -272,6 +297,8 @@ constructor(
                     _uiState.value.copy(isConnecting = false, isConnectedToServer = true)
 
                 Timber.d("Successfully connected to saved server: ${server.name}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to connect to saved server: ${server.name}")
                 _uiState.value =
@@ -286,6 +313,14 @@ constructor(
                             ),
                     )
             }
+        }
+    }
+
+    fun forgetSavedUser(user: User) {
+        viewModelScope.launch {
+            forgetUser(user.serverId, user.id)
+                .onSuccess { loadSavedUsers(user.serverId) }
+                .onFailure { Timber.e(it, "Failed to forget saved user ${user.name}") }
         }
     }
 
@@ -304,6 +339,8 @@ constructor(
             Timber.d(
                 "Loaded ${usersWithTokens.size} saved users with tokens for server $serverId (${allUsers.size} total users)"
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load saved users for server $serverId")
             _savedUsers.value = emptyList()
@@ -370,6 +407,8 @@ constructor(
                         )
                     Timber.w("No saved token found for user: ${user.name}")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value =
                     _uiState.value.copy(
@@ -463,6 +502,8 @@ constructor(
                         Timber.e("Login failed: ${result.message}")
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value =
                     _uiState.value.copy(
@@ -504,6 +545,8 @@ constructor(
                             error = context.getString(R.string.error_quick_connect_start),
                         )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value =
                     _uiState.value.copy(
@@ -604,6 +647,8 @@ constructor(
                     quickConnectCode = null,
                     quickConnectSecret = null,
                 )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             _uiState.value =
                 _uiState.value.copy(
@@ -633,6 +678,12 @@ constructor(
             )
     }
 
+    fun onLocalNetworkPermissionGranted() {
+        localNetworkPermission.refresh()
+        _uiState.value = _uiState.value.copy(needsLocalNetworkPermission = false)
+        discoverServers()
+    }
+
     fun discoverServers() {
         discoveryJob?.cancel()
         discoveryJob = viewModelScope.launch {
@@ -641,6 +692,7 @@ constructor(
                     isDiscovering = true,
                     error = null,
                     discoveredServers = emptyList(),
+                    needsLocalNetworkPermission = false,
                 )
 
             try {
@@ -652,11 +704,19 @@ constructor(
                         )
                     Timber.d("Updated UI with ${servers.size} discovered servers")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isDiscovering = false, error = null)
                 Timber.e(e, "Server discovery failed")
             } finally {
-                _uiState.value = _uiState.value.copy(isDiscovering = false)
+                _uiState.value =
+                    _uiState.value.copy(
+                        isDiscovering = false,
+                        needsLocalNetworkPermission =
+                            _uiState.value.discoveredServers.isEmpty() &&
+                                !localNetworkPermission.isSatisfied(),
+                    )
             }
         }
     }
@@ -678,6 +738,7 @@ data class LoginUiState(
     val isConnectedToServer: Boolean = false,
     val isDiscovering: Boolean = false,
     val discoveredServers: List<Server> = emptyList(),
+    val needsLocalNetworkPermission: Boolean = false,
     val error: String? = null,
     val serverUrlError: String? = null,
     val quickConnectCode: String? = null,

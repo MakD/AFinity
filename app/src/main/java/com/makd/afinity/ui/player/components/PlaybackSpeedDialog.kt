@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.player.components
 
-import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -23,8 +22,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,7 +32,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -44,6 +40,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.makd.afinity.R
+import com.makd.afinity.ui.components.AfinitySlider
+import com.makd.afinity.ui.components.isLandscapeWindow
 import kotlin.math.absoluteValue
 
 @Composable
@@ -52,7 +50,7 @@ fun PlaybackSpeedDialog(
     onSpeedChange: (Float) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
     val cardWidthFraction = if (isLandscape) 0.5f else 0.9f
 
     Dialog(
@@ -70,7 +68,7 @@ fun PlaybackSpeedDialog(
             PlaybackSpeedPanel(
                 currentSpeed = currentSpeed,
                 onSpeedChange = onSpeedChange,
-                modifier = Modifier.fillMaxWidth(cardWidthFraction),
+                modifier = Modifier.fillMaxWidth(cardWidthFraction).playerOverlayInsets(),
             )
         }
     }
@@ -128,19 +126,13 @@ fun PlaybackSpeedPanel(
                     )
                 }
 
-                Slider(
+                AfinitySlider(
                     value = sliderSpeed,
                     onValueChange = { newSpeed -> sliderSpeed = newSpeed },
                     onValueChangeFinished = { onSpeedChange(sliderSpeed) },
                     valueRange = 0.25f..2.0f,
                     steps = 6,
                     modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
-                    colors =
-                        SliderDefaults.colors(
-                            thumbColor = MaterialTheme.colorScheme.primary,
-                            activeTrackColor = MaterialTheme.colorScheme.primary,
-                            inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
-                        ),
                 )
 
                 IconButton(

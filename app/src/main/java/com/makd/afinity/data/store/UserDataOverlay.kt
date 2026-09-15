@@ -7,9 +7,9 @@ import com.makd.afinity.data.models.media.AfinityUserDataOwner
 import com.makd.afinity.data.models.media.withUserData
 import com.makd.afinity.data.models.media.withUserDataFrom
 import com.makd.afinity.data.models.user.AfinityUserDataDto
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import java.util.UUID
 
 fun <T : AfinityItem> Flow<PagingData<T>>.withUserDataOverlay(
     persisted: Flow<Map<UUID, AfinityUserDataDto>>,

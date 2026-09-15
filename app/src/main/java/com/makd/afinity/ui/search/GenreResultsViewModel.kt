@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.search
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
@@ -20,7 +19,8 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.data.store.withUserDataOverlay
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,14 +29,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class GenreResultsViewModel
 @Inject
 constructor(
-    @param:ApplicationContext private val context: Context,
     private val mediaRepository: MediaRepository,
     private val appDataRepository: AppDataRepository,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
@@ -137,6 +135,8 @@ class GenrePagingSource(
                 response.items?.mapNotNull { baseItemDto ->
                     try {
                         baseItemDto.toAfinityItem(mediaRepository.getBaseUrl())
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         null
                     }
@@ -147,6 +147,8 @@ class GenrePagingSource(
                 prevKey = if (position == 0) null else position - params.loadSize,
                 nextKey = if (items.isEmpty()) null else position + items.size,
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             LoadResult.Error(e)
         }

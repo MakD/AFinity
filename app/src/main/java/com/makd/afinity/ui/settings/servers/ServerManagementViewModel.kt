@@ -17,6 +17,7 @@ import com.makd.afinity.data.models.server.AddressCheck
 import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.server.ServerAddress
+import com.makd.afinity.data.network.UrlCandidates
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.JellyfinRepository
@@ -29,6 +30,10 @@ import com.makd.afinity.util.isLocalAddress
 import com.makd.afinity.util.isTailscaleAddress
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Provider
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -47,9 +52,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.doubleOrNull
 import org.jellyfin.sdk.model.api.TaskInfo
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Provider
 
 data class ServerManagementState(
     val servers: List<ServerWithUserCount> = emptyList(),
@@ -92,6 +94,14 @@ data class JellyfinStats(
     val seriesCount: Int = 0,
     val episodeCount: Int = 0,
     val boxsetCount: Int = 0,
+    val albumCount: Int = 0,
+    val songCount: Int = 0,
+    val artistCount: Int = 0,
+    val musicVideoCount: Int = 0,
+    val bookCount: Int = 0,
+    val trailerCount: Int = 0,
+    val programCount: Int = 0,
+    val itemCount: Int = 0,
 )
 
 data class JellyseerrStats(
@@ -181,6 +191,8 @@ constructor(
             try {
                 _state.value = _state.value.copy(isLoading = true, error = null)
                 loadServersInternal()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error loading servers")
                 _state.value =
@@ -239,6 +251,8 @@ constructor(
                 loadServers()
 
                 Timber.d("Server deleted successfully: $serverId")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error deleting server")
                 _state.value =
@@ -256,6 +270,8 @@ constructor(
                 databaseRepository.deleteServerAddress(addressId)
                 reloadAndRefreshDetail()
                 Timber.d("Server address deleted: $addressId")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error deleting server address")
                 _state.value = _state.value.copy(error = e.message)
@@ -283,6 +299,8 @@ constructor(
                 databaseRepository.updateServer(server.copy(address = newPrimaryAddress))
                 reloadAndRefreshDetail()
                 Timber.d("Primary address updated for server $serverId: $newPrimaryAddress")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error setting primary address")
                 _state.value = _state.value.copy(error = e.message)
@@ -324,6 +342,8 @@ constructor(
                             statsLoading = false,
                         )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error loading Jellyfin stats")
                 _state.value = _state.value.copy(statsLoading = false)
@@ -337,6 +357,8 @@ constructor(
                     val currentStats = _state.value.detailStats ?: ServerDetailStats()
                     _state.value =
                         _state.value.copy(detailStats = currentStats.copy(jellyseerrStats = stats))
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Error loading Jellyseerr stats")
                 }
@@ -352,6 +374,8 @@ constructor(
                         _state.value.copy(
                             detailStats = currentStats.copy(audiobookshelfStats = stats)
                         )
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Error loading Audiobookshelf stats")
                 }
@@ -383,6 +407,8 @@ constructor(
                                 }
                             }
                         }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Error polling scheduled tasks")
                     }
@@ -406,6 +432,8 @@ constructor(
                 approvedRequests = approved,
                 availableRequests = available,
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load Jellyseerr stats")
             JellyseerrStats()
@@ -442,6 +470,8 @@ constructor(
                 weekSeconds = periodSeconds(dailyMap, 7),
                 monthSeconds = periodSeconds(dailyMap, 30),
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load Audiobookshelf stats")
             AudiobookshelfStats()
@@ -512,6 +542,8 @@ constructor(
                 jellyseerrDao.deleteAddress(addressId)
                 reloadAndRefreshDetail()
                 Timber.d("Jellyseerr address deleted: $addressId")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error deleting Jellyseerr address")
                 _state.value = _state.value.copy(error = e.message)
@@ -525,6 +557,8 @@ constructor(
                 audiobookshelfDao.deleteAddress(addressId)
                 reloadAndRefreshDetail()
                 Timber.d("Audiobookshelf address deleted: $addressId")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error deleting Audiobookshelf address")
                 _state.value = _state.value.copy(error = e.message)
@@ -540,13 +574,7 @@ constructor(
 
                 _state.value = _state.value.copy(isLoading = true, error = null)
 
-                val rawAddress = address.trim().removeSuffix("/")
-                val candidateUrls =
-                    if (rawAddress.startsWith("http://") || rawAddress.startsWith("https://")) {
-                        listOf(rawAddress)
-                    } else {
-                        listOf("https://$rawAddress", "http://$rawAddress")
-                    }
+                val candidateUrls = UrlCandidates.jellyseerr(address)
 
                 var validUrl: String? = null
                 val repository = jellyseerrRepositoryProvider.get()
@@ -606,6 +634,8 @@ constructor(
                 }
 
                 insertJellyseerrAddress(serverId, userId, validUrl)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error adding Jellyseerr address")
                 _state.value = _state.value.copy(error = e.message, isLoading = false)
@@ -621,13 +651,7 @@ constructor(
 
                 _state.value = _state.value.copy(isLoading = true, error = null)
 
-                val rawAddress = address.trim().removeSuffix("/")
-                val candidateUrls =
-                    if (rawAddress.startsWith("http://") || rawAddress.startsWith("https://")) {
-                        listOf(rawAddress)
-                    } else {
-                        listOf("https://$rawAddress", "http://$rawAddress")
-                    }
+                val candidateUrls = UrlCandidates.audiobookshelf(address)
 
                 var validUrl: String? = null
                 val repository = audiobookshelfRepositoryProvider.get()
@@ -689,6 +713,8 @@ constructor(
                 }
 
                 insertAudiobookshelfAddress(serverId, userId, validUrl)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error adding Audiobookshelf address")
                 _state.value = _state.value.copy(error = e.message, isLoading = false)
@@ -738,6 +764,8 @@ constructor(
                         insertAudiobookshelfAddress(pending.serverId, pending.userId, pending.url)
                 }
                 _state.value = _state.value.copy(isLoading = false)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error adding unverified address")
                 _state.value = _state.value.copy(error = e.message, isLoading = false)

@@ -1,13 +1,16 @@
 package com.makd.afinity.data.repository
 
 import com.makd.afinity.data.models.server.Server
+import com.makd.afinity.data.models.server.ServerStorage
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.ui.settings.servers.JellyfinStats
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
+import org.jellyfin.sdk.model.api.GeneralCommandType
+import org.jellyfin.sdk.model.api.PlaystateCommand
 import org.jellyfin.sdk.model.api.SessionInfoDto
 import org.jellyfin.sdk.model.api.TaskInfo
-import java.util.UUID
 
 interface JellyfinRepository {
 
@@ -46,15 +49,6 @@ interface JellyfinRepository {
 
     suspend fun reportPlaybackStopped(itemId: UUID, positionTicks: Long, sessionId: String? = null)
 
-    suspend fun getStreamUrl(
-        itemId: UUID,
-        mediaSourceId: String,
-        maxBitrate: Int? = null,
-        audioStreamIndex: Int? = null,
-        subtitleStreamIndex: Int? = null,
-        videoStreamIndex: Int? = null,
-    ): String
-
     suspend fun getImageUrl(
         itemId: UUID,
         imageType: String,
@@ -67,6 +61,26 @@ interface JellyfinRepository {
 
     suspend fun getActiveSessions(): Result<List<SessionInfoDto>>
 
+    suspend fun sendSessionPlaystateCommand(
+        sessionId: String,
+        command: PlaystateCommand,
+        seekPositionTicks: Long? = null,
+    ): Result<Unit>
+
+    suspend fun sendSessionGeneralCommand(
+        sessionId: String,
+        command: GeneralCommandType,
+    ): Result<Unit>
+
+    suspend fun setSessionVolume(sessionId: String, volume: Int): Result<Unit>
+
+    suspend fun sendSessionMessage(
+        sessionId: String,
+        header: String,
+        text: String,
+        timeoutMs: Long? = null,
+    ): Result<Unit>
+
     suspend fun restartServer(): Result<Unit>
 
     suspend fun shutdownServer(): Result<Unit>
@@ -74,6 +88,8 @@ interface JellyfinRepository {
     suspend fun refreshAllLibraries(): Result<Unit>
 
     suspend fun getScheduledTasks(): Result<List<TaskInfo>>
+
+    fun getServerStorageFlow(serverId: String): Flow<ServerStorage>
 
     suspend fun startScheduledTask(taskId: String): Result<Unit>
 

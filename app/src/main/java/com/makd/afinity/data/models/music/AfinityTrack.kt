@@ -21,6 +21,7 @@ data class AfinityTrack(
     override val favorite: Boolean,
     val playCount: Int?,
     val normalizationGain: Float?,
+    val albumNormalizationGain: Float? = null,
     val images: AfinityImages,
     override val liked: Boolean = false,
     val playlistItemId: String? = null,

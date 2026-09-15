@@ -37,6 +37,10 @@ import com.makd.afinity.data.repository.music.MadeForYouCache
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.store.ItemStore
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -59,9 +63,6 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 import timber.log.Timber
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
-import javax.inject.Inject
 
 enum class MusicSortField(@StringRes val labelRes: Int, val sortBy: ItemSortBy) {
     Name(R.string.music_sort_field_name, ItemSortBy.SORT_NAME),
@@ -210,6 +211,8 @@ constructor(
 
     val userProfileImageUrl: StateFlow<String?> = appDataRepository.userProfileImageUrl
 
+    val userName: StateFlow<String?> = appDataRepository.userName
+
     private val _uiState = MutableStateFlow(MusicLibraryUiState())
     val uiState: StateFlow<MusicLibraryUiState> = _uiState.asStateFlow()
 
@@ -240,6 +243,9 @@ constructor(
     private val _artistLetterFilter = MutableStateFlow<String?>(null)
     val artistLetterFilter: StateFlow<String?> = _artistLetterFilter.asStateFlow()
 
+    private val _allArtistLetterFilter = MutableStateFlow<String?>(null)
+    val allArtistLetterFilter: StateFlow<String?> = _allArtistLetterFilter.asStateFlow()
+
     private val _trackFilters = MutableStateFlow(MusicFilters())
     val trackFilters: StateFlow<MusicFilters> = _trackFilters.asStateFlow()
 
@@ -248,6 +254,9 @@ constructor(
 
     private val _artistFilters = MutableStateFlow(MusicFilters())
     val artistFilters: StateFlow<MusicFilters> = _artistFilters.asStateFlow()
+
+    private val _allArtistFilters = MutableStateFlow(MusicFilters())
+    val allArtistFilters: StateFlow<MusicFilters> = _allArtistFilters.asStateFlow()
 
     val genresPagingFlow: Flow<PagingData<AfinityMusicGenre>> =
         Pager(
@@ -341,6 +350,32 @@ constructor(
                             sortOrder = SortOrder.ASCENDING,
                             filters = filters,
                             nameStartsWith = letter?.let { if (it == "#") "0" else it },
+                            albumArtistsOnly = true,
+                        )
+                    }
+                    .flow
+            }
+            .cachedIn(viewModelScope)
+            .combine(itemStore.overlay) { pagingData, overlay ->
+                if (overlay.isEmpty()) pagingData
+                else pagingData.map { artist -> itemStore.mergeOwner(artist) }
+            }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val allArtistsPagingFlow: Flow<PagingData<AfinityArtist>> =
+        combine(_allArtistFilters, _allArtistLetterFilter, _refreshTrigger) { filters, letter, _ ->
+                Pair(filters, letter)
+            }
+            .flatMapLatest { (filters, letter) ->
+                Pager(PagingConfig(pageSize = PAGE_SIZE, prefetchDistance = PREFETCH_DISTANCE)) {
+                        MusicArtistsPagingSource(
+                            musicRepository = musicRepository,
+                            libraryId = libraryId,
+                            sortBy = ItemSortBy.SORT_NAME,
+                            sortOrder = SortOrder.ASCENDING,
+                            filters = filters,
+                            nameStartsWith = letter?.let { if (it == "#") "0" else it },
+                            albumArtistsOnly = false,
                         )
                     }
                     .flow
@@ -422,6 +457,10 @@ constructor(
         _artistLetterFilter.value = if (_artistLetterFilter.value == letter) null else letter
     }
 
+    fun filterAllArtistsByLetter(letter: String) {
+        _allArtistLetterFilter.value = if (_allArtistLetterFilter.value == letter) null else letter
+    }
+
     fun setTrackFilters(filters: MusicFilters) {
         _trackFilters.value = filters
         persistBrowsePrefs()
@@ -434,6 +473,11 @@ constructor(
 
     fun setArtistFilters(filters: MusicFilters) {
         _artistFilters.value = filters
+        persistBrowsePrefs()
+    }
+
+    fun setAllArtistFilters(filters: MusicFilters) {
+        _allArtistFilters.value = filters
         persistBrowsePrefs()
     }
 
@@ -452,6 +496,7 @@ constructor(
             _albumSortDescending.value = prefs.albumSortDescending
             _albumFilters.value = prefs.albumFilters
             _artistFilters.value = prefs.artistFilters
+            _allArtistFilters.value = prefs.allArtistFilters
             _trackSortField.value = parseSortField(prefs.trackSortField)
             _trackSortDescending.value = prefs.trackSortDescending
             _trackFilters.value = prefs.trackFilters
@@ -466,6 +511,7 @@ constructor(
                     albumSortDescending = _albumSortDescending.value,
                     albumFilters = _albumFilters.value,
                     artistFilters = _artistFilters.value,
+                    allArtistFilters = _allArtistFilters.value,
                     trackSortField = _trackSortField.value.name,
                     trackSortDescending = _trackSortDescending.value,
                     trackFilters = _trackFilters.value,
@@ -648,6 +694,7 @@ constructor(
                             musicRepository.getTracksByGenre(
                                 genre.name,
                                 MFY_GENRE_TRACKS,
+                                parentId = libraryId,
                             )
                         }
                             .getOrDefault(emptyList())
@@ -679,9 +726,9 @@ constructor(
     }
 
     private suspend fun loadMusicHomeSections() {
-        val hasMusicLibrary =
-            appDataRepository.libraries.value.any { it.type == CollectionType.Music }
-        if (!hasMusicLibrary) return
+        val musicLibraries =
+            appDataRepository.libraries.value.filter { it.type == CollectionType.Music }
+        if (musicLibraries.isEmpty()) return
 
         _uiState.update { it.copy(isLoadingHome = true) }
 
@@ -699,7 +746,8 @@ constructor(
                     .getOrDefault(emptyList())
             }
             val genresJob = async {
-                runCatching { musicRepository.getMusicGenres(limit = 20) }.getOrDefault(emptyList())
+                runCatching { musicRepository.getMusicGenres(limit = 20, parentId = libraryId) }
+                    .getOrDefault(emptyList())
             }
             val randomAlbumsJob = async {
                 runCatching { musicRepository.getRandomAlbums(limit = MFY_ALBUM_FETCH) }
@@ -720,7 +768,6 @@ constructor(
             val recentTracks = recentTracksJob.await()
             val seedRecentTracks = recentTracks.take(RECENT_TRACKS_DISPLAY)
             val seedRecentAlbums = recentTracks.toRecentlyPlayedAlbums(15)
-            val seedGenres = genresJob.await()
 
             if (seedRecentTracks.isNotEmpty())
                 _uiState.update { it.copy(recentlyPlayedTracks = seedRecentTracks) }
@@ -768,12 +815,15 @@ constructor(
                             .filterNotNull()
                     if (sections.isNotEmpty())
                         _uiState.update { it.copy(moreFromArtistSections = sections) }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load More From sections")
                 }
             }
             launch {
                 try {
+                    val seedGenres = genresJob.await()
                     val sections =
                         seedGenres
                             .shuffled()
@@ -782,7 +832,11 @@ constructor(
                                 async {
                                     runCatching {
                                         val albums =
-                                            musicRepository.getAlbumsByGenre(genre.name, limit = 15)
+                                            musicRepository.getAlbumsByGenre(
+                                                genre.name,
+                                                limit = 15,
+                                                parentId = libraryId,
+                                            )
                                         if (albums.isNotEmpty()) genre.name to albums else null
                                     }
                                         .getOrNull()
@@ -792,6 +846,8 @@ constructor(
                             .filterNotNull()
                     if (sections.isNotEmpty())
                         _uiState.update { it.copy(musicGenreSections = sections) }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load genre sections")
                 }
@@ -804,7 +860,7 @@ constructor(
             }
             launch {
                 runCatching {
-                    val a = musicRepository.getRandomArtists(limit = 20)
+                    val a = musicRepository.getRandomArtists(limit = 20, parentId = libraryId)
                     if (a.isNotEmpty()) _uiState.update { it.copy(randomArtists = a) }
                 }
             }
@@ -830,6 +886,8 @@ constructor(
                         if (albums.isNotEmpty())
                             _uiState.update { it.copy(albumsByDecade = decade to albums) }
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load albums by decade")
                 }
@@ -842,13 +900,13 @@ constructor(
             }
             launch {
                 runCatching {
-                    val a = musicRepository.getTopArtists(limit = 15)
+                    val a = musicRepository.getTopArtists(limit = 15, parentId = libraryId)
                     if (a.isNotEmpty()) _uiState.update { it.copy(topArtists = a) }
                 }
             }
             launch {
                 runCatching {
-                    val a = musicRepository.getFavoriteArtists(limit = 15)
+                    val a = musicRepository.getFavoriteArtists(limit = 15, parentId = libraryId)
                     if (a.isNotEmpty()) _uiState.update { it.copy(favoriteArtists = a) }
                 }
             }
@@ -883,12 +941,15 @@ constructor(
                             .filterNotNull()
                     if (sections.isNotEmpty())
                         _uiState.update { it.copy(topTracksSections = sections) }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load top tracks sections")
                 }
             }
             launch {
                 try {
+                    val seedGenres = genresJob.await()
                     val sections =
                         seedGenres
                             .shuffled()
@@ -900,6 +961,7 @@ constructor(
                                             musicRepository.getRecentlyAddedAlbumsByGenre(
                                                 genre.name,
                                                 limit = 12,
+                                                parentId = libraryId,
                                             )
                                         if (albums.isNotEmpty()) genre.name to albums else null
                                     }
@@ -910,6 +972,8 @@ constructor(
                             .filterNotNull()
                     if (sections.isNotEmpty())
                         _uiState.update { it.copy(newGenreReleases = sections) }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load new genre releases")
                 }

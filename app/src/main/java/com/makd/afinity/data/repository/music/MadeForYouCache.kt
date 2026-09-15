@@ -8,12 +8,13 @@ import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.MadeForYouMixKind
 import com.makd.afinity.data.models.music.MadeForYouSlot
 import com.makd.afinity.data.repository.home.HomeCacheRepository
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import timber.log.Timber
 
 private const val LAYOUT_VERSION = 1
 
@@ -35,6 +36,7 @@ private data class CachedTrack(
     val favorite: Boolean = false,
     val playCount: Int? = null,
     val normalizationGain: Float? = null,
+    val albumNormalizationGain: Float? = null,
     val primary: String? = null,
     val blurHash: String? = null,
 )
@@ -93,6 +95,8 @@ constructor(
             if (layout.version != LAYOUT_VERSION) return null
             val slots = layout.slots.mapNotNull { it.toSlot() }
             slots.ifEmpty { null }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to decode Made For You layout for library=$libraryId")
             null
@@ -105,6 +109,8 @@ constructor(
         if (persistable.isEmpty()) return
         try {
             homeCacheRepository.putRaw(key, json.encodeToString(CachedLayout(slots = persistable)))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to persist Made For You layout for library=$libraryId")
         }
@@ -155,6 +161,7 @@ constructor(
             favorite = favorite,
             playCount = playCount,
             normalizationGain = normalizationGain,
+            albumNormalizationGain = albumNormalizationGain,
             primary = images.primary?.toString(),
             blurHash = images.primaryImageBlurHash,
         )
@@ -178,6 +185,7 @@ constructor(
             favorite = favorite,
             playCount = playCount,
             normalizationGain = normalizationGain,
+            albumNormalizationGain = albumNormalizationGain,
             images =
                 AfinityImages(
                     primary = primary?.toUri(),

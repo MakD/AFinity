@@ -18,13 +18,48 @@ data class AfinityMediaStream(
     val height: Int?,
     val width: Int?,
     val videoDoViTitle: String?,
+    val hdr10PlusPresentFlag: Boolean = false,
     val index: Int,
     val channels: Int?,
     val isDefault: Boolean,
     val isForced: Boolean = false,
     val isHearingImpaired: Boolean = false,
+    val isOriginal: Boolean = false,
     val profile: String? = null,
+    val localizedLanguage: String? = null,
+    val localizedForced: String? = null,
+    val localizedExternal: String? = null,
+    val localizedHearingImpaired: String? = null,
+    val localizedOriginal: String? = null,
 )
+
+private val DOLBY_VISION_RANGES =
+    setOf(
+        VideoRangeType.DOVI,
+        VideoRangeType.DOVI_WITH_HDR10,
+        VideoRangeType.DOVI_WITH_HLG,
+        VideoRangeType.DOVI_WITH_SDR,
+        VideoRangeType.DOVI_WITH_EL,
+        VideoRangeType.DOVI_WITH_HDR10_PLUS,
+        VideoRangeType.DOVI_WITH_ELHDR10_PLUS,
+    )
+
+fun AfinityMediaStream.isDolbyVision(): Boolean =
+    videoDoViTitle != null || videoRangeType in DOLBY_VISION_RANGES
+
+fun AfinityMediaStream.hdrLabel(): String? =
+    when (videoRangeType) {
+        VideoRangeType.HDR10_PLUS -> "HDR10+"
+        VideoRangeType.HDR10 -> if (hdr10PlusPresentFlag) "HDR10+" else "HDR10"
+        VideoRangeType.HLG -> "HLG"
+        else -> null
+    }
+
+fun parseVideoRangeType(stored: String?): VideoRangeType? {
+    if (stored.isNullOrBlank()) return null
+    return VideoRangeType.fromNameOrNull(stored)
+        ?: VideoRangeType.entries.firstOrNull { it.name == stored }
+}
 
 fun MediaStream.toAfinityMediaStream(baseUrl: String): AfinityMediaStream {
     return AfinityMediaStream(
@@ -45,12 +80,19 @@ fun MediaStream.toAfinityMediaStream(baseUrl: String): AfinityMediaStream {
         height = height,
         width = width,
         videoDoViTitle = videoDoViTitle,
+        hdr10PlusPresentFlag = hdr10PlusPresentFlag == true,
         index = index,
         channels = channels,
         isDefault = isDefault,
         isForced = isForced,
         isHearingImpaired = isHearingImpaired,
+        isOriginal = isOriginal,
         profile = profile,
+        localizedLanguage = localizedLanguage,
+        localizedForced = localizedForced,
+        localizedExternal = localizedExternal,
+        localizedHearingImpaired = localizedHearingImpaired,
+        localizedOriginal = localizedOriginal,
     )
 }
 
@@ -64,15 +106,22 @@ fun AfinityMediaStreamDto.toAfinityMediaStream(): AfinityMediaStream {
         isExternal = isExternal,
         path = path,
         channelLayout = channelLayout,
-        videoRangeType = VideoRangeType.fromNameOrNull(videoRangeType ?: ""),
+        videoRangeType = parseVideoRangeType(videoRangeType),
         height = height,
         width = width,
         videoDoViTitle = videoDoViTitle,
+        hdr10PlusPresentFlag = hdr10PlusPresentFlag,
         index = index,
         channels = channels,
         isDefault = isDefault,
         isForced = isForced,
         isHearingImpaired = isHearingImpaired,
+        isOriginal = isOriginal,
         profile = profile,
+        localizedLanguage = localizedLanguage,
+        localizedForced = localizedForced,
+        localizedExternal = localizedExternal,
+        localizedHearingImpaired = localizedHearingImpaired,
+        localizedOriginal = localizedOriginal,
     )
 }

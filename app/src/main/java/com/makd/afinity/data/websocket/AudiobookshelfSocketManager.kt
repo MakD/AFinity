@@ -3,6 +3,7 @@ package com.makd.afinity.data.websocket
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.makd.afinity.data.models.audiobookshelf.Bookmark
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.repository.AudiobookshelfRepository
@@ -14,6 +15,10 @@ import io.socket.client.IO
 import io.socket.client.Manager
 import io.socket.client.Socket
 import io.socket.engineio.client.transports.WebSocket
+import java.net.URI
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -31,16 +36,14 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import timber.log.Timber
-import java.net.URI
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Serializable
 private data class AbsProgressEventPayload(@SerialName("data") val data: MediaProgress? = null)
 
 @Serializable
 private data class AbsUserUpdatedPayload(
-    @SerialName("mediaProgress") val mediaProgress: List<MediaProgress> = emptyList()
+    @SerialName("mediaProgress") val mediaProgress: List<MediaProgress> = emptyList(),
+    @SerialName("bookmarks") val bookmarks: List<Bookmark> = emptyList(),
 )
 
 @Serializable private data class AbsItemIdPayload(@SerialName("id") val id: String? = null)
@@ -66,7 +69,11 @@ constructor(
     @ApplicationScope private val scope: CoroutineScope,
 ) : DefaultLifecycleObserver {
 
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        coerceInputValues = true
+    }
 
     private var socket: Socket? = null
     private var isForeground = false
@@ -232,6 +239,8 @@ constructor(
             }
 
             newSocket.connect()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "AbsSocket: failed to create socket")
             socket = null
@@ -246,6 +255,8 @@ constructor(
                 val progress =
                     json.decodeFromString<AbsProgressEventPayload>(raw).data ?: return@launch
                 mergeRemoteProgress(listOf(progress), source = "user_item_progress_updated")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(
                     "AbsSocket: failed to parse user_item_progress_updated (${e::class.simpleName})"
@@ -258,10 +269,13 @@ constructor(
         val raw = payload?.toString() ?: return
         scope.launch {
             try {
-                val progressList = json.decodeFromString<AbsUserUpdatedPayload>(raw).mediaProgress
-                if (progressList.isNotEmpty()) {
-                    mergeRemoteProgress(progressList, source = "user_updated")
+                val payload = json.decodeFromString<AbsUserUpdatedPayload>(raw)
+                if (payload.mediaProgress.isNotEmpty()) {
+                    mergeRemoteProgress(payload.mediaProgress, source = "user_updated")
                 }
+                audiobookshelfRepository.cacheBookmarks(payload.bookmarks)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e("AbsSocket: failed to parse user_updated (${e::class.simpleName})")
             }
@@ -291,6 +305,8 @@ constructor(
                 audiobookshelfRepository.applyRemoteItem(item)
                 Timber.d("AbsSocket: $source applied for ${item.id}")
                 _events.tryEmit(AbsSocketEvent.ItemsChanged)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "AbsSocket: failed to parse $source")
             }
@@ -305,6 +321,8 @@ constructor(
                 audiobookshelfRepository.removeRemoteItem(itemId)
                 Timber.d("AbsSocket: item_removed applied for $itemId")
                 _events.tryEmit(AbsSocketEvent.ItemsChanged)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "AbsSocket: failed to parse item_removed")
             }

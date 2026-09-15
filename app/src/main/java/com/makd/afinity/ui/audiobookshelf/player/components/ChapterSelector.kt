@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -99,7 +101,7 @@ private fun ChapterRow(chapter: BookChapter, index: Int, isCurrent: Boolean, onC
     Row(
         modifier =
             Modifier.fillMaxWidth()
-                .clickable(onClick = onClick)
+                .clickable(role = Role.Button, onClick = onClick)
                 .background(
                     if (isCurrent) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                     else MaterialTheme.colorScheme.surface
@@ -178,8 +180,8 @@ private fun formatTime(seconds: Double): String {
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60
     val secs = totalSeconds % 60
-    return if (hours > 0) String.format("%d:%02d:%02d", hours, minutes, secs)
-    else String.format("%d:%02d", minutes, secs)
+    return if (hours > 0) String.format(Locale.getDefault(), "%d:%02d:%02d", hours, minutes, secs)
+    else String.format(Locale.getDefault(), "%d:%02d", minutes, secs)
 }
 
 private fun formatDuration(seconds: Double): String {

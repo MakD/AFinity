@@ -11,6 +11,7 @@ import android.os.Handler
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
@@ -20,6 +21,7 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.HttpDataSource
+import androidx.media3.exoplayer.DecoderReuseEvaluation
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
@@ -45,6 +47,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.makd.afinity.MainActivity
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.RepeatMode
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
@@ -59,6 +62,9 @@ import com.makd.afinity.player.music.MusicProgressReporter
 import com.makd.afinity.player.music.MusicQueueManager
 import com.makd.afinity.player.music.RadioManager
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.concurrent.atomic.AtomicReference
+import javax.inject.Inject
+import kotlin.math.pow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -69,9 +75,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import timber.log.Timber
-import javax.inject.Inject
-import kotlin.math.pow
 
 @UnstableApi
 @OptIn(UnstableApi::class)
@@ -121,8 +126,12 @@ class AudioService : MediaSessionService() {
 
     private var mediaSession: MediaSession? = null
     private var exoPlayer: ExoPlayer? = null
-    var activeEngine: ActiveEngine = ActiveEngine.NONE
-        private set
+    private val activeEngineRef = AtomicReference(ActiveEngine.NONE)
+    var activeEngine: ActiveEngine
+        get() = activeEngineRef.get()
+        private set(value) {
+            activeEngineRef.set(value)
+        }
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var positionUpdateJob: Job? = null
@@ -221,7 +230,14 @@ class AudioService : MediaSessionService() {
                 .setWakeMode(C.WAKE_MODE_NETWORK)
                 .setLoadControl(loadControl)
                 .setMediaSourceFactory(
-                    DefaultMediaSourceFactory(DynamicDataSourceFactory())
+                    DefaultMediaSourceFactory(
+                            DynamicDataSourceFactory(
+                                applicationContext,
+                                sessionManager,
+                                securePreferencesRepository,
+                                activeEngineRef,
+                            )
+                        )
                         .setLoadErrorHandlingPolicy(retryPolicy)
                 )
                 .build()
@@ -363,10 +379,15 @@ class AudioService : MediaSessionService() {
         stopSelf()
     }
 
-    private inner class DynamicDataSourceFactory : DataSource.Factory {
+    private class DynamicDataSourceFactory(
+        private val context: Context,
+        private val sessionManager: SessionManager,
+        private val securePreferencesRepository: SecurePreferencesRepository,
+        private val activeEngineRef: AtomicReference<ActiveEngine>,
+    ) : DataSource.Factory {
         override fun createDataSource(): DataSource {
             val headers =
-                when (activeEngine) {
+                when (activeEngineRef.get()) {
                     ActiveEngine.ABS -> {
                         val token = securePreferencesRepository.getCachedAudiobookshelfToken()
                         if (token != null) mapOf("Authorization" to "Bearer $token") else emptyMap()
@@ -382,7 +403,7 @@ class AudioService : MediaSessionService() {
                     .setConnectTimeoutMs(15_000)
                     .setReadTimeoutMs(15_000)
                     .setDefaultRequestProperties(headers)
-            return DefaultDataSource.Factory(this@AudioService, httpFactory).createDataSource()
+            return DefaultDataSource.Factory(context, httpFactory).createDataSource()
         }
     }
 
@@ -478,11 +499,20 @@ class AudioService : MediaSessionService() {
                 musicQueueManager.onTrackChanged(newIndex)
                 val track = musicQueueManager.currentTrack
                 musicPlaybackManager.updateTrack(track)
+                musicPlaybackManager.updateServerTranscode(
+                    track != null && musicQueueManager.isServerTranscode(track.id)
+                )
                 if (track != null) {
-                    applyNormalizationGain(track.normalizationGain)
-                    musicProgressReporter.onPlaybackStarted(track.id, 0L)
+                    applyNormalizationGain(track)
+                    musicProgressReporter.onPlaybackStarted(
+                        trackId = track.id,
+                        startPositionMs = 0L,
+                        playSessionId = musicQueueManager.playSessionIdFor(track.id),
+                        playMethod = musicQueueManager.playMethodFor(track.id),
+                    )
                 }
                 radioManager.onTrackChanged(track)
+                resolveAroundCurrent()
             }
 
             override fun onRepeatModeChanged(repeatMode: Int) {
@@ -543,6 +573,16 @@ class AudioService : MediaSessionService() {
                     else -> {}
                 }
             }
+
+            override fun onAudioInputFormatChanged(
+                eventTime: AnalyticsListener.EventTime,
+                format: Format,
+                decoderReuseEvaluation: DecoderReuseEvaluation?,
+            ) {
+                if (activeEngine == ActiveEngine.MUSIC) {
+                    musicPlaybackManager.updateAudioCodec(format.sampleMimeType)
+                }
+            }
         }
 
     private fun startMusicQueueListener() {
@@ -576,6 +616,35 @@ class AudioService : MediaSessionService() {
                 val itemsAfter = event.mediaItems.drop(event.currentIndex + 1)
                 if (itemsAfter.isNotEmpty())
                     player.addMediaItems(event.currentIndex + 1, itemsAfter)
+            }
+        }
+    }
+
+    private fun resolveAroundCurrent() {
+        val startIndex = exoPlayer?.currentMediaItemIndex ?: return
+        serviceScope.launch {
+            val queue = musicQueueManager.queue.value
+            for (index in intArrayOf(startIndex, startIndex + 1)) {
+                val track = queue.getOrNull(index) ?: continue
+                if (!musicQueueManager.ensureResolved(track)) continue
+                musicProgressReporter.updatePlayMethod(
+                    track.id,
+                    musicQueueManager.playMethodFor(track.id),
+                )
+                if (track.id == musicQueueManager.currentTrack?.id) {
+                    musicPlaybackManager.updateServerTranscode(true)
+                }
+                val item = musicQueueManager.mediaItemFor(track)
+                withContext(Dispatchers.Main) {
+                    val player = exoPlayer ?: return@withContext
+                    if (
+                        index < player.mediaItemCount &&
+                            player.getMediaItemAt(index).mediaId == track.id.toString()
+                    ) {
+                        Timber.d("Replacing media item $index with a transcoded stream")
+                        player.replaceMediaItem(index, item)
+                    }
+                }
             }
         }
     }
@@ -633,9 +702,22 @@ class AudioService : MediaSessionService() {
         positionUpdateJob = null
     }
 
-    private fun applyNormalizationGain(gainDb: Float?) {
+    private fun applyNormalizationGain(track: AfinityTrack?) {
         val player = exoPlayer ?: return
+        val gainDb =
+            if (track != null && isPlayingSingleAlbum()) {
+                track.albumNormalizationGain ?: track.normalizationGain
+            } else {
+                track?.normalizationGain
+            }
         player.volume = if (gainDb == null) 1f else (10f.pow(gainDb / 20f)).coerceIn(0f, 1f)
+    }
+
+    private fun isPlayingSingleAlbum(): Boolean {
+        val queue = musicQueueManager.queue.value
+        if (queue.size < 2) return false
+        val albumId = queue.first().albumId ?: return false
+        return queue.all { it.albumId == albumId }
     }
 
     private fun absCustomLayout() =
@@ -694,7 +776,7 @@ class AudioService : MediaSessionService() {
                     .build()
             val layout =
                 if (activeEngine == ActiveEngine.MUSIC) musicCustomLayout() else absCustomLayout()
-            return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+            return MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
                 .setAvailableSessionCommands(allCommands)
                 .setCustomLayout(layout)
                 .build()

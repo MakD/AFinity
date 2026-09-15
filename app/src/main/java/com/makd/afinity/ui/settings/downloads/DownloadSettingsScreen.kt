@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.settings.downloads
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -17,14 +18,21 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,9 +41,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -48,7 +56,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,7 +64,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.painterResource
@@ -67,7 +74,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
@@ -79,95 +85,126 @@ import com.makd.afinity.data.repository.CacheSection
 import com.makd.afinity.data.repository.CacheUsage
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
+import com.makd.afinity.ui.components.AfinitySlider
 import com.makd.afinity.ui.components.AfinitySwitch
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.DownloadListItemRow
 import com.makd.afinity.ui.components.EmptyState
-import com.makd.afinity.ui.components.SettingsGroup
-import com.makd.afinity.ui.components.SettingsItem
+import com.makd.afinity.ui.downloads.DownloadCatalogEntry
+import com.makd.afinity.ui.downloads.DownloadCatalogRef
+import com.makd.afinity.ui.downloads.DownloadCategory
 import com.makd.afinity.ui.downloads.DownloadsViewModel
-import kotlinx.coroutines.launch
+import com.makd.afinity.ui.downloads.absChildrenOf
+import com.makd.afinity.ui.downloads.components.DownloadStorageStrip
+import com.makd.afinity.ui.downloads.components.downloadCatalogSections
+import com.makd.afinity.ui.downloads.jellyfinChildrenOf
 import java.util.UUID
 import kotlin.math.ceil
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DownloadSettingsScreen(
+    modifier: Modifier = Modifier,
     onBackClick: () -> Unit,
     onNavigateToAbsItem: (libraryItemId: String) -> Unit = {},
-    modifier: Modifier = Modifier,
     viewModel: DownloadsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isOffline by
-        viewModel.offlineModeManager.isOffline.collectAsStateWithLifecycle(initialValue = false)
     val snackbarHostState = remember { SnackbarHostState() }
     val playerOffset = LocalPlayerOffset.current
 
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val cacheUsage by viewModel.cacheUsage.collectAsStateWithLifecycle()
-    val isClearingCache by viewModel.isClearingCache.collectAsStateWithLifecycle()
-    var showClearCacheDialog by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { viewModel.refreshCacheUsage() }
+    val catalog by viewModel.catalog.collectAsStateWithLifecycle()
+    val categoryUsage by viewModel.categoryUsage.collectAsStateWithLifecycle()
+    val categoryFilter by viewModel.categoryFilter.collectAsStateWithLifecycle()
+    var selectedEntry by remember { mutableStateOf<DownloadCatalogEntry?>(null) }
+    var pendingBulkDelete by remember { mutableStateOf(false) }
+    var pendingEntryDelete by remember { mutableStateOf<DownloadCatalogEntry?>(null) }
 
-    val cacheUsageSubtitle =
-        cacheUsage?.let { usage ->
-            if (usage.isEmpty) {
-                stringResource(R.string.pref_clear_cache_empty)
-            } else {
-                pluralStringResource(
-                    R.plurals.pref_clear_cache_usage_total_fmt,
-                    usage.metadataEntries,
-                    android.text.format.Formatter.formatShortFileSize(context, usage.totalBytes),
-                    usage.metadataEntries,
-                )
+    var selectedKeyList by rememberSaveable { mutableStateOf(listOf<String>()) }
+    val selectedKeys = remember(selectedKeyList) { selectedKeyList.toSet() }
+    var selectionMode by rememberSaveable { mutableStateOf(false) }
+
+    val selectedEntries =
+        remember(catalog, selectedKeys) { catalog.filter { it.key in selectedKeys } }
+    val selectedBytes = remember(selectedEntries) { selectedEntries.sumOf { it.sizeBytes } }
+
+    fun exitSelection() {
+        selectionMode = false
+        selectedKeyList = emptyList()
+    }
+
+    LaunchedEffect(catalog) {
+        if (selectionMode) {
+            val stillPresent = catalog.map { it.key }.toSet()
+            selectedKeyList = selectedKeyList.filter { it in stillPresent }
+        }
+    }
+
+    BackHandler(enabled = selectionMode) { exitSelection() }
+
+    selectedEntry?.let { entry ->
+        val jellyfinChildren =
+            remember(entry.key, uiState.completedDownloads) {
+                jellyfinChildrenOf(entry, uiState.completedDownloads)
             }
-        } ?: stringResource(R.string.pref_clear_cache_summary)
+        val absChildren =
+            remember(entry.key, uiState.absCompletedDownloads) {
+                absChildrenOf(entry, uiState.absCompletedDownloads)
+            }
 
-    val cacheClearedMessage = stringResource(R.string.pref_clear_cache_done)
-    var selectedSections by remember { mutableStateOf(CacheSection.entries.toSet()) }
-    if (showClearCacheDialog) {
-        AlertDialog(
-            onDismissRequest = { if (!isClearingCache) showClearCacheDialog = false },
-            title = { Text(text = stringResource(R.string.pref_clear_cache_confirm)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(text = stringResource(R.string.pref_clear_cache_message))
-                    CacheSectionPicker(
-                        usage = cacheUsage,
-                        selected = selectedSections,
-                        enabled = !isClearingCache,
-                        onToggle = { section ->
-                            selectedSections =
-                                if (section in selectedSections) selectedSections - section
-                                else selectedSections + section
-                        },
-                        context = context,
-                    )
-                }
+        DownloadGroupSheet(
+            entry = entry,
+            jellyfinChildren = jellyfinChildren,
+            absChildren = absChildren,
+            volumeStats = uiState.volumeStorageStats,
+            formatSize = viewModel::formatStorageSize,
+            onDeleteAll = { pendingEntryDelete = entry },
+            onDeleteChild = viewModel::deleteDownload,
+            onDeleteAbsChild = viewModel::deleteAbsDownload,
+            onOpenAbsItem = { libraryItemId ->
+                selectedEntry = null
+                onNavigateToAbsItem(libraryItemId)
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.clearCachedData(selectedSections) {
-                            showClearCacheDialog = false
-                            scope.launch { snackbarHostState.showSnackbar(cacheClearedMessage) }
-                        }
-                    },
-                    enabled = !isClearingCache && selectedSections.isNotEmpty(),
-                ) {
-                    Text(text = stringResource(R.string.pref_clear_cache))
-                }
+            onDismiss = { selectedEntry = null },
+        )
+    }
+
+    if (pendingBulkDelete) {
+        DeleteDownloadsDialog(
+            title =
+                pluralStringResource(
+                    R.plurals.downloads_delete_selected_fmt,
+                    selectedEntries.size,
+                    selectedEntries.size,
+                ),
+            message =
+                stringResource(
+                    R.string.downloads_delete_selected_message_fmt,
+                    viewModel.formatStorageSize(selectedBytes),
+                ),
+            onConfirm = {
+                viewModel.deleteCatalogEntries(selectedEntries)
+                pendingBulkDelete = false
+                exitSelection()
             },
-            dismissButton = {
-                TextButton(
-                    onClick = { showClearCacheDialog = false },
-                    enabled = !isClearingCache,
-                ) {
-                    Text(text = stringResource(R.string.action_cancel))
-                }
+            onDismiss = { pendingBulkDelete = false },
+        )
+    }
+
+    pendingEntryDelete?.let { entry ->
+        DeleteDownloadsDialog(
+            title = entry.title,
+            message =
+                stringResource(
+                    R.string.downloads_delete_selected_message_fmt,
+                    viewModel.formatStorageSize(entry.sizeBytes),
+                ),
+            onConfirm = {
+                viewModel.deleteCatalogEntry(entry)
+                pendingEntryDelete = null
+                selectedEntry = null
             },
+            onDismiss = { pendingEntryDelete = null },
         )
     }
 
@@ -198,29 +235,78 @@ fun DownloadSettingsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.pref_downloads_and_storage),
-                        style =
-                            MaterialTheme.typography.headlineMedium.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_chevron_left),
-                            contentDescription = stringResource(R.string.cd_back),
+            if (selectionMode) {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text =
+                                stringResource(
+                                    R.string.downloads_selected_fmt,
+                                    selectedEntries.size,
+                                ),
+                            style =
+                                MaterialTheme.typography.headlineSmall.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
                         )
-                    }
-                },
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-            )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { exitSelection() }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_close),
+                                contentDescription =
+                                    stringResource(R.string.cd_downloads_exit_selection),
+                            )
+                        }
+                    },
+                    actions = {
+                        TextButton(
+                            onClick = { selectedKeyList = catalog.map { it.key } },
+                            enabled = selectedEntries.size < catalog.size,
+                        ) {
+                            Text(stringResource(R.string.downloads_select_all))
+                        }
+                    },
+                    colors =
+                        TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                )
+            } else {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = stringResource(R.string.pref_offline_media),
+                            style =
+                                MaterialTheme.typography.headlineMedium.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_chevron_left),
+                                contentDescription = stringResource(R.string.cd_back),
+                            )
+                        }
+                    },
+                    colors =
+                        TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
+                )
+            }
+        },
+        bottomBar = {
+            if (selectionMode) {
+                DownloadSelectionBar(
+                    count = selectedEntries.size,
+                    totalBytes = selectedBytes,
+                    formatSize = viewModel::formatStorageSize,
+                    onDelete = { pendingBulkDelete = true },
+                )
+            }
         },
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState, snackbar = { AFinitySnackbar(it) })
@@ -236,138 +322,52 @@ fun DownloadSettingsScreen(
                 end = innerPadding.calculateEndPadding(layoutDirection),
                 bottom = max(innerPadding.calculateBottomPadding(), playerOffset),
             )
-        val absBooks =
-            remember(uiState.absCompletedDownloads) {
-                uiState.absCompletedDownloads.filter { it.episodeId == null }
-            }
-        val absPodcastGroups =
-            remember(uiState.absCompletedDownloads) {
-                uiState.absCompletedDownloads
-                    .filter { it.episodeId != null }
-                    .groupBy { it.libraryItemId }
-            }
-        val absUniqueItemCount = absBooks.size + absPodcastGroups.size
+        val deviceStats =
+            if (uiState.volumeStorageStats.size > 1)
+                aggregateDeviceStats(uiState.volumeStorageStats)
+            else uiState.deviceStorageStats
 
-        val musicDownloads =
-            remember(uiState.completedDownloads) {
-                uiState.completedDownloads.filter { it.itemType == "Audio" }
-            }
-        val videoDownloads =
-            remember(uiState.completedDownloads) {
-                uiState.completedDownloads.filter { it.itemType != "Audio" }
-            }
-        val musicAlbumGroups =
-            remember(musicDownloads) {
-                musicDownloads.filter { it.seriesId != null }.groupBy { it.seriesId.orEmpty() }
-            }
-        val standaloneMusicTracks =
-            remember(musicDownloads) { musicDownloads.filter { it.seriesId == null } }
-        val musicUniqueItemCount = musicAlbumGroups.size + standaloneMusicTracks.size
-
-        LazyColumn(
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(110.dp),
             modifier = Modifier.fillMaxSize(),
             contentPadding =
                 PaddingValues(
                     top = customPadding.calculateTopPadding(),
-                    start = customPadding.calculateStartPadding(layoutDirection),
-                    end = customPadding.calculateEndPadding(layoutDirection),
+                    start = customPadding.calculateStartPadding(layoutDirection) + 16.dp,
+                    end = customPadding.calculateEndPadding(layoutDirection) + 16.dp,
                     bottom = customPadding.calculateBottomPadding() + 32.dp,
                 ),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item {
-                StatusHub(
-                    totalStorageUsed = uiState.totalStorageUsed,
-                    totalStorageUsedAllServers = uiState.totalStorageUsedAllServers,
-                    downloadCount =
-                        uiState.activeDownloads.size +
-                            videoDownloads.size +
-                            uiState.absActiveDownloads.size +
-                            absUniqueItemCount +
-                            musicUniqueItemCount,
-                    isOffline = isOffline,
-                    wifiOnly = uiState.downloadOverWifiOnly,
-                    maxConcurrentDownloads = uiState.maxConcurrentDownloads,
-                    deviceStats =
-                        if (uiState.volumeStorageStats.size > 1)
-                            aggregateDeviceStats(uiState.volumeStorageStats)
-                        else uiState.deviceStorageStats,
-                    onWifiOnlyChanged = viewModel::setDownloadOverWifiOnly,
-                    onMaxDownloadsChanged = viewModel::setMaxConcurrentDownloads,
+            item(key = "storage_strip", span = { GridItemSpan(maxLineSpan) }) {
+                DownloadStorageStrip(
+                    categories = categoryUsage,
+                    selectedCategory = categoryFilter,
+                    deviceUsedBytes = deviceStats?.usedBytes ?: 0L,
+                    deviceTotalBytes = deviceStats?.totalBytes ?: 0L,
+                    freeBytes = deviceStats?.freeBytes ?: 0L,
                     formatSize = viewModel::formatStorageSize,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    onSelectCategory = viewModel::setCategoryFilter,
+                    modifier = Modifier.padding(top = 8.dp),
                 )
-            }
-
-            if (uiState.volumeStorageStats.size > 1) {
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    SectionHeader(
-                        title = stringResource(R.string.section_storage_locations),
-                        modifier = Modifier.padding(horizontal = 24.dp),
-                    )
-                }
-
-                item {
-                    StorageLocationsCard(
-                        stats = uiState.volumeStorageStats,
-                        defaultVolumeId = uiState.defaultStorageVolumeId,
-                        onSetDefault = viewModel::setDefaultStorageVolume,
-                        formatSize = viewModel::formatStorageSize,
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    )
-                }
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-                SectionHeader(
-                    title = stringResource(R.string.section_storage_cache),
-                    modifier = Modifier.padding(horizontal = 24.dp),
-                )
-            }
-
-            item {
-                ImageCacheSettingsCard(
-                    isCacheEnabled = uiState.isImageCacheEnabled,
-                    cacheSizeMb = uiState.imageCacheSizeMb.toFloat(),
-                    onCacheEnabledChange = viewModel::setImageCacheEnabled,
-                    onCacheSizeChange = { viewModel.setImageCacheSizeMb(it.toInt()) },
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
-            }
-
-            item {
-                VideoCacheSettingsCard(
-                    cacheSizeMb = uiState.videoCacheSizeMb.toFloat(),
-                    onCacheSizeChange = { viewModel.setVideoCacheSizeMb(it.toInt()) },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                )
-            }
-
-            item {
-                SettingsGroup(modifier = Modifier.padding(top = 8.dp)) {
-                    SettingsItem(
-                        icon = painterResource(id = R.drawable.ic_database_off),
-                        title = stringResource(R.string.pref_clear_cache),
-                        subtitle = cacheUsageSubtitle,
-                        onClick = { showClearCacheDialog = true },
-                    )
-                }
             }
 
             val allActiveCount = uiState.activeDownloads.size + uiState.absActiveDownloads.size
             if (allActiveCount > 0) {
-                item {
+                item(key = "active_header", span = { GridItemSpan(maxLineSpan) }) {
                     SectionHeader(
                         title =
                             stringResource(R.string.active_downloads_header_fmt, allActiveCount),
-                        modifier = Modifier.padding(horizontal = 24.dp),
+                        modifier = Modifier.padding(start = 8.dp),
                     )
                 }
 
-                items(uiState.activeDownloads.reversed(), key = { "jf_active_${it.id}" }) { download
-                    ->
+                items(
+                    uiState.activeDownloads.reversed(),
+                    key = { "jf_active_${it.id}" },
+                    span = { GridItemSpan(maxLineSpan) },
+                ) { download ->
                     ActiveDownloadCard(
                         download = download,
                         speedBps = uiState.downloadSpeeds[download.id],
@@ -375,345 +375,317 @@ fun DownloadSettingsScreen(
                         onResume = viewModel::resumeDownload,
                         onCancel = viewModel::cancelDownload,
                         formatSize = viewModel::formatStorageSize,
-                        modifier = Modifier.padding(horizontal = 16.dp),
                     )
                 }
 
-                items(uiState.absActiveDownloads.reversed(), key = { "abs_active_${it.id}" }) {
-                    download ->
+                items(
+                    uiState.absActiveDownloads.reversed(),
+                    key = { "abs_active_${it.id}" },
+                    span = { GridItemSpan(maxLineSpan) },
+                ) { download ->
                     AbsActiveDownloadCard(
                         download = download,
                         speedBps = uiState.absDownloadSpeeds[download.id],
                         onCancel = viewModel::cancelAbsDownload,
                         formatSize = viewModel::formatStorageSize,
-                        modifier = Modifier.padding(horizontal = 16.dp),
                     )
                 }
             }
 
-            val allCompletedCount = videoDownloads.size + absUniqueItemCount + musicUniqueItemCount
+            val allCompletedCount = catalog.size
             if (allCompletedCount > 0) {
-                item {
-                    SectionHeader(
-                        title =
-                            stringResource(
-                                R.string.completed_downloads_header_fmt,
-                                allCompletedCount,
-                            ),
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                    )
-                }
-
-                if (videoDownloads.isNotEmpty()) {
-                    if (absUniqueItemCount > 0 || musicUniqueItemCount > 0) {
-                        item {
-                            SectionHeader(
-                                title = stringResource(R.string.section_videos),
-                                modifier = Modifier.padding(horizontal = 32.dp, vertical = 4.dp),
-                            )
+                downloadCatalogSections(
+                    catalog = catalog,
+                    formatSize = viewModel::formatStorageSize,
+                    selectionMode = selectionMode,
+                    selectedKeys = selectedKeys,
+                    onEntryClick = { entry ->
+                        if (selectionMode) {
+                            selectedKeyList =
+                                if (entry.key in selectedKeys) selectedKeyList - entry.key
+                                else selectedKeyList + entry.key
+                        } else {
+                            selectedEntry = entry
                         }
-                    }
-                    items(videoDownloads, key = { "jf_completed_${it.id}" }) { download ->
-                        val unavailableVolumeIds =
-                            uiState.volumeStorageStats
-                                .filter { !it.isAvailable }
-                                .map { it.volumeId }
-                                .toSet()
-                        val isVolumeAvailable = download.storageVolumeId !in unavailableVolumeIds
-                        CompletedDownloadRow(
-                            download = download,
-                            volumeLabel =
-                                if (uiState.volumeStorageStats.size > 1)
-                                    uiState.volumeStorageStats
-                                        .firstOrNull { it.volumeId == download.storageVolumeId }
-                                        ?.displayName
-                                else null,
-                            isVolumeAvailable = isVolumeAvailable,
-                            onDelete = viewModel::deleteDownload,
-                            formatSize = viewModel::formatStorageSize,
-                        )
-                    }
-                }
-
-                if (absBooks.isNotEmpty()) {
-                    item {
-                        SectionHeader(
-                            title = stringResource(R.string.section_download_audiobooks),
-                            modifier = Modifier.padding(horizontal = 32.dp, vertical = 4.dp),
-                        )
-                    }
-                    items(absBooks, key = { "abs_completed_book_${it.id}" }) { download ->
-                        AbsCompletedDownloadRow(
-                            download = download,
-                            onClick = { onNavigateToAbsItem(download.libraryItemId) },
-                            onDelete = viewModel::deleteAbsDownload,
-                            formatSize = viewModel::formatStorageSize,
-                        )
-                    }
-                }
-
-                if (absPodcastGroups.isNotEmpty()) {
-                    item {
-                        SectionHeader(
-                            title = stringResource(R.string.section_download_podcasts),
-                            modifier = Modifier.padding(horizontal = 32.dp, vertical = 4.dp),
-                        )
-                    }
-                    absPodcastGroups.forEach { (libraryItemId, episodes) ->
-                        item(key = "abs_podcast_$libraryItemId") {
-                            AbsPodcastGroupRow(
-                                libraryItemId = libraryItemId,
-                                episodes = episodes,
-                                onClick = { onNavigateToAbsItem(libraryItemId) },
-                                onDelete = { viewModel.deleteAbsPodcast(libraryItemId) },
-                                formatSize = viewModel::formatStorageSize,
-                            )
+                    },
+                    onEntryLongClick = { entry ->
+                        if (!selectionMode) {
+                            selectionMode = true
+                            selectedKeyList = listOf(entry.key)
                         }
-                    }
-                }
-
-                if (musicAlbumGroups.isNotEmpty() || standaloneMusicTracks.isNotEmpty()) {
-                    item {
-                        SectionHeader(
-                            title = stringResource(R.string.section_download_music),
-                            modifier = Modifier.padding(horizontal = 32.dp, vertical = 4.dp),
-                        )
-                    }
-                    musicAlbumGroups.forEach { (albumSeriesId, tracks) ->
-                        item(key = "music_album_$albumSeriesId") {
-                            MusicAlbumGroupRow(
-                                tracks = tracks,
-                                onDelete = { viewModel.deleteMusicAlbum(albumSeriesId) },
-                                formatSize = viewModel::formatStorageSize,
-                            )
-                        }
-                    }
-                    items(standaloneMusicTracks, key = { "music_track_${it.id}" }) { download ->
-                        MusicTrackRow(
-                            download = download,
-                            onDelete = viewModel::deleteDownload,
-                            formatSize = viewModel::formatStorageSize,
-                        )
-                    }
-                }
+                    },
+                )
             }
 
             if (allActiveCount == 0 && allCompletedCount == 0) {
-                item { EmptyDownloadsState() }
+                item(key = "empty", span = { GridItemSpan(maxLineSpan) }) { EmptyDownloadsState() }
             }
         }
     }
 }
 
 @Composable
-fun StatusHub(
-    totalStorageUsed: Long,
-    totalStorageUsedAllServers: Long,
-    downloadCount: Int,
-    isOffline: Boolean,
-    wifiOnly: Boolean,
-    maxConcurrentDownloads: Int,
-    deviceStats: DownloadsViewModel.DeviceStorageStats?,
-    onWifiOnlyChanged: (Boolean) -> Unit,
-    onMaxDownloadsChanged: (Int) -> Unit,
-    formatSize: (Long) -> String,
-    modifier: Modifier = Modifier,
+private fun DeleteDownloadsDialog(
+    title: String,
+    message: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_delete),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+            )
+        },
+        title = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            )
+        },
+        text = { Text(text = message, style = MaterialTheme.typography.bodyMedium) },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
             ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(72.dp)) {
-                    CircularProgressIndicator(
-                        progress = { 1f },
-                        modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        strokeWidth = 6.dp,
-                    )
+                Text(stringResource(R.string.action_delete))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+        shape = MaterialTheme.shapes.extraLarge,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+    )
+}
 
-                    val progress = deviceStats?.usagePercentage ?: 0f
+@Composable
+private fun DownloadSelectionBar(
+    count: Int,
+    totalBytes: Long,
+    formatSize: (Long) -> String,
+    onDelete: () -> Unit,
+) {
+    Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
+        Row(
+            modifier =
+                Modifier.fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.downloads_frees_up),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = formatSize(totalBytes),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
 
-                    CircularProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier.fillMaxSize(),
-                        color =
-                            if (progress > 0.9f) MaterialTheme.colorScheme.error
-                            else MaterialTheme.colorScheme.primary,
-                        strokeWidth = 6.dp,
-                        strokeCap = StrokeCap.Round,
-                    )
+            Button(
+                onClick = onDelete,
+                enabled = count > 0,
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    ),
+                modifier = Modifier.height(48.dp),
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_delete),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text =
+                        pluralStringResource(
+                            R.plurals.downloads_delete_selected_fmt,
+                            count,
+                            count,
+                        ),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+    }
+}
 
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_database),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp),
-                    )
-                }
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DownloadGroupSheet(
+    entry: DownloadCatalogEntry,
+    jellyfinChildren: List<DownloadInfo>,
+    absChildren: List<AbsDownloadInfo>,
+    volumeStats: List<DownloadsViewModel.VolumeStorageStats>,
+    formatSize: (Long) -> String,
+    onDeleteAll: () -> Unit,
+    onDeleteChild: (UUID) -> Unit,
+    onDeleteAbsChild: (UUID) -> Unit,
+    onOpenAbsItem: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val childCount = jellyfinChildren.size + absChildren.size
 
-                Spacer(modifier = Modifier.width(20.dp))
+    LaunchedEffect(entry.key, childCount) { if (entry.isGroup && childCount == 0) onDismiss() }
 
+    val absLibraryItemId =
+        when (val ref = entry.ref) {
+            is DownloadCatalogRef.AbsBook -> ref.libraryItemId
+            is DownloadCatalogRef.AbsPodcast -> ref.libraryItemId
+            else -> null
+        }
+
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                AsyncImage(
+                    imageUrl = entry.imageUrl,
+                    contentDescription = entry.title,
+                    contentScale = ContentScale.Crop,
+                    modifier =
+                        Modifier.width(84.dp)
+                            .aspectRatio(
+                                if (entry.category == DownloadCategory.VIDEO) 2f / 3f else 1f
+                            )
+                            .clip(RoundedCornerShape(12.dp)),
+                )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = stringResource(R.string.storage_this_server),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = formatSize(totalStorageUsed),
-                        style =
-                            MaterialTheme.typography.headlineLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 32.sp,
-                                letterSpacing = (-1).sp,
-                            ),
+                        text = entry.title,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                     )
-
-                    if (totalStorageUsedAllServers > totalStorageUsed) {
+                    entry.subtitle?.let { subtitle ->
                         Text(
-                            text =
-                                stringResource(
-                                    R.string.storage_all_servers_fmt,
-                                    formatSize(totalStorageUsedAllServers),
-                                ),
-                            style =
-                                MaterialTheme.typography.bodySmall.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
-
-                    val freeSpaceText = deviceStats?.freeBytes?.let { formatSize(it) } ?: "..."
                     Text(
                         text =
-                            stringResource(
-                                R.string.storage_free_on_device_fmt,
-                                freeSpaceText,
-                            ),
-                        style =
-                            MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                        color =
-                            if ((deviceStats?.usagePercentage ?: 0f) > 0.9f)
-                                MaterialTheme.colorScheme.error
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            if (entry.isGroup) {
+                                stringResource(
+                                    R.string.downloads_group_summary_fmt,
+                                    childCount,
+                                    formatSize(entry.sizeBytes),
+                                )
+                            } else {
+                                formatSize(entry.sizeBytes)
+                            },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
-            Spacer(modifier = Modifier.height(16.dp))
-
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(
-                    text = stringResource(R.string.pref_max_concurrent_downloads),
-                    style =
-                        MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                Button(
+                    onClick = onDeleteAll,
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        ),
                 ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        modifier = Modifier.size(36.dp),
-                    ) {
-                        IconButton(
-                            onClick = {
-                                if (maxConcurrentDownloads > 1)
-                                    onMaxDownloadsChanged(maxConcurrentDownloads - 1)
-                            },
-                            enabled = maxConcurrentDownloads > 1,
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_remove),
-                                contentDescription = stringResource(R.string.cd_decrease_limit),
-                                tint =
-                                    if (maxConcurrentDownloads > 1)
-                                        MaterialTheme.colorScheme.onSurface
-                                    else
-                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                            alpha = 0.5f
-                                        ),
-                            )
-                        }
-                    }
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_delete),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text =
+                            if (entry.isGroup) stringResource(R.string.downloads_delete_all)
+                            else stringResource(R.string.action_delete)
+                    )
+                }
 
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    ) {
-                        Text(
-                            text = "$maxConcurrentDownloads",
-                            style =
-                                MaterialTheme.typography.labelMedium.copy(
-                                    fontFamily = FontFamily.Monospace,
-                                    fontWeight = FontWeight.Bold,
-                                ),
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        modifier = Modifier.size(36.dp),
-                    ) {
-                        IconButton(
-                            onClick = {
-                                if (maxConcurrentDownloads < 3)
-                                    onMaxDownloadsChanged(maxConcurrentDownloads + 1)
-                            },
-                            enabled = maxConcurrentDownloads < 3,
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_add),
-                                contentDescription = stringResource(R.string.cd_increase_limit),
-                                tint =
-                                    if (maxConcurrentDownloads < 3)
-                                        MaterialTheme.colorScheme.onSurface
-                                    else
-                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                            alpha = 0.5f
-                                        ),
-                            )
-                        }
+                absLibraryItemId?.let { libraryItemId ->
+                    OutlinedButton(onClick = { onOpenAbsItem(libraryItemId) }) {
+                        Text(stringResource(R.string.downloads_open_item))
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.pref_download_wifi_only_title),
-                    style =
-                        MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            if (entry.isGroup) {
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
+                    modifier = Modifier.padding(horizontal = 24.dp),
                 )
-                AfinitySwitch(checked = wifiOnly, onCheckedChange = onWifiOnlyChanged)
+
+                val unavailableVolumeIds =
+                    remember(volumeStats) {
+                        volumeStats.filter { !it.isAvailable }.map { it.volumeId }.toSet()
+                    }
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp),
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                ) {
+                    if (entry.category == DownloadCategory.MUSIC) {
+                        items(jellyfinChildren, key = { "sheet_track_${it.id}" }) { download ->
+                            MusicTrackRow(
+                                download = download,
+                                onDelete = onDeleteChild,
+                                formatSize = formatSize,
+                            )
+                        }
+                    } else {
+                        items(jellyfinChildren, key = { "sheet_ep_${it.id}" }) { download ->
+                            CompletedDownloadRow(
+                                download = download,
+                                volumeLabel =
+                                    if (volumeStats.size > 1)
+                                        volumeStats
+                                            .firstOrNull { it.volumeId == download.storageVolumeId }
+                                            ?.displayName
+                                    else null,
+                                isVolumeAvailable =
+                                    download.storageVolumeId !in unavailableVolumeIds,
+                                onDelete = onDeleteChild,
+                                formatSize = formatSize,
+                            )
+                        }
+                    }
+
+                    items(absChildren, key = { "sheet_abs_${it.id}" }) { download ->
+                        AbsCompletedDownloadRow(
+                            download = download,
+                            onClick = { onOpenAbsItem(download.libraryItemId) },
+                            onDelete = onDeleteAbsChild,
+                            formatSize = formatSize,
+                        )
+                    }
+                }
             }
         }
     }
@@ -782,7 +754,7 @@ fun ActiveDownloadCard(
                             }
 
                         Text(
-                            text = subtitle ?: download.sourceName,
+                            text = subtitle,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
                             maxLines = 1,
@@ -1384,42 +1356,6 @@ fun AbsCompletedDownloadRow(
 }
 
 @Composable
-fun AbsPodcastGroupRow(
-    libraryItemId: String,
-    episodes: List<AbsDownloadInfo>,
-    onClick: () -> Unit,
-    onDelete: () -> Unit,
-    formatSize: (Long) -> String,
-) {
-    val first = episodes.first()
-    val podcastName = first.authorName?.takeIf { it.isNotBlank() } ?: first.title
-    val totalBytes = episodes.sumOf { it.bytesDownloaded }
-    val count = episodes.size
-    val subtitleText =
-        pluralStringResource(
-            R.plurals.download_group_episodes_fmt,
-            count,
-            count,
-            formatSize(totalBytes),
-        )
-
-    DownloadListItemRow(
-        imageUrl = first.coverUrl,
-        title = podcastName,
-        onClick = onClick,
-        onDelete = onDelete,
-    ) {
-        Text(
-            text = subtitleText,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-@Composable
 fun ImageCacheSettingsCard(
     isCacheEnabled: Boolean,
     cacheSizeMb: Float,
@@ -1519,56 +1455,16 @@ fun ImageCacheSettingsCard(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Slider(
+                    AfinitySlider(
                         value = cacheSizeMb,
                         onValueChange = onCacheSizeChange,
                         valueRange = 256f..2048f,
                         steps = 6,
-                        colors =
-                            SliderDefaults.colors(
-                                thumbColor = MaterialTheme.colorScheme.primary,
-                                activeTrackColor = MaterialTheme.colorScheme.primary,
-                                inactiveTrackColor =
-                                    MaterialTheme.colorScheme.surfaceContainerHighest,
-                                activeTickColor =
-                                    MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
-                                inactiveTickColor =
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                            ),
                         modifier = Modifier.height(24.dp),
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-fun MusicAlbumGroupRow(
-    tracks: List<DownloadInfo>,
-    onDelete: () -> Unit,
-    formatSize: (Long) -> String,
-) {
-    val first = tracks.first()
-    val albumName = first.seriesName?.takeIf { it.isNotBlank() } ?: first.itemName
-    val totalBytes = tracks.sumOf { it.totalBytes }
-    val count = tracks.size
-    val subtitleText =
-        pluralStringResource(
-            R.plurals.download_group_tracks_fmt,
-            count,
-            count,
-            formatSize(totalBytes),
-        )
-
-    DownloadListItemRow(imageUrl = first.imageUrl, title = albumName, onDelete = onDelete) {
-        Text(
-            text = subtitleText,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
     }
 }
 
@@ -1675,19 +1571,11 @@ fun VideoCacheSettingsCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Slider(
+            AfinitySlider(
                 value = cacheSizeMb,
                 onValueChange = onCacheSizeChange,
                 valueRange = 256f..4096f,
                 steps = 6,
-                colors =
-                    SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.primary,
-                        activeTrackColor = MaterialTheme.colorScheme.primary,
-                        inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        activeTickColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
-                        inactiveTickColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                    ),
                 modifier = Modifier.height(24.dp),
             )
         }
@@ -1695,7 +1583,7 @@ fun VideoCacheSettingsCard(
 }
 
 @Composable
-private fun CacheSectionPicker(
+internal fun CacheSectionPicker(
     usage: CacheUsage?,
     selected: Set<CacheSection>,
     enabled: Boolean,

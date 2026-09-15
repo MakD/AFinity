@@ -3,16 +3,17 @@ package com.makd.afinity.data.manager
 import android.content.Context
 import com.makd.afinity.di.ImageClient
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import timber.log.Timber
 
 @Singleton
 class UserImageStore
@@ -52,6 +53,8 @@ constructor(
                         tmp.delete()
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.w(e, "Failed to cache avatar for $userId")
             }

@@ -10,10 +10,10 @@ import com.makd.afinity.data.repository.audiobookshelf.AbsProgressSyncScheduler
 import dagger.Lazy
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.util.UUID
 
 @HiltWorker
 class AbsProgressSyncWorker
@@ -43,6 +43,10 @@ constructor(
                 }
 
             Timber.d("AbsProgressSync: syncing pending progress for serverId=$serverId")
+            val syncedBookmarks = audiobookshelfRepository.get().syncPendingBookmarks()
+            if (syncedBookmarks > 0) {
+                Timber.d("AbsProgressSync: synced $syncedBookmarks bookmark mutations")
+            }
             val result = audiobookshelfRepository.get().syncPendingProgress(serverId, userId)
             return@withContext when {
                 result.isSuccess -> {

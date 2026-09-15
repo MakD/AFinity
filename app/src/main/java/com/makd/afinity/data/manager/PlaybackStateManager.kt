@@ -7,6 +7,10 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.data.sync.UserDataSyncScheduler
 import com.makd.afinity.di.ApplicationScope
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -14,9 +18,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class PlaybackStateManager
@@ -86,6 +87,8 @@ constructor(
                         isEnded,
                     )
                     handlePlaybackStopped(itemId)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.e(e, "Error in notifyPlaybackStopped")
                 }
@@ -137,6 +140,8 @@ constructor(
                 )
                 syncScheduler.triggerSync()
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to report playback stop to Jellyfin")
             syncScheduler.triggerSync()
@@ -160,6 +165,8 @@ constructor(
                 )
                 mediaRefreshBus.emit(RefreshTrigger.USER_DATA_CHANGED)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to handle playback stopped")
         }

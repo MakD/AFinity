@@ -13,13 +13,14 @@ import com.makd.afinity.data.network.TmdbApiService
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltViewModel
 class SeerrMediaDetailViewModel
@@ -136,6 +137,8 @@ constructor(
                     .firstOrNull()
                     ?.file_path ?: return
             _uiState.update { it.copy(logoUrl = "https://image.tmdb.org/t/p/w342$logoPath") }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.w(e, "Failed to load TMDB logo for $tmdbId")
         }

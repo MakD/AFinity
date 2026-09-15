@@ -64,10 +64,17 @@ enum class Destination(
         const val GENRE_RESULTS_ROUTE = "genre_results/{genre}"
         const val SETTINGS_ROUTE = "settings"
         const val DOWNLOAD_SETTINGS_ROUTE = "download_settings"
+        const val STORAGE_SETTINGS_ROUTE = "storage_settings"
         const val PLAYER_OPTIONS_ROUTE = "player_options"
         const val APPEARANCE_OPTIONS_ROUTE = "appearance_options"
         const val CUSTOM_SECTIONS_ROUTE = "custom_sections"
         const val LICENSES_ROUTE = "licenses"
+        const val LOGS_ROUTE = "logs"
+
+        fun createLogsRoute(): String {
+            return LOGS_ROUTE
+        }
+
         const val FILTERED_MEDIA_ROUTE = "filtered_media/{filterType}/{filterId}/{filterName}"
         const val FAVORITES_CATEGORY_ROUTE = "favorites_category/{category}"
         const val WATCHLIST_CATEGORY_ROUTE = "watchlist_category/{category}"
@@ -98,17 +105,19 @@ enum class Destination(
         const val PLAYLIST_ROUTE = "playlist/{playlistId}?audioOnly={audioOnly}"
         const val MUSIC_PLAYER_ROUTE = "music/player"
         const val MUSIC_GENRE_ROUTE =
-            "music/genre/{genreName}?imageUrl={imageUrl}&genreId={genreId}"
+            "music/genre/{genreName}?imageUrl={imageUrl}&genreId={genreId}&libraryId={libraryId}"
 
         fun createMusicGenreRoute(
             genreName: String,
             imageUrl: String? = null,
             genreId: java.util.UUID? = null,
+            libraryId: java.util.UUID? = null,
         ): String {
             val encodedName = genreName.replace("/", "%2F")
             val params = buildList {
                 if (imageUrl != null) add("imageUrl=${URLEncoder.encode(imageUrl, "UTF-8")}")
                 if (genreId != null) add("genreId=$genreId")
+                if (libraryId != null) add("libraryId=$libraryId")
             }
             return if (params.isEmpty()) "music/genre/$encodedName"
             else "music/genre/$encodedName?${params.joinToString("&")}"

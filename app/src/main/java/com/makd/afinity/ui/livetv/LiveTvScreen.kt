@@ -44,6 +44,7 @@ import com.makd.afinity.R
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.livetv.tabs.LiveTvChannelsTab
@@ -113,9 +114,12 @@ fun LiveTvScreen(
                 },
                 onMenuClick = onMenuClick,
                 onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
-                onProfileClick = { navController.navigate(Destination.createSettingsRoute()) },
-                userName = mainUiState.userName,
-                userProfileImageUrl = mainUiState.userProfileImageUrl,
+                profile =
+                    AppBarProfile(
+                        onClick = { navController.navigate(Destination.createSettingsRoute()) },
+                        name = mainUiState.userName,
+                        imageUrl = mainUiState.userProfileImageUrl,
+                    ),
                 backgroundOpacity = { 1f },
             )
         },

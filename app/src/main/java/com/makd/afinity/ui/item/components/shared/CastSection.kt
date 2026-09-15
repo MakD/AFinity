@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,8 +39,8 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
-import org.jellyfin.sdk.model.api.PersonKind
 import java.util.UUID
+import org.jellyfin.sdk.model.api.PersonKind
 
 fun AfinityItem.displayPeople(): List<AfinityPerson> =
     when (this) {
@@ -127,6 +128,7 @@ private fun CastMemberCard(
             Modifier.width(cardWidth).clickable(
                 indication = null,
                 interactionSource = remember { MutableInteractionSource() },
+                role = Role.Button,
             ) {
                 onPersonClick(person.id)
             },

@@ -2,7 +2,6 @@ package com.makd.afinity.ui.music.library
 
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -97,10 +96,12 @@ import com.makd.afinity.player.AudioService
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AlphabetScroller
+import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.SectionRowHeader
 import com.makd.afinity.ui.components.focalAlpha
+import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.home.components.ArtistAlbumsCarousel
 import com.makd.afinity.ui.home.components.LatestAlbumsSection
 import com.makd.afinity.ui.home.components.MostPlayedAlbumsSection
@@ -122,6 +123,7 @@ import java.util.UUID
 enum class LibraryFilter(@StringRes val displayNameRes: Int) {
     Home(R.string.music_tab_home),
     Playlists(R.string.music_tab_playlists),
+    AlbumArtists(R.string.music_tab_album_artists),
     Artists(R.string.music_tab_artists),
     Albums(R.string.music_tab_albums),
     Tracks(R.string.music_tab_tracks),
@@ -137,6 +139,7 @@ fun MusicLibraryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val userProfileImageUrl by viewModel.userProfileImageUrl.collectAsStateWithLifecycle()
+    val userName by viewModel.userName.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     val homeListState = rememberLazyListState()
@@ -162,9 +165,13 @@ fun MusicLibraryScreen(
                     )
                 },
                 backgroundOpacity = { topBarOpacity },
-                userProfileImageUrl = userProfileImageUrl,
+                profile =
+                    AppBarProfile(
+                        onClick = { navController.navigate(Destination.createSettingsRoute()) },
+                        name = userName,
+                        imageUrl = userProfileImageUrl,
+                    ),
                 onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
-                onProfileClick = { navController.navigate(Destination.createSettingsRoute()) },
             )
         }
     ) { innerPadding ->
@@ -220,6 +227,7 @@ fun MusicLibraryScreen(
 
 @Composable
 internal fun TracksList(
+    modifier: Modifier = Modifier,
     listState: LazyListState,
     tracks: LazyPagingItems<AfinityTrack>,
     favoriteOverrides: Map<UUID, Boolean>,
@@ -237,7 +245,6 @@ internal fun TracksList(
     onCancelDownload: ((AfinityTrack) -> Unit)? = null,
     isDownloadEnabled: Boolean = true,
     trackDownloadInfos: Map<UUID, DownloadInfo> = emptyMap(),
-    modifier: Modifier = Modifier,
 ) {
     val isInitialLoading = tracks.loadState.refresh is LoadState.Loading && tracks.itemCount == 0
     if (isInitialLoading) {
@@ -834,11 +841,18 @@ private fun LibraryShortcutsRow(
                 gradientEnd = Color(0xFF5A5482),
             ),
             LibraryShortcut(
-                filter = LibraryFilter.Artists,
-                labelRes = R.string.music_nav_artists,
+                filter = LibraryFilter.AlbumArtists,
+                labelRes = R.string.music_nav_album_artists,
                 iconRes = R.drawable.ic_microphone,
                 gradientStart = Color(0xFFE2AE95),
                 gradientEnd = Color(0xFF965243),
+            ),
+            LibraryShortcut(
+                filter = LibraryFilter.Artists,
+                labelRes = R.string.music_nav_artists,
+                iconRes = R.drawable.ic_microphone,
+                gradientStart = Color(0xFFD9B8A2),
+                gradientEnd = Color(0xFF7E5A4E),
             ),
             LibraryShortcut(
                 filter = LibraryFilter.Albums,
@@ -1002,8 +1016,7 @@ private fun MadeForYouCarousel(
             modifier = Modifier.padding(start = 14.dp, bottom = 12.dp),
         )
 
-        val configuration = LocalConfiguration.current
-        val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        val isLandscape = isLandscapeWindow()
         val containerSize = LocalWindowInfo.current.containerSize
         val density = LocalDensity.current
         val windowWidth = with(density) { containerSize.width.toDp() }
@@ -1216,7 +1229,7 @@ internal fun MusicArtistsRow(
     horizontalPadding: Dp = 16.dp,
     onViewAllClick: (() -> Unit)? = null,
 ) {
-    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
     val cardSize = if (isLandscape) 170.dp else 140.dp
     Column(modifier = modifier) {
         if (onViewAllClick != null) {
@@ -1262,7 +1275,7 @@ fun CompactTrackGridSection(
     onTrackClick: (AfinityTrack) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
     val rowsCount = if (tracks.size >= 6) 3 else if (tracks.size >= 3) 2 else 1
     val rowHeight = if (isLandscape) 70 else 64
     val itemWidth = if (isLandscape) 320.dp else 280.dp
@@ -1335,7 +1348,7 @@ internal fun startMusicService(context: Context) {
             AbsPlayerEntryPoint::class.java,
         )
         .audiobookshelfPlayer()
-        .release()
+        .releaseForEngineSwitch()
     context.startService(
         Intent(context, AudioService::class.java).setAction(AudioService.ACTION_ENGINE_MUSIC)
     )

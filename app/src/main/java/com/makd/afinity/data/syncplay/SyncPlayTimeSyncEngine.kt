@@ -2,6 +2,11 @@ package com.makd.afinity.data.syncplay
 
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.repository.syncplay.SyncPlayRepository
+import java.time.ZoneOffset
+import java.util.concurrent.atomic.AtomicLong
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -10,13 +15,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.api.operations.TimeSyncApi
+import org.jellyfin.sdk.api.operations.SystemApi
 import org.jellyfin.sdk.model.DateTime
 import timber.log.Timber
-import java.time.ZoneOffset
-import java.util.concurrent.atomic.AtomicLong
-import javax.inject.Inject
-import javax.inject.Singleton
 
 private const val PING_ROUNDS = 4
 private const val RESYNC_INTERVAL_MS = 30_000L
@@ -88,6 +89,8 @@ constructor(
                     Timber.d(
                         "SyncPlay time sync round ${round + 1}/$PING_ROUNDS: rtt=${rtt}ms offset=${offset}ms"
                     )
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.w(e, "SyncPlay time sync round ${round + 1} failed, skipping")
                 }
@@ -104,9 +107,9 @@ constructor(
         }
     }
 
-    private fun timeSyncApi(): TimeSyncApi? {
+    private fun timeSyncApi(): SystemApi? {
         val client = sessionManager.getCurrentApiClient() ?: return null
-        return TimeSyncApi(client)
+        return SystemApi(client)
     }
 }
 

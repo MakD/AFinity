@@ -15,19 +15,20 @@ import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.di.DownloadClient
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.io.File
+import java.io.FileOutputStream
+import java.util.UUID
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jellyfin.sdk.api.client.ApiClient
-import org.jellyfin.sdk.api.operations.ItemsApi
+import org.jellyfin.sdk.api.operations.LibraryApi
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
-import java.io.File
-import java.io.FileOutputStream
-import java.util.UUID
 
 @HiltWorker
 class SubtitleDownloadWorker
@@ -100,10 +101,10 @@ constructor(
 
                 val baseUrl = apiClient.baseUrl ?: ""
 
-                val itemsApi = ItemsApi(apiClient)
+                val libraryApi = LibraryApi(apiClient)
                 val baseItemDto =
                     try {
-                        itemsApi
+                        libraryApi
                             .getItems(
                                 userId = userId,
                                 ids = listOf(itemId),
@@ -115,6 +116,8 @@ constructor(
                             .content
                             ?.items
                             ?.firstOrNull()
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to fetch item details for subtitles")
                         null
@@ -171,6 +174,8 @@ constructor(
                             outputDir = subtitlesDir,
                             mediaSourceId = sourceId,
                         )
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to download subtitle: ${stream.language}")
                     }
@@ -185,6 +190,8 @@ constructor(
                         KEY_SOURCE_ID to sourceId,
                     )
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Subtitle download failed")
                 return@withContext Result.failure(
@@ -246,6 +253,8 @@ constructor(
                         }
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error downloading subtitle file")
                 return
@@ -258,6 +267,8 @@ constructor(
                 val localStream = stream.copy(path = outputFile.absolutePath, isExternal = true)
                 databaseRepository.insertMediaStream(localStream, localSourceId)
                 Timber.d("Registered local subtitle in DB: ${outputFile.name}")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to insert subtitle stream into database")
             }

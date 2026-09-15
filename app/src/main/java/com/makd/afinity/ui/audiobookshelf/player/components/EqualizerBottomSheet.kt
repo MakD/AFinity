@@ -3,7 +3,6 @@ package com.makd.afinity.ui.audiobookshelf.player.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,13 +16,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -35,6 +34,7 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
@@ -46,6 +46,7 @@ import com.makd.afinity.player.common.EQ_MAX_DB
 import com.makd.afinity.player.common.EQ_MIN_DB
 import com.makd.afinity.player.common.EqualizerPreset
 import com.makd.afinity.player.common.EqualizerState
+import com.makd.afinity.ui.components.AfinitySlider
 import com.makd.afinity.ui.components.AfinitySwitch
 import kotlin.math.roundToInt
 
@@ -195,7 +196,7 @@ fun EqualizerBottomSheet(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Slider(
+            AfinitySlider(
                 value = state.volumeBoostDb.toFloat(),
                 onValueChange = { onVolumeBoostChanged(it.roundToInt()) },
                 valueRange = 0f..10f,
@@ -244,7 +245,15 @@ private fun PresetChip(
                     ),
                     RoundedCornerShape(50),
                 )
-                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .then(
+                    if (onClick != null)
+                        Modifier.selectable(
+                            selected = isSelected,
+                            role = Role.RadioButton,
+                            onClick = onClick,
+                        )
+                    else Modifier
+                )
                 .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         Text(
@@ -279,7 +288,7 @@ private fun BandColumn(
             textAlign = TextAlign.Center,
         )
 
-        Slider(
+        AfinitySlider(
             value = gainDb.toFloat(),
             onValueChange = { onGainChanged(it.roundToInt()) },
             valueRange = EQ_MIN_DB.toFloat()..EQ_MAX_DB.toFloat(),

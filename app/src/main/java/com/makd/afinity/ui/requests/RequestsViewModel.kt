@@ -30,6 +30,8 @@ import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.util.GenreDuotoneColorGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -44,7 +46,6 @@ import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withPermit
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltViewModel
 class RequestsViewModel
@@ -257,6 +258,8 @@ constructor(
                     _uiState.update { it.copy(requests = requests, isLoading = false) }
                     prefetchAvailableJellyfinIds(requests)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Error observing requests")
             }
@@ -314,6 +317,8 @@ constructor(
                         )
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -350,6 +355,8 @@ constructor(
                             }
                         },
                     )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(isDeletingRequest = false, error = e.message ?: "Unknown error")
@@ -424,6 +431,8 @@ constructor(
                             }
                         },
                     )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(isProcessingRequest = false, error = e.message ?: "Unknown error")
@@ -485,6 +494,8 @@ constructor(
                             }
                         },
                     )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(isProcessingRequest = false, error = e.message ?: "Unknown error")
@@ -527,6 +538,8 @@ constructor(
                             }
                         },
                     )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(isProcessingRequest = false, error = e.message ?: "Unknown error")

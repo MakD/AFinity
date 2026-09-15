@@ -3,6 +3,7 @@ package com.makd.afinity.ui.settings
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,14 +32,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -47,7 +50,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.ui.components.AFinitySnackbar
-import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.ForgetAccountDialog
+import com.makd.afinity.ui.components.UserAvatar
 import kotlinx.coroutines.launch
 
 @Composable
@@ -59,6 +63,15 @@ internal fun SessionSwitcherContent(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var sessionToForget by remember { mutableStateOf<UserSession?>(null) }
+
+    sessionToForget?.let { session ->
+        ForgetAccountDialog(
+            userName = session.username,
+            onConfirm = { viewModel.forgetSession(session) },
+            onDismiss = { sessionToForget = null },
+        )
+    }
 
     LaunchedEffect(state.error) {
         state.error?.let { error ->
@@ -118,6 +131,7 @@ internal fun SessionSwitcherContent(
                                 viewModel.switchSession(session.serverId, session.userId)
                                 onDismiss()
                             },
+                            onSessionLongClick = { session -> sessionToForget = session },
                             onAddAccountClick = {
                                 onDismiss()
                                 onAddAccountClick(sessionGroup.server)
@@ -174,6 +188,7 @@ fun SessionSwitcherBottomSheet(
 internal fun ServerSessionGroupItem(
     sessionGroup: ServerSessionGroup,
     onSessionClick: (UserSession) -> Unit,
+    onSessionLongClick: (UserSession) -> Unit,
     onAddAccountClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -205,7 +220,11 @@ internal fun ServerSessionGroupItem(
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
         ) {
             sessionGroup.sessions.forEach { session ->
-                SessionItem(session = session, onClick = { onSessionClick(session) })
+                SessionItem(
+                    session = session,
+                    onClick = { onSessionClick(session) },
+                    onLongClick = { onSessionLongClick(session) },
+                )
                 HorizontalDivider(
                     modifier = Modifier.padding(horizontal = 16.dp),
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
@@ -215,7 +234,7 @@ internal fun ServerSessionGroupItem(
             Row(
                 modifier =
                     Modifier.fillMaxWidth()
-                        .clickable(onClick = onAddAccountClick)
+                        .clickable(role = Role.Button, onClick = onAddAccountClick)
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -251,41 +270,34 @@ internal fun ServerSessionGroupItem(
 }
 
 @Composable
-private fun SessionItem(session: UserSession, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun SessionItem(
+    session: UserSession,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick, enabled = !session.isCurrent)
+                .combinedClickable(
+                    enabled = !session.isCurrent,
+                    role = Role.Button,
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                )
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(
-            modifier =
-                Modifier.size(40.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (session.userAvatar != null) {
-                AsyncImage(
-                    imageUrl = session.userAvatar,
-                    contentDescription = stringResource(R.string.cd_user_avatar),
-                    targetWidth = 40.dp,
-                    targetHeight = 40.dp,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(40.dp),
-                )
-            } else {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_user),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-        }
+        UserAvatar(
+            imageUrl = session.userAvatar,
+            name = session.username,
+            size = 40.dp,
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            contentDescription = stringResource(R.string.cd_user_avatar),
+        )
 
         Text(
             text = session.username,

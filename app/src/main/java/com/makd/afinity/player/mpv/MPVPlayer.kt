@@ -10,6 +10,7 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.TextureView
 import androidx.core.content.getSystemService
+import androidx.media3.common.AdPlaybackState
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.BasePlayer
 import androidx.media3.common.C
@@ -34,14 +35,14 @@ import androidx.media3.common.util.ListenerSet
 import androidx.media3.common.util.Size
 import androidx.media3.common.util.Util
 import dev.jdtech.mpv.MPVLib
-import org.json.JSONArray
-import org.json.JSONException
-import org.json.JSONObject
-import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.concurrent.CopyOnWriteArraySet
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
+import timber.log.Timber
 
 @androidx.media3.common.util.UnstableApi
 class MPVPlayer(
@@ -669,7 +670,15 @@ class MPVPlayer(
             override fun getPeriodCount(): Int = internalMediaItems.size
 
             override fun getPeriod(periodIndex: Int, period: Period, setIds: Boolean): Period {
-                return period.set(null, null, periodIndex, C.TIME_UNSET, 0)
+                return period.set(
+                    null,
+                    null,
+                    periodIndex,
+                    C.TIME_UNSET,
+                    0,
+                    AdPlaybackState.NONE,
+                    false,
+                )
             }
 
             override fun getIndexOfPeriod(uid: Any): Int = C.INDEX_UNSET
@@ -1031,28 +1040,31 @@ class MPVPlayer(
         mpv.setPropertyInt("volume", volume)
     }
 
+    @Deprecated("Deprecated in Java", ReplaceWith("increaseDeviceVolume(flags)"))
     override fun increaseDeviceVolume() {
-        deviceVolume = (getDeviceVolume() + 1).coerceAtMost(100)
+        increaseDeviceVolume(0)
     }
 
     override fun increaseDeviceVolume(flags: Int) {
-        increaseDeviceVolume()
+        setDeviceVolume((getDeviceVolume() + 1).coerceAtMost(100), flags)
     }
 
+    @Deprecated("Deprecated in Java", ReplaceWith("decreaseDeviceVolume(flags)"))
     override fun decreaseDeviceVolume() {
-        deviceVolume = (getDeviceVolume() - 1).coerceAtLeast(0)
+        decreaseDeviceVolume(0)
     }
 
     override fun decreaseDeviceVolume(flags: Int) {
-        decreaseDeviceVolume()
+        setDeviceVolume((getDeviceVolume() - 1).coerceAtLeast(0), flags)
     }
 
+    @Deprecated("Deprecated in Java", ReplaceWith("setDeviceMuted(muted, flags)"))
     override fun setDeviceMuted(muted: Boolean) {
-        mpv.setPropertyBoolean("mute", muted)
+        setDeviceMuted(muted, 0)
     }
 
     override fun setDeviceMuted(muted: Boolean, flags: Int) {
-        isDeviceMuted = muted
+        mpv.setPropertyBoolean("mute", muted)
     }
 
     override fun setAudioAttributes(audioAttributes: AudioAttributes, handleAudioFocus: Boolean) {}

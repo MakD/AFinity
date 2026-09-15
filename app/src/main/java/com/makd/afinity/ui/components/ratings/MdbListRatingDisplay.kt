@@ -16,11 +16,13 @@ const val RATING_SOURCE_COMMUNITY = "community"
 const val RATING_SOURCE_IMDB = "imdb"
 const val RATING_SOURCE_TOMATOES = "tomatoes"
 
-fun communityRatingOf(rating: Float?): MdbListRating? =
-    rating?.let { MdbListRating(source = RATING_SOURCE_COMMUNITY, value = it.toDouble()) }
+fun communityRatingOf(rating: Float?): MdbListRating? = rating?.let {
+    MdbListRating(source = RATING_SOURCE_COMMUNITY, value = it.toDouble())
+}
 
-fun criticRatingOf(rating: Float?): MdbListRating? =
-    rating?.let { MdbListRating(source = RATING_SOURCE_TOMATOES, value = it.toDouble()) }
+fun criticRatingOf(rating: Float?): MdbListRating? = rating?.let {
+    MdbListRating(source = RATING_SOURCE_TOMATOES, value = it.toDouble())
+}
 
 fun List<MdbListRating>.excludingSupersededBy(criticRating: Float?): List<MdbListRating> =
     if (criticRating == null) this

@@ -1,6 +1,5 @@
 package com.makd.afinity.data.repository.download
 
-import android.content.Context
 import androidx.work.Constraints
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
@@ -34,7 +33,11 @@ import com.makd.afinity.data.workers.LyricsDownloadWorker
 import com.makd.afinity.data.workers.MediaDownloadWorker
 import com.makd.afinity.data.workers.SubtitleDownloadWorker
 import com.makd.afinity.data.workers.TrickplayDownloadWorker
-import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -46,16 +49,11 @@ import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
-import java.io.File
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class JellyfinDownloadRepository
 @Inject
 constructor(
-    @param:ApplicationContext private val context: Context,
     private val sessionManager: SessionManager,
     private val mediaRepository: MediaRepository,
     private val musicRepository: MusicRepository,
@@ -323,6 +321,8 @@ constructor(
                 queueDownloadWork(download)
 
                 Result.success(downloadId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start download")
                 Result.failure(e)
@@ -420,6 +420,8 @@ constructor(
                 }
 
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to pause download")
                 Result.failure(e)
@@ -451,6 +453,8 @@ constructor(
                 queueDownloadWork(updatedDownload, ExistingWorkPolicy.REPLACE)
 
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to resume download")
                 Result.failure(e)
@@ -486,6 +490,8 @@ constructor(
                                 itemDir.deleteRecursively()
                             }
                         }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to delete files for cancelled download")
                     }
@@ -493,6 +499,8 @@ constructor(
                 }
 
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to cancel download")
                 Result.failure(e)
@@ -534,6 +542,8 @@ constructor(
                 databaseRepository.deleteDownload(downloadId)
 
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to delete download")
                 Result.failure(e)
@@ -555,6 +565,8 @@ constructor(
                 databaseRepository.deleteDownload(downloadId)
 
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to remove download record")
                 Result.failure(e)
@@ -643,6 +655,8 @@ constructor(
             return@withContext try {
                 val session = sessionManager.currentSession.value ?: return@withContext 0L
                 databaseRepository.getTotalBytesForServer(session.serverId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to calculate storage used")
                 0L
@@ -653,6 +667,8 @@ constructor(
         withContext(Dispatchers.IO) {
             return@withContext try {
                 databaseRepository.getTotalBytesAllServers()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to calculate total storage used")
                 0L
@@ -664,6 +680,8 @@ constructor(
             return@withContext try {
                 val session = sessionManager.currentSession.value ?: return@withContext emptyMap()
                 databaseRepository.getTotalBytesPerVolumeForServer(session.serverId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to calculate per-volume storage used")
                 emptyMap()
@@ -674,6 +692,8 @@ constructor(
         withContext(Dispatchers.IO) {
             return@withContext try {
                 databaseRepository.getTotalBytesPerVolumeAllServers()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to calculate per-volume storage used")
                 emptyMap()
@@ -752,6 +772,8 @@ constructor(
                 }
                 Timber.i("Season download queued $started/${episodes.size} episodes")
                 Result.success(started)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start season download")
                 Result.failure(e)
@@ -772,6 +794,8 @@ constructor(
                     "Series download queued $totalStarted episodes across ${seasons.size} seasons"
                 )
                 Result.success(totalStarted)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start series download")
                 Result.failure(e)
@@ -790,6 +814,8 @@ constructor(
                 }
                 Timber.i("Cancelled ${toCancel.size} downloads for series $showId")
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to cancel series downloads")
                 Result.failure(e)
@@ -825,6 +851,8 @@ constructor(
                 }
                 Timber.i("Album download queued $started/${tracks.size} tracks for album $albumId")
                 Result.success(started)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start album download")
                 Result.failure(e)
@@ -845,6 +873,8 @@ constructor(
                     "Artist download queued $totalStarted tracks across ${albums.size} albums for artist $artistId"
                 )
                 Result.success(totalStarted)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start artist download")
                 Result.failure(e)
@@ -886,6 +916,8 @@ constructor(
                     "Playlist download queued $started/${entries.size} items for playlist $playlistId"
                 )
                 Result.success(started)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start playlist download")
                 Result.failure(e)
@@ -908,6 +940,8 @@ constructor(
                     "Cancelled ${toCancel.size} downloads for series $seriesId season $seasonNumber"
                 )
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to cancel season downloads")
                 Result.failure(e)

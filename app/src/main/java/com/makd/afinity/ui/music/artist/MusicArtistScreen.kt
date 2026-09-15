@@ -1,16 +1,12 @@
 package com.makd.afinity.ui.music.artist
 
-import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,6 +58,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -79,6 +76,9 @@ import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AFinitySnackbar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.isLandscapeWindow
+import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
+import com.makd.afinity.ui.item.components.shared.OverviewSection
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.music.components.AddToPlaylistResult
 import com.makd.afinity.ui.music.components.AddToPlaylistViewModel
@@ -90,10 +90,9 @@ import com.makd.afinity.ui.music.components.MusicTrackRow
 import com.makd.afinity.ui.music.components.RadioModeBottomSheet
 import com.makd.afinity.ui.music.library.startMusicService
 import com.makd.afinity.ui.music.player.MusicPlayerViewModel
-import com.makd.afinity.ui.utils.htmlToAnnotatedString
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
-import kotlinx.coroutines.launch
 import java.util.UUID
+import kotlinx.coroutines.launch
 
 @Composable
 fun MusicArtistScreen(
@@ -116,7 +115,7 @@ fun MusicArtistScreen(
     var showAddToPlaylist by remember { mutableStateOf(false) }
     var radioSeed by remember { mutableStateOf<RadioSeed?>(null) }
     var showAllTracks by remember { mutableStateOf(false) }
-    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = isLandscapeWindow()
     val portraitListState = rememberLazyListState()
     val landscapeListState = rememberLazyListState()
     val lazyListState = if (isLandscape) landscapeListState else portraitListState
@@ -275,32 +274,39 @@ fun MusicArtistScreen(
                     val overview = uiState.artist?.overview
                     if (!overview.isNullOrBlank()) {
                         item {
-                            ArtistOverviewSection(
+                            OverviewSection(
                                 overview = overview,
                                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                             )
                         }
                     }
 
+                    val externalUrls = uiState.artist?.externalUrls
+                    if (!externalUrls.isNullOrEmpty()) {
+                        item {
+                            Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+                                ExternalLinksSection(externalUrls = externalUrls)
+                            }
+                        }
+                    }
+
                     val genres = uiState.artist?.genres.orEmpty()
                     if (genres.isNotEmpty()) {
                         item {
-                            LazyRow(
-                                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                items(genres) { genre ->
-                                    androidx.compose.material3.SuggestionChip(
-                                        onClick = {},
-                                        label = {
-                                            Text(
-                                                genre,
-                                                style = MaterialTheme.typography.labelMedium,
-                                            )
-                                        },
-                                    )
-                                }
-                            }
+                            Text(
+                                text =
+                                    pluralStringResource(
+                                        R.plurals.genres_prefix,
+                                        genres.size,
+                                        genres.joinToString(", "),
+                                    ),
+                                style =
+                                    MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                            )
                         }
                     }
 
@@ -388,9 +394,7 @@ fun MusicArtistScreen(
                                                     }),
                                             onDownload =
                                                 if (isDownloadAllowedByServer)
-                                                    ({
-                                                        viewModel.downloadTrack(track.id)
-                                                    })
+                                                    ({ viewModel.downloadTrack(track.id) })
                                                 else null,
                                             isDownloadEnabled = canDownloadOnNetwork,
                                             onCancelDownload = {
@@ -450,9 +454,7 @@ fun MusicArtistScreen(
                                                     },
                                                     onDownload =
                                                         if (isDownloadAllowedByServer)
-                                                            ({
-                                                                viewModel.downloadTrack(track.id)
-                                                            })
+                                                            ({ viewModel.downloadTrack(track.id) })
                                                         else null,
                                                     isDownloadEnabled = canDownloadOnNetwork,
                                                     onCancelDownload = {
@@ -511,7 +513,7 @@ fun MusicArtistScreen(
                                     Modifier.padding(start = 20.dp, top = 32.dp, bottom = 16.dp),
                             )
                             LazyRow(
-                                contentPadding = PaddingValues(horizontal = 20.dp),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                             ) {
                                 items(uiState.albums, key = { it.id }) { album ->
@@ -545,7 +547,7 @@ fun MusicArtistScreen(
                                     Modifier.padding(start = 20.dp, top = 32.dp, bottom = 16.dp),
                             )
                             LazyRow(
-                                contentPadding = PaddingValues(horizontal = 20.dp),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                             ) {
                                 items(uiState.appearsOn, key = { it.id }) { album ->
@@ -717,30 +719,35 @@ fun MusicArtistScreen(
 
                         val overview = uiState.artist?.overview
                         if (!overview.isNullOrBlank()) {
-                            ArtistOverviewSection(
+                            OverviewSection(
                                 overview = overview,
                                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                             )
                         }
 
+                        val externalUrls = uiState.artist?.externalUrls
+                        if (!externalUrls.isNullOrEmpty()) {
+                            Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+                                ExternalLinksSection(externalUrls = externalUrls)
+                            }
+                        }
+
                         val genres = uiState.artist?.genres.orEmpty()
                         if (genres.isNotEmpty()) {
-                            LazyRow(
-                                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                items(genres) { genre ->
-                                    androidx.compose.material3.SuggestionChip(
-                                        onClick = {},
-                                        label = {
-                                            Text(
-                                                genre,
-                                                style = MaterialTheme.typography.labelMedium,
-                                            )
-                                        },
-                                    )
-                                }
-                            }
+                            Text(
+                                text =
+                                    pluralStringResource(
+                                        R.plurals.genres_prefix,
+                                        genres.size,
+                                        genres.joinToString(", "),
+                                    ),
+                                style =
+                                    MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                            )
                         }
                     }
                 }
@@ -829,9 +836,7 @@ fun MusicArtistScreen(
                                         }),
                                 onDownload =
                                     if (isDownloadAllowedByServer)
-                                        ({
-                                            viewModel.downloadTrack(track.id)
-                                        })
+                                        ({ viewModel.downloadTrack(track.id) })
                                     else null,
                                 isDownloadEnabled = canDownloadOnNetwork,
                                 onCancelDownload = { viewModel.cancelTrackDownload(track.id) },
@@ -893,9 +898,7 @@ fun MusicArtistScreen(
                                                     }),
                                             onDownload =
                                                 if (isDownloadAllowedByServer)
-                                                    ({
-                                                        viewModel.downloadTrack(track.id)
-                                                    })
+                                                    ({ viewModel.downloadTrack(track.id) })
                                                 else null,
                                             isDownloadEnabled = canDownloadOnNetwork,
                                             onCancelDownload = {
@@ -950,7 +953,7 @@ fun MusicArtistScreen(
                             modifier = Modifier.padding(start = 20.dp, top = 32.dp, bottom = 16.dp),
                         )
                         LazyRow(
-                            contentPadding = PaddingValues(horizontal = 20.dp),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             items(uiState.albums, key = { it.id }) { album ->
@@ -983,7 +986,7 @@ fun MusicArtistScreen(
                             modifier = Modifier.padding(start = 20.dp, top = 32.dp, bottom = 16.dp),
                         )
                         LazyRow(
-                            contentPadding = PaddingValues(horizontal = 20.dp),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             items(uiState.appearsOn, key = { it.id }) { album ->
@@ -1050,75 +1053,6 @@ fun MusicArtistScreen(
                 message?.let { scope.launch { snackbarHostState.showSnackbar(it) } }
             },
         )
-    }
-}
-
-@Composable
-private fun ArtistOverviewSection(overview: String, modifier: Modifier = Modifier) {
-    var isExpanded by remember { mutableStateOf(false) }
-    var isEllipsized by remember { mutableStateOf(false) }
-
-    val containsHtml =
-        remember(overview) {
-            overview.contains("<a ", ignoreCase = true) ||
-                overview.contains("</a>", ignoreCase = true) ||
-                overview.contains("<br", ignoreCase = true)
-        }
-    val linkColor = MaterialTheme.colorScheme.primary
-    val annotatedText =
-        remember(overview, linkColor) {
-            if (containsHtml) htmlToAnnotatedString(overview, linkColor) else null
-        }
-
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        val textModifier = Modifier.animateContentSize()
-        val style = MaterialTheme.typography.bodyMedium
-        val color = MaterialTheme.colorScheme.onSurfaceVariant
-        val maxLines = if (isExpanded) Int.MAX_VALUE else 4
-        val overflow = if (isExpanded) TextOverflow.Visible else TextOverflow.Ellipsis
-        val onTextLayout: (androidx.compose.ui.text.TextLayoutResult) -> Unit = { result ->
-            if (!isExpanded) isEllipsized = result.hasVisualOverflow
-        }
-
-        if (containsHtml && annotatedText != null) {
-            Text(
-                text = annotatedText,
-                style = style,
-                color = color,
-                maxLines = maxLines,
-                overflow = overflow,
-                modifier = textModifier,
-                onTextLayout = onTextLayout,
-            )
-        } else {
-            Text(
-                text = overview,
-                style = style,
-                color = color,
-                maxLines = maxLines,
-                overflow = overflow,
-                modifier = textModifier,
-                onTextLayout = onTextLayout,
-            )
-        }
-
-        if (isEllipsized || isExpanded) {
-            Text(
-                text =
-                    stringResource(
-                        if (isExpanded) R.string.action_show_less else R.string.action_show_more
-                    ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier =
-                    Modifier.clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() },
-                    ) {
-                        isExpanded = !isExpanded
-                    },
-            )
-        }
     }
 }
 

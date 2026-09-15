@@ -43,9 +43,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -60,6 +60,7 @@ import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.settings.ServerSessionGroupItem
 import com.makd.afinity.ui.settings.SessionSwitcherViewModel
+import com.makd.afinity.ui.settings.UserSession
 
 @Composable
 fun AppNavigationDrawerContent(
@@ -85,6 +86,15 @@ fun AppNavigationDrawerContent(
 ) {
     val sessionState by sessionSwitcherViewModel.state.collectAsStateWithLifecycle()
     var accountSwitcherExpanded by remember { mutableStateOf(false) }
+    var sessionToForget by remember { mutableStateOf<UserSession?>(null) }
+
+    sessionToForget?.let { session ->
+        ForgetAccountDialog(
+            userName = session.username,
+            onConfirm = { sessionSwitcherViewModel.forgetSession(session) },
+            onDismiss = { sessionToForget = null },
+        )
+    }
     val chevronRotation by
         animateFloatAsState(
             targetValue = if (accountSwitcherExpanded) 180f else 0f,
@@ -120,43 +130,19 @@ fun AppNavigationDrawerContent(
                         Modifier.fillMaxWidth()
                             .padding(horizontal = 16.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .clickable { accountSwitcherExpanded = !accountSwitcherExpanded }
+                            .clickable(role = Role.Button) {
+                                accountSwitcherExpanded = !accountSwitcherExpanded
+                            }
                             .padding(horizontal = 8.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Box(
-                        modifier =
-                            Modifier.size(48.dp)
-                                .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
-                                .clip(CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        if (userProfileImageUrl != null) {
-                            AsyncImage(
-                                imageUrl = userProfileImageUrl,
-                                contentDescription = stringResource(R.string.cd_profile_icon),
-                                targetWidth = 48.dp,
-                                targetHeight = 48.dp,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop,
-                            )
-                        } else if (!userName.isNullOrBlank()) {
-                            Text(
-                                text = userName.take(1).uppercase(),
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        } else {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_user_circle),
-                                contentDescription = stringResource(R.string.cd_profile_icon),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(28.dp),
-                            )
-                        }
-                    }
+                    UserAvatar(
+                        imageUrl = userProfileImageUrl,
+                        name = userName,
+                        size = 48.dp,
+                        contentDescription = stringResource(R.string.cd_profile_icon),
+                    )
 
                     Column(modifier = Modifier.weight(1f)) {
                         Row(
@@ -253,6 +239,7 @@ fun AppNavigationDrawerContent(
                                     accountSwitcherExpanded = false
                                     onCloseDrawer()
                                 },
+                                onSessionLongClick = { session -> sessionToForget = session },
                                 onAddAccountClick = { onAddAccountClick(sessionGroup.server) },
                             )
                         }
@@ -270,8 +257,7 @@ fun AppNavigationDrawerContent(
                         val visible =
                             when {
                                 isOffline && destination != Destination.HOME -> false
-                                destination == Destination.LIBRARIES ->
-                                    librariesInDrawer && !isOffline
+                                destination == Destination.LIBRARIES -> librariesInDrawer
                                 destination == Destination.FAVORITES -> favoritesCount > 0
                                 destination == Destination.WATCHLIST -> watchlistCount > 0
                                 destination == Destination.REQUESTS -> isJellyseerrAuthenticated

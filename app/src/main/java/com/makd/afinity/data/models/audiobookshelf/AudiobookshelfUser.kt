@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 data class AudiobookshelfUser(
     @SerialName("id") val id: String,
     @SerialName("username") val username: String,
+    @SerialName("email") val email: String? = null,
     @SerialName("type") val type: String? = null,
     @SerialName("token") val token: String? = null,
     @SerialName("accessToken") val accessToken: String? = null,
@@ -20,6 +21,9 @@ data class AudiobookshelfUser(
     @SerialName("permissions") val permissions: UserPermissions? = null,
     @SerialName("librariesAccessible") val librariesAccessible: List<String>? = null,
     @SerialName("itemTagsSelected") val itemTagsSelected: List<String>? = null,
+    @SerialName("hasOpenIDLink") val hasOpenIDLink: Boolean? = null,
+    @SerialName("seriesHideFromContinueListening")
+    val seriesHideFromContinueListening: List<String>? = null,
 )
 
 @Serializable
@@ -39,6 +43,12 @@ data class Bookmark(
     @SerialName("title") val title: String,
     @SerialName("time") val time: Double,
     @SerialName("createdAt") val createdAt: Long,
+)
+
+@Serializable
+data class BookmarkRequest(
+    @SerialName("time") val time: Long,
+    @SerialName("title") val title: String,
 )
 
 @Serializable

@@ -7,16 +7,16 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import com.makd.afinity.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.net.InetAddress
+import java.util.concurrent.ConcurrentHashMap
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
-import java.net.InetAddress
-import java.util.concurrent.ConcurrentHashMap
-import javax.inject.Inject
-import javax.inject.Singleton
 
 enum class Locality {
     ON_LINK,
@@ -35,7 +35,7 @@ private const val TAILSCALE_DOMAIN_SUFFIX = "ts.net"
 class NetworkLocality
 @Inject
 constructor(
-    @param:ApplicationContext context: Context,
+    @ApplicationContext context: Context,
     networkConnectivityMonitor: NetworkConnectivityMonitor,
     @ApplicationScope scope: CoroutineScope,
 ) {

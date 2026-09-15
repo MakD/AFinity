@@ -4,16 +4,18 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
+import com.makd.afinity.data.manager.ForgetUserUseCase
 import com.makd.afinity.data.manager.Session
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.manager.UserImageStore
 import com.makd.afinity.data.models.server.Server
-import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
-import com.makd.afinity.data.repository.auth.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,8 +24,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
 
 data class SessionSwitcherState(
     val sessionGroups: List<ServerSessionGroup> = emptyList(),
@@ -51,9 +51,8 @@ constructor(
     private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
     private val securePreferencesRepository: SecurePreferencesRepository,
-    private val authRepository: AuthRepository,
-    private val appDataRepository: AppDataRepository,
     private val userImageStore: UserImageStore,
+    private val forgetUser: ForgetUserUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SessionSwitcherState())
@@ -106,6 +105,8 @@ constructor(
                                 ServerSessionGroup(server = server, sessions = userSessions)
                             }
                             sessionGroups to currentSession
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Timber.e(e, "Error building session groups")
                             emptyList<ServerSessionGroup>() to currentSession
@@ -143,6 +144,17 @@ constructor(
                                 ),
                         )
                 }
+        }
+    }
+
+    fun forgetSession(session: UserSession) {
+        if (session.isCurrent) return
+        viewModelScope.launch {
+            forgetUser(session.serverId, session.userId).onFailure { error ->
+                Timber.e(error, "Failed to forget ${session.username}")
+                _state.value =
+                    _state.value.copy(error = context.getString(R.string.forget_account_failed))
+            }
         }
     }
 
