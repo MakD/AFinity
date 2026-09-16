@@ -66,7 +66,7 @@ configure<ApplicationExtension> {
     defaultConfig {
         applicationId = "com.makd.afinity"
         minSdk = 35
-        targetSdk = 36
+        targetSdk = 37
         versionCode = appVersionCode.toInt()
         versionName = appVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

@@ -21,7 +21,9 @@ constructor(@param:ApplicationContext private val context: Context) {
     val isGranted: StateFlow<Boolean> = _isGranted.asStateFlow()
 
     val isRequired: Boolean
-        get() = Build.VERSION.SDK_INT >= LOCAL_NETWORK_SDK
+        get() =
+            Build.VERSION.SDK_INT >= LOCAL_NETWORK_SDK &&
+                context.applicationInfo.targetSdkVersion >= LOCAL_NETWORK_SDK
 
     fun refresh() {
         _isGranted.value = checkGranted()
