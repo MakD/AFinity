@@ -108,7 +108,6 @@ constructor(
 
     suspend fun isInternetAvailable(): Boolean {
         val manualOfflineMode = preferencesRepository.getOfflineMode()
-        val isNetworkAvailable = networkConnectivityMonitor.isCurrentlyConnected()
-        return !manualOfflineMode && isNetworkAvailable
+        return !manualOfflineMode && networkConnectivityMonitor.hasValidatedInternet()
     }
 }
