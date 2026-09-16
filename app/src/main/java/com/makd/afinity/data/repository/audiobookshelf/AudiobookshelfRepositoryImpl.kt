@@ -129,6 +129,15 @@ constructor(
     private val _isAuthenticated = MutableStateFlow(false)
     override val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
 
+    private val _isReachable = MutableStateFlow(true)
+    override val isReachable: StateFlow<Boolean> = _isReachable.asStateFlow()
+
+    override suspend fun retryConnection() {
+        val (serverId, userId) = activeContext ?: return
+        _isAuthenticated.value = false
+        setActiveJellyfinSession(serverId, userId)
+    }
+
     private val _personalizedCache =
         MutableStateFlow<Map<String, List<PersonalizedView>>>(emptyMap())
     override val personalizedCache: StateFlow<Map<String, List<PersonalizedView>>> =
@@ -318,6 +327,7 @@ constructor(
                             userId.toString(),
                             config.serverUrl,
                         )
+                    _isReachable.value = result is AudiobookshelfAddressResult.Success
                     if (
                         result is AudiobookshelfAddressResult.Success &&
                             result.address != config.serverUrl
@@ -329,6 +339,10 @@ constructor(
                             result.address
                         )
                         activeUrl = result.address
+                    } else if (result is AudiobookshelfAddressResult.NoRoute) {
+                        Timber.w(
+                            "Audiobookshelf: No route from this network to ${result.attemptedAddresses}"
+                        )
                     }
                 } catch (e: CancellationException) {
                     throw e

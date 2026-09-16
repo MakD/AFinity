@@ -1645,6 +1645,30 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_78_79 =
+        object : Migration(78, 79) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `serverAddressMemory` (
+                        `serverId` TEXT NOT NULL,
+                        `networkKey` TEXT NOT NULL,
+                        `address` TEXT NOT NULL,
+                        `lastSucceededAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`serverId`, `networkKey`),
+                        FOREIGN KEY(`serverId`) REFERENCES `servers`(`id`)
+                            ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """
+                        .trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_serverAddressMemory_serverId` " +
+                        "ON `serverAddressMemory` (`serverId`)"
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1724,5 +1748,6 @@ object DatabaseMigrations {
             MIGRATION_75_76,
             MIGRATION_76_77,
             MIGRATION_77_78,
+            MIGRATION_78_79,
         )
 }

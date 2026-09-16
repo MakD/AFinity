@@ -37,6 +37,7 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.ServiceUnreachableBanner
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.settings.AudiobookshelfBottomSheet
 
@@ -53,6 +54,7 @@ fun AudiobookshelfLibrariesScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val libraries by viewModel.libraries.collectAsStateWithLifecycle()
     val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
+    val isReachable by viewModel.isReachable.collectAsStateWithLifecycle()
     val personalizedSections by viewModel.personalizedSections.collectAsStateWithLifecycle()
     val config by viewModel.currentConfig.collectAsStateWithLifecycle()
 
@@ -135,6 +137,15 @@ fun AudiobookshelfLibrariesScreen(
         }
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            if (!isReachable) {
+                ServiceUnreachableBanner(
+                    serviceName = stringResource(R.string.service_name_audiobookshelf),
+                    onRetry = viewModel::retryConnection,
+                    modifier =
+                        Modifier.align(Alignment.TopCenter)
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
             if (libraries.isEmpty() && uiState.isRefreshing) {
                 FullScreenLoading()
             } else if (libraries.isEmpty()) {

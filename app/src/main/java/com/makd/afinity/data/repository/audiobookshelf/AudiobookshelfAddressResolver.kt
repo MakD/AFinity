@@ -3,6 +3,7 @@ package com.makd.afinity.data.repository.audiobookshelf
 import com.makd.afinity.data.database.dao.AudiobookshelfDao
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import com.makd.afinity.util.NetworkLocality
+import com.makd.afinity.util.ProbeResult
 import com.makd.afinity.util.pingUrl
 import com.makd.afinity.util.probeAddresses
 import java.util.concurrent.TimeUnit
@@ -17,6 +18,8 @@ sealed class AudiobookshelfAddressResult {
     data class Success(val address: String) : AudiobookshelfAddressResult()
 
     data class AllFailed(val attemptedAddresses: List<String>) : AudiobookshelfAddressResult()
+
+    data class NoRoute(val attemptedAddresses: List<String>) : AudiobookshelfAddressResult()
 }
 
 @Singleton
@@ -47,19 +50,19 @@ constructor(
 
         val addressesToTry = listOf(primaryUrl) + alternateAddresses
 
-        val bestAddress =
-            probeAddresses(
-                addresses = addressesToTry,
-                preferLocal = networkConnectivityMonitor.isOnLocalNetwork(),
-                logTag = "Audiobookshelf",
-                networkLocality = networkLocality,
-                validator = { address -> pingService(address) },
-            )
-
-        return if (bestAddress != null) {
-            AudiobookshelfAddressResult.Success(bestAddress)
-        } else {
-            AudiobookshelfAddressResult.AllFailed(addressesToTry)
+        return when (
+            val probe =
+                probeAddresses(
+                    addresses = addressesToTry,
+                    preferLocal = networkConnectivityMonitor.isOnLocalNetwork(),
+                    logTag = "Audiobookshelf",
+                    networkLocality = networkLocality,
+                    validator = { address -> pingService(address) },
+                )
+        ) {
+            is ProbeResult.Success -> AudiobookshelfAddressResult.Success(probe.address)
+            ProbeResult.NoRoute -> AudiobookshelfAddressResult.NoRoute(addressesToTry)
+            ProbeResult.AllFailed -> AudiobookshelfAddressResult.AllFailed(addressesToTry)
         }
     }
 

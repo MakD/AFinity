@@ -251,22 +251,16 @@ constructor(
 
     private fun loadAppData(skipOfflineCheck: Boolean = false) {
         viewModelScope.launch {
-            if (!skipOfflineCheck) {
-                val isOffline = offlineModeManager.isCurrentlyOffline()
+            if (!sessionManager.isServerReachable.value) {
+                Timber.d("Server unreachable (address resolution failed), starting in offline mode")
+                appDataRepository.skipInitialDataLoad()
+                return@launch
+            }
 
-                if (isOffline) {
-                    Timber.d("Device is offline, skipping initial data load")
-                    appDataRepository.skipInitialDataLoad()
-                    return@launch
-                }
-
-                if (!sessionManager.isServerReachable.value) {
-                    Timber.d(
-                        "Server unreachable (address resolution failed), starting in offline mode"
-                    )
-                    appDataRepository.skipInitialDataLoad()
-                    return@launch
-                }
+            if (!skipOfflineCheck && offlineModeManager.isCurrentlyOffline()) {
+                Timber.d("Device is offline, skipping initial data load")
+                appDataRepository.skipInitialDataLoad()
+                return@launch
             }
 
             val maxRetries = 3

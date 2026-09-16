@@ -62,6 +62,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.R.drawable.ic_launcher_monochrome
+import com.makd.afinity.data.manager.UnreachableReason
 import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.HomeRow
@@ -194,10 +195,31 @@ fun HomeScreen(
                     return@run
                 }
                 if (offlineAndEmpty) {
+                    val noRoute = uiState.offlineReason == UnreachableReason.NO_ROUTE
                     FullScreenEmpty(
                         icon = painterResource(R.drawable.ic_server_off),
-                        title = stringResource(R.string.offline_empty_title),
-                        message = stringResource(R.string.offline_empty_message),
+                        title =
+                            stringResource(
+                                if (noRoute) R.string.offline_no_route_title
+                                else R.string.offline_empty_title
+                            ),
+                        message =
+                            stringResource(
+                                if (noRoute) R.string.offline_no_route_message
+                                else R.string.offline_empty_message
+                            ),
+                        actionText =
+                            if (noRoute) stringResource(R.string.offline_no_route_action) else null,
+                        onActionClick =
+                            if (noRoute) {
+                                {
+                                    navController.navigate(
+                                        Destination.createServerManagementRoute()
+                                    )
+                                }
+                            } else {
+                                null
+                            },
                         modifier = Modifier.background(MaterialTheme.colorScheme.background),
                     )
                     return@run

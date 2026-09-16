@@ -47,6 +47,7 @@ import com.makd.afinity.ui.components.AppBarProfile
 import com.makd.afinity.ui.components.EmptyState
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
+import com.makd.afinity.ui.components.ServiceUnreachableBanner
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.settings.JellyseerrBottomSheet
 
@@ -66,6 +67,7 @@ fun RequestsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isAuthenticated by
         viewModel.isAuthenticated.collectAsStateWithLifecycle(initialValue = false)
+    val isReachable by viewModel.isReachable.collectAsStateWithLifecycle(initialValue = true)
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     var showJellyseerrBottomSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -108,6 +110,14 @@ fun RequestsScreen(
                 modifier = Modifier.fillMaxSize().padding(innerPadding),
             )
         } else {
+            if (!isReachable) {
+                ServiceUnreachableBanner(
+                    serviceName = stringResource(R.string.service_name_jellyseerr),
+                    onRetry = viewModel::retryConnection,
+                    modifier =
+                        Modifier.padding(innerPadding).padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
             when {
                 uiState.isLoadingDiscover && uiState.discoverSections.isEmpty() -> {
                     FullScreenLoading(modifier = Modifier.padding(innerPadding))

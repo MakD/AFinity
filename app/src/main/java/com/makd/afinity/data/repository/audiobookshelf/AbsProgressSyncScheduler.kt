@@ -3,11 +3,11 @@ package com.makd.afinity.data.repository.audiobookshelf
 import android.content.Context
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
-import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.makd.afinity.data.workers.AbsProgressSyncWorker
+import com.makd.afinity.util.requireServerNetwork
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
@@ -20,8 +20,7 @@ class AbsProgressSyncScheduler
 constructor(@param:ApplicationContext private val context: Context) {
     fun scheduleSync(serverId: String, userId: UUID) {
         try {
-            val constraints =
-                Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+            val constraints = Constraints.Builder().requireServerNetwork().build()
 
             val inputData = workDataOf(KEY_SERVER_ID to serverId, KEY_USER_ID to userId.toString())
 

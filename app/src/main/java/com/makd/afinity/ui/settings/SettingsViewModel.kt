@@ -161,6 +161,8 @@ constructor(
 
     val connectionType = offlineModeManager.connectionType
 
+    val connectivity = offlineModeManager.connectivity
+
     val isJellyseerrAuthenticated: StateFlow<Boolean> =
         jellyseerrRepository.isAuthenticated.stateIn(
             viewModelScope,

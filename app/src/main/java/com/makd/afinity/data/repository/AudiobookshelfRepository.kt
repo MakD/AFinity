@@ -39,6 +39,10 @@ interface AudiobookshelfRepository {
 
     val isAuthenticated: StateFlow<Boolean>
 
+    val isReachable: StateFlow<Boolean>
+
+    suspend fun retryConnection()
+
     val currentConfig: StateFlow<AudiobookshelfConfig?>
 
     suspend fun login(

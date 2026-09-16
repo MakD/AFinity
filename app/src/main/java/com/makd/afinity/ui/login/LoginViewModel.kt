@@ -280,6 +280,7 @@ constructor(
                     when (val result = serverAddressResolver.resolveAddress(server.id)) {
                         is AddressResolutionResult.Success -> result.address
                         is AddressResolutionResult.PermissionRequired -> server.address
+                        is AddressResolutionResult.NoRoute -> server.address
                         is AddressResolutionResult.AllFailed -> server.address
                     }
                 Timber.d("Resolved server URL: $resolvedUrl")

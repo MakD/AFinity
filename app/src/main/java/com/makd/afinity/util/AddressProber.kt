@@ -18,26 +18,32 @@ import timber.log.Timber
 private const val PREFERRED_GRACE_MS = 500L
 private const val LOCALITY_BUDGET_MS = 500L
 
-private suspend fun resolveOnLink(
+sealed interface ProbeResult {
+    data class Success(val address: String) : ProbeResult
+
+    data object AllFailed : ProbeResult
+
+    data object NoRoute : ProbeResult
+}
+
+private suspend fun resolveLocalities(
     addresses: List<String>,
     networkLocality: NetworkLocality,
     logTag: String,
-): List<String> {
+): Map<String, Locality>? {
     val resolved =
         withTimeoutOrNull(LOCALITY_BUDGET_MS) {
             coroutineScope {
                 addresses
-                    .map { address ->
-                        async { address to (networkLocality.resolve(address) == Locality.ON_LINK) }
-                    }
+                    .map { address -> async { address to networkLocality.resolve(address) } }
                     .awaitAll()
+                    .toMap()
             }
         }
     if (resolved == null) {
         Timber.d("$logTag: Locality resolution exceeded ${LOCALITY_BUDGET_MS}ms, using shape only")
-        return emptyList()
     }
-    return resolved.filter { it.second }.map { it.first }
+    return resolved
 }
 
 suspend fun probeAddresses(
@@ -45,33 +51,54 @@ suspend fun probeAddresses(
     preferLocal: Boolean,
     logTag: String,
     networkLocality: NetworkLocality? = null,
+    rememberedAddress: String? = null,
     validator: suspend (String) -> Boolean,
-): String? {
-    if (addresses.isEmpty()) return null
+): ProbeResult {
+    if (addresses.isEmpty()) return ProbeResult.AllFailed
 
-    val addressesByShape = addresses.filter { isLocalAddress(it) }
-    val localAddresses =
-        if (
-            addresses.size < 2 ||
-                addressesByShape.isNotEmpty() ||
-                !preferLocal ||
-                networkLocality == null
-        ) {
-            addressesByShape
-        } else {
-            resolveOnLink(addresses, networkLocality, logTag).also {
-                if (it.isNotEmpty()) {
-                    Timber.d("$logTag: Locality resolved on-link addresses: $it")
-                }
+    val localities =
+        if (networkLocality != null) resolveLocalities(addresses, networkLocality, logTag) else null
+
+    val unroutable =
+        localities
+            ?.filter { (address, locality) ->
+                locality == Locality.PUBLIC && isLocalAddress(address)
             }
+            ?.keys
+            .orEmpty()
+
+    val candidates = addresses.filterNot { it in unroutable }
+    if (candidates.isEmpty()) {
+        Timber.w("$logTag: No candidate is reachable from this network, skipped $addresses")
+        return ProbeResult.NoRoute
+    }
+    if (unroutable.isNotEmpty()) {
+        Timber.d("$logTag: Skipping addresses with no route from this network: $unroutable")
+    }
+
+    val localSet =
+        if (localities != null) {
+            candidates.filter { localities[it] == Locality.ON_LINK }.toSet()
+        } else {
+            candidates.filter { isLocalAddress(it) }.toSet()
         }
-    val localSet = localAddresses.toSet()
-    val externalAddresses = addresses.filterNot { it in localSet }
+    val preferLocalNow = preferLocal && localSet.isNotEmpty()
+
+    val localAddresses = candidates.filter { it in localSet }
+    val externalAddresses = candidates.filterNot { it in localSet }
+    val byLocality =
+        if (preferLocalNow) localAddresses + externalAddresses
+        else externalAddresses + localAddresses
     val orderedAddresses =
-        if (preferLocal) localAddresses + externalAddresses else externalAddresses + localAddresses
+        if (rememberedAddress != null && rememberedAddress in byLocality) {
+            Timber.d("$logTag: Trying remembered address first: $rememberedAddress")
+            listOf(rememberedAddress) + byLocality.filterNot { it == rememberedAddress }
+        } else {
+            byLocality
+        }
 
     Timber.d(
-        "$logTag: Resolving address, preferLocal=$preferLocal, " +
+        "$logTag: Resolving address, preferLocal=$preferLocalNow, " +
             "addresses=${orderedAddresses.map { "${it}[${if (it in localSet) "local" else "ext"}]" }}"
     )
 
@@ -107,7 +134,7 @@ suspend fun probeAddresses(
             }
         }
 
-        var pendingPreferred = if (preferLocal) localAddresses.size else 0
+        var pendingPreferred = if (preferLocalNow) localAddresses.size else 0
         var fallbackWinner: String? = null
         var graceDeadline = 0L
         var winner: String? = null
@@ -125,7 +152,7 @@ suspend fun probeAddresses(
             if (result == null) break
             received++
             val (address, success) = result
-            if (preferLocal && address in localSet) {
+            if (preferLocalNow && address in localSet) {
                 pendingPreferred--
                 if (success) {
                     winner = address
@@ -150,10 +177,10 @@ suspend fun probeAddresses(
         if (resolved != null) {
             val tag = if (resolved in localSet) "local" else "ext"
             Timber.d("$logTag: Resolved → $resolved [$tag] (${totalElapsed}ms)")
-        } else {
-            Timber.w("$logTag: All ${orderedAddresses.size} addresses failed (${totalElapsed}ms)")
+            return ProbeResult.Success(resolved)
         }
-        return resolved
+        Timber.w("$logTag: All ${orderedAddresses.size} addresses failed (${totalElapsed}ms)")
+        return ProbeResult.AllFailed
     } finally {
         probeScope.cancel()
     }

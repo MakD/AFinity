@@ -3,6 +3,7 @@ package com.makd.afinity.data.repository.jellyseerr
 import com.makd.afinity.data.database.dao.JellyseerrDao
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import com.makd.afinity.util.NetworkLocality
+import com.makd.afinity.util.ProbeResult
 import com.makd.afinity.util.pingUrl
 import com.makd.afinity.util.probeAddresses
 import java.util.concurrent.TimeUnit
@@ -17,6 +18,8 @@ sealed class JellyseerrAddressResult {
     data class Success(val address: String) : JellyseerrAddressResult()
 
     data class AllFailed(val attemptedAddresses: List<String>) : JellyseerrAddressResult()
+
+    data class NoRoute(val attemptedAddresses: List<String>) : JellyseerrAddressResult()
 }
 
 @Singleton
@@ -47,19 +50,19 @@ constructor(
 
         val addressesToTry = listOf(primaryUrl) + alternateAddresses
 
-        val bestAddress =
-            probeAddresses(
-                addresses = addressesToTry,
-                preferLocal = networkConnectivityMonitor.isOnLocalNetwork(),
-                logTag = "Jellyseerr",
-                networkLocality = networkLocality,
-                validator = { address -> pingService(address) },
-            )
-
-        return if (bestAddress != null) {
-            JellyseerrAddressResult.Success(bestAddress)
-        } else {
-            JellyseerrAddressResult.AllFailed(addressesToTry)
+        return when (
+            val probe =
+                probeAddresses(
+                    addresses = addressesToTry,
+                    preferLocal = networkConnectivityMonitor.isOnLocalNetwork(),
+                    logTag = "Jellyseerr",
+                    networkLocality = networkLocality,
+                    validator = { address -> pingService(address) },
+                )
+        ) {
+            is ProbeResult.Success -> JellyseerrAddressResult.Success(probe.address)
+            ProbeResult.NoRoute -> JellyseerrAddressResult.NoRoute(addressesToTry)
+            ProbeResult.AllFailed -> JellyseerrAddressResult.AllFailed(addressesToTry)
         }
     }
 

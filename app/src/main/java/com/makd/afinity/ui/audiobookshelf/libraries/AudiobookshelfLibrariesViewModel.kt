@@ -65,6 +65,20 @@ constructor(
 
     val isAuthenticated = audiobookshelfRepository.isAuthenticated
 
+    val isReachable = audiobookshelfRepository.isReachable
+
+    fun retryConnection() {
+        viewModelScope.launch {
+            try {
+                audiobookshelfRepository.retryConnection()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Audiobookshelf retry failed")
+            }
+        }
+    }
+
     private val _personalizedSections = MutableStateFlow<List<PersonalizedSection>>(emptyList())
     private val _genreSections = MutableStateFlow<List<PersonalizedSection>>(emptyList())
 

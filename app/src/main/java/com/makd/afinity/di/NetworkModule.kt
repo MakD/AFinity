@@ -32,6 +32,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -338,6 +339,13 @@ object NetworkModule {
             connectTimeout = 6.seconds,
             requestTimeout = 45.seconds,
             socketTimeout = 30.seconds,
+        )
+
+    val PROBE_HTTP_OPTIONS =
+        HttpClientOptions(
+            connectTimeout = 1500.milliseconds,
+            requestTimeout = 3.seconds,
+            socketTimeout = 3.seconds,
         )
 
     @Provides

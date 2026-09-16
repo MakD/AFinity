@@ -3,7 +3,6 @@ package com.makd.afinity.data.repository.audiobookshelf
 import androidx.work.Constraints
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
-import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.makd.afinity.data.database.dao.AbsDownloadDao
@@ -14,6 +13,7 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
 import com.makd.afinity.data.workers.AbsMediaDownloadWorker
+import com.makd.afinity.util.requireServerNetwork
 import java.io.File
 import java.util.UUID
 import javax.inject.Inject
@@ -215,10 +215,9 @@ constructor(
 
     private suspend fun enqueueWorker(downloadId: UUID, libraryItemId: String, episodeId: String?) {
         val wifiOnly = preferencesRepository.getDownloadOverWifiOnly()
-        val networkType = if (wifiOnly) NetworkType.UNMETERED else NetworkType.CONNECTED
         val constraints =
             Constraints.Builder()
-                .setRequiredNetworkType(networkType)
+                .requireServerNetwork(unmeteredOnly = wifiOnly)
                 .setRequiresStorageNotLow(true)
                 .build()
 

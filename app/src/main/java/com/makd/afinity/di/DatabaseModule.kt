@@ -21,6 +21,7 @@ import com.makd.afinity.data.database.dao.MusicTrackDao
 import com.makd.afinity.data.database.dao.PersonSectionDao
 import com.makd.afinity.data.database.dao.SeasonDao
 import com.makd.afinity.data.database.dao.ServerAddressDao
+import com.makd.afinity.data.database.dao.ServerAddressMemoryDao
 import com.makd.afinity.data.database.dao.ServerDao
 import com.makd.afinity.data.database.dao.ServerDatabaseDao
 import com.makd.afinity.data.database.dao.ServerStorageDao
@@ -61,6 +62,11 @@ object DatabaseModule {
     @Provides
     fun provideServerAddressDao(database: AfinityDatabase): ServerAddressDao {
         return database.serverAddressDao()
+    }
+
+    @Provides
+    fun provideServerAddressMemoryDao(database: AfinityDatabase): ServerAddressMemoryDao {
+        return database.serverAddressMemoryDao()
     }
 
     @Provides

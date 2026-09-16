@@ -42,6 +42,12 @@ import org.jellyfin.sdk.model.api.UserConfiguration
 import org.jellyfin.sdk.model.api.UserDto
 import timber.log.Timber
 
+enum class UnreachableReason {
+    NO_ROUTE,
+    ALL_ADDRESSES_FAILED,
+    PERMISSION_REQUIRED,
+}
+
 data class Session(
     val serverId: String,
     val userId: UUID,
@@ -74,6 +80,9 @@ constructor(
 
     private val _isServerReachable = MutableStateFlow(true)
     val isServerReachable: StateFlow<Boolean> = _isServerReachable.asStateFlow()
+
+    private val _unreachableReason = MutableStateFlow<UnreachableReason?>(null)
+    val unreachableReason: StateFlow<UnreachableReason?> = _unreachableReason.asStateFlow()
 
     private val _needsLocalNetworkPermission = MutableStateFlow(false)
     val needsLocalNetworkPermission: StateFlow<Boolean> = _needsLocalNetworkPermission.asStateFlow()
@@ -113,9 +122,12 @@ constructor(
                 val validator: suspend (String) -> Boolean = { address ->
                     try {
                         val tempClient =
-                            proberJellyfin.createApi(baseUrl = address).also {
-                                it.update(accessToken = accessToken)
-                            }
+                            proberJellyfin
+                                .createApi(
+                                    baseUrl = address,
+                                    httpClientOptions = NetworkModule.PROBE_HTTP_OPTIONS,
+                                )
+                                .also { it.update(accessToken = accessToken) }
                         val response =
                             withTimeoutOrNull(3000L) { UserApi(tempClient).getCurrentUser() }
                         response?.content?.let { probedUser.compareAndSet(null, it) }
@@ -130,7 +142,7 @@ constructor(
 
                 val resolvedUrl =
                     if (urlPreValidated) {
-                        _isServerReachable.value = true
+                        setServerReachable(true)
                         serverUrl
                     } else
                         try {
@@ -139,23 +151,37 @@ constructor(
                                 Timber.d(
                                     "Resolved server address: ${result.address} (saved: $serverUrl)"
                                 )
-                                _isServerReachable.value = true
+                                setServerReachable(true)
                                 result.address
                             } else if (sawUnauthorized.get()) {
                                 Timber.e("Token rejected by server during address resolution (401)")
                                 return@withContext Result.failure(InvalidStatusException(401, null))
                             } else {
-                                if (result is AddressResolutionResult.PermissionRequired) {
-                                    Timber.w(
-                                        "Local network permission missing, cannot reach ${result.attemptedAddresses}"
-                                    )
-                                    _needsLocalNetworkPermission.value = true
-                                } else {
-                                    Timber.w(
-                                        "Address resolution failed, starting in offline mode. Saved URL: $serverUrl"
-                                    )
-                                }
-                                _isServerReachable.value = false
+                                val reason =
+                                    when (result) {
+                                        is AddressResolutionResult.PermissionRequired -> {
+                                            Timber.w(
+                                                "Local network permission missing, cannot reach ${result.attemptedAddresses}"
+                                            )
+                                            _needsLocalNetworkPermission.value = true
+                                            UnreachableReason.PERMISSION_REQUIRED
+                                        }
+
+                                        is AddressResolutionResult.NoRoute -> {
+                                            Timber.w(
+                                                "No route from this network to ${result.attemptedAddresses}, starting in offline mode"
+                                            )
+                                            UnreachableReason.NO_ROUTE
+                                        }
+
+                                        else -> {
+                                            Timber.w(
+                                                "Address resolution failed, starting in offline mode. Saved URL: $serverUrl"
+                                            )
+                                            UnreachableReason.ALL_ADDRESSES_FAILED
+                                        }
+                                    }
+                                setServerReachable(false, reason)
                                 serverUrl
                             }
                         } catch (e: CancellationException) {
@@ -165,7 +191,7 @@ constructor(
                                 e,
                                 "Address resolution error, starting in offline mode. Saved URL: $serverUrl",
                             )
-                            _isServerReachable.value = false
+                            setServerReachable(false, UnreachableReason.ALL_ADDRESSES_FAILED)
                             serverUrl
                         }
 
@@ -207,25 +233,36 @@ constructor(
 
                 securePrefsRepository.saveActiveSession(serverId, userId, resolvedUrl)
 
-                try {
-                    jellyseerrRepository.setActiveJellyfinSession(serverId, userId)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to link Jellyseerr session")
-                }
-                try {
-                    audiobookshelfRepository.setActiveJellyfinSession(serverId, userId)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to link Audiobookshelf session")
+                sessionScope.launch {
+                    val active = _currentSession.value
+                    if (active?.serverId != serverId || active.userId != userId) {
+                        Timber.d("Session changed before linking services, skipping")
+                        return@launch
+                    }
+                    try {
+                        jellyseerrRepository.setActiveJellyfinSession(serverId, userId)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to link Jellyseerr session")
+                    }
+                    try {
+                        audiobookshelfRepository.setActiveJellyfinSession(serverId, userId)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to link Audiobookshelf session")
+                    }
                 }
 
                 sessionScope.launch {
                     try {
-                        val userDto =
-                            probedUser.get() ?: UserApi(apiClient).getCurrentUser().content
+                        val probed = probedUser.get()
+                        if (probed == null && !_isServerReachable.value) {
+                            Timber.d("Server unreachable, keeping cached user policy")
+                            return@launch
+                        }
+                        val userDto = probed ?: UserApi(apiClient).getCurrentUser().content
                         val isAdmin = userDto.policy?.isAdministrator == true
                         val canAccessLiveTv = userDto.policy?.enableLiveTvAccess
                         val canDownload = userDto.policy?.enableContentDownloading
@@ -279,8 +316,9 @@ constructor(
         }
     }
 
-    fun setServerReachable(reachable: Boolean) {
+    fun setServerReachable(reachable: Boolean, reason: UnreachableReason? = null) {
         _isServerReachable.value = reachable
+        _unreachableReason.value = if (reachable) null else reason
     }
 
     suspend fun updateSessionUrl(newUrl: String) {
@@ -319,6 +357,7 @@ constructor(
                     _needsLocalNetworkPermission.value = true
                     tokenInfo.serverUrl
                 }
+                is AddressResolutionResult.NoRoute,
                 is AddressResolutionResult.AllFailed -> tokenInfo.serverUrl
             }
         val client = getOrCreateApiClient(serverId, tokenInfo.userId, address)
@@ -348,6 +387,7 @@ constructor(
                     _needsLocalNetworkPermission.value = true
                     tokenInfo.serverUrl
                 }
+                is AddressResolutionResult.NoRoute,
                 is AddressResolutionResult.AllFailed -> tokenInfo.serverUrl
             }
 

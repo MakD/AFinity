@@ -3,7 +3,6 @@ package com.makd.afinity.data.repository.download
 import androidx.work.Constraints
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
-import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.makd.afinity.data.database.entities.DownloadDto
@@ -33,6 +32,7 @@ import com.makd.afinity.data.workers.LyricsDownloadWorker
 import com.makd.afinity.data.workers.MediaDownloadWorker
 import com.makd.afinity.data.workers.SubtitleDownloadWorker
 import com.makd.afinity.data.workers.TrickplayDownloadWorker
+import com.makd.afinity.util.requireServerNetwork
 import java.io.File
 import java.util.UUID
 import javax.inject.Inject
@@ -337,9 +337,7 @@ constructor(
 
         val constraints =
             Constraints.Builder()
-                .setRequiredNetworkType(
-                    if (wifiOnly) NetworkType.UNMETERED else NetworkType.CONNECTED
-                )
+                .requireServerNetwork(unmeteredOnly = wifiOnly)
                 .setRequiresStorageNotLow(true)
                 .build()
 

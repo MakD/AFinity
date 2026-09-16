@@ -12,6 +12,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.AdminChangeKind
+import com.makd.afinity.data.manager.Connectivity
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.MediaChangeSource
@@ -19,6 +20,7 @@ import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackEvent
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.manager.UnreachableReason
 import com.makd.afinity.data.manager.resolveTargetItem
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.download.DownloadInfo
@@ -829,6 +831,10 @@ constructor(
                             isLoading = false,
                             error =
                                 when {
+                                    offlineModeManager.connectivity.value
+                                        .let { it as? Connectivity.ServerUnreachable }
+                                        ?.reason == UnreachableReason.NO_ROUTE ->
+                                        context.getString(R.string.item_error_no_route)
                                     isOffline -> context.getString(R.string.item_error_offline)
                                     !hasInternet ->
                                         context.getString(R.string.item_error_connection)

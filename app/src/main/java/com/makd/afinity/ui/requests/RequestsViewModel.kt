@@ -62,6 +62,20 @@ constructor(
 
     val isAuthenticated = jellyseerrRepository.isAuthenticated
 
+    val isReachable = jellyseerrRepository.isReachable
+
+    fun retryConnection() {
+        viewModelScope.launch {
+            try {
+                jellyseerrRepository.retryConnection()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Jellyseerr retry failed")
+            }
+        }
+    }
+
     private val _currentUser = MutableStateFlow<JellyseerrUser?>(null)
     val currentUser: StateFlow<JellyseerrUser?> = _currentUser.asStateFlow()
     private var requestsJob: Job? = null

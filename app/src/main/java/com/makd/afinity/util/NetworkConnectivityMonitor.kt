@@ -2,6 +2,7 @@ package com.makd.afinity.util
 
 import android.content.Context
 import android.net.ConnectivityManager
+import android.net.LinkProperties
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
@@ -101,8 +102,22 @@ constructor(
                     _isOnWifi.value = networkCapabilities.isWifiLike()
                 }
 
+                override fun onAvailable(network: Network) {
+                    Timber.d("Default network available: $network")
+                    _networkSwitchEvents.tryEmit(Unit)
+                }
+
+                override fun onLinkPropertiesChanged(
+                    network: Network,
+                    linkProperties: LinkProperties,
+                ) {
+                    Timber.d("Default network routes changed: $network")
+                    _networkSwitchEvents.tryEmit(Unit)
+                }
+
                 override fun onLost(network: Network) {
                     _isOnWifi.value = false
+                    _networkSwitchEvents.tryEmit(Unit)
                 }
             }
         )
@@ -131,6 +146,34 @@ constructor(
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) ||
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN) ||
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+    }
+
+    fun currentNetworkKey(): String? {
+        val network = connectivityManager.activeNetwork ?: return null
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return null
+        val linkProperties = connectivityManager.getLinkProperties(network) ?: return null
+
+        val transports =
+            listOf(
+                    NetworkCapabilities.TRANSPORT_WIFI to "wifi",
+                    NetworkCapabilities.TRANSPORT_ETHERNET to "eth",
+                    NetworkCapabilities.TRANSPORT_CELLULAR to "cell",
+                    NetworkCapabilities.TRANSPORT_VPN to "vpn",
+                )
+                .filter { capabilities.hasTransport(it.first) }
+                .joinToString("+") { it.second }
+
+        val prefixes =
+            linkProperties.routes
+                .filter { !it.isDefaultRoute && !it.hasGateway() }
+                .mapNotNull { it.destination?.toString() }
+                .sorted()
+                .joinToString(",")
+
+        val dns = linkProperties.dnsServers.mapNotNull { it.hostAddress }.sorted().joinToString(",")
+
+        if (transports.isBlank() && prefixes.isBlank() && dns.isBlank()) return null
+        return "$transports|$prefixes|$dns".hashCode().toString(16)
     }
 
     fun hasValidatedInternet(): Boolean {

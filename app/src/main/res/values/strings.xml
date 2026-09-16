@@ -1313,6 +1313,8 @@
     <string name="pref_offline_mode">Offline Mode</string>
     <string name="offline_mode_no_connection">Offline (No connection)</string>
     <string name="offline_mode_manual">Manually enabled</string>
+    <string name="offline_mode_no_route">Offline (Server not reachable on this network)</string>
+    <string name="offline_mode_unreachable">Offline (Can\'t reach your server)</string>
     <string name="offline_mode_force">Force offline mode</string>
 
 
@@ -2145,9 +2147,16 @@
     <string name="cd_music_delete_playlist">Delete playlist</string>
     <string name="library_load_failed">Couldn\'t load this library. Check your connection and try again.</string>
     <string name="home_load_failed">Couldn\'t reach your server. Check your connection and try again.</string>
+    <string name="item_error_no_route">Your server isn\'t reachable from this network.</string>
+    <string name="service_unreachable_fmt">Can\'t reach %1$s. Showing saved content.</string>
+    <string name="service_name_jellyseerr" translatable="false">Jellyseerr</string>
+    <string name="service_name_audiobookshelf" translatable="false">Audiobookshelf</string>
     <string name="item_error_offline">This item isn\'t available offline.</string>
     <string name="item_error_connection">Couldn\'t reach your server. Check your connection and try again.</string>
     <string name="item_error_not_found">Item not found.</string>
+    <string name="offline_no_route_title">Server not reachable here</string>
+    <string name="offline_no_route_message">This server\'s address only works on its own network. Connect to that network, or add an address that works from anywhere.</string>
+    <string name="offline_no_route_action">Manage servers</string>
     <string name="offline_empty_title">You\'re offline</string>
     <string name="offline_empty_message">We can\'t reach your server right now. Once you\'re back online, anything you download will be available here.</string>
     <string name="websocket_server_restarting">Server is restarting, reconnecting automatically…</string>

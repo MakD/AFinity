@@ -24,6 +24,7 @@ import com.makd.afinity.data.database.dao.MusicTrackDao
 import com.makd.afinity.data.database.dao.PersonSectionDao
 import com.makd.afinity.data.database.dao.SeasonDao
 import com.makd.afinity.data.database.dao.ServerAddressDao
+import com.makd.afinity.data.database.dao.ServerAddressMemoryDao
 import com.makd.afinity.data.database.dao.ServerDao
 import com.makd.afinity.data.database.dao.ServerDatabaseDao
 import com.makd.afinity.data.database.dao.ServerStorageDao
@@ -75,16 +76,18 @@ import com.makd.afinity.data.database.entities.TopPeopleCacheEntity
 import com.makd.afinity.data.database.entities.WikidataAwardsCacheEntity
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.server.ServerAddress
+import com.makd.afinity.data.models.server.ServerAddressMemory
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.models.user.User
 
-const val AFINITY_DB_VERSION = 78
+const val AFINITY_DB_VERSION = 79
 
 @Database(
     entities =
         [
             Server::class,
             ServerAddress::class,
+            ServerAddressMemory::class,
             User::class,
             GenreCacheEntity::class,
             GenreMovieCacheEntity::class,
@@ -137,6 +140,8 @@ abstract class AfinityDatabase : RoomDatabase() {
     abstract fun serverDao(): ServerDao
 
     abstract fun serverAddressDao(): ServerAddressDao
+
+    abstract fun serverAddressMemoryDao(): ServerAddressMemoryDao
 
     abstract fun userDao(): UserDao
 

@@ -7,13 +7,14 @@ import androidx.navigation.NavController
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
-import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.makd.afinity.R
+import com.makd.afinity.data.manager.Connectivity
 import com.makd.afinity.data.manager.DownloadPermissions
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.OfflineModeManager
+import com.makd.afinity.data.manager.UnreachableReason
 import com.makd.afinity.data.manager.resolveTargetItem
 import com.makd.afinity.data.models.CustomSectionCardStyle
 import com.makd.afinity.data.models.GenreItem
@@ -58,6 +59,7 @@ import com.makd.afinity.data.workers.HomeDataReloadWorker
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import com.makd.afinity.ui.utils.IntentUtils
+import com.makd.afinity.util.requireServerNetwork
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
@@ -346,11 +348,13 @@ constructor(
 
         viewModelScope.launch {
             var previousIsOffline: Boolean? = null
-            offlineModeManager.isOffline.collect { isOffline ->
+            offlineModeManager.connectivity.collect { connectivity ->
+                val isOffline = connectivity != Connectivity.Online
                 Timber.d("Offline mode changed: $isOffline")
                 _uiState.update {
                     it.copy(
                         isOffline = isOffline,
+                        offlineReason = (connectivity as? Connectivity.ServerUnreachable)?.reason,
                         offlineContentLoaded = if (isOffline) it.offlineContentLoaded else false,
                     )
                 }
@@ -912,9 +916,7 @@ constructor(
     private fun scheduleHomeDataReload() {
         val request =
             OneTimeWorkRequestBuilder<HomeDataReloadWorker>()
-                .setConstraints(
-                    Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
-                )
+                .setConstraints(Constraints.Builder().requireServerNetwork().build())
                 .setBackoffCriteria(BackoffPolicy.LINEAR, 10, TimeUnit.SECONDS)
                 .build()
 
@@ -1050,6 +1052,7 @@ data class HomeUiState(
         emptyList(),
     val separateTvLibrarySections: List<Pair<AfinityCollection, List<AfinityShow>>> = emptyList(),
     val isOffline: Boolean = false,
+    val offlineReason: UnreachableReason? = null,
 )
 
 fun HomeUiState.mergedWith(itemStore: ItemStore): HomeUiState {

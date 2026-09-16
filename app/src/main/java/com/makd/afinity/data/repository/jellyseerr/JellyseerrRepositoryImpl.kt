@@ -94,6 +94,14 @@ constructor(
     private val _isAuthenticated = MutableStateFlow(false)
     override val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
 
+    private val _isReachable = MutableStateFlow(true)
+    override val isReachable: StateFlow<Boolean> = _isReachable.asStateFlow()
+
+    override suspend fun retryConnection() {
+        val (serverId, userId) = activeContext ?: return
+        setActiveJellyfinSession(serverId, userId)
+    }
+
     private val _currentSessionId = MutableStateFlow<String?>(null)
     override val currentSessionId: StateFlow<String?> = _currentSessionId.asStateFlow()
 
@@ -304,6 +312,7 @@ constructor(
                             userId.toString(),
                             config.serverUrl,
                         )
+                    _isReachable.value = result is JellyseerrAddressResult.Success
                     if (
                         result is JellyseerrAddressResult.Success &&
                             result.address != config.serverUrl
@@ -312,6 +321,10 @@ constructor(
                             "Jellyseerr: Resolved to ${result.address} (config: ${config.serverUrl})"
                         )
                         securePreferencesRepository.updateCachedJellyseerrServerUrl(result.address)
+                    } else if (result is JellyseerrAddressResult.NoRoute) {
+                        Timber.w(
+                            "Jellyseerr: No route from this network to ${result.attemptedAddresses}"
+                        )
                     } else if (result is JellyseerrAddressResult.AllFailed) {
                         Timber.w("Jellyseerr: All addresses failed: ${result.attemptedAddresses}")
                     }

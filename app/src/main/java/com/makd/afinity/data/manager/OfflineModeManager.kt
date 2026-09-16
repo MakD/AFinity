@@ -16,10 +16,21 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import timber.log.Timber
+
+sealed interface Connectivity {
+    data object Online : Connectivity
+
+    data object ForcedOffline : Connectivity
+
+    data object NoNetwork : Connectivity
+
+    data class ServerUnreachable(val reason: UnreachableReason) : Connectivity
+}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
@@ -32,22 +43,50 @@ constructor(
     private val networkLocality: NetworkLocality,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
-    val isOffline: StateFlow<Boolean> =
+    val connectivity: StateFlow<Connectivity> =
         combine(
                 preferencesRepository.getOfflineModeFlow(),
                 networkConnectivityMonitor.isNetworkAvailable,
                 sessionManager.isServerReachable,
-            ) { manualOfflineMode, isNetworkAvailable, isServerReachable ->
-                manualOfflineMode || !isNetworkAvailable || !isServerReachable
+                sessionManager.unreachableReason,
+            ) { manualOfflineMode, isNetworkAvailable, isServerReachable, reason ->
+                when {
+                    manualOfflineMode -> Connectivity.ForcedOffline
+                    !isNetworkAvailable -> Connectivity.NoNetwork
+                    !isServerReachable ->
+                        Connectivity.ServerUnreachable(
+                            reason ?: UnreachableReason.ALL_ADDRESSES_FAILED
+                        )
+
+                    else -> Connectivity.Online
+                }
             }
             .distinctUntilChanged()
-            .onEach { isOffline -> Timber.d("Offline mode changed: $isOffline") }
+            .onEach { Timber.d("Connectivity changed: $it") }
             .stateIn(
                 scope = scope,
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue =
-                    !networkConnectivityMonitor.isCurrentlyConnected() ||
-                        !sessionManager.isServerReachable.value,
+                    when {
+                        !networkConnectivityMonitor.isCurrentlyConnected() -> Connectivity.NoNetwork
+                        !sessionManager.isServerReachable.value ->
+                            Connectivity.ServerUnreachable(
+                                sessionManager.unreachableReason.value
+                                    ?: UnreachableReason.ALL_ADDRESSES_FAILED
+                            )
+
+                        else -> Connectivity.Online
+                    },
+            )
+
+    val isOffline: StateFlow<Boolean> =
+        connectivity
+            .map { it != Connectivity.Online }
+            .distinctUntilChanged()
+            .stateIn(
+                scope = scope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = connectivity.value != Connectivity.Online,
             )
 
     @Volatile private var lastKnownConnectionType: ConnectionType? = null

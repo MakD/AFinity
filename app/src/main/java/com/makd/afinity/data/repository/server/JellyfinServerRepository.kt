@@ -4,6 +4,7 @@ import android.content.Context
 import com.makd.afinity.data.discovery.AfinityServiceTypes
 import com.makd.afinity.data.discovery.LocalServiceDiscovery
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.manager.UnreachableReason
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.network.UrlCandidates
 import com.makd.afinity.data.repository.DatabaseRepository
@@ -158,6 +159,9 @@ constructor(
         }
     }
 
+    @Volatile
+    private var lastUnreachableReason: UnreachableReason = UnreachableReason.ALL_ADDRESSES_FAILED
+
     private suspend fun tryResolveAndConnect(): Boolean = reconnectMutex.withLock {
         val session = sessionManager.currentSession.value ?: return@withLock false
         if (_currentBaseUrl.value.isBlank()) return@withLock false
@@ -182,10 +186,18 @@ constructor(
                 }
                 is AddressResolutionResult.PermissionRequired -> {
                     Timber.w("Re-resolution blocked: local network permission missing")
+                    lastUnreachableReason = UnreachableReason.PERMISSION_REQUIRED
+                    false
+                }
+
+                is AddressResolutionResult.NoRoute -> {
+                    Timber.w("Re-resolution skipped: no address is reachable from this network")
+                    lastUnreachableReason = UnreachableReason.NO_ROUTE
                     false
                 }
                 is AddressResolutionResult.AllFailed -> {
                     Timber.w("Re-resolution failed for all addresses")
+                    lastUnreachableReason = UnreachableReason.ALL_ADDRESSES_FAILED
                     false
                 }
             }
@@ -206,7 +218,7 @@ constructor(
         if (tryResolveAndConnect()) return
         if (sessionManager.currentSession.value?.serverId != serverId) return
         Timber.w("Sustained re-resolution failure, marking server unreachable")
-        sessionManager.setServerReachable(false)
+        sessionManager.setServerReachable(false, lastUnreachableReason)
     }
 
     override suspend fun forceReconnect(): Boolean = tryResolveAndConnect()
@@ -498,7 +510,7 @@ constructor(
 
     private companion object {
         const val RECONNECT_INITIAL_DELAY_MS = 2_000L
-        const val RECONNECT_MAX_DELAY_MS = 30_000L
+        const val RECONNECT_MAX_DELAY_MS = 120_000L
         const val UNREACHABLE_CONFIRM_DELAY_MS = 4_000L
     }
 }

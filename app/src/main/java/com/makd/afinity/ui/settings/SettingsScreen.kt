@@ -88,6 +88,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.makd.afinity.R
 import com.makd.afinity.core.AppConstants
+import com.makd.afinity.data.manager.Connectivity
+import com.makd.afinity.data.manager.UnreachableReason
 import com.makd.afinity.data.models.server.ConnectionType
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
@@ -128,6 +130,8 @@ fun SettingsScreen(
     val connectionType by viewModel.connectionType.collectAsStateWithLifecycle()
     val manualOfflineMode by viewModel.manualOfflineMode.collectAsStateWithLifecycle()
     val isNetworkAvailable by viewModel.isNetworkAvailable.collectAsStateWithLifecycle()
+    val connectivity by viewModel.connectivity.collectAsStateWithLifecycle()
+    val unreachableReason = (connectivity as? Connectivity.ServerUnreachable)?.reason
     val hasOfflineMedia by viewModel.hasOfflineMedia.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
@@ -400,6 +404,15 @@ fun SettingsScreen(
                                                 stringResource(R.string.offline_mode_no_connection)
                                             else if (manualOfflineMode)
                                                 stringResource(R.string.offline_mode_manual)
+                                            else if (unreachableReason != null)
+                                                stringResource(
+                                                    if (
+                                                        unreachableReason ==
+                                                            UnreachableReason.NO_ROUTE
+                                                    )
+                                                        R.string.offline_mode_no_route
+                                                    else R.string.offline_mode_unreachable
+                                                )
                                             else stringResource(R.string.offline_mode_force),
                                         checked = effectiveOfflineMode,
                                         onCheckedChange = viewModel::toggleOfflineMode,

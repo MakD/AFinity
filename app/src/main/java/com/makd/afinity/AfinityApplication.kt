@@ -2,6 +2,9 @@ package com.makd.afinity
 
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.Configuration
 import coil3.ImageLoader
 import coil3.PlatformContext
@@ -15,8 +18,10 @@ import coil3.request.CachePolicy
 import coil3.request.crossfade
 import coil3.svg.SvgDecoder
 import com.makd.afinity.cast.CastManager
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.repository.CacheMaintenance
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.sync.PendingJellyfinSync
 import com.makd.afinity.data.updater.UpdateScheduler
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
@@ -54,6 +59,10 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
     @Inject lateinit var cacheMaintenance: dagger.Lazy<CacheMaintenance>
 
     @Inject lateinit var pendingJellyfinSync: dagger.Lazy<PendingJellyfinSync>
+
+    @Inject lateinit var sessionManager: SessionManager
+
+    @Inject lateinit var serverRepository: dagger.Lazy<ServerRepository>
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     var ringBufferTree: RingBufferTree? = null
@@ -110,6 +119,26 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
             runCatching { cacheMaintenance.get().pruneExpiredData() }
                 .onFailure { Timber.w(it, "Cache pruning failed") }
         }
+
+        observeForegroundReconnect()
+    }
+
+    private fun observeForegroundReconnect() {
+        ProcessLifecycleOwner.get()
+            .lifecycle
+            .addObserver(
+                object : DefaultLifecycleObserver {
+                    override fun onStart(owner: LifecycleOwner) {
+                        if (sessionManager.currentSession.value == null) return
+                        if (sessionManager.isServerReachable.value) return
+                        applicationScope.launch(Dispatchers.IO) {
+                            Timber.d("App foregrounded while server unreachable, re-resolving")
+                            runCatching { serverRepository.get().forceReconnect() }
+                                .onFailure { Timber.w(it, "Foreground re-resolution failed") }
+                        }
+                    }
+                }
+            )
     }
 
     override val workManagerConfiguration: Configuration
