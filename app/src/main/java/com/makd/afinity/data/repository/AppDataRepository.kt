@@ -476,28 +476,32 @@ constructor(
             val latestMoviesHidden =
                 HomeRow.LATEST_MOVIES in homeLayoutPreferencesRepository.getHiddenRows()
             if (cachedMovies != null || latestMoviesHidden) {
-                Timber.d("Cache hit — fetching carousel in parallel, rendering once both are ready")
-                try {
-                    coroutineScope {
-                        val heroDeferred = async { loadHeroCarousel() }
-                        _latestMovies.value = cachedMovies.orEmpty()
-                        _latestTvSeries.value =
-                            homeCacheRepository.getLatestShows(
-                                "latest_shows_$cacheKey",
-                                currentBaseUrl,
-                            ) ?: emptyList()
-                        _heroCarouselItems.value = heroDeferred.await()
-                    }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    Timber.e(e, "Carousel fetch failed on cache-hit path, proceeding without it")
-                }
-                updateProgress(0.5f, context.getString(R.string.loading_phase_fetching))
+                Timber.d("Cache hit — rendering immediately, refreshing in the background")
+                _latestMovies.value = cachedMovies.orEmpty()
+                _latestTvSeries.value =
+                    homeCacheRepository.getLatestShows("latest_shows_$cacheKey", currentBaseUrl)
+                        ?: emptyList()
+
                 startLiveDataCollectors()
-                performBackgroundNetworkRefresh(cacheKey, reportProgress = true)
                 updateProgress(1f, context.getString(R.string.loading_phase_ready))
                 _isInitialDataLoaded.value = true
+
+                scope.launch {
+                    try {
+                        _heroCarouselItems.value = loadHeroCarousel()
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Timber.e(e, "Carousel fetch failed on cache-hit path")
+                    }
+                    try {
+                        performBackgroundNetworkRefresh(cacheKey)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Timber.e(e, "Background refresh failed after cache-hit render")
+                    }
+                }
                 return
             }
         }
@@ -526,28 +530,24 @@ constructor(
 
                 updateProgress(0.3f, context.getString(R.string.loading_phase_fetching))
 
-                val libraries = librariesDeferred.await()
-                _libraries.value = libraries
-
-                val homeDataDeferred = async { loadHomeSpecificData(libraries) }
-
-                updateProgress(0.5f, context.getString(R.string.loading_phase_processing))
-
                 continueWatchingDeferred.await()
                 nextUpDeferred.await()
-                val heroItems = heroCarouselDeferred.await()
-                _heroCarouselItems.value = heroItems
 
-                updateProgress(0.8f, context.getString(R.string.loading_phase_finalizing))
-
-                val (latestMovies, latestTvSeries) = homeDataDeferred.await()
-                _latestMovies.value = latestMovies
-                _latestTvSeries.value = latestTvSeries
-
+                startLiveDataCollectors()
                 updateProgress(1f, context.getString(R.string.loading_phase_ready))
                 _isInitialDataLoaded.value = true
 
-                startLiveDataCollectors()
+                launch {
+                    val heroItems = heroCarouselDeferred.await()
+                    _heroCarouselItems.value = heroItems
+                }
+
+                val libraries = librariesDeferred.await()
+                _libraries.value = libraries
+
+                val (latestMovies, latestTvSeries) = loadHomeSpecificData(libraries)
+                _latestMovies.value = latestMovies
+                _latestTvSeries.value = latestTvSeries
 
                 if (hasSession) {
                     persistHomeCache(cacheKey, latestMovies, latestTvSeries)
