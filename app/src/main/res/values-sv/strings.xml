@@ -206,7 +206,7 @@
     <string name="livetv_tab_guide">TV-guide</string>
     <string name="livetv_tab_channels">Kanaler</string>
     <string name="livetv_error_not_available_title">Live-TV är inte tillgängligt</string>
-    <string name="livetv_error_not_available_message">Konfigurera Live-TV på Jellyfin-servern.</string>
+    <string name="livetv_error_not_available_message">Konfigurera Live-TV på din Jellyfin-server</string>
     <string name="person_biography">Biografi</string>
     <plurals name="person_born_fmt">
         <item quantity="one">Född: %1$s (%2$d år gammal)</item>
@@ -303,8 +303,8 @@
     <string name="user_unknown">Okänd</string>
     <string name="requests_title">Förfrågningar</string>
     <string name="jellyseerr_connect_title">Anslut till Seerr</string>
-    <string name="jellyseerr_connect_message">Logga in på Seerr för att önska filmer och TV-serier.</string>
-    <string name="empty_content_message">Kom tillbaka senare för mer innehåll.</string>
+    <string name="jellyseerr_connect_message">Logga in på Seerr för att önska filmer och TV-serier</string>
+    <string name="empty_content_message">Kom tillbaka senare för mer innehåll</string>
     <string name="section_trending">Populärt just nu</string>
     <string name="section_popular_movies">Populära filmer</string>
     <string name="section_upcoming_movies">Kommande filmer</string>
@@ -363,15 +363,15 @@
     <string name="layout_horizontal">Horisontell</string>
     <string name="layout_vertical">Vertikal</string>
     <string name="pref_downloads_and_storage">Nedladdningar och lagring</string>
-    <string name="pref_downloads_and_storage_summary">Hantera nedladdat innehåll och bildcache</string>
-    <string name="active_downloads_header_fmt">Pågående nedladdningar (%1$d)</string>
-    <string name="completed_downloads_header_fmt">Klara nedladdningar (%1$d)</string>
+    <string name="pref_downloads_and_storage_summary">Hämtningsbeteende, lagringsplatser och cache</string>
+    <string name="active_downloads_header_fmt">Pågår (%1$d)</string>
+    <string name="completed_downloads_header_fmt">På den här enheten (%1$d)</string>
     <string name="download_status_queued">Köad</string>
     <string name="download_status_downloading">Laddar ned</string>
     <string name="download_status_paused">Pausad</string>
     <string name="download_status_failed_fmt">Misslyckades: %1$s</string>
     <string name="empty_downloads_title">Inga nedladdningar</string>
-    <string name="empty_downloads_message">Nedladdat innehåll visas här.</string>
+    <string name="empty_downloads_message">Nedladdat innehåll visas här</string>
     <string name="storage_free_on_device_fmt">%1$s ledigt på enheten</string>
     <string name="storage_this_server">Den här servern</string>
     <string name="storage_all_servers_fmt">%1$s totalt på alla servrar</string>
@@ -380,7 +380,7 @@
     <string name="cd_cancel_download">Avbryt nedladdning</string>
     <string name="cd_queued_tap_cancel">Köad, tryck för att avbryta</string>
     <string name="cd_delete_download">Ta bort nedladdning</string>
-    <string name="player_options_title">Uppspelningsalternativ</string>
+    <string name="player_options_title">Uppspelning</string>
     <string name="pref_group_engine">Spelarmotor</string>
     <string name="pref_use_exoplayer_title">Använd ExoPlayer</string>
     <string name="pref_use_exoplayer_summary">Använder libmpv när detta är av</string>
@@ -489,7 +489,7 @@
     <string name="error_delete_active_server">Det går inte att ta bort den aktiva servern. Byt till en annan server först.</string>
     <string name="error_delete_server_failed">Kunde inte ta bort server</string>
     <string name="update_available_title">Det finns en uppdatering</string>
-    <string name="update_whats_new">Vad är nytt?</string>
+    <string name="update_whats_new">Vad är nytt</string>
     <string name="update_version_fmt">v%1$s</string>
     <string name="btn_download_update">Ladda ned uppdatering</string>
     <string name="btn_downloading">Hämtar …</string>
@@ -532,7 +532,7 @@
     <string name="action_login_server">Logga in på servern</string>
     <string name="action_add_account">Lägg till ett konto</string>
     <string name="empty_sessions_title">Inga sparade inloggningar</string>
-    <string name="empty_sessions_message">Logga in på en server för att spara en inloggning.</string>
+    <string name="empty_sessions_message">Logga in på en server för att skapa en session</string>
     <string name="cd_user_avatar">Profilbild</string>
     <string name="cd_current_session">Aktuell inloggning</string>
     <string name="error_switch_session_failed_fmt">Kunde inte byta inloggning: %1$s</string>
@@ -572,8 +572,8 @@
     <string name="build_release">Stabilt bygge</string>
     <string name="pref_licenses">Licenser</string>
     <string name="pref_licenses_summary">Licenser för öppen källkod</string>
-    <string name="pref_send_logs">Skicka loggar</string>
-    <string name="pref_send_logs_summary">Dela diagnostikloggar vid felrapportering</string>
+    <string name="pref_send_logs">Serveradresser, token och användarnamn ersätts med [REDACTED] innan filen skrivs.</string>
+    <string name="pref_send_logs_summary">Serveradresser, token och användarnamn ersätts med [REDACTED] innan filen skrivs.</string>
     <string name="action_logout">Logga ut</string>
     <string name="dialog_logout_title">Logga ut</string>
     <string name="dialog_logout_message">Vill du logga ut? Du behöver logga in igen för att komma åt innehållet.</string>
@@ -777,7 +777,7 @@
     <string name="error_person_not_found">Personen hittades inte</string>
     <string name="error_server_url_not_available">Serveradress är inte tillgänglig</string>
     <string name="error_server_url_required">Serveradress krävs</string>
-    <string name="error_set_server_url_fmt">Kunde inte ange serveradress: %1$s</string>
+    <string name="error_set_server_url_fmt">Serveradresser, token och användarnamn ersätts med [REDACTED] innan filen skrivs.</string>
     <string name="error_unexpected_fmt">Ett oväntat fel uppstod: %1$s</string>
     <string name="error_not_valid_jellyfin_fmt">Det här verkar inte vara en giltig Jellyfin-server: %1$s</string>
     <string name="error_connect_to_server_fmt">Kunde inte ansluta till %1$s: %2$s</string>
@@ -910,7 +910,7 @@
     <string name="action_authorize">Auktorisera</string>
     <string name="error_quickconnect_invalid_code">Ogiltig eller utgången kod. Försök igen.</string>
     <string name="error_quickconnect_failed_fmt">Auktoriseringen misslyckades: %1$s</string>
-    <string name="section_storage_locations">LAGRINGSPLATSER</string>
+    <string name="section_storage_locations">Lagringsplatser</string>
     <string name="storage_usage_combined_fmt">%1$s används här • %2$s ledigt av %3$s</string>
     <string name="storage_default_badge">Standard</string>
     <string name="storage_set_as_default">Ange som standard</string>
@@ -925,7 +925,7 @@
     <string name="download_location_section">Lagringsplats</string>
     <string name="pref_max_concurrent_downloads">Maximalt antal parallella nedladdningar</string>
     <string name="media_route_menu_title">Casta</string>
-    <string name="section_download_music">MUSIK</string>
+    <string name="section_download_music">Musik</string>
     <string name="build_nightly">Nattlig version</string>
     <string name="music_tab_home">Hem</string>
     <string name="music_tab_playlists">Spellistor</string>
@@ -1938,4 +1938,140 @@
     <string name="player_transcode_reason_audio_profile">ljudprofilen stöds inte</string>
     <string name="player_transcode_reason_audio_sample_rate">ljudets samplingsfrekvens stöds inte</string>
     <string name="player_transcode_reason_audio_bit_depth">ljudets bitdjup stöds inte</string>
+    <plurals name="backup_section_home_fmt">
+        <item quantity="one">%1$d anpassad sektion, rader och Upptäck</item>
+        <item quantity="other">%1$d anpassade sektioner, rader och Upptäck</item>
+    </plurals>
+    <plurals name="backup_section_settings_fmt">
+        <item quantity="one">%1$d inställning</item>
+        <item quantity="other">%1$d inställningar</item>
+    </plurals>
+    <plurals name="cache_entries_fmt">
+        <item quantity="one">%1$d post</item>
+        <item quantity="other">%1$d poster</item>
+    </plurals>
+    <plurals name="custom_sections_refine_summary_fmt">
+        <item quantity="one">%1$s · %2$d filter</item>
+        <item quantity="other">%1$s · %2$d filter</item>
+    </plurals>
+    <plurals name="pref_clear_cache_usage_total_fmt">
+        <item quantity="one">%1$s i cache · %2$d post</item>
+        <item quantity="other">%1$s i cache · %2$d poster</item>
+    </plurals>
+    <plurals name="playlist_item_count">
+        <item quantity="one">%1$d objekt</item>
+        <item quantity="other">%1$d objekt</item>
+    </plurals>
+    <plurals name="playlist_choice_songs">
+        <item quantity="one">%1$d låt</item>
+        <item quantity="other">%1$d låtar</item>
+    </plurals>
+    <plurals name="playlist_choice_videos">
+        <item quantity="one">%1$d video</item>
+        <item quantity="other">%1$d videor</item>
+    </plurals>
+    <plurals name="music_playlist_song_count">
+        <item quantity="one">%1$d låt</item>
+        <item quantity="other">%1$d låtar</item>
+    </plurals>
+    <plurals name="music_playlist_hidden_videos">
+        <item quantity="one">%1$d videoobjekt dolt</item>
+        <item quantity="other">%1$d videoobjekt dolda</item>
+    </plurals>
+    <plurals name="music_playlist_video_only_message">
+        <item quantity="one">Den här spellistan innehåller %1$d videoobjekt som inte kan spelas här.</item>
+        <item quantity="other">Den här spellistan innehåller %1$d videoobjekt som inte kan spelas här.</item>
+    </plurals>
+    <plurals name="playlist_download_partial_fmt">
+        <item quantity="one">Startade %1$d av %2$d hämtning</item>
+        <item quantity="other">Startade %1$d av %2$d hämtningar</item>
+    </plurals>
+    <plurals name="season_already_available">
+        <item quantity="one">Säsong %1$s är redan tillgänglig</item>
+        <item quantity="other">Säsonger %1$s är redan tillgängliga</item>
+    </plurals>
+    <plurals name="syncplay_member_count">
+        <item quantity="one">%1$d medlem</item>
+        <item quantity="other">%1$d medlemmar</item>
+    </plurals>
+    <plurals name="episodes_downloaded_fmt">
+        <item quantity="one">%1$d avsnitt hämtat</item>
+        <item quantity="other">%1$d avsnitt hämtade</item>
+    </plurals>
+    <plurals name="download_group_episodes_fmt">
+        <item quantity="one">%1$d avsnitt · %2$s</item>
+        <item quantity="other">%1$d avsnitt · %2$s</item>
+    </plurals>
+    <plurals name="download_group_tracks_fmt">
+        <item quantity="one">%1$d spår · %2$s</item>
+        <item quantity="other">%1$d spår · %2$s</item>
+    </plurals>
+    <plurals name="server_more_users">
+        <item quantity="one">+%1$d ytterligare användare</item>
+        <item quantity="other">+%1$d ytterligare användare</item>
+    </plurals>
+    <plurals name="awards_wins_fmt">
+        <item quantity="one">%1$d vinst</item>
+        <item quantity="other">%1$d vinster</item>
+    </plurals>
+    <plurals name="awards_nominations_fmt">
+        <item quantity="one">%1$d nominering</item>
+        <item quantity="other">%1$d nomineringar</item>
+    </plurals>
+    <plurals name="awards_show_all_fmt">
+        <item quantity="one">Visa %1$d pris</item>
+        <item quantity="other">Visa alla %1$d priser</item>
+    </plurals>
+    <plurals name="awards_body_oscar_fmt">
+        <item quantity="one">%1$d Oscar</item>
+        <item quantity="other">%1$d Oscar</item>
+    </plurals>
+    <plurals name="awards_body_emmy_fmt">
+        <item quantity="one">%1$d Emmy</item>
+        <item quantity="other">%1$d Emmy</item>
+    </plurals>
+    <plurals name="awards_body_golden_globe_fmt">
+        <item quantity="one">%1$d Golden Globe</item>
+        <item quantity="other">%1$d Golden Globe</item>
+    </plurals>
+    <plurals name="awards_body_bafta_fmt">
+        <item quantity="one">%1$d BAFTA</item>
+        <item quantity="other">%1$d BAFTA</item>
+    </plurals>
+    <plurals name="awards_body_sag_fmt">
+        <item quantity="one">%1$d SAG-pris</item>
+        <item quantity="other">%1$d SAG-priser</item>
+    </plurals>
+    <plurals name="awards_body_critics_choice_fmt">
+        <item quantity="one">%1$d Critics\' Choice-pris</item>
+        <item quantity="other">%1$d Critics\' Choice-priser</item>
+    </plurals>
+    <plurals name="producers_prefix">
+        <item quantity="one">Producent: %1$s</item>
+        <item quantity="other">Producenter: %1$s</item>
+    </plurals>
+    <plurals name="genres_prefix">
+        <item quantity="one">Genre: %1$s</item>
+        <item quantity="other">Genrer: %1$s</item>
+    </plurals>
+    <plurals name="player_sleep_timer_closing_in">
+        <item quantity="one">stängs om %1$d sekund</item>
+        <item quantity="other">stängs om %1$d sekunder</item>
+    </plurals>
+    <plurals name="player_sleep_timer_extend">
+        <item quantity="one">Lägg till %1$d minut</item>
+        <item quantity="other">Lägg till %1$d minuter</item>
+    </plurals>
+    <plurals name="download_count_episodes">
+        <item quantity="one">%1$d avsnitt</item>
+        <item quantity="other">%1$d avsnitt</item>
+    </plurals>
+    <plurals name="download_count_tracks">
+        <item quantity="one">%1$d spår</item>
+        <item quantity="other">%1$d spår</item>
+    </plurals>
+    <plurals name="downloads_delete_selected_fmt">
+        <item quantity="one">Ta bort %1$d objekt</item>
+        <item quantity="other">Ta bort %1$d objekt</item>
+    </plurals>
 </resources>
