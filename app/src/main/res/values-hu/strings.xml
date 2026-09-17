@@ -42,7 +42,7 @@
     <string name="connection_retrying">Csatlakozás…</string>
     <string name="home_error_title">Valami hiba történt</string>
     <string name="home_downloaded_movies">Letöltött filmek</string>
-    <string name="home_downloaded_shows">Letöltött műsorok</string>
+    <string name="home_downloaded_shows">Letöltött Sorozatok</string>
     <string name="home_critics_choice">Kritikusok választása</string>
     <string name="home_popular_studios">Népszerű stúdiók</string>
     <string name="home_episode_count_fmt">%1$d rész</string>
@@ -63,11 +63,11 @@
     <string name="cd_rotten_tomatoes">Rotten Tomatoes</string>
     <string name="home_continue_watching">Megtekintés folytatása</string>
     <string name="home_latest_movies">Legújabb filmek</string>
-    <string name="home_latest_tv_series">Legújabb sorozatok</string>
+    <string name="home_latest_tv_series">Legújabb Sorozatok</string>
     <string name="home_next_up">Következik</string>
     <string name="home_upcoming_episodes">Következő epizódok</string>
     <string name="home_genre_movies_title">%1$s Filmek</string>
-    <string name="home_genre_shows_title">%1$s Műsorok</string>
+    <string name="home_genre_shows_title">%1$s Sorozatok</string>
     <string name="home_person_starring">%1$s szereplésével</string>
     <string name="home_person_directed_by">%1$s rendezte</string>
     <string name="home_person_written_by">%1$s írta</string>
@@ -79,7 +79,7 @@
     <string name="home_watch_again">Nézd meg újra</string>
     <string name="custom_sections_title">Egyedi kezdőlap szakaszok</string>
     <string name="custom_sections_group_always">Mindig látható</string>
-    <string name="custom_sections_always_caption">Alapvető szakaszok, amelyekre minden Jellyfin kliensnek szüksége van. Ezeket nem lehet kikapcsolni.</string>
+    <string name="custom_sections_always_caption">A könyvtáraid és a Megtekintés folytatása. Ezeket nem lehet kikapcsolni.</string>
     <string name="custom_sections_always_on">Mindig bekapcsolva</string>
     <string name="custom_sections_group_rows">Beépített szakaszok</string>
     <string name="custom_sections_rows_caption">Ilyen sorrendben jelennek meg felül. Nem használ elemeket kikapcsolhatod.</string>
@@ -136,6 +136,7 @@
     <string name="pref_clear_cache_empty">Üres gyorsítótár</string>
     <plurals name="pref_clear_cache_usage_total_fmt">
         <item quantity="one">%1$s gyorsítótárazva · %2$d bejegyzés</item>
+        <item quantity="other">%1$s gyorsítótárazva · %2$d bejegyzés</item>
     </plurals>
     <string name="cache_kind_images">Képek</string>
     <string name="cache_store_video">Videó gyorsítótár</string>
@@ -143,6 +144,7 @@
     <string name="cache_store_player">Lejátszó adatok</string>
     <plurals name="cache_entries_fmt">
         <item quantity="one">%1$d bejegyzés</item>
+        <item quantity="other">%1$d bejegyzés</item>
     </plurals>
     <string name="cache_section_jellyfin_metadata">Jellyfin metadata</string>
     <string name="cache_section_jellyseerr">Seerr kérések</string>
@@ -174,9 +176,11 @@
     <string name="backup_section_privacy">Adatvédelem és frissítések</string>
     <plurals name="backup_section_home_fmt">
         <item quantity="one">%1$d egyéni szakasz, sor és felfedezés</item>
+        <item quantity="other">%1$d egyéni szakasz, sor és felfedezés</item>
     </plurals>
     <plurals name="backup_section_settings_fmt">
         <item quantity="one">%1$d beállítások</item>
+        <item quantity="other">%1$d beállítások</item>
     </plurals>
     <string name="custom_sections_add_blank">Üres szakasz</string>
     <string name="custom_sections_add_blank_summary">Kezdjük elölről</string>
@@ -191,7 +195,7 @@
     <string name="custom_sections_item_types_hint">Mit mutathat ez a sor? Válasszon ki legalább egyet.</string>
     <string name="custom_sections_item_types_episode_hint">Az epizódsorok széles kártyákat használnak, és megnyitják az epizód részleteit. Nem keverhetők más típusokkal.</string>
     <string name="custom_sections_item_types_music_hint">A zenei sorok négyzet alakú kártyákat használnak. Nem keverhetők más típusokkal.</string>
-    <string name="custom_sections_item_types_playlist_hint">A lejátszási lista mely elemei jelenjenek meg. A lejátszási listák a műsorokat és az évadokat epizódként tárolják.</string>
+    <string name="custom_sections_item_types_playlist_hint">A lejátszási lista mely elemei jelenjenek meg. A lejátszási listák a sorozatokat és az évadokat epizódként tárolják.</string>
     <string name="custom_sections_item_types_collection_hint">A gyűjtemény mely elemeit mutassuk meg.</string>
     <string name="custom_sections_item_types_library_hint">A könyvtárból milyen elemeket jelenítsünk meg.</string>
     <string name="custom_sections_type_movies">Filmek</string>
@@ -199,11 +203,11 @@
     <string name="tab_movies">Filmek</string>
     <string name="section_movies">Filmek</string>
     <string name="stat_movies">Filmek</string>
-    <string name="custom_sections_type_shows">Műsorok</string>
-    <string name="livetv_cat_shows">Műsorok</string>
-    <string name="custom_sections_type_seasons">Évszakok</string>
-    <string name="seasons_title">Évszakok</string>
-    <string name="section_seasons">Évszakok</string>
+    <string name="custom_sections_type_shows">Sorozatok</string>
+    <string name="livetv_cat_shows">Sorozatok</string>
+    <string name="custom_sections_type_seasons">Évadok</string>
+    <string name="seasons_title">Évadok</string>
+    <string name="section_seasons">Évadok</string>
     <string name="custom_sections_type_boxsets">Gyűjtemények</string>
     <string name="stat_collections">Gyűjtemények</string>
     <string name="custom_sections_type_episodes">Epizódok</string>
@@ -222,6 +226,7 @@
     <string name="custom_sections_refine_none">Nincsenek extra szűrők</string>
     <plurals name="custom_sections_refine_summary_fmt">
         <item quantity="one">%1$s · %2$d szűrő</item>
+        <item quantity="other">%1$s · %2$d szűrő</item>
     </plurals>
     <string name="custom_sections_group_content">Tartalom</string>
     <string name="stat_content">Tartalom</string>
@@ -248,6 +253,7 @@
     <string name="hero_btn_watch_now">Nézd meg most</string>
     <plurals name="hero_season_plural">
         <item quantity="one">%1$d évad</item>
+        <item quantity="other">%1$d évad</item>
     </plurals>
     <string name="favorites_title">Kedvencek</string>
     <string name="error_unknown">Ismeretlen hiba</string>
@@ -256,7 +262,7 @@
     <string name="cast_section_title">Szereplők</string>
     <string name="cast_role_format">mint %1$s</string>
     <string name="external_link_default_name">Külső link</string>
-    <string name="collections_included_in">Tartalmazza</string>
+    <string name="collections_included_in">Ebben a Gyűjteményben</string>
     <string name="meta_res_4k">4K</string>
     <string name="meta_res_hd">HD</string>
     <string name="meta_res_sd">SD</string>
@@ -269,17 +275,20 @@
     <string name="meta_time_remaining_minutes">%1$dp maradt</string>
     <plurals name="meta_boxset_count">
         <item quantity="one">%1$d elem</item>
+        <item quantity="other">%1$d elem</item>
     </plurals>
     <string name="meta_runtime_hours_minutes">%1$dó %2$dp</string>
     <string name="meta_runtime_minutes">%1$dp</string>
     <plurals name="meta_parts_fmt">
-        <item quantity="one">%1$d részek</item>
+        <item quantity="one">%1$d rész</item>
+        <item quantity="other">%1$d részek</item>
     </plurals>
     <string name="meta_part_of_fmt">Rész %1$d/%2$d</string>
     <string name="chapter_number_fmt">%1$d fejezet</string>
     <string name="meta_ends_at">Befejezés: %1$s</string>
     <plurals name="meta_episode_count">
-        <item quantity="one">%1$d részek</item>
+        <item quantity="one">%1$d rész</item>
+        <item quantity="other">%1$d részek</item>
     </plurals>
     <string name="similar_items_title">Több ehhez hasonló</string>
     <string name="special_features_title">Extrák</string>
@@ -317,9 +326,11 @@
     <string name="cd_collapse">Összecsukás</string>
     <plurals name="director_prefix">
         <item quantity="one">Rendező: %1$s</item>
+        <item quantity="other">Rendezők: %1$s</item>
     </plurals>
     <plurals name="writers_prefix">
-        <item quantity="one">Írók: %1$s</item>
+        <item quantity="one">Író: %1$s</item>
+        <item quantity="other">Írók: %1$s</item>
     </plurals>
     <string name="action_play">Lejátszás</string>
     <string name="action_rewatch">Újranézés</string>
@@ -375,11 +386,11 @@
     <string name="admin_section_tags">Címkék</string>
     <string name="abs_tags">Címkék</string>
     <string name="library_filter_video_type">Videó típusa</string>
-    <string name="library_filter_years">Évek</string>
-    <string name="library_filter_genres_hint">Műfajok keresése</string>
-    <string name="library_filter_tags_hint">Címkék keresése</string>
-    <string name="library_filter_ratings_hint">Értékelés keresése</string>
-    <string name="library_filter_years_hint">Évek keresése</string>
+    <string name="library_filter_years">Év</string>
+    <string name="library_filter_genres_hint">Műfajok kiválasztása</string>
+    <string name="library_filter_tags_hint">Címkék kiválasztása</string>
+    <string name="library_filter_ratings_hint">Korhatár kiválasztás</string>
+    <string name="library_filter_years_hint">Évek kiválasztása</string>
     <string name="cd_toggle_keyboard">Billentyűzet váltása</string>
     <string name="filter_played">Lejátszva</string>
     <string name="filter_unplayed">Lejátszatlan</string>
@@ -431,13 +442,15 @@
     <string name="discover_filter_keyword_exclude">Kizárás</string>
     <plurals name="discover_filter_keywords_included_fmt">
         <item quantity="one">%1$d tartalmazza</item>
+        <item quantity="other">%1$d tartalmazza</item>
     </plurals>
     <plurals name="discover_filter_keywords_excluded_fmt">
         <item quantity="one">%1$d kizárva</item>
+        <item quantity="other">%1$d kizárva</item>
     </plurals>
     <string name="discover_filter_keyword_search_hint">Keresési kulcsszavak…</string>
     <string name="discover_filter_select_region">Régió kiválasztása</string>
-    <string name="tv_status_returning_series">Visszatérő sorozatok</string>
+    <string name="tv_status_returning_series">Visszatérő Sorozatok</string>
     <string name="tv_status_planned">Tervezett</string>
     <string name="tv_status_in_production">Gyártás alatt</string>
     <string name="tv_status_cancelled">Befejezett</string>
@@ -460,6 +473,7 @@
     <string name="livetv_header_all">Minden csatorna</string>
     <plurals name="livetv_count_fmt">
         <item quantity="one">%1$d csatorna található</item>
+        <item quantity="other">%1$d csatorna található</item>
     </plurals>
     <string name="action_now">Most</string>
     <string name="cd_guide_previous_time">Előző időblokk</string>
@@ -476,10 +490,12 @@
     <string name="person_biography">Életrajz</string>
     <plurals name="person_born_fmt">
         <item quantity="one">Született: %1$s (%2$d éves)</item>
+        <item quantity="other">Született: %1$s (%2$d éves)</item>
     </plurals>
     <string name="person_born_deceased_fmt">Született: %1$s</string>
     <plurals name="person_died_fmt">
         <item quantity="one">Elhunyt: %1$s (%2$d évesen)</item>
+        <item quantity="other">Elhunyt: %1$s (%2$d évesen)</item>
     </plurals>
     <string name="person_died_no_age_fmt">Elhunyt: %1$s</string>
     <string name="person_birthplace_fmt">Születési hely: %1$s</string>
@@ -531,6 +547,7 @@
     <string name="playback_stats_value_direct_play_local">Közvetlen lejátszás (helyi fájl)</string>
     <plurals name="playback_stats_value_seconds_fmt">
         <item quantity="one">%1$d másodperc</item>
+        <item quantity="other">%1$d másodperc</item>
     </plurals>
     <string name="playback_stats_value_bitrate_container_fmt">%1$s Mbps (konténer)</string>
     <string name="playback_stats_label_connection">Kapcsolat</string>
@@ -557,8 +574,8 @@
     <string name="cd_speed_increase">Sebesség növelése</string>
     <string name="player_audio_title">Hangsáv</string>
     <string name="cd_audio_track">Hangsáv</string>
-    <string name="media_languages_audio">Elérhető hangok:</string>
-    <string name="media_languages_subtitles">Elérhető feliratok:</string>
+    <string name="media_languages_audio">Hangsáv nyelvek:</string>
+    <string name="media_languages_subtitles">Felirat nyelvek:</string>
     <string name="media_language_none">Nincs nyelv</string>
     <string name="media_language_unidentified">Ismeretlen</string>
     <string name="player_version_title">Verzió</string>
@@ -637,7 +654,7 @@
     <string name="status_pending">Függőben</string>
     <string name="stat_pending">Függőben</string>
     <string name="pref_playback">Lejátszás</string>
-    <string name="status_processing">Feldolgozás</string>
+    <string name="status_processing">Folyamatban</string>
     <string name="status_partially_available">Részben elérhető</string>
     <string name="status_available">Elérhető</string>
     <string name="stat_available">Elérhető</string>
@@ -658,13 +675,13 @@
     <string name="requested_by_fmt">%1$s kérte</string>
     <string name="requests_title">Kérések</string>
     <string name="jellyseerr_connect_title">Csatlakozz a Seerr-hez</string>
-    <string name="jellyseerr_connect_message">Jelentkezzen be a Seerr-be filmek és tévéműsorok igényléséhez</string>
+    <string name="jellyseerr_connect_message">Jelentkezzen be a Seerr-be Filmek és Sorozatok igényléséhez</string>
     <string name="empty_content_message">Nézz vissza később az új tartalmakért</string>
     <string name="section_trending">Mostanság népszerű</string>
     <string name="section_popular_movies">Népszerű filmek</string>
     <string name="section_upcoming_movies">Közelgő filmek</string>
-    <string name="section_popular_tv">Népszerű tévéműsorok</string>
-    <string name="section_upcoming_tv">Közelgő tévéműsorok</string>
+    <string name="section_popular_tv">Népszerű Sorozatok</string>
+    <string name="section_upcoming_tv">Közelgő Sorozatok</string>
     <string name="section_recent_requests">Legutóbbi kérések</string>
     <string name="section_available_requests">Elérhető kérések</string>
     <string name="section_studios">Stúdiók</string>
@@ -678,9 +695,9 @@
     <string name="error_search_failed_fmt">Keresés sikertelen: %1$s</string>
     <string name="error_request_create_failed_fmt">Nem sikerült létrehozni a kérést: %1$s</string>
     <string name="error_something_went_wrong">Valami hiba történt</string>
-    <string name="tab_tv_shows">Tévéműsorok</string>
+    <string name="tab_tv_shows">Sorozatok</string>
     <string name="empty_genre_movies">Ebben a műfajban nem találtunk filmeket</string>
-    <string name="empty_genre_tv">Ebben a műfajban nem találtunk tévéműsorokat</string>
+    <string name="empty_genre_tv">Ebben a műfajban nem találtunk sorozatot</string>
     <string name="empty_genre_audiobooks">Ebben a műfajban nem találtunk hangoskönyveket</string>
     <string name="empty_genre_podcasts">Ebben a műfajban nem találtunk podcastokat</string>
     <string name="search_no_results">Nincs találat</string>
@@ -722,7 +739,7 @@
     <string name="pref_libraries_in_drawer_summary">A könyvtárakat a kezdőképernyő helyett a navigációs menüben jelenítsd meg</string>
     <string name="settings_group_home_screen">Kezdőlap</string>
     <string name="pref_combine_library_title">Könyvtári szakaszok összevonása</string>
-    <string name="pref_combine_library_summary">Filmek és tévéműsorok egyesítése egyetlen listába</string>
+    <string name="pref_combine_library_summary">Filmek és Sorozatok egyesítése egyetlen listába</string>
     <string name="pref_sort_date_added_title">Rendezés Hozzáadás dátuma szerint</string>
     <string name="pref_sort_date_added_summary">A legújabb tartalom előrehozása a kezdőképernyőn</string>
     <string name="settings_group_content_layout">Tartalom elrendezés</string>
@@ -783,7 +800,7 @@
     <string name="pref_preferred_audio_language_summary">Hangsáv automatikus kiválasztása nyelv szerint</string>
     <string name="pref_preferred_subtitle_language_title">Előnyben részesített feliratnyelv</string>
     <string name="pref_preferred_subtitle_language_summary">Feliratsáv automatikus kiválasztása nyelv szerint</string>
-    <string name="pref_language_search_hint">Nyelvek keresése…</string>
+    <string name="pref_language_search_hint">Nyelvek kiválasztása</string>
     <string name="pref_subtitle_mode_title">Felirat mód</string>
     <string name="subtitle_mode_follow_server">Kövesse a szerver beállításait</string>
     <string name="pref_prefer_sdh_title">SDH feliratok előnyben részesítése</string>
@@ -1036,7 +1053,7 @@
     <string name="filter_all_libraries">Minden könyvtár</string>
     <string name="filter_all_audiobooks">Minden hangoskönyv</string>
     <string name="section_boxset">Díszdobozok</string>
-    <string name="section_tv_shows">Tévéműsorok</string>
+    <string name="section_tv_shows">Sorozatok</string>
     <string name="section_tv_channels">Élő TV-csatornák</string>
     <string name="section_people">Személy</string>
     <string name="admin_tab_people">Személy</string>
@@ -1460,4 +1477,92 @@
     <string name="unverified_address_confirm">Hozzáadás mégis</string>
     <string name="cd_vpn_connection">VPN kapcsolat</string>
     <string name="connection_label_vpn">VPN</string>
+    <plurals name="producers_prefix">
+        <item quantity="one">Producer: %1$s</item>
+        <item quantity="other">Producerek: %1$s</item>
+    </plurals>
+    <string name="discovery_found_on_network">A hálózatodon talált</string>
+    <string name="custom_sections_source_genre">Műfaj</string>
+    <string name="custom_sections_source_studio">Stúdió</string>
+    <string name="custom_sections_source_tag">Címke</string>
+    <string name="custom_sections_source_collection">Gyűjtemény</string>
+    <string name="custom_sections_source_playlist">Lejátszási lista</string>
+    <string name="custom_sections_source_library">Könyvtár</string>
+    <string name="custom_sections_card_portrait">Állított</string>
+    <string name="custom_sections_card_landscape">Fektetett</string>
+    <string name="custom_sections_card_square">Négyzet</string>
+    <string name="custom_sections_card_spotlight">Középpontban</string>
+    <string name="custom_sections_preset_halloween">Halloween</string>
+    <string name="custom_sections_preset_christmas">Karácsony</string>
+    <string name="custom_sections_preset_new_year">Újév</string>
+    <string name="custom_sections_preset_valentines">Valentin-nap</string>
+    <string name="guest_stars_section_title">Vendégszereplők</string>
+    <string name="people_dialog_title">Szereplők és Stáb</string>
+    <string name="people_group_header_fmt">%1$s · %2$d</string>
+    <string name="people_facepile_overflow_fmt">+%1$d</string>
+    <string name="meta_atmos">Atmos</string>
+    <string name="file_size_b_fmt">%1$d B</string>
+    <string name="file_size_kb_fmt">%1$.1f KB</string>
+    <string name="file_size_mb_fmt">%1$.1f MB</string>
+    <string name="file_size_gb_fmt">%1$.2f GB</string>
+    <string name="file_size_tb_fmt">%1$.2f TB</string>
+    <plurals name="genres_prefix">
+        <item quantity="one">Műfaj: %1$s</item>
+        <item quantity="other">Műfajok: %1$s</item>
+    </plurals>
+    <plurals name="season_already_available">
+        <item quantity="one">A %1$s. évad már elérhető</item>
+        <item quantity="other">A %1$s. évad már elérhető</item>
+    </plurals>
+    <string name="abs_on_audible">az Audible-on</string>
+    <string name="abs_books">Könyvek</string>
+    <string name="abs_chapters_header">FEJEZETEK</string>
+    <string name="abs_equalizer_header">EQUALIZER</string>
+    <string name="abs_skip_silence_summary">Csendes szakaszok kihagyása</string>
+    <string name="abs_speed_normal">Normál</string>
+    <string name="sort_option_random">Véletlenszerű</string>
+    <string name="unit_mbps_fmt">%1$d Mbps</string>
+    <string name="unit_megabytes_fmt">%1$d MB</string>
+    <string name="cd_birthplace">Születési hely megnyitása a térképeken</string>
+    <string name="player_collection_title">Ebben a gyűjteményben</string>
+    <string name="syncplay_manage_group">Csoport kezelése</string>
+    <string name="syncplay_leave_group">Csoport elhagyása</string>
+    <string name="syncplay_group_name">Csoport neve</string>
+    <string name="syncplay_joining">Csatlakozás…</string>
+    <string name="syncplay_create_group">Csoport létrehozása</string>
+    <string name="syncplay_active_groups">Aktív csoportok</string>
+    <string name="syncplay_no_active_groups">Nincsenek aktív csoportok</string>
+    <string name="syncplay_state_paused">Szüneteltetve</string>
+    <string name="syncplay_state_ready">Készen áll</string>
+    <string name="syncplay_state_waiting">Várakozás…</string>
+    <string name="syncplay_state_playing">Lejátszás</string>
+    <string name="syncplay_state_unknown">Ismeretlen</string>
+    <string name="syncplay_active_just_now">Jelenleg aktív</string>
+    <string name="syncplay_active_minutes_fmt">Aktív %1$d hónapja</string>
+    <string name="syncplay_active_hours_fmt">Aktív %1$d órája</string>
+    <string name="syncplay_active_days_fmt">Aktív %1$d napja</string>
+    <string name="action_join">Csatlakozz</string>
+    <string name="action_refresh">Frissítés</string>
+    <plurals name="syncplay_member_count">
+        <item quantity="one">%1$d tag</item>
+        <item quantity="other">%1$d tag</item>
+    </plurals>
+    <string name="playback_stats_value_transcoding">Átkódolás</string>
+    <string name="playback_stats_value_direct_play">Közvetlen lejátszás</string>
+    <string name="playback_stats_value_stream_copy">Stream másolat</string>
+    <string name="playback_stats_section_transcoding">Szerveres átkódolás</string>
+    <string name="playback_stats_label_transcode_output">Kimenet</string>
+    <string name="playback_stats_label_transcode_video">Videó</string>
+    <string name="pref_mpv_hwdec_disabled">Kikapcsolva</string>
+    <string name="pref_mpv_gpu_api_vulkan">Vulkan (experimental)</string>
+    <string name="pref_mpv_gpu_api_opengl">OpenGL (alapértelmezett)</string>
+    <string name="pref_mpv_hdr_auto">Automatikus (HDR-átvitel)</string>
+    <string name="pref_mpv_hdr_tone_map">Mindig SDR-re alakítás</string>
+    <string name="player_quality_title">Minőség</string>
+    <string name="pref_group_streaming_quality">A streamelés minősége</string>
+    <string name="pref_quality_wifi_title">Minőség Wi-Fi-n</string>
+    <string name="pref_quality_cellular_title">Minőség mobil neten</string>
+    <string name="library_filter_audio_language">Hangsáv nyelve</string>
+    <string name="playback_section_tracks_summary">Melyik nyelvet és feliratot válassza a rendszer automatikusan</string>
+    <string name="library_filter_subtitle_language">Felirat nyelve</string>
 </resources>
