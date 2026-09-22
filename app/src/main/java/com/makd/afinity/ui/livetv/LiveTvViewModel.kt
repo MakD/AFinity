@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 @OptIn(FlowPreview::class)
@@ -96,6 +97,9 @@ constructor(
 
     private fun checkLiveTvAccess() {
         viewModelScope.launch {
+            val loadedAt = System.currentTimeMillis()
+            lastTabLoadAt[LiveTvTab.HOME] = loadedAt
+            lastTabLoadAt[LiveTvTab.CHANNELS] = loadedAt
             try {
                 val hasAccess = liveTvRepository.hasLiveTvAccess()
                 _uiState.update { it.copy(hasLiveTvAccess = hasAccess) }
@@ -155,7 +159,7 @@ constructor(
                     awaitAll(
                         async(Dispatchers.IO) {
                             LiveTvCategory.ON_NOW to
-                                liveTvRepository.getPrograms(hasAired = false, limit = 20)
+                                liveTvRepository.getPrograms(isAiring = true, limit = 20)
                         },
                         async(Dispatchers.IO) {
                             LiveTvCategory.MOVIES to
@@ -263,25 +267,19 @@ constructor(
                 val endTime = startTime.plusHours(_uiState.value.epgVisibleHours.toLong() + 1)
 
                 val allPrograms =
-                    channels
-                        .chunked(100)
-                        .map { batch ->
-                            async(Dispatchers.IO) {
-                                try {
-                                    liveTvRepository.getGuidePrograms(
-                                        channelIds = batch.map { it.id },
-                                        windowStart = startTime,
-                                        windowEnd = endTime,
-                                    )
-                                } catch (e: CancellationException) {
-                                    throw e
-                                } catch (e: Exception) {
-                                    emptyList()
-                                }
-                            }
+                    withContext(Dispatchers.IO) {
+                        try {
+                            liveTvRepository.getGuidePrograms(
+                                channelIds = channels.map { it.id },
+                                windowStart = startTime,
+                                windowEnd = endTime,
+                            )
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            emptyList()
                         }
-                        .awaitAll()
-                        .flatten()
+                    }
 
                 val programsByChannel = allPrograms.groupBy { it.channelId }
 

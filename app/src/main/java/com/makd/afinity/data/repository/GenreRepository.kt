@@ -25,7 +25,6 @@ import kotlin.time.Duration.Companion.hours
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -76,22 +75,10 @@ constructor(
                 else -> emptyList()
             }
 
-        return coroutineScope {
-            videoLibraries()
-                .filter { it.type == type }
-                .map { library ->
-                    async {
-                        mediaRepository.getGenres(
-                            parentId = library.id,
-                            includeItemTypes = itemTypes,
-                        )
-                    }
-                }
-                .awaitAll()
-                .flatten()
-                .distinct()
-                .sorted()
-        }
+        if (itemTypes.isEmpty()) return emptyList()
+        if (videoLibraries().none { it.type == type }) return emptyList()
+
+        return mediaRepository.getGenres(includeItemTypes = itemTypes).distinct().sorted()
     }
 
     suspend fun loadCombinedGenres() {

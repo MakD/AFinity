@@ -143,14 +143,14 @@ constructor(
         viewModelScope.launch {
             adminChangeBroadcaster.changes
                 .filter { it.kind != AdminChangeKind.IMAGES }
-                .collect { loadFavorites() }
+                .collect { appDataRepository.reloadFavorites() }
         }
 
         viewModelScope.launch {
             appDataRepository.lastResyncAt.collect { at ->
                 if (at <= lastFavoritesLoadedAt) return@collect
                 lastFavoritesLoadedAt = System.currentTimeMillis()
-                loadFavorites()
+                appDataRepository.reloadFavorites()
             }
         }
 
@@ -197,7 +197,7 @@ constructor(
     fun onScreenResumed() {
         if (appDataRepository.lastUserDataChangedAt.value > lastFavoritesLoadedAt) {
             lastFavoritesLoadedAt = System.currentTimeMillis()
-            loadFavorites()
+            viewModelScope.launch { appDataRepository.reloadFavorites() }
         }
     }
 

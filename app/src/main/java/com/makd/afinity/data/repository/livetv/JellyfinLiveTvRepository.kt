@@ -28,6 +28,7 @@ import org.jellyfin.sdk.model.api.DeviceProfile
 import org.jellyfin.sdk.model.api.DirectPlayProfile
 import org.jellyfin.sdk.model.api.DlnaProfileType
 import org.jellyfin.sdk.model.api.EncodingContext
+import org.jellyfin.sdk.model.api.GetProgramsDto
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.ItemSortBy
@@ -177,6 +178,7 @@ constructor(
         minEndDate: LocalDateTime?,
         maxEndDate: LocalDateTime?,
         hasAired: Boolean?,
+        isAiring: Boolean?,
         isMovie: Boolean?,
         isSeries: Boolean?,
         isNews: Boolean?,
@@ -196,6 +198,7 @@ constructor(
                         minEndDate = minEndDate,
                         maxEndDate = maxEndDate,
                         hasAired = hasAired,
+                        isAiring = isAiring,
                         isMovie = isMovie,
                         isSeries = isSeries,
                         isNews = isNews,
@@ -225,14 +228,17 @@ constructor(
             val baseUrl = getBaseUrl()
 
             LiveTvApi(apiClient)
-                .getLiveTvPrograms(
-                    channelIds = channelIds,
-                    minEndDate = windowStart,
-                    maxStartDate = windowEnd,
-                    sortBy = listOf(ItemSortBy.START_DATE),
-                    sortOrder = listOf(SortOrder.ASCENDING),
-                    enableImages = false,
-                    fields = emptyList(),
+                .getPrograms(
+                    GetProgramsDto(
+                        channelIds = channelIds,
+                        minEndDate = windowStart,
+                        maxStartDate = windowEnd,
+                        sortBy = listOf(ItemSortBy.START_DATE),
+                        sortOrder = listOf(SortOrder.ASCENDING),
+                        enableImages = false,
+                        enableTotalRecordCount = false,
+                        fields = emptyList(),
+                    )
                 )
                 .content
                 .items

@@ -29,6 +29,7 @@ interface LiveTvRepository {
         minEndDate: LocalDateTime? = null,
         maxEndDate: LocalDateTime? = null,
         hasAired: Boolean? = null,
+        isAiring: Boolean? = null,
         isMovie: Boolean? = null,
         isSeries: Boolean? = null,
         isNews: Boolean? = null,

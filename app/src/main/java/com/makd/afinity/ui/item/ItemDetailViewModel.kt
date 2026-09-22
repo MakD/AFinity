@@ -790,9 +790,9 @@ constructor(
                     if (isOffline) {
                         loadItemFromDatabase()
                     } else {
+                        itemLastServerFetchAt = System.currentTimeMillis()
                         mediaRepository.getItemDetail(itemId)?.let { baseItemDto ->
                             specialFeatureCount = baseItemDto.specialFeatureCount ?: 0
-                            itemLastServerFetchAt = System.currentTimeMillis()
                             when (baseItemDto.type) {
                                 BaseItemKind.MOVIE ->
                                     baseItemDto.toAfinityMovie(mediaRepository.getBaseUrl(), null)
