@@ -65,7 +65,7 @@ constructor(
     }
 
     fun selectLevel(level: LogLevel?) {
-        _uiState.update { it.copy(scope = it.scope.copy(minLevel = level), expandedKey = null) }
+        _uiState.update { it.copy(scope = it.scope.copy(level = level), expandedKey = null) }
         rebuild()
     }
 
@@ -312,13 +312,13 @@ constructor(
     ): BuildResult {
         val tagCounts = countTags(entries)
         val errorCount = tagCounts.sumOf { it.errors }
-        val warningCount = errorCount + tagCounts.sumOf { it.warnings }
+        val warningCount = tagCounts.sumOf { it.warnings }
         val since = scope.window.durationMillis?.let { anchorMillis - it }
         val query = scope.query.trim()
 
         val matching = entries.filter { entry ->
             (since == null || entry.timeMillis >= since) &&
-                (scope.minLevel == null || entry.level >= scope.minLevel) &&
+                (scope.level == null || entry.level == scope.level) &&
                 (scope.tags.isEmpty() || entry.tag in scope.tags) &&
                 (query.isEmpty() || entry.matches(query))
         }

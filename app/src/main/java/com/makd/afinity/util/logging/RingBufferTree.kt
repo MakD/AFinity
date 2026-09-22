@@ -30,6 +30,11 @@ class RingBufferTree(private val maxLines: Int = 2000) : Timber.Tree() {
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
         if (priority < Log.DEBUG) return
 
+        val fullStackTrace = t?.stackTraceToString()
+        val baseMessage =
+            if (fullStackTrace == null) message
+            else message.removeSuffix("\n$fullStackTrace").trimEnd()
+
         synchronized(buffer) {
             val created =
                 LogEntry(
@@ -37,14 +42,11 @@ class RingBufferTree(private val maxLines: Int = 2000) : Timber.Tree() {
                     timeMillis = System.currentTimeMillis(),
                     priority = priority,
                     tag = tag ?: "App",
-                    message = LogRedactor.redact(message),
+                    message = LogRedactor.redact(baseMessage),
                     stackTrace =
-                        t?.let {
+                        fullStackTrace?.let {
                             LogRedactor.redact(
-                                it.stackTraceToString()
-                                    .lines()
-                                    .take(STACK_TRACE_LINES)
-                                    .joinToString("\n")
+                                it.lines().take(STACK_TRACE_LINES).joinToString("\n")
                             )
                         },
                 )

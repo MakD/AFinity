@@ -304,7 +304,7 @@ fun LogViewerScreen(
                     label = stringResource(R.string.logs_chip_all),
                     count = uiState.totalCount,
                     tint = MaterialTheme.colorScheme.onSurface,
-                    selected = uiState.tab == LogTab.LOGS && uiState.scope.minLevel == null,
+                    selected = uiState.tab == LogTab.LOGS && uiState.scope.level == null,
                     onClick = {
                         viewModel.openTab(LogTab.LOGS)
                         viewModel.selectLevel(null)
@@ -314,8 +314,7 @@ fun LogViewerScreen(
                     label = stringResource(R.string.logs_chip_warnings),
                     count = uiState.warningCount,
                     tint = LogLevelColors.content(LogLevel.WARN),
-                    selected =
-                        uiState.tab == LogTab.LOGS && uiState.scope.minLevel == LogLevel.WARN,
+                    selected = uiState.tab == LogTab.LOGS && uiState.scope.level == LogLevel.WARN,
                     onClick = {
                         viewModel.openTab(LogTab.LOGS)
                         viewModel.selectLevel(LogLevel.WARN)
@@ -325,8 +324,7 @@ fun LogViewerScreen(
                     label = stringResource(R.string.logs_chip_errors),
                     count = uiState.errorCount,
                     tint = LogLevelColors.content(LogLevel.ERROR),
-                    selected =
-                        uiState.tab == LogTab.LOGS && uiState.scope.minLevel == LogLevel.ERROR,
+                    selected = uiState.tab == LogTab.LOGS && uiState.scope.level == LogLevel.ERROR,
                     onClick = {
                         viewModel.openTab(LogTab.LOGS)
                         viewModel.selectLevel(LogLevel.ERROR)

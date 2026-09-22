@@ -51,14 +51,14 @@ sealed interface TimelineRow {
 data class LogTagCount(val tag: String, val total: Int, val warnings: Int, val errors: Int)
 
 data class LogScope(
-    val minLevel: LogLevel? = null,
+    val level: LogLevel? = null,
     val query: String = "",
     val tags: Set<String> = emptySet(),
     val window: LogWindow = LogWindow.ALL,
 ) {
     val isFiltered: Boolean
         get() =
-            minLevel != null || query.isNotBlank() || tags.isNotEmpty() || window != LogWindow.ALL
+            level != null || query.isNotBlank() || tags.isNotEmpty() || window != LogWindow.ALL
 }
 
 data class LogViewerUiState(
@@ -87,7 +87,7 @@ data class LogViewerUiState(
 ) {
     val density: LogDensity
         get() =
-            if (!paused && scope.minLevel == null) LogDensity.COMPACT else LogDensity.COMFORTABLE
+            if (!paused && scope.level == null) LogDensity.COMPACT else LogDensity.COMFORTABLE
 
     val emptyReason: LogEmptyReason
         get() =
