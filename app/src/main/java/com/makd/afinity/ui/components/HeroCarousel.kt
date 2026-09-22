@@ -80,11 +80,24 @@ import timber.log.Timber
 private val HeroMaxHeight = 560.dp
 private val HeroBottomOverlap = 40.dp
 private val HeroFadeHeight = 340.dp
+private const val HeroPortraitFraction = 0.65f
+private const val HeroLandscapeFraction = 0.95f
+
+@Composable
+fun heroCarouselLayoutHeight(): Dp {
+    val density = LocalDensity.current
+    val windowInfo = LocalWindowInfo.current
+    val screenHeightDp = with(density) { windowInfo.containerSize.height.toDp() }
+    return if (isLandscapeWindow()) {
+        (screenHeightDp * HeroLandscapeFraction).coerceAtMost(HeroMaxHeight) - HeroBottomOverlap
+    } else {
+        (screenHeightDp * HeroPortraitFraction).coerceAtMost(HeroMaxHeight)
+    }
+}
 
 @Composable
 fun HeroCarousel(
     items: List<AfinityItem>,
-    height: Dp,
     onWatchNowClick: (AfinityItem) -> Unit,
     onPlayTrailerClick: (AfinityItem) -> Unit,
     onMoreInformationClick: (AfinityItem) -> Unit,
@@ -102,8 +115,8 @@ fun HeroCarousel(
     val screenHeightDp = with(density) { windowInfo.containerSize.height.toDp() }
 
     val heroHeight =
-        if (isLandscape) (screenHeightDp * 0.95f).coerceAtMost(HeroMaxHeight)
-        else height.coerceAtMost(HeroMaxHeight)
+        if (isLandscape) (screenHeightDp * HeroLandscapeFraction).coerceAtMost(HeroMaxHeight)
+        else (screenHeightDp * HeroPortraitFraction).coerceAtMost(HeroMaxHeight)
 
     val infinitePageCount = Int.MAX_VALUE
     val middleStart = infinitePageCount / 2

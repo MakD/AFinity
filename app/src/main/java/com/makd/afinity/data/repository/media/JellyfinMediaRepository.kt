@@ -47,11 +47,14 @@ import com.makd.afinity.data.repository.JellyfinApiInvoker
 import com.makd.afinity.data.repository.NoActiveSessionException
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.storage.StorageLocationProvider
+import com.makd.afinity.di.ApplicationScope
 import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -62,7 +65,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
@@ -93,6 +98,9 @@ import timber.log.Timber
 
 private val RESUMABLE_ITEM_TYPES = listOf(BaseItemKind.MOVIE, BaseItemKind.EPISODE)
 
+private val CARD_IMAGE_TYPES =
+    listOf(ImageType.PRIMARY, ImageType.BACKDROP, ImageType.THUMB)
+
 @Singleton
 class JellyfinMediaRepository
 @Inject
@@ -104,7 +112,11 @@ constructor(
     private val databaseRepository: DatabaseRepository,
     private val storageLocationProvider: StorageLocationProvider,
     private val apiInvoker: JellyfinApiInvoker,
+    @ApplicationScope private val scope: CoroutineScope,
 ) : MediaRepository {
+
+    private val librariesLoadMutex = Mutex()
+    private var librariesLoadJob: Deferred<Result<List<AfinityCollection>>>? = null
     override suspend fun refreshItemUserData(
         itemId: UUID,
         fields: List<ItemFields>?,
@@ -237,6 +249,8 @@ constructor(
                         enableImages = true,
                         enableUserData = true,
                         enableTotalRecordCount = false,
+                        imageTypeLimit = 1,
+                        enableImageTypes = CARD_IMAGE_TYPES,
                     )
 
                 val continueWatchingItems =
@@ -275,6 +289,8 @@ constructor(
                         enableResumable = false,
                         enableRewatching = false,
                         enableTotalRecordCount = false,
+                        imageTypeLimit = 1,
+                        enableImageTypes = CARD_IMAGE_TYPES,
                     )
 
                 val nextUpEpisodes =
@@ -491,7 +507,16 @@ constructor(
             emptyList()
         }
 
-    override suspend fun getLibrariesResult(): Result<List<AfinityCollection>> =
+    override suspend fun getLibrariesResult(): Result<List<AfinityCollection>> {
+        val job =
+            librariesLoadMutex.withLock {
+                librariesLoadJob?.takeIf { it.isActive }
+                    ?: scope.async { fetchLibraries() }.also { librariesLoadJob = it }
+            }
+        return job.await()
+    }
+
+    private suspend fun fetchLibraries(): Result<List<AfinityCollection>> =
         apiInvoker.apiResult { apiClient, userId ->
             val views = UserViewApi(apiClient).getUserViews(userId = userId).content.items
 
@@ -538,6 +563,8 @@ constructor(
                     enableUserData = true,
                     groupItems = groupItems,
                     includeItemTypes = includeItemTypes,
+                    imageTypeLimit = 1,
+                    enableImageTypes = CARD_IMAGE_TYPES,
                 )
                 .content
                 .mapNotNull { baseItemDto -> baseItemDto.toAfinityItem(getBaseUrl()) }
@@ -560,6 +587,7 @@ constructor(
                         enableUserData = true,
                         enableTotalRecordCount = false,
                         imageTypeLimit = 1,
+                        enableImageTypes = CARD_IMAGE_TYPES,
                     )
                     .content
                     .items
@@ -1309,12 +1337,13 @@ constructor(
                         userId = userId,
                         seriesId = seriesId,
                         limit = limit,
-                        fields = fields ?: FieldSets.EPISODE_LIST,
+                        fields = fields ?: FieldSets.NEXT_UP,
                         enableResumable = enableResumable,
                         enableImages = true,
                         enableUserData = true,
                         enableTotalRecordCount = false,
                         imageTypeLimit = 1,
+                        enableImageTypes = CARD_IMAGE_TYPES,
                     )
                     .content
                     .items

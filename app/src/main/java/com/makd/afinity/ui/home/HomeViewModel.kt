@@ -128,13 +128,16 @@ constructor(
 
     init {
         viewModelScope.launch {
+            var hasEverLoaded = false
             appDataRepository.isInitialDataLoaded.collect { isLoaded ->
                 if (!isLoaded) {
+                    if (!hasEverLoaded) return@collect
                     Timber.d(
                         "Data cleared detected (Session Switch/Clear), resetting HomeViewModel UI state"
                     )
                     _uiState.value = HomeUiState()
                 } else {
+                    hasEverLoaded = true
                     Timber.d(
                         "Initial Data Loaded: Triggering secondary content load (Studios, Genres, Recs)"
                     )
@@ -155,6 +158,12 @@ constructor(
         viewModelScope.launch {
             appDataRepository.heroCarouselItems.collect { heroItems ->
                 _uiState.update { it.copy(heroCarouselItems = heroItems) }
+            }
+        }
+
+        viewModelScope.launch {
+            appDataRepository.heroLoaded.collect { loaded ->
+                _uiState.update { it.copy(heroLoaded = loaded) }
             }
         }
 
@@ -436,10 +445,9 @@ constructor(
                 if (isPlayed) {
                     _uiState.update { state ->
                         state.copy(
-                            continueWatching =
-                                state.continueWatching.filter { it.id != idToRemove },
-                            nextUp = state.nextUp.filter { it.id != idToRemove },
-                            latestMovies = state.latestMovies.filter { it.id != idToRemove },
+                            continueWatching = state.continueWatching.removingItem(idToRemove),
+                            nextUp = state.nextUp.removingItem(idToRemove),
+                            latestMovies = state.latestMovies.removingItem(idToRemove),
                         )
                     }
                 }
@@ -480,6 +488,9 @@ constructor(
         val visible = items.unplayedForDisplay()
         if (visible.isEmpty()) null else library to visible
     }
+
+    private fun <T : AfinityItem> List<T>.removingItem(id: UUID): List<T> =
+        if (none { it.id == id }) this else filter { it.id != id }
 
     private fun patchUiStateItem(updatedItem: AfinityItem) {
         _uiState.update { state ->
@@ -1015,6 +1026,7 @@ private fun HomeSectionDescriptor.toHomeSection(content: HomeSectionContent?): H
 
 data class HomeUiState(
     val heroCarouselItems: List<AfinityItem> = emptyList(),
+    val heroLoaded: Boolean = false,
     val continueWatching: List<AfinityItem> = emptyList(),
     val offlineContinueWatching: List<AfinityItem> = emptyList(),
     val nextUp: List<AfinityEpisode> = emptyList(),

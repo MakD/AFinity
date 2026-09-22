@@ -11,12 +11,14 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -48,7 +50,6 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -78,6 +79,7 @@ import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.HeroCarousel
+import com.makd.afinity.ui.components.heroCarouselLayoutHeight
 import com.makd.afinity.ui.home.components.DownloadedAudiobooksSection
 import com.makd.afinity.ui.home.components.DownloadedMusicAlbumsSection
 import com.makd.afinity.ui.home.components.DownloadedMusicTracksSection
@@ -127,12 +129,6 @@ fun HomeScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val randomNoneMessage = stringResource(R.string.random_item_none)
 
-    val density = LocalDensity.current
-    val windowInfo = LocalWindowInfo.current
-    val screenHeight =
-        remember(windowInfo.containerSize, density) {
-            with(density) { windowInfo.containerSize.height.toDp() }
-        }
     val lazyListState = rememberLazyListState()
     val scrollToTopScope = rememberCoroutineScope()
     val showScrollToTop by remember { derivedStateOf { lazyListState.firstVisibleItemIndex > 3 } }
@@ -230,10 +226,11 @@ fun HomeScreen(
                         WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
                     val bottomPadding =
                         WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                    val showCarousel =
-                        !uiState.isOffline &&
-                            uiState.heroCarouselItems.isNotEmpty() &&
-                            HomeRow.HERO_CAROUSEL !in uiState.hiddenRows
+                    val heroEnabled =
+                        !uiState.isOffline && HomeRow.HERO_CAROUSEL !in uiState.hiddenRows
+                    val showCarousel = heroEnabled && uiState.heroCarouselItems.isNotEmpty()
+                    val heroPending = heroEnabled && !uiState.heroLoaded
+                    val heroHeight = heroCarouselLayoutHeight()
 
                     val baseModifier =
                         Modifier.fillMaxWidth()
@@ -246,7 +243,7 @@ fun HomeScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding =
                             PaddingValues(
-                                top = if (!showCarousel) statusBarHeight + 56.dp else 0.dp,
+                                top = if (!heroEnabled) statusBarHeight + 56.dp else 0.dp,
                                 bottom = max(bottomPadding, playerOffset) + 16.dp,
                             ),
                     ) {
@@ -254,7 +251,6 @@ fun HomeScreen(
                             if (showCarousel) {
                                 HeroCarousel(
                                     items = uiState.heroCarouselItems,
-                                    height = screenHeight * 0.65f,
                                     isScrolling = isScrolling,
                                     onWatchNowClick = onPlayClick,
                                     onPlayTrailerClick = { item ->
@@ -262,6 +258,8 @@ fun HomeScreen(
                                     },
                                     onMoreInformationClick = onItemClick,
                                 )
+                            } else if (heroPending) {
+                                Spacer(modifier = Modifier.fillMaxWidth().height(heroHeight))
                             }
                         }
 

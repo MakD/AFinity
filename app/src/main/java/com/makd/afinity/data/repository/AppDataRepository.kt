@@ -144,6 +144,9 @@ constructor(
     private val _heroCarouselItems = MutableStateFlow<List<AfinityItem>>(emptyList())
     val heroCarouselItems: StateFlow<List<AfinityItem>> = _heroCarouselItems.asStateFlow()
 
+    private val _heroLoaded = MutableStateFlow(false)
+    val heroLoaded: StateFlow<Boolean> = _heroLoaded.asStateFlow()
+
     private val _libraries = MutableStateFlow<List<AfinityCollection>>(emptyList())
     val libraries: StateFlow<List<AfinityCollection>> = _libraries.asStateFlow()
 
@@ -493,7 +496,12 @@ constructor(
                         throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Carousel fetch failed on cache-hit path")
+                    } finally {
+                        _heroLoaded.value = true
                     }
+                }
+
+                scope.launch {
                     try {
                         performBackgroundNetworkRefresh(cacheKey)
                     } catch (e: CancellationException) {
@@ -538,8 +546,11 @@ constructor(
                 _isInitialDataLoaded.value = true
 
                 launch {
-                    val heroItems = heroCarouselDeferred.await()
-                    _heroCarouselItems.value = heroItems
+                    try {
+                        _heroCarouselItems.value = heroCarouselDeferred.await()
+                    } finally {
+                        _heroLoaded.value = true
+                    }
                 }
 
                 val libraries = librariesDeferred.await()
@@ -1402,6 +1413,7 @@ constructor(
         mediaRepository.clearPlaybackCaches()
         itemStore.clear()
         _heroCarouselItems.value = emptyList()
+        _heroLoaded.value = false
         _libraries.value = emptyList()
         _latestMovies.value = emptyList()
         _latestTvSeries.value = emptyList()

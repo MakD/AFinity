@@ -605,8 +605,12 @@ constructor(
             id.toString() == itemId || (uuid != null && id == uuid)
         }
 
-        _watchAgain.update { items -> items.filterNot { matches(it.id) } }
-        _criticsChoice.update { items -> items.filterNot { matches(it.id) } }
+        _watchAgain.update { items ->
+            if (items.none { matches(it.id) }) items else items.filterNot { matches(it.id) }
+        }
+        _criticsChoice.update { items ->
+            if (items.none { matches(it.id) }) items else items.filterNot { matches(it.id) }
+        }
         _content.update { map ->
             var changed = false
             val patched = map.mapValues { (_, content) ->

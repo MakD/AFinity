@@ -23,9 +23,7 @@ import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.operations.LiveTvApi
 import org.jellyfin.sdk.api.operations.MediaInfoApi
-import org.jellyfin.sdk.api.operations.UserViewApi
 import org.jellyfin.sdk.api.operations.VideoApi
-import org.jellyfin.sdk.model.api.CollectionType
 import org.jellyfin.sdk.model.api.DeviceProfile
 import org.jellyfin.sdk.model.api.DirectPlayProfile
 import org.jellyfin.sdk.model.api.DlnaProfileType
@@ -454,10 +452,7 @@ constructor(
         mediaRepository.hasLiveTvLibrary.value?.let {
             return it
         }
-        return apiCall(false, "Failed to check access for user") { apiClient, userId ->
-            UserViewApi(apiClient).getUserViews(userId = userId).content.items.any {
-                it.collectionType == CollectionType.LIVETV
-            }
-        }
+        mediaRepository.getLibraries()
+        return mediaRepository.hasLiveTvLibrary.value ?: false
     }
 }

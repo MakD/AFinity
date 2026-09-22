@@ -79,17 +79,9 @@ object FieldSets {
 
     val MINIMAL = listOf(ItemFields.CHILD_COUNT, ItemFields.RECURSIVE_ITEM_COUNT)
 
-    val CACHE_CONTINUE_WATCHING = listOf(ItemFields.OVERVIEW, ItemFields.GENRES)
+    val CACHE_CONTINUE_WATCHING = emptyList<ItemFields>()
 
-    val CACHE_LATEST_MEDIA =
-        listOf(
-            ItemFields.OVERVIEW,
-            ItemFields.GENRES,
-            ItemFields.CHILD_COUNT,
-            ItemFields.RECURSIVE_ITEM_COUNT,
-        )
-
-    val CACHE_NEXT_UP = listOf(ItemFields.OVERVIEW, ItemFields.AIR_TIME)
+    val CACHE_NEXT_UP = emptyList<ItemFields>()
 
     val MUSIC_TRACK = emptyList<ItemFields>()
 
