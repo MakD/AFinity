@@ -440,4 +440,20 @@
     <string name="library_filter_tags">Tags</string>
     <string name="library_filter_video_type">Tipo di video</string>
     <string name="library_filter_years">Anni</string>
+    <string name="discovery_found_on_network">Trovato nella tua rete</string>
+    <string name="cd_vpn_connection">VPN Connection</string>
+    <string name="cd_retry_connection">Riprova la connessione</string>
+    <string name="connection_retry">Riprova</string>
+    <string name="connection_retrying">Connessione in corso…</string>
+    <string name="connection_label_vpn">VPN</string>
+    <string name="home_because_you_liked">Perché ti è piaciuto %1$s</string>
+    <string name="home_directed_by_from_watched">Diretto da %1$s perché hai guardato %2$s</string>
+    <string name="home_written_by_from_watched">Scritto da %1$s perché hai guardato %2$s</string>
+    <string name="home_watch_again">Guarda di nuovo</string>
+    <string name="custom_sections_title">Sezioni personalizzate della casa</string>
+    <string name="custom_sections_group_always">Sempre visualizzato</string>
+    <string name="custom_sections_always_caption">Le tue raccolte e ciò che stavi guardando. Queste non possono essere disattivate.</string>
+    <string name="custom_sections_always_on">Sempre attivo</string>
+    <string name="custom_sections_group_rows">Righe integrate</string>
+    <string name="custom_sections_rows_caption">Visualizzati in alto, in questo ordine. Disattiva quelli che non utilizzi.</string>
 </resources>
