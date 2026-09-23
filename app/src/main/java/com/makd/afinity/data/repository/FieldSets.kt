@@ -21,6 +21,8 @@ object FieldSets {
 
     val CONTINUE_WATCHING = emptyList<ItemFields>()
 
+    val SEASON_CARDS = emptyList<ItemFields>()
+
     val NEXT_UP = emptyList<ItemFields>()
 
     val LIBRARY_GRID = listOf(ItemFields.RECURSIVE_ITEM_COUNT)

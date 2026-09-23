@@ -1669,6 +1669,13 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_79_80 =
+        object : Migration(79, 80) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE item_metadata_cache ADD COLUMN watchProviders TEXT")
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1749,5 +1756,6 @@ object DatabaseMigrations {
             MIGRATION_76_77,
             MIGRATION_77_78,
             MIGRATION_78_79,
+            MIGRATION_79_80,
         )
 }

@@ -310,6 +310,9 @@
         <item quantity="other">%1$d episodes</item>
     </plurals>
     <string name="similar_items_title">More Like This</string>
+    <string name="related_starring_fmt">Starring %1$s</string>
+    <string name="related_more_in_genre_fmt">More in %1$s</string>
+    <string name="not_in_library_title">Not in your library</string>
     <string name="special_features_title">Special Features</string>
     <string name="extra_type_clip">Clip</string>
     <string name="extra_type_trailer">Trailer</string>
@@ -365,6 +368,41 @@
         <item quantity="one">Producer: %1$s</item>
         <item quantity="other">Producers: %1$s</item>
     </plurals>
+    <plurals name="detail_fact_director">
+        <item quantity="one">Director</item>
+        <item quantity="other">Directors</item>
+    </plurals>
+    <plurals name="detail_fact_writer">
+        <item quantity="one">Writer</item>
+        <item quantity="other">Writers</item>
+    </plurals>
+    <plurals name="detail_fact_producer">
+        <item quantity="one">Producer</item>
+        <item quantity="other">Producers</item>
+    </plurals>
+    <string name="detail_fact_audio">Audio</string>
+    <string name="detail_fact_subtitles">Subtitles</string>
+    <string name="detail_fact_links">Links</string>
+    <string name="where_to_watch_title">Where to Watch</string>
+    <string name="where_to_watch_stream">Stream</string>
+    <string name="where_to_watch_rent_or_buy">Rent or buy</string>
+    <string name="where_to_watch_stream_on">Stream on</string>
+    <string name="where_to_watch_rent_or_buy_on">Rent or buy on</string>
+    <string name="where_to_watch_free">Free</string>
+    <string name="where_to_watch_ads">With ads</string>
+    <string name="where_to_watch_rent">Rent</string>
+    <string name="where_to_watch_buy">Buy</string>
+    <string name="where_to_watch_rent_and_buy">Rent · Buy</string>
+    <plurals name="where_to_watch_more_rent_or_buy">
+        <item quantity="one">+%1$d to rent or buy</item>
+        <item quantity="other">+%1$d to rent or buy</item>
+    </plurals>
+    <plurals name="where_to_watch_more">
+        <item quantity="one">+%1$d more</item>
+        <item quantity="other">+%1$d more</item>
+    </plurals>
+    <string name="where_to_watch_attribution">Data by JustWatch</string>
+    <string name="where_to_watch_all_options">All options</string>
     <plurals name="genres_prefix">
         <item quantity="one">Genre: %1$s</item>
         <item quantity="other">Genres: %1$s</item>
@@ -964,6 +1002,9 @@
 
     <string name="settings_group_content_layout">Content Layout</string>
     <string name="pref_episode_layout_title">Episode Layout</string>
+    <string name="pref_detail_layout_title">Detail Page Layout</string>
+    <string name="detail_layout_classic">Classic</string>
+    <string name="detail_layout_modern">Modern</string>
     <string name="pref_show_ratings_title">Show Ratings</string>
     <string name="pref_show_ratings_summary">Display IMDb and Rotten Tomatoes ratings on cards</string>
 

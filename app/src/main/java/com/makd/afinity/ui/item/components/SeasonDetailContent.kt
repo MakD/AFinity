@@ -2,34 +2,29 @@ package com.makd.afinity.ui.item.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.paging.LoadState
-import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
-import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
 import com.makd.afinity.R
+import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.mdblist.MdbListRatingBadges
@@ -39,19 +34,20 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.models.wikidata.WikidataAwards
-import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.EpisodeListCard
-import com.makd.afinity.ui.item.components.shared.BaseMediaDetailContent
+import com.makd.afinity.ui.item.components.shared.DetailItemBox
+import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
+import com.makd.afinity.ui.item.components.shared.baseMediaDetailItems
+import com.makd.afinity.ui.item.components.shared.detailItem
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
-import kotlinx.coroutines.flow.Flow
 
-@Composable
-fun SeasonDetailContent(
+fun LazyListScope.seasonDetailItems(
     season: AfinitySeason,
-    episodesPagingData: Flow<PagingData<AfinityEpisode>>?,
+    lazyEpisodeItems: LazyPagingItems<AfinityEpisode>?,
+    episodeLayout: EpisodeLayout,
     specialFeatures: List<AfinityItem>,
     containingBoxSets: List<AfinityBoxSet>,
     tmdbReviews: List<TmdbReview> = emptyList(),
@@ -62,15 +58,11 @@ fun SeasonDetailContent(
     onEpisodeClick: (AfinityEpisode) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     navController: NavController,
-    preferencesRepository: PreferencesRepository,
     widthSizeClass: WindowWidthSizeClass,
+    horizontalPadding: Dp,
+    detailLayout: DetailLayout,
 ) {
-    val episodeLayout by
-        preferencesRepository
-            .getEpisodeLayoutFlow()
-            .collectAsState(initial = EpisodeLayout.HORIZONTAL)
-
-    BaseMediaDetailContent(
+    baseMediaDetailItems(
         item = season,
         specialFeatures = specialFeatures,
         containingBoxSets = containingBoxSets,
@@ -89,55 +81,69 @@ fun SeasonDetailContent(
             navController.navigate(route)
         },
         widthSizeClass = widthSizeClass,
+        horizontalPadding = horizontalPadding,
+        detailLayout = detailLayout,
     ) {
-        episodesPagingData?.let { pagingData ->
-            EpisodesSection(
-                episodesPagingData = pagingData,
+        if (lazyEpisodeItems != null) {
+            episodesItems(
+                lazyEpisodeItems = lazyEpisodeItems,
                 onEpisodeClick = onEpisodeClick,
                 layout = episodeLayout,
                 widthSizeClass = widthSizeClass,
+                horizontalPadding = horizontalPadding,
             )
         }
     }
 }
 
-@Composable
-private fun EpisodesSection(
-    episodesPagingData: Flow<PagingData<AfinityEpisode>>,
+private val EpisodesInnerGap = 12.dp
+
+private fun LazyListScope.episodesItems(
+    lazyEpisodeItems: LazyPagingItems<AfinityEpisode>,
     onEpisodeClick: (AfinityEpisode) -> Unit,
     layout: EpisodeLayout,
     widthSizeClass: WindowWidthSizeClass,
+    horizontalPadding: Dp,
 ) {
-    val lazyEpisodeItems = episodesPagingData.collectAsLazyPagingItems()
+    detailItem("episodes_header", horizontalPadding) {
+        DetailSectionTitle(text = stringResource(R.string.season_episodes_title))
+    }
 
-    val cardWidth = widthSizeClass.landscapeWidth
-
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = stringResource(R.string.season_episodes_title),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-
-        when (layout) {
-            EpisodeLayout.HORIZONTAL -> {
+    when (layout) {
+        EpisodeLayout.HORIZONTAL -> {
+            detailItem("episodes_row", horizontalPadding, gap = EpisodesInnerGap) {
                 HorizontalEpisodesList(
                     lazyEpisodeItems = lazyEpisodeItems,
                     onEpisodeClick = onEpisodeClick,
-                    cardWidth = cardWidth,
-                )
-            }
-
-            EpisodeLayout.VERTICAL -> {
-                VerticalEpisodesList(
-                    lazyEpisodeItems = lazyEpisodeItems,
-                    onEpisodeClick = onEpisodeClick,
-                    cardWidth = cardWidth,
+                    cardWidth = widthSizeClass.landscapeWidth,
                 )
             }
         }
 
-        if (lazyEpisodeItems.loadState.append is LoadState.Loading) {
+        EpisodeLayout.VERTICAL -> {
+            items(
+                count = lazyEpisodeItems.itemCount,
+                key = lazyEpisodeItems.itemKey { "episode_${it.id}" },
+                contentType = lazyEpisodeItems.itemContentType { "episode" },
+            ) { index ->
+                DetailItemBox(
+                    horizontalPadding = horizontalPadding,
+                    gap = if (index == 0) EpisodesInnerGap else 0.dp,
+                ) {
+                    lazyEpisodeItems[index]?.let { episode ->
+                        EpisodeListCard(
+                            item = episode,
+                            onClick = { onEpisodeClick(episode) },
+                            thumbnailWidth = widthSizeClass.landscapeWidth,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (lazyEpisodeItems.loadState.append is LoadState.Loading) {
+        detailItem("episodes_loading", horizontalPadding, gap = EpisodesInnerGap) {
             Box(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 contentAlignment = Alignment.Center,
@@ -173,25 +179,6 @@ private fun HorizontalEpisodesList(
                     onClick = { onEpisodeClick(episode) },
                     modifier = Modifier.width(cardWidth),
                     cardWidth = cardWidth,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun VerticalEpisodesList(
-    lazyEpisodeItems: LazyPagingItems<AfinityEpisode>,
-    onEpisodeClick: (AfinityEpisode) -> Unit,
-    cardWidth: Dp,
-) {
-    Column {
-        repeat(lazyEpisodeItems.itemCount) { index ->
-            lazyEpisodeItems[index]?.let { episode ->
-                EpisodeListCard(
-                    item = episode,
-                    onClick = { onEpisodeClick(episode) },
-                    thumbnailWidth = cardWidth,
                 )
             }
         }

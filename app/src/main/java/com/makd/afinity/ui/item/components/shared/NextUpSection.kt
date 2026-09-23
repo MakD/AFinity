@@ -32,11 +32,7 @@ fun NextUpSection(
     val cardWidth = widthSizeClass.landscapeWidth
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = sectionTitle,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        DetailSectionTitle(text = sectionTitle)
         ContinueWatchingCard(
             item = episode,
             onClick = { onEpisodeClick(episode) },

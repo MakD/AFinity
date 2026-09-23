@@ -6,12 +6,14 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.work.WorkManager
 import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.data.repository.ExternalTitlesRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.auth.JellyfinAuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
+import com.makd.afinity.data.repository.external.ExternalTitlesRepositoryImpl
 import com.makd.afinity.data.repository.impl.DatabaseRepositoryImpl
 import com.makd.afinity.data.repository.impl.JellyfinRepositoryImpl
 import com.makd.afinity.data.repository.impl.PreferencesRepositoryImpl
@@ -57,6 +59,12 @@ abstract class RepositoryModule {
     abstract fun bindMediaRepository(
         jellyfinMediaRepository: JellyfinMediaRepository
     ): MediaRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindExternalTitlesRepository(
+        externalTitlesRepositoryImpl: ExternalTitlesRepositoryImpl
+    ): ExternalTitlesRepository
 
     @Binds
     @Singleton

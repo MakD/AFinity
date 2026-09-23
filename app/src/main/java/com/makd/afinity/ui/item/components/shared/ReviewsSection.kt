@@ -68,11 +68,7 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
         )
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = stringResource(R.string.reviews_title),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        DetailSectionTitle(text = stringResource(R.string.reviews_title))
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),

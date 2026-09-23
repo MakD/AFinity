@@ -91,6 +91,7 @@ fun PlayerScreen(
     val syncPlayMemberInfo by syncPlayViewModel.memberInfoMap.collectAsStateWithLifecycle()
     val playlistState by
         viewModel.playlistState.collectAsStateWithLifecycle(initialValue = PlaylistState())
+    val playbackProgress = viewModel.playbackProgress.collectAsStateWithLifecycle()
 
     val context = androidx.compose.ui.platform.LocalContext.current
     val preferencesRepository = remember {
@@ -100,10 +101,10 @@ fun PlayerScreen(
             )
             .preferencesRepository()
     }
+    val subtitlePrefsFlow =
+        remember(preferencesRepository) { preferencesRepository.getSubtitlePreferencesFlow() }
     val subtitlePrefs by
-        preferencesRepository
-            .getSubtitlePreferencesFlow()
-            .collectAsStateWithLifecycle(initialValue = SubtitlePreferences.DEFAULT)
+        subtitlePrefsFlow.collectAsStateWithLifecycle(initialValue = SubtitlePreferences.DEFAULT)
     var seekOriginTime by remember { mutableLongStateOf(0L) }
     var dragStartVolume by remember { mutableIntStateOf(-1) }
     var dragStartBrightness by remember { mutableFloatStateOf(-1f) }
@@ -343,6 +344,7 @@ fun PlayerScreen(
 
             PlayerControls(
                 uiState = uiState,
+                playbackProgress = playbackProgress,
                 player = viewModel.player,
                 onPlayerEvent = viewModel::handlePlayerEvent,
                 onBackClick = {

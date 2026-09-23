@@ -26,17 +26,14 @@ fun SimilarItemsSection(
     items: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
+    title: String = stringResource(R.string.similar_items_title),
 ) {
     val cardWidth = widthSizeClass.portraitWidth
     val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = stringResource(R.string.similar_items_title),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        DetailSectionTitle(text = title)
 
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),

@@ -22,6 +22,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,14 +59,17 @@ fun UpdateSection(
     var showUpdateDialog by remember { mutableStateOf(false) }
     var pendingRelease by remember { mutableStateOf<GitHubRelease?>(null) }
 
-    if (updateState is UpdateState.Available && !showUpdateDialog && pendingRelease == null) {
-        pendingRelease = (updateState as UpdateState.Available).release
-        showUpdateDialog = true
-    }
+    LaunchedEffect(updateState, showUpdateDialog, pendingRelease) {
+        val state = updateState
+        if (state is UpdateState.Available && !showUpdateDialog && pendingRelease == null) {
+            pendingRelease = state.release
+            showUpdateDialog = true
+        }
 
-    if (updateState is UpdateState.Downloaded && !showUpdateDialog && pendingRelease == null) {
-        pendingRelease = (updateState as UpdateState.Downloaded).release
-        showUpdateDialog = true
+        if (state is UpdateState.Downloaded && !showUpdateDialog && pendingRelease == null) {
+            pendingRelease = state.release
+            showUpdateDialog = true
+        }
     }
 
     if (showUpdateDialog && pendingRelease != null) {

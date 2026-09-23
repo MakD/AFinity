@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,15 +32,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
+import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.mdblist.MdbListRatingBadges
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.tmdb.TmdbRegionProviders
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.navigation.LocalShowAwards
@@ -51,8 +55,7 @@ import com.makd.afinity.ui.components.ratings.excludingSupersededBy
 import com.makd.afinity.ui.components.ratings.toDisplay
 import java.util.UUID
 
-@Composable
-fun BaseMediaDetailContent(
+fun LazyListScope.baseMediaDetailItems(
     item: AfinityItem,
     specialFeatures: List<AfinityItem>,
     containingBoxSets: List<AfinityBoxSet>,
@@ -66,67 +69,118 @@ fun BaseMediaDetailContent(
     onBoxSetClick: (AfinityBoxSet) -> Unit,
     onPersonClick: (UUID) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
+    horizontalPadding: Dp,
+    detailLayout: DetailLayout,
     selectedSourceId: String? = null,
-    typeSpecificContent: @Composable () -> Unit,
+    watchProviders: TmdbRegionProviders? = null,
+    typeSpecificItems: LazyListScope.() -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        TaglineSection(item = item)
-        OverviewSection(item = item)
-        ExternalLinksSection(item = item)
+    detailItem("tagline", horizontalPadding) { TaglineSection(item = item) }
+    detailItem("overview", horizontalPadding) { OverviewSection(item = item) }
 
-        DirectorSection(item = item)
-        WriterSection(item = item)
-        ProducerSection(item = item)
+    when (detailLayout) {
+        DetailLayout.CLASSIC -> {
+            detailItem("external_links", horizontalPadding) { ExternalLinksSection(item = item) }
 
-        MediaLanguageFlagsSection(item = item, selectedSourceId = selectedSourceId)
+            detailItem("director", horizontalPadding) { DirectorSection(item = item) }
+            detailItem("writer", horizontalPadding) { WriterSection(item = item) }
+            detailItem("producer", horizontalPadding) { ProducerSection(item = item) }
 
-        typeSpecificContent()
+            detailItem("language_flags", horizontalPadding) {
+                MediaLanguageFlagsSection(item = item, selectedSourceId = selectedSourceId)
+            }
 
+            typeSpecificItems()
+        }
+
+        DetailLayout.MODERN -> {
+            typeSpecificItems()
+
+            detailItem("facts", horizontalPadding) {
+                DetailFactsPanel(item = item, selectedSourceId = selectedSourceId)
+            }
+        }
+    }
+
+    detailItem("cast", horizontalPadding) {
         CastSection(item = item, onPersonClick = onPersonClick, widthSizeClass = widthSizeClass)
+    }
 
+    detailItem("guest_stars", horizontalPadding) {
         GuestStarSection(
             item = item,
             onPersonClick = onPersonClick,
             widthSizeClass = widthSizeClass,
         )
+    }
 
-        if (LocalShowAwards.current) {
-            val omdbHeadline = omdbAwardsHeadline(omdbAwards)
-            val headline =
-                if (omdbHeadline == null && wikidataAwards != null) {
-                    derivedAwardsHeadline(wikidataAwards)
-                } else {
-                    omdbHeadline
+    when (detailLayout) {
+        DetailLayout.CLASSIC -> {
+            detailItem("awards", horizontalPadding) {
+                if (LocalShowAwards.current) {
+                    val headline = awardsHeadlineFor(omdbAwards, wikidataAwards)
+
+                    Column(verticalArrangement = Arrangement.spacedBy(DetailSectionGap)) {
+                        if (headline != null) {
+                            AwardBanner(headline = headline, isFromCache = isRatingsFromCache)
+                        }
+
+                        if (wikidataAwards != null) {
+                            WikidataAwardsSection(
+                                awards = wikidataAwards,
+                                style = AwardsSectionStyle.COLLAPSED_BAR,
+                            )
+                        }
+                    }
                 }
-
-            if (headline != null) {
-                AwardBanner(headline = headline, isFromCache = isRatingsFromCache)
             }
 
-            if (wikidataAwards != null) {
-                WikidataAwardsSection(
-                    awards = wikidataAwards,
-                    style = AwardsSectionStyle.COLLAPSED_BAR,
-                )
+            if (watchProviders != null && watchProviders.hasAny) {
+                detailItem("where_to_watch", horizontalPadding) {
+                    WhereToWatchSection(providers = watchProviders)
+                }
+            }
+
+            detailItem("ratings", horizontalPadding) {
+                if (LocalShowRatings.current) {
+                    RatingsAndReviews(
+                        item = item,
+                        mdbRatings = mdbRatings,
+                        mdbRatingBadges = mdbRatingBadges,
+                        tmdbReviews = tmdbReviews,
+                        isRatingsFromCache = isRatingsFromCache,
+                    )
+                }
             }
         }
 
-        if (LocalShowRatings.current) {
-            RatingsAndReviews(
-                item = item,
-                mdbRatings = mdbRatings,
-                mdbRatingBadges = mdbRatingBadges,
-                tmdbReviews = tmdbReviews,
-                isRatingsFromCache = isRatingsFromCache,
-            )
-        }
+        DetailLayout.MODERN -> {
+            detailItem("awards", horizontalPadding) {
+                if (LocalShowAwards.current) {
+                    AwardsHeadlineBar(
+                        headline = awardsHeadlineFor(omdbAwards, wikidataAwards),
+                        awards = wikidataAwards,
+                    )
+                }
+            }
 
+            detailItem("reviews", horizontalPadding) {
+                if (LocalShowRatings.current && tmdbReviews.isNotEmpty()) {
+                    ReviewsSection(reviews = tmdbReviews)
+                }
+            }
+        }
+    }
+
+    detailItem("special_features", horizontalPadding) {
         SpecialFeaturesSection(
             specialFeatures = specialFeatures,
             onItemClick = onSpecialFeatureClick,
             widthSizeClass = widthSizeClass,
         )
+    }
 
+    detailItem("in_collections", horizontalPadding) {
         InCollectionsSection(
             boxSets = containingBoxSets,
             onBoxSetClick = onBoxSetClick,
@@ -136,13 +190,19 @@ fun BaseMediaDetailContent(
 }
 
 @Composable
-private fun RatingsAndReviews(
+private fun awardsHeadlineFor(omdbAwards: String?, wikidataAwards: WikidataAwards?): String? {
+    val omdbHeadline = omdbAwardsHeadline(omdbAwards)
+    return if (omdbHeadline == null && wikidataAwards != null) {
+        derivedAwardsHeadline(wikidataAwards)
+    } else {
+        omdbHeadline
+    }
+}
+
+internal fun orderedRatingsFor(
     item: AfinityItem,
     mdbRatings: List<MdbListRating>,
-    mdbRatingBadges: MdbListRatingBadges,
-    tmdbReviews: List<TmdbReview>,
-    isRatingsFromCache: Boolean,
-) {
+): List<MdbListRating> {
     val communityRating =
         when (item) {
             is AfinityMovie -> item.communityRating
@@ -157,9 +217,19 @@ private fun RatingsAndReviews(
             else -> null
         }
 
-    val orderedRatings =
-        listOfNotNull(communityRatingOf(communityRating), criticRatingOf(criticRating)) +
-            mdbRatings.excludingSupersededBy(criticRating).sortedBy { it.displayPriority() }
+    return listOfNotNull(communityRatingOf(communityRating), criticRatingOf(criticRating)) +
+        mdbRatings.excludingSupersededBy(criticRating).sortedBy { it.displayPriority() }
+}
+
+@Composable
+private fun RatingsAndReviews(
+    item: AfinityItem,
+    mdbRatings: List<MdbListRating>,
+    mdbRatingBadges: MdbListRatingBadges,
+    tmdbReviews: List<TmdbReview>,
+    isRatingsFromCache: Boolean,
+) {
+    val orderedRatings = orderedRatingsFor(item, mdbRatings)
 
     val hasRatings = mdbRatingBadges.hasAny || orderedRatings.isNotEmpty()
     val hasReviews = tmdbReviews.isNotEmpty()
@@ -171,11 +241,7 @@ private fun RatingsAndReviews(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         if (hasRatings) {
-            Text(
-                text = stringResource(R.string.section_ratings),
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onBackground,
-            )
+            DetailSectionTitle(text = stringResource(R.string.section_ratings))
 
             AnimatedVisibility(
                 visible = true,

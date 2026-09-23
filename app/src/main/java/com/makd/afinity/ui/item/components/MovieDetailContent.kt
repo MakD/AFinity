@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.extensions.thumbBlurHash
@@ -43,19 +45,21 @@ import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.getChapterImageUrl
+import com.makd.afinity.data.models.tmdb.TmdbRegionProviders
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AsyncImage
-import com.makd.afinity.ui.item.components.shared.BaseMediaDetailContent
+import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
+import com.makd.afinity.ui.item.components.shared.baseMediaDetailItems
+import com.makd.afinity.ui.item.components.shared.detailItem
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import java.util.Locale
 import java.util.UUID
 
-@Composable
-fun MovieDetailContent(
+fun LazyListScope.movieDetailItems(
     item: AfinityMovie,
     baseUrl: String,
     specialFeatures: List<AfinityItem>,
@@ -72,11 +76,15 @@ fun MovieDetailContent(
     onPartClick: (AfinityItem) -> Unit = {},
     navController: androidx.navigation.NavController,
     widthSizeClass: WindowWidthSizeClass,
+    horizontalPadding: Dp,
+    detailLayout: DetailLayout,
     selectedSourceId: String? = null,
+    watchProviders: TmdbRegionProviders? = null,
 ) {
-    BaseMediaDetailContent(
+    baseMediaDetailItems(
         item = item,
         selectedSourceId = selectedSourceId,
+        watchProviders = watchProviders,
         specialFeatures = specialFeatures,
         containingBoxSets = containingBoxSets,
         tmdbReviews = tmdbReviews,
@@ -95,37 +103,48 @@ fun MovieDetailContent(
             navController.navigate(route)
         },
         widthSizeClass = widthSizeClass,
+        horizontalPadding = horizontalPadding,
+        detailLayout = detailLayout,
     ) {
         if (parts.isNotEmpty()) {
-            PartsSection(parts = parts, onPartClick = onPartClick, widthSizeClass = widthSizeClass)
+            detailItem("parts", horizontalPadding) {
+                PartsSection(
+                    parts = parts,
+                    onPartClick = onPartClick,
+                    widthSizeClass = widthSizeClass,
+                )
+            }
         }
 
         if (item.chapters.isNotEmpty()) {
-            ChaptersSection(
-                chapters = item.chapters,
-                itemId = item.id,
-                baseUrl = baseUrl,
-                onChapterClick = { startPositionMs ->
-                    onPlayClick(
-                        item,
-                        PlaybackSelection(
-                            mediaSourceId = item.sources.firstOrNull()?.id ?: "",
-                            audioStreamIndex = null,
-                            subtitleStreamIndex = null,
-                            videoStreamIndex =
-                                item.sources
-                                    .firstOrNull()
-                                    ?.mediaStreams
-                                    ?.firstOrNull {
-                                        it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO
-                                    }
-                                    ?.index ?: 0,
-                            startPositionMs = startPositionMs,
-                        ),
-                    )
-                },
-                widthSizeClass = widthSizeClass,
-            )
+            detailItem("chapters", horizontalPadding) {
+                ChaptersSection(
+                    chapters = item.chapters,
+                    itemId = item.id,
+                    baseUrl = baseUrl,
+                    onChapterClick = { startPositionMs ->
+                        onPlayClick(
+                            item,
+                            PlaybackSelection(
+                                mediaSourceId = item.sources.firstOrNull()?.id ?: "",
+                                audioStreamIndex = null,
+                                subtitleStreamIndex = null,
+                                videoStreamIndex =
+                                    item.sources
+                                        .firstOrNull()
+                                        ?.mediaStreams
+                                        ?.firstOrNull {
+                                            it.type ==
+                                                org.jellyfin.sdk.model.api.MediaStreamType.VIDEO
+                                        }
+                                        ?.index ?: 0,
+                                startPositionMs = startPositionMs,
+                            ),
+                        )
+                    },
+                    widthSizeClass = widthSizeClass,
+                )
+            }
         }
     }
 }
@@ -142,11 +161,7 @@ private fun PartsSection(
     val fixedRowHeight = cardHeight + 8.dp + 40.dp
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = stringResource(R.string.parts_title),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        DetailSectionTitle(text = stringResource(R.string.parts_title))
 
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
@@ -272,11 +287,7 @@ internal fun ChaptersSection(
     val fixedRowHeight = cardHeight + 8.dp + 40.dp
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = stringResource(R.string.chapters_title),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        DetailSectionTitle(text = stringResource(R.string.chapters_title))
 
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),

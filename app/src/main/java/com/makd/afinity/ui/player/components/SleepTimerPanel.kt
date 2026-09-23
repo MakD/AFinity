@@ -62,11 +62,12 @@ private val SLEEP_TIMER_DURATION_OPTIONS = listOf(5, 15, 30, 45, 60, 90)
 @Composable
 fun SleepTimerPanel(
     uiState: PlayerViewModel.PlayerUiState,
-    endOfItemRemainingMs: Long,
+    endOfItemRemainingMs: () -> Long,
     onSelectMode: (SleepTimerMode) -> Unit,
     onCancel: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val endOfItemMs = endOfItemRemainingMs()
     val armed = uiState.isSleepTimerArmed
     val selectedMinutes = (uiState.sleepTimerMode as? SleepTimerMode.Duration)?.minutes
     val endOfItemSelected = uiState.sleepTimerMode is SleepTimerMode.EndOfItem
@@ -133,11 +134,11 @@ fun SleepTimerPanel(
                     }
                 }
 
-                if (endOfItemRemainingMs > 0L) {
+                if (endOfItemMs > 0L) {
                     Spacer(modifier = Modifier.height(12.dp))
                     EndOfItemRow(
                         isMovie = uiState.currentItem is AfinityMovie,
-                        remainingMs = endOfItemRemainingMs,
+                        remainingMs = endOfItemMs,
                         selected = endOfItemSelected,
                         onClick = {
                             onSelectMode(SleepTimerMode.EndOfItem)
@@ -350,6 +351,7 @@ fun SleepTimerExtendPrompt(
 @Composable
 fun SleepTimerEndedOverlay(
     uiState: PlayerViewModel.PlayerUiState,
+    currentPositionMs: () -> Long,
     onResume: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -402,7 +404,7 @@ fun SleepTimerEndedOverlay(
                     text =
                         stringResource(
                             R.string.player_sleep_timer_paused_fmt,
-                            formatSleepCountdown(uiState.currentPosition),
+                            formatSleepCountdown(currentPositionMs()),
                             pluralStringResource(
                                 R.plurals.player_sleep_timer_closing_in,
                                 uiState.sleepTimerCloseInSeconds,

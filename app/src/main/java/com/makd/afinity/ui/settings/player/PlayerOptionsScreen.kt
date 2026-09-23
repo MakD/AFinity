@@ -155,10 +155,10 @@ fun PlayerOptionsScreen(
             )
             .preferencesRepository()
     }
+    val subtitlePrefsFlow =
+        remember(preferencesRepository) { preferencesRepository.getSubtitlePreferencesFlow() }
     val subtitlePrefs by
-        preferencesRepository
-            .getSubtitlePreferencesFlow()
-            .collectAsStateWithLifecycle(initialValue = SubtitlePreferences.DEFAULT)
+        subtitlePrefsFlow.collectAsStateWithLifecycle(initialValue = SubtitlePreferences.DEFAULT)
     val playerOffset = LocalPlayerOffset.current
 
     var editingConfigFile by remember { mutableStateOf<String?>(null) }

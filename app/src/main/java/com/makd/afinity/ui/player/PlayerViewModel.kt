@@ -122,6 +122,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
@@ -206,6 +207,9 @@ constructor(
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
+
+    private val _playbackProgress = MutableStateFlow(PlaybackProgress())
+    val playbackProgress: StateFlow<PlaybackProgress> = _playbackProgress.asStateFlow()
 
     val playlistState: StateFlow<PlaylistState> = playlistManager.playlistState
 
@@ -1046,14 +1050,15 @@ constructor(
 
         val bufferedPosition = player.bufferedPosition.coerceAtLeast(0)
 
+        _playbackProgress.value =
+            PlaybackProgress(currentPosition = position, bufferedPosition = bufferedPosition)
+
         _uiState.value =
             _uiState.value.copy(
                 isPlaying = isActuallyPlaying,
                 isPaused = isPausedState,
                 isBuffering = isBuffering,
                 playWhenReady = playWhenReady,
-                currentPosition = position,
-                bufferedPosition = bufferedPosition,
                 duration = duration,
                 showPlayButton =
                     if (isBuffering && playWhenReady) false else _uiState.value.showPlayButton,
@@ -1261,13 +1266,13 @@ constructor(
                     val seekable = _uiState.value.duration > 0
                     val finalPos = if (seekable) event.positionMs else player.currentPosition
                     if (seekable) player.seekTo(finalPos)
+                    _playbackProgress.update { it.copy(currentPosition = finalPos.coerceAtLeast(0)) }
                     updateUiState {
                         it.copy(
                             isSeeking = false,
                             showTrickplayPreview = false,
                             trickplayPreviewImage = null,
                             trickplayPreviewPosition = 0L,
-                            currentPosition = finalPos.coerceAtLeast(0),
                         )
                     }
                     onSeekBarPreview(0, false)
@@ -3023,7 +3028,7 @@ constructor(
     private suspend fun updateCurrentSegment() {
         if (currentMediaSegments.isEmpty()) return
 
-        val currentPositionMs = uiState.value.currentPosition
+        val currentPositionMs = _playbackProgress.value.currentPosition
 
         val currentSegment = currentMediaSegments.find { segment ->
             currentPositionMs in segment.startTicks..<(segment.endTicks - 100L)
@@ -3878,6 +3883,8 @@ constructor(
         enterPictureInPicture?.invoke()
     }
 
+    data class PlaybackProgress(val currentPosition: Long = 0L, val bufferedPosition: Long = 0L)
+
     data class PlayerUiState(
         val isPlayerReady: Boolean = false,
         val isPlaying: Boolean = false,
@@ -3885,8 +3892,6 @@ constructor(
         val isBuffering: Boolean = false,
         val playWhenReady: Boolean = false,
         val isLoading: Boolean = false,
-        val currentPosition: Long = 0L,
-        val bufferedPosition: Long = 0L,
         val duration: Long = 0L,
         val showControls: Boolean = false,
         val isFullscreen: Boolean = false,

@@ -1,6 +1,7 @@
 package com.makd.afinity.ui.settings.update
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,28 +20,30 @@ fun GlobalUpdateDialog(updateManager: UpdateManager) {
     var showDialog by remember { mutableStateOf(false) }
     var hasShownForCurrentUpdate by remember { mutableStateOf(false) }
 
-    when (val state = updateState) {
-        is UpdateState.Available -> {
-            if (!hasShownForCurrentUpdate) {
-                showDialog = true
-                hasShownForCurrentUpdate = true
+    LaunchedEffect(updateState) {
+        when (updateState) {
+            is UpdateState.Available -> {
+                if (!hasShownForCurrentUpdate) {
+                    showDialog = true
+                    hasShownForCurrentUpdate = true
+                }
             }
-        }
 
-        is UpdateState.Downloaded -> {
-            if (!hasShownForCurrentUpdate) {
-                showDialog = true
-                hasShownForCurrentUpdate = true
+            is UpdateState.Downloaded -> {
+                if (!hasShownForCurrentUpdate) {
+                    showDialog = true
+                    hasShownForCurrentUpdate = true
+                }
             }
-        }
 
-        UpdateState.Idle,
-        UpdateState.UpToDate -> {
-            hasShownForCurrentUpdate = false
-        }
+            UpdateState.Idle,
+            UpdateState.UpToDate -> {
+                hasShownForCurrentUpdate = false
+            }
 
-        else -> {
-            // Keep current state for Checking, Downloading, Error
+            else -> {
+                // Keep current state for Checking, Downloading, Error
+            }
         }
     }
 

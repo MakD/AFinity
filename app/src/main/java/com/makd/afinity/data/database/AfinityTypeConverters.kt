@@ -14,6 +14,7 @@ import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityStudio
+import com.makd.afinity.data.models.tmdb.TmdbRegionProviders
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.models.wikidata.WikidataAward
 import java.time.LocalDateTime
@@ -468,6 +469,21 @@ class AfinityTypeConverters {
             null
         }
     }
+
+    @TypeConverter
+    fun fromTmdbRegionProviders(providers: TmdbRegionProviders?): String? = providers?.let {
+        json.encodeToString(it)
+    }
+
+    @TypeConverter
+    fun toTmdbRegionProviders(providersString: String?): TmdbRegionProviders? =
+        providersString?.let {
+            try {
+                json.decodeFromString<TmdbRegionProviders>(it)
+            } catch (e: Exception) {
+                null
+            }
+        }
 
     @TypeConverter
     fun fromMdbRatingList(ratings: List<MdbListRating>?): String? = ratings?.let {

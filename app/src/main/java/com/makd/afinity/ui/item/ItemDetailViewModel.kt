@@ -29,6 +29,7 @@ import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.extensions.toAfinitySeason
 import com.makd.afinity.data.models.extensions.toAfinityVideoPlaylist
+import com.makd.afinity.data.models.external.ExternalTitles
 import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.mdblist.MdbListRatingBadges
 import com.makd.afinity.data.models.media.AfinityBoxSet
@@ -41,6 +42,7 @@ import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.media.toAfinityMovie
 import com.makd.afinity.data.models.media.toAfinityShow
+import com.makd.afinity.data.models.tmdb.TmdbRegionProviders
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.data.models.wikidata.WikidataSubjectType
@@ -48,6 +50,7 @@ import com.makd.afinity.data.network.TmdbApiService
 import com.makd.afinity.data.paging.EpisodesPagingSource
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.data.repository.ExternalTitlesRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
@@ -64,11 +67,13 @@ import com.makd.afinity.data.storage.StorageVolumeInfo
 import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.data.store.withUserDataOverlay
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
+import com.makd.afinity.ui.item.components.shared.peopleOfKind
 import com.makd.afinity.ui.item.delegates.ItemDownloadDelegate
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
@@ -101,6 +106,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
+import org.jellyfin.sdk.model.api.PersonKind
 import timber.log.Timber
 
 private const val POPULATED_METADATA_TTL_MS = 48L * 60L * 60L * 1000L
@@ -136,6 +142,7 @@ constructor(
     private val downloadPermissions: DownloadPermissions,
     private val itemStore: ItemStore,
     private val wikidataAwardsRepository: WikidataAwardsRepository,
+    private val externalTitlesRepository: ExternalTitlesRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -165,7 +172,7 @@ constructor(
     }
 
     private var bulkDownloadJob: Job? = null
-    private var itemLastLoadedAt = 0L
+    private var itemLastLoadedAt = System.currentTimeMillis()
     private var itemLastServerFetchAt = 0L
 
     private companion object {
@@ -195,7 +202,8 @@ constructor(
     init {
         viewModelScope.launch {
             _uiState.first { it.item != null || it.error != null }
-            if (_uiState.value.item == null) return@launch
+            val loaded = _uiState.value.item
+            if (loaded == null || loaded is AfinityBoxSet) return@launch
             try {
                 val boxSets =
                     mediaRepository.getBoxSetsContaining(
@@ -238,7 +246,8 @@ constructor(
                             s.tmdbReviews.isEmpty() &&
                             s.mdbRatings.isEmpty() &&
                             !s.mdbRatingBadges.hasAny &&
-                            s.omdbAwards == null
+                            s.omdbAwards == null &&
+                            s.watchProviders == null
                     ) {
                         loadReviewsAndRatings(item)
                     }
@@ -276,11 +285,19 @@ constructor(
                     val boxSet = itemStore.merge(state.boxSetItems)
                     val seasons = itemStore.merge(state.seasons)
                     val parts = itemStore.merge(state.movieParts)
+                    val related =
+                        state.relatedRows.map { row ->
+                            val merged = itemStore.merge(row.items)
+                            if (merged === row.items) row else row.copy(items = merged)
+                        }
+                    val relatedUnchanged =
+                        related.indices.all { related[it] === state.relatedRows[it] }
                     if (
                         similar === state.similarItems &&
                             boxSet === state.boxSetItems &&
                             seasons === state.seasons &&
-                            parts === state.movieParts
+                            parts === state.movieParts &&
+                            relatedUnchanged
                     ) {
                         state
                     } else {
@@ -289,6 +306,7 @@ constructor(
                             boxSetItems = boxSet,
                             seasons = seasons,
                             movieParts = parts,
+                            relatedRows = if (relatedUnchanged) state.relatedRows else related,
                         )
                     }
                 }
@@ -397,7 +415,8 @@ constructor(
                     if (item.id == currentItem.id) {
                         _uiState.update { it.copy(item = item) }
                         val membershipMayHaveChanged =
-                            event.source != MediaChangeSource.PLAYBACK &&
+                            currentItem !is AfinityBoxSet &&
+                                event.source != MediaChangeSource.PLAYBACK &&
                                 event.userData == null &&
                                 event.patch == null
                         if (membershipMayHaveChanged) {
@@ -470,7 +489,8 @@ constructor(
                     }
 
                     if (currentItem is AfinityShow) {
-                        val freshSeasons = mediaRepository.getSeasons(currentItem.id)
+                        val freshSeasons =
+                            mediaRepository.getSeasons(currentItem.id, FieldSets.SEASON_CARDS)
                         _uiState.update { it.copy(seasons = freshSeasons) }
                     }
 
@@ -693,7 +713,11 @@ constructor(
                             }
                             launch {
                                 try {
-                                    val seasons = mediaRepository.getSeasons(serverItem.id)
+                                    val seasons =
+                                        mediaRepository.getSeasons(
+                                            serverItem.id,
+                                            FieldSets.SEASON_CARDS,
+                                        )
                                     if (seasons != _uiState.value.seasons) {
                                         _uiState.update {
                                             it.copy(seasons = itemStore.merge(seasons))
@@ -740,7 +764,7 @@ constructor(
                         includeItemTypes = listOf("MOVIE", "SERIES", "SEASON", "EPISODE"),
                         limit = 100,
                         sortBy = SortBy.RELEASE_DATE,
-                        fields = FieldSets.MINIMAL,
+                        fields = FieldSets.MINIMAL + ItemFields.PROVIDER_IDS,
                     )
                 val baseUrl = mediaRepository.getBaseUrl()
                 val converted =
@@ -783,6 +807,9 @@ constructor(
 
                 if (!isOffline && itemType?.uppercase() in setOf("SERIES", "SEASON")) {
                     fetchNextUp()
+                }
+                if (!isOffline && itemType?.uppercase() == "SERIES") {
+                    fetchSeasons()
                 }
 
                 var specialFeatureCount = 0
@@ -848,7 +875,7 @@ constructor(
                 itemLastLoadedAt = System.currentTimeMillis()
 
                 if (!isOffline) {
-                    launchParallelFetches(specialFeatureCount)
+                    launchParallelFetches(item, specialFeatureCount)
                 }
 
                 if (!isOffline) {
@@ -865,6 +892,9 @@ constructor(
                 }
                 if (item is AfinityMovie || item is AfinityShow || item is AfinitySeason) {
                     launch { loadWikidataAwards(item, hasInternet) }
+                }
+                if (!isOffline && (item is AfinityMovie || item is AfinityShow)) {
+                    launch { loadRelatedRows(item) }
                 }
                 if (item is AfinityMovie || item is AfinityShow) {
                     if (hasInternet) {
@@ -886,6 +916,7 @@ constructor(
                                     mdbRatings = cachedMetadata.mdbRatings,
                                     mdbRatingBadges = cachedMetadata.mdbRatingBadges,
                                     omdbAwards = cachedMetadata.omdbAwards,
+                                    watchProviders = cachedMetadata.watchProviders,
                                     isRatingsFromCache = true,
                                 )
                         }
@@ -895,6 +926,7 @@ constructor(
                 if (!isOffline) {
                     if (item is AfinityBoxSet) {
                         loadBoxSetItems(item.id)
+                        launch { loadCollectionParts(item) }
                     }
                     if (item is AfinityMovie && (item.partCount ?: 0) > 1) {
                         launch {
@@ -958,7 +990,47 @@ constructor(
         }
     }
 
-    private fun launchParallelFetches(specialFeatureCount: Int) {
+    private suspend fun loadCollectionParts(boxSet: AfinityBoxSet) {
+        val collectionId = boxSet.providerIds?.get("Tmdb")?.toIntOrNull() ?: return
+        val parts = externalTitlesRepository.getCollectionParts(collectionId) ?: return
+        _uiState.update { it.copy(collectionParts = parts) }
+    }
+
+    private suspend fun loadRelatedRows(item: AfinityItem) {
+        val genre =
+            when (item) {
+                is AfinityMovie -> item.genres.firstOrNull()
+                is AfinityShow -> item.genres.firstOrNull()
+                else -> null
+            }
+        val actor = item.peopleOfKind(PersonKind.ACTOR).firstOrNull()
+        val rows = coroutineScope {
+            val starring = actor?.let { person ->
+                async {
+                    RelatedRow(
+                        kind = RelatedRow.Kind.STARRING,
+                        subject = person.name,
+                        items = mediaRepository.getRelatedItems(item.id, personId = person.id),
+                    )
+                }
+            }
+            val inGenre = genre?.let { name ->
+                async {
+                    RelatedRow(
+                        kind = RelatedRow.Kind.GENRE,
+                        subject = name,
+                        items = mediaRepository.getRelatedItems(item.id, genre = name),
+                    )
+                }
+            }
+            listOfNotNull(starring?.await(), inGenre?.await()).filter { it.items.isNotEmpty() }
+        }
+        _uiState.update { state ->
+            state.copy(relatedRows = rows.map { it.copy(items = itemStore.merge(it.items)) })
+        }
+    }
+
+    private fun launchParallelFetches(item: AfinityItem, specialFeatureCount: Int) {
         when (itemType?.uppercase()) {
             "SERIES" -> {
                 viewModelScope.launch {
@@ -969,16 +1041,6 @@ constructor(
                         throw e
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to get similar items")
-                    }
-                }
-                viewModelScope.launch {
-                    try {
-                        val seasons = mediaRepository.getSeasons(itemId)
-                        _uiState.update { it.copy(seasons = itemStore.merge(seasons)) }
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to get seasons")
                     }
                 }
                 if (specialFeatureCount > 0) {
@@ -1044,14 +1106,16 @@ constructor(
             }
             "PLAYLIST" -> {}
             else -> {
-                viewModelScope.launch {
-                    try {
-                        val similar = mediaRepository.getSimilarItems(itemId)
-                        _uiState.update { it.copy(similarItems = itemStore.merge(similar)) }
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to get similar items")
+                if (item !is AfinityBoxSet) {
+                    viewModelScope.launch {
+                        try {
+                            val similar = mediaRepository.getSimilarItems(itemId)
+                            _uiState.update { it.copy(similarItems = itemStore.merge(similar)) }
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to get similar items")
+                        }
                     }
                 }
                 if (specialFeatureCount > 0) {
@@ -1068,6 +1132,19 @@ constructor(
                         }
                     }
                 }
+            }
+        }
+    }
+
+    private fun fetchSeasons() {
+        viewModelScope.launch {
+            try {
+                val seasons = mediaRepository.getSeasons(itemId, FieldSets.SEASON_CARDS)
+                _uiState.update { it.copy(seasons = itemStore.merge(seasons)) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get seasons")
             }
         }
     }
@@ -1177,6 +1254,8 @@ constructor(
                 .getOrNull()
         }
 
+    private fun watchRegion(): String = Locale.getDefault().country.ifBlank { "US" }
+
     private suspend fun loadReviewsAndRatings(item: AfinityItem) {
         val userId = sessionManager.currentSession.value?.userId
         try {
@@ -1191,15 +1270,19 @@ constructor(
                     )
                 } else null
 
+            val region = watchRegion()
             val cacheAgeMs = System.currentTimeMillis() - (cachedMetadata?.lastUpdated ?: 0L)
             val cachedHasData =
                 cachedMetadata != null &&
                     (cachedMetadata.tmdbReviews.isNotEmpty() ||
                         cachedMetadata.mdbRatings.isNotEmpty() ||
                         cachedMetadata.mdbRatingBadges.hasAny ||
-                        !cachedMetadata.omdbAwards.isNullOrBlank())
+                        !cachedMetadata.omdbAwards.isNullOrBlank() ||
+                        cachedMetadata.watchProviders?.hasAny == true)
             val cacheTtlMs = if (cachedHasData) POPULATED_METADATA_TTL_MS else EMPTY_METADATA_TTL_MS
-            val isCacheValid = cacheAgeMs < cacheTtlMs
+            val cachedRegionMatches =
+                cachedMetadata?.watchProviders.let { it == null || it.region == region }
+            val isCacheValid = cacheAgeMs < cacheTtlMs && cachedRegionMatches
 
             if (cachedMetadata != null && isCacheValid) {
                 _uiState.update {
@@ -1208,6 +1291,7 @@ constructor(
                         mdbRatings = cachedMetadata.mdbRatings,
                         mdbRatingBadges = cachedMetadata.mdbRatingBadges,
                         omdbAwards = cachedMetadata.omdbAwards,
+                        watchProviders = cachedMetadata.watchProviders,
                         isRatingsFromCache = true,
                         isLoadingReviews = false,
                     )
@@ -1219,6 +1303,7 @@ constructor(
                 var fetchedRatings = emptyList<MdbListRating>()
                 var fetchedRatingBadges = MdbListRatingBadges()
                 var fetchedOmdbAwards: String? = null
+                var fetchedWatchProviders: TmdbRegionProviders? = null
 
                 if ((tmdbId != null || imdbId != null) && userId != null) {
                     val serverId = session?.serverId ?: serverRepository.currentServer.value?.id
@@ -1226,23 +1311,25 @@ constructor(
                         securePreferencesRepository.getTmdbApiKey(it, userId.toString())
                     }
                     coroutineScope {
-                        val reviewsDeferred = async {
+                        val tmdbDeferred = async {
                             try {
                                 if (tmdbId != null && !tmdbKey.isNullOrBlank()) {
                                     when (item) {
                                         is AfinityMovie ->
-                                            tmdbApiService.getMovieReviews(tmdbId, tmdbKey).results
+                                            tmdbApiService.getMovieDetails(tmdbId, tmdbKey)
                                         is AfinityShow ->
-                                            tmdbApiService.getSeriesReviews(tmdbId, tmdbKey).results
-                                        else -> emptyList()
+                                            tmdbApiService.getSeriesDetails(tmdbId, tmdbKey)
+
+                                        else -> null
                                     }
                                 } else {
-                                    emptyList()
+                                    null
                                 }
                             } catch (e: CancellationException) {
                                 throw e
                             } catch (e: Exception) {
-                                emptyList()
+                                Timber.w(e, "TMDB details fetch failed")
+                                null
                             }
                         }
 
@@ -1261,7 +1348,12 @@ constructor(
                             )
                         }
 
-                        fetchedReviews = reviewsDeferred.await()
+                        tmdbDeferred.await()?.let { details ->
+                            fetchedReviews = details.reviews?.results.orEmpty()
+                            fetchedWatchProviders =
+                                details.watchProviders?.forRegion(region)
+                                    ?: TmdbRegionProviders(region = region)
+                        }
                     }
                 }
 
@@ -1271,6 +1363,7 @@ constructor(
                         mdbRatings = fetchedRatings,
                         mdbRatingBadges = fetchedRatingBadges,
                         omdbAwards = fetchedOmdbAwards,
+                        watchProviders = fetchedWatchProviders,
                         isRatingsFromCache = false,
                         isLoadingReviews = false,
                     )
@@ -1286,6 +1379,7 @@ constructor(
                             mdbRatings = fetchedRatings,
                             mdbRatingBadges = fetchedRatingBadges,
                             omdbAwards = fetchedOmdbAwards,
+                            watchProviders = fetchedWatchProviders,
                         )
                     )
                 }
@@ -1321,6 +1415,8 @@ constructor(
 
     private val _selectedEpisode = MutableStateFlow<AfinityEpisode?>(null)
     val selectedEpisode: StateFlow<AfinityEpisode?> = _selectedEpisode.asStateFlow()
+    private var episodeLoadJob: Job? = null
+    private var episodeLoadTarget: AfinityEpisode? = null
     private val _isLoadingEpisode = MutableStateFlow(false)
     private val _selectedEpisodeWatchlistStatus = MutableStateFlow(false)
     val selectedEpisodeWatchlistStatus: StateFlow<Boolean> =
@@ -1350,7 +1446,11 @@ constructor(
     }
 
     fun selectEpisode(episode: AfinityEpisode) {
-        viewModelScope.launch {
+        val alreadyLoading = episodeLoadJob?.isActive == true && episodeLoadTarget?.id == episode.id
+        if (alreadyLoading || _selectedEpisode.value?.id == episode.id) return
+        episodeLoadJob?.cancel()
+        episodeLoadTarget = episode
+        episodeLoadJob = viewModelScope.launch {
             try {
                 _isLoadingEpisode.value = true
                 val fullEpisode =
@@ -1358,6 +1458,8 @@ constructor(
                         mediaRepository
                             .getItem(episode.id, fields = FieldSets.ITEM_DETAIL)
                             ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (_: Exception) {
                         try {
                             authRepository.currentUser.value?.id?.let {
@@ -1368,9 +1470,11 @@ constructor(
                         }
                     }
                 _selectedEpisode.value = fullEpisode ?: episode
-                _selectedEpisodeWatchlistStatus.value = episode.liked
+                _selectedEpisodeWatchlistStatus.value = (fullEpisode ?: episode).liked
 
                 _isLoadingEpisode.value = false
+            } catch (e: CancellationException) {
+                throw e
             } catch (_: Exception) {
                 _selectedEpisode.value = episode
                 _selectedEpisodeWatchlistStatus.value = false
@@ -1744,12 +1848,21 @@ constructor(
     }
 }
 
+data class RelatedRow(val kind: Kind, val subject: String, val items: List<AfinityItem>) {
+    enum class Kind {
+        STARRING,
+        GENRE,
+    }
+}
+
 data class ItemDetailUiState(
     val item: AfinityItem? = null,
     val seasons: List<AfinitySeason> = emptyList(),
     val boxSetItems: List<AfinityItem> = emptyList(),
     val containingBoxSets: List<AfinityBoxSet> = emptyList(),
     val similarItems: List<AfinityItem> = emptyList(),
+    val relatedRows: List<RelatedRow> = emptyList(),
+    val collectionParts: ExternalTitles? = null,
     val specialFeatures: List<AfinityItem> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
@@ -1766,6 +1879,7 @@ data class ItemDetailUiState(
     val mdbRatings: List<MdbListRating> = emptyList(),
     val mdbRatingBadges: MdbListRatingBadges = MdbListRatingBadges(),
     val omdbAwards: String? = null,
+    val watchProviders: TmdbRegionProviders? = null,
     val wikidataAwards: WikidataAwards? = null,
     val isLoadingWikidataAwards: Boolean = false,
     val isRatingsFromCache: Boolean = false,

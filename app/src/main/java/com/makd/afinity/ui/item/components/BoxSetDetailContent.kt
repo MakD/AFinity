@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
@@ -16,6 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.data.models.common.DetailLayout
+import com.makd.afinity.data.models.external.ExternalTitles
+import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -24,17 +28,23 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
-import com.makd.afinity.ui.item.components.shared.BaseMediaDetailContent
+import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
+import com.makd.afinity.ui.item.components.shared.ExternalTitlesSection
+import com.makd.afinity.ui.item.components.shared.baseMediaDetailItems
+import com.makd.afinity.ui.item.components.shared.detailItem
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
-@Composable
-fun BoxSetDetailContent(
+fun LazyListScope.boxSetDetailItems(
     item: AfinityBoxSet,
     boxSetItems: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
+    missingParts: ExternalTitles?,
+    onMissingPartClick: (SearchResultItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
+    horizontalPadding: Dp,
+    detailLayout: DetailLayout,
 ) {
     val portraitWidth = widthSizeClass.portraitWidth
     val landscapeWidth = widthSizeClass.landscapeWidth
@@ -44,7 +54,7 @@ fun BoxSetDetailContent(
     val seasons = boxSetItems.filterIsInstance<AfinitySeason>()
     val episodes = boxSetItems.filterIsInstance<AfinityEpisode>()
 
-    BaseMediaDetailContent(
+    baseMediaDetailItems(
         item = item,
         specialFeatures = emptyList(),
         containingBoxSets = emptyList(),
@@ -55,41 +65,62 @@ fun BoxSetDetailContent(
         onBoxSetClick = {},
         onPersonClick = {},
         widthSizeClass = widthSizeClass,
+        horizontalPadding = horizontalPadding,
+        detailLayout = detailLayout,
     ) {
         if (movies.isNotEmpty()) {
-            BoxSetTypeSection(
-                title = stringResource(R.string.section_movies),
-                items = movies,
-                onItemClick = onItemClick,
-                cardWidth = portraitWidth,
-            )
+            detailItem("boxset_movies", horizontalPadding) {
+                BoxSetTypeSection(
+                    title = stringResource(R.string.section_movies),
+                    items = movies,
+                    onItemClick = onItemClick,
+                    cardWidth = portraitWidth,
+                )
+            }
         }
 
         if (shows.isNotEmpty()) {
-            BoxSetTypeSection(
-                title = stringResource(R.string.section_tv_shows),
-                items = shows,
-                onItemClick = onItemClick,
-                cardWidth = portraitWidth,
-            )
+            detailItem("boxset_shows", horizontalPadding) {
+                BoxSetTypeSection(
+                    title = stringResource(R.string.section_tv_shows),
+                    items = shows,
+                    onItemClick = onItemClick,
+                    cardWidth = portraitWidth,
+                )
+            }
         }
 
         if (seasons.isNotEmpty()) {
-            BoxSetTypeSection(
-                title = stringResource(R.string.section_seasons),
-                items = seasons,
-                onItemClick = onItemClick,
-                cardWidth = portraitWidth,
-            )
+            detailItem("boxset_seasons", horizontalPadding) {
+                BoxSetTypeSection(
+                    title = stringResource(R.string.section_seasons),
+                    items = seasons,
+                    onItemClick = onItemClick,
+                    cardWidth = portraitWidth,
+                )
+            }
         }
 
         if (episodes.isNotEmpty()) {
-            BoxSetEpisodesSection(
-                title = stringResource(R.string.section_episodes),
-                episodes = episodes,
-                onEpisodeClick = { onItemClick(it) },
-                cardWidth = landscapeWidth,
-            )
+            detailItem("boxset_episodes", horizontalPadding) {
+                BoxSetEpisodesSection(
+                    title = stringResource(R.string.section_episodes),
+                    episodes = episodes,
+                    onEpisodeClick = { onItemClick(it) },
+                    cardWidth = landscapeWidth,
+                )
+            }
+        }
+
+        if (missingParts != null) {
+            detailItem("boxset_missing", horizontalPadding) {
+                ExternalTitlesSection(
+                    title = stringResource(R.string.not_in_library_title),
+                    titles = missingParts,
+                    onSeerrItemClick = onMissingPartClick,
+                    cardWidth = portraitWidth,
+                )
+            }
         }
     }
 }
@@ -105,11 +136,7 @@ private fun BoxSetTypeSection(
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = stringResource(R.string.watchlist_section_header_fmt, title, items.size),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        DetailSectionTitle(text = title)
 
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
@@ -131,11 +158,7 @@ private fun BoxSetEpisodesSection(
     cardWidth: Dp,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = stringResource(R.string.watchlist_section_header_fmt, title, episodes.size),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        DetailSectionTitle(text = title)
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),

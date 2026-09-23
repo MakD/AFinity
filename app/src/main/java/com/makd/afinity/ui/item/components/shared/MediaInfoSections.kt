@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPerson
@@ -62,9 +63,13 @@ fun OverviewSection(overview: String, modifier: Modifier = Modifier) {
 
     if (overview.isNotEmpty()) {
         Column(modifier = modifier) {
+            val isModern = LocalDetailLayout.current == DetailLayout.MODERN
             val textStyle =
-                MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
-            val textColor = MaterialTheme.colorScheme.onBackground
+                if (isModern) MaterialTheme.typography.bodyMedium
+                else MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+            val textColor =
+                if (isModern) MaterialTheme.colorScheme.onSurfaceVariant
+                else MaterialTheme.colorScheme.onBackground
             val textMaxLines = if (isExpanded) Int.MAX_VALUE else 3
             val textOverflow = if (isExpanded) TextOverflow.Visible else TextOverflow.Ellipsis
             val onTextLayout: (TextLayoutResult) -> Unit = { result ->

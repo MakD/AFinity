@@ -8,6 +8,7 @@ import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.HomeRow
 import com.makd.afinity.data.models.auth.QuickConnectAuthorization
+import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.mdblist.MdbListUsage
 import com.makd.afinity.data.models.player.AssRenderMode
@@ -145,6 +146,15 @@ constructor(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = EpisodeLayout.HORIZONTAL,
+            )
+
+    val detailLayout: StateFlow<DetailLayout> =
+        preferencesRepository
+            .getDetailLayoutFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = DetailLayout.CLASSIC,
             )
 
     private val _manualOfflineMode = MutableStateFlow(false)
@@ -1079,6 +1089,18 @@ constructor(
                 throw e
             } catch (e: Exception) {
                 Timber.e(e, "Failed to set episode layout")
+            }
+        }
+    }
+
+    fun setDetailLayout(layout: DetailLayout) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setDetailLayout(layout)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set detail layout")
             }
         }
     }

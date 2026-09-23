@@ -8,6 +8,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.resolveChangedItems
+import com.makd.afinity.data.models.external.ExternalTitles
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
@@ -16,6 +17,8 @@ import com.makd.afinity.data.models.media.withUserDataFrom
 import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.data.models.wikidata.WikidataSubjectType
 import com.makd.afinity.data.repository.AppDataRepository
+import com.makd.afinity.data.repository.ExternalTitlesRepository
+import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
@@ -33,6 +36,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
 
 @HiltViewModel
@@ -48,6 +52,7 @@ constructor(
     private val itemStore: ItemStore,
     private val wikidataAwardsRepository: WikidataAwardsRepository,
     private val preferencesRepository: PreferencesRepository,
+    private val externalTitlesRepository: ExternalTitlesRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -63,9 +68,11 @@ constructor(
     private val _uiState = MutableStateFlow(PersonUiState())
     val uiState: StateFlow<PersonUiState> = _uiState.asStateFlow()
 
-    private var lastLoadedAt = 0L
+    private var lastLoadedAt = System.currentTimeMillis()
 
     private var awardsTmdbId: String? = null
+
+    private var creditsTmdbId: Int? = null
 
     init {
         viewModelScope.launch { adminChangeBroadcaster.itemChanged.collect { loadPersonDetails() } }
@@ -162,6 +169,7 @@ constructor(
                         mediaRepository.getPersonItems(
                             personId = personId,
                             includeItemTypes = listOf("Movie", "Series"),
+                            fields = FieldSets.MEDIA_ITEM_CARDS + ItemFields.PROVIDER_IDS,
                         )
                     }
                     val refreshedDeferred = async { mediaRepository.getPersonResult(personId) }
@@ -173,6 +181,7 @@ constructor(
                                 isLoading = false,
                             )
                         }
+                        loadExternalCreditsFor(stored)
                     }
 
                     val personItems = itemsDeferred.await()
@@ -217,6 +226,7 @@ constructor(
                     _uiState.update { it.copy(person = person, isLoading = false) }
                     lastLoadedAt = System.currentTimeMillis()
                     loadAwardsFor(person)
+                    loadExternalCreditsFor(person)
 
                     if (person.hasIncompleteMetadata()) {
                         val rechecked = mediaRepository.getPersonWithoutRefresh(personId)
@@ -271,6 +281,22 @@ constructor(
             _uiState.update {
                 it.copy(awards = awards.takeIf { loaded -> loaded.found }, isLoadingAwards = false)
             }
+        }
+    }
+
+    private fun loadExternalCreditsFor(person: AfinityPersonDetail) {
+        val tmdbId = person.providerIds?.get("Tmdb")?.toIntOrNull() ?: return
+        if (tmdbId == creditsTmdbId) return
+        creditsTmdbId = tmdbId
+
+        viewModelScope.launch {
+            val credits = externalTitlesRepository.getPersonCredits(tmdbId)
+            if (creditsTmdbId != tmdbId) return@launch
+            if (credits == null) {
+                creditsTmdbId = null
+                return@launch
+            }
+            _uiState.update { it.copy(externalCredits = credits) }
         }
     }
 
@@ -333,4 +359,5 @@ data class PersonUiState(
     val error: String? = null,
     val awards: WikidataAwards? = null,
     val isLoadingAwards: Boolean = false,
+    val externalCredits: ExternalTitles? = null,
 )

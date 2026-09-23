@@ -31,6 +31,7 @@ import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.person.components.PersonDetailContent
+import com.makd.afinity.ui.requests.FilterType
 import com.makd.afinity.ui.utils.rememberTopBarOpacity
 
 @Composable
@@ -65,6 +66,31 @@ fun PersonScreen(
                     movies = uiState.movies,
                     shows = uiState.shows,
                     awards = uiState.awards,
+                    externalCredits = uiState.externalCredits,
+                    onExternalItemClick = { credit ->
+                        navController.navigate(
+                            Destination.createSeerrMediaRoute(
+                                mediaType = credit.mediaType,
+                                tmdbId = credit.id,
+                                title = credit.getDisplayTitle(),
+                                backdropUrl = credit.getBackdropUrl(),
+                                posterUrl = credit.getPosterUrl(),
+                            )
+                        )
+                    },
+                    onViewAllCredits = {
+                        val person = uiState.person
+                        val tmdbId = person?.providerIds?.get("Tmdb")?.toIntOrNull()
+                        if (person != null && tmdbId != null) {
+                            navController.navigate(
+                                Destination.createFilteredMediaRoute(
+                                    filterType = FilterType.PERSON.name,
+                                    filterId = tmdbId,
+                                    filterName = person.name,
+                                )
+                            )
+                        }
+                    },
                     onItemClick = { item ->
                         val route =
                             Destination.createItemDetailRoute(

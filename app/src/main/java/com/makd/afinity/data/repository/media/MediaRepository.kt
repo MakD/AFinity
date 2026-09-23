@@ -143,6 +143,13 @@ interface MediaRepository {
         fields: List<ItemFields>? = null,
     ): List<AfinityItem>
 
+    suspend fun getRelatedItems(
+        excludeItemId: UUID,
+        personId: UUID? = null,
+        genre: String? = null,
+        limit: Int = 12,
+    ): List<AfinityItem>
+
     suspend fun getMovies(
         parentId: UUID? = null,
         sortBy: SortBy = SortBy.NAME,

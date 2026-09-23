@@ -133,7 +133,8 @@ fun HeroCarousel(
         fillHeightPx = with(density) { heroHeight.toPx().toInt() },
     )
 
-    val currentItem by remember { derivedStateOf { items[pagerState.currentPage % items.size] } }
+    val currentItem by
+        remember(items) { derivedStateOf { items[pagerState.currentPage % items.size] } }
     val contentAlpha by remember {
         derivedStateOf {
             1f - (kotlin.math.abs(pagerState.currentPageOffsetFraction) * 2f).coerceIn(0f, 1f)

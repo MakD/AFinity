@@ -42,9 +42,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalConfiguration
@@ -134,7 +136,7 @@ fun AfinitySplashScreen(
     val density = LocalDensity.current
     val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
 
-    val shimmerTranslate by
+    val shimmerTranslate =
         infiniteTransition.animateFloat(
             initialValue = -screenWidthPx * 0.5f,
             targetValue = screenWidthPx * 1.5f,
@@ -146,17 +148,14 @@ fun AfinitySplashScreen(
             label = "shimmer_translate",
         )
 
-    val shimmerBrush =
-        Brush.linearGradient(
-            colors =
-                listOf(
-                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                    MaterialTheme.colorScheme.onBackground,
-                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                ),
-            start = Offset(shimmerTranslate, 0f),
-            end = Offset(shimmerTranslate + screenWidthPx * 0.3f, 0f),
-        )
+    val onBackground = MaterialTheme.colorScheme.onBackground
+    val textShimmerColors =
+        remember(onBackground) {
+            listOf(onBackground.copy(alpha = 0.7f), onBackground, onBackground.copy(alpha = 0.7f))
+        }
+    val logoShimmerColors = remember {
+        listOf(Color.Transparent, Color.White.copy(alpha = 0.6f), Color.Transparent)
+    }
 
     Box(
         modifier = modifier.fillMaxSize().background(backgroundColor),
@@ -193,18 +192,6 @@ fun AfinitySplashScreen(
                             }
                         }
                 )
-                val logoShimmerBrush =
-                    Brush.linearGradient(
-                        colors =
-                            listOf(
-                                Color.Transparent,
-                                Color.White.copy(alpha = 0.6f),
-                                Color.Transparent,
-                            ),
-                        start = Offset(shimmerTranslate, 0f),
-                        end = Offset(shimmerTranslate + screenWidthPx * 0.3f, 0f),
-                    )
-
                 Image(
                     painter = painterResource(id = R.drawable.ic_launcher_splash),
                     contentDescription = stringResource(R.string.cd_app_logo),
@@ -218,8 +205,14 @@ fun AfinitySplashScreen(
                             .drawWithCache {
                                 onDrawWithContent {
                                     drawContent()
+                                    val start = shimmerTranslate.value
                                     drawRect(
-                                        brush = logoShimmerBrush,
+                                        brush =
+                                            Brush.linearGradient(
+                                                colors = logoShimmerColors,
+                                                start = Offset(start, 0f),
+                                                end = Offset(start + screenWidthPx * 0.3f, 0f),
+                                            ),
                                         blendMode = androidx.compose.ui.graphics.BlendMode.SrcAtop,
                                     )
                                 }
@@ -231,16 +224,27 @@ fun AfinitySplashScreen(
 
             Text(
                 text = stringResource(R.string.app_name),
-                style =
-                    MaterialTheme.typography.headlineLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        brush = shimmerBrush,
-                    ),
+                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
+                color = onBackground,
                 modifier =
                     Modifier.graphicsLayer {
-                        alpha = textAlpha
-                        translationY = textOffset.toPx()
-                    },
+                            alpha = textAlpha
+                            translationY = textOffset.toPx()
+                            compositingStrategy = CompositingStrategy.Offscreen
+                        }
+                        .drawWithContent {
+                            drawContent()
+                            val start = shimmerTranslate.value
+                            drawRect(
+                                brush =
+                                    Brush.linearGradient(
+                                        colors = textShimmerColors,
+                                        start = Offset(start, 0f),
+                                        end = Offset(start + screenWidthPx * 0.3f, 0f),
+                                    ),
+                                blendMode = androidx.compose.ui.graphics.BlendMode.SrcIn,
+                            )
+                        },
             )
 
             Spacer(modifier = Modifier.height(48.dp))

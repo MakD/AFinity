@@ -9,5 +9,5 @@ data class WatchProviderDetails(
     val logoPath: String? = null,
     val displayPriority: Int? = null,
 ) {
-    fun logoUrl(): String? = logoPath?.let { "https://image.tmdb.org/t/p/original$it" }
+    fun logoUrl(): String? = logoPath?.let { "https://image.tmdb.org/t/p/w154$it" }
 }

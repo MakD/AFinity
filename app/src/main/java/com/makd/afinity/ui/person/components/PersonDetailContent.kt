@@ -67,6 +67,10 @@ import androidx.core.net.toUri
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
+import com.makd.afinity.data.models.external.ExternalTitles
+import com.makd.afinity.data.models.external.ExternalTitlesSource
+import com.makd.afinity.data.models.jellyseerr.MediaStatus
+import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
@@ -79,11 +83,14 @@ import com.makd.afinity.ui.components.FavoriteToggleButton
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.components.isLandscapeWindow
 import com.makd.afinity.ui.item.components.shared.AwardsSectionStyle
+import com.makd.afinity.ui.item.components.shared.ExternalTitlesSection
 import com.makd.afinity.ui.item.components.shared.OverviewSection
 import com.makd.afinity.ui.item.components.shared.WikidataAwardsSection
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import com.makd.afinity.ui.utils.IntentUtils
 import com.makd.afinity.ui.utils.verticalLayoutOffset
+
+private const val MISSING_CREDITS_LIMIT = 20
 
 @Composable
 fun PersonDetailContent(
@@ -93,11 +100,39 @@ fun PersonDetailContent(
     onItemClick: (AfinityItem) -> Unit,
     onToggleFavorite: () -> Unit,
     awards: WikidataAwards?,
+    externalCredits: ExternalTitles?,
+    onExternalItemClick: (SearchResultItem) -> Unit,
+    onViewAllCredits: () -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
 ) {
     val isLandscape = isLandscapeWindow()
+
+    val missingCredits =
+        remember(externalCredits, movies, shows) {
+            val credits = externalCredits ?: return@remember null
+            val owned = buildSet {
+                movies.forEach { movie ->
+                    movie.providerIds?.get("Tmdb")?.toIntOrNull()?.let { add("movie" to it) }
+                }
+                shows.forEach { show ->
+                    show.providerIds?.get("Tmdb")?.toIntOrNull()?.let { add("tv" to it) }
+                }
+            }
+            val missing =
+                credits.items
+                    .filterNot { credit ->
+                        (credit.mediaType to credit.id) in owned ||
+                            credit.mediaInfo?.status == MediaStatus.AVAILABLE.value ||
+                            credit.mediaInfo?.status == MediaStatus.PARTIALLY_AVAILABLE.value
+                    }
+                    .take(MISSING_CREDITS_LIMIT)
+            if (missing.isEmpty()) null else credits.copy(items = missing)
+        }
+    val viewAllCredits = onViewAllCredits.takeIf {
+        externalCredits?.source == ExternalTitlesSource.SEERR
+    }
 
     if (isLandscape) {
         LandscapePersonDetailContent(
@@ -107,6 +142,9 @@ fun PersonDetailContent(
             onItemClick = onItemClick,
             onToggleFavorite = onToggleFavorite,
             awards = awards,
+            missingCredits = missingCredits,
+            onExternalItemClick = onExternalItemClick,
+            onViewAllCredits = viewAllCredits,
             modifier = modifier,
             lazyListState = lazyListState,
         )
@@ -118,6 +156,9 @@ fun PersonDetailContent(
             onItemClick = onItemClick,
             onToggleFavorite = onToggleFavorite,
             awards = awards,
+            missingCredits = missingCredits,
+            onExternalItemClick = onExternalItemClick,
+            onViewAllCredits = viewAllCredits,
             widthSizeClass = widthSizeClass,
             modifier = modifier,
             lazyListState = lazyListState,
@@ -133,6 +174,9 @@ private fun LandscapePersonDetailContent(
     onItemClick: (AfinityItem) -> Unit,
     onToggleFavorite: () -> Unit,
     awards: WikidataAwards?,
+    missingCredits: ExternalTitles?,
+    onExternalItemClick: (SearchResultItem) -> Unit,
+    onViewAllCredits: (() -> Unit)?,
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
 ) {
@@ -212,6 +256,9 @@ private fun LandscapePersonDetailContent(
                             onItemClick = onItemClick,
                             cardWidth = 140.dp,
                             awards = awards,
+                            missingCredits = missingCredits,
+                            onExternalItemClick = onExternalItemClick,
+                            onViewAllCredits = onViewAllCredits,
                         )
                     }
                 }
@@ -229,6 +276,9 @@ private fun PortraitPersonDetailContent(
     onItemClick: (AfinityItem) -> Unit,
     onToggleFavorite: () -> Unit,
     awards: WikidataAwards?,
+    missingCredits: ExternalTitles?,
+    onExternalItemClick: (SearchResultItem) -> Unit,
+    onViewAllCredits: (() -> Unit)?,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
     lazyListState: LazyListState = rememberLazyListState(),
@@ -272,6 +322,9 @@ private fun PortraitPersonDetailContent(
                     onItemClick = onItemClick,
                     cardWidth = cardWidth,
                     awards = awards,
+                    missingCredits = missingCredits,
+                    onExternalItemClick = onExternalItemClick,
+                    onViewAllCredits = onViewAllCredits,
                 )
             }
         }
@@ -286,6 +339,9 @@ private fun PersonSharedContentBlocks(
     onItemClick: (AfinityItem) -> Unit,
     cardWidth: Dp,
     awards: WikidataAwards?,
+    missingCredits: ExternalTitles?,
+    onExternalItemClick: (SearchResultItem) -> Unit,
+    onViewAllCredits: (() -> Unit)?,
 ) {
     if (person.overview.isNotBlank()) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -317,6 +373,16 @@ private fun PersonSharedContentBlocks(
             items = shows,
             onItemClick = onItemClick,
             cardWidth = cardWidth,
+        )
+    }
+
+    if (missingCredits != null) {
+        ExternalTitlesSection(
+            title = stringResource(R.string.not_in_library_title),
+            titles = missingCredits,
+            onSeerrItemClick = onExternalItemClick,
+            cardWidth = cardWidth,
+            onViewAllClick = onViewAllCredits,
         )
     }
 }

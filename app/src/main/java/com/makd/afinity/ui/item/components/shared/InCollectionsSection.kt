@@ -28,11 +28,7 @@ fun InCollectionsSection(
     val cardWidth = widthSizeClass.portraitWidth
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = stringResource(R.string.collections_included_in),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        DetailSectionTitle(text = stringResource(R.string.collections_included_in))
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),

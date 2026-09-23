@@ -22,8 +22,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -136,14 +136,14 @@ class PlayerActivity : AppCompatActivity() {
         )
 
         setContent {
-            val themeMode by
-                preferencesRepository.getThemeModeFlow().collectAsState(initial = "SYSTEM")
-            val dynamicColors by
-                preferencesRepository.getDynamicColorsFlow().collectAsState(initial = true)
-            val showRatings by
-                preferencesRepository.getShowRatingsFlow().collectAsState(initial = true)
-            val showAwards by
-                preferencesRepository.getShowAwardsFlow().collectAsState(initial = true)
+            val themeModeFlow = remember { preferencesRepository.getThemeModeFlow() }
+            val dynamicColorsFlow = remember { preferencesRepository.getDynamicColorsFlow() }
+            val showRatingsFlow = remember { preferencesRepository.getShowRatingsFlow() }
+            val showAwardsFlow = remember { preferencesRepository.getShowAwardsFlow() }
+            val themeMode by themeModeFlow.collectAsStateWithLifecycle(initialValue = "SYSTEM")
+            val dynamicColors by dynamicColorsFlow.collectAsStateWithLifecycle(initialValue = true)
+            val showRatings by showRatingsFlow.collectAsStateWithLifecycle(initialValue = true)
+            val showAwards by showAwardsFlow.collectAsStateWithLifecycle(initialValue = true)
 
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 

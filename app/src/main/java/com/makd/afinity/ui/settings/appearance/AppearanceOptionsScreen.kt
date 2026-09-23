@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.SettingsDivider
@@ -60,6 +61,7 @@ fun AppearanceOptionsScreen(
     val librariesInDrawer by viewModel.librariesInDrawer.collectAsStateWithLifecycle()
     val sideSheetEnabled by viewModel.sideSheetEnabled.collectAsStateWithLifecycle()
     val episodeLayout by viewModel.episodeLayout.collectAsStateWithLifecycle()
+    val detailLayout by viewModel.detailLayout.collectAsStateWithLifecycle()
     val showRatings by viewModel.showRatings.collectAsStateWithLifecycle()
     val showAwards by viewModel.showAwards.collectAsStateWithLifecycle()
     val appFont by viewModel.appFont.collectAsStateWithLifecycle()
@@ -202,11 +204,18 @@ fun AppearanceOptionsScreen(
 
             item {
                 SettingsGroup(title = stringResource(R.string.settings_group_content_layout)) {
-                    EpisodeLayoutSelectorItem(
-                        selectedLayout = episodeLayout,
-                        onLayoutSelected = viewModel::setEpisodeLayout,
+                    DetailLayoutSelectorItem(
+                        selectedLayout = detailLayout,
+                        onLayoutSelected = viewModel::setDetailLayout,
                     )
                     SettingsDivider()
+                    if (detailLayout == DetailLayout.CLASSIC) {
+                        EpisodeLayoutSelectorItem(
+                            selectedLayout = episodeLayout,
+                            onLayoutSelected = viewModel::setEpisodeLayout,
+                        )
+                        SettingsDivider()
+                    }
                     SettingsSwitchItem(
                         icon = painterResource(id = R.drawable.ic_visibility),
                         title = stringResource(R.string.pref_show_ratings_title),
@@ -274,6 +283,65 @@ private fun ThemeSelectorItem(currentThemeMode: String, onThemeModeChange: (Stri
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun DetailLayoutSelectorItem(
+    selectedLayout: DetailLayout,
+    onLayoutSelected: (DetailLayout) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        SettingsItem(
+            icon = painterResource(id = R.drawable.ic_article),
+            title = stringResource(R.string.pref_detail_layout_title),
+            subtitle = getDetailLayoutDisplayName(selectedLayout),
+            onClick = { expanded = true },
+            trailing = {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp),
+                )
+            },
+        )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        ) {
+            DetailLayout.entries.forEach { layout ->
+                DropdownMenuItem(
+                    text = { Text(getDetailLayoutDisplayName(layout)) },
+                    onClick = {
+                        onLayoutSelected(layout)
+                        expanded = false
+                    },
+                    leadingIcon =
+                        if (layout == selectedLayout) {
+                            {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_check),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else null,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun getDetailLayoutDisplayName(layout: DetailLayout): String {
+    return when (layout) {
+        DetailLayout.CLASSIC -> stringResource(R.string.detail_layout_classic)
+        DetailLayout.MODERN -> stringResource(R.string.detail_layout_modern)
     }
 }
 

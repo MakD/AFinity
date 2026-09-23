@@ -331,12 +331,8 @@ constructor(
                             jellyseerrRepository.getPersonCombinedCredits(params.id).map { credits
                                 ->
                                 val combined =
-                                    if (currentPage == 1) {
-                                        (credits.cast + credits.crew)
-                                            .filter { it.getMediaType() != null }
-                                            .distinctBy { it.id }
-                                            .sortedByDescending { it.popularity ?: 0.0 }
-                                    } else emptyList()
+                                    if (currentPage == 1) credits.meaningfulCredits()
+                                    else emptyList()
                                 com.makd.afinity.data.models.jellyseerr.JellyseerrSearchResult(
                                     results = combined
                                 )

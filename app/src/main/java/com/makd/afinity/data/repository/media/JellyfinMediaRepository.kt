@@ -98,8 +98,7 @@ import timber.log.Timber
 
 private val RESUMABLE_ITEM_TYPES = listOf(BaseItemKind.MOVIE, BaseItemKind.EPISODE)
 
-private val CARD_IMAGE_TYPES =
-    listOf(ImageType.PRIMARY, ImageType.BACKDROP, ImageType.THUMB)
+private val CARD_IMAGE_TYPES = listOf(ImageType.PRIMARY, ImageType.BACKDROP, ImageType.THUMB)
 
 @Singleton
 class JellyfinMediaRepository
@@ -117,6 +116,7 @@ constructor(
 
     private val librariesLoadMutex = Mutex()
     private var librariesLoadJob: Deferred<Result<List<AfinityCollection>>>? = null
+
     override suspend fun refreshItemUserData(
         itemId: UUID,
         fields: List<ItemFields>?,
@@ -508,11 +508,10 @@ constructor(
         }
 
     override suspend fun getLibrariesResult(): Result<List<AfinityCollection>> {
-        val job =
-            librariesLoadMutex.withLock {
-                librariesLoadJob?.takeIf { it.isActive }
-                    ?: scope.async { fetchLibraries() }.also { librariesLoadJob = it }
-            }
+        val job = librariesLoadMutex.withLock {
+            librariesLoadJob?.takeIf { it.isActive }
+                ?: scope.async { fetchLibraries() }.also { librariesLoadJob = it }
+        }
         return job.await()
     }
 
@@ -899,6 +898,40 @@ constructor(
                     userId = userId,
                     limit = limit,
                     fields = fields ?: FieldSets.SIMILAR_ITEMS,
+                )
+                .content
+                .items
+                .mapNotNull { baseItem -> baseItem.toAfinityItem(getBaseUrl()) }
+        }
+
+    override suspend fun getRelatedItems(
+        excludeItemId: UUID,
+        personId: UUID?,
+        genre: String?,
+        limit: Int,
+    ): List<AfinityItem> =
+        apiCall(
+            emptyList(),
+            "Failed to get related items for $excludeItemId",
+        ) { apiClient, userId ->
+            LibraryApi(apiClient)
+                .getItems(
+                    userId = userId,
+                    excludeItemIds = listOf(excludeItemId),
+                    personIds = personId?.let { listOf(it) },
+                    genres = genre?.let { listOf(it) },
+                    includeItemTypes = listOf(BaseItemKind.MOVIE, BaseItemKind.SERIES),
+                    recursive = true,
+                    limit = limit,
+                    sortBy =
+                        if (personId != null) listOf(ItemSortBy.PREMIERE_DATE)
+                        else listOf(ItemSortBy.RANDOM),
+                    sortOrder = if (personId != null) listOf(SortOrder.DESCENDING) else null,
+                    fields = FieldSets.SIMILAR_ITEMS,
+                    enableImages = true,
+                    imageTypeLimit = 1,
+                    enableUserData = true,
+                    enableTotalRecordCount = false,
                 )
                 .content
                 .items

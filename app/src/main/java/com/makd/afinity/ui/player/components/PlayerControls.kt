@@ -61,6 +61,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -144,6 +145,7 @@ data class SubtitleStreamOption(
 @Composable
 fun PlayerControls(
     uiState: PlayerViewModel.PlayerUiState,
+    playbackProgress: State<PlayerViewModel.PlaybackProgress>,
     player: Player,
     onPlayerEvent: (PlayerEvent) -> Unit,
     onBackClick: () -> Unit,
@@ -174,14 +176,15 @@ fun PlayerControls(
         if (uiState.sleepTimerExpired) showSleepTimerPanel = false
     }
 
-    val sleepTimerEndOfItemRemainingMs =
+    val sleepTimerEndOfItemRemainingMs: () -> Long = {
         if (uiState.isLiveChannel || uiState.duration <= 0L) {
             0L
         } else {
-            ((uiState.duration - uiState.currentPosition).coerceAtLeast(0L) /
+            ((uiState.duration - playbackProgress.value.currentPosition).coerceAtLeast(0L) /
                     uiState.playbackSpeed.coerceAtLeast(0.1f))
                 .toLong()
         }
+    }
 
     val currentItem = uiState.currentItem
 
@@ -419,7 +422,11 @@ fun PlayerControls(
             enter = fadeIn(animationSpec = tween(220)),
             exit = fadeOut(animationSpec = tween(180)),
         ) {
-            PauseDetailsOverlay(uiState = uiState, onPlayerEvent = onPlayerEvent)
+            PauseDetailsOverlay(
+                uiState = uiState,
+                playbackProgress = playbackProgress,
+                onPlayerEvent = onPlayerEvent,
+            )
         }
         AnimatedVisibility(
             visible =
@@ -580,6 +587,7 @@ fun PlayerControls(
                     )
                     BottomControls(
                         uiState = uiState,
+                        playbackProgress = playbackProgress,
                         onPlayerEvent = onPlayerEvent,
                         onSpeedToggle = { showSpeedDialog = !showSpeedDialog },
                         onTrackPanelToggle = { showTrackPanel = !showTrackPanel },
@@ -624,7 +632,11 @@ fun PlayerControls(
                             )
                             .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 10.dp)
                 ) {
-                    SeekBar(uiState = uiState, onPlayerEvent = onPlayerEvent)
+                    SeekBar(
+                        uiState = uiState,
+                        playbackProgress = playbackProgress,
+                        onPlayerEvent = onPlayerEvent,
+                    )
                     Spacer(modifier = Modifier.height(48.dp))
                 }
             }
@@ -671,8 +683,10 @@ fun PlayerControls(
             if (chapterItemId != null) {
                 ChapterSwitcher(
                     chapters = uiState.chapters,
-                    currentPosition =
-                        if (uiState.isSeeking) uiState.seekPosition else uiState.currentPosition,
+                    currentPosition = {
+                        if (uiState.isSeeking) uiState.seekPosition
+                        else playbackProgress.value.currentPosition
+                    },
                     itemId = chapterItemId,
                     baseUrl = uiState.baseUrl,
                     onChapterClick = { startPosition ->
@@ -820,7 +834,7 @@ fun PlayerControls(
                 currentIndex = switcherIndex,
                 isPlaying = uiState.isPlaying,
                 collectionName = playlistCollectionName,
-                currentPositionMs = uiState.currentPosition,
+                currentPositionMs = { playbackProgress.value.currentPosition },
                 currentDurationMs = uiState.duration,
                 onEpisodeClick = { episodeId ->
                     onJumpToEpisode(episodeId)
@@ -1027,6 +1041,7 @@ fun PlayerControls(
         if (uiState.sleepTimerExpired && !uiState.isInPictureInPictureMode) {
             SleepTimerEndedOverlay(
                 uiState = uiState,
+                currentPositionMs = { playbackProgress.value.currentPosition },
                 onResume = { onPlayerEvent(PlayerEvent.ResumeFromSleepTimer) },
             )
         }
@@ -1248,6 +1263,7 @@ private fun CenterPlayButton(
 private fun BottomControls(
     modifier: Modifier = Modifier,
     uiState: PlayerViewModel.PlayerUiState,
+    playbackProgress: State<PlayerViewModel.PlaybackProgress>,
     onPlayerEvent: (PlayerEvent) -> Unit,
     onSpeedToggle: () -> Unit,
     onTrackPanelToggle: () -> Unit,
@@ -1272,7 +1288,11 @@ private fun BottomControls(
     ) {
         Column {
             if (!uiState.isPlayingIntro) {
-                SeekBar(uiState = uiState, onPlayerEvent = onPlayerEvent)
+                SeekBar(
+                    uiState = uiState,
+                    playbackProgress = playbackProgress,
+                    onPlayerEvent = onPlayerEvent,
+                )
             } else {
                 Text(
                     text = stringResource(R.string.playing_intro_text),
@@ -1461,12 +1481,14 @@ private fun LabeledControl(
 @Composable
 private fun SeekBar(
     uiState: PlayerViewModel.PlayerUiState,
+    playbackProgress: State<PlayerViewModel.PlaybackProgress>,
     onPlayerEvent: (PlayerEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var draggedPosition by remember { mutableStateOf<Float?>(null) }
     val duration = uiState.duration
-    val position = if (uiState.isSeeking) uiState.seekPosition else uiState.currentPosition
+    val position =
+        if (uiState.isSeeking) uiState.seekPosition else playbackProgress.value.currentPosition
 
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -1535,7 +1557,8 @@ private fun SeekBar(
                                 val bufferStartX =
                                     (thumbCenterX + thumbTrackGapPx).coerceAtMost(size.width)
                                 val bufferedFraction =
-                                    (uiState.bufferedPosition.toFloat() / duration.toFloat())
+                                    (playbackProgress.value.bufferedPosition.toFloat() /
+                                            duration.toFloat())
                                         .coerceIn(0f, 1f)
                                 val bufferedEndX =
                                     (bufferedFraction * size.width).coerceAtMost(size.width)
@@ -1978,6 +2001,7 @@ private fun TrackRow(
 @Composable
 private fun PauseDetailsOverlay(
     uiState: PlayerViewModel.PlayerUiState,
+    playbackProgress: State<PlayerViewModel.PlaybackProgress>,
     onPlayerEvent: (PlayerEvent) -> Unit,
 ) {
     val item = uiState.currentItem ?: return
@@ -2042,7 +2066,8 @@ private fun PauseDetailsOverlay(
 
     val speed = uiState.playbackSpeed.coerceAtLeast(0.1f)
     val remainingMs =
-        ((uiState.duration - uiState.currentPosition).coerceAtLeast(0L) / speed).toLong()
+        ((uiState.duration - playbackProgress.value.currentPosition).coerceAtLeast(0L) / speed)
+            .toLong()
     val endsAt =
         remember(remainingMs / 60000L) {
             DateFormat.getTimeFormat(context).format(Date(System.currentTimeMillis() + remainingMs))

@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.player.AssRenderMode
@@ -104,6 +105,7 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
 
         val VIDEO_ZOOM_MODE = intPreferencesKey("video_zoom_mode")
         val EPISODE_LAYOUT = stringPreferencesKey("episode_layout")
+        val DETAIL_LAYOUT = stringPreferencesKey("detail_layout")
 
         val SUBTITLE_TEXT_COLOR = intPreferencesKey("subtitle_text_color")
         val SUBTITLE_TEXT_SIZE = stringPreferencesKey("subtitle_text_size")
@@ -1056,6 +1058,17 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         return dataStore.data.map { preferences ->
             preferences[Keys.EPISODE_LAYOUT]?.let { EpisodeLayout.fromValue(it) }
                 ?: EpisodeLayout.HORIZONTAL
+        }
+    }
+
+    override suspend fun setDetailLayout(layout: DetailLayout) {
+        dataStore.edit { preferences -> preferences[Keys.DETAIL_LAYOUT] = layout.value }
+    }
+
+    override fun getDetailLayoutFlow(): Flow<DetailLayout> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.DETAIL_LAYOUT]?.let { DetailLayout.fromValue(it) }
+                ?: DetailLayout.CLASSIC
         }
     }
 

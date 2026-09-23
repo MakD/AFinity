@@ -89,6 +89,83 @@ fun WikidataAwardsSection(
 }
 
 @Composable
+fun AwardsHeadlineBar(headline: String?, awards: WikidataAwards?, modifier: Modifier = Modifier) {
+    val foundAwards = awards?.takeIf { it.found }
+    val found = foundAwards != null
+    if (headline == null && !found) return
+
+    var showSheet by remember { mutableStateOf(false) }
+
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .then(
+                    if (found) Modifier.clickable(role = Role.Button) { showSheet = true }
+                    else Modifier
+                ),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_laurel),
+                contentDescription = null,
+                tint = AwardGold,
+                modifier = Modifier.size(24.dp),
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                if (headline != null) {
+                    Text(
+                        text = headline,
+                        style =
+                            MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                        color = AwardGold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (foundAwards != null) {
+                    Text(
+                        text = awardsSummary(foundAwards),
+                        style =
+                            if (headline != null) MaterialTheme.typography.bodySmall
+                            else
+                                MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                        color =
+                            if (headline != null) MaterialTheme.colorScheme.onSurfaceVariant
+                            else MaterialTheme.colorScheme.onBackground,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            if (found) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_chevron_right),
+                    contentDescription = stringResource(R.string.cd_awards_open),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+    }
+
+    if (showSheet && foundAwards != null) {
+        AwardsSheet(awards = foundAwards, onDismiss = { showSheet = false })
+    }
+}
+
+@Composable
 private fun AwardsSummaryBar(
     awards: WikidataAwards,
     onClick: () -> Unit,

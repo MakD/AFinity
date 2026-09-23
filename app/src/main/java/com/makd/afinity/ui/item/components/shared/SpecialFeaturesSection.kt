@@ -46,11 +46,7 @@ fun SpecialFeaturesSection(
 
     if (specialFeatures.isNotEmpty()) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                text = stringResource(R.string.special_features_title),
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onBackground,
-            )
+            DetailSectionTitle(text = stringResource(R.string.special_features_title))
 
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),

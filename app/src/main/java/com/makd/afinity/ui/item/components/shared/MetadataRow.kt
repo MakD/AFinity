@@ -15,11 +15,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -57,17 +53,19 @@ fun MetadataRow(
     val isLandscape = isLandscapeWindow()
     val horizontalAlignment = if (isLandscape) Alignment.Start else Alignment.CenterHorizontally
 
-    var stableRuntimeTicks by remember(item.id) { mutableLongStateOf(item.runtimeTicks) }
+    val lastRuntimeTicks = remember(item.id) { longArrayOf(item.runtimeTicks) }
     if (item.runtimeTicks > 0L) {
-        stableRuntimeTicks = item.runtimeTicks
+        lastRuntimeTicks[0] = item.runtimeTicks
     }
+    val stableRuntimeTicks = lastRuntimeTicks[0]
 
     val rawEpCount =
         (item as? AfinityShow)?.episodeCount ?: (item as? AfinitySeason)?.episodeCount ?: 0
-    var stableEpCount by remember(item.id) { mutableIntStateOf(rawEpCount) }
+    val lastEpCount = remember(item.id) { intArrayOf(rawEpCount) }
     if (rawEpCount > 0) {
-        stableEpCount = rawEpCount
+        lastEpCount[0] = rawEpCount
     }
+    val stableEpCount = lastEpCount[0]
 
     val actualTotalChildTicks =
         if (boxSetItems.isNotEmpty()) {

@@ -60,16 +60,17 @@ private val ChapterCardWidth = 220.dp
 @Composable
 fun ChapterSwitcher(
     chapters: List<AfinityChapter>,
-    currentPosition: Long,
+    currentPosition: () -> Long,
     itemId: UUID,
     baseUrl: String,
     onChapterClick: (Long) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val position = currentPosition()
     val activeChapterIndex =
-        remember(chapters, currentPosition) {
-            chapters.indexOfLast { it.startPosition <= currentPosition }.coerceAtLeast(0)
+        remember(chapters, position) {
+            chapters.indexOfLast { it.startPosition <= position }.coerceAtLeast(0)
         }
 
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = activeChapterIndex)

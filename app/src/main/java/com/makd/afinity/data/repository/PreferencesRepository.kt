@@ -1,5 +1,6 @@
 package com.makd.afinity.data.repository
 
+import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.player.AssRenderMode
@@ -375,6 +376,10 @@ interface PreferencesRepository {
     suspend fun getEpisodeLayout(): EpisodeLayout
 
     fun getEpisodeLayoutFlow(): Flow<EpisodeLayout>
+
+    suspend fun setDetailLayout(layout: DetailLayout)
+
+    fun getDetailLayoutFlow(): Flow<DetailLayout>
 
     suspend fun setShowRatings(enabled: Boolean)
 

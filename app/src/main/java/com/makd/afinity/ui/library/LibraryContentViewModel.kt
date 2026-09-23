@@ -31,7 +31,6 @@ import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.home.CustomHomeSectionsRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
-import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.data.store.withUserDataOverlay
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
@@ -71,7 +70,6 @@ constructor(
     private val mediaChangeManager: MediaChangeManager,
     private val preferencesRepository: PreferencesRepository,
     private val customHomeSectionsRepository: CustomHomeSectionsRepository,
-    private val watchlistRepository: WatchlistRepository,
     private val downloadRepository: DownloadRepository,
     private val userDataRepository: UserDataRepository,
     private val itemUserDataDelegate: ItemUserDataDelegate,
@@ -86,6 +84,9 @@ constructor(
 
     private val _selectedEpisode = MutableStateFlow<AfinityEpisode?>(null)
     val selectedEpisode: StateFlow<AfinityEpisode?> = _selectedEpisode.asStateFlow()
+
+    private var episodeLoadJob: Job? = null
+    private var episodeLoadTarget: AfinityEpisode? = null
 
     private val _selectedEpisodeWatchlistStatus = MutableStateFlow(false)
     val selectedEpisodeWatchlistStatus: StateFlow<Boolean> =
@@ -112,15 +113,18 @@ constructor(
     }
 
     fun selectEpisode(episode: AfinityEpisode) {
-        viewModelScope.launch {
+        val alreadyLoading = episodeLoadJob?.isActive == true && episodeLoadTarget?.id == episode.id
+        if (alreadyLoading || _selectedEpisode.value?.id == episode.id) return
+        episodeLoadJob?.cancel()
+        episodeLoadTarget = episode
+        episodeLoadJob = viewModelScope.launch {
             try {
                 val fullEpisode =
                     mediaRepository
                         .getItem(episode.id, fields = FieldSets.ITEM_DETAIL)
                         ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
                 _selectedEpisode.value = fullEpisode ?: episode
-                _selectedEpisodeWatchlistStatus.value =
-                    watchlistRepository.isInWatchlist(episode.id)
+                _selectedEpisodeWatchlistStatus.value = (fullEpisode ?: episode).liked
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

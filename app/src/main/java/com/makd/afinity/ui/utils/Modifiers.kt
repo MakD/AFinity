@@ -71,6 +71,17 @@ fun Modifier.verticalLayoutOffset(yOffset: Dp) =
         }
     }
 
+fun Modifier.gapIfNotEmpty(gap: Dp) =
+    this.layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        if (placeable.height == 0) {
+            layout(placeable.width, 0) { placeable.placeRelative(0, 0) }
+        } else {
+            val gapPx = gap.roundToPx()
+            layout(placeable.width, placeable.height + gapPx) { placeable.placeRelative(0, gapPx) }
+        }
+    }
+
 fun Modifier.horizontalBleed(amount: Dp) =
     this.layout { measurable, constraints ->
         if (!constraints.hasBoundedWidth) {

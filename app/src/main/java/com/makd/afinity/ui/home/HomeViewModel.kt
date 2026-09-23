@@ -680,6 +680,9 @@ constructor(
     private val _selectedEpisode = MutableStateFlow<AfinityEpisode?>(null)
     val selectedEpisode: StateFlow<AfinityEpisode?> = _selectedEpisode.asStateFlow()
 
+    private var episodeLoadJob: Job? = null
+    private var episodeLoadTarget: AfinityEpisode? = null
+
     private val _selectedEpisodeWatchlistStatus = MutableStateFlow(false)
     val selectedEpisodeWatchlistStatus: StateFlow<Boolean> =
         _selectedEpisodeWatchlistStatus.asStateFlow()
@@ -701,7 +704,11 @@ constructor(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     fun selectEpisode(episode: AfinityEpisode) {
-        viewModelScope.launch {
+        val alreadyLoading = episodeLoadJob?.isActive == true && episodeLoadTarget?.id == episode.id
+        if (alreadyLoading || _selectedEpisode.value?.id == episode.id) return
+        episodeLoadJob?.cancel()
+        episodeLoadTarget = episode
+        episodeLoadJob = viewModelScope.launch {
             try {
                 _isLoadingEpisode.value = true
 
@@ -718,16 +725,7 @@ constructor(
                         ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
 
                 _selectedEpisode.value = fullEpisode ?: episode
-
-                try {
-                    val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
-                    _selectedEpisodeWatchlistStatus.value = isInWatchlist
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to load episode watchlist status")
-                    _selectedEpisodeWatchlistStatus.value = false
-                }
+                _selectedEpisodeWatchlistStatus.value = (fullEpisode ?: episode).liked
 
                 _isLoadingEpisode.value = false
             } catch (e: CancellationException) {

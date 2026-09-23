@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.makd.afinity.R
+import com.makd.afinity.data.models.common.DetailLayout
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.extensions.showPrimaryImageUrl
@@ -40,19 +42,21 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.tmdb.TmdbRegionProviders
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.MediaCountBadge
 import com.makd.afinity.ui.components.PlayedBadge
-import com.makd.afinity.ui.item.components.shared.BaseMediaDetailContent
+import com.makd.afinity.ui.item.components.shared.DetailSectionTitle
 import com.makd.afinity.ui.item.components.shared.NextUpSection
+import com.makd.afinity.ui.item.components.shared.baseMediaDetailItems
+import com.makd.afinity.ui.item.components.shared.detailItem
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
-@Composable
-fun SeriesDetailContent(
+fun LazyListScope.seriesDetailItems(
     item: AfinityShow,
     seasons: List<AfinitySeason>,
     nextEpisode: AfinityEpisode?,
@@ -69,9 +73,13 @@ fun SeriesDetailContent(
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     navController: NavController,
     widthSizeClass: WindowWidthSizeClass,
+    horizontalPadding: Dp,
+    detailLayout: DetailLayout,
+    watchProviders: TmdbRegionProviders? = null,
 ) {
-    BaseMediaDetailContent(
+    baseMediaDetailItems(
         item = item,
+        watchProviders = watchProviders,
         specialFeatures = specialFeatures,
         containingBoxSets = containingBoxSets,
         tmdbReviews = tmdbReviews,
@@ -90,22 +98,28 @@ fun SeriesDetailContent(
             navController.navigate(route)
         },
         widthSizeClass = widthSizeClass,
+        horizontalPadding = horizontalPadding,
+        detailLayout = detailLayout,
     ) {
         if (nextEpisode != null) {
-            NextUpSection(
-                episode = nextEpisode,
-                onEpisodeClick = onEpisodeClick,
-                widthSizeClass = widthSizeClass,
-                onEpisodeMoreClick = onEpisodeMoreClick,
-            )
+            detailItem("next_up", horizontalPadding) {
+                NextUpSection(
+                    episode = nextEpisode,
+                    onEpisodeClick = onEpisodeClick,
+                    widthSizeClass = widthSizeClass,
+                    onEpisodeMoreClick = onEpisodeMoreClick,
+                )
+            }
         }
 
         if (seasons.isNotEmpty()) {
-            SeasonsSection(
-                seasons = seasons,
-                navController = navController,
-                widthSizeClass = widthSizeClass,
-            )
+            detailItem("seasons", horizontalPadding) {
+                SeasonsSection(
+                    seasons = seasons,
+                    navController = navController,
+                    widthSizeClass = widthSizeClass,
+                )
+            }
         }
     }
 }
@@ -117,11 +131,7 @@ internal fun SeasonsSection(
     widthSizeClass: WindowWidthSizeClass,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = stringResource(R.string.seasons_title),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        DetailSectionTitle(text = stringResource(R.string.seasons_title))
 
         val cardWidth = widthSizeClass.portraitWidth
 

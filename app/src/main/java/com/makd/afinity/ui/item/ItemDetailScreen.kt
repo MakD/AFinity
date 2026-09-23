@@ -7,12 +7,14 @@ import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.displayCutout
@@ -21,21 +23,26 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -51,9 +58,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
@@ -66,7 +75,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import androidx.paging.PagingData
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.makd.afinity.R
+import com.makd.afinity.data.models.common.DetailLayout
+import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
@@ -76,6 +89,9 @@ import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.extensions.showBackdropBlurHash
 import com.makd.afinity.data.models.extensions.showBackdropImageUrl
 import com.makd.afinity.data.models.extensions.showLogoImageUrl
+import com.makd.afinity.data.models.external.ExternalTitles
+import com.makd.afinity.data.models.jellyseerr.MediaStatus
+import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.mdblist.MdbListRatingBadges
 import com.makd.afinity.data.models.media.AfinityBoxSet
@@ -86,33 +102,39 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.AfinityVideoPlaylist
+import com.makd.afinity.data.models.tmdb.TmdbRegionProviders
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.models.wikidata.WikidataAwards
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
+import com.makd.afinity.navigation.LocalShowRatings
 import com.makd.afinity.ui.admin.refresh.RefreshMetadataDialog
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.isLandscapeWindow
-import com.makd.afinity.ui.item.components.BoxSetDetailContent
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
-import com.makd.afinity.ui.item.components.MovieDetailContent
 import com.makd.afinity.ui.item.components.QualitySelectionDialog
-import com.makd.afinity.ui.item.components.SeasonDetailContent
-import com.makd.afinity.ui.item.components.SeriesDetailContent
 import com.makd.afinity.ui.item.components.StorageLocationDialog
 import com.makd.afinity.ui.item.components.VersionPickerDialog
+import com.makd.afinity.ui.item.components.boxSetDetailItems
+import com.makd.afinity.ui.item.components.movieDetailItems
+import com.makd.afinity.ui.item.components.seasonDetailItems
+import com.makd.afinity.ui.item.components.seriesDetailItems
 import com.makd.afinity.ui.item.components.shared.ActionButtonsRow
 import com.makd.afinity.ui.item.components.shared.AdminAction
 import com.makd.afinity.ui.item.components.shared.HeroSection
+import com.makd.afinity.ui.item.components.shared.LocalDetailLayout
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.components.shared.MetadataRow
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.item.components.shared.PrimaryPlaybackButton
+import com.makd.afinity.ui.item.components.shared.RatingChipsRow
 import com.makd.afinity.ui.item.components.shared.SimilarItemsSection
 import com.makd.afinity.ui.item.components.shared.VideoQualitySelection
+import com.makd.afinity.ui.item.components.shared.WhereToWatchStrip
+import com.makd.afinity.ui.item.components.shared.detailItem
 import com.makd.afinity.ui.music.components.AddToPlaylistDialog
 import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.utils.IntentUtils
@@ -148,6 +170,11 @@ fun ItemDetailScreen(
     var showEpisodeRefreshDialog by remember { mutableStateOf(false) }
     var showEpisodeDeleteDialog by remember { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
+    val preferencesRepository = rememberPreferencesRepository()
+    val detailLayoutFlow =
+        remember(preferencesRepository) { preferencesRepository.getDetailLayoutFlow() }
+    val detailLayout by
+        detailLayoutFlow.collectAsStateWithLifecycle<DetailLayout?>(initialValue = null)
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -179,7 +206,37 @@ fun ItemDetailScreen(
         }
     }
 
+    val relatedRows =
+        remember(uiState.relatedRows, uiState.similarItems) {
+            val seen = uiState.similarItems.mapTo(HashSet()) { it.id }
+            uiState.relatedRows.mapNotNull { row ->
+                val fresh = row.items.filter { seen.add(it.id) }
+                if (fresh.isEmpty()) null else row.copy(items = fresh)
+            }
+        }
+
+    val missingCollectionParts =
+        remember(uiState.collectionParts, uiState.boxSetItems) {
+            val parts = uiState.collectionParts
+            if (parts == null || uiState.boxSetItems.isEmpty()) return@remember null
+            val owned =
+                uiState.boxSetItems.mapNotNullTo(HashSet()) {
+                    it.providerIds?.get("Tmdb")?.toIntOrNull()
+                }
+            val missing =
+                parts.items
+                    .filterNot {
+                        it.id in owned || it.mediaInfo?.status == MediaStatus.AVAILABLE.value
+                    }
+                    .sortedWith(
+                        compareBy<SearchResultItem> { it.releaseDate.isNullOrBlank() }
+                            .thenBy { it.releaseDate }
+                    )
+            if (missing.isEmpty()) null else parts.copy(items = missing)
+        }
+
     Box(modifier = modifier.fillMaxSize()) {
+        val resolvedLayout = detailLayout
         when {
             uiState.isLoading -> {
                 FullScreenLoading()
@@ -191,14 +248,17 @@ fun ItemDetailScreen(
                     onActionClick = { viewModel.loadItem() },
                 )
             }
-            uiState.item != null -> {
+            uiState.item != null && resolvedLayout != null -> {
                 ItemDetailContent(
+                    detailLayout = resolvedLayout,
                     item = uiState.item!!,
                     hasPlayableItems = uiState.hasPlayableItems,
                     seasons = uiState.seasons,
                     boxSetItems = uiState.boxSetItems,
                     containingBoxSets = uiState.containingBoxSets,
                     similarItems = uiState.similarItems,
+                    relatedRows = relatedRows,
+                    missingCollectionParts = missingCollectionParts,
                     nextEpisode = nextEpisode,
                     baseUrl = viewModel.getBaseUrl(),
                     specialFeatures = uiState.specialFeatures,
@@ -414,12 +474,15 @@ fun ItemDetailScreen(
 
 @Composable
 private fun ItemDetailContent(
+    detailLayout: DetailLayout,
     item: AfinityItem,
     hasPlayableItems: Boolean,
     seasons: List<AfinitySeason>,
     boxSetItems: List<AfinityItem>,
     containingBoxSets: List<AfinityBoxSet>,
     similarItems: List<AfinityItem>,
+    relatedRows: List<RelatedRow>,
+    missingCollectionParts: ExternalTitles?,
     nextEpisode: AfinityEpisode?,
     baseUrl: String,
     specialFeatures: List<AfinityItem>,
@@ -447,66 +510,74 @@ private fun ItemDetailContent(
     val topBarOpacity by rememberTopBarOpacity(lazyListState)
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (isLandscape) {
-            LandscapeItemDetailContent(
-                item = item,
-                hasPlayableItems = hasPlayableItems,
-                seasons = seasons,
-                boxSetItems = boxSetItems,
-                containingBoxSets = containingBoxSets,
-                similarItems = similarItems,
-                nextEpisode = nextEpisode,
-                baseUrl = baseUrl,
-                specialFeatures = specialFeatures,
-                isInWatchlist = isInWatchlist,
-                episodesPagingData = episodesPagingData,
-                downloadInfo = downloadInfo,
-                tmdbReviews = tmdbReviews,
-                mdbRatings = mdbRatings,
-                mdbRatingBadges = mdbRatingBadges,
-                omdbAwards = omdbAwards,
-                wikidataAwards = wikidataAwards,
-                isRatingsFromCache = isRatingsFromCache,
-                movieParts = movieParts,
-                onPlayClick = onPlayClick,
-                onBoxSetItemClick = onBoxSetItemClick,
-                onSpecialFeatureClick = onSpecialFeatureClick,
-                navController = navController,
-                viewModel = viewModel,
-                context = context,
-                widthSizeClass = widthSizeClass,
-                lazyListState = lazyListState,
-            )
-        } else {
-            PortraitItemDetailContent(
-                item = item,
-                hasPlayableItems = hasPlayableItems,
-                seasons = seasons,
-                boxSetItems = boxSetItems,
-                containingBoxSets = containingBoxSets,
-                similarItems = similarItems,
-                nextEpisode = nextEpisode,
-                baseUrl = baseUrl,
-                specialFeatures = specialFeatures,
-                isInWatchlist = isInWatchlist,
-                episodesPagingData = episodesPagingData,
-                downloadInfo = downloadInfo,
-                tmdbReviews = tmdbReviews,
-                mdbRatings = mdbRatings,
-                mdbRatingBadges = mdbRatingBadges,
-                omdbAwards = omdbAwards,
-                wikidataAwards = wikidataAwards,
-                isRatingsFromCache = isRatingsFromCache,
-                movieParts = movieParts,
-                onPlayClick = onPlayClick,
-                onBoxSetItemClick = onBoxSetItemClick,
-                onSpecialFeatureClick = onSpecialFeatureClick,
-                navController = navController,
-                viewModel = viewModel,
-                context = context,
-                widthSizeClass = widthSizeClass,
-                lazyListState = lazyListState,
-            )
+        CompositionLocalProvider(LocalDetailLayout provides detailLayout) {
+            if (isLandscape) {
+                LandscapeItemDetailContent(
+                    item = item,
+                    hasPlayableItems = hasPlayableItems,
+                    seasons = seasons,
+                    boxSetItems = boxSetItems,
+                    containingBoxSets = containingBoxSets,
+                    similarItems = similarItems,
+                    relatedRows = relatedRows,
+                    missingCollectionParts = missingCollectionParts,
+                    nextEpisode = nextEpisode,
+                    baseUrl = baseUrl,
+                    specialFeatures = specialFeatures,
+                    isInWatchlist = isInWatchlist,
+                    episodesPagingData = episodesPagingData,
+                    downloadInfo = downloadInfo,
+                    tmdbReviews = tmdbReviews,
+                    mdbRatings = mdbRatings,
+                    mdbRatingBadges = mdbRatingBadges,
+                    omdbAwards = omdbAwards,
+                    wikidataAwards = wikidataAwards,
+                    isRatingsFromCache = isRatingsFromCache,
+                    movieParts = movieParts,
+                    onPlayClick = onPlayClick,
+                    onBoxSetItemClick = onBoxSetItemClick,
+                    onSpecialFeatureClick = onSpecialFeatureClick,
+                    navController = navController,
+                    viewModel = viewModel,
+                    context = context,
+                    widthSizeClass = widthSizeClass,
+                    detailLayout = detailLayout,
+                    lazyListState = lazyListState,
+                )
+            } else {
+                PortraitItemDetailContent(
+                    item = item,
+                    hasPlayableItems = hasPlayableItems,
+                    seasons = seasons,
+                    boxSetItems = boxSetItems,
+                    containingBoxSets = containingBoxSets,
+                    similarItems = similarItems,
+                    relatedRows = relatedRows,
+                    missingCollectionParts = missingCollectionParts,
+                    nextEpisode = nextEpisode,
+                    baseUrl = baseUrl,
+                    specialFeatures = specialFeatures,
+                    isInWatchlist = isInWatchlist,
+                    episodesPagingData = episodesPagingData,
+                    downloadInfo = downloadInfo,
+                    tmdbReviews = tmdbReviews,
+                    mdbRatings = mdbRatings,
+                    mdbRatingBadges = mdbRatingBadges,
+                    omdbAwards = omdbAwards,
+                    wikidataAwards = wikidataAwards,
+                    isRatingsFromCache = isRatingsFromCache,
+                    movieParts = movieParts,
+                    onPlayClick = onPlayClick,
+                    onBoxSetItemClick = onBoxSetItemClick,
+                    onSpecialFeatureClick = onSpecialFeatureClick,
+                    navController = navController,
+                    viewModel = viewModel,
+                    context = context,
+                    widthSizeClass = widthSizeClass,
+                    detailLayout = detailLayout,
+                    lazyListState = lazyListState,
+                )
+            }
         }
 
         AfinityTopAppBar(
@@ -530,6 +601,8 @@ private fun LandscapeItemDetailContent(
     boxSetItems: List<AfinityItem>,
     containingBoxSets: List<AfinityBoxSet>,
     similarItems: List<AfinityItem>,
+    relatedRows: List<RelatedRow>,
+    missingCollectionParts: ExternalTitles?,
     nextEpisode: AfinityEpisode?,
     baseUrl: String,
     specialFeatures: List<AfinityItem>,
@@ -550,6 +623,7 @@ private fun LandscapeItemDetailContent(
     viewModel: ItemDetailViewModel,
     context: Context,
     widthSizeClass: WindowWidthSizeClass,
+    detailLayout: DetailLayout,
     lazyListState: LazyListState = rememberLazyListState(),
 ) {
     val preferencesRepository = rememberPreferencesRepository()
@@ -569,6 +643,22 @@ private fun LandscapeItemDetailContent(
     val windowInfo = LocalWindowInfo.current
     val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
     val screenHeightDp = with(density) { windowInfo.containerSize.height.toDp() }
+    val mediaSourceOptions = rememberMediaSourceOptions(item)
+    val selectedMediaSource by viewModel.selectedMediaSource.collectAsStateWithLifecycle()
+    val episodeLayoutFlow =
+        remember(preferencesRepository) { preferencesRepository.getEpisodeLayoutFlow() }
+    val episodeLayoutPreference by
+        episodeLayoutFlow.collectAsState(initial = EpisodeLayout.HORIZONTAL)
+    val episodeLayout =
+        if (detailLayout == DetailLayout.MODERN) EpisodeLayout.VERTICAL else episodeLayoutPreference
+    val isModernSeason = detailLayout == DetailLayout.MODERN && item is AfinitySeason
+    val lazyEpisodeItems = episodesPagingData?.collectAsLazyPagingItems()
+
+    LaunchedEffect(mediaSourceOptions) {
+        if (selectedMediaSource == null && mediaSourceOptions.isNotEmpty()) {
+            viewModel.selectMediaSource(mediaSourceOptions.first())
+        }
+    }
 
     val landscapeColorScheme =
         remember(baseColorScheme) {
@@ -647,18 +737,16 @@ private fun LandscapeItemDetailContent(
                         bottom = 16.dp + playerOffset,
                     ),
             ) {
-                item {
+                item(key = "header") {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         MediaLogoHeader(item = item, isLandscape = true)
 
-                        val mediaSourceOptions = rememberMediaSourceOptions(item)
-                        val selectedMediaSource by
-                            viewModel.selectedMediaSource.collectAsStateWithLifecycle()
-
-                        LaunchedEffect(mediaSourceOptions) {
-                            if (selectedMediaSource == null && mediaSourceOptions.isNotEmpty()) {
-                                viewModel.selectMediaSource(mediaSourceOptions.first())
-                            }
+                        if (isModernSeason && item is AfinitySeason) {
+                            ModernSeasonTitle(
+                                season = item,
+                                isLandscape = true,
+                                onSeriesClick = { navigateToSeries(navController, item) },
+                            )
                         }
 
                         MetadataRow(
@@ -666,6 +754,14 @@ private fun LandscapeItemDetailContent(
                             boxSetItems = boxSetItems,
                             selectedSourceId = selectedMediaSource?.id,
                         )
+
+                        if (detailLayout == DetailLayout.MODERN && LocalShowRatings.current) {
+                            RatingChipsRow(
+                                item = item,
+                                mdbRatings = mdbRatings,
+                                mdbRatingBadges = mdbRatingBadges,
+                            )
+                        }
 
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -790,40 +886,50 @@ private fun LandscapeItemDetailContent(
                             }
                         }
 
+                        val providers = uiState.watchProviders
+                        if (detailLayout == DetailLayout.MODERN && providers != null) {
+                            WhereToWatchStrip(providers = providers)
+                        }
+
                         VideoQualitySelection(
                             mediaSourceOptions = mediaSourceOptions,
                             selectedSource = selectedMediaSource,
                             onSourceSelected = viewModel::selectMediaSource,
                         )
-
-                        TypeSpecificContent(
-                            item = item,
-                            hasPlayableItems = hasPlayableItems,
-                            seasons = seasons,
-                            boxSetItems = boxSetItems,
-                            containingBoxSets = containingBoxSets,
-                            similarItems = similarItems,
-                            nextEpisode = nextEpisode,
-                            baseUrl = baseUrl,
-                            specialFeatures = specialFeatures,
-                            episodesPagingData = episodesPagingData,
-                            tmdbReviews = tmdbReviews,
-                            mdbRatings = mdbRatings,
-                            mdbRatingBadges = mdbRatingBadges,
-                            omdbAwards = omdbAwards,
-                            wikidataAwards = wikidataAwards,
-                            isRatingsFromCache = isRatingsFromCache,
-                            movieParts = movieParts,
-                            onPlayClick = onPlayClick,
-                            onBoxSetItemClick = onBoxSetItemClick,
-                            onSpecialFeatureClick = onSpecialFeatureClick,
-                            navController = navController,
-                            viewModel = viewModel,
-                            preferencesRepository = preferencesRepository,
-                            widthSizeClass = widthSizeClass,
-                        )
                     }
                 }
+
+                typeSpecificItems(
+                    item = item,
+                    seasons = seasons,
+                    boxSetItems = boxSetItems,
+                    containingBoxSets = containingBoxSets,
+                    similarItems = similarItems,
+                    relatedRows = relatedRows,
+                    missingCollectionParts = missingCollectionParts,
+                    nextEpisode = nextEpisode,
+                    baseUrl = baseUrl,
+                    specialFeatures = specialFeatures,
+                    lazyEpisodeItems = lazyEpisodeItems,
+                    episodeLayout = episodeLayout,
+                    tmdbReviews = tmdbReviews,
+                    mdbRatings = mdbRatings,
+                    mdbRatingBadges = mdbRatingBadges,
+                    omdbAwards = omdbAwards,
+                    wikidataAwards = wikidataAwards,
+                    isRatingsFromCache = isRatingsFromCache,
+                    movieParts = movieParts,
+                    selectedSourceId = selectedMediaSource?.id,
+                    onPlayClick = onPlayClick,
+                    onBoxSetItemClick = onBoxSetItemClick,
+                    onSpecialFeatureClick = onSpecialFeatureClick,
+                    navController = navController,
+                    viewModel = viewModel,
+                    widthSizeClass = widthSizeClass,
+                    horizontalPadding = 0.dp,
+                    detailLayout = detailLayout,
+                    watchProviders = uiState.watchProviders,
+                )
             }
         }
     }
@@ -837,6 +943,8 @@ private fun PortraitItemDetailContent(
     boxSetItems: List<AfinityItem>,
     containingBoxSets: List<AfinityBoxSet>,
     similarItems: List<AfinityItem>,
+    relatedRows: List<RelatedRow>,
+    missingCollectionParts: ExternalTitles?,
     nextEpisode: AfinityEpisode?,
     baseUrl: String,
     specialFeatures: List<AfinityItem>,
@@ -857,6 +965,7 @@ private fun PortraitItemDetailContent(
     viewModel: ItemDetailViewModel,
     context: Context,
     widthSizeClass: WindowWidthSizeClass,
+    detailLayout: DetailLayout,
     lazyListState: LazyListState = rememberLazyListState(),
 ) {
     val preferencesRepository = rememberPreferencesRepository()
@@ -870,32 +979,46 @@ private fun PortraitItemDetailContent(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showAddToPlaylist by remember { mutableStateOf(false) }
     val playerOffset = LocalPlayerOffset.current
+    val mediaSourceOptions = rememberMediaSourceOptions(item)
+    val selectedMediaSource by viewModel.selectedMediaSource.collectAsStateWithLifecycle()
+    val episodeLayoutFlow =
+        remember(preferencesRepository) { preferencesRepository.getEpisodeLayoutFlow() }
+    val episodeLayoutPreference by
+        episodeLayoutFlow.collectAsState(initial = EpisodeLayout.HORIZONTAL)
+    val episodeLayout =
+        if (detailLayout == DetailLayout.MODERN) EpisodeLayout.VERTICAL else episodeLayoutPreference
+    val isModernSeason = detailLayout == DetailLayout.MODERN && item is AfinitySeason
+    val lazyEpisodeItems = episodesPagingData?.collectAsLazyPagingItems()
+
+    LaunchedEffect(mediaSourceOptions) {
+        if (selectedMediaSource == null && mediaSourceOptions.isNotEmpty()) {
+            viewModel.selectMediaSource(mediaSourceOptions.first())
+        }
+    }
 
     LazyColumn(
         state = lazyListState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = max(bottomPadding, playerOffset) + 16.dp),
     ) {
-        item { HeroSection(item = item) }
+        item(key = "hero") { HeroSection(item = item) }
 
-        item {
+        item(key = "header") {
             Column(
                 modifier =
                     Modifier.fillMaxWidth()
                         .verticalLayoutOffset((-110).dp)
-                        .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 16.dp),
+                        .padding(start = 16.dp, end = 16.dp, top = 0.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 MediaLogoHeader(item = item, isLandscape = false)
 
-                val mediaSourceOptions = rememberMediaSourceOptions(item)
-                val selectedMediaSource by
-                    viewModel.selectedMediaSource.collectAsStateWithLifecycle()
-
-                LaunchedEffect(mediaSourceOptions) {
-                    if (selectedMediaSource == null && mediaSourceOptions.isNotEmpty()) {
-                        viewModel.selectMediaSource(mediaSourceOptions.first())
-                    }
+                if (isModernSeason && item is AfinitySeason) {
+                    ModernSeasonTitle(
+                        season = item,
+                        isLandscape = false,
+                        onSeriesClick = { navigateToSeries(navController, item) },
+                    )
                 }
 
                 MetadataRow(
@@ -903,6 +1026,14 @@ private fun PortraitItemDetailContent(
                     boxSetItems = boxSetItems,
                     selectedSourceId = selectedMediaSource?.id,
                 )
+
+                if (detailLayout == DetailLayout.MODERN && LocalShowRatings.current) {
+                    RatingChipsRow(
+                        item = item,
+                        mdbRatings = mdbRatings,
+                        mdbRatingBadges = mdbRatingBadges,
+                    )
+                }
 
                 if (item !is AfinityBoxSet && item !is AfinityVideoPlaylist && item.canPlay) {
                     PrimaryPlaybackButton(
@@ -1000,39 +1131,93 @@ private fun PortraitItemDetailContent(
                     )
                 }
 
+                val providers = uiState.watchProviders
+                if (detailLayout == DetailLayout.MODERN && providers != null) {
+                    WhereToWatchStrip(providers = providers)
+                }
+
                 VideoQualitySelection(
                     mediaSourceOptions = mediaSourceOptions,
                     selectedSource = selectedMediaSource,
                     onSourceSelected = viewModel::selectMediaSource,
                 )
-
-                TypeSpecificContent(
-                    item = item,
-                    hasPlayableItems = hasPlayableItems,
-                    seasons = seasons,
-                    boxSetItems = boxSetItems,
-                    containingBoxSets = containingBoxSets,
-                    similarItems = similarItems,
-                    nextEpisode = nextEpisode,
-                    baseUrl = baseUrl,
-                    specialFeatures = specialFeatures,
-                    episodesPagingData = episodesPagingData,
-                    tmdbReviews = tmdbReviews,
-                    mdbRatings = mdbRatings,
-                    mdbRatingBadges = mdbRatingBadges,
-                    omdbAwards = omdbAwards,
-                    wikidataAwards = wikidataAwards,
-                    isRatingsFromCache = isRatingsFromCache,
-                    movieParts = movieParts,
-                    onPlayClick = onPlayClick,
-                    onBoxSetItemClick = onBoxSetItemClick,
-                    onSpecialFeatureClick = onSpecialFeatureClick,
-                    navController = navController,
-                    viewModel = viewModel,
-                    preferencesRepository = preferencesRepository,
-                    widthSizeClass = widthSizeClass,
-                )
             }
+        }
+
+        typeSpecificItems(
+            item = item,
+            seasons = seasons,
+            boxSetItems = boxSetItems,
+            containingBoxSets = containingBoxSets,
+            similarItems = similarItems,
+            relatedRows = relatedRows,
+            missingCollectionParts = missingCollectionParts,
+            nextEpisode = nextEpisode,
+            baseUrl = baseUrl,
+            specialFeatures = specialFeatures,
+            lazyEpisodeItems = lazyEpisodeItems,
+            episodeLayout = episodeLayout,
+            tmdbReviews = tmdbReviews,
+            mdbRatings = mdbRatings,
+            mdbRatingBadges = mdbRatingBadges,
+            omdbAwards = omdbAwards,
+            wikidataAwards = wikidataAwards,
+            isRatingsFromCache = isRatingsFromCache,
+            movieParts = movieParts,
+            selectedSourceId = selectedMediaSource?.id,
+            onPlayClick = onPlayClick,
+            onBoxSetItemClick = onBoxSetItemClick,
+            onSpecialFeatureClick = onSpecialFeatureClick,
+            navController = navController,
+            viewModel = viewModel,
+            widthSizeClass = widthSizeClass,
+            horizontalPadding = 16.dp,
+            detailLayout = detailLayout,
+            watchProviders = uiState.watchProviders,
+        )
+
+        item(key = "bottom_spacer") { Spacer(modifier = Modifier.height(16.dp)) }
+    }
+}
+
+@Composable
+private fun ModernSeasonTitle(
+    season: AfinitySeason,
+    isLandscape: Boolean,
+    onSeriesClick: () -> Unit,
+) {
+    Column(
+        horizontalAlignment = if (isLandscape) Alignment.Start else Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(
+            text = season.name,
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = if (isLandscape) TextAlign.Start else TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            modifier =
+                Modifier.clickable(role = Role.Button, onClick = onSeriesClick)
+                    .padding(vertical = 4.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.cd_go_to_series),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Icon(
+                painter = painterResource(id = R.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
         }
     }
 }
@@ -1081,18 +1266,19 @@ private fun ColumnScope.MediaLogoHeader(item: AfinityItem, isLandscape: Boolean)
     }
 }
 
-@Composable
-private fun TypeSpecificContent(
+private fun LazyListScope.typeSpecificItems(
     item: AfinityItem,
-    hasPlayableItems: Boolean,
     seasons: List<AfinitySeason>,
     boxSetItems: List<AfinityItem>,
     containingBoxSets: List<AfinityBoxSet>,
     similarItems: List<AfinityItem>,
+    relatedRows: List<RelatedRow>,
+    missingCollectionParts: ExternalTitles?,
     nextEpisode: AfinityEpisode?,
     baseUrl: String,
     specialFeatures: List<AfinityItem>,
-    episodesPagingData: Flow<PagingData<AfinityEpisode>>?,
+    lazyEpisodeItems: LazyPagingItems<AfinityEpisode>?,
+    episodeLayout: EpisodeLayout,
     tmdbReviews: List<TmdbReview>,
     mdbRatings: List<MdbListRating>,
     mdbRatingBadges: MdbListRatingBadges,
@@ -1100,20 +1286,22 @@ private fun TypeSpecificContent(
     wikidataAwards: WikidataAwards?,
     isRatingsFromCache: Boolean,
     movieParts: List<AfinityItem>,
+    selectedSourceId: String?,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     navController: NavController,
     viewModel: ItemDetailViewModel,
-    preferencesRepository: com.makd.afinity.data.repository.PreferencesRepository,
     widthSizeClass: WindowWidthSizeClass,
+    horizontalPadding: Dp,
+    detailLayout: DetailLayout,
+    watchProviders: TmdbRegionProviders?,
 ) {
-    val selectedMediaSource by viewModel.selectedMediaSource.collectAsStateWithLifecycle()
-
     when (item) {
         is AfinityShow ->
-            SeriesDetailContent(
+            seriesDetailItems(
                 item = item,
+                watchProviders = watchProviders,
                 seasons = seasons,
                 nextEpisode = nextEpisode,
                 specialFeatures = specialFeatures,
@@ -1125,7 +1313,7 @@ private fun TypeSpecificContent(
                 wikidataAwards = wikidataAwards,
                 isRatingsFromCache = isRatingsFromCache,
                 onEpisodeClick = { ep ->
-                    val mediaSourceId = ep.sources.firstOrNull()?.id ?: return@SeriesDetailContent
+                    val mediaSourceId = ep.sources.firstOrNull()?.id ?: return@seriesDetailItems
                     val startPos =
                         if (ep.playbackPositionTicks > 0) ep.playbackPositionTicks / 10000 else 0L
                     PlayerLauncher.launch(
@@ -1160,11 +1348,14 @@ private fun TypeSpecificContent(
                 },
                 navController = navController,
                 widthSizeClass = widthSizeClass,
+                horizontalPadding = horizontalPadding,
+                detailLayout = detailLayout,
             )
         is AfinitySeason ->
-            SeasonDetailContent(
+            seasonDetailItems(
                 season = item,
-                episodesPagingData = episodesPagingData,
+                lazyEpisodeItems = lazyEpisodeItems,
+                episodeLayout = episodeLayout,
                 specialFeatures = specialFeatures,
                 containingBoxSets = containingBoxSets,
                 tmdbReviews = tmdbReviews,
@@ -1175,12 +1366,14 @@ private fun TypeSpecificContent(
                 onEpisodeClick = { ep -> viewModel.selectEpisode(ep) },
                 onSpecialFeatureClick = onSpecialFeatureClick,
                 navController = navController,
-                preferencesRepository = preferencesRepository,
                 widthSizeClass = widthSizeClass,
+                horizontalPadding = horizontalPadding,
+                detailLayout = detailLayout,
             )
         is AfinityMovie ->
-            MovieDetailContent(
+            movieDetailItems(
                 item = item,
+                watchProviders = watchProviders,
                 baseUrl = baseUrl,
                 specialFeatures = specialFeatures,
                 containingBoxSets = containingBoxSets,
@@ -1196,36 +1389,76 @@ private fun TypeSpecificContent(
                 onPartClick = { part -> onPlayClick(part, null) },
                 navController = navController,
                 widthSizeClass = widthSizeClass,
-                selectedSourceId = selectedMediaSource?.id,
+                horizontalPadding = horizontalPadding,
+                detailLayout = detailLayout,
+                selectedSourceId = selectedSourceId,
             )
         is AfinityBoxSet ->
-            BoxSetDetailContent(
+            boxSetDetailItems(
                 item = item,
                 boxSetItems = boxSetItems,
                 onItemClick = onBoxSetItemClick,
+                missingParts = missingCollectionParts,
+                onMissingPartClick = { part ->
+                    navController.navigate(
+                        Destination.createSeerrMediaRoute(
+                            mediaType = part.mediaType,
+                            tmdbId = part.id,
+                            title = part.getDisplayTitle(),
+                            backdropUrl = part.getBackdropUrl(),
+                            posterUrl = part.getPosterUrl(),
+                        )
+                    )
+                },
                 widthSizeClass = widthSizeClass,
+                horizontalPadding = horizontalPadding,
+                detailLayout = detailLayout,
             )
+
+        else -> Unit
+    }
+
+    val openRelatedItem: (AfinityItem) -> Unit = { related ->
+        val route =
+            Destination.createItemDetailRoute(
+                itemId = related.id.toString(),
+                itemType =
+                    when (related) {
+                        is AfinityShow -> "Series"
+                        is AfinitySeason -> "Season"
+                        else -> null
+                    },
+                seriesId = (related as? AfinitySeason)?.seriesId?.toString(),
+            )
+        navController.navigate(route)
     }
 
     if (item !is AfinityBoxSet && item !is AfinityVideoPlaylist && similarItems.isNotEmpty()) {
-        SimilarItemsSection(
-            items = similarItems,
-            onItemClick = { sim ->
-                val route =
-                    Destination.createItemDetailRoute(
-                        itemId = sim.id.toString(),
-                        itemType =
-                            when (sim) {
-                                is AfinityShow -> "Series"
-                                is AfinitySeason -> "Season"
-                                else -> null
-                            },
-                        seriesId = (sim as? AfinitySeason)?.seriesId?.toString(),
-                    )
-                navController.navigate(route)
-            },
-            widthSizeClass = widthSizeClass,
-        )
+        detailItem("similar", horizontalPadding) {
+            SimilarItemsSection(
+                items = similarItems,
+                onItemClick = openRelatedItem,
+                widthSizeClass = widthSizeClass,
+            )
+        }
+    }
+
+    relatedRows.forEach { row ->
+        detailItem("related_${row.kind.name}", horizontalPadding) {
+            SimilarItemsSection(
+                items = row.items,
+                onItemClick = openRelatedItem,
+                widthSizeClass = widthSizeClass,
+                title =
+                    when (row.kind) {
+                        RelatedRow.Kind.STARRING ->
+                            stringResource(R.string.related_starring_fmt, row.subject)
+
+                        RelatedRow.Kind.GENRE ->
+                            stringResource(R.string.related_more_in_genre_fmt, row.subject)
+                    },
+            )
+        }
     }
 }
 
@@ -1260,6 +1493,12 @@ private fun rememberMediaSourceOptions(item: AfinityItem): List<MediaSourceOptio
             )
         }
     }
+}
+
+private fun navigateToSeries(navController: NavController, season: AfinitySeason) {
+    navController.navigate(
+        Destination.createItemDetailRoute(itemId = season.seriesId.toString(), itemType = "Series")
+    )
 }
 
 private fun hasTrailer(item: AfinityItem): Boolean =

@@ -199,6 +199,55 @@ private fun LanguageCluster(label: String, chips: List<LanguageChip>) {
     }
 }
 
+fun hasLanguageChips(item: AfinityItem, type: MediaStreamType, selectedSourceId: String?): Boolean =
+    languageChips(item, type, selectedSourceId).isNotEmpty()
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun LanguageChipsRow(
+    item: AfinityItem,
+    type: MediaStreamType,
+    selectedSourceId: String?,
+    modifier: Modifier = Modifier,
+) {
+    val chips =
+        remember(item, type, selectedSourceId) { languageChips(item, type, selectedSourceId) }
+    FlowRow(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        chips.forEach { chip ->
+            when (chip) {
+                is LanguageChip.Flag ->
+                    CircleFlagIcon(
+                        url = chip.assetUrl,
+                        size = 16.dp,
+                        modifier = Modifier.align(Alignment.CenterVertically),
+                    )
+
+                LanguageChip.NoLanguage ->
+                    LanguageCodeChip(
+                        text = stringResource(R.string.media_language_none),
+                        modifier = Modifier.align(Alignment.CenterVertically),
+                    )
+
+                LanguageChip.Unidentified ->
+                    LanguageCodeChip(
+                        text = stringResource(R.string.media_language_unidentified),
+                        modifier = Modifier.align(Alignment.CenterVertically),
+                    )
+
+                is LanguageChip.Code ->
+                    LanguageCodeChip(
+                        text = chip.text,
+                        modifier = Modifier.align(Alignment.CenterVertically),
+                    )
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun LanguageFlagRow(label: String, chips: List<LanguageChip>) {

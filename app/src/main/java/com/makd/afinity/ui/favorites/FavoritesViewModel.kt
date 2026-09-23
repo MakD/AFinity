@@ -27,7 +27,6 @@ import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.music.MusicRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
-import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.data.store.ItemStore
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -36,6 +35,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -60,7 +60,6 @@ constructor(
     private val mediaRepository: MediaRepository,
     private val musicRepository: MusicRepository,
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
-    private val watchlistRepository: WatchlistRepository,
     private val downloadRepository: DownloadRepository,
     private val appDataRepository: AppDataRepository,
     private val itemUserDataDelegate: ItemUserDataDelegate,
@@ -69,7 +68,7 @@ constructor(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FavoritesUiState())
-    private var lastFavoritesLoadedAt = 0L
+    private var lastFavoritesLoadedAt = System.currentTimeMillis()
 
     val isDownloadAllowedByServer: StateFlow<Boolean> = downloadPermissions.isAllowedByServer
 
@@ -79,6 +78,9 @@ constructor(
 
     private val _selectedEpisode = MutableStateFlow<AfinityEpisode?>(null)
     val selectedEpisode: StateFlow<AfinityEpisode?> = _selectedEpisode.asStateFlow()
+
+    private var episodeLoadJob: Job? = null
+    private var episodeLoadTarget: AfinityEpisode? = null
 
     private val _isLoadingEpisode = MutableStateFlow(false)
     val isLoadingEpisode: StateFlow<Boolean> = _isLoadingEpisode.asStateFlow()
@@ -242,7 +244,11 @@ constructor(
     }
 
     fun selectEpisode(episode: AfinityEpisode) {
-        viewModelScope.launch {
+        val alreadyLoading = episodeLoadJob?.isActive == true && episodeLoadTarget?.id == episode.id
+        if (alreadyLoading || _selectedEpisode.value?.id == episode.id) return
+        episodeLoadJob?.cancel()
+        episodeLoadTarget = episode
+        episodeLoadJob = viewModelScope.launch {
             try {
                 _isLoadingEpisode.value = true
 
@@ -252,9 +258,7 @@ constructor(
                         ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
 
                 _selectedEpisode.value = fullEpisode ?: episode
-
-                val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
-                _selectedEpisodeWatchlistStatus.value = isInWatchlist
+                _selectedEpisodeWatchlistStatus.value = (fullEpisode ?: episode).liked
 
                 _isLoadingEpisode.value = false
             } catch (e: CancellationException) {

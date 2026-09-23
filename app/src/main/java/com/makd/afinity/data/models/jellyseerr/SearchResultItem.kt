@@ -23,6 +23,9 @@ data class SearchResultItem(
     @SerialName("originalLanguage") val originalLanguage: String? = null,
     @SerialName("adult") val adult: Boolean? = null,
     @SerialName("mediaInfo") val mediaInfo: MediaInfo? = null,
+    @SerialName("character") val character: String? = null,
+    @SerialName("job") val job: String? = null,
+    @SerialName("episodeCount") val episodeCount: Int? = null,
 ) {
     fun getDisplayTitle(): String = title ?: name ?: originalTitle ?: originalName ?: "Unknown"
 
