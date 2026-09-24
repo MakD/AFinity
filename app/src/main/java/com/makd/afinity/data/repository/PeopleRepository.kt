@@ -5,6 +5,7 @@ import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.database.AfinityTypeConverters
 import com.makd.afinity.data.database.entities.PersonSectionCacheEntity
 import com.makd.afinity.data.database.entities.TopPeopleCacheEntity
+import com.makd.afinity.data.manager.BackgroundWorkQueue
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.CachedPersonWithCount
 import com.makd.afinity.data.models.PersonSection
@@ -19,13 +20,18 @@ import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.util.ItemIds
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -42,12 +48,14 @@ constructor(
     private val mediaRepository: MediaRepository,
     private val sessionManager: SessionManager,
     private val deletedItemsRepository: DeletedItemsRepository,
+    private val backgroundWorkQueue: BackgroundWorkQueue,
+    @ApplicationScope private val scope: CoroutineScope,
     database: AfinityDatabase,
 ) {
     private val personCacheTTL = 48.hours.inWholeMilliseconds
-    private val peopleCacheTTL = 24.hours.inWholeMilliseconds
+    private val peopleCacheTTL = 3.days.inWholeMilliseconds
     private val peopleScanTTL = 5.minutes.inWholeMilliseconds
-    private val peopleScanLimit = 250
+    private val scanFailureBackoff = 10.minutes.inWholeMilliseconds
 
     private val topPeopleDao = database.topPeopleDao()
     private val personSectionDao = database.personSectionDao()
@@ -59,83 +67,138 @@ constructor(
     private fun currentUserId(): String =
         sessionManager.currentSession.value?.userId?.toString() ?: ""
 
+    private fun sessionKey(): String = "${currentServerId()}_${currentUserId()}"
+
     private val scanMutex = Mutex()
-    private var scanCache: Triple<String, Long, List<BaseItemDto>>? = null
-
-    private suspend fun recentItemsWithPeople(): List<BaseItemDto> = scanMutex.withLock {
-        val sessionKey = "${currentServerId()}_${currentUserId()}"
-        scanCache?.let { (key, timestamp, items) ->
-            if (key == sessionKey && System.currentTimeMillis() - timestamp < peopleScanTTL) {
-                return items
-            }
-        }
-
-        val items =
-            mediaRepository
-                .getItems(
-                    includeItemTypes = listOf("Movie", "Series"),
-                    fields = listOf(ItemFields.PEOPLE),
-                    limit = peopleScanLimit,
-                    sortBy = SortBy.DATE_ADDED,
-                    sortDescending = true,
-                )
-                .items
-
-        if (items.isNotEmpty()) {
-            scanCache = Triple(sessionKey, System.currentTimeMillis(), items)
-        }
-        return items
-    }
+    private var scanResult: Triple<String, Long, Map<PersonKind, List<PersonWithCount>>>? = null
+    private var lastScanFailure: Pair<String, Long>? = null
+    private var refreshJob: Job? = null
 
     fun invalidatePeopleScan() {
-        scanCache = null
+        scanResult = null
     }
 
     suspend fun getTopPeople(
         type: PersonKind,
         limit: Int = 100,
         minAppearances: Int = 10,
+        scanLimit: Int = DEFAULT_SCAN_LIMIT,
     ): List<PersonWithCount> {
         try {
-            val serverId = currentServerId()
-            val userId = currentUserId()
-            val cached = topPeopleDao.getCachedTopPeople(type.name, serverId, userId)
-            val currentTime = System.currentTimeMillis()
-
-            if (
-                cached != null &&
-                    topPeopleDao.isTopPeopleCacheFresh(
-                        type.name,
-                        serverId,
-                        userId,
-                        peopleCacheTTL,
-                        currentTime,
-                    )
-            ) {
+            val cached =
+                topPeopleDao.getCachedTopPeople(type.name, currentServerId(), currentUserId())
+            if (cached != null) {
+                if (System.currentTimeMillis() - cached.cachedTimestamp >= peopleCacheTTL) {
+                    refreshInBackground(scanLimit)
+                }
                 val cachedData =
                     json.decodeFromString<List<CachedPersonWithCount>>(cached.peopleData)
                 val baseUrl = mediaRepository.getBaseUrl()
-                return cachedData.map { PersonWithCount.fromCached(it, baseUrl) }
+                return cachedData.take(limit).map { PersonWithCount.fromCached(it, baseUrl) }
             }
 
-            Timber.d("Fetching top ${type.name}...")
-            val baseUrl = mediaRepository.getBaseUrl()
+            return scanAllRoles(scanLimit, force = false)?.get(type).orEmpty().take(limit)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get top ${type.name}")
+            return emptyList()
+        }
+    }
 
-            val peopleFrequency = mutableMapOf<String, Pair<AfinityPerson, Int>>()
+    private fun refreshInBackground(scanLimit: Int) {
+        if (refreshJob?.isActive == true) return
+        refreshJob = scope.launch {
+            try {
+                scanAllRoles(scanLimit, force = true)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Background top people refresh failed")
+            }
+        }
+    }
 
-            val movies = recentItemsWithPeople()
+    private suspend fun scanAllRoles(
+        scanLimit: Int,
+        force: Boolean,
+    ): Map<PersonKind, List<PersonWithCount>>? = scanMutex.withLock {
+        val sessionKey = sessionKey()
+        val now = System.currentTimeMillis()
+        scanResult?.let { (key, timestamp, result) ->
+            if (key == sessionKey && now - timestamp < peopleScanTTL) return result
+        }
+        lastScanFailure?.let { (key, timestamp) ->
+            if (!force && key == sessionKey && now - timestamp < scanFailureBackoff) return null
+        }
 
-            movies.forEach { movieItem ->
-                movieItem.people
-                    ?.filter { it.type == type }
-                    ?.forEach { personDto ->
-                        val key = personDto.name ?: return@forEach
+        Timber.d("Scanning $scanLimit recent items for top people...")
+        val items =
+            backgroundWorkQueue
+                .run("top people scan") {
+                    mediaRepository.getItemsResult(
+                        includeItemTypes = listOf("Movie", "Series"),
+                        fields = listOf(ItemFields.PEOPLE),
+                        limit = scanLimit,
+                        sortBy = SortBy.DATE_ADDED,
+                        sortDescending = true,
+                    )
+                }
+                .getOrElse { e ->
+                    if (e is CancellationException) throw e
+                    Timber.w(e, "Top people scan failed")
+                    lastScanFailure = sessionKey to now
+                    return null
+                }
+                .items
+        if (items.isEmpty()) {
+            lastScanFailure = sessionKey to now
+            return null
+        }
 
-                        if (!peopleFrequency.containsKey(key)) {
-                            val id = personDto.id
-                            val primaryTag = personDto.primaryImageTag
+        val baseUrl = mediaRepository.getBaseUrl()
+        val result = SCANNED_ROLES.associateWith { role -> rankPeople(items, role, baseUrl) }
+        Timber.d(
+            "Scan complete: " +
+                result.entries.joinToString { (role, people) -> "${people.size} ${role.name}s" }
+        )
 
-                            val imageUri = primaryTag?.let { tag ->
+        val serverId = currentServerId()
+        val userId = currentUserId()
+        result.forEach { (role, people) ->
+            topPeopleDao.insertTopPeople(
+                TopPeopleCacheEntity(
+                    personType = role.name,
+                    serverId = serverId,
+                    userId = userId,
+                    peopleData = json.encodeToString(people.map { it.toCached() }),
+                    cachedTimestamp = now,
+                )
+            )
+        }
+        scanResult = Triple(sessionKey, now, result)
+        lastScanFailure = null
+        result
+    }
+
+    private fun rankPeople(
+        items: List<BaseItemDto>,
+        type: PersonKind,
+        baseUrl: String,
+    ): List<PersonWithCount> {
+        val peopleFrequency = mutableMapOf<String, Pair<AfinityPerson, Int>>()
+
+        items.forEach { item ->
+            item.people
+                ?.filter { it.type == type }
+                ?.forEach { personDto ->
+                    val key = personDto.name ?: return@forEach
+
+                    val current = peopleFrequency[key]
+                    if (current == null) {
+                        val id = personDto.id
+                        val imageUri =
+                            personDto.primaryImageTag?.let { tag ->
                                 baseUrl
                                     .toUri()
                                     .buildUpon()
@@ -143,52 +206,25 @@ constructor(
                                     .appendQueryParameter("tag", tag)
                                     .build()
                             }
-
-                            val afinityPerson =
-                                AfinityPerson(
-                                    id = id,
-                                    name = key,
-                                    type = type,
-                                    role = personDto.role ?: type.name,
-                                    image = AfinityPersonImage(imageUri, null),
-                                )
-                            peopleFrequency[key] = afinityPerson to 1
-                        } else {
-                            val current = peopleFrequency[key]!!
-                            peopleFrequency[key] = current.first to (current.second + 1)
-                        }
+                        peopleFrequency[key] =
+                            AfinityPerson(
+                                id = id,
+                                name = key,
+                                type = type,
+                                role = personDto.role ?: type.name,
+                                image = AfinityPersonImage(imageUri, null),
+                            ) to 1
+                    } else {
+                        peopleFrequency[key] = current.first to (current.second + 1)
                     }
-            }
-
-            val mappedPeople =
-                peopleFrequency.values
-                    .filter { it.second >= 2 }
-                    .sortedByDescending { it.second }
-                    .take(limit)
-                    .map { PersonWithCount(it.first, it.second) }
-
-            Timber.d("Scan complete: Found ${mappedPeople.size} ${type.name}s")
-
-            if (mappedPeople.isNotEmpty()) {
-                val cachedData = mappedPeople.map { it.toCached() }
-                val entity =
-                    TopPeopleCacheEntity(
-                        personType = type.name,
-                        serverId = serverId,
-                        userId = userId,
-                        peopleData = json.encodeToString(cachedData),
-                        cachedTimestamp = System.currentTimeMillis(),
-                    )
-                topPeopleDao.insertTopPeople(entity)
-            }
-
-            return mappedPeople
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get top ${type.name}")
-            return emptyList()
+                }
         }
+
+        return peopleFrequency.values
+            .filter { it.second >= 2 }
+            .sortedByDescending { it.second }
+            .take(STORED_PEOPLE_PER_ROLE)
+            .map { PersonWithCount(it.first, it.second) }
     }
 
     suspend fun getPersonSection(
@@ -357,7 +393,11 @@ constructor(
     }
 
     suspend fun clearAllData() {
-        invalidatePeopleScan()
+        refreshJob?.cancel()
+        scanMutex.withLock {
+            scanResult = null
+            lastScanFailure = null
+        }
         try {
             topPeopleDao.clearAllCache()
             personSectionDao.clearAllCache()
@@ -366,5 +406,11 @@ constructor(
         } catch (e: Exception) {
             Timber.e(e, "Failed to clear people database caches")
         }
+    }
+
+    private companion object {
+        const val DEFAULT_SCAN_LIMIT = 250
+        const val STORED_PEOPLE_PER_ROLE = 100
+        val SCANNED_ROLES = listOf(PersonKind.ACTOR, PersonKind.DIRECTOR, PersonKind.WRITER)
     }
 }

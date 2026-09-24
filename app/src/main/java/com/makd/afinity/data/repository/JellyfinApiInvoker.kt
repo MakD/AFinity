@@ -1,5 +1,6 @@
 package com.makd.afinity.data.repository
 
+import com.makd.afinity.data.manager.BackgroundRequest
 import com.makd.afinity.data.manager.SessionManager
 import java.util.UUID
 import javax.inject.Inject
@@ -17,8 +18,10 @@ class JellyfinApiInvoker @Inject constructor(private val sessionManager: Session
 
     suspend fun <T> apiResult(block: suspend (apiClient: ApiClient, userId: UUID) -> T): Result<T> =
         withContext(Dispatchers.IO) {
+            val isBackground = coroutineContext[BackgroundRequest] != null
             val apiClient =
-                sessionManager.getCurrentApiClient()
+                (if (isBackground) sessionManager.getBackgroundApiClient()
+                else sessionManager.getCurrentApiClient())
                     ?: return@withContext Result.failure(NoActiveSessionException())
             val userId =
                 sessionManager.currentSession.value?.userId

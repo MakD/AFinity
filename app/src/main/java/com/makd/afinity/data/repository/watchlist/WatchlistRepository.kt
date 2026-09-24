@@ -38,7 +38,9 @@ interface WatchlistRepository {
 
     val watchlistCountFlow: StateFlow<Int?>
 
-    suspend fun refreshWatchlistCount()
+    suspend fun refreshWatchlistCount(): Int?
+
+    fun seedWatchlistCount(count: Int?)
 
     suspend fun clearWatchlist()
 }

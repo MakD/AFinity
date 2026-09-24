@@ -31,6 +31,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -86,38 +87,37 @@ constructor(
     init {
         observeSelectedEpisodeDownload()
 
-        viewModelScope.launch {
-            appDataRepository.watchlistLoadFailed.collect { failed ->
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error =
-                            if (failed) context.getString(R.string.error_content_unavailable_server)
-                            else null,
-                    )
-                }
-            }
-        }
-
         viewModelScope.launch { adminChangeBroadcaster.itemChanged.collect { loadWatchlist() } }
 
         viewModelScope.launch {
-            appDataRepository.watchlistData.collect { data ->
-                itemStore.putIfAbsent(
-                    data.boxSets + data.movies + data.shows + data.seasons + data.episodes
-                )
-                _uiState.value =
-                    WatchlistUiState(
-                        boxSets = itemStore.merge(data.boxSets),
-                        movies = itemStore.merge(data.movies),
-                        shows = itemStore.merge(data.shows),
-                        seasons = itemStore.merge(data.seasons),
-                        episodes = itemStore.merge(data.episodes),
-                        isLoading = false,
-                        error = null,
+            combine(
+                    appDataRepository.watchlistData,
+                    appDataRepository.watchlistLoaded,
+                    appDataRepository.watchlistLoadFailed,
+                ) { data, loaded, failed ->
+                    Triple(data, loaded, failed)
+                }
+                .collect { (data, loaded, failed) ->
+                    itemStore.putIfAbsent(
+                        data.boxSets + data.movies + data.shows + data.seasons + data.episodes
                     )
-                lastWatchlistLoadedAt = System.currentTimeMillis()
-            }
+                    _uiState.value =
+                        WatchlistUiState(
+                            boxSets = itemStore.merge(data.boxSets),
+                            movies = itemStore.merge(data.movies),
+                            shows = itemStore.merge(data.shows),
+                            seasons = itemStore.merge(data.seasons),
+                            episodes = itemStore.merge(data.episodes),
+                            isLoading = !loaded && !failed,
+                            error =
+                                if (failed && !loaded) {
+                                    context.getString(R.string.error_content_unavailable_server)
+                                } else {
+                                    null
+                                },
+                        )
+                    if (loaded) lastWatchlistLoadedAt = System.currentTimeMillis()
+                }
         }
 
         viewModelScope.launch {
@@ -169,17 +169,8 @@ constructor(
     }
 
     fun loadWatchlist() {
-        viewModelScope.launch {
-            val currentData = _uiState.value
-            val hasData =
-                currentData.movies.isNotEmpty() ||
-                    currentData.shows.isNotEmpty() ||
-                    currentData.episodes.isNotEmpty() ||
-                    currentData.boxSets.isNotEmpty()
-            if (!hasData) {
-                appDataRepository.reloadWatchlist()
-            }
-        }
+        if (appDataRepository.watchlistLoaded.value) return
+        viewModelScope.launch { appDataRepository.reloadWatchlist() }
     }
 
     fun retry() {

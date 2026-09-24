@@ -49,17 +49,29 @@ constructor(
         if (maxAgeMs != null && System.currentTimeMillis() - entity.updatedAt > maxAgeMs) {
             return null
         }
-        return try {
+        return decodeItems(entity, baseUrl)
+    }
+
+    suspend fun getItemsStamped(
+        key: String,
+        baseUrl: String? = null,
+    ): Pair<List<AfinityItem>, Long>? {
+        val entity = dao.get(key) ?: return null
+        val items = decodeItems(entity, baseUrl) ?: return null
+        return items to entity.updatedAt
+    }
+
+    private suspend fun decodeItems(entity: HomeCacheEntity, baseUrl: String?): List<AfinityItem>? =
+        try {
             val wrapper = json.decodeFromString<StringList>(entity.json)
             val items = wrapper.items.mapNotNull { converters.toAfinityItem(it)?.rebase(baseUrl) }
             deletedItemsRepository.retainAlive(items) { it.id.toString() }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Timber.e(e, "Failed to deserialize AfinityItem list for key=$key")
+            Timber.e(e, "Failed to deserialize AfinityItem list for key=${entity.key}")
             null
         }
-    }
 
     suspend fun putItems(key: String, items: List<AfinityItem>) {
         if (items.isEmpty()) return
@@ -144,6 +156,9 @@ constructor(
         }
         return entity.json
     }
+
+    suspend fun getRawStamped(key: String): Pair<String, Long>? =
+        dao.get(key)?.let { it.json to it.updatedAt }
 
     suspend fun putRaw(key: String, value: String) {
         dao.upsert(HomeCacheEntity(key, value, System.currentTimeMillis()))

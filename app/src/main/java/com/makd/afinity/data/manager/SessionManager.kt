@@ -75,6 +75,8 @@ constructor(
     @param:ProberClient private val proberJellyfin: Jellyfin,
     @ApplicationScope private val sessionScope: CoroutineScope,
 ) {
+    private var backgroundClient: Pair<String, ApiClient>? = null
+
     private val _currentSession = MutableStateFlow<Session?>(null)
     val currentSession: StateFlow<Session?> = _currentSession.asStateFlow()
 
@@ -479,6 +481,33 @@ constructor(
     fun getCurrentApiClient(): ApiClient? {
         val session = _currentSession.value ?: return null
         return apiClients[clientKey(session.serverId, session.userId)]
+    }
+
+    @Synchronized
+    fun getBackgroundApiClient(): ApiClient? {
+        val session = _currentSession.value ?: return null
+        val primary = apiClients[clientKey(session.serverId, session.userId)] ?: return null
+        val key =
+            "${
+                clientKey(
+                    session.serverId,
+                    session.userId,
+                )
+            }|${primary.baseUrl}|${primary.accessToken}"
+        backgroundClient?.let { (cachedKey, client) -> if (cachedKey == key) return client }
+        return try {
+            jellyfin
+                .createApi(
+                    baseUrl = primary.baseUrl,
+                    accessToken = primary.accessToken,
+                    deviceInfo = deviceInfo.forUser(session.userId),
+                    httpClientOptions = NetworkModule.BACKGROUND_HTTP_OPTIONS,
+                )
+                .also { backgroundClient = key to it }
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to build background ApiClient, using session client")
+            primary
+        }
     }
 
     companion object {

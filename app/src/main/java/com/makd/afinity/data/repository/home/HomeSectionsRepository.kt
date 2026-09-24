@@ -3,12 +3,14 @@ package com.makd.afinity.data.repository.home
 import android.content.Context
 import com.makd.afinity.R
 import com.makd.afinity.data.database.AfinityTypeConverters
+import com.makd.afinity.data.manager.BackgroundWorkQueue
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.CustomHomeSection
 import com.makd.afinity.data.models.CustomSectionSourceType
 import com.makd.afinity.data.models.DiscoveryConfig
 import com.makd.afinity.data.models.DiscoverySection
 import com.makd.afinity.data.models.GenreType
+import com.makd.afinity.data.models.HomeRow
 import com.makd.afinity.data.models.HomeSectionContent
 import com.makd.afinity.data.models.HomeSectionDescriptor
 import com.makd.afinity.data.models.HomeSectionType
@@ -19,7 +21,6 @@ import com.makd.afinity.data.models.PersonSectionType
 import com.makd.afinity.data.models.PersonWithCount
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityItem
-import com.makd.afinity.data.models.extensions.toAfinityMovie
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
@@ -41,6 +42,7 @@ import kotlin.time.Duration.Companion.hours
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -51,6 +53,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -61,6 +66,7 @@ import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.PersonKind
 import timber.log.Timber
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
 class HomeSectionsRepository
 @Inject
@@ -73,11 +79,13 @@ constructor(
     private val homeCacheRepository: HomeCacheRepository,
     private val customHomeSectionsRepository: CustomHomeSectionsRepository,
     private val homeLayoutPreferencesRepository: HomeLayoutPreferencesRepository,
+    private val backgroundWorkQueue: BackgroundWorkQueue,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
     private val layoutTTL = 24.hours.inWholeMilliseconds
     private val recentCacheTTL = 6.hours.inWholeMilliseconds
     private val studiosTTL = 24.hours.inWholeMilliseconds
+    private val boxSetsTTL = 24.hours.inWholeMilliseconds
 
     private val json = Json { ignoreUnknownKeys = true }
     private val converters = AfinityTypeConverters()
@@ -130,9 +138,38 @@ constructor(
         }
 
         scope.launch {
-            homeLayoutPreferencesRepository.discoveryConfig.distinctUntilChanged().drop(1).collect {
-                sessionKey()?.let { sk -> homeCacheRepository.invalidate(layoutCacheKey(sk)) }
-                ensureLayout(force = true)
+            sessionManager.currentSession
+                .map { session ->
+                    session
+                        ?.takeIf { it.serverId.isNotBlank() }
+                        ?.let { "${it.serverId}_${it.userId}" }
+                }
+                .distinctUntilChanged()
+                .flatMapLatest { key ->
+                    if (key == null) {
+                        emptyFlow()
+                    } else {
+                        homeLayoutPreferencesRepository.discoveryConfig
+                            .distinctUntilChanged()
+                            .drop(1)
+                    }
+                }
+                .collect {
+                    sessionKey()?.let { sk -> homeCacheRepository.invalidate(layoutCacheKey(sk)) }
+                    ensureLayout(force = true)
+                }
+        }
+
+        scope.launch {
+            var previousHidden: Set<HomeRow>? = null
+            homeLayoutPreferencesRepository.hiddenRows.distinctUntilChanged().collect { hidden ->
+                val before = previousHidden
+                previousHidden = hidden
+                if (before == null) return@collect
+                val shown = before - hidden
+                if (HomeRow.WATCH_AGAIN in shown) ensureWatchAgain(force = false)
+                if (HomeRow.CRITICS_CHOICE in shown) ensureCriticsChoice(force = false)
+                if (HomeRow.POPULAR_STUDIOS in shown) ensurePopularStudios(force = false)
             }
         }
     }
@@ -223,57 +260,156 @@ constructor(
 
     private fun studiosCacheKey(sessionKey: String) = "home_studios_$sessionKey"
 
+    private fun boxSetsCacheKey(sessionKey: String) = "home_boxsets_$sessionKey"
+
     private val studiosMutex = Mutex()
     private var cachedStudios: List<AfinityStudio>? = null
+    private var studiosFetchedAt = 0L
+    private var studiosFailedAt = 0L
+    private var studiosRefreshJob: Job? = null
 
-    private suspend fun studiosPool(force: Boolean): List<AfinityStudio> = studiosMutex.withLock {
-        if (!force)
-            cachedStudios?.let {
-                return it
-            }
+    private val boxSetsMutex = Mutex()
+    private var cachedBoxSets: List<AfinityBoxSet>? = null
+    private var boxSetsFetchedAt = 0L
+    private var boxSetsFailedAt = 0L
+    private var boxSetsRefreshJob: Job? = null
 
-        val sk = sessionKey()
-        val baseUrl = mediaRepository.getBaseUrl()
-
-        if (!force && sk != null) {
-            val cached =
-                homeCacheRepository.getRaw(studiosCacheKey(sk), studiosTTL)?.let { raw ->
-                    runCatching { json.decodeFromString<List<CachedStudio>>(raw) }.getOrNull()
-                }
-            if (!cached.isNullOrEmpty()) {
-                val restored = cached.mapNotNull { it.toStudio() }.map { it.withBaseUrl(baseUrl) }
-                if (restored.isNotEmpty()) {
-                    cachedStudios = restored
-                    return restored
-                }
-            }
+    private suspend fun studiosPool(force: Boolean): List<AfinityStudio> {
+        val cached = studiosMutex.withLock {
+            if (cachedStudios == null) restoreStudios()
+            cachedStudios
         }
-
-        val fetched =
-            try {
-                mediaRepository.getStudios(
-                    limit = STUDIOS_POOL,
-                    includeItemTypes = POPULAR_STUDIOS_TYPES,
-                )
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.w(e, "Failed to load studios")
-                emptyList()
+        if (!force && cached != null) {
+            if (System.currentTimeMillis() - studiosFetchedAt >= studiosTTL) {
+                if (studiosRefreshJob?.isActive != true) {
+                    studiosRefreshJob = scope.launch(Dispatchers.IO) { fetchStudios(force = false) }
+                }
             }
+            return cached
+        }
+        return fetchStudios(force) ?: cached.orEmpty()
+    }
 
-        if (fetched.isNotEmpty()) {
-            cachedStudios = fetched
-            if (sk != null) {
-                runCatching {
-                    homeCacheRepository.putRaw(
-                        studiosCacheKey(sk),
-                        json.encodeToString(fetched.map { CachedStudio.from(it) }),
+    private suspend fun restoreStudios() {
+        val sk = sessionKey() ?: return
+        val (raw, updatedAt) = homeCacheRepository.getRawStamped(studiosCacheKey(sk)) ?: return
+        val baseUrl = mediaRepository.getBaseUrl()
+        val restored = runCatching {
+            json.decodeFromString<List<CachedStudio>>(raw)
+        }.getOrNull()?.mapNotNull { it.toStudio() }?.map { it.withBaseUrl(baseUrl) }
+        if (!restored.isNullOrEmpty()) {
+            cachedStudios = restored
+            studiosFetchedAt = updatedAt
+        }
+    }
+
+    private suspend fun fetchStudios(force: Boolean): List<AfinityStudio>? = studiosMutex.withLock {
+        val now = System.currentTimeMillis()
+        if (!force) {
+            cachedStudios
+                ?.takeIf { now - studiosFetchedAt < studiosTTL }
+                ?.let {
+                    return it
+                }
+            if (now - studiosFailedAt < POOL_FAILURE_BACKOFF_MS) return null
+        }
+        val sk = sessionKey()
+        val fetched =
+            backgroundWorkQueue
+                .run("studios pool") {
+                    mediaRepository.getStudiosResult(
+                        limit = STUDIOS_POOL,
+                        includeItemTypes = POPULAR_STUDIOS_TYPES,
                     )
                 }
+                .getOrElse { e ->
+                    if (e is CancellationException) throw e
+                    Timber.w(e, "Failed to load studios")
+                    studiosFailedAt = now
+                    return null
+                }
+        if (fetched.isEmpty()) {
+            studiosFailedAt = now
+            return null
+        }
+        cachedStudios = fetched
+        studiosFetchedAt = now
+        if (sk != null) {
+            runCatching {
+                homeCacheRepository.putRaw(
+                    studiosCacheKey(sk),
+                    json.encodeToString(fetched.map { CachedStudio.from(it) }),
+                )
             }
         }
-        return fetched
+        fetched
+    }
+
+    private suspend fun boxSetPool(): List<AfinityBoxSet> {
+        val cached = boxSetsMutex.withLock {
+            if (cachedBoxSets == null) restoreBoxSets()
+            cachedBoxSets
+        }
+        if (cached != null) {
+            if (System.currentTimeMillis() - boxSetsFetchedAt >= boxSetsTTL) {
+                if (boxSetsRefreshJob?.isActive != true) {
+                    boxSetsRefreshJob = scope.launch(Dispatchers.IO) { fetchBoxSets() }
+                }
+            }
+            return cached
+        }
+        return fetchBoxSets().orEmpty()
+    }
+
+    private suspend fun restoreBoxSets() {
+        val sk = sessionKey() ?: return
+        val (items, updatedAt) =
+            homeCacheRepository.getItemsStamped(boxSetsCacheKey(sk), mediaRepository.getBaseUrl())
+                ?: return
+        val restored = items.filterIsInstance<AfinityBoxSet>()
+        if (restored.isNotEmpty()) {
+            cachedBoxSets = restored
+            boxSetsFetchedAt = updatedAt
+        }
+    }
+
+    private suspend fun fetchBoxSets(): List<AfinityBoxSet>? = boxSetsMutex.withLock {
+        val now = System.currentTimeMillis()
+        cachedBoxSets
+            ?.takeIf { now - boxSetsFetchedAt < boxSetsTTL }
+            ?.let {
+                return it
+            }
+        if (now - boxSetsFailedAt < POOL_FAILURE_BACKOFF_MS) return null
+        val sk = sessionKey()
+        val baseUrl = mediaRepository.getBaseUrl()
+        val fetched =
+            backgroundWorkQueue
+                .run("box set pool") {
+                    mediaRepository.getItemsResult(
+                        includeItemTypes = listOf("BOX_SET"),
+                        fields = FieldSets.MEDIA_ITEM_CARDS,
+                    )
+                }
+                .map { result ->
+                    result.items
+                        .mapNotNull { it.toAfinityItem(baseUrl) }
+                        .filterIsInstance<AfinityBoxSet>()
+                }
+                .getOrElse { e ->
+                    if (e is CancellationException) throw e
+                    Timber.w(e, "Failed to load box sets")
+                    boxSetsFailedAt = now
+                    return null
+                }
+        if (fetched.isEmpty()) {
+            boxSetsFailedAt = now
+            return null
+        }
+        cachedBoxSets = fetched
+        boxSetsFetchedAt = now
+        if (sk != null) homeCacheRepository.putItems(boxSetsCacheKey(sk), fetched)
+        fetched
     }
 
     private fun contentCacheKey(sessionKey: String, descriptorKey: String) =
@@ -355,6 +491,10 @@ constructor(
         criticsChoiceJob =
             scope.launch(Dispatchers.IO) {
                 try {
+                    if (isRowHidden(HomeRow.CRITICS_CHOICE)) {
+                        _criticsChoiceLoaded.value = true
+                        return@launch
+                    }
                     val items = loadCriticsChoiceItems(bypassCache = force)
                     if (items.isNotEmpty()) {
                         hydrationMutex.withLock { renderedItemIds.addAll(items.map { it.id }) }
@@ -379,6 +519,10 @@ constructor(
         watchAgainJob =
             scope.launch(Dispatchers.IO) {
                 try {
+                    if (isRowHidden(HomeRow.WATCH_AGAIN)) {
+                        _watchAgainLoaded.value = true
+                        return@launch
+                    }
                     val items =
                         presentationSample(
                             WATCH_AGAIN_KEY,
@@ -408,6 +552,10 @@ constructor(
         popularStudiosJob =
             scope.launch(Dispatchers.IO) {
                 try {
+                    if (isRowHidden(HomeRow.POPULAR_STUDIOS)) {
+                        _popularStudiosLoaded.value = true
+                        return@launch
+                    }
                     val studios = studiosPool(force).take(POPULAR_STUDIOS_POOL)
                     _popularStudios.value =
                         if (studios.size < MIN_POPULAR_STUDIOS) emptyList()
@@ -421,6 +569,9 @@ constructor(
                 }
             }
     }
+
+    private suspend fun isRowHidden(row: HomeRow): Boolean =
+        row in homeLayoutPreferencesRepository.getHiddenRows()
 
     fun hydrate(descriptorKey: String) {
         val layout = _layout.value
@@ -581,6 +732,13 @@ constructor(
             if (items.none { it.id == updatedItem.id }) items
             else items.map { if (it.id == updatedItem.id) updatedItem else it }
         }
+        if (updatedItem is AfinityBoxSet) {
+            cachedBoxSets?.let { sets ->
+                if (sets.any { it.id == updatedItem.id }) {
+                    cachedBoxSets = sets.map { if (it.id == updatedItem.id) updatedItem else it }
+                }
+            }
+        }
         _content.update { map ->
             var changed = false
             val patched = map.mapValues { (_, content) ->
@@ -610,6 +768,9 @@ constructor(
         }
         _criticsChoice.update { items ->
             if (items.none { matches(it.id) }) items else items.filterNot { matches(it.id) }
+        }
+        cachedBoxSets?.let { sets ->
+            if (sets.any { matches(it.id) }) cachedBoxSets = sets.filterNot { matches(it.id) }
         }
         _content.update { map ->
             var changed = false
@@ -683,7 +844,18 @@ constructor(
         _layout.value = emptyList()
         _content.value = emptyMap()
         _pinnedLayout.value = emptyList()
-        cachedStudios = null
+        studiosRefreshJob?.cancel()
+        boxSetsRefreshJob?.cancel()
+        studiosMutex.withLock {
+            cachedStudios = null
+            studiosFetchedAt = 0L
+            studiosFailedAt = 0L
+        }
+        boxSetsMutex.withLock {
+            cachedBoxSets = null
+            boxSetsFetchedAt = 0L
+            boxSetsFailedAt = 0L
+        }
         customSectionSignatures.clear()
         presentationSeed = System.currentTimeMillis()
         watchAgainJob?.cancel()
@@ -949,22 +1121,8 @@ constructor(
                     }
                 }
                 val boxSetsDeferred = async {
-                    try {
-                        mediaRepository
-                            .getItems(
-                                includeItemTypes = listOf("BOX_SET"),
-                                fields = FieldSets.MEDIA_ITEM_CARDS,
-                            )
-                            .items
-                            ?.mapNotNull { it.toAfinityItem(baseUrl) }
-                            ?.filterIsInstance<AfinityBoxSet>()
-                            ?.filter { it.unplayedItemCount == 0 && (it.itemCount ?: 0) >= 2 }
-                            ?: emptyList()
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        Timber.w(e, "Failed to load watched boxsets for watch again")
-                        emptyList()
+                    boxSetPool().filter {
+                        it.unplayedItemCount == 0 && (it.itemCount ?: 0) >= 2
                     }
                 }
                 val shows =
@@ -1284,10 +1442,21 @@ constructor(
             fun cap(section: DiscoverySection) = discovery.countFor(section)
 
             val spotlightCap = cap(DiscoverySection.SPOTLIGHTS)
+            val peopleScanLimit =
+                ((cap(DiscoverySection.STARRING) +
+                        cap(DiscoverySection.DIRECTED_BY) +
+                        cap(DiscoverySection.WRITTEN_BY)) * PEOPLE_SCAN_PER_ROW)
+                    .coerceIn(PEOPLE_SCAN_MIN, PEOPLE_SCAN_MAX)
 
             val actorsDeferred = async {
                 if (cap(DiscoverySection.STARRING) == 0) emptyList()
-                else peopleRepository.getTopPeople(PersonKind.ACTOR, limit = 75, minAppearances = 5)
+                else
+                    peopleRepository.getTopPeople(
+                        PersonKind.ACTOR,
+                        limit = 75,
+                        minAppearances = 5,
+                        scanLimit = peopleScanLimit,
+                    )
             }
             val directorsDeferred = async {
                 if (cap(DiscoverySection.DIRECTED_BY) == 0) emptyList()
@@ -1296,35 +1465,25 @@ constructor(
                         PersonKind.DIRECTOR,
                         limit = 75,
                         minAppearances = 5,
+                        scanLimit = peopleScanLimit,
                     )
             }
             val writersDeferred = async {
                 if (cap(DiscoverySection.WRITTEN_BY) == 0) emptyList()
                 else
-                    peopleRepository.getTopPeople(PersonKind.WRITER, limit = 50, minAppearances = 3)
+                    peopleRepository.getTopPeople(
+                        PersonKind.WRITER,
+                        limit = 50,
+                        minAppearances = 3,
+                        scanLimit = peopleScanLimit,
+                    )
             }
             val studiosDeferred = async {
                 if (spotlightCap == 0) emptyList() else studiosPool(force = false)
             }
             val boxSetsDeferred = async {
-                if (spotlightCap == 0) {
-                    emptyList()
-                } else {
-                    try {
-                        mediaRepository
-                            .getItems(
-                                includeItemTypes = listOf("BOX_SET"),
-                                fields = FieldSets.MEDIA_ITEM_CARDS,
-                            )
-                            .items
-                            ?.filter { (it.childCount ?: 0) >= 3 && it.name != null } ?: emptyList()
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        Timber.w(e, "Failed to load boxsets for spotlight descriptors")
-                        emptyList()
-                    }
-                }
+                if (spotlightCap == 0) emptyList()
+                else boxSetPool().filter { (it.itemCount ?: 0) >= 3 }
             }
 
             val usedPeopleNames = mutableSetOf<String>()
@@ -1416,6 +1575,22 @@ constructor(
 
             val personFromMovieDescriptors = mutableListOf<HomeSectionDescriptor>()
             val usedPersonFromMovies = mutableSetOf<UUID>()
+            val fromMovieTotal =
+                cap(DiscoverySection.ACTOR_FROM_MOVIE) +
+                    cap(DiscoverySection.DIRECTOR_FROM_MOVIE) +
+                    cap(DiscoverySection.WRITER_FROM_MOVIE)
+            val moviesWithPeople: Map<UUID, AfinityMovie> =
+                if (fromMovieTotal == 0) {
+                    emptyMap()
+                } else {
+                    val ids = recentlyWatchedMovies().map { it.id }
+                    if (ids.isEmpty()) emptyMap()
+                    else
+                        mediaRepository
+                            .getItemsByIds(ids, fields = listOf(ItemFields.PEOPLE))
+                            .filterIsInstance<AfinityMovie>()
+                            .associateBy { it.id }
+                }
 
             suspend fun addPersonFromMovieDescriptors(
                 type: HomeSectionType,
@@ -1428,19 +1603,7 @@ constructor(
                     val randomMovie = getRandomRecentlyWatchedMovie(usedPersonFromMovies) ?: break
                     usedPersonFromMovies.add(randomMovie.id)
 
-                    val movieWithPeople =
-                        try {
-                            mediaRepository
-                                .getItem(
-                                    itemId = randomMovie.id,
-                                    fields = listOf(ItemFields.PEOPLE),
-                                )
-                                ?.toAfinityMovie(mediaRepository.getBaseUrl())
-                        } catch (e: CancellationException) {
-                            throw e
-                        } catch (e: Exception) {
-                            null
-                        } ?: continue
+                    val movieWithPeople = moviesWithPeople[randomMovie.id] ?: continue
 
                     val availablePeople =
                         movieWithPeople.people
@@ -1693,27 +1856,31 @@ constructor(
         }
     }
 
-    private suspend fun getRandomRecentlyWatchedMovie(excludedMovies: Set<UUID>): AfinityMovie? {
+    private suspend fun recentlyWatchedMovies(): List<AfinityMovie> {
         try {
             val now = System.currentTimeMillis()
             val cached = recentWatchedCache
+            if (cached != null && now - cached.first < recentCacheTTL) return cached.second
+            val movies =
+                mediaRepository.getMovies(
+                    sortBy = SortBy.DATE_PLAYED,
+                    sortDescending = true,
+                    limit = 10,
+                    isPlayed = true,
+                )
+            recentWatchedCache = now to movies
+            return movies
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get recently watched movies")
+            return emptyList()
+        }
+    }
 
-            val allRecentWatched =
-                if (cached != null && now - cached.first < recentCacheTTL) {
-                    cached.second
-                } else {
-                    val movies =
-                        mediaRepository.getMovies(
-                            sortBy = SortBy.DATE_PLAYED,
-                            sortDescending = true,
-                            limit = 10,
-                            isPlayed = true,
-                        )
-                    recentWatchedCache = now to movies
-                    movies
-                }
-
-            val recentWatched = allRecentWatched.filterNot { it.id in excludedMovies }
+    private suspend fun getRandomRecentlyWatchedMovie(excludedMovies: Set<UUID>): AfinityMovie? {
+        try {
+            val recentWatched = recentlyWatchedMovies().filterNot { it.id in excludedMovies }
 
             if (recentWatched.isEmpty()) return null
 
@@ -1744,6 +1911,10 @@ private const val WATCH_AGAIN_POOL = 50
 private const val WATCH_AGAIN_MIN_ITEMS = 5
 private const val POPULAR_STUDIOS_KEY = "popular_studios"
 private const val STUDIOS_POOL = 50
+private const val POOL_FAILURE_BACKOFF_MS = 10 * 60 * 1000L
+private const val PEOPLE_SCAN_PER_ROW = 8
+private const val PEOPLE_SCAN_MIN = 60
+private const val PEOPLE_SCAN_MAX = 250
 
 @Serializable
 private data class CachedStudio(

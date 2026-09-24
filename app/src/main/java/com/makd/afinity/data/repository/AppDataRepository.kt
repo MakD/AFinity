@@ -4,6 +4,7 @@ import android.content.Context
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.AdminChangeBroadcaster
 import com.makd.afinity.data.manager.AdminChangeKind
+import com.makd.afinity.data.manager.BackgroundWorkQueue
 import com.makd.afinity.data.manager.MediaChangeEvent
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.MediaRefreshBus
@@ -58,6 +59,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -66,6 +68,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -107,6 +110,7 @@ constructor(
     private val adminChangeBroadcaster: AdminChangeBroadcaster,
     private val deletedItemsRepository: DeletedItemsRepository,
     private val databaseRepository: DatabaseRepository,
+    private val backgroundWorkQueue: BackgroundWorkQueue,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
 
@@ -319,20 +323,15 @@ constructor(
 
     private val _favoritesLoadFailed = MutableStateFlow(false)
     val favoritesLoadFailed: StateFlow<Boolean> = _favoritesLoadFailed.asStateFlow()
+
+    private val _favoritesLoaded = MutableStateFlow(false)
+    val favoritesLoaded: StateFlow<Boolean> = _favoritesLoaded.asStateFlow()
+
+    private val _favoritesProbeCount = MutableStateFlow(0)
+
     val favoritesCountFlow: Flow<Int> =
-        favoritesData
-            .map { data ->
-                data.movies.size +
-                    data.shows.size +
-                    data.seasons.size +
-                    data.episodes.size +
-                    data.boxSets.size +
-                    data.people.size +
-                    data.channels.size +
-                    data.favoriteAlbums.size +
-                    data.favoriteArtists.size +
-                    data.favoriteTracks.size +
-                    data.favoritePlaylists.size
+        combine(_favoritesLoaded, favoritesData, _favoritesProbeCount) { loaded, data, probe ->
+                if (loaded) data.totalCount() else probe
             }
             .distinctUntilChanged()
 
@@ -342,8 +341,20 @@ constructor(
     private val _watchlistLoadFailed = MutableStateFlow(false)
     val watchlistLoadFailed: StateFlow<Boolean> = _watchlistLoadFailed.asStateFlow()
 
+    private val _watchlistLoaded = MutableStateFlow(false)
+    val watchlistLoaded: StateFlow<Boolean> = _watchlistLoaded.asStateFlow()
+
+    private var favoritesLoadJob: Deferred<Unit>? = null
+    private var watchlistLoadJob: Deferred<Unit>? = null
+    private var navCountsJob: Job? = null
+    private var favoritesRecountJob: Job? = null
+    private var backgroundRefreshJob: Job? = null
+
     private val _isInitialDataLoaded = MutableStateFlow(false)
     val isInitialDataLoaded: StateFlow<Boolean> = _isInitialDataLoaded.asStateFlow()
+
+    private val _homeEssentialsReady = MutableStateFlow(false)
+    val homeEssentialsReady: StateFlow<Boolean> = _homeEssentialsReady.asStateFlow()
 
     private val _loadingProgress = MutableStateFlow(0f)
     val loadingProgress: StateFlow<Float> = _loadingProgress.asStateFlow()
@@ -434,6 +445,7 @@ constructor(
         _loadingProgress.value = 1f
         _loadingPhase.value = context.getString(R.string.loading_phase_offline)
         _isInitialDataLoaded.value = true
+        _homeEssentialsReady.value = true
     }
 
     suspend fun loadInitialData() {
@@ -454,6 +466,7 @@ constructor(
             Timber.d("Retrying initial data load")
             _initialLoadFailed.value = false
             _isInitialDataLoaded.value = false
+            _homeEssentialsReady.value = false
             try {
                 loadInitialData()
             } catch (e: CancellationException) {
@@ -473,6 +486,7 @@ constructor(
         val hasSession = session != null && session.serverId.isNotBlank()
 
         if (hasSession) {
+            session?.let { seedNavCounts(it.serverId, it.userId.toString()) }
             val currentBaseUrl = mediaRepository.getBaseUrl()
             val cachedMovies =
                 homeCacheRepository.getLatestMovies("latest_movies_$cacheKey", currentBaseUrl)
@@ -501,7 +515,8 @@ constructor(
                     }
                 }
 
-                scope.launch {
+                backgroundRefreshJob?.cancel()
+                backgroundRefreshJob = scope.launch {
                     try {
                         performBackgroundNetworkRefresh(cacheKey)
                     } catch (e: CancellationException) {
@@ -509,6 +524,8 @@ constructor(
                     } catch (e: Exception) {
                         Timber.e(e, "Background refresh failed after cache-hit render")
                     }
+                    _homeEssentialsReady.value = true
+                    launchNavCountsRefresh()
                 }
                 return
             }
@@ -524,17 +541,6 @@ constructor(
                 val nextUpDeferred = async { mediaRepository.invalidateNextUpCache() }
                 val heroCarouselDeferred = async { loadHeroCarousel() }
                 val librariesDeferred = async { loadLibraries(reportFailure = true) }
-                val watchlistCountDeferred = async {
-                    try {
-                        watchlistRepository.refreshWatchlistCount()
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to load watchlist count on startup")
-                    }
-                }
-                val favoritesDeferred = async { loadFavoritesData() }
-                val watchlistDeferred = async { loadWatchlistData() }
 
                 updateProgress(0.3f, context.getString(R.string.loading_phase_fetching))
 
@@ -563,16 +569,16 @@ constructor(
                 if (hasSession) {
                     persistHomeCache(cacheKey, latestMovies, latestTvSeries)
                 }
-                watchlistCountDeferred.await()
-                favoritesDeferred.await()
-                watchlistDeferred.await()
             }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load initial app data")
             throw e
+        } finally {
+            _homeEssentialsReady.value = true
         }
+        launchNavCountsRefresh()
     }
 
     private suspend fun performBackgroundNetworkRefresh(
@@ -605,13 +611,6 @@ constructor(
                 continueWatchingDeferred.await()
                 nextUpDeferred.await()
                 persistHomeCache(cacheKey, latestMovies, latestTvSeries)
-                launch {
-                    try {
-                        watchlistRepository.refreshWatchlistCount()
-                    } catch (_: Exception) {}
-                }
-                launch { loadFavoritesData() }
-                launch { loadWatchlistData() }
             }
             Timber.d("Background network refresh complete")
         } catch (e: CancellationException) {
@@ -694,9 +693,9 @@ constructor(
             launch {
                 mediaChangeManager.mediaChanges.collect { event ->
                     val userData = event.userData
+                    val previous = heldItemById(event.itemId)
                     val changedItem =
-                        userData?.let { data -> heldItemById(event.itemId)?.withUserData(data) }
-                            ?: event.updatedItem
+                        userData?.let { data -> previous?.withUserData(data) } ?: event.updatedItem
 
                     changedItem?.let { updateItemInCaches(it) }
                     event.parentItem?.let { updateItemInCaches(it) }
@@ -709,17 +708,38 @@ constructor(
                         }
                         return@collect
                     }
+                    val favoriteMayHaveChanged =
+                        event.patch?.let { it.favorite != null }
+                            ?: (userData.isFavorite || previous?.favorite == true)
+                    val likedMayHaveChanged =
+                        event.patch?.let { it.liked != null }
+                            ?: (userData.likes == true || previous?.liked == true)
+
+                    if (!_favoritesLoaded.value && favoriteMayHaveChanged) {
+                        scheduleFavoritesRecount()
+                    }
+
                     val item = changedItem ?: return@collect
                     if (item.id != userData.itemId) return@collect
 
-                    updateFavoriteStatus(item, userData.isFavorite)
+                    if (_favoritesLoaded.value) {
+                        updateFavoriteStatus(item, userData.isFavorite)
+                    }
 
                     val shouldBeOnWatchlist = userData.likes == true
-                    if (isInWatchlistData(item.id) != shouldBeOnWatchlist) {
+                    val watchlistChanged =
+                        if (_watchlistLoaded.value) {
+                            isInWatchlistData(item.id) != shouldBeOnWatchlist
+                        } else {
+                            likedMayHaveChanged
+                        }
+                    if (watchlistChanged) {
                         updateWatchlistStatus(item, shouldBeOnWatchlist)
                         launch {
                             try {
                                 watchlistRepository.refreshWatchlistCount()
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (_: Exception) {}
                         }
                     }
@@ -745,6 +765,7 @@ constructor(
         if (_isInitialDataLoaded.value && _libraries.value.isEmpty()) {
             Timber.d("Libraries empty (offline start detected), forcing full initial load...")
             _isInitialDataLoaded.value = false
+            _homeEssentialsReady.value = false
             loadInitialData()
             return
         }
@@ -1145,6 +1166,7 @@ constructor(
     }
 
     private suspend fun loadFavoritesData() {
+        _favoritesLoadFailed.value = false
         try {
             coroutineScope {
                 val mediaDeferred = async { mediaRepository.getFavoriteMediaResult() }
@@ -1194,7 +1216,7 @@ constructor(
                     }
                 _favoritesLoadFailed.value = false
 
-                _favoritesData.value =
+                val data =
                     FavoritesData(
                         movies = media.filterIsInstance<AfinityMovie>().sortedBy { it.name },
                         shows = media.filterIsInstance<AfinityShow>().sortedBy { it.name },
@@ -1209,6 +1231,10 @@ constructor(
                         favoriteTracks = tracksDeferred.await().sortedBy { it.name },
                         favoritePlaylists = playlistsDeferred.await().sortedBy { it.name },
                     )
+                _favoritesLoaded.value = true
+                _favoritesData.value = data
+                favoritesRecountJob?.cancel()
+                persistNavCount(data.totalCount(), preferencesRepository::setNavFavoritesCount)
             }
         } catch (e: CancellationException) {
             throw e
@@ -1219,6 +1245,7 @@ constructor(
     }
 
     private suspend fun loadWatchlistData() {
+        _watchlistLoadFailed.value = false
         try {
             val items =
                 watchlistRepository.getWatchlistItemsResult().getOrElse { e ->
@@ -1228,6 +1255,7 @@ constructor(
                     return
                 }
             _watchlistLoadFailed.value = false
+            _watchlistLoaded.value = true
             _watchlistData.value =
                 WatchlistData(
                     boxSets = items.filterIsInstance<AfinityBoxSet>().sortedBy { it.name },
@@ -1306,6 +1334,10 @@ constructor(
     }
 
     fun updateFavoriteStatus(item: AfinityItem, isFavorite: Boolean) {
+        if (!_favoritesLoaded.value) {
+            scheduleFavoritesRecount()
+            return
+        }
         _favoritesData.update { current ->
             when (item) {
                 is AfinityMovie -> current.copy(movies = current.movies.upserted(item, isFavorite))
@@ -1322,6 +1354,10 @@ constructor(
     }
 
     fun updateAlbumFavoriteStatus(album: AfinityAlbum, isFavorite: Boolean) {
+        if (!_favoritesLoaded.value) {
+            scheduleFavoritesRecount()
+            return
+        }
         _favoritesData.update { current ->
             val without = current.favoriteAlbums.filterNot { it.id == album.id }
             current.copy(
@@ -1333,6 +1369,10 @@ constructor(
     }
 
     fun updateArtistFavoriteStatus(artist: AfinityArtist, isFavorite: Boolean) {
+        if (!_favoritesLoaded.value) {
+            scheduleFavoritesRecount()
+            return
+        }
         _favoritesData.update { current ->
             val without = current.favoriteArtists.filterNot { it.id == artist.id }
             current.copy(
@@ -1344,6 +1384,10 @@ constructor(
     }
 
     fun updateTrackFavoriteStatus(track: AfinityTrack, isFavorite: Boolean) {
+        if (!_favoritesLoaded.value) {
+            scheduleFavoritesRecount()
+            return
+        }
         _favoritesData.update { current ->
             val without = current.favoriteTracks.filterNot { it.id == track.id }
             current.copy(
@@ -1355,6 +1399,10 @@ constructor(
     }
 
     fun updatePlaylistFavoriteStatus(playlist: AfinityPlaylist, isFavorite: Boolean) {
+        if (!_favoritesLoaded.value) {
+            scheduleFavoritesRecount()
+            return
+        }
         _favoritesData.update { current ->
             val without = current.favoritePlaylists.filterNot { it.id == playlist.id }
             current.copy(
@@ -1375,6 +1423,7 @@ constructor(
     }
 
     fun updateWatchlistStatus(item: AfinityItem, isOnWatchlist: Boolean) {
+        if (!_watchlistLoaded.value) return
         _watchlistData.update { current ->
             when (item) {
                 is AfinityBoxSet ->
@@ -1392,11 +1441,112 @@ constructor(
     }
 
     suspend fun reloadFavorites() {
-        loadFavoritesData()
+        val job =
+            synchronized(this) {
+                favoritesLoadJob?.takeIf { it.isActive }
+                    ?: scope.async { loadFavoritesData() }.also { favoritesLoadJob = it }
+            }
+        job.await()
+    }
+
+    suspend fun onFavoritesChanged() {
+        if (_favoritesLoaded.value) reloadFavorites() else scheduleFavoritesRecount()
     }
 
     suspend fun reloadWatchlist() {
-        loadWatchlistData()
+        val job =
+            synchronized(this) {
+                watchlistLoadJob?.takeIf { it.isActive }
+                    ?: scope.async { loadWatchlistData() }.also { watchlistLoadJob = it }
+            }
+        job.await()
+    }
+
+    private suspend fun seedNavCounts(serverId: String, userId: String) {
+        try {
+            if (!_favoritesLoaded.value) {
+                preferencesRepository.getNavFavoritesCount(serverId, userId)?.let {
+                    _favoritesProbeCount.value = it
+                }
+            }
+            if (watchlistRepository.watchlistCountFlow.value == null) {
+                preferencesRepository.getNavWatchlistCount(serverId, userId)?.let {
+                    watchlistRepository.seedWatchlistCount(it)
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to read persisted nav counts")
+        }
+    }
+
+    private fun launchNavCountsRefresh() {
+        navCountsJob?.cancel()
+        navCountsJob = scope.launch { refreshNavCounts() }
+    }
+
+    private suspend fun refreshNavCounts() {
+        backgroundWorkQueue.run("nav counts") {
+            coroutineScope {
+                launch {
+                    if (!_favoritesLoaded.value) refreshFavoritesProbe()
+                }
+                launch {
+                    try {
+                        watchlistRepository.refreshWatchlistCount()?.let {
+                            persistNavCount(it, preferencesRepository::setNavWatchlistCount)
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to refresh watchlist count")
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun refreshFavoritesProbe() {
+        val itemCount =
+            mediaRepository.getFavoritesCountResult().getOrElse { e ->
+                if (e is CancellationException) throw e
+                Timber.w(e, "Failed to probe favorites count")
+                return
+            }
+        val channelCount =
+            if (sessionManager.currentSession.value?.canAccessLiveTv == false) {
+                0
+            } else {
+                liveTvRepository.getChannels(isFavorite = true).size
+            }
+        if (_favoritesLoaded.value) return
+        val total = itemCount + channelCount
+        _favoritesProbeCount.value = total
+        persistNavCount(total, preferencesRepository::setNavFavoritesCount)
+    }
+
+    private fun scheduleFavoritesRecount() {
+        favoritesRecountJob?.cancel()
+        favoritesRecountJob = scope.launch {
+            delay(FAVORITES_RECOUNT_DEBOUNCE_MS)
+            backgroundWorkQueue.run("favorites recount") { refreshFavoritesProbe() }
+        }
+    }
+
+    private suspend fun persistNavCount(
+        count: Int,
+        write: suspend (serverId: String, userId: String, count: Int) -> Unit,
+    ) {
+        val session = sessionManager.currentSession.value ?: return
+        if (session.serverId.isBlank()) return
+        try {
+            write(session.serverId, session.userId.toString(), count)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to persist nav count")
+        }
     }
 
     suspend fun clearAllData(sessionEnded: Boolean = true) {
@@ -1409,6 +1559,11 @@ constructor(
             initialLoadJob = null
         }
         liveDataJob?.cancel()
+        backgroundRefreshJob?.cancel()
+        navCountsJob?.cancel()
+        favoritesRecountJob?.cancel()
+        favoritesLoadJob?.cancel()
+        watchlistLoadJob?.cancel()
         homeSectionsRepository.clearAllData()
         mediaRepository.clearPlaybackCaches()
         itemStore.clear()
@@ -1418,13 +1573,20 @@ constructor(
         _latestMovies.value = emptyList()
         _latestTvSeries.value = emptyList()
         _isInitialDataLoaded.value = false
+        _homeEssentialsReady.value = false
         _initialLoadFailed.value = false
         _loadingProgress.value = 0f
         _loadingPhase.value = ""
         _separateMovieLibrarySections.value = emptyList()
         _separateTvLibrarySections.value = emptyList()
+        _favoritesLoaded.value = false
+        _favoritesLoadFailed.value = false
+        _favoritesProbeCount.value = 0
         _favoritesData.value = FavoritesData()
+        _watchlistLoaded.value = false
+        _watchlistLoadFailed.value = false
         _watchlistData.value = WatchlistData()
+        watchlistRepository.seedWatchlistCount(null)
         preferencesRepository.setLastCacheInvalidatedAt(0L)
         homeCacheRepository.invalidateAll()
 
@@ -1445,6 +1607,7 @@ constructor(
         const val COMBINED_LATEST_FETCH = 60
         private const val REINSERT_REFRESH_COOLDOWN_MS = 5_000L
         private const val PLAYBACK_SECTIONS_COALESCE_MS = 5_000L
+        private const val FAVORITES_RECOUNT_DEBOUNCE_MS = 2_000L
         private val LATEST_ROWS = setOf(HomeRow.LATEST_MOVIES, HomeRow.LATEST_TV)
     }
 }
@@ -1462,6 +1625,19 @@ data class FavoritesData(
     val favoriteTracks: List<AfinityTrack> = emptyList(),
     val favoritePlaylists: List<AfinityPlaylist> = emptyList(),
 )
+
+fun FavoritesData.totalCount(): Int =
+    movies.size +
+        shows.size +
+        seasons.size +
+        episodes.size +
+        boxSets.size +
+        people.size +
+        channels.size +
+        favoriteAlbums.size +
+        favoriteArtists.size +
+        favoriteTracks.size +
+        favoritePlaylists.size
 
 fun FavoritesData.itemById(id: UUID): AfinityItem? =
     movies.firstOrNull { it.id == id }

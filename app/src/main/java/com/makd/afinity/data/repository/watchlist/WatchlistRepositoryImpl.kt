@@ -39,8 +39,14 @@ constructor(
     private val _watchlistCountFlow = MutableStateFlow<Int?>(null)
     override val watchlistCountFlow: StateFlow<Int?> = _watchlistCountFlow.asStateFlow()
 
-    override suspend fun refreshWatchlistCount() {
-        _watchlistCountFlow.value = getWatchlistCount()
+    override suspend fun refreshWatchlistCount(): Int? {
+        val count = fetchWatchlistCount() ?: return null
+        _watchlistCountFlow.value = count
+        return count
+    }
+
+    override fun seedWatchlistCount(count: Int?) {
+        _watchlistCountFlow.value = count
     }
 
     override suspend fun addToWatchlist(itemId: UUID, itemType: String): Boolean {
@@ -202,24 +208,21 @@ constructor(
         }
     }
 
-    override suspend fun getWatchlistCount(): Int {
-        return withContext(Dispatchers.IO) {
-            try {
-                val response =
-                    mediaRepository.getItems(
-                        limit = 0,
-                        criteria = ItemFilterCriteria(isLiked = true),
-                        enableTotalRecordCount = true,
-                    )
-                response.totalRecordCount ?: 0
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
+    override suspend fun getWatchlistCount(): Int = fetchWatchlistCount() ?: 0
+
+    private suspend fun fetchWatchlistCount(): Int? =
+        mediaRepository
+            .getItemsResult(
+                limit = 0,
+                criteria = ItemFilterCriteria(isLiked = true),
+                enableTotalRecordCount = true,
+            )
+            .map { it.totalRecordCount ?: 0 }
+            .getOrElse { e ->
+                if (e is CancellationException) throw e
                 Timber.e(e, "Failed to get watchlist count")
-                0
+                null
             }
-        }
-    }
 
     override suspend fun clearWatchlist() {
         return withContext(Dispatchers.IO) {

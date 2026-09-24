@@ -1124,6 +1124,26 @@ constructor(@param:AppPreferences private val dataStore: DataStore<Preferences>)
         return dataStore.data.first()[Keys.IMAGE_CACHE_SIZE_MB] ?: 512
     }
 
+    private fun navFavoritesKey(serverId: String, userId: String) =
+        intPreferencesKey("nav_favorites_count_${serverId}_$userId")
+
+    private fun navWatchlistKey(serverId: String, userId: String) =
+        intPreferencesKey("nav_watchlist_count_${serverId}_$userId")
+
+    override suspend fun getNavFavoritesCount(serverId: String, userId: String): Int? =
+        dataStore.data.first()[navFavoritesKey(serverId, userId)]
+
+    override suspend fun setNavFavoritesCount(serverId: String, userId: String, count: Int) {
+        dataStore.edit { it[navFavoritesKey(serverId, userId)] = count }
+    }
+
+    override suspend fun getNavWatchlistCount(serverId: String, userId: String): Int? =
+        dataStore.data.first()[navWatchlistKey(serverId, userId)]
+
+    override suspend fun setNavWatchlistCount(serverId: String, userId: String, count: Int) {
+        dataStore.edit { it[navWatchlistKey(serverId, userId)] = count }
+    }
+
     override suspend fun setVideoCacheSizeMb(sizeMb: Int) {
         dataStore.edit { preferences -> preferences[Keys.VIDEO_CACHE_SIZE_MB] = sizeMb }
     }

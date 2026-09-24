@@ -213,6 +213,14 @@ interface PreferencesRepository {
 
     suspend fun getImageCacheSizeMb(): Int
 
+    suspend fun getNavFavoritesCount(serverId: String, userId: String): Int?
+
+    suspend fun setNavFavoritesCount(serverId: String, userId: String, count: Int)
+
+    suspend fun getNavWatchlistCount(serverId: String, userId: String): Int?
+
+    suspend fun setNavWatchlistCount(serverId: String, userId: String, count: Int)
+
     suspend fun setVideoCacheSizeMb(sizeMb: Int)
 
     suspend fun getVideoCacheSizeMb(): Int

@@ -6,6 +6,7 @@ import com.makd.afinity.data.database.entities.GenreCacheEntity
 import com.makd.afinity.data.database.entities.GenreMovieCacheEntity
 import com.makd.afinity.data.database.entities.GenreShowCacheEntity
 import com.makd.afinity.data.database.entities.ShowGenreCacheEntity
+import com.makd.afinity.data.manager.BackgroundWorkQueue
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.GenreType
@@ -17,20 +18,25 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.di.ApplicationScope
 import com.makd.afinity.util.ItemIds
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
@@ -41,9 +47,15 @@ constructor(
     private val mediaRepository: MediaRepository,
     private val sessionManager: SessionManager,
     private val deletedItemsRepository: DeletedItemsRepository,
+    private val backgroundWorkQueue: BackgroundWorkQueue,
+    @ApplicationScope private val scope: CoroutineScope,
     database: AfinityDatabase,
 ) {
-    private val genreCacheTTL = 12.hours.inWholeMilliseconds
+    private val genreCacheTTL = 24.hours.inWholeMilliseconds
+    private val genreFailureBackoff = 10.minutes.inWholeMilliseconds
+    private val genreRefreshMutex = Mutex()
+    private var genreRefreshJob: Job? = null
+    private var lastGenreFailure: Pair<String, Long>? = null
     private val genreCacheDao = database.genreCacheDao()
     private val afinityTypeConverters = AfinityTypeConverters()
 
@@ -67,34 +79,47 @@ constructor(
     private suspend fun videoLibraries(): List<AfinityCollection> =
         mediaRepository.libraries.first().ifEmpty { mediaRepository.getLibraries() }
 
-    private suspend fun genresForLibraryType(type: CollectionType): List<String> {
+    private suspend fun fetchGenreNames(
+        type: CollectionType,
+        libraries: List<AfinityCollection>,
+    ): List<String>? {
         val itemTypes =
             when (type) {
                 CollectionType.Movies -> listOf("MOVIE")
                 CollectionType.TvShows -> listOf("SERIES")
-                else -> emptyList()
+                else -> return emptyList()
             }
-
-        if (itemTypes.isEmpty()) return emptyList()
-        if (videoLibraries().none { it.type == type }) return emptyList()
-
-        return mediaRepository.getGenres(includeItemTypes = itemTypes).distinct().sorted()
+        val names = sortedSetOf<String>()
+        for (library in libraries.filter { it.type == type }) {
+            val genres =
+                mediaRepository
+                    .getGenresResult(parentId = library.id, includeItemTypes = itemTypes)
+                    .getOrElse { e ->
+                        if (e is CancellationException) throw e
+                        Timber.w(e, "Failed to load ${type.name} genres for ${library.name}")
+                        return null
+                    }
+            names.addAll(genres)
+        }
+        return names.toList()
     }
 
     suspend fun loadCombinedGenres() {
         withContext(Dispatchers.IO) {
             try {
-                coroutineScope {
-                    val movieGenresTask = async { loadGenres() }
-                    val showGenresTask = async { loadShowGenres() }
-                    movieGenresTask.await()
-                    showGenresTask.await()
-                }
-
                 val serverId = currentServerId()
                 val userId = currentUserId()
-                val movieGenreNames = genreCacheDao.getAllGenreNames(serverId, userId)
-                val showGenreNames = genreCacheDao.getAllShowGenreNames(serverId, userId)
+                var movieGenreNames = genreCacheDao.getAllGenreNames(serverId, userId)
+                var showGenreNames = genreCacheDao.getAllShowGenreNames(serverId, userId)
+
+                if (movieGenreNames.isEmpty() && showGenreNames.isEmpty()) {
+                    if (refreshGenreLists()) {
+                        movieGenreNames = genreCacheDao.getAllGenreNames(serverId, userId)
+                        showGenreNames = genreCacheDao.getAllShowGenreNames(serverId, userId)
+                    }
+                } else if (isGenreListStale(serverId, userId)) {
+                    refreshGenreListsInBackground()
+                }
 
                 val movieGenreItems = movieGenreNames.map { GenreItem(it, GenreType.MOVIE) }
                 val showGenreItems = showGenreNames.map { GenreItem(it, GenreType.SHOW) }
@@ -109,70 +134,92 @@ constructor(
         }
     }
 
-    private suspend fun loadGenres() {
-        try {
-            val serverId = currentServerId()
-            val userId = currentUserId()
-            val cachedGenreNames = genreCacheDao.getAllGenreNames(serverId, userId)
-            if (cachedGenreNames.isNotEmpty()) {
-                val currentTime = System.currentTimeMillis()
-                val oldestTimestamp = genreCacheDao.getOldestCacheTimestamp(serverId, userId) ?: 0
-                val isFresh = (currentTime - oldestTimestamp) < genreCacheTTL
-
-                if (isFresh) return
-            }
-
-            val genres = genresForLibraryType(CollectionType.Movies)
-
-            val timestamp = System.currentTimeMillis()
-            val genreEntities = genres.map { genreName ->
-                GenreCacheEntity(
-                    genreName = genreName,
-                    serverId = serverId,
-                    userId = userId,
-                    lastFetchedTimestamp = timestamp,
-                    movieCount = 0,
+    private suspend fun isGenreListStale(serverId: String, userId: String): Boolean {
+        val oldest =
+            listOfNotNull(
+                    genreCacheDao.getOldestCacheTimestamp(serverId, userId),
+                    genreCacheDao.getOldestShowCacheTimestamp(serverId, userId),
                 )
-            }
-            genreCacheDao.insertGenreCaches(genreEntities)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to load genres")
-        }
+                .minOrNull() ?: return true
+        return System.currentTimeMillis() - oldest >= genreCacheTTL
     }
 
-    private suspend fun loadShowGenres() {
-        try {
-            val serverId = currentServerId()
-            val userId = currentUserId()
-            val cachedGenreNames = genreCacheDao.getAllShowGenreNames(serverId, userId)
-            if (cachedGenreNames.isNotEmpty()) {
-                val currentTime = System.currentTimeMillis()
-                val oldestTimestamp =
-                    genreCacheDao.getOldestShowCacheTimestamp(serverId, userId) ?: 0
-                val isFresh = (currentTime - oldestTimestamp) < genreCacheTTL
-                if (isFresh) return
+    private fun refreshGenreListsInBackground() {
+        if (genreRefreshJob?.isActive == true) return
+        genreRefreshJob =
+            scope.launch(Dispatchers.IO) {
+                try {
+                    refreshGenreLists()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.e(e, "Background genre refresh failed")
+                }
             }
+    }
 
-            val genres = genresForLibraryType(CollectionType.TvShows)
-
-            val timestamp = System.currentTimeMillis()
-            val genreEntities = genres.map { genreName ->
-                ShowGenreCacheEntity(
-                    genreName = genreName,
-                    serverId = serverId,
-                    userId = userId,
-                    lastFetchedTimestamp = timestamp,
-                    showCount = 0,
-                )
-            }
-            genreCacheDao.insertShowGenreCaches(genreEntities)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to load show genres")
+    private suspend fun refreshGenreLists(): Boolean = genreRefreshMutex.withLock {
+        val serverId = currentServerId()
+        val userId = currentUserId()
+        val sessionKey = "${serverId}_$userId"
+        val now = System.currentTimeMillis()
+        lastGenreFailure?.let { (key, at) ->
+            if (key == sessionKey && now - at < genreFailureBackoff) return false
         }
+
+        val libraries = videoLibraries()
+        if (libraries.isEmpty()) {
+            lastGenreFailure = sessionKey to now
+            return false
+        }
+
+        val (movieGenres, showGenres) =
+            backgroundWorkQueue.run("genre lists") {
+                fetchGenreNames(CollectionType.Movies, libraries) to
+                    fetchGenreNames(CollectionType.TvShows, libraries)
+            }
+
+        val timestamp = System.currentTimeMillis()
+        movieGenres?.let { names ->
+            val removed = genreCacheDao.getAllGenreNames(serverId, userId) - names.toSet()
+            removed.forEach {
+                genreCacheDao.deleteGenreCache(it, serverId, userId)
+                genreCacheDao.deleteMoviesForGenre(it, serverId, userId)
+            }
+            genreCacheDao.insertGenreCaches(
+                names.map {
+                    GenreCacheEntity(
+                        genreName = it,
+                        serverId = serverId,
+                        userId = userId,
+                        lastFetchedTimestamp = timestamp,
+                        movieCount = 0,
+                    )
+                }
+            )
+        }
+        showGenres?.let { names ->
+            val removed = genreCacheDao.getAllShowGenreNames(serverId, userId) - names.toSet()
+            removed.forEach {
+                genreCacheDao.deleteShowGenreCache(it, serverId, userId)
+                genreCacheDao.deleteShowsForGenre(it, serverId, userId)
+            }
+            genreCacheDao.insertShowGenreCaches(
+                names.map {
+                    ShowGenreCacheEntity(
+                        genreName = it,
+                        serverId = serverId,
+                        userId = userId,
+                        lastFetchedTimestamp = timestamp,
+                        showCount = 0,
+                    )
+                }
+            )
+        }
+
+        val succeeded = movieGenres != null && showGenres != null
+        lastGenreFailure = if (succeeded) null else sessionKey to now
+        succeeded
     }
 
     suspend fun loadMoviesForGenre(genre: String, limit: Int = 20) {
@@ -495,6 +542,8 @@ constructor(
     }
 
     suspend fun clearAllData() {
+        genreRefreshJob?.cancel()
+        genreRefreshMutex.withLock { lastGenreFailure = null }
         try {
             genreCacheDao.clearAllCache()
         } catch (e: CancellationException) {

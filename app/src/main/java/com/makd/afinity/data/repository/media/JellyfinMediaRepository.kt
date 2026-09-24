@@ -72,6 +72,7 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.operations.ArtistApi
 import org.jellyfin.sdk.api.operations.FilterApi
 import org.jellyfin.sdk.api.operations.GenreApi
 import org.jellyfin.sdk.api.operations.LibraryApi
@@ -1340,6 +1341,56 @@ constructor(
             .mapNotNull { baseItem -> baseItem.toAfinityItem(baseUrl) }
     }
 
+    override suspend fun getFavoritesCountResult(): Result<Int> =
+        apiInvoker.apiResult { apiClient, userId ->
+            val items =
+                LibraryApi(apiClient)
+                    .getItems(
+                        userId = userId,
+                        includeItemTypes =
+                            listOf(
+                                BaseItemKind.MOVIE,
+                                BaseItemKind.SERIES,
+                                BaseItemKind.SEASON,
+                                BaseItemKind.EPISODE,
+                                BaseItemKind.BOX_SET,
+                                BaseItemKind.MUSIC_ALBUM,
+                                BaseItemKind.AUDIO,
+                                BaseItemKind.PLAYLIST,
+                            ),
+                        isFavorite = true,
+                        recursive = true,
+                        limit = 0,
+                        enableTotalRecordCount = true,
+                        enableImages = false,
+                        enableUserData = false,
+                    )
+                    .content
+                    .totalRecordCount ?: 0
+            val artists =
+                ArtistApi(apiClient)
+                    .getAlbumArtists(
+                        userId = userId,
+                        filters = listOf(ItemFilter.IS_FAVORITE),
+                        limit = 0,
+                        enableTotalRecordCount = true,
+                    )
+                    .content
+                    .totalRecordCount ?: 0
+            val people =
+                PersonApi(apiClient)
+                    .getPersons(
+                        userId = userId,
+                        isFavorite = true,
+                        enableImages = false,
+                        enableUserData = false,
+                    )
+                    .content
+                    .items
+                    .size
+            items + artists + people
+        }
+
     override suspend fun getFavoritePeople(fields: List<ItemFields>?): List<AfinityPersonDetail> =
         apiCall(emptyList(), "Failed to get favorite people") { apiClient, userId ->
             PersonApi(apiClient)
@@ -1615,7 +1666,17 @@ constructor(
         limit: Int?,
         includeItemTypes: List<String>,
     ): List<String> =
-        apiCall(emptyList(), "Failed to get genres") { apiClient, userId ->
+        getGenresResult(parentId, limit, includeItemTypes).getOrElse { e ->
+            if (e !is NoActiveSessionException) Timber.e(e, "Failed to get genres")
+            emptyList()
+        }
+
+    override suspend fun getGenresResult(
+        parentId: UUID?,
+        limit: Int?,
+        includeItemTypes: List<String>,
+    ): Result<List<String>> =
+        apiInvoker.apiResult { apiClient, userId ->
             GenreApi(apiClient)
                 .getGenres(
                     userId = userId,

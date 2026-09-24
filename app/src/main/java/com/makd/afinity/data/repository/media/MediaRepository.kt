@@ -224,11 +224,19 @@ interface MediaRepository {
 
     suspend fun getFavoriteMediaResult(fields: List<ItemFields>? = null): Result<List<AfinityItem>>
 
+    suspend fun getFavoritesCountResult(): Result<Int>
+
     suspend fun getGenres(
         parentId: UUID? = null,
         limit: Int? = null,
         includeItemTypes: List<String> = emptyList(),
     ): List<String>
+
+    suspend fun getGenresResult(
+        parentId: UUID? = null,
+        limit: Int? = null,
+        includeItemTypes: List<String> = emptyList(),
+    ): Result<List<String>>
 
     suspend fun getStudios(
         includeItemTypes: List<String>,

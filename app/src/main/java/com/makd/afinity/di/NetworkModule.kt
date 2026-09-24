@@ -341,6 +341,13 @@ object NetworkModule {
             socketTimeout = 30.seconds,
         )
 
+    val BACKGROUND_HTTP_OPTIONS =
+        HttpClientOptions(
+            connectTimeout = 6.seconds,
+            requestTimeout = 180.seconds,
+            socketTimeout = 120.seconds,
+        )
+
     val PROBE_HTTP_OPTIONS =
         HttpClientOptions(
             connectTimeout = 1500.milliseconds,

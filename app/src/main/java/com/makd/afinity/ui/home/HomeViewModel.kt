@@ -86,6 +86,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
@@ -123,6 +124,7 @@ constructor(
     val isFetchingRandomItem: StateFlow<Boolean> = _isFetchingRandomItem.asStateFlow()
 
     private var libraryContentReloadJob: Job? = null
+    private var secondaryLoadJob: Job? = null
 
     private var lastHomeRefreshedAt = 0L
 
@@ -135,14 +137,19 @@ constructor(
                     Timber.d(
                         "Data cleared detected (Session Switch/Clear), resetting HomeViewModel UI state"
                     )
+                    secondaryLoadJob?.cancel()
                     _uiState.value = HomeUiState()
                 } else {
                     hasEverLoaded = true
-                    Timber.d(
-                        "Initial Data Loaded: Triggering secondary content load (Studios, Genres, Recs)"
-                    )
                     _uiState.update { it.copy(isLoading = false) }
-                    launch {
+                    secondaryLoadJob?.cancel()
+                    secondaryLoadJob = launch {
+                        withTimeoutOrNull(ESSENTIALS_WAIT_MS) {
+                            appDataRepository.homeEssentialsReady.first { it }
+                        }
+                        Timber.d(
+                            "Home essentials ready: triggering secondary content load (Studios, Genres, Recs)"
+                        )
                         coroutineScope {
                             launch { loadCombinedGenres() }
                             launch { loadUpcomingEpisodes() }
@@ -937,6 +944,7 @@ constructor(
 
     companion object {
         private const val WORK_HOME_RELOAD = "home_data_reload"
+        private const val ESSENTIALS_WAIT_MS = 15_000L
     }
 }
 

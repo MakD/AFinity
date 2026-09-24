@@ -324,7 +324,7 @@ constructor(
                     }
                     Timber.e("Failed to toggle favorite for person: ${currentPerson.name}")
                 } else {
-                    appDataRepository.reloadFavorites()
+                    appDataRepository.onFavoritesChanged()
                 }
             } catch (e: CancellationException) {
                 throw e

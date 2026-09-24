@@ -39,6 +39,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
@@ -97,49 +98,48 @@ constructor(
         observeSelectedEpisodeDownload()
 
         viewModelScope.launch {
-            appDataRepository.favoritesLoadFailed.collect { failed ->
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error =
-                            if (failed) context.getString(R.string.error_content_unavailable_server)
-                            else null,
-                    )
+            combine(
+                    appDataRepository.favoritesData,
+                    appDataRepository.favoritesLoaded,
+                    appDataRepository.favoritesLoadFailed,
+                ) { data, loaded, failed ->
+                    Triple(data, loaded, failed)
                 }
-            }
-        }
-
-        viewModelScope.launch {
-            appDataRepository.favoritesData.collect { data ->
-                itemStore.putIfAbsent(
-                    data.movies +
-                        data.shows +
-                        data.seasons +
-                        data.episodes +
-                        data.boxSets +
-                        data.favoriteAlbums +
-                        data.favoriteArtists +
-                        data.favoriteTracks
-                )
-                _uiState.update {
-                    it.copy(
-                        movies = itemStore.merge(data.movies),
-                        shows = itemStore.merge(data.shows),
-                        seasons = itemStore.merge(data.seasons),
-                        episodes = itemStore.merge(data.episodes),
-                        boxSets = itemStore.merge(data.boxSets),
-                        channels = data.channels,
-                        people = data.people,
-                        favoriteAlbums = itemStore.mergeOwners(data.favoriteAlbums),
-                        favoriteArtists = itemStore.mergeOwners(data.favoriteArtists),
-                        favoriteTracks = itemStore.mergeOwners(data.favoriteTracks),
-                        favoritePlaylists = data.favoritePlaylists,
-                        isLoading = false,
-                        error = null,
+                .collect { (data, loaded, failed) ->
+                    itemStore.putIfAbsent(
+                        data.movies +
+                            data.shows +
+                            data.seasons +
+                            data.episodes +
+                            data.boxSets +
+                            data.favoriteAlbums +
+                            data.favoriteArtists +
+                            data.favoriteTracks
                     )
+                    _uiState.update {
+                        it.copy(
+                            movies = itemStore.merge(data.movies),
+                            shows = itemStore.merge(data.shows),
+                            seasons = itemStore.merge(data.seasons),
+                            episodes = itemStore.merge(data.episodes),
+                            boxSets = itemStore.merge(data.boxSets),
+                            channels = data.channels,
+                            people = data.people,
+                            favoriteAlbums = itemStore.mergeOwners(data.favoriteAlbums),
+                            favoriteArtists = itemStore.mergeOwners(data.favoriteArtists),
+                            favoriteTracks = itemStore.mergeOwners(data.favoriteTracks),
+                            favoritePlaylists = data.favoritePlaylists,
+                            isLoading = !loaded && !failed,
+                            error =
+                                if (failed && !loaded) {
+                                    context.getString(R.string.error_content_unavailable_server)
+                                } else {
+                                    null
+                                },
+                        )
+                    }
+                    if (loaded) lastFavoritesLoadedAt = System.currentTimeMillis()
                 }
-                lastFavoritesLoadedAt = System.currentTimeMillis()
-            }
         }
 
         viewModelScope.launch {
@@ -204,16 +204,8 @@ constructor(
     }
 
     fun loadFavorites() {
-        viewModelScope.launch {
-            val currentData = _uiState.value
-            val hasData =
-                currentData.movies.isNotEmpty() ||
-                    currentData.shows.isNotEmpty() ||
-                    currentData.episodes.isNotEmpty()
-            if (!hasData) {
-                appDataRepository.reloadFavorites()
-            }
-        }
+        if (appDataRepository.favoritesLoaded.value) return
+        viewModelScope.launch { appDataRepository.reloadFavorites() }
     }
 
     fun retry() {
