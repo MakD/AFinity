@@ -116,6 +116,7 @@ constructor(
                         lockData = item.lockData,
                         lockedFields =
                             item.lockedFields.mapNotNull { MetadataField.fromNameOrNull(it) },
+                        trickplay = null,
                     )
                 api.updateItem(itemId = UUID.fromString(itemId), data = updated)
                 adminChangeBroadcaster.notifyItemChanged(itemId)
