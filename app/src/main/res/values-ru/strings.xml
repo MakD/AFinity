@@ -2182,4 +2182,55 @@
     <string name="logs_empty_crashes_body">AFinity хранит на этом устройстве последние пять отчетов о вылетах. Сейчас отчетов нет.</string>
     <string name="logs_empty_clear_filters">Очистить фильтры</string>
     <string name="logs_empty_filter_title">Нет соответсвий под данные фильтры</string>
+    <string name="related_starring_fmt">В главных ролях: %1$s</string>
+    <plurals name="detail_fact_director">
+        <item quantity="one">Режиссер</item>
+        <item quantity="few">Режиссеры</item>
+        <item quantity="many">Режиссеры</item>
+        <item quantity="other">Режиссеры</item>
+    </plurals>
+    <plurals name="detail_fact_writer">
+        <item quantity="one">Сценарист</item>
+        <item quantity="few">Сценаристы</item>
+        <item quantity="many">Сценаристы</item>
+        <item quantity="other">Сценаристы</item>
+    </plurals>
+    <plurals name="detail_fact_producer">
+        <item quantity="one">Продюсер</item>
+        <item quantity="few">Продюсеры</item>
+        <item quantity="many">Продюсеры</item>
+        <item quantity="other">Продюсеры</item>
+    </plurals>
+    <string name="detail_fact_audio">Аудио</string>
+    <string name="detail_fact_subtitles">Субтитры</string>
+    <string name="detail_fact_links">Ссылки</string>
+    <string name="where_to_watch_title">Где посмотреть</string>
+    <string name="not_in_library_title">Нет в вашей библиотеке</string>
+    <string name="related_more_in_genre_fmt">Еще в жанре «%1$s»</string>
+    <string name="where_to_watch_attribution">Данные от JustWatch</string>
+    <string name="pref_detail_layout_title">Дизайн страницы с подробностями</string>
+    <string name="detail_layout_classic">Классический</string>
+    <string name="detail_layout_modern">Современный</string>
+    <string name="where_to_watch_rent_or_buy">Взять напрокат или купить</string>
+    <string name="where_to_watch_free">Бесплатно</string>
+    <string name="where_to_watch_ads">С рекламой</string>
+    <string name="where_to_watch_rent">Аренда</string>
+    <string name="where_to_watch_buy">Покупка</string>
+    <string name="where_to_watch_rent_and_buy">Аренда · Покупка</string>
+    <plurals name="where_to_watch_more_rent_or_buy">
+        <item quantity="one">+%1$d для аренды или покупки</item>
+        <item quantity="few">+%1$d для аренды или покупки</item>
+        <item quantity="many">+%1$d для аренды или покупки</item>
+        <item quantity="other">+%1$d для аренды или покупки</item>
+    </plurals>
+    <plurals name="where_to_watch_more">
+        <item quantity="one">еще +%1$d</item>
+        <item quantity="few">еще +%1$d</item>
+        <item quantity="many">еще +%1$d</item>
+        <item quantity="other">еще +%1$d</item>
+    </plurals>
+    <string name="where_to_watch_all_options">Все варианты</string>
+    <string name="where_to_watch_stream_on">Смотрите на</string>
+    <string name="where_to_watch_rent_or_buy_on">Возьмите напрокат или купите в</string>
+    <string name="where_to_watch_stream">Потоковое</string>
 </resources>
