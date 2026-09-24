@@ -60,6 +60,7 @@
     <string name="hero_btn_watch_now">Nu bekijken</string>
     <plurals name="hero_season_plural">
         <item quantity="one">%1$d seizoenen</item>
+        <item quantity="other">%1$d seizoenen</item>
     </plurals>
     <string name="favorites_title">Favorieten</string>
     <string name="error_unknown">Onbekende fout</string>
@@ -81,12 +82,14 @@
     <string name="meta_time_remaining_minutes">nog %1$d m</string>
     <plurals name="meta_boxset_count">
         <item quantity="one">%1$d items</item>
+        <item quantity="other">%1$d items</item>
     </plurals>
     <string name="meta_runtime_hours_minutes">%1$d u %2$d m</string>
     <string name="meta_runtime_minutes">%1$d m</string>
     <string name="meta_ends_at">Eindigt om %1$s</string>
     <plurals name="meta_episode_count">
         <item quantity="one">%1$d afleveringen</item>
+        <item quantity="other">%1$d afleveringen</item>
     </plurals>
     <string name="similar_items_title">Vergelijkbaar</string>
     <string name="special_features_title">Extra\'s</string>
@@ -118,9 +121,11 @@
     <string name="cd_collapse">Inklappen</string>
     <plurals name="director_prefix">
         <item quantity="one">Regie: %1$s</item>
+        <item quantity="other">Regie: %1$s</item>
     </plurals>
     <plurals name="writers_prefix">
         <item quantity="one">Scenario: %1$s</item>
+        <item quantity="other">Scenario: %1$s</item>
     </plurals>
     <string name="seasons_title">Seizoenen</string>
     <string name="action_play">Afspelen</string>
@@ -177,6 +182,7 @@
     <string name="livetv_header_all">Alle zenders</string>
     <plurals name="livetv_count_fmt">
         <item quantity="one">%1$d zenders gevonden</item>
+        <item quantity="other">%1$d zenders gevonden</item>
     </plurals>
     <string name="livetv_guide_date_fmt">EEE d MMM</string>
     <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
@@ -194,10 +200,12 @@
     <string name="person_biography">Biografie</string>
     <plurals name="person_born_fmt">
         <item quantity="one">Geboren: %1$s (%2$d jaar)</item>
+        <item quantity="other">Geboren: %1$s (%2$d jaar)</item>
     </plurals>
     <string name="person_born_deceased_fmt">Geboren: %1$s</string>
     <plurals name="person_died_fmt">
         <item quantity="one">Overleden: %1$s (%2$d jaar)</item>
+        <item quantity="other">Overleden: %1$s (%2$d jaar)</item>
     </plurals>
     <string name="person_died_no_age_fmt">Overleden: %1$s</string>
     <string name="person_birthplace_fmt">Geboorteplaats: %1$s</string>
@@ -316,6 +324,7 @@
     <string name="explore_genres">Genres verkennen</string>
     <plurals name="search_results_count_fmt">
         <item quantity="one">%1$d resultaten gevonden</item>
+        <item quantity="other">%1$d resultaten gevonden</item>
     </plurals>
     <string name="cd_watched">Bekeken</string>
     <string name="cd_finished">Voltooid</string>
@@ -453,6 +462,7 @@
     <string name="dialog_delete_server_message_fmt">Weet je zeker dat je \"%1$s\" wilt verwijderen?</string>
     <plurals name="dialog_delete_server_warning_fmt">
         <item quantity="one">Hierdoor worden %1$d opgeslagen gebruiker(s) en alle bijbehorende gegevens verwijderd.</item>
+        <item quantity="other">Hierdoor worden %1$d opgeslagen gebruiker(s) en alle bijbehorende gegevens verwijderd.</item>
     </plurals>
     <string name="action_delete">Verwijderen</string>
     <string name="error_load_servers_failed">Kan servers niet laden</string>
@@ -583,6 +593,7 @@
     <string name="cd_remote_connection">Verbinding op afstand</string>
     <plurals name="meta_parts_fmt">
         <item quantity="one">%1$d delen</item>
+        <item quantity="other">%1$d delen</item>
     </plurals>
     <string name="meta_part_of_fmt">Deel %1$d/%2$d</string>
     <string name="parts_title">Delen</string>
@@ -746,6 +757,7 @@
     <string name="pref_clear_cache_empty">Niets gecacht</string>
     <plurals name="pref_clear_cache_usage_total_fmt">
         <item quantity="one">%1$s gecacht · %2$d items</item>
+        <item quantity="other">%1$s gecacht · %2$d items</item>
     </plurals>
     <string name="cache_kind_images">Afbeeldingen</string>
     <string name="cache_store_video">Videocache</string>
@@ -753,6 +765,7 @@
     <string name="cache_store_player">Spelergegevens</string>
     <plurals name="cache_entries_fmt">
         <item quantity="one">%1$d items</item>
+        <item quantity="other">%1$d items</item>
     </plurals>
     <string name="pref_clear_cache_confirm">Gecachte gegevens wissen?</string>
     <string name="pref_clear_cache_message">Downloads, instellingen en je aangepaste secties worden niet beïnvloed. Startschermrijen worden opnieuw opgebouwd zodra ze laden.</string>
@@ -782,9 +795,11 @@
     <string name="backup_section_privacy">Privacy en updates</string>
     <plurals name="backup_section_home_fmt">
         <item quantity="one">%1$d aangepaste secties, rijen en Ontdekken</item>
+        <item quantity="other">%1$d aangepaste secties, rijen en Ontdekken</item>
     </plurals>
     <plurals name="backup_section_settings_fmt">
         <item quantity="one">%1$d instellingen</item>
+        <item quantity="other">%1$d instellingen</item>
     </plurals>
     <string name="custom_sections_add_blank">Lege sectie</string>
     <string name="custom_sections_add_blank_summary">Vanaf nul beginnen</string>
@@ -815,6 +830,7 @@
     <string name="custom_sections_refine_none">Geen extra filters</string>
     <plurals name="custom_sections_refine_summary_fmt">
         <item quantity="one">%1$s · %2$d filters</item>
+        <item quantity="other">%1$s · %2$d filters</item>
     </plurals>
     <string name="custom_sections_group_content">Inhoud</string>
     <string name="custom_sections_group_display">Weergave</string>
@@ -882,9 +898,11 @@
     <string name="discover_filter_keyword_exclude">Uitsluiten</string>
     <plurals name="discover_filter_keywords_included_fmt">
         <item quantity="one">%1$d ingesloten</item>
+        <item quantity="other">%1$d ingesloten</item>
     </plurals>
     <plurals name="discover_filter_keywords_excluded_fmt">
         <item quantity="one">%1$d uitgesloten</item>
+        <item quantity="other">%1$d uitgesloten</item>
     </plurals>
     <string name="discover_filter_keyword_search_hint">Trefwoorden zoeken…</string>
     <string name="discover_filter_select_region">Selecteer regio</string>
@@ -897,6 +915,7 @@
     <string name="home_more_from_artist_fmt">Meer van %1$s</string>
     <plurals name="playback_stats_value_seconds_fmt">
         <item quantity="one">%1$d seconden</item>
+        <item quantity="other">%1$d seconden</item>
     </plurals>
     <string name="playback_stats_value_bitrate_container_fmt">%1$s Mbps (container)</string>
     <string name="playback_stats_label_connection">Verbinding</string>
@@ -1012,6 +1031,7 @@
     <string name="permission_request">Aanvraag</string>
     <plurals name="quota_days_fmt">
         <item quantity="one">%1$d / %2$d dagen</item>
+        <item quantity="other">%1$d / %2$d dagen</item>
     </plurals>
     <string name="duration_hours_fmt">%.0f uur</string>
     <string name="media_route_menu_title">Casten</string>
@@ -1094,12 +1114,15 @@
     <string name="request_all_seasons_note">Alle seizoenen worden aangevraagd</string>
     <plurals name="request_quota_movie_remaining_fmt">
         <item quantity="one">nog %1$d van %2$d filmaanvragen over</item>
+        <item quantity="other">nog %1$d van %2$d filmaanvragen over</item>
     </plurals>
     <plurals name="request_quota_tv_remaining_fmt">
         <item quantity="one">nog %1$d van %2$d seizoensaanvragen over</item>
+        <item quantity="other">nog %1$d van %2$d seizoensaanvragen over</item>
     </plurals>
     <plurals name="request_quota_period_fmt">
         <item quantity="one">per %1$d dagen</item>
+        <item quantity="other">per %1$d dagen</item>
     </plurals>
     <string name="request_quota_exceeded">Limiet bereikt</string>
     <string name="request_language_profile">Taalprofiel</string>
@@ -1113,6 +1136,7 @@
     <string name="seerr_collection_fallback">Collectie</string>
     <plurals name="season_count_fmt">
         <item quantity="one">%1$d seizoenen</item>
+        <item quantity="other">%1$d seizoenen</item>
     </plurals>
     <string name="seerr_recommendations_title">Aanbevelingen</string>
     <string name="seerr_details_title">Details</string>
@@ -1166,6 +1190,7 @@
     <string name="server_primary_connection">Primaire verbinding</string>
     <plurals name="server_backup_routes_fmt">
         <item quantity="one">+ %1$d reserve-route(s)</item>
+        <item quantity="other">+ %1$d reserve-route(s)</item>
     </plurals>
     <string name="service_label_seerr">Seerr</string>
     <string name="service_label_abs">ABS</string>

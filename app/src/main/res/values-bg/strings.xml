@@ -63,6 +63,7 @@
     <string name="hero_btn_watch_now">Гледай сега</string>
     <plurals name="hero_season_plural">
         <item quantity="one">%1$d сезона</item>
+        <item quantity="other">%1$d сезона</item>
     </plurals>
     <string name="favorites_title">Любими</string>
     <string name="error_unknown">Неизвестна грешка</string>
@@ -84,12 +85,14 @@
     <string name="meta_time_remaining_minutes">Остават %1$d м</string>
     <plurals name="meta_boxset_count">
         <item quantity="one">%1$d елемента</item>
+        <item quantity="other">%1$d елемента</item>
     </plurals>
     <string name="meta_runtime_hours_minutes">%1$d ч. %2$d м</string>
     <string name="meta_runtime_minutes">%1$d м</string>
     <string name="meta_ends_at">Завършва в %1$s</string>
     <plurals name="meta_episode_count">
         <item quantity="one">%1$d епизода</item>
+        <item quantity="other">%1$d епизода</item>
     </plurals>
     <string name="similar_items_title">Още подобни</string>
     <string name="special_features_title">Специални материали</string>
@@ -121,9 +124,11 @@
     <string name="cd_collapse">Свиване</string>
     <plurals name="director_prefix">
         <item quantity="one">Режисьор: %1$s</item>
+        <item quantity="other">Режисьор: %1$s</item>
     </plurals>
     <plurals name="writers_prefix">
         <item quantity="one">Сценаристи: %1$s</item>
+        <item quantity="other">Сценаристи: %1$s</item>
     </plurals>
     <string name="seasons_title">Сезони</string>
     <string name="action_play">Възпроизвеждане</string>
@@ -180,6 +185,7 @@
     <string name="livetv_header_all">Всички канали</string>
     <plurals name="livetv_count_fmt">
         <item quantity="one">Намерени %1$d канала</item>
+        <item quantity="other">Намерени %1$d канала</item>
     </plurals>
     <string name="livetv_guide_date_fmt">EEE, d MMM</string>
     <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
@@ -197,10 +203,12 @@
     <string name="person_biography">Биография</string>
     <plurals name="person_born_fmt">
         <item quantity="one">Роден(а): %1$s (на %2$d години)</item>
+        <item quantity="other">Роден(а): %1$s (на %2$d години)</item>
     </plurals>
     <string name="person_born_deceased_fmt">Роден(а): %1$s</string>
     <plurals name="person_died_fmt">
         <item quantity="one">Починал(а): %1$s (на %2$d години)</item>
+        <item quantity="other">Починал(а): %1$s (на %2$d години)</item>
     </plurals>
     <string name="person_died_no_age_fmt">Починал(а): %1$s</string>
     <string name="person_birthplace_fmt">Място на раждане: %1$s</string>
@@ -321,6 +329,7 @@
     <string name="explore_genres">Разгледайте жанровете</string>
     <plurals name="search_results_count_fmt">
         <item quantity="one">Намерени са %1$d резултата</item>
+        <item quantity="other">Намерени са %1$d резултата</item>
     </plurals>
     <string name="cd_watched">Гледано</string>
     <string name="cd_finished">Завършено</string>
@@ -465,6 +474,7 @@
     <string name="dialog_delete_server_message_fmt">Сигурни ли сте, че искате да изтриете „%1$s“?</string>
     <plurals name="dialog_delete_server_warning_fmt">
         <item quantity="one">Това ще премахне %1$d запазени потребители и всички свързани данни.</item>
+        <item quantity="other">Това ще премахне %1$d запазени потребители и всички свързани данни.</item>
     </plurals>
     <string name="action_delete">Изтриване</string>
     <string name="error_load_servers_failed">Грешка при зареждането на сървърите</string>

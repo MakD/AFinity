@@ -60,6 +60,7 @@
     <string name="hero_btn_watch_now">Ver ahora</string>
     <plurals name="hero_season_plural">
         <item quantity="one">%1$d Estaciones</item>
+        <item quantity="other">%1$d Estaciones</item>
     </plurals>
     <string name="favorites_title">Favoritos</string>
     <string name="error_unknown">Error desconocido</string>
@@ -81,12 +82,14 @@
     <string name="meta_time_remaining_minutes">queda %1$dm</string>
     <plurals name="meta_boxset_count">
         <item quantity="one">%1$d elementos</item>
+        <item quantity="other">%1$d elementos</item>
     </plurals>
     <string name="meta_runtime_hours_minutes">%1$dh %2$dm</string>
     <string name="meta_runtime_minutes">%1$dm</string>
     <string name="meta_ends_at">Termina en %1$s</string>
     <plurals name="meta_episode_count">
         <item quantity="one">%1$d episodios</item>
+        <item quantity="other">%1$d episodios</item>
     </plurals>
     <string name="similar_items_title">Más como esto</string>
     <string name="special_features_title">Características especiales</string>
@@ -118,9 +121,11 @@
     <string name="cd_collapse">Colapsar</string>
     <plurals name="director_prefix">
         <item quantity="one">Director: %1$s</item>
+        <item quantity="other">Director: %1$s</item>
     </plurals>
     <plurals name="writers_prefix">
         <item quantity="one">Escritores: %1$s</item>
+        <item quantity="other">Escritores: %1$s</item>
     </plurals>
     <string name="seasons_title">Temporadas</string>
     <string name="action_play">Reproducir</string>
@@ -177,6 +182,7 @@
     <string name="livetv_header_all">Todos los canales</string>
     <plurals name="livetv_count_fmt">
         <item quantity="one">%1$d canales encontrados</item>
+        <item quantity="other">%1$d canales encontrados</item>
     </plurals>
     <string name="livetv_guide_date_fmt">EEE, MMM d</string>
     <string name="livetv_guide_time_range_fmt">%1$d:00 – %2$d:00</string>
@@ -194,10 +200,12 @@
     <string name="person_biography">Biografía</string>
     <plurals name="person_born_fmt">
         <item quantity="one">Nacimiento: %1$s (%2$d años)</item>
+        <item quantity="other">Nacimiento: %1$s (%2$d años)</item>
     </plurals>
     <string name="person_born_deceased_fmt">Nacimiento: %1$s</string>
     <plurals name="person_died_fmt">
         <item quantity="one">Defunción: %1$s (edad %2$d)</item>
+        <item quantity="other">Defunción: %1$s (edad %2$d)</item>
     </plurals>
     <string name="person_died_no_age_fmt">Defunción: %1$s</string>
     <string name="person_birthplace_fmt">Lugar de nacimiento: %1$s</string>
@@ -316,6 +324,7 @@
     <string name="explore_genres">Explorar géneros</string>
     <plurals name="search_results_count_fmt">
         <item quantity="one">%1$d resultados encontrados</item>
+        <item quantity="other">%1$d resultados encontrados</item>
     </plurals>
     <string name="cd_watched">Vigilado</string>
     <string name="cd_finished">Finalizado</string>
@@ -453,6 +462,7 @@
     <string name="dialog_delete_server_message_fmt">¿Está seguro que desea eliminar “%1$s”?</string>
     <plurals name="dialog_delete_server_warning_fmt">
         <item quantity="one">Esto eliminará %1$d los usuario(s) guardado(s) y todos los datos asociados.</item>
+        <item quantity="other">Esto eliminará %1$d los usuario(s) guardado(s) y todos los datos asociados.</item>
     </plurals>
     <string name="action_delete">Eliminar</string>
     <string name="error_load_servers_failed">No se pudieron cargar los servidores</string>
@@ -588,6 +598,7 @@
     <string name="home_upcoming_episodes">Próximos episodios</string>
     <plurals name="meta_parts_fmt">
         <item quantity="one">%1$d Partes</item>
+        <item quantity="other">%1$d Partes</item>
     </plurals>
     <string name="meta_part_of_fmt">Parte %1$d/%2$d</string>
     <string name="parts_title">Partes</string>
@@ -633,6 +644,7 @@
     <string name="permission_request">Solicitud</string>
     <plurals name="quota_days_fmt">
         <item quantity="one">%1$d / %2$d días</item>
+        <item quantity="other">%1$d / %2$d días</item>
     </plurals>
     <string name="duration_hours_fmt">%.0f horas</string>
     <string name="cd_manage_addresses">Administrar direcciones</string>
@@ -686,6 +698,7 @@
     <string name="playback_stats_value_direct_streaming">Transmisión directa</string>
     <plurals name="playback_stats_value_seconds_fmt">
         <item quantity="one">%1$d segundos</item>
+        <item quantity="other">%1$d segundos</item>
     </plurals>
     <string name="playback_stats_value_hdr_output">Se reproduce en HDR</string>
     <string name="playback_stats_value_hdr_tonemapped">Convertido a SDR mediante mapeo de tonos</string>

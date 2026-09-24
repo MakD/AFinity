@@ -716,6 +716,7 @@
     <string name="explore_genres">Műfajok felfedezése</string>
     <plurals name="search_results_count_fmt">
         <item quantity="one">%1$d találat</item>
+        <item quantity="other">%1$d találat</item>
     </plurals>
     <string name="cd_finished">Befejezett</string>
     <string name="abs_finished">Befejezett</string>
@@ -936,6 +937,7 @@
     <string name="dialog_delete_server_message_fmt">Biztos, hogy törlöd \"%1$s\"?</string>
     <plurals name="dialog_delete_server_warning_fmt">
         <item quantity="one">Ezzel %1$d mentett felhasználó és az összes kapcsolódó adat törlésre kerül.</item>
+        <item quantity="other">Ezzel %1$d mentett felhasználó és az összes kapcsolódó adat törlésre kerül.</item>
     </plurals>
     <string name="error_load_servers_failed">Nem sikerült betölteni a szervereket</string>
     <string name="error_delete_active_server">A jelenleg aktív szerver nem törölhető. Kérjük, először váltson egy másik szerverre.</string>
@@ -1108,6 +1110,7 @@
     <string name="service_label_mdblist">MDBList</string>
     <plurals name="quota_days_fmt">
         <item quantity="one">%1$d / %2$d napok</item>
+        <item quantity="other">%1$d / %2$d napok</item>
     </plurals>
     <string name="duration_hours_fmt">%.0f óra</string>
     <string name="cd_manage_addresses">Címek kezelése</string>
@@ -1205,12 +1208,15 @@
     <string name="request_all_seasons_note">Minden évad kérve lesz</string>
     <plurals name="request_quota_movie_remaining_fmt">
         <item quantity="one">%1$d maradt %2$d kérésből</item>
+        <item quantity="other">%1$d maradt %2$d kérésből</item>
     </plurals>
     <plurals name="request_quota_tv_remaining_fmt">
         <item quantity="one">%2$d maradt %2$d évad kérésből</item>
+        <item quantity="other">%2$d maradt %2$d évad kérésből</item>
     </plurals>
     <plurals name="request_quota_period_fmt">
         <item quantity="one">%1$d naponta</item>
+        <item quantity="other">%1$d naponta</item>
     </plurals>
     <string name="request_quota_exceeded">Elérte a limitet</string>
     <string name="request_language_profile">Nyelvi profil</string>
@@ -1221,6 +1227,7 @@
     <string name="seerr_collection_fallback">Gyűjtemény</string>
     <plurals name="season_count_fmt">
         <item quantity="one">%1$d évad</item>
+        <item quantity="other">%1$d évad</item>
     </plurals>
     <string name="seerr_recommendations_title">Ajánlások</string>
     <string name="request_quota_exceeded_message">Nincs elég fennmaradó kérésed. A kvótád automatikusan visszaáll.</string>
@@ -1268,6 +1275,7 @@
     <string name="server_primary_connection">Elsődleges kapcsolat</string>
     <plurals name="server_backup_routes_fmt">
         <item quantity="one">+ %1$d tartalék útvonal</item>
+        <item quantity="other">+ %1$d tartalék útvonal</item>
     </plurals>
     <string name="websocket_server_restarting">A szerver újraindul, automatikusan újracsatlakozik…</string>
     <string name="websocket_server_shutdown">A szerver leállt</string>

@@ -59,6 +59,7 @@
     <string name="hero_btn_watch_now">Jetzt ansehen</string>
     <plurals name="hero_season_plural">
         <item quantity="one">%1$d Staffeln</item>
+        <item quantity="other">%1$d Staffeln</item>
     </plurals>
     <string name="favorites_title">Favoriten</string>
     <string name="error_unknown">Unbekannter Fehler</string>
@@ -80,6 +81,7 @@
     <string name="meta_time_remaining_minutes">Noch %1$dm</string>
     <plurals name="meta_boxset_count">
         <item quantity="one">%1$d Einträge</item>
+        <item quantity="other">%1$d Einträge</item>
     </plurals>
     <string name="meta_runtime_hours_minutes">%1$dh %2$dm</string>
     <string name="meta_runtime_minutes">%1$dm</string>
@@ -104,9 +106,11 @@
     <string name="cd_collapse">Einklappen</string>
     <plurals name="director_prefix">
         <item quantity="one">Regie: %1$s</item>
+        <item quantity="other">Regie: %1$s</item>
     </plurals>
     <plurals name="writers_prefix">
         <item quantity="one">Drehbuch: %1$s</item>
+        <item quantity="other">Drehbuch: %1$s</item>
     </plurals>
     <string name="seasons_title">Staffeln</string>
     <string name="action_play">Abspielen</string>
@@ -163,6 +167,7 @@
     <string name="livetv_header_all">Alle Sender</string>
     <plurals name="livetv_count_fmt">
         <item quantity="one">%1$d Sender gefunden</item>
+        <item quantity="other">%1$d Sender gefunden</item>
     </plurals>
     <string name="livetv_guide_date_fmt">EEE. d. MMM</string>
     <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
@@ -176,6 +181,7 @@
     <string name="person_biography">Biografie</string>
     <plurals name="person_born_fmt">
         <item quantity="one">Geboren: %1$s (%2$d Jahre alt)</item>
+        <item quantity="other">Geboren: %1$s (%2$d Jahre alt)</item>
     </plurals>
     <string name="person_birthplace_fmt">Geburtsort: %1$s</string>
     <string name="action_show_more">Mehr anzeigen</string>
@@ -255,6 +261,7 @@
     <string name="explore_genres">Genres entdecken</string>
     <plurals name="search_results_count_fmt">
         <item quantity="one">%1$d Ergebnisse gefunden</item>
+        <item quantity="other">%1$d Ergebnisse gefunden</item>
     </plurals>
     <string name="cd_watched">Angesehen</string>
     <string name="media_type_book">Buch</string>
@@ -467,6 +474,7 @@
     <string name="outline_background">Hintergrund-Sammlung</string>
     <plurals name="dialog_delete_server_warning_fmt">
         <item quantity="one">Hierbei werden %1$d gespeicherte(r) Nutzer und alle dazugehörigen Daten gelöscht.</item>
+        <item quantity="other">Hierbei werden %1$d gespeicherte(r) Nutzer und alle dazugehörigen Daten gelöscht.</item>
     </plurals>
     <string name="error_delete_server_failed">Löschen des Servers fehlgeschlagen</string>
     <string name="update_whats_new">Was gibt es neues</string>
@@ -505,6 +513,7 @@
     <string name="pref_cast_max_bitrate_title">Maximale Bitrate</string>
     <plurals name="person_died_fmt">
         <item quantity="one">Verstorben: %1$s (%2$d Jahre)</item>
+        <item quantity="other">Verstorben: %1$s (%2$d Jahre)</item>
     </plurals>
     <string name="person_died_no_age_fmt">Verstorben: %1$s</string>
     <string name="track_number_fmt">Spur %1$d</string>
@@ -534,6 +543,7 @@
     <string name="dialog_select_language_title">Sprache auswählen</string>
     <plurals name="meta_episode_count">
         <item quantity="one">%1$d Folgen</item>
+        <item quantity="other">%1$d Folgen</item>
     </plurals>
     <string name="extra_type_interview">Interview</string>
     <string name="extra_type_scene">Szene</string>
@@ -581,6 +591,7 @@
     <string name="pref_app_language">App-Sprache</string>
     <plurals name="meta_parts_fmt">
         <item quantity="one">%1$d Teile</item>
+        <item quantity="other">%1$d Teile</item>
     </plurals>
     <string name="lang_system_default">System-Standardeinstellung</string>
     <string name="pref_send_logs">Protokolle senden</string>
@@ -711,6 +722,7 @@
     <string name="server_primary_connection">Standardverbindung</string>
     <plurals name="server_backup_routes_fmt">
         <item quantity="one">+ %1$d Backup-Route(n)</item>
+        <item quantity="other">+ %1$d Backup-Route(n)</item>
     </plurals>
     <string name="service_label_seerr">Seerr</string>
     <string name="service_label_abs">ABS</string>
@@ -842,6 +854,7 @@
     <string name="playback_stats_value_live">Live</string>
     <plurals name="playback_stats_value_seconds_fmt">
         <item quantity="one">%1$d Sekunden</item>
+        <item quantity="other">%1$d Sekunden</item>
     </plurals>
     <string name="playback_stats_label_connection">Verbindung</string>
     <string name="playback_stats_label_network_speed">Netzwerkgeschwindigkeit</string>

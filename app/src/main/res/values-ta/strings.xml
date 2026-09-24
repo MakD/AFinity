@@ -64,6 +64,7 @@
     <string name="hero_btn_watch_now">இப்போது பார்க்கவும்</string>
     <plurals name="hero_season_plural">
         <item quantity="one">%1$d சீசன்கள்</item>
+        <item quantity="other">%1$d சீசன்கள்</item>
     </plurals>
     <string name="favorites_title">பிடித்தவை</string>
     <string name="error_unknown">அறியப்படாத பிழை</string>
@@ -85,16 +86,19 @@
     <string name="meta_time_remaining_minutes">%1$dm மீதமுள்ளது</string>
     <plurals name="meta_boxset_count">
         <item quantity="one">%1$d உருப்படிகள்</item>
+        <item quantity="other">%1$d உருப்படிகள்</item>
     </plurals>
     <string name="meta_runtime_hours_minutes">%1$dh %2$dm</string>
     <string name="meta_runtime_minutes">%1$dm</string>
     <plurals name="meta_parts_fmt">
         <item quantity="one">%1$d பாகங்கள்</item>
+        <item quantity="other">%1$d பாகங்கள்</item>
     </plurals>
     <string name="meta_part_of_fmt">பகுதி %1$d/%2$d</string>
     <string name="meta_ends_at">%1$s இல் முடிவடைகிறது</string>
     <plurals name="meta_episode_count">
         <item quantity="one">%1$d எபிசோடுகள்</item>
+        <item quantity="other">%1$d எபிசோடுகள்</item>
     </plurals>
     <string name="similar_items_title">இது போன்ற மேலும்</string>
     <string name="special_features_title">சிறப்பு நற்பொருத்தங்கள்</string>
@@ -129,9 +133,11 @@
     <string name="cd_collapse">சுருக்கு</string>
     <plurals name="director_prefix">
         <item quantity="one">இயக்குனர்: %1$s</item>
+        <item quantity="other">இயக்குனர்: %1$s</item>
     </plurals>
     <plurals name="writers_prefix">
         <item quantity="one">எழுத்தாளர்கள்: %1$s</item>
+        <item quantity="other">எழுத்தாளர்கள்: %1$s</item>
     </plurals>
     <string name="seasons_title">பருவங்கள்</string>
     <string name="action_play">விளையாடு</string>
@@ -189,6 +195,7 @@
     <string name="livetv_header_all">அனைத்து சேனல்களும்</string>
     <plurals name="livetv_count_fmt">
         <item quantity="one">%1$d சேனல்கள் கண்டறியப்பட்டன</item>
+        <item quantity="other">%1$d சேனல்கள் கண்டறியப்பட்டன</item>
     </plurals>
     <string name="livetv_guide_date_fmt">EEE, MMM டி</string>
     <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
@@ -206,10 +213,12 @@
     <string name="person_biography">சுயசரிதை</string>
     <plurals name="person_born_fmt">
         <item quantity="one">பிறப்பு: %1$s (%2$d வயது)</item>
+        <item quantity="other">பிறப்பு: %1$s (%2$d வயது)</item>
     </plurals>
     <string name="person_born_deceased_fmt">பிறந்தவர்: %1$s</string>
     <plurals name="person_died_fmt">
         <item quantity="one">இறந்தவர்: %1$s (வயது %2$d)</item>
+        <item quantity="other">இறந்தவர்: %1$s (வயது %2$d)</item>
     </plurals>
     <string name="person_died_no_age_fmt">இறந்தவர்: %1$s</string>
     <string name="person_birthplace_fmt">பிறந்த இடம்: %1$s</string>
@@ -331,6 +340,7 @@
     <string name="explore_genres">வகைகளை ஆராயுங்கள்</string>
     <plurals name="search_results_count_fmt">
         <item quantity="one">%1$d முடிவுகள் கிடைத்தன</item>
+        <item quantity="other">%1$d முடிவுகள் கிடைத்தன</item>
     </plurals>
     <string name="cd_watched">பார்த்தேன்</string>
     <string name="cd_finished">முடிந்தது</string>
@@ -491,6 +501,7 @@
     <string name="dialog_delete_server_message_fmt">\"%1$s\" ஐ நிச்சயமாக நீக்க விரும்புகிறீர்களா?</string>
     <plurals name="dialog_delete_server_warning_fmt">
         <item quantity="one">இது %1$d சேமித்த பயனர்(கள்) மற்றும் தொடர்புடைய எல்லா தரவையும் அகற்றும்.</item>
+        <item quantity="other">இது %1$d சேமித்த பயனர்(கள்) மற்றும் தொடர்புடைய எல்லா தரவையும் அகற்றும்.</item>
     </plurals>
     <string name="action_delete">நீக்கு</string>
     <string name="error_load_servers_failed">சேவையகங்களை ஏற்றுவதில் தோல்வி</string>
@@ -655,6 +666,7 @@
     <string name="permission_request">கோரிக்கை</string>
     <plurals name="quota_days_fmt">
         <item quantity="one">%1$d / %2$d நாட்கள்</item>
+        <item quantity="other">%1$d / %2$d நாட்கள்</item>
     </plurals>
     <string name="duration_hours_fmt">%.0f மணி</string>
     <string name="cd_manage_addresses">முகவரிகளை நிர்வகிக்கவும்</string>
@@ -792,6 +804,7 @@
     <string name="server_primary_connection">முதன்மை இணைப்பு</string>
     <plurals name="server_backup_routes_fmt">
         <item quantity="one">+ %1$d காப்புப் பிரதி வழி(கள்)</item>
+        <item quantity="other">+ %1$d காப்புப் பிரதி வழி(கள்)</item>
     </plurals>
     <string name="service_label_seerr">உடல்</string>
     <string name="service_label_abs">ஏபிஎச்</string>
