@@ -110,213 +110,225 @@ fun RequestsScreen(
                 modifier = Modifier.fillMaxSize().padding(innerPadding),
             )
         } else {
-            if (!isReachable) {
-                ServiceUnreachableBanner(
-                    serviceName = stringResource(R.string.service_name_jellyseerr),
-                    onRetry = viewModel::retryConnection,
-                    modifier =
-                        Modifier.padding(innerPadding).padding(horizontal = 16.dp, vertical = 8.dp),
-                )
-            }
-            when {
-                uiState.isLoadingDiscover && uiState.discoverSections.isEmpty() -> {
-                    FullScreenLoading(modifier = Modifier.padding(innerPadding))
-                }
-
-                uiState.error != null &&
-                    uiState.requests.isEmpty() &&
-                    uiState.discoverSections.isEmpty() -> {
-                    ErrorView(
-                        message = uiState.error ?: stringResource(R.string.error_unknown),
-                        onRetry = {
-                            viewModel.loadRequests()
-                            viewModel.loadDiscoverContent()
-                        },
-                        modifier = Modifier.fillMaxSize().padding(innerPadding),
+            Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                if (!isReachable) {
+                    ServiceUnreachableBanner(
+                        serviceName = stringResource(R.string.service_name_jellyseerr),
+                        onRetry = viewModel::retryConnection,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 }
-
-                else -> {
-                    val activeRequests =
-                        uiState.requests.filter { req ->
-                            RequestStatus.fromValue(req.status) != RequestStatus.COMPLETED
-                        }
-                    val availableRequests =
-                        remember(uiState.requests) {
-                            uiState.requests
-                                .filter { req ->
-                                    RequestStatus.fromValue(req.status) == RequestStatus.COMPLETED
-                                }
-                                .groupBy { req ->
-                                    (req.media.tmdbId?.toString() ?: "req_${req.id}") to
-                                        req.media.mediaType
-                                }
-                                .map { (_, groupedRequests) ->
-                                    DisplayRequest(
-                                        request = groupedRequests.minBy { it.id },
-                                        additionalRequestersCount =
-                                            groupedRequests
-                                                .distinctBy { it.requestedBy.displayName }
-                                                .size - 1,
-                                        sortKey =
-                                            groupedRequests.firstNotNullOfOrNull {
-                                                it.media.mediaAddedAt
-                                            } ?: groupedRequests.maxOf { it.updatedAt },
-                                    )
-                                }
-                                .sortedByDescending { displayReq -> displayReq.sortKey }
+                Box(modifier = Modifier.weight(1f)) {
+                    when {
+                        uiState.isLoadingDiscover && uiState.discoverSections.isEmpty() -> {
+                            FullScreenLoading()
                         }
 
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize().padding(innerPadding),
-                        contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp + playerOffset),
-                        verticalArrangement = Arrangement.spacedBy(24.dp),
-                    ) {
-                        if (activeRequests.isNotEmpty()) {
-                            item {
-                                MyRequestsSection(
-                                    requests = activeRequests,
-                                    baseUrl = uiState.jellyseerrUrl,
-                                    isAdmin = currentUser?.isAdmin() == true,
-                                    onRequestClick = { request ->
-                                        if (currentUser?.isAdmin() == true) {
-                                            viewModel.selectRequest(request)
+                        uiState.error != null &&
+                            uiState.requests.isEmpty() &&
+                            uiState.discoverSections.isEmpty() -> {
+                            ErrorView(
+                                message = uiState.error ?: stringResource(R.string.error_unknown),
+                                onRetry = {
+                                    viewModel.loadRequests()
+                                    viewModel.loadDiscoverContent()
+                                },
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+
+                        else -> {
+                            val activeRequests =
+                                uiState.requests.filter { req ->
+                                    RequestStatus.fromValue(req.status) != RequestStatus.COMPLETED
+                                }
+                            val availableRequests =
+                                remember(uiState.requests) {
+                                    uiState.requests
+                                        .filter { req ->
+                                            RequestStatus.fromValue(req.status) ==
+                                                RequestStatus.COMPLETED
                                         }
-                                    },
-                                    onApprove = { viewModel.approveRequest(it) },
-                                    onDecline = { viewModel.declineRequest(it) },
-                                    onRequestVisible = viewModel::onRequestVisible,
-                                    widthSizeClass = widthSizeClass,
-                                )
-                            }
-                        }
+                                        .groupBy { req ->
+                                            (req.media.tmdbId?.toString() ?: "req_${req.id}") to
+                                                req.media.mediaType
+                                        }
+                                        .map { (_, groupedRequests) ->
+                                            DisplayRequest(
+                                                request = groupedRequests.minBy { it.id },
+                                                additionalRequestersCount =
+                                                    groupedRequests
+                                                        .distinctBy { it.requestedBy.displayName }
+                                                        .size - 1,
+                                                sortKey =
+                                                    groupedRequests.firstNotNullOfOrNull {
+                                                        it.media.mediaAddedAt
+                                                    } ?: groupedRequests.maxOf { it.updatedAt },
+                                            )
+                                        }
+                                        .sortedByDescending { displayReq -> displayReq.sortKey }
+                                }
 
-                        if (availableRequests.isNotEmpty()) {
-                            item {
-                                AvailableRequestsSection(
-                                    requests = availableRequests,
-                                    onRequestClick = { viewModel.resolveAndNavigate(it) },
-                                    onRequestVisible = viewModel::onRequestVisible,
-                                    widthSizeClass = widthSizeClass,
-                                )
-                            }
-                        }
-
-                        items(
-                            items = uiState.discoverSections,
-                            key = { section -> section.key },
-                        ) { section ->
-                            when (section) {
-                                is DiscoverSectionContent.MediaRow -> {
-                                    val title =
-                                        section.customTitle
-                                            ?: builtInSectionTitleRes(section.sliderType)?.let {
-                                                stringResource(it)
-                                            }
-                                            ?: ""
-                                    DiscoverSection(
-                                        title = title,
-                                        items = section.items,
-                                        onItemClick = { item ->
-                                            if (item.mediaInfo?.isFullyAvailable() == true) {
-                                                item.mediaInfo?.getJellyfinItemId()?.let {
-                                                    jellyfinId ->
-                                                    val mappedType =
-                                                        when (item.mediaType.lowercase()) {
-                                                            "tv" -> "Series"
-                                                            "movie" -> "Movie"
-                                                            else -> null
-                                                        }
-                                                    onItemClick(jellyfinId, mappedType)
-                                                } ?: onNavigateToSeerrMedia(item)
-                                            } else {
-                                                onNavigateToSeerrMedia(item)
-                                            }
-                                        },
-                                        onViewAllClick =
-                                            section.viewAllType?.let { viewAllType ->
-                                                {
-                                                    onNavigateToFilteredMedia(
-                                                        FilterParams(
-                                                            type = viewAllType,
-                                                            id = section.viewAllId,
-                                                            name = title,
-                                                        )
-                                                    )
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding =
+                                    PaddingValues(top = 16.dp, bottom = 16.dp + playerOffset),
+                                verticalArrangement = Arrangement.spacedBy(24.dp),
+                            ) {
+                                if (activeRequests.isNotEmpty()) {
+                                    item {
+                                        MyRequestsSection(
+                                            requests = activeRequests,
+                                            baseUrl = uiState.jellyseerrUrl,
+                                            isAdmin = currentUser?.isAdmin() == true,
+                                            onRequestClick = { request ->
+                                                if (currentUser?.isAdmin() == true) {
+                                                    viewModel.selectRequest(request)
                                                 }
                                             },
-                                        widthSizeClass = widthSizeClass,
-                                    )
+                                            onApprove = { viewModel.approveRequest(it) },
+                                            onDecline = { viewModel.declineRequest(it) },
+                                            onRequestVisible = viewModel::onRequestVisible,
+                                            widthSizeClass = widthSizeClass,
+                                        )
+                                    }
                                 }
-                                is DiscoverSectionContent.MovieGenres ->
-                                    MovieGenresSection(
-                                        genres = section.genres,
-                                        onGenreClick = { genre ->
-                                            onNavigateToFilteredMedia(
-                                                FilterParams(
-                                                    type = FilterType.GENRE_MOVIE,
-                                                    id = genre.id,
-                                                    name = genre.name,
-                                                )
-                                            )
-                                        },
-                                        genreBackdrops = section.backdrops,
-                                        widthSizeClass = widthSizeClass,
-                                    )
-                                is DiscoverSectionContent.TvGenres ->
-                                    TvGenresSection(
-                                        genres = section.genres,
-                                        onGenreClick = { genre ->
-                                            onNavigateToFilteredMedia(
-                                                FilterParams(
-                                                    type = FilterType.GENRE_TV,
-                                                    id = genre.id,
-                                                    name = genre.name,
-                                                )
-                                            )
-                                        },
-                                        genreBackdrops = section.backdrops,
-                                        widthSizeClass = widthSizeClass,
-                                    )
-                                is DiscoverSectionContent.Studios ->
-                                    StudiosSection(
-                                        studios = section.studios,
-                                        onStudioClick = { studio ->
-                                            onNavigateToFilteredMedia(
-                                                FilterParams(
-                                                    type = FilterType.STUDIO,
-                                                    id = studio.id,
-                                                    name = studio.name,
-                                                )
-                                            )
-                                        },
-                                        widthSizeClass = widthSizeClass,
-                                    )
-                                is DiscoverSectionContent.Networks ->
-                                    NetworksSection(
-                                        networks = section.networks,
-                                        onNetworkClick = { network ->
-                                            onNavigateToFilteredMedia(
-                                                FilterParams(
-                                                    type = FilterType.NETWORK,
-                                                    id = network.id,
-                                                    name = network.name,
-                                                )
-                                            )
-                                        },
-                                        widthSizeClass = widthSizeClass,
-                                    )
-                            }
-                        }
 
-                        if (
-                            uiState.requests.isEmpty() &&
-                                uiState.discoverSections.isEmpty() &&
-                                !uiState.isLoading &&
-                                !uiState.isLoadingDiscover
-                        ) {
-                            item {
-                                EmptyStateView(modifier = Modifier.fillMaxWidth().padding(32.dp))
+                                if (availableRequests.isNotEmpty()) {
+                                    item {
+                                        AvailableRequestsSection(
+                                            requests = availableRequests,
+                                            onRequestClick = { viewModel.resolveAndNavigate(it) },
+                                            onRequestVisible = viewModel::onRequestVisible,
+                                            widthSizeClass = widthSizeClass,
+                                        )
+                                    }
+                                }
+
+                                items(
+                                    items = uiState.discoverSections,
+                                    key = { section -> section.key },
+                                ) { section ->
+                                    when (section) {
+                                        is DiscoverSectionContent.MediaRow -> {
+                                            val title =
+                                                section.customTitle
+                                                    ?: builtInSectionTitleRes(section.sliderType)
+                                                        ?.let { stringResource(it) }
+                                                    ?: ""
+                                            DiscoverSection(
+                                                title = title,
+                                                items = section.items,
+                                                onItemClick = { item ->
+                                                    if (
+                                                        item.mediaInfo?.isFullyAvailable() == true
+                                                    ) {
+                                                        item.mediaInfo?.getJellyfinItemId()?.let {
+                                                            jellyfinId ->
+                                                            val mappedType =
+                                                                when (item.mediaType.lowercase()) {
+                                                                    "tv" -> "Series"
+                                                                    "movie" -> "Movie"
+                                                                    else -> null
+                                                                }
+                                                            onItemClick(jellyfinId, mappedType)
+                                                        } ?: onNavigateToSeerrMedia(item)
+                                                    } else {
+                                                        onNavigateToSeerrMedia(item)
+                                                    }
+                                                },
+                                                onViewAllClick =
+                                                    section.viewAllType?.let { viewAllType ->
+                                                        {
+                                                            onNavigateToFilteredMedia(
+                                                                FilterParams(
+                                                                    type = viewAllType,
+                                                                    id = section.viewAllId,
+                                                                    name = title,
+                                                                )
+                                                            )
+                                                        }
+                                                    },
+                                                widthSizeClass = widthSizeClass,
+                                            )
+                                        }
+
+                                        is DiscoverSectionContent.MovieGenres ->
+                                            MovieGenresSection(
+                                                genres = section.genres,
+                                                onGenreClick = { genre ->
+                                                    onNavigateToFilteredMedia(
+                                                        FilterParams(
+                                                            type = FilterType.GENRE_MOVIE,
+                                                            id = genre.id,
+                                                            name = genre.name,
+                                                        )
+                                                    )
+                                                },
+                                                genreBackdrops = section.backdrops,
+                                                widthSizeClass = widthSizeClass,
+                                            )
+
+                                        is DiscoverSectionContent.TvGenres ->
+                                            TvGenresSection(
+                                                genres = section.genres,
+                                                onGenreClick = { genre ->
+                                                    onNavigateToFilteredMedia(
+                                                        FilterParams(
+                                                            type = FilterType.GENRE_TV,
+                                                            id = genre.id,
+                                                            name = genre.name,
+                                                        )
+                                                    )
+                                                },
+                                                genreBackdrops = section.backdrops,
+                                                widthSizeClass = widthSizeClass,
+                                            )
+
+                                        is DiscoverSectionContent.Studios ->
+                                            StudiosSection(
+                                                studios = section.studios,
+                                                onStudioClick = { studio ->
+                                                    onNavigateToFilteredMedia(
+                                                        FilterParams(
+                                                            type = FilterType.STUDIO,
+                                                            id = studio.id,
+                                                            name = studio.name,
+                                                        )
+                                                    )
+                                                },
+                                                widthSizeClass = widthSizeClass,
+                                            )
+
+                                        is DiscoverSectionContent.Networks ->
+                                            NetworksSection(
+                                                networks = section.networks,
+                                                onNetworkClick = { network ->
+                                                    onNavigateToFilteredMedia(
+                                                        FilterParams(
+                                                            type = FilterType.NETWORK,
+                                                            id = network.id,
+                                                            name = network.name,
+                                                        )
+                                                    )
+                                                },
+                                                widthSizeClass = widthSizeClass,
+                                            )
+                                    }
+                                }
+
+                                if (
+                                    uiState.requests.isEmpty() &&
+                                        uiState.discoverSections.isEmpty() &&
+                                        !uiState.isLoading &&
+                                        !uiState.isLoadingDiscover
+                                ) {
+                                    item {
+                                        EmptyStateView(
+                                            modifier = Modifier.fillMaxWidth().padding(32.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

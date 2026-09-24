@@ -137,65 +137,76 @@ fun AudiobookshelfLibrariesScreen(
         }
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            if (!isReachable) {
-                ServiceUnreachableBanner(
-                    serviceName = stringResource(R.string.service_name_audiobookshelf),
-                    onRetry = viewModel::retryConnection,
-                    modifier =
-                        Modifier.align(Alignment.TopCenter)
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                )
-            }
-            if (libraries.isEmpty() && uiState.isRefreshing) {
-                FullScreenLoading()
-            } else if (libraries.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = stringResource(R.string.abs_no_libraries_found),
-                        style = MaterialTheme.typography.titleMedium,
+            Column(modifier = Modifier.fillMaxSize()) {
+                if (!isReachable) {
+                    ServiceUnreachableBanner(
+                        serviceName = stringResource(R.string.service_name_audiobookshelf),
+                        onRetry = viewModel::retryConnection,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 }
-            } else {
-                AudiobookshelfHomeTab(
-                    sections = personalizedSections,
-                    libraries = libraries,
-                    serverUrl = config?.serverUrl,
-                    onItemClick = { item ->
-                        val episodeId = item.recentEpisode?.id
-                        if (episodeId != null) {
-                            navController.navigate(
-                                Destination.createAudiobookshelfPlayerRoute(
-                                    itemId = item.id,
-                                    episodeId = episodeId,
-                                )
-                            )
-                        } else {
-                            onNavigateToItem(item.id)
-                        }
-                    },
-                    onSeriesClick = { series ->
-                        val libraryId = series.libraryId ?: series.books.firstOrNull()?.libraryId
-                        if (libraryId != null) {
-                            navController.navigate(
-                                Destination.createAudiobookshelfSeriesRoute(
-                                    series.id,
-                                    libraryId,
-                                    series.name,
-                                )
+                Box(modifier = Modifier.weight(1f)) {
+                    if (libraries.isEmpty() && uiState.isRefreshing) {
+                        FullScreenLoading()
+                    } else if (libraries.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.abs_no_libraries_found),
+                                style = MaterialTheme.typography.titleMedium,
                             )
                         }
-                    },
-                    onBrowseSeries = {
-                        navController.navigate(Destination.createAudiobookshelfSeriesListRoute())
-                    },
-                    onBrowseLibrary = { library ->
-                        navController.navigate(
-                            Destination.createAudiobookshelfLibraryRoute(library.id, library.name)
+                    } else {
+                        AudiobookshelfHomeTab(
+                            sections = personalizedSections,
+                            libraries = libraries,
+                            serverUrl = config?.serverUrl,
+                            onItemClick = { item ->
+                                val episodeId = item.recentEpisode?.id
+                                if (episodeId != null) {
+                                    navController.navigate(
+                                        Destination.createAudiobookshelfPlayerRoute(
+                                            itemId = item.id,
+                                            episodeId = episodeId,
+                                        )
+                                    )
+                                } else {
+                                    onNavigateToItem(item.id)
+                                }
+                            },
+                            onSeriesClick = { series ->
+                                val libraryId =
+                                    series.libraryId ?: series.books.firstOrNull()?.libraryId
+                                if (libraryId != null) {
+                                    navController.navigate(
+                                        Destination.createAudiobookshelfSeriesRoute(
+                                            series.id,
+                                            libraryId,
+                                            series.name,
+                                        )
+                                    )
+                                }
+                            },
+                            onBrowseSeries = {
+                                navController.navigate(
+                                    Destination.createAudiobookshelfSeriesListRoute()
+                                )
+                            },
+                            onBrowseLibrary = { library ->
+                                navController.navigate(
+                                    Destination.createAudiobookshelfLibraryRoute(
+                                        library.id,
+                                        library.name,
+                                    )
+                                )
+                            },
+                            isLoading = uiState.isRefreshing && personalizedSections.isEmpty(),
+                            widthSizeClass = widthSizeClass,
                         )
-                    },
-                    isLoading = uiState.isRefreshing && personalizedSections.isEmpty(),
-                    widthSizeClass = widthSizeClass,
-                )
+                    }
+                }
             }
 
             AnimatedVisibility(
