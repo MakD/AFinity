@@ -896,4 +896,5 @@
     <string name="home_directed_by_from_watched">Unter der Regie von %1$s weil Sie %2$s gesehen haben</string>
     <string name="home_written_by_from_watched">Geschrieben von %1$s weil du %2$s gesehen hast</string>
     <string name="home_watch_again">Nochmal schauen</string>
+    <string name="where_to_watch_stream">Stream</string>
 </resources>
