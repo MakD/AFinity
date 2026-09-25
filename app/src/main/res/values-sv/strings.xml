@@ -2074,4 +2074,45 @@
         <item quantity="one">Ta bort %1$d objekt</item>
         <item quantity="other">Ta bort %1$d objekt</item>
     </plurals>
+    <string name="related_starring_fmt">I rollerna %1$s</string>
+    <string name="related_more_in_genre_fmt">Mer i %1$s</string>
+    <string name="not_in_library_title">Inte i ditt bibliotek</string>
+    <plurals name="detail_fact_director">
+        <item quantity="one">Regissör</item>
+        <item quantity="other">Regissörer</item>
+    </plurals>
+    <plurals name="detail_fact_writer">
+        <item quantity="one">Manusförfattare</item>
+        <item quantity="other">Manusförfattare</item>
+    </plurals>
+    <plurals name="detail_fact_producer">
+        <item quantity="one">Producent</item>
+        <item quantity="other">Producenter</item>
+    </plurals>
+    <string name="detail_fact_audio">Ljud</string>
+    <string name="detail_fact_subtitles">Undertexter</string>
+    <string name="detail_fact_links">Länkar</string>
+    <string name="where_to_watch_title">Var kan man se den</string>
+    <string name="where_to_watch_stream">Stream</string>
+    <string name="where_to_watch_rent_or_buy">Hyr eller köp</string>
+    <string name="where_to_watch_stream_on">Strömma med</string>
+    <string name="where_to_watch_rent_or_buy_on">Hyr eller köp på</string>
+    <string name="where_to_watch_free">Gratis</string>
+    <string name="where_to_watch_ads">Med annonser</string>
+    <string name="where_to_watch_rent">Hyr</string>
+    <string name="where_to_watch_buy">Köp</string>
+    <string name="where_to_watch_rent_and_buy">Hyr · Köp</string>
+    <plurals name="where_to_watch_more">
+        <item quantity="one">+%1$d fler</item>
+        <item quantity="other">+%1$d fler</item>
+    </plurals>
+    <string name="where_to_watch_attribution">Data från JustWatch</string>
+    <string name="where_to_watch_all_options">Alla alternativ</string>
+    <string name="pref_detail_layout_title">Layout för detaljsida</string>
+    <string name="detail_layout_classic">Klassiker</string>
+    <string name="detail_layout_modern">Modern</string>
+    <plurals name="where_to_watch_more_rent_or_buy">
+        <item quantity="one">+%1$d att hyra eller köpa</item>
+        <item quantity="other">+%1$d att hyra eller köpa</item>
+    </plurals>
 </resources>
