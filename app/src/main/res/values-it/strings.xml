@@ -466,4 +466,7 @@
     <string name="custom_sections_always_on">Sempre attivo</string>
     <string name="custom_sections_group_rows">Righe integrate</string>
     <string name="custom_sections_rows_caption">Visualizzati in alto, in questo ordine. Disattiva quelli che non utilizzi.</string>
+    <string name="custom_sections_yours_caption">Le tue righe, visualizzate sopra quelle generate. Trascina per riordinare, tocca per modificare.</string>
+    <string name="custom_sections_discovery_caption">Righe create a partire dalla tua libreria. Cambiano ogni volta che apri l\'app.</string>
+    <string name="custom_sections_group_discovery">Scoperta</string>
 </resources>
