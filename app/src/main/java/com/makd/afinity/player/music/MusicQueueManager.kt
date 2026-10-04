@@ -17,32 +17,44 @@ import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.data.database.dao.MusicQueueDao
 import com.makd.afinity.data.database.entities.MusicQueueEntity
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.music.AfinityTrack
 import com.makd.afinity.data.models.music.RepeatMode
 import com.makd.afinity.data.models.player.MusicQuality
 import com.makd.afinity.data.models.player.StreamDecision
+import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.player.AudioService
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 
 data class LoadQueueEvent(
@@ -65,6 +77,11 @@ private const val MAX_QUEUE_SIZE = 5000
 private const val STREAM_KEY_LOCAL = Int.MIN_VALUE
 private const val PLAY_METHOD_DIRECT = "DirectPlay"
 private const val PLAY_METHOD_TRANSCODE = "Transcode"
+private const val AUDIO_ITEM_TYPE = "Audio"
+private const val DOWNLOADS_READY_TIMEOUT_MS = 2_000L
+
+private fun toFileUri(rawPath: String): String =
+    if (rawPath.startsWith("/")) Uri.fromFile(File(rawPath)).toString() else rawPath
 
 @Singleton
 class MusicQueueManager
@@ -79,8 +96,36 @@ constructor(
     private val preferencesRepository: PreferencesRepository,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
     private val playbackRepository: PlaybackRepository,
+    private val databaseRepository: DatabaseRepository,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    @kotlin.OptIn(ExperimentalCoroutinesApi::class)
+    private val downloadedTrackPaths: StateFlow<Map<UUID, String>?> =
+        sessionManager.currentSession
+            .flatMapLatest { session ->
+                if (session == null) flowOf(emptyMap<UUID, String>())
+                else
+                    databaseRepository
+                        .getDownloadsByStatusFlowScoped(
+                            listOf(DownloadStatus.COMPLETED),
+                            session.serverId,
+                            session.userId,
+                        )
+                        .map { downloads ->
+                            downloads
+                                .filter { it.itemType == AUDIO_ITEM_TYPE }
+                                .mapNotNull { dl ->
+                                    dl.filePath?.let { dl.itemId to toFileUri(it) }
+                                }
+                                .toMap()
+                        }
+            }
+            .catch { e ->
+                Timber.w(e, "Failed to observe downloaded tracks")
+                emit(emptyMap())
+            }
+            .stateIn(scope, SharingStarted.Eagerly, null)
 
     private val _queue = MutableStateFlow<List<AfinityTrack>>(emptyList())
     val queue: StateFlow<List<AfinityTrack>> = _queue.asStateFlow()
@@ -396,6 +441,9 @@ constructor(
 
     private fun emitLoadEvent(tracks: List<AfinityTrack>, startIndex: Int, startPositionMs: Long) {
         scope.launch {
+            withTimeoutOrNull(DOWNLOADS_READY_TIMEOUT_MS) {
+                downloadedTrackPaths.filterNotNull().first()
+            }
             tracks.getOrNull(startIndex)?.let { ensureResolved(it) }
             val mediaItems = tracks.map { buildMediaItem(it) }
             _loadQueueEvents.emit(
@@ -408,8 +456,11 @@ constructor(
         }
     }
 
+    private fun localPathFor(track: AfinityTrack): String? =
+        track.localFilePath?.takeIf { it.isNotBlank() } ?: downloadedTrackPaths.value?.get(track.id)
+
     suspend fun ensureResolved(track: AfinityTrack): Boolean {
-        if (!track.localFilePath.isNullOrBlank()) return false
+        if (localPathFor(track) != null) return false
         if (_neverTranscode.value) return false
         if (resolvedStreams.containsKey(track.id)) return false
 
@@ -453,8 +504,8 @@ constructor(
     }
 
     private fun buildStreamUri(track: AfinityTrack): Uri {
-        val localPath = track.localFilePath
-        if (!localPath.isNullOrBlank()) {
+        val localPath = localPathFor(track)
+        if (localPath != null) {
             val localUri = localPath.toUri()
             if (localUri.scheme == "file") {
                 registerStreamSession(track.id, STREAM_KEY_LOCAL, isDirect = true)

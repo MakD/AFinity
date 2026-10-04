@@ -1,10 +1,14 @@
 package com.makd.afinity.ui.player
 
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.PlaylistEntry
+import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
 import java.util.UUID
@@ -14,6 +18,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
 
@@ -28,7 +33,13 @@ data class PlaylistState(
 )
 
 @Singleton
-class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepository) {
+class PlaylistManager
+@Inject
+constructor(
+    private val mediaRepository: MediaRepository,
+    private val databaseRepository: DatabaseRepository,
+    private val sessionManager: SessionManager,
+) {
     private val _playlistState = MutableStateFlow(PlaylistState())
     val playlistState: StateFlow<PlaylistState> = _playlistState.asStateFlow()
 
@@ -45,6 +56,7 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
         seasonId: UUID? = null,
         startPositionMs: Long = 0L,
         playlistId: UUID? = null,
+        includeIntros: Boolean = true,
     ): Boolean {
         if (playlistId != null) {
             return initializeJellyfinPlaylistQueue(startingItem, playlistId)
@@ -65,7 +77,9 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
         return try {
             val intros =
                 try {
-                    if (startPositionMs == 0L) {
+                    if (!includeIntros) {
+                        emptyList()
+                    } else if (startPositionMs == 0L) {
                         mediaRepository.getIntros(startingItem.id)
                     } else {
                         Timber.d("Resuming media at ${startPositionMs}ms, skipping intros")
@@ -109,11 +123,13 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
             currentSeriesId = null
             isJellyfinPlaylistQueue = true
             val videoItems =
-                mediaRepository
-                    .getPlaylistEntries(playlistId, fields = FieldSets.PLAYABLE_EPISODE)
-                    .entries
-                    .filterIsInstance<PlaylistEntry.Video>()
-                    .map { it.item }
+                withLocalSources(
+                    mediaRepository
+                        .getPlaylistEntries(playlistId, fields = FieldSets.PLAYABLE_EPISODE)
+                        .entries
+                        .filterIsInstance<PlaylistEntry.Video>()
+                        .map { it.item }
+                )
 
             if (videoItems.isEmpty()) {
                 return initializeSingleItemQueue(startingItem, emptyList())
@@ -139,9 +155,11 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
             if (seasonId != null) {
                 Timber.d("Loading episodes for season $seasonId only")
                 val episodes =
-                    mediaRepository.getEpisodes(seasonId, startingEpisode.seriesId).filter {
-                        !it.missing
-                    }
+                    withLocalSources(
+                        mediaRepository.getEpisodes(seasonId, startingEpisode.seriesId).filter {
+                            !it.missing
+                        }
+                    )
 
                 if (episodes.isEmpty()) {
                     val fallbackQueue = intros.toMutableList().apply { add(startingEpisode) }
@@ -170,9 +188,11 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
 
             Timber.d("Loading episodes for entire series")
             val allEpisodes =
-                mediaRepository
-                    .getSeriesEpisodes(startingEpisode.seriesId)
-                    .filter { !it.missing }
+                withLocalSources(
+                        mediaRepository.getSeriesEpisodes(startingEpisode.seriesId).filter {
+                            !it.missing
+                        }
+                    )
                     .toMutableList()
 
             if (allEpisodes.isEmpty()) {
@@ -242,10 +262,12 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
             }
 
             val siblings =
-                mediaRepository.getMovies(
-                    parentId = boxSet.id,
-                    sortBy = SortBy.RELEASE_DATE,
-                    fields = FieldSets.PLAYABLE_EPISODE + ItemFields.OVERVIEW,
+                withLocalSources(
+                    mediaRepository.getMovies(
+                        parentId = boxSet.id,
+                        sortBy = SortBy.RELEASE_DATE,
+                        fields = FieldSets.PLAYABLE_EPISODE + ItemFields.OVERVIEW,
+                    )
                 )
 
             val startIndex = siblings.indexOfFirst { it.id == item.id }
@@ -272,6 +294,48 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
         } catch (e: Exception) {
             Timber.e(e, "Failed to build collection queue for ${item.name}")
             false
+        }
+    }
+
+    private suspend fun <T : AfinityItem> withLocalSources(items: List<T>): List<T> {
+        if (items.isEmpty()) return items
+        val session = sessionManager.currentSession.value ?: return items
+        return try {
+            val downloadedIds =
+                databaseRepository
+                    .getDownloadsByStatusFlowScoped(
+                        listOf(DownloadStatus.COMPLETED),
+                        session.serverId,
+                        session.userId,
+                    )
+                    .first()
+                    .mapTo(HashSet()) { it.itemId }
+            if (downloadedIds.isEmpty()) return items
+
+            items.map { item ->
+                if (
+                    item.id !in downloadedIds ||
+                        item.sources.any { it.type == AfinitySourceType.LOCAL }
+                ) {
+                    return@map item
+                }
+                val localSources =
+                    databaseRepository.getSourcesForItem(item.id).filter {
+                        it.type == AfinitySourceType.LOCAL && !it.path.endsWith(".download")
+                    }
+                if (localSources.isEmpty()) return@map item
+                @Suppress("UNCHECKED_CAST")
+                when (item) {
+                    is AfinityEpisode -> item.copy(sources = localSources + item.sources) as T
+                    is AfinityMovie -> item.copy(sources = localSources + item.sources) as T
+                    else -> item
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to attach local sources to queue items")
+            items
         }
     }
 

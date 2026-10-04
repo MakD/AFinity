@@ -237,6 +237,7 @@ constructor(
 
     private var progressReportingJob: Job? = null
     private var pendingMainItemOptions: MainItemPlaybackOptions? = null
+    private var queueInitJob: Job? = null
     private var pendingAudioStreamIndex: Int? = null
     private var pendingSubtitleStreamIndex: Int? = null
     private var sideLoadedSubtitleUris: Map<Int, String> = emptyMap()
@@ -2096,16 +2097,19 @@ constructor(
 
             refreshStreamAuthHeader()
 
+            val useLocalSource = mediaSource.type == AfinitySourceType.LOCAL
             val allowTranscoding = isTranscodingAllowed()
             val quality = resolveVideoQuality()
             val playbackInfo =
-                playbackRepository.getPlaybackInfo(
-                    itemId = fullItem.id,
-                    quality = quality,
-                    mediaSourceId = actualMediaSourceId,
-                    enableDirectPlay = !forceTranscodeFallback,
-                    allowTranscoding = allowTranscoding,
-                )
+                if (useLocalSource) null
+                else
+                    playbackRepository.getPlaybackInfo(
+                        itemId = fullItem.id,
+                        quality = quality,
+                        mediaSourceId = actualMediaSourceId,
+                        enableDirectPlay = !forceTranscodeFallback,
+                        allowTranscoding = allowTranscoding,
+                    )
             val negotiatedSource =
                 playbackInfo?.mediaSources?.firstOrNull { it.id == actualMediaSourceId }
                     ?: playbackInfo?.mediaSources?.firstOrNull()
@@ -2204,7 +2208,6 @@ constructor(
             )
             playbackStateManager.trackCurrentItem(fullItem.id)
             coroutineScope {
-                val useLocalSource = mediaSource.type == AfinitySourceType.LOCAL
                 val streamDecision =
                     when {
                         useLocalSource ->
@@ -2431,6 +2434,7 @@ constructor(
                                 "[MultiPart] Checking additional parts for '${fullItem.name}' id=${fullItem.id}"
                             )
                             val parts = mediaRepository.getAdditionalParts(fullItem.id)
+                            queueInitJob?.join()
                             Timber.d(
                                 "[MultiPart] getAdditionalParts returned ${parts.size} item(s): ${parts.map { "'${it.name}' (${it.id})" }}"
                             )
@@ -3139,6 +3143,33 @@ constructor(
                 }
             }
         }
+        if (targetSource?.type == AfinitySourceType.LOCAL && !shuffle) {
+            pendingMainItemOptions = null
+            updateUiState { it.copy(isPlayingIntro = false) }
+            suppressNextControlShow = false
+            queueInitJob =
+                viewModelScope.launch {
+                    playlistManager.initializePlaylist(
+                        item,
+                        seasonId,
+                        startPositionMs,
+                        playlistId,
+                        includeIntros = false,
+                    )
+                    launch { playlistManager.enrichWithCollectionQueue(item) }
+                }
+            handlePlayerEvent(
+                PlayerEvent.LoadMedia(
+                    item = item,
+                    mediaSourceId = targetSource.id,
+                    audioStreamIndex = audioStreamIndex,
+                    subtitleStreamIndex = subtitleStreamIndex,
+                    startPositionMs = startPositionMs,
+                )
+            )
+            return
+        }
+
         viewModelScope.launch {
             playlistManager.initializePlaylist(item, seasonId, startPositionMs, playlistId)
             if (shuffle) {
@@ -3424,8 +3455,13 @@ constructor(
         val currentSource =
             _uiState.value.currentItem?.sources?.firstOrNull { it.id == currentSourceId }
 
+        val localSource =
+            fullItem.sources.firstOrNull {
+                it.type == AfinitySourceType.LOCAL && !it.path.endsWith(".download")
+            }
         val bestMatch =
-            findBestMatchingSource(reference = currentSource, candidates = fullItem.sources)
+            localSource
+                ?: findBestMatchingSource(reference = currentSource, candidates = fullItem.sources)
         val mediaSourceId = bestMatch?.id ?: fullItem.sources.firstOrNull()?.id ?: ""
 
         handlePlayerEvent(
