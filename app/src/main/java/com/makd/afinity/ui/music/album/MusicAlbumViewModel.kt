@@ -89,11 +89,13 @@ constructor(
                 val albumDeferred = async { musicRepository.getAlbumById(albumId) }
                 val tracksDeferred = async { musicRepository.getAlbumTracks(albumId) }
                 val album = albumDeferred.await()
-                val tracks = tracksDeferred.await()
-                val artistImageUrl =
+                val artistDeferred = async {
                     album?.artistId?.let {
-                        "${musicRepository.getBaseUrl()}/Items/$it/Images/Primary?fillHeight=128&quality=90"
+                        musicRepository.getArtistsByIds(listOf(it)).firstOrNull()
                     }
+                }
+                val tracks = tracksDeferred.await()
+                val artistImageUrl = artistDeferred.await()?.images?.primary?.toString()
                 itemStore.putIfAbsent(tracks + listOfNotNull(album))
                 _uiState.update {
                     it.copy(

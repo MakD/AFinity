@@ -233,7 +233,9 @@ constructor(
                         null
                     }
 
-                val artworkUrl = "${serverBaseUrl.trimEnd('/')}/Items/${item.id}/Images/Primary"
+                val artworkUrl =
+                    item.images.primary?.toString()?.takeIf { it.startsWith("http") }
+                        ?: "${serverBaseUrl.trimEnd('/')}/Items/${item.id}/Images/Primary"
                 val metadata =
                     MediaMetadata(MediaMetadata.MEDIA_TYPE_MOVIE).apply {
                         putString(MediaMetadata.KEY_TITLE, item.name)

@@ -25,6 +25,7 @@ import com.makd.afinity.data.models.media.AfinityVideoPlaylist
 import com.makd.afinity.data.models.media.toAfinityExternalUrl
 import com.makd.afinity.data.models.media.toAfinityMediaStream
 import com.makd.afinity.data.models.media.toAfinityTrickplayInfo
+import java.util.UUID
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.BaseItemPerson
@@ -317,6 +318,15 @@ fun BaseItemDto.toAfinityImages(baseUrl: String, imageFormat: ImageFormat? = nul
     fun Uri.Builder.withFormat(): Uri.Builder =
         if (imageFormat == null) this else appendQueryParameter("format", imageFormat.serialName)
 
+    fun imageUri(itemId: UUID, path: String, tag: String?): Uri =
+        baseUri
+            .buildUpon()
+            .appendEncodedPath("Items/$itemId/Images/$path")
+            .apply { if (tag != null) appendQueryParameter("tag", tag) }
+            .build()
+
+    val hasSeriesImages = seriesId != null && seriesPrimaryImageTag != null
+
     return AfinityImages(
         primary =
             imageTags?.get(ImageType.PRIMARY)?.let { tag ->
@@ -362,39 +372,39 @@ fun BaseItemDto.toAfinityImages(baseUrl: String, imageFormat: ImageFormat? = nul
                     .build()
             },
         showBackdrop =
-            seriesPrimaryImageTag?.let { tag ->
-                baseUri
-                    .buildUpon()
-                    .appendEncodedPath("Items/$seriesId/Images/Backdrop/0")
-                    .appendQueryParameter("tag", tag)
-                    .build()
+            run {
+                val backdropTag = parentBackdropImageTags?.firstOrNull()
+                val backdropOwner = parentBackdropItemId ?: seriesId
+                when {
+                    backdropTag != null && backdropOwner != null ->
+                        imageUri(backdropOwner, "Backdrop/0", backdropTag)
+
+                    hasSeriesImages -> imageUri(seriesId!!, "Backdrop/0", null)
+                    else -> null
+                }
             },
         showThumb =
-            (seriesThumbImageTag ?: seriesPrimaryImageTag)?.let { tag ->
-                baseUri
-                    .buildUpon()
-                    .appendEncodedPath("Items/$seriesId/Images/Thumb")
-                    .appendQueryParameter("tag", tag)
-                    .build()
+            run {
+                val parentThumbTag = parentThumbImageTag
+                val parentThumbOwner = parentThumbItemId
+                when {
+                    seriesThumbImageTag != null && seriesId != null ->
+                        imageUri(seriesId!!, "Thumb", seriesThumbImageTag)
+
+                    parentThumbTag != null && parentThumbOwner != null ->
+                        imageUri(parentThumbOwner, "Thumb", parentThumbTag)
+
+                    hasSeriesImages -> imageUri(seriesId!!, "Thumb", null)
+                    else -> null
+                }
             },
         showLogo =
             run {
                 val logoTag = parentLogoImageTag
-                val itemId = if (logoTag != null) (parentLogoItemId ?: seriesId) else seriesId
-                val fallbackTag = seriesPrimaryImageTag
+                val logoOwner = parentLogoItemId ?: seriesId
                 when {
-                    logoTag != null && itemId != null ->
-                        baseUri
-                            .buildUpon()
-                            .appendEncodedPath("Items/$itemId/Images/Logo")
-                            .appendQueryParameter("tag", logoTag)
-                            .build()
-                    fallbackTag != null && seriesId != null ->
-                        baseUri
-                            .buildUpon()
-                            .appendEncodedPath("Items/$seriesId/Images/Logo")
-                            .appendQueryParameter("tag", fallbackTag)
-                            .build()
+                    logoTag != null && logoOwner != null -> imageUri(logoOwner, "Logo", logoTag)
+                    hasSeriesImages -> imageUri(seriesId!!, "Logo", null)
                     else -> null
                 }
             },
@@ -411,6 +421,7 @@ fun BaseItemDto.toAfinityChapters(): List<AfinityChapter> {
             startPosition = chapter.startPositionTicks / 10000,
             name = chapter.name,
             imageIndex = if (chapter.imagePath.isNullOrEmpty()) null else index,
+            imageTag = chapter.imageTag,
         )
     } ?: emptyList()
 }

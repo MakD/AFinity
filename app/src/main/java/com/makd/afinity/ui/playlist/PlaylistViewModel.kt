@@ -23,6 +23,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +33,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+
+private const val ARTIST_LOOKUP_CHUNK = 100
 
 data class PlaylistArtistEntry(val name: String, val imageUrl: String?)
 
@@ -118,6 +121,9 @@ constructor(
     private val audioOnly: Boolean = savedStateHandle.get<String>("audioOnly")?.toBoolean() == true
 
     private val _uiState = MutableStateFlow(PlaylistUiState(audioOnly = audioOnly))
+
+    private val artistImageUrls = mutableMapOf<UUID, String?>()
+    private var artistImageJob: Job? = null
 
     private val _videoPlaybackRequests = MutableSharedFlow<VideoPlaybackRequest>()
     val videoPlaybackRequests = _videoPlaybackRequests.asSharedFlow()
@@ -450,18 +456,33 @@ constructor(
         if (audioOnly) filterIsInstance<PlaylistEntry.Audio>() else this
 
     private fun buildArtistEntries(entries: List<PlaylistEntry>): List<PlaylistArtistEntry> {
-        val baseUrl = musicRepository.getBaseUrl()
-        return entries
-            .filterIsInstance<PlaylistEntry.Audio>()
-            .map { it.track }
-            .filter { it.artistId != null && it.artist != null }
-            .groupBy { it.artistId }
-            .entries
-            .sortedByDescending { it.value.size }
-            .mapNotNull { (artistId, group) ->
-                val name = group.first().artist ?: return@mapNotNull null
-                val imageUrl = "$baseUrl/Items/$artistId/Images/Primary?fillHeight=128&quality=90"
-                PlaylistArtistEntry(name = name, imageUrl = imageUrl)
-            }
+        val grouped =
+            entries
+                .filterIsInstance<PlaylistEntry.Audio>()
+                .map { it.track }
+                .filter { it.artistId != null && it.artist != null }
+                .groupBy { it.artistId!! }
+                .entries
+                .sortedByDescending { it.value.size }
+        resolveArtistImages(grouped.map { it.key }, entries)
+        return grouped.mapNotNull { (artistId, group) ->
+            val name = group.first().artist ?: return@mapNotNull null
+            PlaylistArtistEntry(name = name, imageUrl = artistImageUrls[artistId])
+        }
+    }
+
+    private fun resolveArtistImages(artistIds: List<UUID>, entries: List<PlaylistEntry>) {
+        val missing = artistIds.filterNot { it in artistImageUrls }
+        if (missing.isEmpty()) return
+        artistImageJob?.cancel()
+        artistImageJob = viewModelScope.launch {
+            val found =
+                missing
+                    .chunked(ARTIST_LOOKUP_CHUNK)
+                    .flatMap { chunk -> musicRepository.getArtistsByIds(chunk) }
+                    .associateBy { it.id }
+            missing.forEach { id -> artistImageUrls[id] = found[id]?.images?.primary?.toString() }
+            _uiState.update { it.copy(artistEntries = buildArtistEntries(entries)) }
+        }
     }
 }

@@ -475,7 +475,9 @@ constructor(
 
                                 val imageUrl =
                                     activeSession.userId?.let { uid ->
-                                        "$baseUrl/Users/$uid/Images/Primary"
+                                        activeSession.userPrimaryImageTag?.let { tag ->
+                                            "$baseUrl/Users/$uid/Images/Primary?tag=$tag"
+                                        }
                                     }
 
                                 SyncPlayMemberInfo(

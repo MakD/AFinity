@@ -510,9 +510,14 @@ private fun PlayingSessionCard(
     val clientIconUrl = session.capabilities?.iconUrl
 
     val userAvatarUrl =
-        remember(baseUrl, session.userId) {
+        remember(baseUrl, session.userId, session.userPrimaryImageTag) {
             val uid = session.userId
-            if (baseUrl.isNotEmpty()) "$baseUrl/Users/$uid/Images/Primary?maxWidth=48" else null
+            val tag = session.userPrimaryImageTag
+            if (baseUrl.isNotEmpty() && tag != null) {
+                "$baseUrl/Users/$uid/Images/Primary?tag=$tag&maxWidth=48"
+            } else {
+                null
+            }
         }
 
     val basePositionTicks = session.playState?.positionTicks ?: 0L
