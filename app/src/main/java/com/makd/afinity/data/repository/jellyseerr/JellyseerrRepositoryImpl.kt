@@ -68,6 +68,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -117,8 +118,25 @@ constructor(
         isLenient = true
     }
 
+    private val seerrJson = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        coerceInputValues = true
+    }
+
     companion object {
         private const val CACHE_VALIDITY_MS = 5 * 60 * 1000L
+    }
+
+    private fun seerrErrorMessage(response: Response<*>): String {
+        val raw = runCatching { response.errorBody()?.string() }.getOrNull()
+        val message = raw?.let {
+            runCatching {
+                seerrJson.parseToJsonElement(it).jsonObject["message"]?.jsonPrimitive?.contentOrNull
+            }
+                .getOrNull()
+        }
+        return message?.takeIf { it.isNotBlank() } ?: "HTTP ${response.code()}"
     }
 
     private suspend fun <T> seerrResult(
@@ -135,7 +153,7 @@ constructor(
                 if (response.isSuccessful && body != null) {
                     Result.success(body)
                 } else {
-                    Result.failure(Exception("$errorMessage: ${response.message()}"))
+                    Result.failure(Exception("$errorMessage: ${seerrErrorMessage(response)}"))
                 }
             } catch (e: kotlin.coroutines.cancellation.CancellationException) {
                 throw e
@@ -785,9 +803,21 @@ constructor(
                         userId = userId,
                     )
                 val response = apiService.get().createRequest(requestBody)
+                val responseBody = response.body()
 
-                if (response.isSuccessful && response.body() != null) {
-                    val request = response.body()!!
+                if (response.isSuccessful && responseBody != null) {
+                    if (!responseBody.containsKey("id")) {
+                        val message =
+                            responseBody["message"]?.jsonPrimitive?.contentOrNull
+                                ?: "HTTP ${response.code()}"
+                        Timber.w("Seerr accepted the request without creating one: $message")
+                        return@withContext Result.failure(Exception(message))
+                    }
+                    val request =
+                        seerrJson.decodeFromJsonElement(
+                            JellyseerrRequest.serializer(),
+                            responseBody,
+                        )
 
                     val latestRequest =
                         try {
@@ -805,10 +835,8 @@ constructor(
                     _requestEvents.emit(RequestEvent(latestRequest))
                     Result.success(latestRequest)
                 } else {
-                    val errorBody = response.errorBody()?.string()
-                    val errorMsg =
-                        "Failed to create request: ${response.code()} ${if (errorBody != null) " - $errorBody" else ""}"
-                    Timber.e(errorMsg)
+                    val errorMsg = seerrErrorMessage(response)
+                    Timber.e("Failed to create request: ${response.code()} $errorMsg")
                     Result.failure(Exception(errorMsg))
                 }
             } catch (e: CancellationException) {
@@ -1161,23 +1189,10 @@ constructor(
         }
     }
 
-    override suspend fun approveRequest(
-        requestId: Int,
-        serverId: Int?,
-        profileId: Int?,
-        rootFolder: String?,
-    ): Result<JellyseerrRequest> {
+    override suspend fun approveRequest(requestId: Int): Result<JellyseerrRequest> {
         return withContext(Dispatchers.IO) {
             try {
-                val body =
-                    if (serverId != null || profileId != null || rootFolder != null) {
-                        com.makd.afinity.data.models.jellyseerr.ApproveRequestBody(
-                            serverId = serverId,
-                            profileId = profileId,
-                            rootFolder = rootFolder,
-                        )
-                    } else null
-                val response = apiService.get().approveRequest(requestId, body)
+                val response = apiService.get().approveRequest(requestId)
 
                 if (response.isSuccessful && response.body() != null) {
                     var req = response.body()!!
@@ -1215,7 +1230,7 @@ constructor(
 
                     cacheRequest(req)
                     Result.success(req)
-                } else Result.failure(Exception("Failed to approve request"))
+                } else Result.failure(Exception(seerrErrorMessage(response)))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -1233,6 +1248,8 @@ constructor(
         serverId: Int?,
         profileId: Int?,
         rootFolder: String?,
+        languageProfileId: Int?,
+        tags: List<Int>?,
     ): Result<JellyseerrRequest> {
         return withContext(Dispatchers.IO) {
             val (currentServerId, currentUserId) =
@@ -1243,15 +1260,26 @@ constructor(
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
+                val current =
+                    apiService.get().getRequestById(requestId).let { response ->
+                        if (response.isSuccessful) response.body()
+                        else
+                            return@withContext Result.failure(
+                                Exception(seerrErrorMessage(response))
+                            )
+                    }
+
                 val requestBody =
                     CreateRequestBody(
                         tmdbId = mediaId,
                         mediaType = mediaType.toApiString(),
-                        seasons = seasons,
+                        seasons = seasons ?: current?.seasons?.map { it.seasonNumber },
                         is4k = is4k,
-                        serverId = serverId,
-                        profileId = profileId,
-                        rootFolder = rootFolder,
+                        serverId = serverId ?: current?.serverId,
+                        profileId = profileId ?: current?.profileId,
+                        rootFolder = rootFolder ?: current?.rootFolder,
+                        languageProfileId = languageProfileId ?: current?.languageProfileId,
+                        tags = tags ?: current?.tags,
                     )
 
                 val response = apiService.get().updateRequest(requestId, requestBody)
@@ -1294,9 +1322,7 @@ constructor(
                     _requestEvents.emit(RequestEvent(updatedRequest))
                     Result.success(updatedRequest)
                 } else {
-                    val errorBody = response.errorBody()?.string()
-                    val errorMsg = "Failed to update: ${response.code()} - $errorBody"
-                    Result.failure(Exception(errorMsg))
+                    Result.failure(Exception(seerrErrorMessage(response)))
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -1344,7 +1370,7 @@ constructor(
 
                     cacheRequest(req)
                     Result.success(req)
-                } else Result.failure(Exception("Failed"))
+                } else Result.failure(Exception(seerrErrorMessage(response)))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

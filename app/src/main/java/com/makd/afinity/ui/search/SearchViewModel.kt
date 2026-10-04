@@ -20,7 +20,9 @@ import com.makd.afinity.data.models.jellyseerr.Permissions
 import com.makd.afinity.data.models.jellyseerr.PublicSettings
 import com.makd.afinity.data.models.jellyseerr.QualityProfile
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
+import com.makd.afinity.data.models.jellyseerr.RootFolder
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
+import com.makd.afinity.data.models.jellyseerr.ServiceDetailsResponse
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
 import com.makd.afinity.data.models.jellyseerr.ServiceTag
 import com.makd.afinity.data.models.jellyseerr.SonarrSeries
@@ -136,6 +138,7 @@ constructor(
     private var audiobookshelfSearchJob: Job? = null
     private var musicSearchJob: Job? = null
     private var genresJob: Job? = null
+    private var lastServiceDetails: ServiceDetailsResponse? = null
 
     private val searchQueryFlow = MutableSharedFlow<String>(extraBufferCapacity = 1)
     private var lastQueryAt = 0L
@@ -1035,8 +1038,11 @@ constructor(
                 selectedTvdbId = null,
                 availableUsers = emptyList(),
                 selectedRequestUser = null,
+                isAnimeRequest = false,
+                requestDialogError = null,
             )
         }
+        lastServiceDetails = null
         loadPublicSettings()
         refreshUserQuota()
         loadRequestableUsers()
@@ -1094,7 +1100,13 @@ constructor(
                                         ),
                                     selectedSeasons = selectableSeasons,
                                     disabledSeasons = alreadyAvailableSeasons,
+                                    isAnimeRequest = mediaType == MediaType.TV && details.isAnime(),
                                 )
+                        }
+                        if (mediaType == MediaType.TV && details.isAnime()) {
+                            lastServiceDetails?.let { cached ->
+                                if (isStillCurrent(_uiState.value)) applyServiceDefaults(cached)
+                            }
                         }
                         if (mediaType == MediaType.TV && details.externalIds?.tvdbId == null) {
                             viewModelScope.launch {
@@ -1160,7 +1172,7 @@ constructor(
 
         viewModelScope.launch {
             try {
-                _uiState.update { it.copy(isCreatingRequest = true) }
+                _uiState.update { it.copy(isCreatingRequest = true, requestDialogError = null) }
 
                 jellyseerrRepository
                     .createRequest(
@@ -1200,11 +1212,14 @@ constructor(
                                     isCreatingRequest = false,
                                     showRequestDialog = false,
                                     pendingRequest = null,
+                                    isAnimeRequest = false,
+                                    requestDialogError = null,
                                     selectedSeasons = emptyList(),
                                     is4kRequested = false,
                                     availableServers = emptyList(),
                                     selectedServer = null,
                                     availableProfiles = emptyList(),
+                                    availableRootFolders = emptyList(),
                                     selectedProfile = null,
                                     selectedRootFolder = null,
                                     jellyseerrSearchResults = updatedResults,
@@ -1222,7 +1237,16 @@ constructor(
                             Timber.d("Request created successfully: ${newRequest.id}")
                         },
                         onFailure = { error ->
-                            _uiState.update { it.copy(isCreatingRequest = false) }
+                            _uiState.update {
+                                it.copy(
+                                    isCreatingRequest = false,
+                                    requestDialogError =
+                                        context.getString(
+                                            R.string.error_request_create_failed_fmt,
+                                            error.message.orEmpty(),
+                                        ),
+                                )
+                            }
                             Timber.e(error, "Failed to create request")
                         },
                     )
@@ -1236,16 +1260,20 @@ constructor(
     }
 
     fun dismissRequestDialog() {
+        lastServiceDetails = null
         _uiState.update {
             it.copy(
                 showRequestDialog = false,
                 pendingRequest = null,
+                isAnimeRequest = false,
+                requestDialogError = null,
                 isFetchingTvDetails = false,
                 selectedSeasons = emptyList(),
                 is4kRequested = false,
                 availableServers = emptyList(),
                 selectedServer = null,
                 availableProfiles = emptyList(),
+                availableRootFolders = emptyList(),
                 selectedProfile = null,
                 selectedRootFolder = null,
                 isLoadingServers = false,
@@ -1294,6 +1322,7 @@ constructor(
                 is4kRequested = is4k,
                 selectedServer = null,
                 availableProfiles = emptyList(),
+                availableRootFolders = emptyList(),
                 selectedProfile = null,
                 selectedRootFolder = null,
                 availableLanguageProfiles = emptyList(),
@@ -1313,6 +1342,7 @@ constructor(
                 selectedRootFolder = null,
                 selectedProfile = null,
                 availableProfiles = emptyList(),
+                availableRootFolders = emptyList(),
                 availableLanguageProfiles = emptyList(),
                 selectedLanguageProfile = null,
                 availableTags = emptyList(),
@@ -1327,31 +1357,73 @@ constructor(
         _uiState.update { it.copy(selectedProfile = profile) }
     }
 
+    fun selectRootFolder(path: String) {
+        _uiState.update { it.copy(selectedRootFolder = path) }
+    }
+
     private fun loadServiceSettings(mediaType: MediaType) {
-        val user = _currentUser.value ?: return
-        if (
-            !user.hasPermission(Permissions.REQUEST_ADVANCED) &&
-                !user.hasPermission(Permissions.REQUEST_4K) &&
-                !user.hasPermission(Permissions.MANAGE_REQUESTS)
-        )
-            return
         viewModelScope.launch {
+            val user =
+                _currentUser.value
+                    ?: jellyseerrRepository.getCurrentUser().getOrNull()?.also {
+                        _currentUser.value = it
+                    }
+                    ?: return@launch
+            if (
+                !user.hasPermission(Permissions.REQUEST_ADVANCED) &&
+                    !user.hasPermission(Permissions.REQUEST_4K) &&
+                    !user.hasPermission(Permissions.MANAGE_REQUESTS)
+            )
+                return@launch
             _uiState.update { it.copy(isLoadingServers = true) }
             jellyseerrRepository
                 .getServiceSettings(mediaType)
                 .fold(
                     onSuccess = { servers ->
                         val is4k = _uiState.value.is4kRequested
-                        val filtered = servers.filter { it.is4k == is4k }
+                        val finalServers = servers.filter { it.is4k == is4k }
+                        val defaultServer =
+                            finalServers.firstOrNull { it.isDefault } ?: finalServers.firstOrNull()
                         _uiState.update {
-                            it.copy(availableServers = filtered, isLoadingServers = false)
+                            it.copy(
+                                availableServers = finalServers,
+                                selectedServer = defaultServer,
+                                isLoadingServers = false,
+                            )
                         }
+                        if (defaultServer != null) loadQualityProfiles(mediaType, defaultServer.id)
                     },
                     onFailure = { error ->
                         Timber.e(error, "Failed to load service settings")
                         _uiState.update { it.copy(isLoadingServers = false) }
                     },
                 )
+        }
+    }
+
+    private fun applyServiceDefaults(details: ServiceDetailsResponse) {
+        val isAnime = _uiState.value.isAnimeRequest
+        val server = details.server
+        val preselected = details.profiles.find { it.id == server?.defaultProfileId(isAnime) }
+        val rootFolder =
+            server?.defaultDirectory(isAnime) ?: details.rootFolders.firstOrNull()?.path
+        val languageProfile =
+            details.languageProfiles.find { it.id == server?.defaultLanguageProfileId(isAnime) }
+        _uiState.update {
+            it.copy(
+                availableProfiles = details.profiles,
+                availableRootFolders = details.rootFolders,
+                selectedProfile = preselected,
+                selectedRootFolder = rootFolder,
+                availableLanguageProfiles = details.languageProfiles,
+                selectedLanguageProfile = languageProfile,
+                availableTags = details.tags,
+                selectedTagIds =
+                    server?.defaultTags(isAnime)?.filter { tagId ->
+                        details.tags.any { tag -> tag.id == tagId }
+                    } ?: emptyList(),
+                isLoadingProfiles = false,
+            )
         }
     }
 
@@ -1362,30 +1434,8 @@ constructor(
                 .getServiceDetails(mediaType, serviceId)
                 .fold(
                     onSuccess = { details ->
-                        val activeProfileId = details.server?.activeProfileId
-                        val preselected = details.profiles.find { it.id == activeProfileId }
-                        val rootFolder =
-                            details.server?.activeDirectory
-                                ?: details.rootFolders.firstOrNull()?.path
-                        val languageProfile =
-                            details.languageProfiles.find {
-                                it.id == details.server?.activeLanguageProfileId
-                            }
-                        _uiState.update {
-                            it.copy(
-                                availableProfiles = details.profiles,
-                                selectedProfile = preselected,
-                                selectedRootFolder = rootFolder,
-                                availableLanguageProfiles = details.languageProfiles,
-                                selectedLanguageProfile = languageProfile,
-                                availableTags = details.tags,
-                                selectedTagIds =
-                                    details.server?.activeTags?.filter { tagId ->
-                                        details.tags.any { tag -> tag.id == tagId }
-                                    } ?: emptyList(),
-                                isLoadingProfiles = false,
-                            )
-                        }
+                        lastServiceDetails = details
+                        applyServiceDefaults(details)
                     },
                     onFailure = { error ->
                         Timber.e(error, "Failed to load quality profiles")
@@ -1447,6 +1497,9 @@ data class SearchUiState(
     val searchResults: List<AfinityItem> = emptyList(),
     val isSearching: Boolean = false,
     val searchError: String? = null,
+    val isAnimeRequest: Boolean = false,
+    val requestDialogError: String? = null,
+    val availableRootFolders: List<RootFolder> = emptyList(),
     val episodeResults: List<AfinityEpisode> = emptyList(),
     val isEpisodeSearching: Boolean = false,
     val libraries: List<AfinityCollection> = emptyList(),

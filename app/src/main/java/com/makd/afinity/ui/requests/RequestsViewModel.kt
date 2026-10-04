@@ -19,7 +19,9 @@ import com.makd.afinity.data.models.jellyseerr.Permissions
 import com.makd.afinity.data.models.jellyseerr.PublicSettings
 import com.makd.afinity.data.models.jellyseerr.QualityProfile
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
+import com.makd.afinity.data.models.jellyseerr.RootFolder
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
+import com.makd.afinity.data.models.jellyseerr.ServiceDetailsResponse
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
 import com.makd.afinity.data.models.jellyseerr.ServiceTag
 import com.makd.afinity.data.models.jellyseerr.SonarrSeries
@@ -88,6 +90,7 @@ constructor(
     private val prefetchSemaphore = kotlinx.coroutines.sync.Semaphore(4)
 
     private var discoverJob: Job? = null
+    private var lastServiceDetails: ServiceDetailsResponse? = null
     private val sectionResults = LinkedHashMap<String, DiscoverSectionContent>()
     private var sectionOrder: List<String> = emptyList()
 
@@ -379,42 +382,54 @@ constructor(
         }
     }
 
+    private suspend fun saveRequestOverrides(): Result<JellyseerrRequest> {
+        val state = _uiState.value
+        val request =
+            state.selectedRequest ?: return Result.failure(IllegalStateException("No request"))
+        val tmdbId =
+            request.media.tmdbId ?: return Result.failure(IllegalStateException("No media id"))
+        val mediaType = request.getMediaType() ?: MediaType.MOVIE
+        return jellyseerrRepository.updateRequest(
+            requestId = request.id,
+            mediaId = tmdbId,
+            mediaType = mediaType,
+            seasons =
+                if (mediaType == MediaType.TV) request.seasons?.map { it.seasonNumber } else null,
+            is4k = state.is4kRequested,
+            serverId = state.selectedServer?.id,
+            profileId = state.selectedProfile?.id,
+            rootFolder = state.selectedRootFolder,
+            languageProfileId =
+                state.selectedLanguageProfile?.id.takeIf { mediaType == MediaType.TV },
+            tags = state.selectedTagIds.takeIf { state.availableTags.isNotEmpty() },
+        )
+    }
+
     fun approveRequest(requestId: Int) {
+        val isFromDialog = _uiState.value.selectedRequest?.id == requestId
         viewModelScope.launch {
             try {
-                _uiState.update { it.copy(isProcessingRequest = true) }
+                _uiState.update { it.copy(isProcessingRequest = true, requestDialogError = null) }
 
-                var serverId = _uiState.value.selectedServer?.id
-                var profileId = _uiState.value.selectedProfile?.id
-                var rootFolder = _uiState.value.selectedRootFolder
-                val isFromDialog = _uiState.value.selectedRequest?.id == requestId
-                if (!isFromDialog && serverId == null) {
-                    val request = _uiState.value.requests.find { it.id == requestId }
-                    val mediaType = request?.getMediaType() ?: MediaType.MOVIE
-                    val is4k = request?.is4k ?: false
-                    jellyseerrRepository.getServiceSettings(mediaType).onSuccess { servers ->
-                        val defaultServer =
-                            servers.firstOrNull { it.is4k == is4k }
-                                ?: servers.firstOrNull { it.isDefault }
-                                ?: servers.firstOrNull()
-                        serverId = defaultServer?.id
-                    }
-
-                    serverId?.let { sid ->
-                        jellyseerrRepository.getServiceDetails(mediaType, sid).onSuccess { details
-                            ->
-                            profileId =
-                                details.server?.activeProfileId
-                                    ?: details.profiles.firstOrNull()?.id
-                            rootFolder =
-                                details.server?.activeDirectory
-                                    ?: details.rootFolders.firstOrNull()?.path
+                if (isFromDialog) {
+                    val saved = saveRequestOverrides()
+                    if (saved.isFailure) {
+                        _uiState.update {
+                            it.copy(
+                                isProcessingRequest = false,
+                                requestDialogError =
+                                    context.getString(
+                                        R.string.error_request_update_failed_fmt,
+                                        saved.exceptionOrNull()?.message.orEmpty(),
+                                    ),
+                            )
                         }
+                        return@launch
                     }
                 }
 
                 jellyseerrRepository
-                    .approveRequest(requestId, serverId, profileId, rootFolder)
+                    .approveRequest(requestId)
                     .fold(
                         onSuccess = { updated ->
                             _uiState.update {
@@ -433,15 +448,20 @@ constructor(
                             loadRequests()
                         },
                         onFailure = { error ->
-                            _uiState.update {
-                                it.copy(
-                                    isProcessingRequest = false,
-                                    error =
-                                        context.getString(
-                                            R.string.error_request_fail_approve_fmt,
-                                            error.message ?: "",
-                                        ),
+                            val message =
+                                context.getString(
+                                    R.string.error_request_fail_approve_fmt,
+                                    error.message ?: "",
                                 )
+                            _uiState.update {
+                                if (isFromDialog) {
+                                    it.copy(
+                                        isProcessingRequest = false,
+                                        requestDialogError = message,
+                                    )
+                                } else {
+                                    it.copy(isProcessingRequest = false, error = message)
+                                }
                             }
                         },
                     )
@@ -456,30 +476,12 @@ constructor(
     }
 
     fun updateRequest(requestId: Int) {
-        val request = _uiState.value.selectedRequest ?: return
-        val tmdbId = request.media.tmdbId ?: return
-        val mediaType = request.getMediaType() ?: MediaType.MOVIE
-        val state = _uiState.value
-        val seasons =
-            if (mediaType == MediaType.TV)
-                state.selectedSeasons.takeIf { it.isNotEmpty() }
-                    ?: request.seasons?.map { it.seasonNumber }
-            else null
+        if (_uiState.value.selectedRequest?.id != requestId) return
 
         viewModelScope.launch {
             try {
-                _uiState.update { it.copy(isProcessingRequest = true) }
-                jellyseerrRepository
-                    .updateRequest(
-                        requestId,
-                        tmdbId,
-                        mediaType,
-                        seasons,
-                        state.is4kRequested,
-                        state.selectedServer?.id,
-                        state.selectedProfile?.id,
-                        state.selectedRootFolder,
-                    )
+                _uiState.update { it.copy(isProcessingRequest = true, requestDialogError = null) }
+                saveRequestOverrides()
                     .fold(
                         onSuccess = { updated ->
                             _uiState.update {
@@ -499,7 +501,7 @@ constructor(
                             _uiState.update {
                                 it.copy(
                                     isProcessingRequest = false,
-                                    error =
+                                    requestDialogError =
                                         context.getString(
                                             R.string.error_request_update_failed_fmt,
                                             error.message ?: "",
@@ -519,9 +521,10 @@ constructor(
     }
 
     fun declineRequest(requestId: Int) {
+        val isFromDialog = _uiState.value.selectedRequest?.id == requestId
         viewModelScope.launch {
             try {
-                _uiState.update { it.copy(isProcessingRequest = true) }
+                _uiState.update { it.copy(isProcessingRequest = true, requestDialogError = null) }
                 jellyseerrRepository
                     .declineRequest(requestId)
                     .fold(
@@ -540,15 +543,20 @@ constructor(
                             }
                         },
                         onFailure = { error ->
-                            _uiState.update {
-                                it.copy(
-                                    isProcessingRequest = false,
-                                    error =
-                                        context.getString(
-                                            R.string.error_request_fail_decline_fmt,
-                                            error.message ?: "",
-                                        ),
+                            val message =
+                                context.getString(
+                                    R.string.error_request_fail_decline_fmt,
+                                    error.message ?: "",
                                 )
+                            _uiState.update {
+                                if (isFromDialog) {
+                                    it.copy(
+                                        isProcessingRequest = false,
+                                        requestDialogError = message,
+                                    )
+                                } else {
+                                    it.copy(isProcessingRequest = false, error = message)
+                                }
                             }
                         },
                     )
@@ -567,7 +575,7 @@ constructor(
             "JellyseerrDebug: selectRequest called for Request ID: ${request.id}, pre-loading data..."
         )
 
-        _uiState.update { it.copy(isLoadingManagementData = true) }
+        _uiState.update { it.copy(isLoadingManagementData = true, requestDialogError = null) }
 
         val tmdbId = request.media.tmdbId ?: return
         val mediaType = request.getMediaType() ?: MediaType.MOVIE
@@ -599,11 +607,13 @@ constructor(
             var finalServers: List<ServiceSettings> = emptyList()
             var matchedServer: ServiceSettings? = null
             var finalProfiles: List<QualityProfile> = emptyList()
+            var finalRootFolders: List<RootFolder> = emptyList()
             var selectedProfile: QualityProfile? = null
             var finalRootFolder: String? = request.rootFolder
             var finalIs4k = request.is4k
 
             detailsResult.onSuccess { detailsData = it }
+            val isAnime = mediaType == MediaType.TV && detailsData?.isAnime() == true
 
             settingsResult.onSuccess { servers ->
                 val actualServer = servers.find { it.id == request.serverId }
@@ -616,7 +626,7 @@ constructor(
                 }
 
                 val filtered = servers.filter { it.is4k == finalIs4k }
-                finalServers = filtered.ifEmpty { servers }
+                finalServers = filtered
 
                 matchedServer =
                     actualServer
@@ -629,17 +639,20 @@ constructor(
                 jellyseerrRepository.getServiceDetails(mediaType, targetServiceId).onSuccess {
                     serviceDetails ->
                     finalProfiles = serviceDetails.profiles
+                    finalRootFolders = serviceDetails.rootFolders
 
                     selectedProfile =
                         if (request.profileId != null) {
                             finalProfiles.find { it.id == request.profileId }
                         } else {
-                            finalProfiles.find { it.id == serviceDetails.server?.activeProfileId }
+                            finalProfiles.find {
+                                it.id == serviceDetails.server?.defaultProfileId(isAnime)
+                            }
                         }
 
                     if (finalRootFolder == null) {
                         finalRootFolder =
-                            serviceDetails.server?.activeDirectory
+                            serviceDetails.server?.defaultDirectory(isAnime)
                                 ?: serviceDetails.rootFolders.firstOrNull()?.path
                     }
                 }
@@ -661,11 +674,58 @@ constructor(
                     availableProfiles = finalProfiles,
                     selectedProfile = selectedProfile,
                     selectedRootFolder = finalRootFolder,
+                    availableRootFolders = finalRootFolders,
+                    availableLanguageProfiles = emptyList(),
+                    selectedLanguageProfile = null,
+                    availableTags = emptyList(),
+                    selectedTagIds = emptyList(),
+                    isAnimeRequest = isAnime,
                     isLoadingDetails = false,
                     isLoadingServers = false,
                     isLoadingProfiles = false,
                 )
             }
+        }
+    }
+
+    private fun applyServiceDefaults(
+        serviceDetails: ServiceDetailsResponse,
+        requestedProfileId: Int?,
+        keepRootFolder: Boolean,
+    ) {
+        val isAnime = _uiState.value.isAnimeRequest
+        val server = serviceDetails.server
+        val profile =
+            if (requestedProfileId != null) {
+                serviceDetails.profiles.find { it.id == requestedProfileId }
+            } else {
+                serviceDetails.profiles.find { it.id == server?.defaultProfileId(isAnime) }
+            }
+        val rootFolder =
+            server?.defaultDirectory(isAnime) ?: serviceDetails.rootFolders.firstOrNull()?.path
+        val languageProfile =
+            serviceDetails.languageProfiles.find {
+                it.id == server?.defaultLanguageProfileId(isAnime)
+            }
+        val tagIds =
+            server?.defaultTags(isAnime)?.filter { tagId ->
+                serviceDetails.tags.any { tag -> tag.id == tagId }
+            } ?: emptyList()
+
+        _uiState.update {
+            it.copy(
+                availableProfiles = serviceDetails.profiles,
+                availableRootFolders = serviceDetails.rootFolders,
+                selectedProfile = profile,
+                selectedRequestProfileName = profile?.name ?: it.selectedRequestProfileName,
+                selectedRootFolder =
+                    if (keepRootFolder) it.selectedRootFolder ?: rootFolder else rootFolder,
+                availableLanguageProfiles = serviceDetails.languageProfiles,
+                selectedLanguageProfile = languageProfile,
+                availableTags = serviceDetails.tags,
+                selectedTagIds = tagIds,
+                isLoadingProfiles = false,
+            )
         }
     }
 
@@ -678,41 +738,12 @@ constructor(
             .getServiceDetails(mediaType, serviceId)
             .fold(
                 onSuccess = { serviceDetails ->
-                    val profile =
-                        if (requestedProfileId != null) {
-                            serviceDetails.profiles.find { it.id == requestedProfileId }
-                        } else {
-                            serviceDetails.profiles.find {
-                                it.id == serviceDetails.server?.activeProfileId
-                            }
-                        }
-
-                    val rootFolder =
-                        serviceDetails.server?.activeDirectory
-                            ?: serviceDetails.rootFolders.firstOrNull()?.path
-
-                    val languageProfile =
-                        serviceDetails.languageProfiles.find {
-                            it.id == serviceDetails.server?.activeLanguageProfileId
-                        }
-
-                    _uiState.update {
-                        it.copy(
-                            availableProfiles = serviceDetails.profiles,
-                            selectedProfile = profile,
-                            selectedRequestProfileName =
-                                profile?.name ?: it.selectedRequestProfileName,
-                            selectedRootFolder = it.selectedRootFolder ?: rootFolder,
-                            availableLanguageProfiles = serviceDetails.languageProfiles,
-                            selectedLanguageProfile = languageProfile,
-                            availableTags = serviceDetails.tags,
-                            selectedTagIds =
-                                serviceDetails.server?.activeTags?.filter { tagId ->
-                                    serviceDetails.tags.any { tag -> tag.id == tagId }
-                                } ?: emptyList(),
-                            isLoadingProfiles = false,
-                        )
-                    }
+                    lastServiceDetails = serviceDetails
+                    applyServiceDefaults(
+                        serviceDetails,
+                        requestedProfileId,
+                        keepRootFolder = true,
+                    )
                 },
                 onFailure = { _uiState.update { it.copy(isLoadingProfiles = false) } },
             )
@@ -720,10 +751,26 @@ constructor(
 
     fun setIs4kRequested(is4k: Boolean) {
         _uiState.update {
+            val pending = it.pendingRequest
+            val laneDisabled = if (is4k) it.disabledSeasons4k else it.disabledSeasonsHd
+            val switchSeasons =
+                pending?.mediaType == MediaType.TV &&
+                    !it.isFetchingTvDetails &&
+                    it.showRequestDialog
             it.copy(
                 is4kRequested = is4k,
+                disabledSeasons = if (switchSeasons) laneDisabled else it.disabledSeasons,
+                selectedSeasons =
+                    if (switchSeasons) {
+                        (1..(pending?.availableSeasons ?: 0)).filter { season ->
+                            season !in laneDisabled
+                        }
+                    } else {
+                        it.selectedSeasons
+                    },
                 selectedServer = null,
                 availableProfiles = emptyList(),
+                availableRootFolders = emptyList(),
                 selectedProfile = null,
                 selectedRootFolder = null,
                 availableLanguageProfiles = emptyList(),
@@ -744,7 +791,7 @@ constructor(
                 .fold(
                     onSuccess = { servers ->
                         val filtered = servers.filter { it.is4k == is4k }
-                        val finalServers = filtered.ifEmpty { servers }
+                        val finalServers = filtered
                         val defaultServer =
                             finalServers.firstOrNull { it.isDefault } ?: finalServers.firstOrNull()
 
@@ -772,6 +819,7 @@ constructor(
                 selectedRootFolder = null,
                 selectedProfile = null,
                 availableProfiles = emptyList(),
+                availableRootFolders = emptyList(),
                 availableLanguageProfiles = emptyList(),
                 selectedLanguageProfile = null,
                 availableTags = emptyList(),
@@ -788,6 +836,10 @@ constructor(
 
     fun selectProfile(profile: QualityProfile) {
         _uiState.update { it.copy(selectedProfile = profile) }
+    }
+
+    fun selectRootFolder(path: String) {
+        _uiState.update { it.copy(selectedRootFolder = path) }
     }
 
     fun searchForContent(query: String, mediaType: MediaType? = null) {
@@ -834,7 +886,7 @@ constructor(
     fun createRequest(mediaId: Int, mediaType: MediaType, seasons: List<Int>? = null) {
         val state = _uiState.value
         viewModelScope.launch {
-            _uiState.update { it.copy(isCreatingRequest = true) }
+            _uiState.update { it.copy(isCreatingRequest = true, requestDialogError = null) }
             jellyseerrRepository
                 .createRequest(
                     mediaId = mediaId,
@@ -867,10 +919,10 @@ constructor(
                         _uiState.update {
                             it.copy(
                                 isCreatingRequest = false,
-                                error =
+                                requestDialogError =
                                     context.getString(
                                         R.string.error_request_create_failed_fmt,
-                                        error.message,
+                                        error.message.orEmpty(),
                                     ),
                             )
                         }
@@ -905,6 +957,13 @@ constructor(
                 selectedRootFolder = null,
                 availableServers = emptyList(),
                 availableProfiles = emptyList(),
+                availableRootFolders = emptyList(),
+                availableLanguageProfiles = emptyList(),
+                selectedLanguageProfile = null,
+                availableTags = emptyList(),
+                selectedTagIds = emptyList(),
+                isAnimeRequest = false,
+                requestDialogError = null,
             )
         }
     }
@@ -1153,6 +1212,8 @@ constructor(
         posterUrl: String?,
         availableSeasons: Int = 0,
         existingStatus: MediaStatus? = null,
+        existingStatus4k: MediaStatus? = null,
+        is4k: Boolean = false,
     ) {
         _uiState.update {
             it.copy(
@@ -1166,16 +1227,23 @@ constructor(
                         posterUrl,
                         availableSeasons,
                         existingStatus,
+                        existingStatus4k,
                     ),
                 selectedSeasons = emptyList(),
                 disabledSeasons = emptyList(),
+                disabledSeasonsHd = emptyList(),
+                disabledSeasons4k = emptyList(),
+                is4kLaneBlocked = false,
                 tvdbCandidates = emptyList(),
                 selectedTvdbId = null,
                 availableUsers = emptyList(),
                 selectedRequestUser = null,
+                isAnimeRequest = false,
+                requestDialogError = null,
             )
         }
-        setIs4kRequested(false)
+        lastServiceDetails = null
+        setIs4kRequested(is4k)
 
         viewModelScope.launch {
             val authJob = async { refreshCurrentUser() }
@@ -1195,24 +1263,26 @@ constructor(
             detailsResult.fold(
                 onSuccess = { details ->
                     val seasonCount = if (mediaType == MediaType.TV) details.getSeasonCount() else 0
-                    val physicallyAvailable =
-                        details.mediaInfo?.getAvailableSeasons() ?: emptyList()
-                    val alreadyRequestedByOthers =
-                        details.mediaInfo?.requests?.flatMap { request ->
-                            request.seasons?.map { it.seasonNumber } ?: emptyList()
-                        } ?: emptyList()
-                    val allDisabledSeasons =
-                        (physicallyAvailable + alreadyRequestedByOthers).distinct()
-                    val selectableSeasons =
+                    val mediaInfo = details.mediaInfo
+                    val disabledHd = mediaInfo?.blockedSeasons(is4k = false).orEmpty()
+                    val disabled4k = mediaInfo?.blockedSeasons(is4k = true).orEmpty()
+                    val fourKLaneBlocked =
                         if (mediaType == MediaType.TV) {
-                            (1..seasonCount).filter { it !in allDisabledSeasons }
+                            seasonCount > 0 && (1..seasonCount).all { it in disabled4k }
                         } else {
-                            emptyList()
+                            mediaInfo?.canRequestLane(is4k = true) == false
                         }
 
                     _uiState.update { state ->
                         if (!isStillCurrent(state)) state
-                        else
+                        else {
+                            val laneDisabled = if (state.is4kRequested) disabled4k else disabledHd
+                            val selectableSeasons =
+                                if (mediaType == MediaType.TV) {
+                                    (1..seasonCount).filter { it !in laneDisabled }
+                                } else {
+                                    emptyList()
+                                }
                             state.copy(
                                 isFetchingTvDetails = false,
                                 pendingRequest =
@@ -1222,7 +1292,8 @@ constructor(
                                         details.title ?: details.name ?: title,
                                         details.getPosterUrl(),
                                         seasonCount,
-                                        existingStatus,
+                                        mediaInfo?.laneStatus(is4k = false) ?: existingStatus,
+                                        mediaInfo?.laneStatus(is4k = true) ?: existingStatus4k,
                                         details.getBackdropUrl(),
                                         details.tagline,
                                         details.overview,
@@ -1236,8 +1307,20 @@ constructor(
                                         details.ratingsCombined,
                                     ),
                                 selectedSeasons = selectableSeasons,
-                                disabledSeasons = allDisabledSeasons,
+                                disabledSeasons = laneDisabled,
+                                disabledSeasonsHd = disabledHd,
+                                disabledSeasons4k = disabled4k,
+                                is4kLaneBlocked = fourKLaneBlocked,
+                                isAnimeRequest = mediaType == MediaType.TV && details.isAnime(),
                             )
+                        }
+                    }
+                    if (mediaType == MediaType.TV && details.isAnime()) {
+                        lastServiceDetails?.let { cached ->
+                            if (isStillCurrent(_uiState.value)) {
+                                applyServiceDefaults(cached, null, keepRootFolder = false)
+                            }
+                        }
                     }
                     if (mediaType == MediaType.TV && details.externalIds?.tvdbId == null) {
                         launch {
@@ -1298,16 +1381,24 @@ constructor(
     }
 
     fun dismissRequestDialog() {
+        lastServiceDetails = null
         _uiState.update {
             it.copy(
                 showRequestDialog = false,
                 pendingRequest = null,
+                isAnimeRequest = false,
+                requestDialogError = null,
+                disabledSeasons = emptyList(),
+                disabledSeasonsHd = emptyList(),
+                disabledSeasons4k = emptyList(),
+                is4kLaneBlocked = false,
                 isFetchingTvDetails = false,
                 selectedSeasons = emptyList(),
                 is4kRequested = false,
                 availableServers = emptyList(),
                 selectedServer = null,
                 availableProfiles = emptyList(),
+                availableRootFolders = emptyList(),
                 selectedProfile = null,
                 selectedRootFolder = null,
                 isLoadingServers = false,
@@ -1377,6 +1468,9 @@ data class RequestsUiState(
     val pendingRequest: PendingRequest? = null,
     val selectedSeasons: List<Int> = emptyList(),
     val disabledSeasons: List<Int> = emptyList(),
+    val disabledSeasonsHd: List<Int> = emptyList(),
+    val disabledSeasons4k: List<Int> = emptyList(),
+    val is4kLaneBlocked: Boolean = false,
     val isFetchingTvDetails: Boolean = false,
     val is4kRequested: Boolean = false,
     val availableServers: List<ServiceSettings> = emptyList(),
@@ -1391,6 +1485,9 @@ data class RequestsUiState(
     val isLoadingDetails: Boolean = false,
     val selectedRequestServerName: String? = null,
     val selectedRequestProfileName: String? = null,
+    val availableRootFolders: List<RootFolder> = emptyList(),
+    val isAnimeRequest: Boolean = false,
+    val requestDialogError: String? = null,
     val publicSettings: PublicSettings? = null,
     val userQuota: UserQuotaResponse? = null,
     val availableLanguageProfiles: List<LanguageProfile> = emptyList(),
@@ -1410,6 +1507,7 @@ data class PendingRequest(
     val posterUrl: String?,
     val availableSeasons: Int = 0,
     val existingStatus: MediaStatus? = null,
+    val existingStatus4k: MediaStatus? = null,
     val backdropUrl: String? = null,
     val tagline: String? = null,
     val overview: String? = null,

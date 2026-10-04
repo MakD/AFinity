@@ -253,7 +253,10 @@ fun FilteredMediaScreen(
                     if (requestsUiState.pendingRequest!!.mediaType == MediaType.TV) it.tv
                     else it.movie
                 },
-            existingStatus = requestsUiState.pendingRequest!!.existingStatus,
+            existingStatus =
+                if (requestsUiState.is4kRequested) requestsUiState.pendingRequest!!.existingStatus4k
+                else requestsUiState.pendingRequest!!.existingStatus,
+            is4kLaneBlocked = requestsUiState.is4kLaneBlocked,
             isLoading = requestsUiState.isCreatingRequest,
             detailsLoading = requestsUiState.isFetchingTvDetails,
             onConfirm = { requestsViewModel.confirmRequest() },
@@ -274,7 +277,7 @@ fun FilteredMediaScreen(
                     if (requestsUiState.pendingRequest!!.mediaType == MediaType.MOVIE)
                         it.movie4kEnabled
                     else it.series4kEnabled
-                } ?: true) && currentUser?.hasPermission(Permissions.REQUEST_4K) == true,
+                } ?: false) && currentUser?.hasPermission(Permissions.REQUEST_4K) == true,
             is4k = requestsUiState.is4kRequested,
             onIs4kChange = { requestsViewModel.setIs4kRequested(it) },
             canAdvanced =
@@ -301,6 +304,9 @@ fun FilteredMediaScreen(
             availableUsers = requestsUiState.availableUsers,
             selectedRequestUser = requestsUiState.selectedRequestUser,
             onRequestUserSelected = { requestsViewModel.selectRequestUser(it) },
+            availableRootFolders = requestsUiState.availableRootFolders,
+            onRootFolderSelected = { requestsViewModel.selectRootFolder(it) },
+            errorMessage = requestsUiState.requestDialogError,
         )
     }
 

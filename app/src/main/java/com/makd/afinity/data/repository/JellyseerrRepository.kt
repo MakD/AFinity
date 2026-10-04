@@ -140,12 +140,7 @@ interface JellyseerrRepository {
         isMovie: Boolean? = null,
     ): Result<Unit>
 
-    suspend fun approveRequest(
-        requestId: Int,
-        serverId: Int?,
-        profileId: Int?,
-        rootFolder: String?,
-    ): Result<JellyseerrRequest>
+    suspend fun approveRequest(requestId: Int): Result<JellyseerrRequest>
 
     suspend fun updateRequest(
         requestId: Int,
@@ -156,6 +151,8 @@ interface JellyseerrRepository {
         serverId: Int? = null,
         profileId: Int? = null,
         rootFolder: String? = null,
+        languageProfileId: Int? = null,
+        tags: List<Int>? = null,
     ): Result<JellyseerrRequest>
 
     suspend fun declineRequest(requestId: Int): Result<JellyseerrRequest>

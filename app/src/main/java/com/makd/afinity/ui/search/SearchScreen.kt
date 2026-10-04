@@ -417,7 +417,7 @@ fun SearchScreen(
                     (uiState.publicSettings?.let {
                         if (uiState.pendingRequest!!.mediaType == MediaType.MOVIE) it.movie4kEnabled
                         else it.series4kEnabled
-                    } ?: true) && currentUser?.hasPermission(Permissions.REQUEST_4K) == true,
+                    } ?: false) && currentUser?.hasPermission(Permissions.REQUEST_4K) == true,
                 is4k = uiState.is4kRequested,
                 onIs4kChange = { viewModel.setIs4kRequested(it) },
                 canAdvanced =
@@ -444,6 +444,9 @@ fun SearchScreen(
                 availableUsers = uiState.availableUsers,
                 selectedRequestUser = uiState.selectedRequestUser,
                 onRequestUserSelected = { viewModel.selectRequestUser(it) },
+                availableRootFolders = uiState.availableRootFolders,
+                onRootFolderSelected = { viewModel.selectRootFolder(it) },
+                errorMessage = uiState.requestDialogError,
             )
         }
 

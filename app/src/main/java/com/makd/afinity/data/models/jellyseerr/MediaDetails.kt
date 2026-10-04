@@ -4,6 +4,8 @@ import java.util.Locale
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+private const val ANIME_KEYWORD_ID = 210024
+
 @Serializable
 data class MediaDetails(
     @SerialName("id") val id: Int,
@@ -43,7 +45,10 @@ data class MediaDetails(
     @SerialName("networks") val networks: List<TvNetwork>? = null,
     @SerialName("productionCountries") val productionCountries: List<ProductionCountry>? = null,
     @SerialName("spokenLanguages") val spokenLanguages: List<SpokenLanguage>? = null,
+    @SerialName("keywords") val keywords: List<TmdbKeyword>? = null,
 ) {
+    fun isAnime(): Boolean = keywords?.any { it.id == ANIME_KEYWORD_ID } == true
+
     fun getSeasonCount(): Int {
         return seasons?.filter { (it.seasonNumber ?: 0) > 0 }?.size ?: numberOfSeason ?: 0
     }

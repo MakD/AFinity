@@ -24,6 +24,7 @@ data class QualityProfile(
 data class RootFolder(
     @SerialName("id") val id: Int,
     @SerialName("path") val path: String,
+    @SerialName("freeSpace") val freeSpace: Long? = null,
 )
 
 @Serializable
@@ -47,7 +48,24 @@ data class ServiceServerConfig(
     @SerialName("activeDirectory") val activeDirectory: String? = null,
     @SerialName("activeLanguageProfileId") val activeLanguageProfileId: Int? = null,
     @SerialName("activeTags") val activeTags: List<Int> = emptyList(),
-)
+    @SerialName("activeAnimeProfileId") val activeAnimeProfileId: Int? = null,
+    @SerialName("activeAnimeDirectory") val activeAnimeDirectory: String? = null,
+    @SerialName("activeAnimeLanguageProfileId") val activeAnimeLanguageProfileId: Int? = null,
+    @SerialName("activeAnimeTags") val activeAnimeTags: List<Int>? = null,
+) {
+    fun defaultProfileId(isAnime: Boolean): Int? =
+        if (isAnime) activeAnimeProfileId ?: activeProfileId else activeProfileId
+
+    fun defaultDirectory(isAnime: Boolean): String? =
+        if (isAnime) activeAnimeDirectory ?: activeDirectory else activeDirectory
+
+    fun defaultLanguageProfileId(isAnime: Boolean): Int? =
+        if (isAnime) activeAnimeLanguageProfileId ?: activeLanguageProfileId
+        else activeLanguageProfileId
+
+    fun defaultTags(isAnime: Boolean): List<Int> =
+        if (isAnime) activeAnimeTags ?: activeTags else activeTags
+}
 
 @Serializable
 data class ServiceDetailsResponse(

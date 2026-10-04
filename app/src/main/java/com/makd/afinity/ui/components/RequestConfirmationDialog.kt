@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.components
 
+import android.text.format.Formatter
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -41,6 +42,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -62,6 +64,7 @@ import com.makd.afinity.data.models.jellyseerr.QualityProfile
 import com.makd.afinity.data.models.jellyseerr.QuotaStatus
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.RequestStatus
+import com.makd.afinity.data.models.jellyseerr.RootFolder
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
 import com.makd.afinity.data.models.jellyseerr.ServiceTag
 import com.makd.afinity.data.models.jellyseerr.SonarrSeries
@@ -134,11 +137,16 @@ fun RequestConfirmationDialog(
     availableUsers: List<JellyseerrUser> = emptyList(),
     selectedRequestUser: JellyseerrUser? = null,
     onRequestUserSelected: (JellyseerrUser) -> Unit = {},
+    availableRootFolders: List<RootFolder> = emptyList(),
+    onRootFolderSelected: (String) -> Unit = {},
+    is4kLaneBlocked: Boolean = false,
+    errorMessage: String? = null,
 ) {
     val alreadyRequested =
         !isManagementMode &&
             existingStatus != null &&
             existingStatus != MediaStatus.UNKNOWN &&
+            existingStatus != MediaStatus.DELETED &&
             (mediaType == MediaType.MOVIE ||
                 existingStatus == MediaStatus.AVAILABLE ||
                 existingStatus == MediaStatus.PROCESSING)
@@ -558,34 +566,12 @@ fun RequestConfirmationDialog(
                                         isLoading = isLoadingProfiles,
                                     )
 
-                                    selectedRootFolder?.let { folder ->
-                                        Row(
-                                            modifier =
-                                                Modifier.fillMaxWidth()
-                                                    .clip(MaterialTheme.shapes.medium)
-                                                    .background(
-                                                        MaterialTheme.colorScheme.surfaceVariant
-                                                            .copy(0.5f)
-                                                    )
-                                                    .padding(16.dp)
-                                        ) {
-                                            Column {
-                                                Text(
-                                                    stringResource(R.string.request_root_folder),
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    color =
-                                                        MaterialTheme.colorScheme.onSurfaceVariant,
-                                                )
-                                                Text(
-                                                    folder,
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis,
-                                                )
-                                            }
-                                        }
-                                    }
+                                    RootFolderTile(
+                                        selectedRootFolder = selectedRootFolder,
+                                        availableRootFolders = availableRootFolders,
+                                        onRootFolderSelected = onRootFolderSelected,
+                                        isLoading = isLoadingProfiles,
+                                    )
                                 }
                             }
                         } else {
@@ -683,12 +669,18 @@ fun RequestConfirmationDialog(
                         }
 
                         if (can4k) {
+                            val fourKLocked = is4kLaneBlocked && !is4k
                             MinimalSwitchTile(
-                                stringResource(R.string.request_4k_title),
-                                is4k,
-                                onIs4kChange,
-                                R.drawable.ic_4k,
-                                18.dp,
+                                title = stringResource(R.string.request_4k_title),
+                                checked = is4k,
+                                onCheckedChange = onIs4kChange,
+                                icon = R.drawable.ic_4k,
+                                iconSize = 18.dp,
+                                enabled = !fourKLocked,
+                                subtitle =
+                                    if (fourKLocked)
+                                        stringResource(R.string.request_4k_already_requested)
+                                    else null,
                             )
                         }
 
@@ -724,34 +716,12 @@ fun RequestConfirmationDialog(
                                         onProfileSelected,
                                         isLoadingProfiles,
                                     )
-                                    selectedRootFolder?.let { folder ->
-                                        Row(
-                                            modifier =
-                                                Modifier.fillMaxWidth()
-                                                    .clip(MaterialTheme.shapes.medium)
-                                                    .background(
-                                                        MaterialTheme.colorScheme.surfaceVariant
-                                                            .copy(0.5f)
-                                                    )
-                                                    .padding(16.dp)
-                                        ) {
-                                            Column {
-                                                Text(
-                                                    stringResource(R.string.request_root_folder),
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    color =
-                                                        MaterialTheme.colorScheme.onSurfaceVariant,
-                                                )
-                                                Text(
-                                                    folder,
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis,
-                                                )
-                                            }
-                                        }
-                                    }
+                                    RootFolderTile(
+                                        selectedRootFolder = selectedRootFolder,
+                                        availableRootFolders = availableRootFolders,
+                                        onRootFolderSelected = onRootFolderSelected,
+                                        isLoading = isLoadingProfiles,
+                                    )
                                     if (
                                         mediaType == MediaType.TV &&
                                             availableLanguageProfiles.isNotEmpty()
@@ -795,6 +765,13 @@ fun RequestConfirmationDialog(
                             }
                         }
                     }
+                }
+                errorMessage?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
             }
         },
@@ -868,7 +845,12 @@ fun RequestConfirmationDialog(
                                 contentDescription = null,
                                 modifier = Modifier.size(20.dp),
                             )
-                            Text(stringResource(R.string.request_on_seerr_title))
+                            Text(
+                                stringResource(
+                                    if (is4k) R.string.request_4k_title
+                                    else R.string.request_on_seerr_title
+                                )
+                            )
                         }
                 }
             }
@@ -983,6 +965,76 @@ private fun MetadataDot() {
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
             modifier = Modifier.padding(horizontal = 2.dp),
         )
+    }
+}
+
+@Composable
+private fun RootFolderTile(
+    selectedRootFolder: String?,
+    availableRootFolders: List<RootFolder>,
+    onRootFolderSelected: (String) -> Unit,
+    isLoading: Boolean,
+) {
+    val context = LocalContext.current
+    if (availableRootFolders.size > 1) {
+        val labelFor = { folder: RootFolder ->
+            folder.freeSpace
+                ?.takeIf { it > 0 }
+                ?.let { bytes ->
+                    context.getString(
+                        R.string.request_root_folder_free_fmt,
+                        folder.path,
+                        Formatter.formatShortFileSize(context, bytes),
+                    )
+                } ?: folder.path
+        }
+        MinimalSelectionTile(
+            label = stringResource(R.string.request_root_folder),
+            selectedText =
+                availableRootFolders.firstOrNull { it.path == selectedRootFolder }?.let(labelFor)
+                    ?: selectedRootFolder
+                    ?: "Default",
+            items = availableRootFolders,
+            itemText = labelFor,
+            onItemSelected = { onRootFolderSelected(it.path) },
+            isLoading = isLoading,
+        )
+        return
+    }
+    val folder = selectedRootFolder ?: return
+    val folderText =
+        availableRootFolders
+            .firstOrNull { it.path == folder }
+            ?.freeSpace
+            ?.takeIf { it > 0 }
+            ?.let { bytes ->
+                stringResource(
+                    R.string.request_root_folder_free_fmt,
+                    folder,
+                    Formatter.formatShortFileSize(context, bytes),
+                )
+            } ?: folder
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(MaterialTheme.shapes.medium)
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(0.5f))
+                .padding(16.dp)
+    ) {
+        Column {
+            Text(
+                stringResource(R.string.request_root_folder),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                folderText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -1169,35 +1221,55 @@ fun MinimalSwitchTile(
     onCheckedChange: (Boolean) -> Unit,
     icon: Int? = null,
     iconSize: Dp = 24.dp,
+    enabled: Boolean = true,
+    subtitle: String? = null,
 ) {
     Row(
         modifier =
             Modifier.fillMaxWidth()
                 .clip(MaterialTheme.shapes.medium)
-                .toggleable(value = checked, role = Role.Checkbox, onValueChange = onCheckedChange)
+                .toggleable(
+                    value = checked,
+                    enabled = enabled,
+                    role = Role.Checkbox,
+                    onValueChange = onCheckedChange,
+                )
                 .padding(vertical = 8.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
             if (icon != null) {
                 Icon(
                     painter = painterResource(icon),
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint =
+                        if (enabled) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(end = 12.dp).size(iconSize),
                 )
             }
 
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color =
+                        if (enabled) MaterialTheme.colorScheme.onSurface
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                subtitle?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
         }
 
-        AfinitySwitch(checked = checked, onCheckedChange = null)
+        AfinitySwitch(checked = checked, onCheckedChange = null, enabled = enabled)
     }
 }
 

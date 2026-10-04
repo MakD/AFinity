@@ -17,6 +17,8 @@ data class JellyseerrRequest(
     @SerialName("serverId") val serverId: Int? = null,
     @SerialName("profileId") val profileId: Int? = null,
     @SerialName("rootFolder") val rootFolder: String? = null,
+    @SerialName("languageProfileId") val languageProfileId: Int? = null,
+    @SerialName("tags") val tags: List<Int>? = null,
 ) {
     fun getRequestStatus(): RequestStatus = RequestStatus.fromValue(status)
 

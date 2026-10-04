@@ -3,6 +3,7 @@ package com.makd.afinity.di
 import android.app.LocaleManager
 import android.content.Context
 import android.os.Build
+import androidx.core.content.edit
 import com.makd.afinity.BuildConfig
 import com.makd.afinity.core.AppConstants
 import com.makd.afinity.data.manager.SessionManager
@@ -118,7 +119,7 @@ object NetworkModule {
             hardwareId?.takeIf { it.isNotBlank() && it != "null" }
                 ?: UUID.randomUUID().toString().replace("-", "")
         val deviceId = "$seed-${BuildConfig.APPLICATION_ID}"
-        prefs.edit().putString(KEY_DEVICE_ID, deviceId).apply()
+        prefs.edit { putString(KEY_DEVICE_ID, deviceId) }
         return deviceId
     }
 
@@ -516,6 +517,7 @@ object NetworkModule {
         ignoreUnknownKeys = true
         isLenient = true
         encodeDefaults = true
+        coerceInputValues = true
     }
 
     @Provides

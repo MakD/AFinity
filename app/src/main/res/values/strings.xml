@@ -1314,6 +1314,8 @@
     <string name="label_login_method">Login Method</string>
     <string name="login_method_jellyfin">Jellyfin Account</string>
     <string name="login_method_local">Local Account</string>
+    <string name="jellyseerr_use_local_account">Sign in with a Seerr account instead</string>
+    <string name="jellyseerr_use_jellyfin_account">Sign in with your Jellyfin account instead</string>
     <string name="label_jellyfin_username">Jellyfin Username</string>
     <string name="label_seerr_email">Seerr Email</string>
     <string name="placeholder_username">Username</string>
@@ -1718,10 +1720,12 @@
     <string name="request_rt_audience">RT Audience</string>
     <string name="request_fulfillment_details">Fulfillment Details</string>
     <string name="request_4k_title">Request in 4K</string>
+    <string name="request_4k_already_requested">Already requested or available in 4K</string>
     <string name="request_override_options">Override Options</string>
     <string name="request_destination_server">Destination Server</string>
     <string name="request_quality_profile">Quality Profile</string>
     <string name="request_root_folder">Root Folder</string>
+    <string name="request_root_folder_free_fmt">%1$s (%2$s free)</string>
     <string name="request_advanced_options">Advanced Options</string>
     <string name="request_radarr_server">Radarr Server</string>
     <string name="request_sonarr_server">Sonarr Server</string>

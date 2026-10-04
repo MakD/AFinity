@@ -5,6 +5,8 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,10 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SheetState
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,6 +46,7 @@ import androidx.compose.ui.platform.LocalAutofillManager
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -151,49 +151,8 @@ internal fun JellyseerrLoginContent(
         )
 
         val settings = uiState.publicSettings
-        val showLoginMethodChoice =
+        val showLoginMethodSwitch =
             settings == null || (settings.localLogin && settings.mediaServerLogin)
-
-        if (showLoginMethodChoice) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = stringResource(R.string.label_login_method),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Medium,
-                )
-
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    SegmentedButton(
-                        selected = uiState.useJellyfinAuth,
-                        onClick = { viewModel.setUseJellyfinAuth(true) },
-                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                        enabled = !busy,
-                        colors =
-                            SegmentedButtonDefaults.colors(
-                                activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            ),
-                    ) {
-                        Text(stringResource(R.string.login_method_jellyfin))
-                    }
-
-                    SegmentedButton(
-                        selected = !uiState.useJellyfinAuth,
-                        onClick = { viewModel.setUseJellyfinAuth(false) },
-                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                        enabled = !busy,
-                        colors =
-                            SegmentedButtonDefaults.colors(
-                                activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            ),
-                    ) {
-                        Text(stringResource(R.string.login_method_local))
-                    }
-                }
-            }
-        }
 
         if (uiState.useJellyfinAuth && uiState.quickConnectAvailable) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -249,7 +208,7 @@ internal fun JellyseerrLoginContent(
                         else -> stringResource(R.string.jellyseerr_email_hint)
                     },
                 isError = uiState.emailError != null,
-                enabled = !busy && !uiState.useJellyfinAuth,
+                enabled = !busy,
                 keyboardOptions =
                     KeyboardOptions(
                         keyboardType =
@@ -353,22 +312,54 @@ internal fun JellyseerrLoginContent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        LoadingButton(
-            loading = uiState.isLoading,
-            text = stringResource(R.string.btn_login),
-            onClick = {
-                autofillManager?.commit()
-                focusManager.clearFocus()
-                viewModel.login()
-            },
-            enabled =
-                !uiState.isQuickConnecting &&
-                    uiState.serverUrl.isNotBlank() &&
-                    uiState.email.isNotBlank() &&
-                    (uiState.useJellyfinAuth || uiState.password.isNotBlank()),
-        )
+        Column(
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            LoadingButton(
+                loading = uiState.isLoading,
+                text = stringResource(R.string.btn_login),
+                onClick = {
+                    autofillManager?.commit()
+                    focusManager.clearFocus()
+                    viewModel.login()
+                },
+                enabled =
+                    !uiState.isQuickConnecting &&
+                        uiState.serverUrl.isNotBlank() &&
+                        uiState.email.isNotBlank() &&
+                        (uiState.useJellyfinAuth || uiState.password.isNotBlank()),
+            )
 
-        Spacer(modifier = Modifier.height(16.dp))
+            if (showLoginMethodSwitch) {
+                Text(
+                    text =
+                        if (uiState.useJellyfinAuth) {
+                            stringResource(R.string.jellyseerr_use_local_account)
+                        } else {
+                            stringResource(R.string.jellyseerr_use_jellyfin_account)
+                        },
+                    style = MaterialTheme.typography.labelLarge,
+                    color =
+                        if (busy) MaterialTheme.colorScheme.onSurfaceVariant
+                        else MaterialTheme.colorScheme.primary,
+                    modifier =
+                        Modifier.align(Alignment.CenterHorizontally)
+                            .clickable(
+                                enabled = !busy,
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() },
+                                role = Role.Button,
+                            ) {
+                                focusManager.clearFocus()
+                                viewModel.setUseJellyfinAuth(!uiState.useJellyfinAuth)
+                            }
+                            .padding(vertical = 8.dp),
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 

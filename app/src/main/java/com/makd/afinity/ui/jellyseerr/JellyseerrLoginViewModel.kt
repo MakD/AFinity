@@ -25,6 +25,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -90,9 +93,20 @@ constructor(
     private fun sessionUsername(): String? = sessionManager.currentSession.value?.user?.name
 
     private fun seedJellyfinUsername() {
-        val username = sessionUsername() ?: return
-        _uiState.update {
-            if (it.useJellyfinAuth) it.copy(email = username, emailError = null) else it
+        viewModelScope.launch {
+            sessionManager.currentSession
+                .map { it?.user?.name }
+                .filterNotNull()
+                .distinctUntilChanged()
+                .collect { username ->
+                    _uiState.update {
+                        if (it.useJellyfinAuth && it.email.isBlank()) {
+                            it.copy(email = username, emailError = null)
+                        } else {
+                            it
+                        }
+                    }
+                }
         }
     }
 
@@ -460,14 +474,14 @@ constructor(
         var isValid = validateServerUrl()
 
         if (state.email.isBlank()) {
-            if (state.useJellyfinAuth) {
-                _uiState.update {
-                    it.copy(error = context.getString(R.string.error_no_jellyfin_session))
-                }
-            } else {
-                _uiState.update {
-                    it.copy(emailError = context.getString(R.string.error_email_username_required))
-                }
+            _uiState.update {
+                it.copy(
+                    emailError =
+                        context.getString(
+                            if (state.useJellyfinAuth) R.string.error_username_required
+                            else R.string.error_email_username_required
+                        )
+                )
             }
             isValid = false
         }

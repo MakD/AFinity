@@ -25,6 +25,7 @@ import com.makd.afinity.data.models.jellyseerr.UserQuotaResponse
 import com.makd.afinity.data.models.jellyseerr.UserResultsResponse
 import com.makd.afinity.data.models.jellyseerr.WatchProviderDetails
 import com.makd.afinity.data.models.jellyseerr.WatchProviderRegion
+import kotlinx.serialization.json.JsonObject
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -76,7 +77,7 @@ interface JellyseerrApiService {
     @POST("api/v1/auth/logout") suspend fun logout(): Response<Unit>
 
     @POST("api/v1/request")
-    suspend fun createRequest(@Body request: CreateRequestBody): Response<JellyseerrRequest>
+    suspend fun createRequest(@Body request: CreateRequestBody): Response<JsonObject>
 
     @GET("api/v1/request")
     suspend fun getRequests(
@@ -101,10 +102,7 @@ interface JellyseerrApiService {
     suspend fun runJob(@Path("jobId") jobId: String): Response<Unit>
 
     @POST("api/v1/request/{requestId}/approve")
-    suspend fun approveRequest(
-        @Path("requestId") requestId: Int,
-        @Body body: com.makd.afinity.data.models.jellyseerr.ApproveRequestBody? = null,
-    ): Response<JellyseerrRequest>
+    suspend fun approveRequest(@Path("requestId") requestId: Int): Response<JellyseerrRequest>
 
     @retrofit2.http.PUT("api/v1/request/{requestId}")
     suspend fun updateRequest(
@@ -117,13 +115,6 @@ interface JellyseerrApiService {
 
     @GET("api/v1/search")
     suspend fun search(
-        @Query("query") query: String,
-        @Query("page") page: Int = 1,
-        @Query("language") language: String = "en",
-    ): Response<JellyseerrSearchResult>
-
-    @GET("api/v1/search/multi")
-    suspend fun searchMulti(
         @Query("query") query: String,
         @Query("page") page: Int = 1,
         @Query("language") language: String = "en",

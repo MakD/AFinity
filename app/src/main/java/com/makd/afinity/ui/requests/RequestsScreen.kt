@@ -345,7 +345,7 @@ fun RequestsScreen(
             val fourKEnabledOnServer =
                 uiState.publicSettings?.let {
                     if (type == MediaType.MOVIE) it.movie4kEnabled else it.series4kEnabled
-                } ?: true
+                } ?: false
             val canToggle4k =
                 fourKEnabledOnServer &&
                     (currentUser?.let { user ->
@@ -400,6 +400,9 @@ fun RequestsScreen(
                 selectedRootFolder = uiState.selectedRootFolder,
                 isLoadingServers = uiState.isLoadingServers,
                 isLoadingProfiles = uiState.isLoadingProfiles,
+                availableRootFolders = uiState.availableRootFolders,
+                onRootFolderSelected = { viewModel.selectRootFolder(it) },
+                errorMessage = uiState.requestDialogError,
             )
         }
 
@@ -410,7 +413,7 @@ fun RequestsScreen(
                 uiState.publicSettings?.let {
                     if (pending.mediaType == MediaType.MOVIE) it.movie4kEnabled
                     else it.series4kEnabled
-                } ?: true
+                } ?: false
             val canRequest4k =
                 fourKEnabledOnServer &&
                     (currentUser?.let { user ->
@@ -435,7 +438,9 @@ fun RequestsScreen(
                     uiState.userQuota?.let {
                         if (pending.mediaType == MediaType.TV) it.tv else it.movie
                     },
-                existingStatus = pending.existingStatus,
+                existingStatus =
+                    if (uiState.is4kRequested) pending.existingStatus4k else pending.existingStatus,
+                is4kLaneBlocked = uiState.is4kLaneBlocked,
                 isLoading = uiState.isCreatingRequest,
                 detailsLoading = uiState.isFetchingTvDetails,
                 onConfirm = { viewModel.confirmRequest() },
@@ -478,6 +483,9 @@ fun RequestsScreen(
                 availableUsers = uiState.availableUsers,
                 selectedRequestUser = uiState.selectedRequestUser,
                 onRequestUserSelected = { viewModel.selectRequestUser(it) },
+                availableRootFolders = uiState.availableRootFolders,
+                onRootFolderSelected = { viewModel.selectRootFolder(it) },
+                errorMessage = uiState.requestDialogError,
             )
         }
 

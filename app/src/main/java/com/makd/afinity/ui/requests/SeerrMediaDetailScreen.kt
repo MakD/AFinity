@@ -35,6 +35,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
@@ -196,10 +197,94 @@ private fun SeerrRequestActionButton(
     onItemClick: (String, String?) -> Unit,
     requestsViewModel: RequestsViewModel,
 ) {
-    val status = MediaStatus.fromValue(details.mediaInfo?.status ?: MediaStatus.UNKNOWN.value)
-    val jellyfinId = details.mediaInfo?.getJellyfinItemId()
+    val requestsUiState by requestsViewModel.uiState.collectAsStateWithLifecycle()
+    val currentUser by requestsViewModel.currentUser.collectAsStateWithLifecycle()
+    val mediaInfo = details.mediaInfo
+    val status = MediaStatus.fromValue(mediaInfo?.status ?: MediaStatus.UNKNOWN.value)
+    val status4k = MediaStatus.fromValue(mediaInfo?.status4k ?: MediaStatus.UNKNOWN.value)
+    val jellyfinId = mediaInfo?.getJellyfinItemId()
     val mappedType = if (mediaType == MediaType.TV) "Series" else "Movie"
 
+    val mainOpensRequest =
+        !(status == MediaStatus.AVAILABLE && jellyfinId != null) &&
+            status != MediaStatus.BLOCKLISTED &&
+            !(mediaType == MediaType.MOVIE &&
+                (status == MediaStatus.PENDING ||
+                    status == MediaStatus.PROCESSING ||
+                    status == MediaStatus.AVAILABLE))
+    val fourKEnabled =
+        requestsUiState.publicSettings?.let {
+            if (mediaType == MediaType.MOVIE) it.movie4kEnabled else it.series4kEnabled
+        } ?: false
+    val canRequest4kPermission =
+        currentUser?.let { user ->
+            user.hasPermission(Permissions.REQUEST_4K) ||
+                (mediaType == MediaType.MOVIE &&
+                    user.hasPermission(Permissions.REQUEST_4K_MOVIE)) ||
+                (mediaType == MediaType.TV && user.hasPermission(Permissions.REQUEST_4K_TV))
+        } ?: false
+    val fourKLaneOpen =
+        if (mediaType == MediaType.MOVIE) mediaInfo?.canRequestLane(is4k = true) ?: true
+        else status4k != MediaStatus.AVAILABLE && status4k != MediaStatus.BLOCKLISTED
+    val showRequest4k =
+        !mainOpensRequest &&
+            status != MediaStatus.BLOCKLISTED &&
+            fourKEnabled &&
+            canRequest4kPermission &&
+            fourKLaneOpen
+
+    val openRequestDialog: (Boolean) -> Unit = { is4k ->
+        requestsViewModel.showRequestDialog(
+            tmdbId = tmdbId,
+            mediaType = mediaType,
+            title = details.title ?: details.name ?: "",
+            posterUrl = details.getPosterUrl(),
+            availableSeasons = 0,
+            existingStatus = status,
+            existingStatus4k = status4k,
+            is4k = is4k,
+        )
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SeerrPrimaryActionButton(
+            status = status,
+            mediaType = mediaType,
+            jellyfinId = jellyfinId,
+            mappedType = mappedType,
+            onItemClick = onItemClick,
+            onRequest = { openRequestDialog(false) },
+        )
+        if (showRequest4k) {
+            OutlinedButton(
+                onClick = { openRequestDialog(true) },
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_4k),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Text(stringResource(R.string.request_4k_title))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SeerrPrimaryActionButton(
+    status: MediaStatus,
+    mediaType: MediaType,
+    jellyfinId: String?,
+    mappedType: String,
+    onItemClick: (String, String?) -> Unit,
+    onRequest: () -> Unit,
+) {
     when {
         status == MediaStatus.AVAILABLE && jellyfinId != null -> {
             Button(
@@ -232,16 +317,7 @@ private fun SeerrRequestActionButton(
         }
         else -> {
             Button(
-                onClick = {
-                    requestsViewModel.showRequestDialog(
-                        tmdbId = tmdbId,
-                        mediaType = mediaType,
-                        title = details.title ?: details.name ?: "",
-                        posterUrl = details.getPosterUrl(),
-                        availableSeasons = 0,
-                        existingStatus = status,
-                    )
-                },
+                onClick = onRequest,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
             ) {
                 Row(
@@ -413,7 +489,9 @@ private fun SeerrRequestDialogHost(requestsViewModel: RequestsViewModel) {
                 uiState.userQuota?.let {
                     if (pending.mediaType == MediaType.TV) it.tv else it.movie
                 },
-            existingStatus = pending.existingStatus,
+            existingStatus =
+                if (uiState.is4kRequested) pending.existingStatus4k else pending.existingStatus,
+            is4kLaneBlocked = uiState.is4kLaneBlocked,
             isLoading = uiState.isCreatingRequest,
             detailsLoading = uiState.isFetchingTvDetails,
             onConfirm = { requestsViewModel.confirmRequest() },
@@ -433,7 +511,7 @@ private fun SeerrRequestDialogHost(requestsViewModel: RequestsViewModel) {
                 (uiState.publicSettings?.let {
                     if (pending.mediaType == MediaType.MOVIE) it.movie4kEnabled
                     else it.series4kEnabled
-                } ?: true) &&
+                } ?: false) &&
                     (currentUser?.let { user ->
                         user.hasPermission(Permissions.REQUEST_4K) ||
                             (pending.mediaType == MediaType.MOVIE &&
@@ -467,6 +545,9 @@ private fun SeerrRequestDialogHost(requestsViewModel: RequestsViewModel) {
             availableUsers = uiState.availableUsers,
             selectedRequestUser = uiState.selectedRequestUser,
             onRequestUserSelected = { requestsViewModel.selectRequestUser(it) },
+            availableRootFolders = uiState.availableRootFolders,
+            onRootFolderSelected = { requestsViewModel.selectRootFolder(it) },
+            errorMessage = uiState.requestDialogError,
         )
     }
 }

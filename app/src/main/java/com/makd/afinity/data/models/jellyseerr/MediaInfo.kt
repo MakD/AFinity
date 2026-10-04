@@ -3,6 +3,16 @@ package com.makd.afinity.data.models.jellyseerr
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+private val SEASON_PRESENT_STATUSES =
+    setOf(
+        MediaStatus.AVAILABLE.value,
+        MediaStatus.PARTIALLY_AVAILABLE.value,
+        MediaStatus.PROCESSING.value,
+    )
+
+private fun JellyseerrRequest.isActive(): Boolean =
+    status != RequestStatus.DECLINED.value && status != RequestStatus.COMPLETED.value
+
 @Serializable
 data class MediaInfo(
     @SerialName("id") val id: Int,
@@ -35,6 +45,35 @@ data class MediaInfo(
     }
 
     fun getDisplayTitle(): String = title ?: name ?: "Unknown"
+
+    fun laneStatus(is4k: Boolean): MediaStatus =
+        MediaStatus.fromValue((if (is4k) status4k else status) ?: MediaStatus.UNKNOWN.value)
+
+    fun hasActiveRequest(is4k: Boolean): Boolean =
+        requests.orEmpty().any { it.is4k == is4k && it.isActive() }
+
+    fun canRequestLane(is4k: Boolean): Boolean =
+        when (laneStatus(is4k)) {
+            MediaStatus.UNKNOWN -> true
+            MediaStatus.DELETED -> !hasActiveRequest(is4k)
+            else -> false
+        }
+
+    fun blockedSeasons(is4k: Boolean): List<Int> {
+        val requested =
+            requests
+                .orEmpty()
+                .filter { it.is4k == is4k && it.isActive() }
+                .flatMap { request -> request.seasons.orEmpty().map { it.seasonNumber } }
+        val present =
+            seasons
+                .orEmpty()
+                .filter { season ->
+                    (if (is4k) season.status4k else season.status) in SEASON_PRESENT_STATUSES
+                }
+                .mapNotNull { it.seasonNumber }
+        return (requested + present).distinct()
+    }
 
     fun getReleaseYear(): String? {
         val date = releaseDate ?: firstAirDate
@@ -73,4 +112,5 @@ data class MediaInfoSeason(
     @SerialName("id") val id: Int? = null,
     @SerialName("seasonNumber") val seasonNumber: Int? = null,
     @SerialName("status") val status: Int? = null,
+    @SerialName("status4k") val status4k: Int? = null,
 )
