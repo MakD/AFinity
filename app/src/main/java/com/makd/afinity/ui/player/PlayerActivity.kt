@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
@@ -50,7 +51,6 @@ class PlayerActivity : AppCompatActivity() {
     @Inject lateinit var preferencesRepository: PreferencesRepository
 
     private var wasPip: Boolean = false
-    private var isResumed: Boolean = false
 
     companion object {
         private const val ACTION_PLAY_PAUSE = "com.makd.afinity.action.PLAY_PAUSE"
@@ -269,22 +269,15 @@ class PlayerActivity : AppCompatActivity() {
 
         viewModel.onPipModeChanged(isInPictureInPictureMode)
 
-        if (!isInPictureInPictureMode) {
-            window.decorView.postDelayed(
-                {
-                    if (!isResumed) {
-                        viewModel.stopPlayback()
-                        finish()
-                    }
-                },
-                100,
-            )
+        if (!isInPictureInPictureMode && lifecycle.currentState == Lifecycle.State.CREATED) {
+            Timber.d("PiP dismissed, stopping playback")
+            viewModel.stopPlayback()
+            finish()
         }
     }
 
     override fun onResume() {
         super.onResume()
-        isResumed = true
         hideSystemUI()
 
         if (wasPip) {
@@ -296,7 +289,6 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        isResumed = false
 
         if (isInPictureInPictureMode) {
             wasPip = true
