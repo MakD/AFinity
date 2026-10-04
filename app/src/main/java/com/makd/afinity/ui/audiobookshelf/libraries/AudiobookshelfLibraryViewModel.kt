@@ -95,6 +95,10 @@ constructor(
         _selectedLetter.value = if (_selectedLetter.value == letter) null else letter
     }
 
+    fun clearLetterFilter() {
+        _selectedLetter.value = null
+    }
+
     private fun enrichItems(
         items: List<LibraryItem>,
         progressMap: Map<String, MediaProgress>,

@@ -170,6 +170,11 @@ interface AudiobookshelfDao {
     ): Long?
 
     @Query(
+        "SELECT COUNT(*) FROM audiobookshelf_items WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND libraryId = :libraryId"
+    )
+    suspend fun countItemsForLibrary(serverId: String, userId: String, libraryId: String): Int
+
+    @Query(
         "SELECT (SELECT COUNT(*) FROM audiobookshelf_items) + (SELECT COUNT(*) FROM audiobookshelf_libraries) + (SELECT COUNT(*) FROM audiobookshelf_episodes)"
     )
     suspend fun cachedEntryCount(): Int

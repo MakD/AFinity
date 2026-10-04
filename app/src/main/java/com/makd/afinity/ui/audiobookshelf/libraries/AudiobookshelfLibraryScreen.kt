@@ -32,6 +32,7 @@ import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AlphabetScroller
 import com.makd.afinity.ui.components.AppBarProfile
+import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.main.MainUiState
 
@@ -77,12 +78,45 @@ fun AudiobookshelfLibraryScreen(
             when {
                 isLoading -> FullScreenLoading()
 
+                displayItems.isEmpty() && selectedLetter != null -> {
+                    Row(modifier = Modifier.fillMaxSize()) {
+                        Box(
+                            modifier = Modifier.weight(1f).fillMaxSize().padding(top = 16.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            FullScreenEmpty(
+                                title = stringResource(R.string.library_empty_title),
+                                message =
+                                    stringResource(
+                                        R.string.library_empty_letter_fmt,
+                                        selectedLetter.orEmpty(),
+                                    ),
+                                actionText = stringResource(R.string.action_show_all),
+                                onActionClick = viewModel::clearLetterFilter,
+                            )
+                        }
+                        Box(
+                            modifier = Modifier.fillMaxHeight(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            AlphabetScroller(
+                                selectedLetter = selectedLetter,
+                                onLetterSelected = viewModel::onLetterSelected,
+                                modifier =
+                                    Modifier.background(
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                        shape = MaterialTheme.shapes.small,
+                                    ),
+                            )
+                        }
+                    }
+                }
+
                 displayItems.isEmpty() -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = stringResource(R.string.abs_no_items_in_library),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        FullScreenEmpty(
+                            title = stringResource(R.string.library_empty_title),
+                            message = stringResource(R.string.abs_no_items_in_library),
                         )
                     }
                 }

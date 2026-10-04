@@ -742,8 +742,26 @@ constructor(
                         oldestCachedAt != null &&
                             System.currentTimeMillis() - oldestCachedAt < LIBRARY_ITEMS_TTL_MS
                     ) {
-                        Timber.d("Library $libraryId cache is fresh, skipping refresh")
-                        return@withContext Result.success(emptyList())
+                        val cachedCount =
+                            audiobookshelfDao.countItemsForLibrary(
+                                currentServerId,
+                                currentUserId.toString(),
+                                libraryId,
+                            )
+                        val serverTotal =
+                            apiService
+                                .get()
+                                .getLibraryItems(id = libraryId, limit = 1, page = 0)
+                                .takeIf { it.isSuccessful }
+                                ?.body()
+                                ?.total
+                        if (serverTotal != null && cachedCount == serverTotal) {
+                            Timber.d("Library $libraryId cache is fresh, skipping refresh")
+                            return@withContext Result.success(emptyList())
+                        }
+                        Timber.d(
+                            "Library $libraryId cache holds $cachedCount of $serverTotal items, refreshing"
+                        )
                     }
                 }
 
